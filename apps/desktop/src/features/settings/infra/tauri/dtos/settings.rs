@@ -2,7 +2,9 @@ use std::collections::HashMap;
 
 use aether_core::features::{
     instance::PlatformId,
-    settings::{EditPlatformProvider, EditSettings, Settings, SettingsError},
+    settings::{
+        EditPlatformProvider, EditSettings, MaxConcurrentDownloads, Settings, SettingsError,
+    },
 };
 use serde::{Deserialize, Serialize};
 use serde_with::{DisplayFromStr, serde_as};
@@ -45,7 +47,7 @@ pub struct EditPlatformProviderDto {
 impl From<Settings> for SettingsDto {
     fn from(value: Settings) -> Self {
         Self {
-            max_concurrent_downloads: value.max_concurrent_downloads(),
+            max_concurrent_downloads: value.max_concurrent_downloads().get(),
             platform_providers: value
                 .platform_providers()
                 .iter()
@@ -74,8 +76,11 @@ impl TryFrom<EditSettingsDto> for EditSettings {
             })
             .transpose()?;
 
+        let max_concurrent_downloads = MaxConcurrentDownloads::new(value.max_concurrent_downloads)
+            .map_err(|_| SettingsError::InvalidMaxConcurrentDownloads)?;
+
         Ok(Self {
-            max_concurrent_downloads: value.max_concurrent_downloads,
+            max_concurrent_downloads,
             platform_provider,
         })
     }
@@ -106,6 +111,19 @@ mod tests {
                     if got == platform
             ));
         }
+    }
+
+    #[test]
+    fn should_refuse_zero_concurrent_downloads() {
+        let mut dto = edit("modrinth");
+        dto.max_concurrent_downloads = 0;
+
+        let result = EditSettings::try_from(dto);
+
+        assert!(matches!(
+            result,
+            Err(SettingsError::InvalidMaxConcurrentDownloads)
+        ));
     }
 
     #[test]

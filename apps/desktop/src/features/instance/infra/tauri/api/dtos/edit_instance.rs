@@ -1,4 +1,4 @@
-use aether_core::features::instance::EditInstance;
+use aether_core::features::{instance::EditInstance, settings::SettingsError};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
@@ -50,9 +50,11 @@ pub struct EditInstanceDto {
     pub hooks: Option<EditHooksDto>,
 }
 
-impl From<EditInstanceDto> for EditInstance {
-    fn from(value: EditInstanceDto) -> Self {
-        Self {
+impl TryFrom<EditInstanceDto> for EditInstance {
+    type Error = SettingsError;
+
+    fn try_from(value: EditInstanceDto) -> Result<Self, Self::Error> {
+        Ok(Self {
             name: value.name,
 
             override_java_path: value.override_java_path,
@@ -65,13 +67,13 @@ impl From<EditInstanceDto> for EditInstance {
             env_vars: value.env_vars,
 
             override_memory: value.override_memory,
-            memory: value.memory.map(Into::into),
+            memory: value.memory.map(TryInto::try_into).transpose()?,
 
             override_window_settings: value.override_window_settings,
             window: value.window.map(Into::into),
 
             override_hooks: value.override_hooks,
             hooks: value.hooks.map(Into::into),
-        }
+        })
     }
 }

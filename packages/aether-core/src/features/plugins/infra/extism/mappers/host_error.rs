@@ -587,9 +587,8 @@ impl From<&SettingsError> for HostError {
             // The plugin API has no variant for it and a plugin cannot edit the provider choice,
             // so it only ever sees it as a settings failure with the readable message.
             SettingsError::InvalidPlatformProvider { .. }
-            | SettingsError::InvalidMaxConcurrentDownloads => {
-                SettingsErrorDto::Storage(value.to_string())
-            }
+            | SettingsError::InvalidMaxConcurrentDownloads
+            | SettingsError::InvalidMemory => SettingsErrorDto::Storage(value.to_string()),
         })
     }
 }

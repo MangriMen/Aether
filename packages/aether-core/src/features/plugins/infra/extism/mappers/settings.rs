@@ -3,7 +3,8 @@ use aether_core_plugin_api::v0::{
 };
 
 use crate::features::settings::{
-    DefaultInstanceSettings, Hooks, MemorySettings, WindowSettings, WindowSize,
+    DefaultInstanceSettings, Hooks, InvalidMemoryMb, MemoryMb, MemorySettings, WindowSettings,
+    WindowSize,
 };
 
 impl From<DefaultInstanceSettings> for DefaultInstanceSettingsDto {
@@ -21,16 +22,16 @@ impl From<DefaultInstanceSettings> for DefaultInstanceSettingsDto {
 impl From<MemorySettings> for MemorySettingsDto {
     fn from(value: MemorySettings) -> Self {
         Self {
-            maximum: value.maximum,
+            maximum: value.maximum.get(),
         }
     }
 }
 
-impl From<MemorySettingsDto> for MemorySettings {
-    fn from(value: MemorySettingsDto) -> Self {
-        Self {
-            maximum: value.maximum,
-        }
+impl TryFrom<MemorySettingsDto> for MemorySettings {
+    type Error = InvalidMemoryMb;
+
+    fn try_from(value: MemorySettingsDto) -> Result<Self, Self::Error> {
+        Ok(Self::new(MemoryMb::new(value.maximum)?))
     }
 }
 

@@ -37,6 +37,7 @@ mod tests {
     use tokio::sync::Mutex;
 
     use super::*;
+    use crate::features::settings::MaxConcurrentDownloads;
     use crate::features::{instance::PlatformId, settings::app::EditPlatformProvider};
 
     struct FixedSettings(Mutex<Settings>);
@@ -65,7 +66,7 @@ mod tests {
 
     fn edit(platform: &str, provider_id: &str) -> EditSettings {
         EditSettings {
-            max_concurrent_downloads: 10,
+            max_concurrent_downloads: MaxConcurrentDownloads::default(),
             platform_provider: Some(EditPlatformProvider {
                 platform: PlatformId::try_from(platform).unwrap(),
                 provider_id: Some(provider_id.to_owned()),
@@ -80,23 +81,6 @@ mod tests {
             .await;
         let stored = storage.get().await.unwrap();
         (result, stored)
-    }
-
-    #[tokio::test]
-    async fn should_refuse_zero_concurrent_downloads() {
-        let mut edit_settings = edit("curseforge", "cf-plugin#curseforge");
-        edit_settings.max_concurrent_downloads = 0;
-
-        let (result, stored) = run(edit_settings).await;
-
-        assert!(matches!(
-            result,
-            Err(SettingsError::InvalidMaxConcurrentDownloads)
-        ));
-        assert_eq!(
-            stored.max_concurrent_downloads(),
-            Settings::default().max_concurrent_downloads()
-        );
     }
 
     #[rstest]

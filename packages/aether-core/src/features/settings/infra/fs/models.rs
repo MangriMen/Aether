@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::features::settings::{
-    DefaultInstanceSettings, Hooks, MemorySettings, WindowSettings, WindowSize,
+    DefaultInstanceSettings, Hooks, MemoryMb, MemorySettings, WindowSettings, WindowSize,
 };
 
 #[derive(Debug, Default, Serialize, Deserialize, Clone)]
@@ -22,7 +22,9 @@ pub struct MemorySettingsV1 {
 
 impl Default for MemorySettingsV1 {
     fn default() -> Self {
-        Self { maximum: 2048 }
+        Self {
+            maximum: MemoryMb::default().get(),
+        }
     }
 }
 
@@ -55,7 +57,7 @@ impl From<&DefaultInstanceSettings> for DefaultInstanceSettingsV1 {
             launch_args: domain.launch_args().to_vec(),
             env_vars: domain.env_vars().to_vec(),
             memory: MemorySettingsV1 {
-                maximum: domain.memory().maximum(),
+                maximum: domain.memory().maximum().get(),
             },
             window: WindowSettingsV1 {
                 force_fullscreen: domain.window().force_fullscreen(),
@@ -75,7 +77,7 @@ impl From<&DefaultInstanceSettings> for DefaultInstanceSettingsV1 {
 
 impl From<DefaultInstanceSettingsV1> for DefaultInstanceSettings {
     fn from(dto: DefaultInstanceSettingsV1) -> Self {
-        let memory = MemorySettings::new(dto.memory.maximum);
+        let memory = MemorySettings::from(dto.memory);
         let resolution =
             WindowSize::new(dto.window.game_resolution.0, dto.window.game_resolution.1);
         let window = WindowSettings::new(dto.window.force_fullscreen, resolution);
@@ -87,14 +89,14 @@ impl From<DefaultInstanceSettingsV1> for DefaultInstanceSettings {
 
 impl From<MemorySettingsV1> for MemorySettings {
     fn from(value: MemorySettingsV1) -> Self {
-        Self::new(value.maximum)
+        Self::new(lenient_memory(value.maximum))
     }
 }
 
 impl From<MemorySettings> for MemorySettingsV1 {
     fn from(value: MemorySettings) -> Self {
         Self {
-            maximum: value.maximum(),
+            maximum: value.maximum().get(),
         }
     }
 }
@@ -140,4 +142,12 @@ impl From<Hooks> for HooksV2 {
             post_exit: value.post_exit().to_string(),
         }
     }
+}
+
+/// Lenient read of the settings file: an invalid value is logged and replaced by the default.
+fn lenient_memory(value: u32) -> MemoryMb {
+    MemoryMb::new(value).unwrap_or_else(|err| {
+        tracing::warn!("Invalid memory.maximum in the settings file: {err}; using the default");
+        MemoryMb::default()
+    })
 }

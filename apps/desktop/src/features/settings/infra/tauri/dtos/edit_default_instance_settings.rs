@@ -1,4 +1,4 @@
-use aether_core::features::settings::{EditDefaultInstanceSettings, EditHooks};
+use aether_core::features::settings::{EditDefaultInstanceSettings, EditHooks, SettingsError};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
@@ -36,15 +36,17 @@ pub struct EditHooksDto {
     pub post_exit: Option<String>,
 }
 
-impl From<EditDefaultInstanceSettingsDto> for EditDefaultInstanceSettings {
-    fn from(value: EditDefaultInstanceSettingsDto) -> Self {
-        Self {
+impl TryFrom<EditDefaultInstanceSettingsDto> for EditDefaultInstanceSettings {
+    type Error = SettingsError;
+
+    fn try_from(value: EditDefaultInstanceSettingsDto) -> Result<Self, Self::Error> {
+        Ok(Self {
             launch_args: value.launch_args,
             env_vars: value.env_vars,
-            memory: value.memory.map(Into::into),
+            memory: value.memory.map(TryInto::try_into).transpose()?,
             window: value.window.map(Into::into),
             hooks: value.hooks.map(Into::into),
-        }
+        })
     }
 }
 

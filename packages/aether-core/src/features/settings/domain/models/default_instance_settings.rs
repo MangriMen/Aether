@@ -1,3 +1,5 @@
+use super::MemoryMb;
+
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct DefaultInstanceSettings {
     launch_args: Vec<String>,
@@ -93,26 +95,20 @@ impl DefaultInstanceSettings {
 ///
 /// Used to define the maximum amount of memory that can be allocated
 /// to the JVM when launching a game.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct MemorySettings {
     /// Maximum amount of RAM in megabytes.
     ///
     /// Typically corresponds to the `-Xmx` parameter when starting the JVM.
-    pub maximum: u32,
-}
-
-impl Default for MemorySettings {
-    fn default() -> Self {
-        Self { maximum: 2048 }
-    }
+    pub maximum: MemoryMb,
 }
 
 impl MemorySettings {
-    pub fn new(maximum: u32) -> Self {
+    pub fn new(maximum: MemoryMb) -> Self {
         Self { maximum }
     }
 
-    pub fn maximum(&self) -> u32 {
+    pub fn maximum(&self) -> MemoryMb {
         self.maximum
     }
 }

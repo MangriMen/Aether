@@ -1,6 +1,9 @@
 use crate::features::{
     instance::{PlatformId, ProviderId},
-    settings::{DefaultInstanceSettings, MemorySettings, Settings, SettingsError, WindowSettings},
+    settings::{
+        DefaultInstanceSettings, MaxConcurrentDownloads, MemorySettings, Settings, SettingsError,
+        WindowSettings,
+    },
 };
 
 /// What a cache holds, as the user tells them apart. A cache is given its kind where the app
@@ -59,7 +62,7 @@ pub enum ClearCacheOutcome {
 
 #[derive(Debug)]
 pub struct EditSettings {
-    pub max_concurrent_downloads: usize,
+    pub max_concurrent_downloads: MaxConcurrentDownloads,
     pub platform_provider: Option<EditPlatformProvider>,
 }
 
@@ -74,11 +77,6 @@ impl EditSettings {
     /// Refuse a provider choice that no platform install could ever use: a
     /// provider id that is not `plugin#capability`.
     pub fn validate(&self) -> Result<(), SettingsError> {
-        // Zero permits would park every download forever.
-        if self.max_concurrent_downloads == 0 {
-            return Err(SettingsError::InvalidMaxConcurrentDownloads);
-        }
-
         let Some(choice) = &self.platform_provider else {
             return Ok(());
         };

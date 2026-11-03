@@ -610,7 +610,7 @@ export type RuntimeConfigDto = {
 export type SettingsErrorDto = { code: "NOT_FOUND" } | { code: "STORAGE_FAILURE" } | { code: "INVALID_PLATFORM_PROVIDER"; payload: {
 	platform: string,
 	reason: string,
-} } | { code: "INVALID_MAX_CONCURRENT_DOWNLOADS" };
+} } | { code: "INVALID_MAX_CONCURRENT_DOWNLOADS" } | { code: "INVALID_MEMORY" };
 
 export type SkippedPluginDirDto = {
 	dir_name: string,

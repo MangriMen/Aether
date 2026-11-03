@@ -155,7 +155,7 @@ impl GetMinecraftLaunchCommandUseCase {
             libraries_path: &libraries_dir,
             class_paths: &class_paths,
             version_name: &version_jar,
-            max_memory: launch_settings.memory.maximum,
+            max_memory: launch_settings.memory.maximum.get(),
             custom_args: &launch_settings.launch_args,
             java_arch: java.architecture(),
         })?;

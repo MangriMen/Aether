@@ -364,7 +364,7 @@ impl InstanceBuilder {
 mod tests {
     use super::*;
     use crate::features::instance::InstanceInstallStage;
-    use crate::features::settings::{WindowSettings, WindowSize};
+    use crate::features::settings::{MemoryMb, WindowSettings, WindowSize};
     use rstest::rstest;
 
     fn make_built_instance(name: &str) -> Instance {
@@ -391,7 +391,7 @@ mod tests {
             java_path: Overridable::new("java17".into(), true),
             launch_args: Overridable::new(vec!["-Xmx2G".into()], true),
             env_vars: Overridable::new(vec![("VAR".into(), "val".into())], true),
-            memory: Overridable::new(MemorySettings::new(4096), true),
+            memory: Overridable::new(MemorySettings::new(MemoryMb::new(4096).unwrap()), true),
             window: Overridable::new(
                 WindowSettings::new(false, WindowSize::new(1920, 1080)),
                 true,

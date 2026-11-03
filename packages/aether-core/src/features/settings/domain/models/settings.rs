@@ -1,14 +1,11 @@
 use std::collections::{HashMap, HashSet};
 
+use super::MaxConcurrentDownloads;
 use crate::features::instance::PlatformId;
 
-pub const DEFAULT_MAX_CONCURRENT_DOWNLOADS: usize = 10;
-#[allow(clippy::cast_possible_wrap)]
-pub const DEFAULT_MAX_CONCURRENT_DOWNLOADS_I64: i64 = DEFAULT_MAX_CONCURRENT_DOWNLOADS as i64;
-
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Settings {
-    max_concurrent_downloads: usize,
+    max_concurrent_downloads: MaxConcurrentDownloads,
 
     enabled_plugins: HashSet<String>,
 
@@ -17,18 +14,11 @@ pub struct Settings {
     platform_providers: HashMap<PlatformId, String>,
 }
 
-impl Default for Settings {
-    fn default() -> Self {
-        Self {
-            max_concurrent_downloads: DEFAULT_MAX_CONCURRENT_DOWNLOADS,
-            enabled_plugins: HashSet::default(),
-            platform_providers: HashMap::default(),
-        }
-    }
-}
-
 impl Settings {
-    pub fn new(max_concurrent_downloads: usize, enabled_plugins: HashSet<String>) -> Self {
+    pub fn new(
+        max_concurrent_downloads: MaxConcurrentDownloads,
+        enabled_plugins: HashSet<String>,
+    ) -> Self {
         Self {
             max_concurrent_downloads,
             enabled_plugins,
@@ -67,7 +57,7 @@ impl Settings {
         }
     }
 
-    pub fn max_concurrent_downloads(&self) -> usize {
+    pub fn max_concurrent_downloads(&self) -> MaxConcurrentDownloads {
         self.max_concurrent_downloads
     }
 
@@ -75,7 +65,10 @@ impl Settings {
         &self.enabled_plugins
     }
 
-    pub fn set_max_concurrent_downloads(&mut self, max_concurrent_downloads: usize) {
+    pub fn set_max_concurrent_downloads(
+        &mut self,
+        max_concurrent_downloads: MaxConcurrentDownloads,
+    ) {
         self.max_concurrent_downloads = max_concurrent_downloads;
     }
 
