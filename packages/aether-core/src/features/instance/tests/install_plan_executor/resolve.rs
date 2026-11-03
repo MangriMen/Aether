@@ -1,5 +1,7 @@
 //! Resolving refs and choosing the provider of a platform.
 
+use crate::features::instance::InstanceName;
+
 use crate::features::instance::PlatformId;
 use crate::{
     features::{
@@ -90,7 +92,7 @@ async fn should_report_progress_up_to_complete_when_the_plan_finishes() {
 async fn should_caption_the_bar_with_the_instance_name_when_the_plan_runs() {
     let fixture = Fixture::new().await;
     let new_instance = NewInstance {
-        name: "My Pack".into(),
+        name: InstanceName::parse("My Pack").unwrap(),
         game_version: "1.20.1".into(),
         mod_loader: ModLoader::Vanilla,
         loader_version: None,

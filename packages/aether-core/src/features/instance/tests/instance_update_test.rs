@@ -1,3 +1,4 @@
+use crate::features::instance::InstanceName;
 use std::sync::Arc;
 
 use chrono::Utc;
@@ -36,7 +37,7 @@ async fn pool() -> (TempDir, SqlitePool) {
 fn instance(id: &InstanceId) -> Instance {
     InstanceBuilder::new(
         id.clone(),
-        "Old".to_string(),
+        InstanceName::parse("Old").unwrap(),
         "1.20.1".to_string(),
         ModLoader::Fabric,
     )
@@ -45,7 +46,7 @@ fn instance(id: &InstanceId) -> Instance {
 
 fn rename_to(name: &str) -> EditInstance {
     EditInstance {
-        name: Some(name.to_string()),
+        name: Some(InstanceName::parse(name).unwrap()),
         override_java_path: None,
         java_path: None,
         override_launch_args: None,
@@ -91,24 +92,9 @@ async fn should_keep_both_changes_when_edit_and_launch_update_run_concurrently()
     launch.await.unwrap();
 
     let stored = storage.get(&id).await.unwrap();
-    assert_eq!(stored.name(), "New");
+    assert_eq!(stored.name().as_str(), "New");
     assert_eq!(stored.install_stage, InstanceInstallStage::Installed);
     assert!(stored.last_played.is_some());
-}
-
-#[tokio::test]
-async fn should_reject_the_rename_when_the_name_is_only_whitespace() {
-    let (_dir, pool) = pool().await;
-    let storage = Arc::new(SqliteInstanceStorage::new(pool));
-    let id = InstanceId::try_from(uuid::Uuid::new_v4().to_string().as_str()).unwrap();
-    storage.upsert(&instance(&id)).await.unwrap();
-
-    let result = EditInstanceUseCase::new(storage.clone())
-        .execute(id.clone(), rename_to("   "))
-        .await;
-
-    assert!(result.is_err());
-    assert_eq!(storage.get(&id).await.unwrap().name(), "Old");
 }
 
 #[tokio::test]
@@ -148,14 +134,14 @@ async fn should_not_write_when_update_reports_no_change() {
         .update(
             &id,
             Box::new(|instance| {
-                instance.rename("Ignored".to_string())?;
+                instance.rename(InstanceName::parse("Ignored").unwrap());
                 Ok(false)
             }),
         )
         .await
         .unwrap();
 
-    assert_eq!(storage.get(&id).await.unwrap().name(), "Old");
+    assert_eq!(storage.get(&id).await.unwrap().name().as_str(), "Old");
 }
 
 #[tokio::test]

@@ -1,4 +1,4 @@
-use aether_core::features::instance::{InstanceError, NewInstance};
+use aether_core::features::instance::{InstanceError, InstanceName, NewInstance};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
@@ -34,7 +34,7 @@ impl TryFrom<NewInstanceDto> for NewInstance {
 
     fn try_from(value: NewInstanceDto) -> Result<Self, Self::Error> {
         Ok(Self {
-            name: value.name,
+            name: InstanceName::try_from(value.name)?,
             game_version: value.game_version,
             mod_loader: value.mod_loader.into(),
             loader_version: value.loader_version.map(std::convert::Into::into),

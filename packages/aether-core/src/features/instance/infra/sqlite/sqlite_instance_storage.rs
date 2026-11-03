@@ -451,12 +451,13 @@ async fn write_instance(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::features::instance::InstanceName;
     use crate::features::{instance::InstanceBuilder, minecraft::ModLoader};
 
     fn instance(loader: ModLoader) -> Instance {
         InstanceBuilder::new(
             InstanceId::try_from("a").unwrap(),
-            "a".to_owned(),
+            InstanceName::parse("a").unwrap(),
             "1.21.1".into(),
             loader,
         )
@@ -516,5 +517,19 @@ mod tests {
         assert!(
             matches!(result, Err(InstanceError::Storage(ref m)) if m.contains("env_vars_json"))
         );
+    }
+
+    #[tokio::test]
+    async fn should_fall_back_to_the_id_when_the_stored_name_is_blank() {
+        let storage = SqliteInstanceStorage::in_memory().await;
+        storage.upsert(&instance(ModLoader::Fabric)).await.unwrap();
+        sqlx::query("UPDATE instances SET name = '  ' WHERE id = 'a'")
+            .execute(storage.pool())
+            .await
+            .unwrap();
+
+        let result = storage.get(&InstanceId::try_from("a").unwrap()).await;
+
+        assert_eq!(result.unwrap().name().as_str(), "a");
     }
 }

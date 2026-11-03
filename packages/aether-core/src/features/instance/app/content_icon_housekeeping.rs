@@ -110,6 +110,7 @@ mod tests {
     use std::{sync::Mutex, time::SystemTime};
 
     use super::*;
+    use crate::features::instance::InstanceName;
     use crate::features::{
         instance::{
             CachedContentAuthor, CachedContentIcon, CachedContentMetadata,
@@ -124,7 +125,7 @@ mod tests {
     fn instance(id: &str) -> Instance {
         InstanceBuilder::new(
             InstanceId::try_from(id).unwrap(),
-            id.into(),
+            InstanceName::parse(id).unwrap(),
             "1.21.1".into(),
             ModLoader::Fabric,
         )

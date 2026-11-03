@@ -1,3 +1,4 @@
+use crate::features::instance::InstanceName;
 use std::{path::Path, sync::Arc};
 
 use async_trait::async_trait;
@@ -311,7 +312,7 @@ async fn should_create_a_vanilla_instance_when_given_valid_params() {
     );
 
     let new_instance = NewInstance {
-        name: "Test Instance".to_string(),
+        name: InstanceName::parse("Test Instance").unwrap(),
         game_version: "1.21".to_string(),
         mod_loader: ModLoader::Vanilla,
         loader_version: None,
@@ -330,7 +331,7 @@ async fn should_create_a_vanilla_instance_when_given_valid_params() {
         .get(&InstanceId::try_from(instance_id.as_str()).unwrap())
         .await
         .expect("Instance should exist");
-    assert_eq!(stored.name(), "Test Instance");
+    assert_eq!(stored.name().as_str(), "Test Instance");
     assert_eq!(stored.game_version, "1.21");
     assert_eq!(stored.loader, ModLoader::Vanilla);
 
@@ -367,7 +368,7 @@ async fn should_create_an_instance_when_given_a_loader_and_an_explicit_version()
     );
 
     let new_instance = NewInstance {
-        name: "Fabric Test".to_string(),
+        name: InstanceName::parse("Fabric Test").unwrap(),
         game_version: "1.20.1".to_string(),
         mod_loader: ModLoader::Fabric,
         loader_version: Some(LoaderVersionPreference::Exact("0.16.5".to_string())),
@@ -416,7 +417,7 @@ async fn should_pick_the_default_loader_version_when_none_is_given() {
     );
 
     let new_instance = NewInstance {
-        name: "Forge Test".to_string(),
+        name: InstanceName::parse("Forge Test").unwrap(),
         game_version: "1.20.1".to_string(),
         mod_loader: ModLoader::Forge,
         loader_version: None,
@@ -481,7 +482,7 @@ async fn should_run_the_install_service_when_an_instance_is_created() {
     );
 
     let new_instance = NewInstance {
-        name: "Install Test".to_string(),
+        name: InstanceName::parse("Install Test").unwrap(),
         game_version: "1.21".to_string(),
         mod_loader: ModLoader::Vanilla,
         loader_version: None,
@@ -543,7 +544,7 @@ async fn should_skip_the_install_when_it_is_not_requested() {
     );
 
     let new_instance = NewInstance {
-        name: "Skip Install".to_string(),
+        name: InstanceName::parse("Skip Install").unwrap(),
         game_version: "1.21".to_string(),
         mod_loader: ModLoader::Vanilla,
         loader_version: None,
@@ -587,7 +588,7 @@ async fn should_sanitize_the_name_when_it_has_unsafe_characters() {
     );
 
     let new_instance = NewInstance {
-        name: "Bad/Name:*Test?".to_string(),
+        name: InstanceName::parse("Bad/Name:*Test?").unwrap(),
         game_version: "1.21".to_string(),
         mod_loader: ModLoader::Vanilla,
         loader_version: None,
@@ -607,60 +608,6 @@ async fn should_sanitize_the_name_when_it_has_unsafe_characters() {
     assert!(
         !instance_id.contains('*'),
         "ID should not contain asterisks"
-    );
-}
-
-#[tokio::test]
-async fn should_refuse_a_blank_name_when_creating_an_instance() {
-    let (_temp, location_info) = setup_temp_location();
-    let instances_root = location_info.instances_dir();
-
-    let storage = Arc::new(MemInstanceStorage::new());
-    let loader_service = Arc::new(MockLoaderService {
-        try_get_default_result: None,
-    });
-    let install_service = Arc::new(NoOpInstallService);
-    let file_service = Arc::new(MemInstanceFileService::new(instances_root.clone()));
-    let watcher = Arc::new(NoOpWatcher);
-    let emitter: SharedEventEmitter = Arc::new(NoOpEmitter);
-
-    let use_case = make_use_case(
-        storage,
-        loader_service,
-        install_service,
-        file_service,
-        watcher,
-        emitter,
-    );
-
-    let new_instance = NewInstance {
-        name: "   ".to_string(),
-        game_version: "1.21".to_string(),
-        mod_loader: ModLoader::Vanilla,
-        loader_version: None,
-        icon_path: None,
-        skip_install_instance: Some(true),
-        pack_info: None,
-    };
-
-    let err = use_case
-        .execute(new_instance, None)
-        .await
-        .expect_err("A blank name must be refused");
-
-    assert!(
-        matches!(
-            err,
-            InstanceError::ValidationError {
-                field: crate::features::instance::InstanceField::Name,
-                reason: crate::features::instance::InstanceValidationErrorReason::CannotBeEmpty,
-            }
-        ),
-        "expected a name validation error, got {err:?}"
-    );
-    assert!(
-        !instances_root.exists(),
-        "nothing may be created for a refused name"
     );
 }
 
@@ -686,7 +633,7 @@ async fn should_not_create_a_directory_when_the_loader_cannot_be_resolved() {
     );
 
     let new_instance = NewInstance {
-        name: "Fabric Test".to_string(),
+        name: InstanceName::parse("Fabric Test").unwrap(),
         game_version: "1.20.1".to_string(),
         mod_loader: ModLoader::Fabric,
         loader_version: Some(LoaderVersionPreference::Exact("0.0.0".to_string())),
@@ -762,7 +709,7 @@ async fn should_roll_back_when_storage_fails() {
     );
 
     let new_instance = NewInstance {
-        name: "Rollback Test".to_string(),
+        name: InstanceName::parse("Rollback Test").unwrap(),
         game_version: "1.21".to_string(),
         mod_loader: ModLoader::Vanilla,
         loader_version: None,
@@ -803,7 +750,7 @@ async fn should_store_the_asset_id_when_the_new_instance_has_an_icon() {
     let instance_id = use_case
         .execute(
             NewInstance {
-                name: "With Icon".to_string(),
+                name: InstanceName::parse("With Icon").unwrap(),
                 game_version: "1.21".to_string(),
                 mod_loader: ModLoader::Vanilla,
                 loader_version: None,
@@ -842,7 +789,7 @@ async fn should_create_the_instance_without_an_icon_when_the_icon_cannot_be_impo
     let instance_id = use_case
         .execute(
             NewInstance {
-                name: "Missing Icon".to_string(),
+                name: InstanceName::parse("Missing Icon").unwrap(),
                 game_version: "1.21".to_string(),
                 mod_loader: ModLoader::Vanilla,
                 loader_version: None,
@@ -897,7 +844,7 @@ async fn should_release_the_imported_icon_when_the_instance_directory_cannot_be_
     let result = use_case
         .execute(
             NewInstance {
-                name: "No Dir".to_string(),
+                name: InstanceName::parse("No Dir").unwrap(),
                 game_version: "1.21".to_string(),
                 mod_loader: ModLoader::Vanilla,
                 loader_version: None,

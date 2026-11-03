@@ -1,6 +1,8 @@
 //! The tree of bars a run reports on, with the real progress service: the plan's bar, with one
 //! under it per file downloaded and one for the game a new instance installs.
 
+use crate::features::instance::InstanceName;
+
 use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use tokio::sync::mpsc;
@@ -74,7 +76,7 @@ fn root(bars: &HashMap<Uuid, Vec<ProgressEvent>>) -> &[ProgressEvent] {
 fn new_instance_plan(files: Vec<crate::features::instance::InstallFileEntry>) -> InstallPlan {
     InstallPlan {
         target: InstallTarget::New(NewInstance {
-            name: "My Pack".into(),
+            name: InstanceName::parse("My Pack").unwrap(),
             game_version: "1.20.1".into(),
             mod_loader: ModLoader::Vanilla,
             loader_version: None,

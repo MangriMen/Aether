@@ -2,6 +2,8 @@
 //! and records, the stage through a change of game, the files of a pack installed before owners
 //! were recorded, and the plugin updater for a provider without plans.
 
+use crate::features::instance::InstanceName;
+
 use std::{
     collections::HashMap,
     path::Path,
@@ -530,7 +532,7 @@ impl Fixture {
         let storage = Arc::new(MemInstanceStorage::default());
         let mut instance = InstanceBuilder::new(
             InstanceId::try_from(INSTANCE_ID).unwrap(),
-            "Instance".into(),
+            InstanceName::parse("Instance").unwrap(),
             "1.21.1".into(),
             ModLoader::Fabric,
         )

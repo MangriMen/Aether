@@ -315,6 +315,7 @@ pub enum OverrideLocation {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::features::instance::InstanceName;
     use crate::shared::hash::HashAlgorithm;
 
     const SHA1_ABC: &str = "a9993e364706816aba3e25717850c26c9cd0d89d";
@@ -373,7 +374,7 @@ mod tests {
     fn fabric_instance(loader_version: Option<&str>) -> Instance {
         crate::features::instance::InstanceBuilder::new(
             crate::features::instance::InstanceId::try_from("instance").unwrap(),
-            "Instance".into(),
+            InstanceName::parse("Instance").unwrap(),
             "1.21.1".into(),
             ModLoader::Fabric,
         )
@@ -409,7 +410,7 @@ mod tests {
     fn should_ignore_the_loader_version_when_the_game_is_vanilla() {
         let instance = crate::features::instance::InstanceBuilder::new(
             crate::features::instance::InstanceId::try_from("instance").unwrap(),
-            "Instance".into(),
+            InstanceName::parse("Instance").unwrap(),
             "1.21.1".into(),
             ModLoader::Vanilla,
         )

@@ -1,3 +1,4 @@
+use crate::features::instance::InstanceName;
 use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
@@ -142,7 +143,7 @@ impl Fixture {
         let storage = Arc::new(MemInstanceStorage::default());
         let mut instance = InstanceBuilder::new(
             InstanceId::try_from(INSTANCE_ID).unwrap(),
-            "Instance".into(),
+            InstanceName::parse("Instance").unwrap(),
             "1.21.1".into(),
             ModLoader::Fabric,
         )

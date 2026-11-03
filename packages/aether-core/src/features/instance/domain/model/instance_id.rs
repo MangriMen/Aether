@@ -6,7 +6,7 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 
-use super::{InstanceError, validate_instance_name};
+use super::{InstanceError, InstanceName};
 
 /// An id that names a directory directly under `instances/`.
 ///
@@ -33,11 +33,9 @@ impl InstanceId {
     ///
     /// The name is what the user typed and is shown as it is; the id is the directory it lives
     /// in, so it is derived here rather than validated: a name that cannot be a directory is
-    /// sanitized into one. A blank name has no id to derive, hence the validation error.
-    pub fn from_name(name: &str) -> Result<Self, InstanceError> {
-        validate_instance_name(name)?;
-
-        Self::try_from(sanitize_name(name))
+    /// sanitized into one.
+    pub fn from_name(name: &InstanceName) -> Result<Self, InstanceError> {
+        Self::try_from(sanitize_name(name.as_str()))
     }
 
     pub fn as_str(&self) -> &str {
@@ -140,7 +138,10 @@ impl fmt::Display for InstanceId {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::features::instance::{InstanceField, InstanceValidationErrorReason};
+
+    fn name(value: &str) -> InstanceName {
+        InstanceName::parse(value).unwrap()
+    }
 
     #[test]
     fn should_accept_an_instance_id_when_it_is_a_single_name() {
@@ -190,19 +191,28 @@ mod tests {
 
     #[test]
     fn should_replace_forbidden_characters_when_deriving_an_id() {
-        assert_eq!(InstanceId::from_name("a/b:c").unwrap().as_str(), "a_b_c");
-        assert_eq!(InstanceId::from_name("a\0b").unwrap().as_str(), "a_b");
+        assert_eq!(
+            InstanceId::from_name(&name("a/b:c")).unwrap().as_str(),
+            "a_b_c"
+        );
+        assert_eq!(
+            InstanceId::from_name(&name("a\0b")).unwrap().as_str(),
+            "a_b"
+        );
     }
 
     #[test]
     fn should_prefix_a_reserved_windows_name_when_deriving_an_id() {
-        assert_eq!(InstanceId::from_name("con").unwrap().as_str(), "_con");
         assert_eq!(
-            InstanceId::from_name("NUL.txt").unwrap().as_str(),
+            InstanceId::from_name(&name("con")).unwrap().as_str(),
+            "_con"
+        );
+        assert_eq!(
+            InstanceId::from_name(&name("NUL.txt")).unwrap().as_str(),
             "_NUL.txt"
         );
         assert_eq!(
-            InstanceId::from_name("console").unwrap().as_str(),
+            InstanceId::from_name(&name("console")).unwrap().as_str(),
             "console"
         );
     }
@@ -210,26 +220,19 @@ mod tests {
     #[test]
     fn should_strip_trailing_dots_and_spaces_when_deriving_an_id() {
         assert_eq!(
-            InstanceId::from_name("My pack. . ").unwrap().as_str(),
+            InstanceId::from_name(&name("My pack. . "))
+                .unwrap()
+                .as_str(),
             "My pack"
         );
     }
 
     #[test]
     fn should_fall_back_when_nothing_is_left_of_the_name() {
-        assert_eq!(InstanceId::from_name("...").unwrap().as_str(), "instance");
-    }
-
-    #[test]
-    fn should_refuse_a_blank_name_when_deriving_an_id() {
-        let err = InstanceId::from_name("   ").unwrap_err();
-        assert!(matches!(
-            err,
-            InstanceError::ValidationError {
-                field: InstanceField::Name,
-                reason: InstanceValidationErrorReason::CannotBeEmpty,
-            }
-        ));
+        assert_eq!(
+            InstanceId::from_name(&name("...")).unwrap().as_str(),
+            "instance"
+        );
     }
 
     #[test]

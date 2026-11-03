@@ -1,3 +1,4 @@
+use crate::features::instance::InstanceName;
 use crate::features::instance::PlatformId;
 use std::{
     collections::HashMap,
@@ -769,7 +770,7 @@ impl Fixture {
     ) -> Result<InstanceId, InstanceError> {
         let instance = InstanceBuilder::new(
             InstanceId::try_from(INSTANCE_ID).unwrap(),
-            "Instance".into(),
+            InstanceName::parse("Instance").unwrap(),
             "1.21.1".into(),
             ModLoader::Fabric,
         )

@@ -27,13 +27,7 @@ impl TryFrom<InstallTargetDto> for InstallTarget {
                 instance_id: InstanceId::try_from(instance_id)?,
                 game: game.map(Into::into),
             },
-            InstallTargetDto::New(new_instance) => {
-                Self::New(new_instance.try_into().map_err(|err: InvalidId| {
-                    InstanceError::ContentProviderError {
-                        reason: err.to_string(),
-                    }
-                })?)
-            }
+            InstallTargetDto::New(new_instance) => Self::New(new_instance.try_into()?),
         })
     }
 }

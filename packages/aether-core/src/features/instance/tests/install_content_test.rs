@@ -1,6 +1,8 @@
 //! `InstallContentUseCase` asks the provider for a plan and hands it to the executor: what it
 //! asks for, under which owner the files are recorded, and the stage a new pack's instance ends in.
 
+use crate::features::instance::InstanceName;
+
 use crate::features::instance::PlatformId;
 use std::{
     collections::HashMap,
@@ -51,7 +53,7 @@ fn pack_info(modpack_id: &str) -> PackInfo {
 
 fn new_instance(pack_info: Option<PackInfo>) -> NewInstance {
     NewInstance {
-        name: "Pack".into(),
+        name: InstanceName::parse("Pack").unwrap(),
         game_version: "1.21.1".into(),
         mod_loader: ModLoader::Fabric,
         loader_version: None,
@@ -276,7 +278,7 @@ impl Fixture {
         ] {
             let mut instance = InstanceBuilder::new(
                 InstanceId::try_from(id).unwrap(),
-                id.into(),
+                InstanceName::parse(id).unwrap(),
                 "1.21.1".into(),
                 ModLoader::Fabric,
             )

@@ -1,3 +1,4 @@
+use crate::features::instance::InstanceName;
 use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
@@ -151,7 +152,7 @@ async fn run_install(
 
     let mut instance = InstanceBuilder::new(
         InstanceId::try_from("inst").unwrap(),
-        "inst".to_owned(),
+        InstanceName::parse("inst").unwrap(),
         "1.20.1".to_owned(),
         ModLoader::Vanilla,
     )
@@ -261,7 +262,7 @@ async fn should_be_installing_while_a_working_instance_is_reinstalled() {
     ));
     let mut instance = InstanceBuilder::new(
         InstanceId::try_from("inst").unwrap(),
-        "inst".to_owned(),
+        InstanceName::parse("inst").unwrap(),
         "1.20.1".to_owned(),
         ModLoader::Vanilla,
     )
@@ -299,7 +300,7 @@ async fn should_reset_only_transient_stages_on_startup_sweep() {
     let make = |name: &str, stage| {
         let mut i = InstanceBuilder::new(
             InstanceId::try_from(name).unwrap(),
-            name.to_owned(),
+            InstanceName::parse(name).unwrap(),
             "1.20.1".to_owned(),
             ModLoader::Vanilla,
         )
@@ -420,7 +421,7 @@ async fn should_put_the_bar_of_the_game_under_the_parent_bar_when_there_is_one()
     ));
     let instance = InstanceBuilder::new(
         InstanceId::try_from("inst").unwrap(),
-        "inst".to_owned(),
+        InstanceName::parse("inst").unwrap(),
         "1.20.1".to_owned(),
         ModLoader::Vanilla,
     )
@@ -484,7 +485,7 @@ impl MinecraftInstallService for RenameDuringInstall {
             .update(
                 &id,
                 Box::new(|instance| {
-                    instance.rename("renamed".to_owned())?;
+                    instance.rename(InstanceName::parse("renamed").unwrap());
                     Ok(true)
                 }),
             )
@@ -503,7 +504,7 @@ async fn should_keep_an_edit_made_while_the_game_installs() {
     ));
     let instance = InstanceBuilder::new(
         InstanceId::try_from("inst").unwrap(),
-        "inst".to_owned(),
+        InstanceName::parse("inst").unwrap(),
         "1.20.1".to_owned(),
         ModLoader::Vanilla,
     )
@@ -522,6 +523,6 @@ async fn should_keep_an_edit_made_while_the_game_installs() {
     use_case.execute(id.clone(), false, None).await.unwrap();
 
     let stored = storage.get(&id).await.unwrap();
-    assert_eq!(stored.name(), "renamed");
+    assert_eq!(stored.name().as_str(), "renamed");
     assert_eq!(stored.install_stage, InstanceInstallStage::Installed);
 }

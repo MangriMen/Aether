@@ -39,9 +39,9 @@ impl InstallInstanceUseCase {
         instance: &Instance,
         pack_pending: bool,
     ) -> Result<(), InstanceError> {
-        log::info!(
+        tracing::info!(
             "Installed instance: \"{}\" (minecraft: \"{}\", modloader: \"{:?}\" \"{:?}\")",
-            instance.name().to_owned(),
+            instance.name(),
             instance.game_version,
             instance.loader,
             instance.loader_version
@@ -116,16 +116,16 @@ impl InstallInstanceUseCase {
                 parent_bar,
                 ProgressEventType::MinecraftDownload {
                     instance_id,
-                    instance_name: instance.name().to_owned(),
+                    instance_name: instance.name().to_string(),
                 },
                 100.0,
                 "Downloading Minecraft".to_string(),
             )
             .await;
 
-        log::info!(
+        tracing::info!(
             "Installing instance: \"{}\" (minecraft: \"{}\", modloader: \"{:?}\" \"{:?}\")",
-            instance.name().to_owned(),
+            instance.name(),
             instance.game_version,
             instance.loader,
             instance.loader_version

@@ -2,7 +2,10 @@ use chrono::{DateTime, Utc};
 
 use crate::{
     features::{
-        instance::{Instance, InstanceError, InstanceId, InstanceInstallStage, InstanceSnapshot},
+        instance::{
+            Instance, InstanceError, InstanceId, InstanceInstallStage, InstanceName,
+            InstanceSnapshot,
+        },
         minecraft::{LoaderVersionPreference, ModLoader},
         settings::{Hooks, MemoryMb, MemorySettings, WindowSettings, WindowSize},
     },
@@ -165,7 +168,7 @@ fn enum_to_column<T: serde::Serialize>(value: &T) -> Result<String, serde_json::
     }
 }
 
-fn storage_err(column: &str, id: &str, e: &serde_json::Error) -> InstanceError {
+fn storage_err(column: &str, id: &str, e: &dyn std::fmt::Display) -> InstanceError {
     tracing::warn!(instance_id = id, column, error = %e, "Invalid instance column");
     InstanceError::Storage(format!("Invalid {column} for instance {id}: {e}"))
 }
@@ -179,7 +182,7 @@ impl TryFrom<Instance> for SqlInstance {
 
         Ok(Self {
             id: id.clone(),
-            name: s.name,
+            name: s.name.into_string(),
             icon_path: s.icon_path,
             install_stage: enum_to_column(&InstanceInstallStageDto::from(s.install_stage))
                 .map_err(|e| storage_err("install_stage", &id, &e))?,
@@ -258,9 +261,11 @@ impl TryFrom<SqlInstance> for Instance {
         let env_vars = serde_json::from_str(&row.env_vars_json)
             .map_err(|e| storage_err("env_vars_json", &row.id, &e))?;
 
+        let name = InstanceName::from_stored_or_id(&row.name, &row.id);
+
         let snapshot = InstanceSnapshot {
             id: InstanceId::try_from(row.id)?,
-            name: row.name,
+            name,
             icon_path: row.icon_path,
             install_stage: {
                 let dto: InstanceInstallStageDto =

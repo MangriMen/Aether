@@ -1,5 +1,7 @@
 //! `ImportInstanceUseCase` finishing the instances a plugin created for a pack.
 
+use crate::features::instance::InstanceName;
+
 use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
@@ -113,7 +115,7 @@ async fn import(fail: bool) -> (Result<(), InstanceError>, Arc<MemStorage>) {
     let storage = Arc::new(MemStorage::default());
     let mut instance = InstanceBuilder::new(
         InstanceId::try_from("pack").unwrap(),
-        "Pack".into(),
+        InstanceName::parse("Pack").unwrap(),
         "1.21.1".into(),
         ModLoader::Fabric,
     )

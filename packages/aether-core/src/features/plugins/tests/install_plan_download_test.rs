@@ -4,6 +4,8 @@
 //! `allowed_hosts`; a built-in provider's URL goes through the application's client. Whatever
 //! fails, the instance is left as it was.
 
+use crate::features::instance::InstanceName;
+
 use crate::features::instance::PlatformId;
 use std::{
     collections::HashMap,
@@ -450,7 +452,7 @@ impl Fixture {
         let downloader = self.downloader();
         let instance = InstanceBuilder::new(
             InstanceId::try_from(INSTANCE_ID).unwrap(),
-            "Instance".into(),
+            InstanceName::parse("Instance").unwrap(),
             "1.21.1".into(),
             ModLoader::Fabric,
         )

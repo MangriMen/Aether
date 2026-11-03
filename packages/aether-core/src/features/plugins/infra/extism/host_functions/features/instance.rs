@@ -91,10 +91,7 @@ pub(crate) fn new_instance_from_plugin(
         .transpose()?
         .map(|host| host.to_string_lossy().into_owned());
 
-    let mut new_instance =
-        NewInstance::try_from(dto).map_err(|err| InstanceError::ContentProviderError {
-            reason: err.to_string(),
-        })?;
+    let mut new_instance = NewInstance::try_from(dto)?;
     new_instance.icon_path = icon_path;
     Ok(new_instance)
 }
@@ -440,6 +437,7 @@ mod tests {
     use crate::features::settings::LocationInfo;
 
     use super::*;
+    use crate::features::instance::InstanceName;
 
     const PLUGIN_ID: &str = "test-plugin";
 
@@ -459,7 +457,7 @@ mod tests {
             if instance_id.as_str() == INSTANCE_ID {
                 Ok(InstanceBuilder::new(
                     InstanceId::try_from(INSTANCE_ID).unwrap(),
-                    "Test".to_owned(),
+                    InstanceName::parse("Test").unwrap(),
                     "1.20.1".to_owned(),
                     ModLoader::Vanilla,
                 )
@@ -855,7 +853,7 @@ mod tests {
         async fn execute(&self, _instance_id: InstanceId) -> Result<Instance, InstanceError> {
             Ok(InstanceBuilder::new(
                 InstanceId::generate(),
-                "Test".to_owned(),
+                InstanceName::parse("Test").unwrap(),
                 "1.20.1".to_owned(),
                 ModLoader::Vanilla,
             )
