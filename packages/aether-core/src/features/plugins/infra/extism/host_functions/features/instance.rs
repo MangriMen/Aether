@@ -923,6 +923,32 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn should_refuse_the_whole_list_when_a_content_path_leaves_the_instance() {
+        for hostile in ["../x", "mods/../../x", ".metadata/instance.json"] {
+            let change = RecordingContent::default();
+
+            let err = handle_change_contents(
+                INSTANCE_ID.to_owned(),
+                vec!["mods/a.jar".to_owned(), hostile.to_owned()],
+                ContentStateAction::Disable,
+                &OneInstance,
+                &change,
+            )
+            .await
+            .expect_err(hostile);
+
+            assert!(
+                matches!(
+                    err.raw.as_ref(),
+                    crate::ErrorKind::InstanceError(InstanceError::InvalidRelativePath { .. })
+                ),
+                "{hostile}: {err:?}"
+            );
+            assert!(!change.called.load(Ordering::SeqCst), "{hostile}");
+        }
+    }
+
+    #[tokio::test]
     async fn should_refuse_to_change_contents_when_the_instance_is_unknown() {
         let change = RecordingContent::default();
 

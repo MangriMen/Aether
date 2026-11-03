@@ -120,8 +120,9 @@ impl ImportContentUseCase {
         // on Windows would record a file the listing never finds, and import it again as new.
         let spelled = format!("{content_folder}/{file_name}");
         let content_path = ContentPath::parse(&spelled)?;
-        // The name must stay one segment: parsing treats `` as a separator on every host, so a
-        // Linux file named `a.jar` would otherwise be copied to `a/b.jar`.
+        // The name must stay one segment: a backslash is treated as a separator on every host, so a
+        // Linux file named `a\b.jar` (a backslash in the name) would otherwise be copied to
+        // `a/b.jar`.
         if content_path.as_str() != spelled {
             return Err(InstanceError::InvalidRelativePath {
                 path: spelled,

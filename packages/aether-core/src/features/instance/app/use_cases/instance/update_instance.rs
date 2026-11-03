@@ -285,7 +285,7 @@ impl UpdateInstanceUseCase {
     }
 }
 
-/// The ownerless records at a path of `plan`, compared as the executor compares paths: with
+/// The ownerless records at a path of `plan`, compared as the executor compares paths:
 /// either separator, and without case where the file system ignores it.
 fn ownerless_pack_files(
     records: HashMap<ContentPath, PackFile>,
@@ -412,14 +412,6 @@ mod tests {
      {
         let adopted =
             ownerless_pack_files_by(record_at("mods/A.jar"), &plan_of("mods/a.jar"), true);
-
-        assert_eq!(adopted.len(), 1);
-    }
-
-    #[test]
-    fn should_adopt_a_record_when_it_differs_from_the_planned_path_in_the_separator() {
-        let adopted =
-            ownerless_pack_files_by(record_at("mods\\a.jar"), &plan_of("mods/a.jar"), false);
 
         assert_eq!(adopted.len(), 1);
     }

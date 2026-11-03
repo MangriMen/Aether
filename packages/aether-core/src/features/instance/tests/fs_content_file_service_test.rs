@@ -606,68 +606,6 @@ async fn change_all(
     ]
 }
 
-/// The paths come from the pack storage and the UI, and are checked as [`ContentPath`]s where they
-/// enter: one out of the instance, or into the launcher's `.metadata`, never reaches an operation
-/// — nothing is done to what it would have named — while the valid path is changed as asked.
-#[tokio::test]
-async fn should_refuse_a_path_out_of_the_content_area_before_changing_a_list() {
-    let (temp_dir, location_info) = setup_temp_location();
-    let service = FsContentFileService::new(location_info.clone());
-    let instance_id = &InstanceId::try_from("test-change-refused").unwrap();
-    create_instance_dir(&location_info, instance_id).await;
-    let instance_dir = location_info.instance_dir(instance_id);
-
-    // Targets each path would reach if it were joined as it is.
-    std::fs::write(temp_dir.path().join("escaped.jar"), b"outside").unwrap();
-    std::fs::write(temp_dir.path().join("escaped.jar.disabled"), b"outside").unwrap();
-    std::fs::create_dir_all(instance_dir.join(".metadata")).unwrap();
-    std::fs::write(instance_dir.join(".metadata/instance.json"), b"{}").unwrap();
-    let absolute = temp_dir.path().join("escaped.jar").display().to_string();
-
-    let valid = instance_dir.join("mods/test.jar");
-    for path in [
-        "../../escaped.jar",
-        "mods/../../../escaped.jar",
-        absolute.as_str(),
-        "/escaped.jar",
-        ".metadata/instance.json",
-        ".Metadata/instance.json",
-    ] {
-        assert!(ContentPath::parse(path).is_err(), "{path} must not parse");
-        let paths = [cp("mods/test.jar")];
-        std::fs::create_dir_all(valid.parent().unwrap()).unwrap();
-        std::fs::write(&valid, b"jar").unwrap();
-
-        service
-            .disable_content_files(instance_id, &paths)
-            .await
-            .expect(path);
-        assert!(
-            instance_dir.join("mods/test.jar.disabled").exists(),
-            "{path}"
-        );
-        service
-            .enable_content_files(instance_id, &paths)
-            .await
-            .expect(path);
-        assert!(valid.exists(), "{path}");
-        service
-            .remove_content_files(instance_id, &paths)
-            .await
-            .expect(path);
-        assert!(!valid.exists(), "{path}");
-    }
-
-    assert!(temp_dir.path().join("escaped.jar").exists());
-    assert!(temp_dir.path().join("escaped.jar.disabled").exists());
-    assert!(instance_dir.join(".metadata/instance.json").exists());
-    assert!(
-        !instance_dir
-            .join(".metadata/instance.json.disabled")
-            .exists()
-    );
-}
-
 /// A plain path whose folder is a symlink out of the instance is refused.
 #[tokio::test]
 async fn should_refuse_to_change_a_file_when_a_symlink_leads_out_of_the_instance() {

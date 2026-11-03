@@ -3,6 +3,7 @@ use crate::features::instance::{
     PackFile, PackStorage, PlanOrigin, ProviderId,
     infra::{
         legacy_provider_id::{legacy_provider_id_string, parse_stored_provider_id},
+        stored_content_path::parse_stored_content_path,
         stored_side::parse_stored_side,
     },
 };
@@ -12,21 +13,6 @@ use std::collections::HashMap;
 
 pub struct SqlitePackStorage {
     pool: SqlitePool,
-}
-
-/// A stored content path as a [`ContentPath`]. One that fails the check can never name a file of an
-/// instance, so it is dropped with a warning rather than failing the read of the whole pack; the
-/// row is left as it is.
-fn parse_stored_content_path(instance_id: &InstanceId, stored: &str) -> Option<ContentPath> {
-    match ContentPath::parse(stored) {
-        Ok(path) => Some(path),
-        Err(err) => {
-            tracing::warn!(
-                "Ignoring pack file \"{stored}\" of \"{instance_id}\": not a valid content path: {err}"
-            );
-            None
-        }
-    }
 }
 
 struct PackFileRow {
@@ -361,20 +347,23 @@ impl PackStorage for SqlitePackStorage {
         // Rows are not rewritten: a file saved under a provider's earlier id is matched by that
         // id too, so both ids are queried.
         let legacy_pid = legacy_provider_id_string(provider_id).unwrap_or_else(|| pid.clone());
-        let row = sqlx::query!(
-            "SELECT content_path FROM pack_file_updates WHERE instance_id = ? AND provider_id IN (?, ?) AND content_id = ? LIMIT 1",
-            instance_id.as_str(),
-            pid,
-            legacy_pid,
-            content_id
+        // Not the checked `query!` macro: dropping `LIMIT 1` changes the query text, which the
+        // offline sqlx cache is keyed by.
+        let rows: Vec<String> = sqlx::query_scalar(
+            "SELECT content_path FROM pack_file_updates WHERE instance_id = ? AND provider_id IN (?, ?) AND content_id = ? ORDER BY content_path ASC",
         )
-        .fetch_optional(&self.pool)
+        .bind(instance_id.as_str())
+        .bind(&pid)
+        .bind(&legacy_pid)
+        .bind(content_id)
+        .fetch_all(&self.pool)
         .await
         .map_err(|e| InstanceError::Storage(e.to_string()))?;
 
-        // A row whose path cannot be a content path matches nothing.
-        if let Some(r) = row
-            && let Some(content_path) = parse_stored_content_path(instance_id, &r.content_path)
+        // A row whose path cannot be a content path matches nothing; the first one that can wins.
+        if let Some(content_path) = rows
+            .iter()
+            .find_map(|stored| parse_stored_content_path(instance_id, stored))
         {
             return Ok(Some(self.get_pack_file(instance_id, &content_path).await?));
         }
@@ -574,5 +563,58 @@ mod tests {
         assert_eq!(pack.files[0].file, cp("mods/a.jar"));
         assert_eq!(files.len(), 1);
         assert!(files.contains_key(&cp("mods/a.jar")));
+    }
+
+    #[tokio::test]
+    async fn should_find_the_valid_row_when_an_invalid_one_sorts_first() {
+        let storage = SqlitePackStorage::in_memory().await;
+        let id = InstanceId::try_from("inst").unwrap();
+        let provider: ProviderId = "plugin#cap".parse().unwrap();
+        let file = PackFile {
+            update: Some(HashMap::from([(
+                provider.clone(),
+                ContentFileUpdateInfo {
+                    content_id: "c1".into(),
+                    version: "v1".into(),
+                },
+            )])),
+            ..PackFile::from_hash("good.jar".into(), "h".into())
+        };
+        storage
+            .update_pack_file(&id, &cp("mods/good.jar"), &file)
+            .await
+            .unwrap();
+        for bad in [".metadata/old.jar", "../old.jar"] {
+            sqlx::query("INSERT INTO pack_files (instance_id, content_path, file_name, hash) VALUES ('inst', ?, 'old.jar', 'h')")
+                .bind(bad)
+                .execute(&storage.pool)
+                .await
+                .unwrap();
+            sqlx::query("INSERT INTO pack_file_updates (instance_id, content_path, provider_id, content_id, version_id) VALUES ('inst', ?, 'plugin#cap', 'c1', 'v0')")
+                .bind(bad)
+                .execute(&storage.pool)
+                .await
+                .unwrap();
+        }
+
+        let found = storage
+            .find_by_provider_id(&id, &provider, "c1")
+            .await
+            .unwrap();
+
+        assert_eq!(found.map(|f| f.file_name).as_deref(), Some("good.jar"));
+    }
+
+    #[tokio::test]
+    async fn should_drop_a_stored_path_that_changes_when_normalized() {
+        let storage = SqlitePackStorage::in_memory().await;
+        let id = InstanceId::try_from("inst").unwrap();
+        sqlx::query(r"INSERT INTO pack_files (instance_id, content_path, file_name, hash) VALUES ('inst', 'mods\a.jar', 'a.jar', 'h')")
+            .execute(&storage.pool)
+            .await
+            .unwrap();
+
+        assert!(storage.get_pack(&id).await.unwrap().files.is_empty());
+        assert!(storage.get_pack_files(&id).await.unwrap().is_empty());
     }
 }

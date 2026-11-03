@@ -17,6 +17,7 @@ use crate::{
 };
 
 use super::pack_file::{PackFileV1, PackFileV2, PackV2};
+use crate::features::instance::infra::stored_content_path::parse_stored_content_path;
 
 pub struct FsPackStorage {
     location_info: Arc<LocationInfo>,
@@ -69,21 +70,14 @@ impl PackStorage for FsPackStorage {
             .await
             .map_err(|err| InstanceError::Storage(err.to_string()))?;
 
-        // An entry that fails the check can never name a file of an instance: it is dropped with
-        // a warning rather than failing the read of the whole pack.
+        // An entry that fails the check can never name a file of an instance: it is dropped
+        // rather than failing the read of the whole pack.
         Ok(Pack {
             files: dto
                 .files
                 .into_iter()
-                .filter_map(|e| match ContentPath::parse(&e.file) {
-                    Ok(file) => Some(PackEntry { file }),
-                    Err(err) => {
-                        tracing::warn!(
-                            "Ignoring pack file \"{}\" of \"{instance_id}\": not a valid content path: {err}",
-                            e.file
-                        );
-                        None
-                    }
+                .filter_map(|e| {
+                    parse_stored_content_path(instance_id, &e.file).map(|file| PackEntry { file })
                 })
                 .collect(),
         })
@@ -294,5 +288,36 @@ mod tests {
         assert_eq!(pack.files[0].file, good);
         assert_eq!(files.len(), 1);
         assert_eq!(files[&good].hash, "h");
+    }
+
+    #[tokio::test]
+    async fn should_drop_an_index_entry_that_changes_when_normalized() {
+        let temp = TempDir::new().unwrap();
+        let storage = FsPackStorage::new(Arc::new(LocationInfo::new(
+            temp.path().join("settings"),
+            temp.path().to_path_buf(),
+        )));
+        let id = InstanceId::try_from("inst").unwrap();
+        let good = ContentPath::parse("mods/a.jar").unwrap();
+        storage
+            .update_pack_file(&id, &good, &PackFile::from_hash("a.jar".into(), "h".into()))
+            .await
+            .unwrap();
+        tokio::fs::write(
+            storage.get_pack_path(&id),
+            r#"[[files]]
+file = 'mods\a.jar'
+
+[[files]]
+file = "mods/a.jar"
+"#,
+        )
+        .await
+        .unwrap();
+
+        let pack = storage.get_pack(&id).await.unwrap();
+
+        assert_eq!(pack.files.len(), 1);
+        assert_eq!(pack.files[0].file, good);
     }
 }
