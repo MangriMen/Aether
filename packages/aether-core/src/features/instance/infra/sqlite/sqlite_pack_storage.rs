@@ -347,15 +347,13 @@ impl PackStorage for SqlitePackStorage {
         // Rows are not rewritten: a file saved under a provider's earlier id is matched by that
         // id too, so both ids are queried.
         let legacy_pid = legacy_provider_id_string(provider_id).unwrap_or_else(|| pid.clone());
-        // Not the checked `query!` macro: dropping `LIMIT 1` changes the query text, which the
-        // offline sqlx cache is keyed by.
-        let rows: Vec<String> = sqlx::query_scalar(
+        let rows = sqlx::query!(
             "SELECT content_path FROM pack_file_updates WHERE instance_id = ? AND provider_id IN (?, ?) AND content_id = ? ORDER BY content_path ASC",
+            instance_id.as_str(),
+            pid,
+            legacy_pid,
+            content_id
         )
-        .bind(instance_id.as_str())
-        .bind(&pid)
-        .bind(&legacy_pid)
-        .bind(content_id)
         .fetch_all(&self.pool)
         .await
         .map_err(|e| InstanceError::Storage(e.to_string()))?;
@@ -363,7 +361,7 @@ impl PackStorage for SqlitePackStorage {
         // A row whose path cannot be a content path matches nothing; the first one that can wins.
         if let Some(content_path) = rows
             .iter()
-            .find_map(|stored| parse_stored_content_path(instance_id, stored))
+            .find_map(|row| parse_stored_content_path(instance_id, &row.content_path))
         {
             return Ok(Some(self.get_pack_file(instance_id, &content_path).await?));
         }
