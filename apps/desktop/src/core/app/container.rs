@@ -192,8 +192,7 @@ pub async fn build_container(
         let _ = settings_storage_sqlite.upsert(default.clone()).await;
         default
     };
-    // A stored 0 (older builds accepted it) would park every download forever.
-    let max_downloads = settings.max_concurrent_downloads().max(1);
+    let max_downloads = settings.max_concurrent_downloads().get();
     let fetch_semaphore = Arc::new(FetchSemaphore(tokio::sync::Semaphore::new(max_downloads)));
 
     // ── Limits ──────────────────────────────────────────────────────

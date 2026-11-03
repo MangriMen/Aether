@@ -5,7 +5,7 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 
-use crate::features::settings::{Settings, parse_platform_providers};
+use crate::features::settings::{MaxConcurrentDownloads, Settings, parse_platform_providers};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -20,7 +20,10 @@ pub struct SettingsV1 {
 
 impl From<SettingsV1> for Settings {
     fn from(value: SettingsV1) -> Self {
-        Self::new(value.max_concurrent_downloads, value.enabled_plugins)
+        Self::new(
+            lenient_max_downloads(value.max_concurrent_downloads),
+            value.enabled_plugins,
+        )
     }
 }
 
@@ -36,15 +39,18 @@ pub struct SettingsV2 {
 
 impl From<SettingsV2> for Settings {
     fn from(value: SettingsV2) -> Self {
-        Self::new(value.max_concurrent_downloads, value.enabled_plugins)
-            .with_platform_providers(parse_platform_providers(value.platform_providers))
+        Self::new(
+            lenient_max_downloads(value.max_concurrent_downloads),
+            value.enabled_plugins,
+        )
+        .with_platform_providers(parse_platform_providers(value.platform_providers))
     }
 }
 
 impl From<&Settings> for SettingsV2 {
     fn from(value: &Settings) -> Self {
         Self {
-            max_concurrent_downloads: value.max_concurrent_downloads(),
+            max_concurrent_downloads: value.max_concurrent_downloads().get(),
             enabled_plugins: value.enabled_plugins().clone(),
             platform_providers: value
                 .platform_providers()
@@ -53,4 +59,14 @@ impl From<&Settings> for SettingsV2 {
                 .collect(),
         }
     }
+}
+
+/// Lenient read of the settings file: an invalid value is logged and replaced by the default.
+fn lenient_max_downloads(value: usize) -> MaxConcurrentDownloads {
+    MaxConcurrentDownloads::new(value).unwrap_or_else(|err| {
+        tracing::warn!(
+            "Invalid max_concurrent_downloads in the settings file: {err}; using the default"
+        );
+        MaxConcurrentDownloads::default()
+    })
 }

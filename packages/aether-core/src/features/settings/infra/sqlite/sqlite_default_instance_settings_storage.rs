@@ -2,8 +2,8 @@ use async_trait::async_trait;
 use sqlx::{Sqlite, SqliteConnection, SqlitePool, Transaction};
 
 use crate::features::settings::{
-    DefaultInstanceSettings, DefaultInstanceSettingsStorage, Hooks, MemorySettings, SettingsError,
-    WindowSettings, WindowSize,
+    DefaultInstanceSettings, DefaultInstanceSettingsStorage, Hooks, MemoryMb, MemorySettings,
+    SettingsError, WindowSettings, WindowSize,
 };
 
 pub struct SqliteDefaultInstanceSettingsStorage {
@@ -84,12 +84,10 @@ async fn read_settings(
     let launch_args = serde_json::from_str(&row.launch_args_json).unwrap_or_default();
     let env_vars = serde_json::from_str(&row.env_vars_json).unwrap_or_default();
 
-    let max_memory = u32::try_from(row.max_memory);
-    let memory = if let Ok(max_memory) = max_memory {
-        MemorySettings::new(max_memory)
-    } else {
-        MemorySettings::default()
-    };
+    let memory = MemorySettings::new(MemoryMb::from_stored_or_default(
+        row.max_memory,
+        "default_instance_settings.max_memory",
+    ));
 
     let width = u16::try_from(row.window_width);
     let height = u16::try_from(row.window_height);
@@ -119,7 +117,7 @@ async fn write_settings(
         serde_json::to_string(settings.launch_args()).unwrap_or_else(|_| "[]".into());
     let env_vars_json = serde_json::to_string(settings.env_vars()).unwrap_or_else(|_| "[]".into());
 
-    let memory_max = i64::from(settings.memory().maximum);
+    let memory_max = i64::from(settings.memory().maximum());
     let fullscreen = settings.window().force_fullscreen();
     let width = i64::from(settings.window().game_resolution().width());
     let height = i64::from(settings.window().game_resolution().height());
@@ -234,5 +232,19 @@ mod tests {
 
         assert!(result.is_err());
         assert!(!edited.load(Ordering::SeqCst));
+    }
+
+    #[tokio::test]
+    async fn should_fall_back_to_the_default_when_the_stored_memory_is_invalid() {
+        let dir = tempfile::tempdir().unwrap();
+        let storage = storage(&dir).await;
+        sqlx::query("INSERT INTO default_instance_settings (id, max_memory) VALUES (1, -5)")
+            .execute(&storage.pool)
+            .await
+            .unwrap();
+
+        let settings = storage.get().await.unwrap();
+
+        assert_eq!(settings.memory().maximum(), MemoryMb::default());
     }
 }

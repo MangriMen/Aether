@@ -12,6 +12,8 @@ pub enum SettingsErrorDto {
     InvalidPlatformProvider { platform: String, reason: String },
 
     InvalidMaxConcurrentDownloads,
+
+    InvalidMemory,
 }
 
 impl From<&SettingsError> for SettingsErrorDto {
@@ -28,6 +30,7 @@ impl From<&SettingsError> for SettingsErrorDto {
             SettingsError::InvalidMaxConcurrentDownloads => {
                 SettingsErrorDto::InvalidMaxConcurrentDownloads
             }
+            SettingsError::InvalidMemory => SettingsErrorDto::InvalidMemory,
         }
     }
 }

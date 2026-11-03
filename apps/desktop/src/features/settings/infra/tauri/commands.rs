@@ -149,7 +149,7 @@ async fn edit_default_instance_settings(
     let container = container.0.clone();
     Ok(container
         .edit_default_instance_settings_use_case()
-        .execute(edit_settings.into())
+        .execute(edit_settings.try_into().map_err(aether_core::Error::from)?)
         .await
         .map_err(aether_core::Error::from)?
         .into())

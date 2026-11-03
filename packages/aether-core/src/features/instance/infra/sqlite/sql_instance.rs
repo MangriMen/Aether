@@ -4,7 +4,7 @@ use crate::{
     features::{
         instance::{Instance, InstanceError, InstanceId, InstanceInstallStage, InstanceSnapshot},
         minecraft::{LoaderVersionPreference, ModLoader},
-        settings::{Hooks, MemorySettings, WindowSettings, WindowSize},
+        settings::{Hooks, MemoryMb, MemorySettings, WindowSettings, WindowSize},
     },
     shared::overridable::domain::Overridable,
 };
@@ -196,7 +196,7 @@ impl From<Instance> for SqlInstance {
 
             // Memory
             override_memory: s.memory.is_active,
-            memory_maximum: i64::from(s.memory.data.maximum),
+            memory_maximum: i64::from(s.memory.data.maximum()),
 
             // Window
             override_window_settings: s.window.is_active,
@@ -224,12 +224,10 @@ impl TryFrom<SqlInstance> for Instance {
     type Error = InstanceError;
 
     fn try_from(row: SqlInstance) -> Result<Self, Self::Error> {
-        let max_memory = u32::try_from(row.memory_maximum);
-        let memory = if let Ok(max_memory) = max_memory {
-            MemorySettings::new(max_memory)
-        } else {
-            MemorySettings::default()
-        };
+        let memory = MemorySettings::new(MemoryMb::from_stored_or_default(
+            row.memory_maximum,
+            "instances.memory_maximum",
+        ));
 
         let width = u16::try_from(row.window_width);
         let height = u16::try_from(row.window_height);

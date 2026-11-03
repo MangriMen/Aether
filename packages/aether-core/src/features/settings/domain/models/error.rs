@@ -11,4 +11,7 @@ pub enum SettingsError {
 
     #[error("The number of concurrent downloads must be at least 1")]
     InvalidMaxConcurrentDownloads,
+
+    #[error("The memory amount must be at least 1 MB")]
+    InvalidMemory,
 }

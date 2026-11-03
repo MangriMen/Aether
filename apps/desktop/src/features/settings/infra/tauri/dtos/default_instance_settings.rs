@@ -1,5 +1,6 @@
 use aether_core::features::settings::{
-    DefaultInstanceSettings, Hooks, MemorySettings, WindowSettings, WindowSize,
+    DefaultInstanceSettings, Hooks, MemoryMb, MemorySettings, SettingsError, WindowSettings,
+    WindowSize,
 };
 use serde::{Deserialize, Serialize};
 use specta::Type;
@@ -55,16 +56,17 @@ impl From<DefaultInstanceSettings> for DefaultInstanceSettingsDto {
 impl From<MemorySettings> for MemorySettingsDto {
     fn from(value: MemorySettings) -> Self {
         Self {
-            maximum: value.maximum,
+            maximum: value.maximum.get(),
         }
     }
 }
 
-impl From<MemorySettingsDto> for MemorySettings {
-    fn from(value: MemorySettingsDto) -> Self {
-        Self {
-            maximum: value.maximum,
-        }
+impl TryFrom<MemorySettingsDto> for MemorySettings {
+    type Error = SettingsError;
+
+    fn try_from(value: MemorySettingsDto) -> Result<Self, Self::Error> {
+        let maximum = MemoryMb::new(value.maximum).map_err(|_| SettingsError::InvalidMemory)?;
+        Ok(Self::new(maximum))
     }
 }
 
@@ -108,5 +110,24 @@ impl From<Hooks> for HooksDto {
 impl From<HooksDto> for Hooks {
     fn from(value: HooksDto) -> Self {
         Self::new(value.pre_launch, value.wrapper, value.post_exit)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn should_refuse_zero_memory() {
+        let result = MemorySettings::try_from(MemorySettingsDto { maximum: 0 });
+
+        assert!(matches!(result, Err(SettingsError::InvalidMemory)));
+    }
+
+    #[test]
+    fn should_accept_positive_memory() {
+        let result = MemorySettings::try_from(MemorySettingsDto { maximum: 4096 }).unwrap();
+
+        assert_eq!(result.maximum().get(), 4096);
     }
 }

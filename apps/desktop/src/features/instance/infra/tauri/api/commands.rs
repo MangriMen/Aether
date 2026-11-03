@@ -197,7 +197,10 @@ async fn edit(
     let container = container.0.clone();
     Ok(container
         .edit_instance_use_case()
-        .execute(id, edit_instance.into())
+        .execute(
+            id,
+            edit_instance.try_into().map_err(aether_core::Error::from)?,
+        )
         .await
         .map_err(aether_core::Error::from)?
         .into())

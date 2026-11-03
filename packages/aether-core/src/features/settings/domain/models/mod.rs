@@ -1,8 +1,12 @@
+mod bounded_numbers;
 mod default_instance_settings;
 mod error;
 mod location_info;
 mod settings;
 
+pub use bounded_numbers::{
+    InvalidMaxConcurrentDownloads, InvalidMemoryMb, MaxConcurrentDownloads, MemoryMb,
+};
 pub use default_instance_settings::{
     DefaultInstanceSettings, Hooks, MemorySettings, WindowSettings, WindowSize,
 };
@@ -11,7 +15,5 @@ pub use location_info::{
     CACHE_FOLDER_NAME, INSTANCE_METADATA_FOLDER_NAME, INSTANCES_FOLDER_NAME, LocationInfo,
     METADATA_FOLDER_NAME, PLUGIN_SETTINGS_FILE_NAME, PLUGINS_FOLDER_NAME,
 };
+pub use settings::Settings;
 pub(crate) use settings::parse_platform_providers;
-pub use settings::{
-    DEFAULT_MAX_CONCURRENT_DOWNLOADS, DEFAULT_MAX_CONCURRENT_DOWNLOADS_I64, Settings,
-};

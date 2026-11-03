@@ -2,8 +2,7 @@ use async_trait::async_trait;
 use sqlx::{Sqlite, SqliteConnection, SqlitePool, Transaction};
 
 use crate::features::settings::{
-    DEFAULT_MAX_CONCURRENT_DOWNLOADS, DEFAULT_MAX_CONCURRENT_DOWNLOADS_I64, Settings,
-    SettingsError, SettingsStorage, parse_platform_providers,
+    MaxConcurrentDownloads, Settings, SettingsError, SettingsStorage, parse_platform_providers,
 };
 
 pub struct SqliteSettingsStorage {
@@ -77,9 +76,10 @@ async fn read_settings(conn: &mut SqliteConnection) -> Result<Settings, Settings
     let platform_providers = parse_platform_providers(platform_providers);
 
     Ok(Settings::new(
-        base.max_concurrent_downloads
-            .try_into()
-            .unwrap_or(DEFAULT_MAX_CONCURRENT_DOWNLOADS),
+        MaxConcurrentDownloads::from_stored_or_default(
+            base.max_concurrent_downloads,
+            "launcher_settings.max_concurrent_downloads",
+        ),
         enabled_plugins,
     )
     .with_platform_providers(platform_providers))
@@ -89,8 +89,7 @@ async fn write_settings(
     conn: &mut SqliteConnection,
     settings: Settings,
 ) -> Result<Settings, SettingsError> {
-    let max_downloads = i64::try_from(settings.max_concurrent_downloads())
-        .unwrap_or(DEFAULT_MAX_CONCURRENT_DOWNLOADS_I64);
+    let max_downloads = i64::from(settings.max_concurrent_downloads());
 
     // Update main table
     sqlx::query!(
@@ -181,5 +180,41 @@ mod tests {
         }
 
         assert_eq!(storage.get().await.unwrap().enabled_plugins().len(), 20);
+    }
+
+    #[tokio::test]
+    async fn should_fall_back_to_the_default_when_the_stored_downloads_count_is_invalid() {
+        let dir = tempfile::tempdir().unwrap();
+        let storage = storage(&dir).await;
+        sqlx::query("INSERT INTO launcher_settings (id, max_concurrent_downloads) VALUES (1, 0)")
+            .execute(&storage.pool)
+            .await
+            .unwrap();
+
+        let settings = storage.get().await.unwrap();
+
+        assert_eq!(
+            settings.max_concurrent_downloads(),
+            MaxConcurrentDownloads::default()
+        );
+    }
+
+    #[tokio::test]
+    async fn should_round_trip_a_valid_downloads_count() {
+        let dir = tempfile::tempdir().unwrap();
+        let storage = storage(&dir).await;
+        let mut settings = Settings::default();
+        settings.set_max_concurrent_downloads(MaxConcurrentDownloads::new(3).unwrap());
+        storage.upsert(settings).await.unwrap();
+
+        assert_eq!(
+            storage
+                .get()
+                .await
+                .unwrap()
+                .max_concurrent_downloads()
+                .get(),
+            3
+        );
     }
 }
