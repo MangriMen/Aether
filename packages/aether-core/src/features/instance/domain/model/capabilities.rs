@@ -1,6 +1,6 @@
 use std::ops::Deref;
 
-use super::CapabilityId;
+use super::{CapabilityId, PlatformId};
 
 #[derive(Debug, Clone)]
 pub struct CapabilityMetadata {
@@ -43,7 +43,7 @@ pub struct ContentProviderCapabilityMetadata {
     /// `None` — the provider owns no content of a platform and cannot be the target of a ref.
     ///
     /// [`ContentSource::ProviderRef`]: super::ContentSource::ProviderRef
-    pub platform: Option<String>,
+    pub platform: Option<PlatformId>,
 }
 
 impl Deref for ImporterCapabilityMetadata {

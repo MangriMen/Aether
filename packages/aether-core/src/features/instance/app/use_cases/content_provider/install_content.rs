@@ -183,7 +183,7 @@ impl InstallContentUseCase {
 /// when it is on the provider's own platform. A plan of several files, or with overrides, is a
 /// pack's, whose files are not the content asked for.
 fn own_identity(provider: &dyn ContentProvider, plan: &InstallPlan) -> Option<String> {
-    let platform = provider.metadata().platform.as_deref()?;
+    let platform = provider.metadata().platform.as_ref()?;
 
     match plan.files.as_slice() {
         [
@@ -195,7 +195,7 @@ fn own_identity(provider: &dyn ContentProvider, plan: &InstallPlan) -> Option<St
                     },
                 ..
             },
-        ] if plan.overrides.is_empty() && identity.platform == platform => {
+        ] if plan.overrides.is_empty() && &identity.platform == platform => {
             Some(identity.content_id.clone())
         }
         _ => None,

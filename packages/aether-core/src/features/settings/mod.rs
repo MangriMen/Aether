@@ -2,6 +2,7 @@ mod app;
 mod domain;
 pub mod infra;
 
+pub(crate) use domain::parse_platform_providers;
 pub use domain::{
     CACHE_FOLDER_NAME, DEFAULT_MAX_CONCURRENT_DOWNLOADS, DEFAULT_MAX_CONCURRENT_DOWNLOADS_I64,
     DefaultInstanceSettings, Hooks, INSTANCE_METADATA_FOLDER_NAME, INSTANCES_FOLDER_NAME,

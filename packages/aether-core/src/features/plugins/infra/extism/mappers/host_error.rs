@@ -226,10 +226,10 @@ fn instance_dto(value: &InstanceError) -> InstanceErrorDto {
             operation: (*operation).to_owned(),
         },
         InstanceError::PlatformProviderNotFound { platform } => Dto::PlatformProviderNotFound {
-            platform: platform.clone(),
+            platform: platform.to_string(),
         },
         InstanceError::PlatformProviderNotChosen { platform } => Dto::PlatformProviderNotChosen {
-            platform: platform.clone(),
+            platform: platform.to_string(),
         },
         InstanceError::GameChangeNotAllowed {
             instance_id,

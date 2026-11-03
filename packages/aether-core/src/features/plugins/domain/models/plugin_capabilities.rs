@@ -3,7 +3,7 @@ use std::ops::Deref;
 use crate::features::{
     instance::{
         CapabilityMetadata, ContentProviderCapabilityMetadata, ImporterCapabilityMetadata,
-        UpdaterCapabilityMetadata, is_valid_id,
+        UpdaterCapabilityMetadata,
     },
     plugins::ManifestError,
 };
@@ -21,23 +21,8 @@ pub struct PluginCapabilities {
 }
 
 impl PluginCapabilities {
-    /// Every platform a content provider serves must fit the id scheme: it becomes part of
-    /// `ProviderRef`.
+    /// Refuse capabilities that cannot work together.
     pub fn validate(&self) -> Result<(), ManifestError> {
-        let platforms = self
-            .content_providers
-            .iter()
-            .filter_map(|c| c.metadata.platform.as_ref());
-
-        for platform in platforms {
-            if !is_valid_id(platform) {
-                return Err(ManifestError::InvalidId {
-                    field: "contentProviders[].platform".to_owned(),
-                    value: platform.clone(),
-                });
-            }
-        }
-
         // A platform makes the provider a candidate for every `ProviderRef` to it, resolved
         // through `resolve_file`: without it every ref would fail instead of the plugin's load.
         if let Some(provider) = self
@@ -130,7 +115,7 @@ impl AsCapabilityMetadata for PluginContentProviderCapability {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::features::instance::CapabilityId;
+    use crate::features::instance::{CapabilityId, PlatformId};
 
     fn base(id: &'static str) -> CapabilityMetadata {
         CapabilityMetadata {
@@ -161,12 +146,12 @@ mod tests {
 
     fn content_provider(
         id: &'static str,
-        platform: Option<&str>,
+        platform: Option<&'static str>,
     ) -> PluginContentProviderCapability {
         PluginContentProviderCapability {
             metadata: ContentProviderCapabilityMetadata {
                 base: base(id),
-                platform: platform.map(ToOwned::to_owned),
+                platform: platform.map(PlatformId::from_static),
             },
             handlers: ProviderHandlers {
                 search: "search".to_owned(),
@@ -183,13 +168,6 @@ mod tests {
         }
     }
 
-    fn rejected_field(capabilities: &PluginCapabilities) -> Option<String> {
-        match capabilities.validate() {
-            Err(ManifestError::InvalidId { field, .. }) => Some(field),
-            _ => None,
-        }
-    }
-
     /// The ids `packwiz` and `curseforge` plugins declare in their `capabilities.json`.
     #[test]
     fn should_accept_capabilities_when_they_are_those_of_existing_plugins() {
@@ -200,19 +178,6 @@ mod tests {
         };
 
         assert!(capabilities.validate().is_ok());
-    }
-
-    #[test]
-    fn should_reject_a_capability_when_the_platform_is_invalid() {
-        let capabilities = PluginCapabilities {
-            content_providers: vec![content_provider("provider", Some("Mod Rinth"))],
-            ..Default::default()
-        };
-
-        assert_eq!(
-            rejected_field(&capabilities).as_deref(),
-            Some("contentProviders[].platform")
-        );
     }
 
     #[test]

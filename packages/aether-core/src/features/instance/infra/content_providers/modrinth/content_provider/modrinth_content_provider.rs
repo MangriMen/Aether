@@ -15,8 +15,8 @@ use crate::{
             ContentMetadata, ContentProvider, ContentProviderCapabilityMetadata,
             ContentSearchParams, ContentSearchResult, ContentSource, ContentType, ContentVersion,
             ContentVersionMetadata, InstallFileEntry, InstallPlan, Instance, InstanceError,
-            InstanceId, PackInfo, PackMetadata, PackSource, PluginId, ProviderId, ReleaseChannel,
-            ResolveInstallPlanParams, ResolveTarget, ResolvedFile,
+            InstanceId, PackInfo, PackMetadata, PackSource, PlatformId, PluginId, ProviderId,
+            ReleaseChannel, ResolveInstallPlanParams, ResolveTarget, ResolvedFile,
             app::{ContentCompatibilityCheckParams, ContentCompatibilityResult},
             infra::content_providers::modrinth::{
                 ModrinthMapperError,
@@ -114,7 +114,7 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
                 description: None,
                 icon: None,
             },
-            platform: Some(ModrinthContentProvider::PLATFORM.to_string()),
+            platform: Some(PlatformId::from_static(ModrinthContentProvider::PLATFORM)),
         };
 
         Self {
@@ -375,7 +375,7 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
                     url: resolved.url,
                     hash: resolved.hash,
                     identity: Some(ContentIdentity {
-                        platform: ModrinthContentProvider::PLATFORM.to_owned(),
+                        platform: PlatformId::from_static(ModrinthContentProvider::PLATFORM),
                         content_id: project.id.clone(),
                         version: resolved.version,
                     }),

@@ -1,5 +1,5 @@
 use crate::features::{
-    instance::ProviderId,
+    instance::{PlatformId, ProviderId},
     settings::{DefaultInstanceSettings, MemorySettings, Settings, SettingsError, WindowSettings},
 };
 
@@ -66,12 +66,12 @@ pub struct EditSettings {
 /// The choice of the provider serving `platform`; `None` drops the choice.
 #[derive(Debug)]
 pub struct EditPlatformProvider {
-    pub platform: String,
+    pub platform: PlatformId,
     pub provider_id: Option<String>,
 }
 
 impl EditSettings {
-    /// Refuse a provider choice that no platform install could ever use: an empty platform or a
+    /// Refuse a provider choice that no platform install could ever use: a
     /// provider id that is not `plugin#capability`.
     pub fn validate(&self) -> Result<(), SettingsError> {
         // Zero permits would park every download forever.
@@ -83,17 +83,10 @@ impl EditSettings {
             return Ok(());
         };
 
-        if choice.platform.trim().is_empty() {
-            return Err(SettingsError::InvalidPlatformProvider {
-                platform: choice.platform.clone(),
-                reason: "the platform is empty".to_owned(),
-            });
-        }
-
         if let Some(provider_id) = &choice.provider_id {
             provider_id.parse::<ProviderId>().map_err(|reason| {
                 SettingsError::InvalidPlatformProvider {
-                    platform: choice.platform.clone(),
+                    platform: choice.platform.to_string(),
                     reason: reason.to_string(),
                 }
             })?;

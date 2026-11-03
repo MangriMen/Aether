@@ -1,6 +1,7 @@
 //! `InstallContentUseCase` asks the provider for a plan and hands it to the executor: what it
 //! asks for, under which owner the files are recorded, and the stage a new pack's instance ends in.
 
+use crate::features::instance::PlatformId;
 use std::{
     collections::HashMap,
     sync::{Arc, Mutex},
@@ -93,13 +94,13 @@ impl MockProvider {
     /// A provider serving `platform` whose plans are the one file of `content_id` there.
     fn planning_file_of(platform: &str, content_id: &str) -> Arc<Self> {
         let mut provider = Arc::into_inner(Self::new(Some(answer_as_asked()))).unwrap();
-        provider.metadata.platform = Some(platform.into());
+        provider.metadata.platform = Some(PlatformId::try_from(platform).unwrap());
         provider.files = vec![InstallFileEntry::new(
             ContentSource::Direct {
                 url: "https://cdn.example/sodium.jar".into(),
                 hash: None,
                 identity: Some(ContentIdentity {
-                    platform: platform.into(),
+                    platform: PlatformId::try_from(platform).unwrap(),
                     content_id: content_id.into(),
                     version: "v2".into(),
                 }),
@@ -523,7 +524,7 @@ async fn should_own_a_mod_under_the_id_of_its_file_when_it_is_asked_for_by_slug(
 async fn should_keep_the_asked_id_when_the_file_is_of_another_platform() {
     let provider = MockProvider::planning_file_of("modrinth", "AANobbMI");
     let mut provider = Arc::into_inner(provider).unwrap();
-    provider.metadata.platform = Some("curseforge".into());
+    provider.metadata.platform = Some(PlatformId::from_static("curseforge"));
     let provider = Arc::new(provider);
     let fixture = Fixture::new(&provider).await;
 

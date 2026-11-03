@@ -4,6 +4,7 @@
 //! `allowed_hosts`; a built-in provider's URL goes through the application's client. Whatever
 //! fails, the instance is left as it was.
 
+use crate::features::instance::PlatformId;
 use std::{
     collections::HashMap,
     net::IpAddr,
@@ -427,7 +428,7 @@ impl Fixture {
                     description: None,
                     icon: None,
                 },
-                platform: Some("curseforge".into()),
+                platform: Some(PlatformId::from_static("curseforge")),
             },
             url,
         };
@@ -729,7 +730,7 @@ async fn should_hold_a_ref_to_that_plugins_hosts_when_a_plugin_resolved_it() {
     let plan = InstallPlan {
         files: vec![InstallFileEntry::new(
             ContentSource::ProviderRef {
-                platform: "curseforge".into(),
+                platform: PlatformId::from_static("curseforge"),
                 content_id: "238222".into(),
                 version: None,
             },

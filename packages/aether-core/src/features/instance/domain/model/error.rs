@@ -4,7 +4,7 @@ use uuid::Uuid;
 
 use crate::features::{
     auth::AuthApplicationError,
-    instance::{ContentType, ProviderId},
+    instance::{ContentType, PlatformId, ProviderId},
     minecraft::MinecraftApplicationError,
     process::ProcessError,
     settings::SettingsError,
@@ -122,12 +122,12 @@ pub enum InstanceError {
     /// A [`ContentSource::ProviderRef`](super::ContentSource::ProviderRef) names a platform no
     /// available provider serves. There is no fallback to another platform's provider.
     #[error("No content provider serves platform \"{platform}\"")]
-    PlatformProviderNotFound { platform: String },
+    PlatformProviderNotFound { platform: PlatformId },
 
     /// Several providers serve the platform and the core may not pick one itself: none is
     /// chosen in the settings and none is built in, or the chosen one is not available.
     #[error("Choose a content provider for platform \"{platform}\"")]
-    PlatformProviderNotChosen { platform: String },
+    PlatformProviderNotChosen { platform: PlatformId },
 
     /// A plan for an existing instance names a game to move it to, but is not a plan of the pack
     /// the instance was installed from: only an update of its own pack may change the game
@@ -184,14 +184,14 @@ mod tests {
     fn should_format_platform_provider_errors_when_displayed() {
         assert_eq!(
             InstanceError::PlatformProviderNotFound {
-                platform: "curseforge".into()
+                platform: PlatformId::from_static("curseforge")
             }
             .to_string(),
             "No content provider serves platform \"curseforge\""
         );
         assert_eq!(
             InstanceError::PlatformProviderNotChosen {
-                platform: "curseforge".into()
+                platform: PlatformId::from_static("curseforge")
             }
             .to_string(),
             "Choose a content provider for platform \"curseforge\""

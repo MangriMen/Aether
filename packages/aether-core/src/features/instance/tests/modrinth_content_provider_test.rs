@@ -2,6 +2,7 @@
 //! Modrinth API and CDN from memory: what plan a mod and a modpack become, and which requests
 //! that takes.
 
+use crate::features::instance::PlatformId;
 use std::{
     collections::HashMap,
     io::Write,
@@ -342,7 +343,7 @@ async fn should_plan_a_mod_as_its_file_with_its_identity_when_resolving_a_mod() 
             url: SODIUM_URL.into(),
             hash: Some(FileHash::new(HashAlgorithm::Sha512, sha512_hex(b"sodium")).unwrap()),
             identity: Some(ContentIdentity {
-                platform: "modrinth".into(),
+                platform: PlatformId::from_static("modrinth"),
                 content_id: "AANobbMI".into(),
                 version: "IZskON6d".into(),
             }),

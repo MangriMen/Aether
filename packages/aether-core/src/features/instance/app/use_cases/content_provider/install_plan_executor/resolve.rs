@@ -13,7 +13,7 @@ use futures::future::try_join_all;
 use super::{DownloadEntry, InstallPlanExecutor, ResolvedRef, TargetGame, is_pack_of};
 use crate::features::instance::{
     ContentMetadata, ContentProvider, ContentSource, ContentVersionMetadata, InstallFileEntry,
-    InstallTarget, InstanceError, PlanOrigin, ProviderId,
+    InstallTarget, InstanceError, PlanOrigin, PlatformId, ProviderId,
 };
 
 /// What a plan's direct entries say about their own content, by the provider the content list
@@ -251,19 +251,19 @@ impl InstallPlanExecutor {
     pub(super) async fn providers_of(
         &self,
         files: &[InstallFileEntry],
-    ) -> Result<HashMap<String, Arc<dyn ContentProvider>>, InstanceError> {
+    ) -> Result<HashMap<PlatformId, Arc<dyn ContentProvider>>, InstanceError> {
         let mut ref_platforms = HashSet::new();
         let mut identity_platforms = HashSet::new();
         for file in files {
             match &file.source {
                 ContentSource::ProviderRef { platform, .. } => {
-                    ref_platforms.insert(platform.as_str());
+                    ref_platforms.insert(platform);
                 }
                 ContentSource::Direct {
                     identity: Some(identity),
                     ..
                 } => {
-                    identity_platforms.insert(identity.platform.as_str());
+                    identity_platforms.insert(&identity.platform);
                 }
                 ContentSource::Direct { identity: None, .. } => {}
             }
@@ -272,7 +272,7 @@ impl InstallPlanExecutor {
         let mut providers = HashMap::new();
         for platform in &ref_platforms {
             providers.insert(
-                (*platform).to_owned(),
+                (*platform).clone(),
                 self.provider_for_platform(platform).await?,
             );
         }
@@ -281,7 +281,7 @@ impl InstallPlanExecutor {
         for platform in identity_platforms.difference(&ref_platforms) {
             match self.provider_for_platform(platform).await {
                 Ok(provider) => {
-                    providers.insert((*platform).to_owned(), provider);
+                    providers.insert((*platform).clone(), provider);
                 }
                 Err(
                     InstanceError::PlatformProviderNotFound { .. }
@@ -296,7 +296,7 @@ impl InstallPlanExecutor {
 
     pub(super) async fn provider_for_platform(
         &self,
-        platform: &str,
+        platform: &PlatformId,
     ) -> Result<Arc<dyn ContentProvider>, InstanceError> {
         let available = self
             .provider_registry
@@ -321,17 +321,17 @@ impl InstallPlanExecutor {
 ///
 /// A platform no provider serves is an error of its own, with no fallback.
 pub(super) fn choose_provider(
-    platform: &str,
+    platform: &PlatformId,
     available: Vec<Arc<dyn ContentProvider>>,
     selected: Option<&ProviderId>,
 ) -> Result<Arc<dyn ContentProvider>, InstanceError> {
     let mut serving: Vec<_> = available
         .into_iter()
-        .filter(|provider| provider.metadata().platform.as_deref() == Some(platform))
+        .filter(|provider| provider.metadata().platform.as_ref() == Some(platform))
         .collect();
 
     let not_chosen = || InstanceError::PlatformProviderNotChosen {
-        platform: platform.to_owned(),
+        platform: platform.clone(),
     };
 
     if let Some(selected) = selected {
@@ -348,7 +348,7 @@ pub(super) fn choose_provider(
 
     match serving.len() {
         0 => Err(InstanceError::PlatformProviderNotFound {
-            platform: platform.to_owned(),
+            platform: platform.clone(),
         }),
         1 => Ok(serving.remove(0)),
         _ => serving

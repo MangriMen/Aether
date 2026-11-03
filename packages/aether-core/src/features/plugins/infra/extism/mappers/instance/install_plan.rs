@@ -10,7 +10,7 @@ use aether_core_plugin_api::v0::{
 use crate::{
     features::instance::{
         ContentIdentity, ContentSource, FileSide, InstallFileEntry, InstallTarget, InstanceError,
-        InstanceGame, InstanceId, InvalidId, OptionalFile,
+        InstanceGame, InstanceId, InvalidId, OptionalFile, PlatformId,
     },
     shared::hash::{FileHash, InvalidFileHash},
 };
@@ -47,10 +47,20 @@ impl From<InstanceGameDto> for InstanceGame {
     }
 }
 
+/// What is wrong with a file a plugin put in its plan.
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+pub enum InvalidPlanFile {
+    #[error(transparent)]
+    Hash(#[from] InvalidFileHash),
+
+    #[error("Invalid platform: {0}")]
+    Platform(#[from] InvalidId),
+}
+
 /// A hash from a plugin is validated and lowercased here, as `download_to_cache` does: the
 /// core relies on a [`FileHash`] being a well-formed digest.
 impl TryFrom<ContentSourceDto> for ContentSource {
-    type Error = InvalidFileHash;
+    type Error = InvalidPlanFile;
 
     fn try_from(value: ContentSourceDto) -> Result<Self, Self::Error> {
         Ok(match value {
@@ -61,14 +71,14 @@ impl TryFrom<ContentSourceDto> for ContentSource {
             } => Self::Direct {
                 url,
                 hash: hash.map(FileHash::try_from).transpose()?,
-                identity: identity.map(Into::into),
+                identity: identity.map(ContentIdentity::try_from).transpose()?,
             },
             ContentSourceDto::ProviderRef {
                 platform,
                 content_id,
                 version,
             } => Self::ProviderRef {
-                platform,
+                platform: PlatformId::try_from(platform)?,
                 content_id,
                 version,
             },
@@ -76,18 +86,20 @@ impl TryFrom<ContentSourceDto> for ContentSource {
     }
 }
 
-impl From<ContentIdentityDto> for ContentIdentity {
-    fn from(value: ContentIdentityDto) -> Self {
-        Self {
-            platform: value.platform,
+impl TryFrom<ContentIdentityDto> for ContentIdentity {
+    type Error = InvalidId;
+
+    fn try_from(value: ContentIdentityDto) -> Result<Self, Self::Error> {
+        Ok(Self {
+            platform: PlatformId::try_from(value.platform)?,
             content_id: value.content_id,
             version: value.version,
-        }
+        })
     }
 }
 
 impl TryFrom<InstallFileEntryDto> for InstallFileEntry {
-    type Error = InvalidFileHash;
+    type Error = InvalidPlanFile;
 
     fn try_from(value: InstallFileEntryDto) -> Result<Self, Self::Error> {
         Ok(Self {
@@ -215,7 +227,7 @@ mod tests {
             entry,
             InstallFileEntry {
                 source: ContentSource::ProviderRef {
-                    platform: "modrinth".into(),
+                    platform: PlatformId::from_static("modrinth"),
                     content_id: "AANobbMI".into(),
                     version: Some("IZskON6d".into()),
                 },
@@ -255,7 +267,7 @@ mod tests {
                 url: "https://example.com/a.jar".into(),
                 hash: Some(FileHash::new(HashAlgorithm::Sha1, SHA1_ABC).unwrap()),
                 identity: Some(ContentIdentity {
-                    platform: "modrinth".into(),
+                    platform: PlatformId::from_static("modrinth"),
                     content_id: "AANobbMI".into(),
                     version: "IZskON6d".into(),
                 }),

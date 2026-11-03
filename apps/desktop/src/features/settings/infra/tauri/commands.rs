@@ -1,4 +1,4 @@
-use aether_core::features::settings::SettingsFeature;
+use aether_core::features::settings::{EditSettings, SettingsFeature};
 use tauri::State;
 
 use crate::{
@@ -53,11 +53,12 @@ async fn edit(
     container: State<'_, ContainerState>,
 ) -> FrontendResult<SettingsDto> {
     let _guard = idempotency.lock_cmd(request_id)?;
+    let edit_settings: EditSettings = edit_settings.try_into().map_err(aether_core::Error::from)?;
 
     let container = container.0.clone();
     Ok(container
         .edit_settings_use_case()
-        .execute(edit_settings.into())
+        .execute(edit_settings)
         .await
         .map_err(aether_core::Error::from)?
         .into())

@@ -1,5 +1,6 @@
 //! Resolving refs and choosing the provider of a platform.
 
+use crate::features::instance::PlatformId;
 use crate::{
     features::{
         events::ProgressEventType,
@@ -295,7 +296,7 @@ async fn should_pass_the_ref_version_through_unchanged_when_resolving() {
 
     let mut entry = provider_ref("modrinth", "AANobbMI", "mods/sodium.jar");
     entry.source = ContentSource::ProviderRef {
-        platform: "modrinth".into(),
+        platform: PlatformId::from_static("modrinth"),
         content_id: "AANobbMI".into(),
         version: Some("IZskON6d".into()),
     };
@@ -327,7 +328,7 @@ async fn should_refuse_a_ref_when_no_provider_serves_its_platform() {
         .unwrap_err();
 
     assert!(
-        matches!(&err, InstanceError::PlatformProviderNotFound { platform } if platform == "curseforge"),
+        matches!(&err, InstanceError::PlatformProviderNotFound { platform } if platform.as_str() == "curseforge"),
         "{err:?}"
     );
     assert!(fixture.downloader.downloads().is_empty());
@@ -421,7 +422,7 @@ async fn should_ask_for_a_choice_when_several_plugin_providers_serve_a_platform(
         .unwrap_err();
 
     assert!(
-        matches!(&err, InstanceError::PlatformProviderNotChosen { platform } if platform == "curseforge"),
+        matches!(&err, InstanceError::PlatformProviderNotChosen { platform } if platform.as_str() == "curseforge"),
         "{err:?}"
     );
     assert!(first.calls().is_empty() && second.calls().is_empty());
