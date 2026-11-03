@@ -7,7 +7,7 @@ impl From<Instance> for InstanceDto {
         Self {
             id: value.id().to_string(),
 
-            name: value.name().to_owned(),
+            name: value.name().to_string(),
 
             icon_path: value.icon_path().map(ToString::to_string),
 

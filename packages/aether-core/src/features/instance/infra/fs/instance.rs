@@ -4,7 +4,8 @@ use serde::{Deserialize, Serialize};
 use crate::{
     features::{
         instance::{
-            Instance, InstanceError, InstanceId, InstanceInstallStage, InstanceSnapshot,
+            Instance, InstanceError, InstanceId, InstanceInstallStage, InstanceName,
+            InstanceSnapshot,
             infra::fs::pack_info::{PackInfoV1, PackInfoV2},
         },
         minecraft::{LoaderVersionPreference, ModLoader},
@@ -159,14 +160,20 @@ pub struct HooksV1 {
     pub post_exit: Option<String>,
 }
 
+fn invalid_name(id: &str, e: &InstanceError) -> InstanceError {
+    InstanceError::Storage(format!("Invalid name for instance {id}: {e}"))
+}
+
 impl TryFrom<InstanceV1> for Instance {
     type Error = InstanceError;
 
     fn try_from(v1: InstanceV1) -> Result<Self, Self::Error> {
+        let name = InstanceName::try_from(v1.name).map_err(|e| invalid_name(&v1.id, &e))?;
+
         let snapshot = InstanceSnapshot {
             id: InstanceId::try_from(v1.id)?,
 
-            name: v1.name,
+            name,
 
             icon_path: v1.icon_path,
 
@@ -281,10 +288,12 @@ impl TryFrom<InstanceV2> for Instance {
     type Error = InstanceError;
 
     fn try_from(v2: InstanceV2) -> Result<Self, Self::Error> {
+        let name = InstanceName::try_from(v2.name).map_err(|e| invalid_name(&v2.id, &e))?;
+
         let snapshot = InstanceSnapshot {
             id: InstanceId::try_from(v2.id)?,
 
-            name: v2.name,
+            name,
 
             icon_path: v2.icon_path,
 
@@ -330,7 +339,7 @@ impl From<&Instance> for InstanceV2 {
         Self {
             id: value.id().to_string(),
 
-            name: value.name().to_owned(),
+            name: value.name().to_string(),
             icon_path: value.icon_path().map(ToString::to_string),
 
             install_stage: {

@@ -122,6 +122,7 @@ mod tests {
     use crate::features::minecraft::ModLoader;
 
     use super::*;
+    use crate::features::instance::InstanceName;
 
     struct ChannelEmitter(mpsc::UnboundedSender<Event>);
 
@@ -149,7 +150,7 @@ mod tests {
     fn instance(stage: InstanceInstallStage) -> Instance {
         let mut instance = InstanceBuilder::new(
             InstanceId::try_from("abc").unwrap(),
-            "My Pack".to_string(),
+            InstanceName::parse("My Pack").unwrap(),
             "1.20.1".to_string(),
             ModLoader::Vanilla,
         )

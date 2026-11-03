@@ -1,11 +1,11 @@
 use crate::features::{
-    instance::{Instance, InstanceError},
+    instance::{Instance, InstanceError, InstanceName},
     settings::{EditHooks, MemorySettings, WindowSettings},
 };
 
 #[derive(Debug)]
 pub struct EditInstance {
-    pub name: Option<String>,
+    pub name: Option<InstanceName>,
 
     pub override_java_path: Option<bool>,
     pub java_path: Option<String>,
@@ -34,7 +34,7 @@ impl EditInstance {
 
         // Name
         if let Some(name) = self.name {
-            is_changed |= instance.rename(name)?;
+            is_changed |= instance.rename(name);
         }
 
         // Java Path

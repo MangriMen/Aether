@@ -1,4 +1,4 @@
-use aether_core::features::{instance::EditInstance, settings::SettingsError};
+use aether_core::features::instance::{EditInstance, InstanceName};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
@@ -51,11 +51,11 @@ pub struct EditInstanceDto {
 }
 
 impl TryFrom<EditInstanceDto> for EditInstance {
-    type Error = SettingsError;
+    type Error = aether_core::Error;
 
     fn try_from(value: EditInstanceDto) -> Result<Self, Self::Error> {
         Ok(Self {
-            name: value.name,
+            name: value.name.map(InstanceName::try_from).transpose()?,
 
             override_java_path: value.override_java_path,
             java_path: value.java_path,

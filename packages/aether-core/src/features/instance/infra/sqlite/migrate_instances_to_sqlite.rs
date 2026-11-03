@@ -77,6 +77,7 @@ mod tests {
     use tempfile::TempDir;
 
     use super::*;
+    use crate::features::instance::InstanceName;
     use crate::features::{
         instance::{InstanceBuilder, InstanceId},
         minecraft::ModLoader,
@@ -93,7 +94,7 @@ mod tests {
         for id in ids {
             let instance = InstanceBuilder::new(
                 InstanceId::try_from(*id).unwrap(),
-                (*id).to_owned(),
+                InstanceName::parse(id).unwrap(),
                 "1.21.1".into(),
                 ModLoader::Fabric,
             )

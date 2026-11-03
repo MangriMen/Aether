@@ -429,7 +429,7 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
                 modpack_id: project.id.clone(),
                 version_id: version.id.clone(),
             })
-        });
+        })?;
 
         Ok(InstallPlan {
             target,

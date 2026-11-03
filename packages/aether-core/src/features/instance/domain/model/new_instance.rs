@@ -1,3 +1,4 @@
+use super::InstanceName;
 use crate::features::{
     instance::PackInfo,
     minecraft::{LoaderVersionPreference, ModLoader},
@@ -10,7 +11,7 @@ use crate::features::{
 /// instance is still pure data.
 #[derive(Debug, Clone, PartialEq)]
 pub struct NewInstance {
-    pub name: String,
+    pub name: InstanceName,
     pub game_version: String,
     pub mod_loader: ModLoader,
     pub loader_version: Option<LoaderVersionPreference>,

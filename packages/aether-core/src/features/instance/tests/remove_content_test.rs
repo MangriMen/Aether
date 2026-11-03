@@ -1,3 +1,4 @@
+use crate::features::instance::InstanceName;
 use std::sync::Arc;
 
 use async_trait::async_trait;
@@ -62,7 +63,7 @@ async fn create_test_infrastructure() -> (TempDir, Arc<LocationInfo>, SqlitePool
 fn create_instance(id: &str) -> Instance {
     InstanceBuilder::new(
         InstanceId::try_from(id).unwrap(),
-        "Integration Test".to_string(),
+        InstanceName::parse("Integration Test").unwrap(),
         "1.21".to_string(),
         ModLoader::Fabric,
     )

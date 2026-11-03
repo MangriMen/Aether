@@ -145,12 +145,13 @@ mod tests {
     use tempfile::TempDir;
 
     use super::*;
+    use crate::features::instance::InstanceName;
     use crate::features::{instance::InstanceBuilder, minecraft::ModLoader};
 
     async fn store(storage: &FsInstanceStorage, id: &InstanceId) {
         let instance = InstanceBuilder::new(
             id.clone(),
-            "Stored".to_owned(),
+            InstanceName::parse("Stored").unwrap(),
             "1.20.1".to_owned(),
             ModLoader::Vanilla,
         )

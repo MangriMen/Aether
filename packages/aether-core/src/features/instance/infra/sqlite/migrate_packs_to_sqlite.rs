@@ -98,6 +98,7 @@ mod tests {
     use tempfile::TempDir;
 
     use super::*;
+    use crate::features::instance::InstanceName;
     use crate::features::{
         instance::{
             ContentPath, Instance, InstanceBuilder, InstanceError, InstanceId, Pack, PackEntry,
@@ -167,7 +168,7 @@ mod tests {
         let id = InstanceId::try_from("inst").unwrap();
         let instance = InstanceBuilder::new(
             id.clone(),
-            "Inst".into(),
+            InstanceName::parse("Inst").unwrap(),
             "1.21.1".into(),
             ModLoader::Fabric,
         )

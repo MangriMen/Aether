@@ -761,10 +761,10 @@ impl InstallPlanExecutor {
             InstallTarget::Existing { instance_id, .. } => {
                 self.instance_storage.get(instance_id).await.map_or_else(
                     |_: InstanceError| origin.content_id.clone(),
-                    |instance| instance.name().to_owned(),
+                    |instance| instance.name().to_string(),
                 )
             }
-            InstallTarget::New(new_instance) => new_instance.name.clone(),
+            InstallTarget::New(new_instance) => new_instance.name.to_string(),
         };
 
         let bar = self

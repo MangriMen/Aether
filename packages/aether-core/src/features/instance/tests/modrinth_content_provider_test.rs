@@ -457,7 +457,7 @@ async fn should_plan_a_modpack_from_its_mrpack_when_the_target_is_a_new_instance
     let InstallTarget::New(new_instance) = &plan.target else {
         panic!("a new instance expected: {:?}", plan.target)
     };
-    assert_eq!(new_instance.name, "Pack");
+    assert_eq!(new_instance.name.as_str(), "Pack");
     assert_eq!(new_instance.game_version, "1.21.4");
     assert_eq!(new_instance.mod_loader, ModLoader::NeoForge);
     assert_eq!(

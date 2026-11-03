@@ -9,7 +9,7 @@ use std::path::PathBuf;
 
 use crate::{
     features::{
-        instance::{InstanceId, NewInstance, PackInfo},
+        instance::{InstanceError, InstanceId, InstanceName, NewInstance, PackInfo},
         minecraft::{LoaderVersionPreference, ModLoader},
     },
     shared::hash::FileHash,
@@ -72,14 +72,14 @@ impl ResolveTarget {
         self,
         metadata: &PackMetadata,
         pack_info: impl FnOnce() -> Option<PackInfo>,
-    ) -> InstallTarget {
-        match self {
+    ) -> Result<InstallTarget, InstanceError> {
+        Ok(match self {
             Self::Existing { instance_id, .. } => InstallTarget::Existing {
                 instance_id,
                 game: Some(metadata.game()),
             },
-            Self::New => InstallTarget::New(metadata.new_instance(pack_info())),
-        }
+            Self::New => InstallTarget::New(metadata.new_instance(pack_info())?),
+        })
     }
 
     /// Whether `target` is an answer to this request: the same existing instance, or a new one.
@@ -157,22 +157,22 @@ impl PackMetadata {
 
     /// The instance this pack runs in, named after the pack. `pack_info` links the instance to
     /// the pack it was installed from, for updates.
-    pub fn new_instance(&self, pack_info: Option<PackInfo>) -> NewInstance {
+    pub fn new_instance(&self, pack_info: Option<PackInfo>) -> Result<NewInstance, InstanceError> {
         let InstanceGame {
             game_version,
             mod_loader,
             loader_version,
         } = self.game();
 
-        NewInstance {
-            name: self.name.clone(),
+        Ok(NewInstance {
+            name: InstanceName::parse(&self.name)?,
             game_version,
             mod_loader,
             loader_version,
             icon_path: None,
             skip_install_instance: None,
             pack_info,
-        }
+        })
     }
 }
 
@@ -212,6 +212,7 @@ mod tests {
     };
 
     use super::*;
+    use crate::features::instance::InstanceName;
     use crate::shared::hash::HashAlgorithm;
 
     const SHA1_ABC: &str = "a9993e364706816aba3e25717850c26c9cd0d89d";
@@ -320,7 +321,7 @@ mod tests {
         let plan = InstallPlan {
             target: params
                 .target
-                .into_install_target(|| metadata.new_instance(Some(pack_info.clone()))),
+                .into_install_target(|| metadata.new_instance(Some(pack_info.clone())).unwrap()),
             files: vec![
                 InstallFileEntry::new(
                     sodium_ref(Some("IZskON6d")),
@@ -348,7 +349,7 @@ mod tests {
         let InstallTarget::New(instance) = &plan.target else {
             panic!("a modpack plan creates its instance: {:?}", plan.target)
         };
-        assert_eq!(instance.name, "Fabulously Optimized");
+        assert_eq!(instance.name.as_str(), "Fabulously Optimized");
         assert_eq!(instance.game_version, "1.21.1");
         assert_eq!(instance.mod_loader, ModLoader::Fabric);
         assert_eq!(
@@ -382,7 +383,9 @@ mod tests {
         };
 
         assert_eq!(
-            existing.into_pack_install_target(&metadata, || unreachable!()),
+            existing
+                .into_pack_install_target(&metadata, || unreachable!())
+                .unwrap(),
             InstallTarget::Existing {
                 instance_id: InstanceId::try_from("instance").unwrap(),
                 game: Some(InstanceGame {
@@ -393,8 +396,10 @@ mod tests {
             }
         );
         assert_eq!(
-            ResolveTarget::New.into_pack_install_target(&metadata, || None),
-            InstallTarget::New(metadata.new_instance(None))
+            ResolveTarget::New
+                .into_pack_install_target(&metadata, || None)
+                .unwrap(),
+            InstallTarget::New(metadata.new_instance(None).unwrap())
         );
     }
 
@@ -412,7 +417,7 @@ mod tests {
             icon_url: None,
         };
 
-        let instance = metadata.new_instance(None);
+        let instance = metadata.new_instance(None).unwrap();
 
         assert_eq!(instance.loader_version, None);
         assert_eq!(instance.pack_info, None);
@@ -454,7 +459,7 @@ mod tests {
         };
         let other = InstallTarget::existing(InstanceId::try_from("other").unwrap());
         let new = InstallTarget::New(NewInstance {
-            name: "Pack".into(),
+            name: InstanceName::parse("Pack").unwrap(),
             game_version: "1.21.1".into(),
             mod_loader: ModLoader::Fabric,
             loader_version: None,

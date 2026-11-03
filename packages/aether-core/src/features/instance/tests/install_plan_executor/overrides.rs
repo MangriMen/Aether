@@ -1,5 +1,7 @@
 //! Overrides a pack ships as they are.
 
+use crate::features::instance::InstanceName;
+
 use std::{io::Write, path::PathBuf};
 
 use crate::features::{
@@ -405,7 +407,7 @@ async fn should_apply_overrides_when_the_instance_is_new() {
         .execute(
             InstallPlan {
                 target: InstallTarget::New(NewInstance {
-                    name: "Pack".into(),
+                    name: InstanceName::parse("Pack").unwrap(),
                     game_version: "1.21.1".into(),
                     mod_loader: ModLoader::Fabric,
                     loader_version: None,

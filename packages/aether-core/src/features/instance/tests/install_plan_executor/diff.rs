@@ -1,5 +1,7 @@
 //! Diffing a plan against what the instance already has.
 
+use crate::features::instance::InstanceName;
+
 use crate::{
     features::{
         instance::{
@@ -58,7 +60,7 @@ async fn should_record_the_files_of_a_new_instance_when_it_is_created() {
         .execute(
             InstallPlan {
                 target: InstallTarget::New(NewInstance {
-                    name: "Pack".into(),
+                    name: InstanceName::parse("Pack").unwrap(),
                     game_version: "1.20.1".into(),
                     mod_loader: ModLoader::Fabric,
                     loader_version: None,

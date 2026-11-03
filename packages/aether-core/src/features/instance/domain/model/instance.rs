@@ -2,23 +2,20 @@ use chrono::{DateTime, Utc};
 
 use crate::{
     features::{
-        instance::{
-            InstanceError, InstanceSnapshot,
-            domain::{InstanceField, InstanceValidationErrorReason},
-        },
+        instance::InstanceSnapshot,
         minecraft::{LoaderVersionPreference, ModLoader},
         settings::{Hooks, MemorySettings, WindowSettings},
     },
     shared::overridable::domain::Overridable,
 };
 
-use super::{InstanceId, InstanceInstallStage, PackInfo};
+use super::{InstanceId, InstanceInstallStage, InstanceName, PackInfo};
 
 #[derive(Debug, Clone)]
 pub struct Instance {
     id: InstanceId,
 
-    name: String,
+    name: InstanceName,
     icon_path: Option<String>,
 
     pub install_stage: InstanceInstallStage,
@@ -54,27 +51,12 @@ pub struct Instance {
     pub pack_info: Option<PackInfo>,
 }
 
-/// A name an instance can be created with or renamed to.
-///
-/// The name is shown as it is, so only emptiness is refused: a name that cannot be a directory
-/// is sanitized into one instead of being rejected.
-pub(super) fn validate_instance_name(name: &str) -> Result<(), InstanceError> {
-    if name.trim().is_empty() {
-        return Err(InstanceError::ValidationError {
-            field: InstanceField::Name,
-            reason: InstanceValidationErrorReason::CannotBeEmpty,
-        });
-    }
-
-    Ok(())
-}
-
 impl Instance {
     pub fn id(&self) -> &InstanceId {
         &self.id
     }
 
-    pub fn name(&self) -> &str {
+    pub fn name(&self) -> &InstanceName {
         &self.name
     }
 
@@ -82,19 +64,15 @@ impl Instance {
         self.icon_path.as_deref()
     }
 
-    pub fn rename(&mut self, new_name: String) -> Result<bool, InstanceError> {
-        validate_instance_name(&new_name)?;
-
-        let trimmed = new_name.trim();
-
-        if self.name == trimmed {
-            return Ok(false);
+    pub fn rename(&mut self, new_name: InstanceName) -> bool {
+        if self.name == new_name {
+            return false;
         }
 
         self.name = new_name;
         self.mark_modified();
 
-        Ok(true)
+        true
     }
 
     pub fn set_icon(&mut self, icon_id: Option<String>) {
@@ -278,7 +256,7 @@ impl Instance {
 
 pub struct InstanceBuilder {
     id: InstanceId,
-    name: String,
+    name: InstanceName,
 
     game_version: String,
     loader: ModLoader,
@@ -290,7 +268,12 @@ pub struct InstanceBuilder {
 }
 
 impl InstanceBuilder {
-    pub fn new(id: InstanceId, name: String, game_version: String, loader: ModLoader) -> Self {
+    pub fn new(
+        id: InstanceId,
+        name: InstanceName,
+        game_version: String,
+        loader: ModLoader,
+    ) -> Self {
         Self {
             name,
             id,
@@ -370,7 +353,7 @@ mod tests {
     fn make_built_instance(name: &str) -> Instance {
         InstanceBuilder::new(
             InstanceId::generate(),
-            name.to_string(),
+            InstanceName::parse(name).unwrap(),
             "1.20.1".to_string(),
             ModLoader::Fabric,
         )
@@ -382,7 +365,7 @@ mod tests {
         let now = Utc::now();
         Instance {
             id: id.clone(),
-            name: name.to_string(),
+            name: InstanceName::parse(name).unwrap(),
             icon_path: Some("icon.png".into()),
             install_stage: InstanceInstallStage::Installed,
             game_version: "1.20.1".to_string(),
@@ -423,22 +406,18 @@ mod tests {
         #[case] expected_name: &str,
     ) {
         let mut instance = make_built_instance(old_name);
-        let result = instance.rename(new_name.into()).unwrap();
+        let result = instance.rename(InstanceName::parse(new_name).unwrap());
         assert_eq!(result, changed);
-        assert_eq!(instance.name(), expected_name);
+        assert_eq!(instance.name().as_str(), expected_name);
     }
 
     #[test]
-    fn should_fail_when_name_is_empty() {
+    fn should_keep_modified_when_renamed_to_the_same_name_after_trim() {
         let mut instance = make_built_instance("name");
-        let err = instance.rename("   ".into()).unwrap_err();
-        assert!(matches!(
-            err,
-            InstanceError::ValidationError {
-                field: InstanceField::Name,
-                reason: InstanceValidationErrorReason::CannotBeEmpty,
-            }
-        ));
+        instance.modified -= chrono::Duration::seconds(1);
+        let before = instance.modified;
+        assert!(!instance.rename(InstanceName::parse("  name ").unwrap()));
+        assert_eq!(instance.modified, before);
     }
 
     #[test]
@@ -446,7 +425,7 @@ mod tests {
         let mut instance = make_built_instance("old");
         instance.modified -= chrono::Duration::seconds(1);
         let before = instance.modified;
-        instance.rename("new".into()).unwrap();
+        instance.rename(InstanceName::parse("new").unwrap());
         assert!(instance.modified > before);
     }
 
@@ -533,7 +512,7 @@ mod tests {
     fn should_build_instance_when_optional_fields_are_given() {
         let instance = InstanceBuilder::new(
             InstanceId::try_from("id").unwrap(),
-            "name".into(),
+            InstanceName::parse("name").unwrap(),
             "1.20".into(),
             ModLoader::Forge,
         )

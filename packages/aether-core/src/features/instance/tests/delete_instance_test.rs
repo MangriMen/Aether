@@ -1,3 +1,4 @@
+use crate::features::instance::InstanceName;
 use crate::features::instance::infra::{SqliteInstanceStorage, SqlitePackStorage};
 use crate::features::instance::{
     Instance, InstanceBuilder, InstanceId, InstanceStorage, PackStorage,
@@ -41,7 +42,7 @@ async fn create_pool(with_foreign_keys: bool) -> SqlitePool {
 fn create_test_instance(id: &str) -> Instance {
     InstanceBuilder::new(
         InstanceId::try_from(id).unwrap(),
-        "Test Instance".to_string(),
+        InstanceName::parse("Test Instance").unwrap(),
         "1.20.1".to_string(),
         ModLoader::Fabric,
     )
