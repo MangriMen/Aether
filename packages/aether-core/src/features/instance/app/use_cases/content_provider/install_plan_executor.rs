@@ -82,9 +82,9 @@ use crate::{
             ProgressStage,
         },
         instance::{
-            ContentDownloader, ContentFileService, ContentFileUpdateInfo, ContentProvider,
-            FileSide, InstallPlan, InstallTarget, Instance, InstanceError, InstanceId,
-            InstanceStorage, OverrideLocation, PackFile, PackStorage, PlanOrigin,
+            ContentDownloader, ContentFileService, ContentFileUpdateInfo, ContentPath,
+            ContentProvider, FileSide, InstallPlan, InstallTarget, Instance, InstanceError,
+            InstanceId, InstanceStorage, OverrideLocation, PackFile, PackStorage, PlanOrigin,
             PlatformProviderSelection, ProviderId,
             app::{
                 DISABLED_SUFFIX,
@@ -175,7 +175,7 @@ impl PlanProgress<'_> {
                         parent.id,
                         ProgressEventType::PackFileDownload {
                             instance_path: self.instance_path.clone(),
-                            pack_name: file_name_of(&entry.relative_path).to_owned(),
+                            pack_name: entry.relative_path.file_name().to_owned(),
                             icon: None,
                             pack_version: entry
                                 .resolved
@@ -299,7 +299,7 @@ impl FileProgress<'_, '_> {
 
             while let Some(bytes) = received.recv().await {
                 counted += bytes;
-                budget.spend(bytes, &entry.relative_path)?;
+                budget.spend(bytes, entry.relative_path.as_str())?;
                 self.add_bytes(bytes).await;
 
                 let Some(expected) = entry.size.filter(|size| *size > 0) else {
@@ -326,7 +326,7 @@ impl FileProgress<'_, '_> {
         let (size, (reported, counted)) = futures::try_join!(transfer, reporting)?;
         // A downloader that does not report its bytes is counted by the size it returns.
         let uncounted = size.saturating_sub(counted);
-        budget.spend(uncounted, &entry.relative_path)?;
+        budget.spend(uncounted, entry.relative_path.as_str())?;
         if uncounted > 0 {
             self.add_bytes(uncounted).await;
         }
@@ -396,7 +396,7 @@ impl TargetGame {
 /// A planned file once its bytes are known: where they come from, and whose word that is.
 #[derive(Debug, Clone, PartialEq)]
 struct DownloadEntry {
-    relative_path: String,
+    relative_path: ContentPath,
     url: String,
     hash: Option<FileHash>,
     /// The provider that supplied `url`: the plan's for a direct source, the resolving
@@ -456,7 +456,7 @@ impl PlannedFile {
         if self.disabled {
             format!("{}{DISABLED_SUFFIX}", self.entry.relative_path)
         } else {
-            self.entry.relative_path.clone()
+            self.entry.relative_path.to_string()
         }
     }
 }
@@ -631,7 +631,7 @@ impl InstallPlanExecutor {
 
         self.check_file_count(files.len())?;
         let files = select_files(files);
-        self.check_paths(&files)?;
+        Self::check_paths(&files)?;
         let game = self.target_game(&target, &origin).await?;
 
         let overrides = self.check_overrides(overrides, &files).await?;
@@ -859,7 +859,7 @@ impl InstallPlanExecutor {
     ) -> Result<Option<(String, PlannedOnDisk)>, InstanceError> {
         let Some(located) = self
             .content_file_service
-            .locate_content_file(instance_id, &entry.relative_path)
+            .locate_content_file(instance_id, entry.relative_path.as_str())
             .await?
         else {
             return Ok(None);
@@ -875,7 +875,7 @@ impl InstallPlanExecutor {
         };
 
         Ok(Some((
-            entry.relative_path.clone(),
+            entry.relative_path.to_string(),
             PlannedOnDisk {
                 path: located.path,
                 disabled: located.disabled,
@@ -921,7 +921,7 @@ impl InstallPlanExecutor {
             declared = declared.saturating_add(file.entry.size.unwrap_or(0));
             if declared > self.limits.max_plan_bytes {
                 return Err(InstanceError::FileTooLarge {
-                    path: file.entry.relative_path.clone(),
+                    path: file.entry.relative_path.to_string(),
                     size: declared,
                     limit: self.limits.max_plan_bytes,
                 });
@@ -1053,11 +1053,11 @@ impl InstallPlanExecutor {
             .into_iter()
             .map(|InstalledFile { entry, sha1 }| {
                 let same_bytes = records
-                    .get(&entry.relative_path)
+                    .get(entry.relative_path.as_str())
                     .filter(|record| record.hash.eq_ignore_ascii_case(&sha1));
 
                 let mut pack_file = PackFile {
-                    file_name: file_name_of(&entry.relative_path).to_owned(),
+                    file_name: entry.relative_path.file_name().to_owned(),
                     name: entry
                         .name
                         .or_else(|| same_bytes.and_then(|record| record.name.clone())),
@@ -1082,7 +1082,7 @@ impl InstallPlanExecutor {
                     )]));
                 }
 
-                (entry.relative_path, pack_file)
+                (entry.relative_path.into_string(), pack_file)
             })
             .unzip();
 
@@ -1176,11 +1176,6 @@ async fn sha1_of(path: &Path, known: Option<&FileHash>) -> Result<String, Instan
 /// case — on a case-insensitive file system these are one file.
 fn path_key(relative_path: &str) -> String {
     relative_path.replace('\\', "/").to_lowercase()
-}
-
-/// The last segment of a content path.
-fn file_name_of(relative_path: &str) -> &str {
-    relative_path.rsplit('/').next().unwrap_or(relative_path)
 }
 
 #[async_trait]

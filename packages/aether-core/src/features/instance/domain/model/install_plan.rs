@@ -15,8 +15,8 @@ use std::{fmt, path::PathBuf, str::FromStr};
 use crate::{
     features::{
         instance::{
-            ContentMetadata, ContentType, ContentVersionMetadata, Instance, InstanceId,
-            NewInstance, PlatformId, ProviderId,
+            ContentMetadata, ContentPath, ContentType, ContentVersionMetadata, Instance,
+            InstanceId, NewInstance, PlatformId, ProviderId,
         },
         minecraft::{LoaderVersionPreference, ModLoader},
     },
@@ -101,9 +101,10 @@ pub struct InstallFileEntry {
     /// Where the file goes, relative to the instance directory, `/`-separated whatever the
     /// host. Resolving a [`ContentSource::ProviderRef`] never changes it.
     ///
-    /// Not checked to stay inside the instance here: that happens where the file is written
-    /// (`InstanceRelativePath::parse`), as for every other write.
-    pub relative_path: String,
+    /// Already checked to be a plain relative path outside `.metadata` ([`ContentPath::parse`]);
+    /// whether it stays inside the instance on disk (symlinks) is only known where the file is
+    /// written.
+    pub relative_path: ContentPath,
     pub content_type: ContentType,
     /// `None` — the file is required. `Some` — the user may leave it out, and the plan carries
     /// everything the selection UI needs to offer that choice.
@@ -128,12 +129,15 @@ pub struct InstallFileEntry {
 }
 
 impl InstallFileEntry {
-    /// A required entry for both sides, of unknown size and without a name or metadata, its path
-    /// normalised.
-    pub fn new(source: ContentSource, relative_path: &str, content_type: ContentType) -> Self {
+    /// A required entry for both sides, of unknown size and without a name or metadata.
+    pub fn new(
+        source: ContentSource,
+        relative_path: ContentPath,
+        content_type: ContentType,
+    ) -> Self {
         Self {
             source,
-            relative_path: Self::normalize_relative_path(relative_path),
+            relative_path,
             content_type,
             optional: None,
             side: FileSide::default(),
@@ -141,29 +145,6 @@ impl InstallFileEntry {
             name: None,
             metadata: None,
             version_metadata: None,
-        }
-    }
-
-    /// `relative_path` with every `\` turned into `/`.
-    ///
-    /// Done on the string, not with `path_slash`: that uses the host's path parser, and on Linux
-    /// a plugin's `mods\a.jar` would stay one segment.
-    pub fn normalize_relative_path(relative_path: &str) -> String {
-        relative_path.replace('\\', "/")
-    }
-
-    /// A path as the file system tells paths apart: without case on Windows and macOS, exactly
-    /// elsewhere. Two paths with the same key are the same file there.
-    pub fn file_system_key(path: &str) -> String {
-        Self::path_key(path, cfg!(any(windows, target_os = "macos")))
-    }
-
-    /// [`Self::file_system_key`] for a file system that does or does not ignore case.
-    pub fn path_key(path: &str, ignores_case: bool) -> String {
-        if ignores_case {
-            path.to_lowercase()
-        } else {
-            path.to_owned()
         }
     }
 }
@@ -441,18 +422,10 @@ mod tests {
     fn should_normalize_backslashes_when_the_host_is_not_windows() {
         let entry = InstallFileEntry::new(
             provider_ref("modrinth", "AANobbMI", None),
-            "mods\\sodium.jar",
+            ContentPath::parse("mods\\sodium.jar").unwrap(),
             ContentType::Mod,
         );
 
-        assert_eq!(entry.relative_path, "mods/sodium.jar");
-    }
-
-    #[test]
-    fn should_leave_a_slash_path_as_is_when_it_has_no_backslashes() {
-        assert_eq!(
-            InstallFileEntry::normalize_relative_path("config/sodium/options.json"),
-            "config/sodium/options.json"
-        );
+        assert_eq!(entry.relative_path.as_str(), "mods/sodium.jar");
     }
 }

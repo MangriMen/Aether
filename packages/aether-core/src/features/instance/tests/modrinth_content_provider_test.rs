@@ -332,7 +332,7 @@ async fn should_plan_a_mod_as_its_file_with_its_identity_when_resolving_a_mod() 
     let [entry] = &plan.files[..] else {
         panic!("one file expected: {:?}", plan.files)
     };
-    assert_eq!(entry.relative_path, "mods/sodium.jar");
+    assert_eq!(entry.relative_path.as_str(), "mods/sodium.jar");
     assert_eq!(entry.content_type, ContentType::Mod);
     assert_eq!(entry.size, Some(6));
     // The version's name, as the older install path recorded it.
@@ -396,6 +396,35 @@ async fn should_fill_the_metadata_of_the_project_and_version_when_resolving_a_mo
             .batches(&format!("{API_V3}/organizations"))
             .is_empty()
     );
+}
+
+#[tokio::test]
+async fn should_refuse_a_mod_when_its_file_name_leaves_the_content_folder() {
+    let fixture = Fixture::new();
+    fixture.http.serve_json(
+        &format!("{API}/project/sodium"),
+        &project("AANobbMI", "sodium", "mod"),
+    );
+    fixture.http.serve_json(
+        &format!("{API}/project/AANobbMI/version"),
+        &json!([version(
+            "IZskON6d",
+            "AANobbMI",
+            &["1.21.1"],
+            &["fabric"],
+            file(SODIUM_URL, "../evil.jar", b"sodium"),
+        )]),
+    );
+
+    let result = fixture
+        .provider
+        .resolve_install_plan(params("sodium", existing_fabric()))
+        .await;
+
+    assert!(matches!(
+        result,
+        Err(InstanceError::InvalidRelativePath { .. })
+    ));
 }
 
 #[tokio::test]

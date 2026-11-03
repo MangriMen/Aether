@@ -4,7 +4,9 @@
 use std::collections::{HashMap, HashSet};
 
 use super::{DownloadEntry, InstallDiff, InstalledState, PlannedFile, UnchangedFile};
-use crate::features::instance::{FileSide, InstallFileEntry, Instance, PackFile, PlanOrigin};
+use crate::features::instance::{
+    ContentPath, FileSide, InstallFileEntry, Instance, PackFile, PlanOrigin,
+};
 
 /// The files an instance gets when nobody chose otherwise.
 ///
@@ -91,7 +93,7 @@ pub(super) fn dropped_paths(
 ) -> Vec<String> {
     let planned: HashSet<String> = entries
         .iter()
-        .map(|entry| InstallFileEntry::file_system_key(&entry.relative_path))
+        .map(|entry| entry.relative_path.file_system_key())
         .collect();
     let replaced = |record: &PackFile| {
         entries.iter().any(|entry| {
@@ -106,7 +108,7 @@ pub(super) fn dropped_paths(
         .iter()
         .filter(|(content_path, record)| {
             (is_installed_by(record, origin) || replaced(record))
-                && !planned.contains(&InstallFileEntry::file_system_key(content_path))
+                && !planned.contains(&ContentPath::raw_file_system_key(content_path))
         })
         .map(|(content_path, _)| content_path.clone())
         .collect();
@@ -130,7 +132,7 @@ pub(super) fn diff_against_installed(
     };
 
     for entry in entries {
-        match installed.planned.get(&entry.relative_path) {
+        match installed.planned.get(entry.relative_path.as_str()) {
             Some(on_disk) if on_disk.matches => diff.unchanged.push(UnchangedFile {
                 file: PlannedFile {
                     entry,

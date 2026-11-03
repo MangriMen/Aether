@@ -9,8 +9,9 @@ use aether_core_plugin_api::v0::{
 
 use crate::{
     features::instance::{
-        ContentIdentity, ContentSource, FileSide, InstallFileEntry, InstallTarget, InstanceError,
-        InstanceGame, InstanceId, InvalidId, OptionalFile, PlatformId,
+        ContentIdentity, ContentPath, ContentSource, FileSide, InstallFileEntry, InstallTarget,
+        InstanceError, InstanceGame, InstanceId, InvalidId, InvalidRelativePath, OptionalFile,
+        PlatformId,
     },
     shared::hash::{FileHash, InvalidFileHash},
 };
@@ -55,6 +56,9 @@ pub enum InvalidPlanFile {
 
     #[error("Invalid platform: {0}")]
     Platform(#[from] InvalidId),
+
+    #[error(transparent)]
+    Path(#[from] InvalidRelativePath),
 }
 
 /// A hash from a plugin is validated and lowercased here, as `download_to_cache` does: the
@@ -109,7 +113,7 @@ impl TryFrom<InstallFileEntryDto> for InstallFileEntry {
             name: value.name,
             ..Self::new(
                 value.source.try_into()?,
-                &value.relative_path,
+                ContentPath::parse(&value.relative_path)?,
                 value.content_type.into(),
             )
         })
@@ -231,7 +235,7 @@ mod tests {
                     content_id: "AANobbMI".into(),
                     version: Some("IZskON6d".into()),
                 },
-                relative_path: "mods/sodium.jar".into(),
+                relative_path: ContentPath::parse("mods/sodium.jar").unwrap(),
                 content_type: ContentType::Mod,
                 optional: Some(OptionalFile {
                     default_enabled: false,
@@ -288,6 +292,35 @@ mod tests {
             }));
 
             assert!(result.is_err(), "{hash:?} must be refused");
+        }
+    }
+
+    /// A plan file at `../x` or under `.metadata` is refused when the plan is mapped, before
+    /// anything of it is resolved.
+    #[test]
+    fn should_reject_a_path_when_it_leaves_the_instance_or_is_metadata() {
+        for path in [
+            "../x",
+            "mods/../../x",
+            "/abs/x.jar",
+            ".metadata/x",
+            "",
+            "C:/x.jar",
+            ".METADATA/x",
+        ] {
+            let mut dto = entry(ContentSourceDto::Direct {
+                url: "https://example.com/a.jar".into(),
+                hash: None,
+                identity: None,
+            });
+            dto.relative_path = path.into();
+
+            let result = InstallFileEntry::try_from(dto);
+
+            assert!(
+                matches!(result, Err(InvalidPlanFile::Path(_))),
+                "`{path}` must be refused"
+            );
         }
     }
 }

@@ -216,11 +216,51 @@ impl ContentPath {
     pub fn file_name(&self) -> &str {
         self.0.as_str().rsplit('/').next().unwrap_or_default()
     }
+
+    pub fn into_string(self) -> String {
+        self.0.0
+    }
+
+    /// The path as the file system tells paths apart: without case on Windows and macOS, exactly
+    /// elsewhere. Two paths with the same key are the same file there.
+    pub fn file_system_key(&self) -> String {
+        self.key(cfg!(any(windows, target_os = "macos")))
+    }
+
+    /// The path in lower case, for comparing names whatever the file system does.
+    pub fn case_insensitive_key(&self) -> String {
+        self.as_str().to_lowercase()
+    }
+
+    /// [`Self::file_system_key`] for a file system that does or does not ignore case.
+    pub fn key(&self, ignores_case: bool) -> String {
+        Self::raw_key(self.as_str(), ignores_case)
+    }
+
+    /// [`Self::key`] of a path that is still a string (a recorded one); not normalized.
+    pub fn raw_key(path: &str, ignores_case: bool) -> String {
+        if ignores_case {
+            path.to_lowercase()
+        } else {
+            path.to_owned()
+        }
+    }
+
+    /// [`Self::file_system_key`] of a path that is still a string (a recorded one).
+    pub fn raw_file_system_key(path: &str) -> String {
+        Self::raw_key(path, cfg!(any(windows, target_os = "macos")))
+    }
 }
 
 impl fmt::Display for ContentPath {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.0.fmt(f)
+    }
+}
+
+impl From<ContentPath> for String {
+    fn from(path: ContentPath) -> Self {
+        path.into_string()
     }
 }
 
@@ -258,6 +298,16 @@ mod tests {
 
         assert_eq!(path.file_name(), "sodium.jar");
         assert_eq!(path.as_str(), "mods/sodium.jar");
+    }
+
+    #[test]
+    fn should_key_a_content_path_by_case_only_when_the_file_system_ignores_it() {
+        let path = ContentPath::parse("Mods/Sodium.jar").unwrap();
+
+        assert_eq!(path.key(true), "mods/sodium.jar");
+        assert_eq!(path.key(false), "Mods/Sodium.jar");
+        assert_eq!(path.case_insensitive_key(), "mods/sodium.jar");
+        assert_eq!(path.clone().into_string(), "Mods/Sodium.jar");
     }
 
     #[test]

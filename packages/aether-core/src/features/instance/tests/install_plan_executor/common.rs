@@ -20,7 +20,7 @@ use crate::{
             CapabilityMetadata, ChangeInstanceGameUseCasePort, ContentAuthor,
             ContentCompatibilityCheckParams, ContentCompatibilityResult, ContentDownloader,
             ContentFileUpdateInfo, ContentIdentity, ContentItem, ContentMetadata,
-            ContentMetadataCache, ContentProvider, ContentProviderCapabilityMetadata,
+            ContentMetadataCache, ContentPath, ContentProvider, ContentProviderCapabilityMetadata,
             ContentSearchParams, ContentSearchResult, ContentSource, ContentType, ContentVersion,
             ContentVersionMetadata, CreateInstanceUseCasePort, FileSide, InstallFileEntry,
             InstallPlan, InstallPlanExecutor, InstallTarget, Instance, InstanceBuilder,
@@ -996,7 +996,7 @@ pub(super) fn provider_ref(platform: &str, content_id: &str, path: &str) -> Inst
             content_id: content_id.into(),
             version: None,
         },
-        path,
+        ContentPath::parse(path).unwrap(),
         ContentType::Mod,
     )
 }
@@ -1004,7 +1004,7 @@ pub(super) fn provider_ref(platform: &str, content_id: &str, path: &str) -> Inst
 pub(super) fn direct(url: &str, path: &str) -> InstallFileEntry {
     InstallFileEntry::new(
         ContentSource::direct(url.into(), None),
-        path,
+        ContentPath::parse(path).unwrap(),
         ContentType::Mod,
     )
 }
@@ -1016,7 +1016,7 @@ pub(super) fn hashed(url: &str, path: &str) -> InstallFileEntry {
             url.into(),
             Some(FileHash::new(HashAlgorithm::Sha1, sha1(url)).unwrap()),
         ),
-        path,
+        ContentPath::parse(path).unwrap(),
         ContentType::Mod,
     )
 }
@@ -1057,7 +1057,7 @@ pub(super) fn identified(
                 version: version.into(),
             }),
         },
-        path,
+        ContentPath::parse(path).unwrap(),
         ContentType::Mod,
     )
 }

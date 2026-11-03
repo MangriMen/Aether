@@ -20,7 +20,7 @@ use crate::{
             CachedContentAuthor, CachedContentMetadata, CachedContentVersionMetadata,
             CapabilityMetadata, ChangeInstanceGameUseCase, ContentAuthor,
             ContentCompatibilityCheckParams, ContentCompatibilityResult, ContentDownloader,
-            ContentItem, ContentMetadata, ContentMetadataCache, ContentProvider,
+            ContentItem, ContentMetadata, ContentMetadataCache, ContentPath, ContentProvider,
             ContentProviderCapabilityMetadata, ContentSearchParams, ContentSearchResult,
             ContentSource, ContentType, ContentVersion, ContentVersionMetadata,
             CreateInstanceUseCasePort, InstallFileEntry, InstallPlan, InstallPlanExecutor,
@@ -121,7 +121,7 @@ fn pack_file(name: &str, path: &str) -> InstallFileEntry {
             url(name),
             Some(FileHash::new(HashAlgorithm::Sha1, sha1(&url(name))).unwrap()),
         ),
-        path,
+        ContentPath::parse(path).unwrap(),
         ContentType::Mod,
     )
 }
