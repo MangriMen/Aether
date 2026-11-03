@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT content_path FROM pack_file_updates WHERE instance_id = ? AND provider_id IN (?, ?) AND content_id = ? LIMIT 1",
+  "query": "SELECT content_path FROM pack_file_updates WHERE instance_id = ? AND provider_id IN (?, ?) AND content_id = ? ORDER BY content_path ASC",
   "describe": {
     "columns": [
       {
@@ -22,5 +22,5 @@
       false
     ]
   },
-  "hash": "ab5cef763647b17a64eff1b07e1b17480cd1dc859b4b9450a387d54128999932"
+  "hash": "52c2fe2209ce2468173f550acadd1f368eca9abfe2a6747f2500e7713c43a934"
 }

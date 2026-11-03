@@ -96,7 +96,7 @@ impl From<ContentFileView> for ContentFileDto {
         } = view;
 
         Self {
-            content_path: value.content_path,
+            content_path: value.content_path.into_string(),
             content_type: value.content_type.into(),
             disabled: value.disabled,
             file_name: value.file_name,
@@ -167,14 +167,16 @@ impl From<ContentVersionMetadata> for ContentVersionMetadataDto {
 mod tests {
     use std::collections::HashMap;
 
-    use aether_core::features::instance::{ContentFile, ContentType, PackFile, ProviderId};
+    use aether_core::features::instance::{
+        ContentFile, ContentPath, ContentType, PackFile, ProviderId,
+    };
 
     use super::*;
 
     fn file(icon_path: Option<&str>) -> ContentFileView {
         let mut file = ContentFileView::from(ContentFile::from_pack_file(
             PackFile::from_hash("sodium.jar".into(), "hash".into()),
-            "mods/sodium.jar".into(),
+            ContentPath::parse("mods/sodium.jar").unwrap(),
             ContentType::Mod,
             1,
             false,

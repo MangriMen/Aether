@@ -11,8 +11,8 @@ use crate::{
     features::{
         events::{EventEmitterExt, InstanceEvent, InstanceEventType, SharedEventEmitter},
         instance::{
-            ContentType, InstanceError, InstanceId, InstanceLocks, PackFile, PackStorage,
-            app::DISABLED_SUFFIX,
+            ContentPath, ContentType, InstanceError, InstanceId, InstanceLocks, PackFile,
+            PackStorage, app::DISABLED_SUFFIX,
         },
         settings::LocationInfo,
     },
@@ -71,7 +71,7 @@ impl ImportContentUseCase {
         instance_id: &InstanceId,
         content_type: ContentType,
         source_paths: &[PathBuf],
-    ) -> Result<(Vec<String>, Vec<PackFile>), InstanceError> {
+    ) -> Result<(Vec<ContentPath>, Vec<PackFile>), InstanceError> {
         let mut paths = Vec::with_capacity(source_paths.len());
         let mut metadata_files = Vec::with_capacity(source_paths.len());
         let mut seen = HashSet::with_capacity(source_paths.len());
@@ -84,12 +84,14 @@ impl ImportContentUseCase {
             // Two sources of one name would be copied onto each other; Windows and macOS
             // file systems treat names differing in case as one.
             let key = if cfg!(any(windows, target_os = "macos")) {
-                content_path.to_lowercase()
+                content_path.case_insensitive_key()
             } else {
-                content_path.clone()
+                content_path.as_str().to_owned()
             };
             if !seen.insert(key) {
-                return Err(InstanceError::ContentDuplication { content_path });
+                return Err(InstanceError::ContentDuplication {
+                    content_path: content_path.into_string(),
+                });
             }
 
             paths.push(content_path);
@@ -104,7 +106,7 @@ impl ImportContentUseCase {
         instance_id: &InstanceId,
         content_type: ContentType,
         path: &Path,
-    ) -> Result<(String, PackFile), InstanceError> {
+    ) -> Result<(ContentPath, PackFile), InstanceError> {
         let content_folder = content_type.get_folder();
 
         let file_name =
@@ -116,12 +118,22 @@ impl ImportContentUseCase {
 
         // Always with `/`, as the pack records and the content listing key a file: a `\` here
         // on Windows would record a file the listing never finds, and import it again as new.
-        let content_path = format!("{content_folder}/{file_name}");
+        let spelled = format!("{content_folder}/{file_name}");
+        let content_path = ContentPath::parse(&spelled)?;
+        // The name must stay one segment: a backslash is treated as a separator on every host, so a
+        // Linux file named `a\b.jar` (a backslash in the name) would otherwise be copied to
+        // `a/b.jar`.
+        if content_path.as_str() != spelled {
+            return Err(InstanceError::InvalidRelativePath {
+                path: spelled,
+                reason: "the file name is not a single path segment".to_owned(),
+            });
+        }
 
         let instance_dir = self.location_info.instance_dir(instance_id);
         Self::ensure_folder_inside_instance(instance_id, &instance_dir, content_folder)?;
 
-        let absolute_content_path = instance_dir.join(&content_path);
+        let absolute_content_path = instance_dir.join(content_path.to_path_buf());
         let disabled_path =
             absolute_content_path.with_file_name(format!("{file_name}{DISABLED_SUFFIX}"));
 
@@ -130,7 +142,7 @@ impl ImportContentUseCase {
             || disabled_path.symlink_metadata().is_ok()
         {
             return Err(InstanceError::ContentDuplication {
-                content_path: content_path.clone(),
+                content_path: content_path.to_string(),
             });
         }
 
@@ -141,7 +153,7 @@ impl ImportContentUseCase {
 
         if pack_file.is_ok() {
             return Err(InstanceError::ContentDuplication {
-                content_path: content_path.clone(),
+                content_path: content_path.to_string(),
             });
         }
 
@@ -183,13 +195,13 @@ impl ImportContentUseCase {
         &self,
         instance_id: &InstanceId,
         source_paths: &[PathBuf],
-        content_paths: &[String],
+        content_paths: &[ContentPath],
     ) -> Result<(), InstanceError> {
         let instance_dir = self.location_info.instance_dir(instance_id);
         let mut copied = Vec::with_capacity(content_paths.len());
 
         for (src, dest) in source_paths.iter().zip(content_paths) {
-            let dest_path = instance_dir.join(dest);
+            let dest_path = instance_dir.join(dest.to_path_buf());
             if let Err(err) = tokio::fs::copy(src, &dest_path).await {
                 // A half-written file is not in the way of another import, but is not
                 // wanted either.
@@ -246,7 +258,7 @@ impl ImportContentUseCase {
             let instance_dir = self.location_info.instance_dir(&instance_id);
             let copied: Vec<PathBuf> = content_paths
                 .iter()
-                .map(|content_path| instance_dir.join(content_path))
+                .map(|content_path| instance_dir.join(content_path.to_path_buf()))
                 .collect();
             Self::remove_files(&copied).await;
             return Err(err);

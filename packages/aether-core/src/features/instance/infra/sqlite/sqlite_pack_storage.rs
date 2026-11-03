@@ -1,8 +1,9 @@
 use crate::features::instance::{
-    ContentFileUpdateInfo, FileSide, InstanceError, InstanceId, Pack, PackEntry, PackFile,
-    PackStorage, PlanOrigin, ProviderId,
+    ContentFileUpdateInfo, ContentPath, FileSide, InstanceError, InstanceId, Pack, PackEntry,
+    PackFile, PackStorage, PlanOrigin, ProviderId,
     infra::{
         legacy_provider_id::{legacy_provider_id_string, parse_stored_provider_id},
+        stored_content_path::parse_stored_content_path,
         stored_side::parse_stored_side,
     },
 };
@@ -128,6 +129,12 @@ impl SqlitePackStorage {
         Self::new(pool)
     }
 
+    /// The pool under the storage, for a test to plant rows the storage would not write.
+    #[cfg(test)]
+    pub(crate) fn pool(&self) -> &SqlitePool {
+        &self.pool
+    }
+
     /// Whether the instance has a pack row. The row is created with the first file and stays
     /// when the last one is removed, so it tells a pack that was emptied from one never stored.
     pub async fn has_pack(&self, instance_id: &InstanceId) -> Result<bool, InstanceError> {
@@ -143,9 +150,10 @@ impl SqlitePackStorage {
     async fn upsert_file_internal(
         tx: &mut Transaction<'_, Sqlite>,
         instance_id: &InstanceId,
-        content_path: &str,
+        content_path: &ContentPath,
         pack_file: &PackFile,
     ) -> Result<(), InstanceError> {
+        let content_path = content_path.as_str();
         // Ensure pack exists
         sqlx::query!(
             "INSERT OR IGNORE INTO packs (instance_id) VALUES (?)",
@@ -241,8 +249,9 @@ impl PackStorage for SqlitePackStorage {
         Ok(Pack {
             files: files
                 .into_iter()
-                .map(|r| PackEntry {
-                    file: r.content_path,
+                .filter_map(|r| {
+                    parse_stored_content_path(instance_id, &r.content_path)
+                        .map(|file| PackEntry { file })
                 })
                 .collect(),
         })
@@ -261,8 +270,9 @@ impl PackStorage for SqlitePackStorage {
     async fn get_pack_file(
         &self,
         instance_id: &InstanceId,
-        content_path: &str,
+        content_path: &ContentPath,
     ) -> Result<PackFile, InstanceError> {
+        let content_path = content_path.as_str();
         let row = sqlx::query_as!(
             PackFileRow,
             "SELECT content_path, file_name, name, hash, side, update_provider_id, installed_by_provider_id, installed_by_content_id FROM pack_files WHERE instance_id = ? AND content_path = ?",
@@ -290,7 +300,7 @@ impl PackStorage for SqlitePackStorage {
     async fn get_pack_files(
         &self,
         instance_id: &InstanceId,
-    ) -> Result<HashMap<String, PackFile>, InstanceError> {
+    ) -> Result<HashMap<ContentPath, PackFile>, InstanceError> {
         let rows = sqlx::query_as!(
             PackFileRow,
             "SELECT content_path, file_name, name, hash, side, update_provider_id, installed_by_provider_id, installed_by_content_id FROM pack_files WHERE instance_id = ?",
@@ -319,9 +329,10 @@ impl PackStorage for SqlitePackStorage {
 
         Ok(rows
             .into_iter()
-            .map(|row| {
+            .filter_map(|row| {
+                let content_path = parse_stored_content_path(instance_id, &row.content_path)?;
                 let file_updates = updates.remove(&row.content_path).unwrap_or_default();
-                (row.content_path.clone(), row.into_pack_file(file_updates))
+                Some((content_path, row.into_pack_file(file_updates)))
             })
             .collect())
     }
@@ -336,21 +347,23 @@ impl PackStorage for SqlitePackStorage {
         // Rows are not rewritten: a file saved under a provider's earlier id is matched by that
         // id too, so both ids are queried.
         let legacy_pid = legacy_provider_id_string(provider_id).unwrap_or_else(|| pid.clone());
-        let row = sqlx::query!(
-            "SELECT content_path FROM pack_file_updates WHERE instance_id = ? AND provider_id IN (?, ?) AND content_id = ? LIMIT 1",
+        let rows = sqlx::query!(
+            "SELECT content_path FROM pack_file_updates WHERE instance_id = ? AND provider_id IN (?, ?) AND content_id = ? ORDER BY content_path ASC",
             instance_id.as_str(),
             pid,
             legacy_pid,
             content_id
         )
-        .fetch_optional(&self.pool)
+        .fetch_all(&self.pool)
         .await
         .map_err(|e| InstanceError::Storage(e.to_string()))?;
 
-        if let Some(r) = row {
-            return Ok(Some(
-                self.get_pack_file(instance_id, &r.content_path).await?,
-            ));
+        // A row whose path cannot be a content path matches nothing; the first one that can wins.
+        if let Some(content_path) = rows
+            .iter()
+            .find_map(|row| parse_stored_content_path(instance_id, &row.content_path))
+        {
+            return Ok(Some(self.get_pack_file(instance_id, &content_path).await?));
         }
 
         Ok(None)
@@ -359,7 +372,7 @@ impl PackStorage for SqlitePackStorage {
     async fn update_pack_file(
         &self,
         instance_id: &InstanceId,
-        content_path: &str,
+        content_path: &ContentPath,
         pack_file: &PackFile,
     ) -> Result<(), InstanceError> {
         let mut tx = self
@@ -376,7 +389,7 @@ impl PackStorage for SqlitePackStorage {
     async fn update_pack_file_many(
         &self,
         instance_id: &InstanceId,
-        content_paths: &[String],
+        content_paths: &[ContentPath],
         pack_files: &[PackFile],
     ) -> Result<(), InstanceError> {
         let mut tx = self
@@ -397,8 +410,9 @@ impl PackStorage for SqlitePackStorage {
     async fn remove_pack_file(
         &self,
         instance_id: &InstanceId,
-        content_path: &str,
+        content_path: &ContentPath,
     ) -> Result<(), InstanceError> {
+        let content_path = content_path.as_str();
         sqlx::query!(
             "DELETE FROM pack_files WHERE instance_id = ? AND content_path = ?",
             instance_id.as_str(),
@@ -413,7 +427,7 @@ impl PackStorage for SqlitePackStorage {
     async fn remove_pack_file_many(
         &self,
         instance_id: &InstanceId,
-        content_paths: &[String],
+        content_paths: &[ContentPath],
     ) -> Result<(), InstanceError> {
         let mut tx = self
             .pool
@@ -425,7 +439,7 @@ impl PackStorage for SqlitePackStorage {
             sqlx::query!(
                 "DELETE FROM pack_files WHERE instance_id = ? AND content_path = ?",
                 instance_id.as_str(),
-                path
+                path.as_str()
             )
             .execute(&mut *tx)
             .await
@@ -478,6 +492,10 @@ impl PackStorage for SqlitePackStorage {
 mod tests {
     use super::*;
 
+    fn cp(path: &str) -> ContentPath {
+        ContentPath::parse(path).unwrap()
+    }
+
     #[tokio::test]
     async fn should_skip_update_when_its_provider_id_is_malformed() {
         let storage = SqlitePackStorage::in_memory().await;
@@ -494,7 +512,7 @@ mod tests {
             ..PackFile::from_hash("a.jar".into(), "h".into())
         };
         storage
-            .update_pack_file(&id, "mods/a.jar", &file)
+            .update_pack_file(&id, &cp("mods/a.jar"), &file)
             .await
             .unwrap();
         sqlx::query(
@@ -504,13 +522,97 @@ mod tests {
         .await
         .unwrap();
 
-        let single = storage.get_pack_file(&id, "mods/a.jar").await.unwrap();
+        let single = storage.get_pack_file(&id, &cp("mods/a.jar")).await.unwrap();
         let all = storage.get_pack_files(&id).await.unwrap();
 
-        for read in [&single, &all["mods/a.jar"]] {
+        for read in [&single, &all[&cp("mods/a.jar")]] {
             let updates = read.update.as_ref().unwrap();
             assert_eq!(updates.len(), 1);
             assert_eq!(updates[&good].content_id, "c1");
         }
+    }
+
+    #[tokio::test]
+    async fn should_drop_a_stored_path_that_is_not_a_content_path_when_reading() {
+        let storage = SqlitePackStorage::in_memory().await;
+        let id = InstanceId::try_from("inst").unwrap();
+        storage
+            .update_pack_file(
+                &id,
+                &cp("mods/a.jar"),
+                &PackFile::from_hash("a.jar".into(), "h".into()),
+            )
+            .await
+            .unwrap();
+        for bad in ["../x.jar", ".metadata/instance.json", "mods//b.jar"] {
+            sqlx::query(
+                "INSERT INTO pack_files (instance_id, content_path, file_name, hash) VALUES ('inst', ?, 'x.jar', 'h')",
+            )
+            .bind(bad)
+            .execute(&storage.pool)
+            .await
+            .unwrap();
+        }
+
+        let pack = storage.get_pack(&id).await.unwrap();
+        let files = storage.get_pack_files(&id).await.unwrap();
+
+        assert_eq!(pack.files.len(), 1);
+        assert_eq!(pack.files[0].file, cp("mods/a.jar"));
+        assert_eq!(files.len(), 1);
+        assert!(files.contains_key(&cp("mods/a.jar")));
+    }
+
+    #[tokio::test]
+    async fn should_find_the_valid_row_when_an_invalid_one_sorts_first() {
+        let storage = SqlitePackStorage::in_memory().await;
+        let id = InstanceId::try_from("inst").unwrap();
+        let provider: ProviderId = "plugin#cap".parse().unwrap();
+        let file = PackFile {
+            update: Some(HashMap::from([(
+                provider.clone(),
+                ContentFileUpdateInfo {
+                    content_id: "c1".into(),
+                    version: "v1".into(),
+                },
+            )])),
+            ..PackFile::from_hash("good.jar".into(), "h".into())
+        };
+        storage
+            .update_pack_file(&id, &cp("mods/good.jar"), &file)
+            .await
+            .unwrap();
+        for bad in [".metadata/old.jar", "../old.jar"] {
+            sqlx::query("INSERT INTO pack_files (instance_id, content_path, file_name, hash) VALUES ('inst', ?, 'old.jar', 'h')")
+                .bind(bad)
+                .execute(&storage.pool)
+                .await
+                .unwrap();
+            sqlx::query("INSERT INTO pack_file_updates (instance_id, content_path, provider_id, content_id, version_id) VALUES ('inst', ?, 'plugin#cap', 'c1', 'v0')")
+                .bind(bad)
+                .execute(&storage.pool)
+                .await
+                .unwrap();
+        }
+
+        let found = storage
+            .find_by_provider_id(&id, &provider, "c1")
+            .await
+            .unwrap();
+
+        assert_eq!(found.map(|f| f.file_name).as_deref(), Some("good.jar"));
+    }
+
+    #[tokio::test]
+    async fn should_drop_a_stored_path_that_changes_when_normalized() {
+        let storage = SqlitePackStorage::in_memory().await;
+        let id = InstanceId::try_from("inst").unwrap();
+        sqlx::query(r"INSERT INTO pack_files (instance_id, content_path, file_name, hash) VALUES ('inst', 'mods\a.jar', 'a.jar', 'h')")
+            .execute(&storage.pool)
+            .await
+            .unwrap();
+
+        assert!(storage.get_pack(&id).await.unwrap().files.is_empty());
+        assert!(storage.get_pack_files(&id).await.unwrap().is_empty());
     }
 }

@@ -9,7 +9,7 @@ use path_slash::PathBufExt;
 use crate::{
     core::app::AetherContainer,
     features::instance::{
-        ChangeContentState, ChangeContentStateUseCasePort, ContentManagementPort,
+        ChangeContentState, ChangeContentStateUseCasePort, ContentManagementPort, ContentPath,
         ContentStateAction, GetInstanceUseCasePort, InstanceCrudPort, InstanceError,
         InstanceFileService, InstanceId, InstanceRelativePath, InstanceServicesPort,
         ListContentUseCasePort, NewInstance, PluginId,
@@ -126,6 +126,11 @@ pub(crate) async fn handle_change_contents(
     change_state: &dyn ChangeContentStateUseCasePort,
 ) -> crate::Result<()> {
     let instance_id = require_instance(&instance_id, get_instance).await?;
+    let content_paths = content_paths
+        .iter()
+        .map(|content_path| ContentPath::parse(content_path))
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(InstanceError::from)?;
 
     change_state
         .execute(ChangeContentState::multiple(
@@ -914,6 +919,32 @@ mod tests {
                 .expect_err("an id outside `instances/` must be refused");
                 assert!(!change.called.load(Ordering::SeqCst), "{id}");
             }
+        }
+    }
+
+    #[tokio::test]
+    async fn should_refuse_the_whole_list_when_a_content_path_leaves_the_instance() {
+        for hostile in ["../x", "mods/../../x", ".metadata/instance.json"] {
+            let change = RecordingContent::default();
+
+            let err = handle_change_contents(
+                INSTANCE_ID.to_owned(),
+                vec!["mods/a.jar".to_owned(), hostile.to_owned()],
+                ContentStateAction::Disable,
+                &OneInstance,
+                &change,
+            )
+            .await
+            .expect_err(hostile);
+
+            assert!(
+                matches!(
+                    err.raw.as_ref(),
+                    crate::ErrorKind::InstanceError(InstanceError::InvalidRelativePath { .. })
+                ),
+                "{hostile}: {err:?}"
+            );
+            assert!(!change.called.load(Ordering::SeqCst), "{hostile}");
         }
     }
 

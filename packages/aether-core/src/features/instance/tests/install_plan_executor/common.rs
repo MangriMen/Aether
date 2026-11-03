@@ -519,7 +519,7 @@ impl ContentFileService for FailingRestore {
     async fn remove_content_files(
         &self,
         instance_id: &InstanceId,
-        content_paths: &[String],
+        content_paths: &[ContentPath],
     ) -> Result<(), InstanceError> {
         self.0
             .remove_content_files(instance_id, content_paths)
@@ -529,7 +529,7 @@ impl ContentFileService for FailingRestore {
     async fn enable_content_files(
         &self,
         instance_id: &InstanceId,
-        content_paths: &[String],
+        content_paths: &[ContentPath],
     ) -> Result<(), InstanceError> {
         self.0
             .enable_content_files(instance_id, content_paths)
@@ -539,7 +539,7 @@ impl ContentFileService for FailingRestore {
     async fn disable_content_files(
         &self,
         instance_id: &InstanceId,
-        content_paths: &[String],
+        content_paths: &[ContentPath],
     ) -> Result<(), InstanceError> {
         self.0
             .disable_content_files(instance_id, content_paths)
@@ -549,13 +549,9 @@ impl ContentFileService for FailingRestore {
     async fn locate_content_file(
         &self,
         instance_id: &InstanceId,
-        content_path: &str,
+        content_path: &ContentPath,
     ) -> Result<Option<LocatedContentFile>, InstanceError> {
         self.0.locate_content_file(instance_id, content_path).await
-    }
-
-    fn check_content_path(&self, content_path: &str) -> Result<(), InstanceError> {
-        self.0.check_content_path(content_path)
     }
 
     async fn move_content_file_out(
@@ -891,7 +887,7 @@ impl Fixture {
         self.pack_storage
             .update_pack_file(
                 &InstanceId::try_from(INSTANCE_ID).unwrap(),
-                relative_path,
+                &ContentPath::parse(relative_path).unwrap(),
                 &pack_file,
             )
             .await
@@ -921,6 +917,9 @@ impl Fixture {
             .get_pack_files(&InstanceId::try_from(instance_id).unwrap())
             .await
             .unwrap()
+            .into_iter()
+            .map(|(path, record)| (path.into_string(), record))
+            .collect()
     }
 
     pub(super) fn downloaded_urls(&self) -> Vec<String> {

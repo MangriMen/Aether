@@ -8,8 +8,8 @@ use tempfile::TempDir;
 use crate::features::{
     events::{Event, EventEmitter, EventError},
     instance::{
-        ContentType, ImportContent, ImportContentUseCase, InstanceError, InstanceId, InstanceLocks,
-        Pack, PackFile, PackStorage, ProviderId, infra::SqlitePackStorage,
+        ContentPath, ContentType, ImportContent, ImportContentUseCase, InstanceError, InstanceId,
+        InstanceLocks, Pack, PackFile, PackStorage, ProviderId, infra::SqlitePackStorage,
     },
     settings::LocationInfo,
 };
@@ -68,7 +68,10 @@ async fn should_wait_for_the_instance_lock_when_a_plan_holds_it() {
     assert!(instance_mods.join("a.jar").exists());
     assert!(
         pack_storage
-            .get_pack_file(&InstanceId::try_from(INSTANCE_ID).unwrap(), "mods/a.jar")
+            .get_pack_file(
+                &InstanceId::try_from(INSTANCE_ID).unwrap(),
+                &cp("mods/a.jar"),
+            )
             .await
             .is_ok()
     );
@@ -80,6 +83,10 @@ struct Setup {
     sources: std::path::PathBuf,
     pack_storage: Arc<SqlitePackStorage>,
     use_case: ImportContentUseCase,
+}
+
+fn cp(path: &str) -> ContentPath {
+    ContentPath::parse(path).unwrap()
 }
 
 fn instance_id() -> InstanceId {
@@ -154,7 +161,7 @@ async fn should_record_the_content_path_with_forward_slashes() {
         .into_iter()
         .map(|entry| entry.file)
         .collect();
-    assert_eq!(files, ["mods/a.jar"]);
+    assert_eq!(files, [cp("mods/a.jar")]);
 }
 
 /// A file removed from the instance can be imported again: nothing of the first import is left
@@ -169,7 +176,7 @@ async fn should_import_again_when_the_file_was_removed() {
         .unwrap();
     setup
         .pack_storage
-        .remove_pack_file(&instance_id(), "mods/a.jar")
+        .remove_pack_file(&instance_id(), &cp("mods/a.jar"))
         .await
         .unwrap();
 
@@ -249,7 +256,11 @@ impl PackStorage for FailingRecord {
     async fn update_pack(&self, id: &InstanceId, pack: &Pack) -> Result<(), InstanceError> {
         self.0.update_pack(id, pack).await
     }
-    async fn get_pack_file(&self, id: &InstanceId, path: &str) -> Result<PackFile, InstanceError> {
+    async fn get_pack_file(
+        &self,
+        id: &InstanceId,
+        path: &ContentPath,
+    ) -> Result<PackFile, InstanceError> {
         self.0.get_pack_file(id, path).await
     }
     async fn find_by_provider_id(
@@ -265,7 +276,7 @@ impl PackStorage for FailingRecord {
     async fn update_pack_file(
         &self,
         id: &InstanceId,
-        path: &str,
+        path: &ContentPath,
         pack_file: &PackFile,
     ) -> Result<(), InstanceError> {
         self.0.update_pack_file(id, path, pack_file).await
@@ -273,18 +284,22 @@ impl PackStorage for FailingRecord {
     async fn update_pack_file_many(
         &self,
         _: &InstanceId,
-        _: &[String],
+        _: &[ContentPath],
         _: &[PackFile],
     ) -> Result<(), InstanceError> {
         Err(InstanceError::Storage("disk full".into()))
     }
-    async fn remove_pack_file(&self, id: &InstanceId, path: &str) -> Result<(), InstanceError> {
+    async fn remove_pack_file(
+        &self,
+        id: &InstanceId,
+        path: &ContentPath,
+    ) -> Result<(), InstanceError> {
         self.0.remove_pack_file(id, path).await
     }
     async fn remove_pack_file_many(
         &self,
         id: &InstanceId,
-        paths: &[String],
+        paths: &[ContentPath],
     ) -> Result<(), InstanceError> {
         self.0.remove_pack_file_many(id, paths).await
     }
@@ -353,5 +368,36 @@ fn link_dir(target: &std::path::Path, link: &std::path::Path) {
             .unwrap()
             .status;
         assert!(status.success());
+    }
+}
+
+/// A source whose file name cannot be a content path is refused before anything is copied or
+/// recorded. Such names (a trailing dot, a `\` that parsing would read as a separator) exist as
+/// files only on Unix file systems; Windows cannot even create them.
+#[cfg(unix)]
+#[tokio::test]
+async fn should_refuse_a_source_when_its_file_name_cannot_be_a_content_path() {
+    for name in ["a.jar.", r"evil\..\a.jar", r"x\y.jar"] {
+        let setup = setup().await;
+        let good = setup.source("good.jar", false).await;
+        let hostile = setup.source(name, false).await;
+
+        let result = setup.import(vec![good, hostile]).await;
+
+        assert!(
+            matches!(result, Err(InstanceError::InvalidRelativePath { .. })),
+            "{name}: {result:?}"
+        );
+        assert!(!setup.mods.join("good.jar").exists(), "{name}");
+        assert!(
+            setup
+                .pack_storage
+                .get_pack(&instance_id())
+                .await
+                .unwrap()
+                .files
+                .is_empty(),
+            "{name}"
+        );
     }
 }

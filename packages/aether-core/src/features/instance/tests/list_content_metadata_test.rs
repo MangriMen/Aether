@@ -13,7 +13,7 @@ use dashmap::DashMap;
 use tempfile::TempDir;
 use tokio::sync::{Semaphore, mpsc};
 
-use crate::features::instance::CapabilityId;
+use crate::features::instance::{CapabilityId, ContentPath};
 use crate::{
     features::{
         events::{CacheEvent, Event, EventEmitter, EventError, InstanceEvent, InstanceEventType},
@@ -544,7 +544,7 @@ impl Fixture {
             pack_storage
                 .update_pack_file(
                     &InstanceId::try_from(INSTANCE_ID).unwrap(),
-                    &format!("mods/{file}"),
+                    &ContentPath::parse(&format!("mods/{file}")).unwrap(),
                     &pack_file,
                 )
                 .await
@@ -1652,4 +1652,25 @@ async fn should_show_a_stale_author_while_asking_for_it_again() {
     assert_eq!(before["mods/a.jar"], (Some("jellysquid3".into()), false));
     assert_eq!(after["mods/a.jar"], (Some("CaffeineMC".into()), false));
     assert_eq!(provider.author_calls(), [[SODIUM_AUTHOR]]);
+}
+
+/// A file whose name cannot be a content path (a trailing dot is one a Unix file system allows)
+/// is left out of the list, and the other files are still listed.
+#[cfg(unix)]
+#[tokio::test]
+async fn should_skip_a_file_when_its_name_cannot_be_a_content_path() {
+    let provider = Arc::new(FakeProvider::new("modrinth", Answer::Items(vec![])));
+    let fixture = Fixture::new(&[], vec![provider]).await;
+    tokio::fs::write(fixture.mods.join("foo.jar."), b"jar")
+        .await
+        .unwrap();
+    tokio::fs::write(fixture.mods.join("good.jar"), b"jar")
+        .await
+        .unwrap();
+
+    let names = fixture.names().await;
+
+    assert!(names.contains_key("mods/good.jar"));
+    assert!(!names.keys().any(|path| path.starts_with("mods/foo.jar")));
+    assert_eq!(names.len(), 1);
 }

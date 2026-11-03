@@ -1,10 +1,10 @@
 use aether_core::features::{
     instance::{
         ChangeContentState, ContentCompatibilityCheckParams, ContentGetParams,
-        ContentInstallParams, ContentListVersionsParams, ContentManagementPort,
+        ContentInstallParams, ContentListVersionsParams, ContentManagementPort, ContentPath,
         ContentProviderPort, ContentSearchParams, ContentStateAction, EditInstanceIcon,
-        ImportContent, ImportInstance, InstanceCrudPort, InstanceId, InstanceLifecyclePort,
-        InstanceServicesPort, NewInstance, RemoveContent,
+        ImportContent, ImportInstance, InstanceCrudPort, InstanceError, InstanceId,
+        InstanceLifecyclePort, InstanceServicesPort, NewInstance, RemoveContent,
     },
     process::ProcessFeature,
 };
@@ -336,6 +336,7 @@ async fn enable_contents(
     let _guard = idempotency.lock_cmd(request_id)?;
 
     let id = InstanceId::try_from(id).map_err(aether_core::Error::from)?;
+    let content_paths = parse_content_paths(&content_paths)?;
     let container = container.0.clone();
     Ok(container
         .change_content_state_use_case()
@@ -360,6 +361,7 @@ async fn disable_contents(
     let _guard = idempotency.lock_cmd(request_id)?;
 
     let id = InstanceId::try_from(id).map_err(aether_core::Error::from)?;
+    let content_paths = parse_content_paths(&content_paths)?;
     let container = container.0.clone();
     Ok(container
         .change_content_state_use_case()
@@ -384,6 +386,7 @@ async fn remove_contents(
     let _guard = idempotency.lock_cmd(request_id)?;
 
     let id = InstanceId::try_from(id).map_err(aether_core::Error::from)?;
+    let content_paths = parse_content_paths(&content_paths)?;
     let container = container.0.clone();
     Ok(container
         .remove_content_use_case()
@@ -501,4 +504,43 @@ async fn edit_icon(
         .map_err(aether_core::Error::from)?;
 
     Ok(())
+}
+
+/// The content paths a command received, checked once here: the use cases only ever hold
+/// [`ContentPath`]s, so a path that is not a plain relative chain of names (or reaches into
+/// `.metadata`) is refused before any use case runs.
+fn parse_content_paths(content_paths: &[String]) -> Result<Vec<ContentPath>, aether_core::Error> {
+    content_paths
+        .iter()
+        .map(|content_path| ContentPath::parse(content_path))
+        .collect::<Result<_, _>>()
+        .map_err(|err| aether_core::Error::from(InstanceError::from(err)))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn should_parse_content_paths_when_all_are_plain_relative_paths() {
+        let parsed = parse_content_paths(&["mods/a.jar".into(), r"config\b.toml".into()]).unwrap();
+
+        assert_eq!(parsed[0].as_str(), "mods/a.jar");
+        assert_eq!(parsed[1].as_str(), "config/b.toml");
+    }
+
+    #[test]
+    fn should_refuse_the_whole_list_when_one_content_path_escapes_the_instance() {
+        for hostile in [
+            "../x",
+            "mods/../../x",
+            "/etc/passwd",
+            ".metadata/instance.json",
+        ] {
+            assert!(
+                parse_content_paths(&["mods/a.jar".into(), hostile.into()]).is_err(),
+                "`{hostile}` must be refused"
+            );
+        }
+    }
 }

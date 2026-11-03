@@ -624,7 +624,7 @@ impl Fixture {
         self.pack_storage
             .update_pack_file(
                 &InstanceId::try_from(INSTANCE_ID).unwrap(),
-                path,
+                &ContentPath::parse(path).unwrap(),
                 &PackFile {
                     installed_by,
                     ..PackFile::from_hash(name.into(), sha1(&url(name)))
@@ -663,7 +663,7 @@ impl Fixture {
         self.pack_storage
             .get_pack_files(&InstanceId::try_from(INSTANCE_ID).unwrap())
             .await
-            .unwrap()[path]
+            .unwrap()[&ContentPath::parse(path).unwrap()]
             .installed_by
             .clone()
     }

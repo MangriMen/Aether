@@ -2,7 +2,9 @@ use std::collections::HashMap;
 
 use async_trait::async_trait;
 
-use crate::features::instance::domain::{InstanceError, InstanceId, Pack, PackFile, ProviderId};
+use crate::features::instance::domain::{
+    ContentPath, InstanceError, InstanceId, Pack, PackFile, ProviderId,
+};
 
 #[async_trait]
 pub trait PackStorage: Send + Sync {
@@ -14,7 +16,7 @@ pub trait PackStorage: Send + Sync {
     async fn get_pack_file(
         &self,
         instance_id: &InstanceId,
-        content_path: &str,
+        content_path: &ContentPath,
     ) -> Result<PackFile, InstanceError>;
 
     /// Every file recorded for the instance, by content path — what an install plan is diffed
@@ -22,7 +24,7 @@ pub trait PackStorage: Send + Sync {
     async fn get_pack_files(
         &self,
         instance_id: &InstanceId,
-    ) -> Result<HashMap<String, PackFile>, InstanceError> {
+    ) -> Result<HashMap<ContentPath, PackFile>, InstanceError> {
         let mut files = HashMap::new();
 
         for entry in self.get_pack(instance_id).await?.files {
@@ -43,27 +45,27 @@ pub trait PackStorage: Send + Sync {
     async fn update_pack_file(
         &self,
         instance_id: &InstanceId,
-        content_path: &str,
+        content_path: &ContentPath,
         pack_file: &PackFile,
     ) -> Result<(), InstanceError>;
 
     async fn update_pack_file_many(
         &self,
         instance_id: &InstanceId,
-        content_paths: &[String],
+        content_paths: &[ContentPath],
         pack_files: &[PackFile],
     ) -> Result<(), InstanceError>;
 
     async fn remove_pack_file(
         &self,
         instance_id: &InstanceId,
-        content_path: &str,
+        content_path: &ContentPath,
     ) -> Result<(), InstanceError>;
 
     async fn remove_pack_file_many(
         &self,
         instance_id: &InstanceId,
-        content_paths: &[String],
+        content_paths: &[ContentPath],
     ) -> Result<(), InstanceError>;
 
     async fn remove_all_for_instance(&self, instance_id: &InstanceId) -> Result<(), InstanceError>;

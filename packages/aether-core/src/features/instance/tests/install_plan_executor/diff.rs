@@ -232,21 +232,22 @@ async fn should_remove_a_file_when_the_pack_no_longer_has_it() {
     assert!(records.contains_key("mods/a-2.jar"));
 }
 
-/// A record of the pack at a path no file of the instance can have is the storage's word only:
-/// it is left alone, and the update goes through.
+/// A row of the pack at a path no file of the instance can have is the storage's word only: the
+/// reader drops it, the row itself is left alone, and the update goes through.
 #[tokio::test]
 async fn should_keep_a_dropped_record_when_its_path_is_out_of_the_content_area() {
     let fixture = Fixture::new().await;
     let pack = pack_of(&plugin("packwiz"));
-    fixture
-        .record(
-            ".metadata/stale.jar",
-            PackFile {
-                installed_by: Some(pack.clone()),
-                ..PackFile::from_hash("stale.jar".into(), sha1("stale"))
-            },
-        )
-        .await;
+    sqlx::query(
+        "INSERT INTO pack_files (instance_id, content_path, file_name, hash, installed_by_provider_id, installed_by_content_id) VALUES (?, '.metadata/stale.jar', 'stale.jar', ?, ?, ?)",
+    )
+    .bind(INSTANCE_ID)
+    .bind(sha1("stale"))
+    .bind(pack.provider_id.to_string())
+    .bind(&pack.content_id)
+    .execute(fixture.pack_storage.pool())
+    .await
+    .unwrap();
     fixture
         .put_installed("mods/a-1.jar", "a 1", Some(pack))
         .await;
@@ -261,8 +262,16 @@ async fn should_keep_a_dropped_record_when_its_path_is_out_of_the_content_area()
 
     assert_eq!(fixture.instance_files(INSTANCE_ID), ["mods/a-2.jar"]);
     let records = fixture.records(INSTANCE_ID).await;
-    assert!(records.contains_key(".metadata/stale.jar"));
+    assert!(!records.contains_key(".metadata/stale.jar"));
     assert!(!records.contains_key("mods/a-1.jar"));
+    assert!(records.contains_key("mods/a-2.jar"));
+    let stale_rows: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM pack_files WHERE content_path = '.metadata/stale.jar'",
+    )
+    .fetch_one(fixture.pack_storage.pool())
+    .await
+    .unwrap();
+    assert_eq!(stale_rows, 1, "the stored row is not rewritten");
 }
 
 /// Foreign files: added by hand (recorded by `list_content` without an owner, or not recorded

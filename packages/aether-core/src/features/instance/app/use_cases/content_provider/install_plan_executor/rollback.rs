@@ -3,7 +3,9 @@
 use std::{collections::HashMap, path::Path};
 
 use super::{FileChange, InstallPlanExecutor, Undo};
-use crate::features::instance::{InstanceError, InstanceId, InstanceStorageExt, PackFile};
+use crate::features::instance::{
+    ContentPath, InstanceError, InstanceId, InstanceStorageExt, PackFile,
+};
 
 impl InstallPlanExecutor {
     /// Put an existing instance back as it was before the run: the files moved aside back in
@@ -12,7 +14,7 @@ impl InstallPlanExecutor {
     pub(super) async fn roll_back(
         &self,
         instance_id: &InstanceId,
-        records_before: &HashMap<String, PackFile>,
+        records_before: &HashMap<ContentPath, PackFile>,
         undo: &Undo,
         err: &InstanceError,
     ) -> bool {
@@ -50,12 +52,12 @@ impl InstallPlanExecutor {
             }
         }
 
-        let (restore, forget): (Vec<&String>, Vec<&String>) = undo
+        let (restore, forget): (Vec<&ContentPath>, Vec<&ContentPath>) = undo
             .records
             .iter()
             .partition(|path| records_before.contains_key(*path));
         if !restore.is_empty() {
-            let paths: Vec<String> = restore.iter().map(|path| (*path).clone()).collect();
+            let paths: Vec<ContentPath> = restore.iter().map(|path| (*path).clone()).collect();
             let files: Vec<PackFile> = restore
                 .iter()
                 .map(|path| records_before[*path].clone())
@@ -69,7 +71,7 @@ impl InstallPlanExecutor {
             }
         }
         if !forget.is_empty() {
-            let paths: Vec<String> = forget.into_iter().cloned().collect();
+            let paths: Vec<ContentPath> = forget.into_iter().cloned().collect();
             if let Err(err) = self
                 .pack_storage
                 .remove_pack_file_many(instance_id, &paths)

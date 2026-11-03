@@ -50,7 +50,7 @@ fn invalid(path: &str, reason: &str) -> InvalidRelativePath {
 /// Both `/` and `\` are treated as separators no matter which host this runs on, so a path that
 /// is refused on Windows is refused on Linux too — but for a `:` inside a name past a drive-like
 /// first segment ([`is_refused_colon`]). The value is normalized: every `\` is a `/`.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct InstanceRelativePath(String);
 
 impl InstanceRelativePath {
@@ -178,7 +178,7 @@ fn is_refused_colon(index: usize, segment: &str) -> bool {
 ///
 /// Whether the path also stays inside the instance on disk (symlinks) is only known where the
 /// file is written.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct ContentPath(InstanceRelativePath);
 
 impl ContentPath {
@@ -234,21 +234,17 @@ impl ContentPath {
 
     /// [`Self::file_system_key`] for a file system that does or does not ignore case.
     pub fn key(&self, ignores_case: bool) -> String {
-        Self::raw_key(self.as_str(), ignores_case)
-    }
-
-    /// [`Self::key`] of a path that is still a string (a recorded one); not normalized.
-    pub fn raw_key(path: &str, ignores_case: bool) -> String {
         if ignores_case {
-            path.to_lowercase()
+            self.as_str().to_lowercase()
         } else {
-            path.to_owned()
+            self.as_str().to_owned()
         }
     }
 
-    /// [`Self::file_system_key`] of a path that is still a string (a recorded one).
-    pub fn raw_file_system_key(path: &str) -> String {
-        Self::raw_key(path, cfg!(any(windows, target_os = "macos")))
+    /// This path with `suffix` appended to the last segment (`mods/a.jar` + `.disabled`),
+    /// checked against the segment rules again.
+    pub fn with_suffix(&self, suffix: &str) -> Result<InstanceRelativePath, InvalidRelativePath> {
+        InstanceRelativePath::parse(&format!("{}{suffix}", self.as_str()))
     }
 }
 

@@ -1,12 +1,14 @@
 use std::collections::HashMap;
 
-use crate::features::instance::{ContentMetadata, ContentVersionMetadata, PackFile, ProviderId};
+use crate::features::instance::{
+    ContentMetadata, ContentPath, ContentVersionMetadata, PackFile, ProviderId,
+};
 
 use super::ContentType;
 
 #[derive(Debug, Clone)]
 pub struct ContentFile {
-    pub content_path: String,
+    pub content_path: ContentPath,
     pub content_type: ContentType,
     pub disabled: bool,
     pub file_name: String,
@@ -67,7 +69,7 @@ pub struct ContentFileUpdateInfo {
 impl ContentFile {
     pub fn from_pack_file(
         pack_file: PackFile,
-        content_path: String,
+        content_path: ContentPath,
         content_type: ContentType,
         size: u64,
         disabled: bool,

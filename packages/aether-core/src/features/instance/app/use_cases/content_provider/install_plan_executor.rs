@@ -477,16 +477,16 @@ struct InstallDiff {
     to_download: Vec<PlannedFile>,
     /// Content paths of the files the plan's origin installed and the plan no longer has, and of
     /// the other versions of the contents it installs.
-    to_remove: Vec<String>,
+    to_remove: Vec<ContentPath>,
 }
 
 /// What an instance has, as far as one plan is concerned.
 #[derive(Debug, Default)]
 struct InstalledState {
     /// Every recorded file, by content path.
-    records: HashMap<String, PackFile>,
+    records: HashMap<ContentPath, PackFile>,
     /// The planned paths that hold a file.
-    planned: HashMap<String, PlannedOnDisk>,
+    planned: HashMap<ContentPath, PlannedOnDisk>,
     /// The files of the plan's origin whose paths the plan no longer has, and the other versions
     /// of the contents it installs ([`dropped_paths`]).
     dropped: Vec<DroppedFile>,
@@ -505,7 +505,7 @@ struct PlannedOnDisk {
 /// installs.
 #[derive(Debug, Clone)]
 struct DroppedFile {
-    content_path: String,
+    content_path: ContentPath,
     record: PackFile,
     /// Disabled on disk. `false` when the file is gone.
     disabled: bool,
@@ -557,7 +557,7 @@ struct Undo {
     /// In the order made; undone in reverse, so a path changed twice ends up as it first was.
     files: Vec<FileChange>,
     /// The content paths whose records the run wrote or removed.
-    records: Vec<String>,
+    records: Vec<ContentPath>,
     /// The instance as it was before the plan moved it to another game.
     game_before: Option<Instance>,
 }
@@ -793,7 +793,7 @@ impl InstallPlanExecutor {
     async fn records_of(
         &self,
         target: &InstallTarget,
-    ) -> Result<HashMap<String, PackFile>, InstanceError> {
+    ) -> Result<HashMap<ContentPath, PackFile>, InstanceError> {
         match target {
             InstallTarget::Existing { instance_id, .. } => {
                 self.pack_storage.get_pack_files(instance_id).await
@@ -809,7 +809,7 @@ impl InstallPlanExecutor {
         &self,
         target: &InstallTarget,
         origin: &PlanOrigin,
-        records: HashMap<String, PackFile>,
+        records: HashMap<ContentPath, PackFile>,
         entries: &[DownloadEntry],
     ) -> Result<InstalledState, InstanceError> {
         let InstallTarget::Existing { instance_id, .. } = target else {
@@ -830,14 +830,6 @@ impl InstallPlanExecutor {
 
         let mut dropped = Vec::new();
         for content_path in dropped_paths(&records, origin, entries) {
-            // A record is the storage's word: one at a path no file of the instance can have is
-            // left alone, rather than failing every update of the pack.
-            if let Err(err) = self.content_file_service.check_content_path(&content_path) {
-                tracing::warn!(
-                    "Not removing \"{content_path}\" of \"{instance_id}\": {err}. Its record is kept"
-                );
-                continue;
-            }
             dropped.push(DroppedFile {
                 disabled: self.is_disabled(instance_id, &content_path).await,
                 record: records[&content_path].clone(),
@@ -856,10 +848,10 @@ impl InstallPlanExecutor {
         &self,
         instance_id: &InstanceId,
         entry: &DownloadEntry,
-    ) -> Result<Option<(String, PlannedOnDisk)>, InstanceError> {
+    ) -> Result<Option<(ContentPath, PlannedOnDisk)>, InstanceError> {
         let Some(located) = self
             .content_file_service
-            .locate_content_file(instance_id, entry.relative_path.as_str())
+            .locate_content_file(instance_id, &entry.relative_path)
             .await?
         else {
             return Ok(None);
@@ -875,7 +867,7 @@ impl InstallPlanExecutor {
         };
 
         Ok(Some((
-            entry.relative_path.to_string(),
+            entry.relative_path.clone(),
             PlannedOnDisk {
                 path: located.path,
                 disabled: located.disabled,
@@ -886,7 +878,7 @@ impl InstallPlanExecutor {
 
     /// Whether the file of a dropped record is disabled on disk. A path that cannot be looked at
     /// counts as enabled: all this decides is whether a new version starts disabled.
-    async fn is_disabled(&self, instance_id: &InstanceId, content_path: &str) -> bool {
+    async fn is_disabled(&self, instance_id: &InstanceId, content_path: &ContentPath) -> bool {
         match self
             .content_file_service
             .locate_content_file(instance_id, content_path)
@@ -1045,7 +1037,7 @@ impl InstallPlanExecutor {
         &self,
         instance_id: &InstanceId,
         origin: &PlanOrigin,
-        records: &HashMap<String, PackFile>,
+        records: &HashMap<ContentPath, PackFile>,
         installed: Vec<InstalledFile>,
         undo: &mut Undo,
     ) -> Result<(), InstanceError> {
@@ -1053,7 +1045,7 @@ impl InstallPlanExecutor {
             .into_iter()
             .map(|InstalledFile { entry, sha1 }| {
                 let same_bytes = records
-                    .get(entry.relative_path.as_str())
+                    .get(&entry.relative_path)
                     .filter(|record| record.hash.eq_ignore_ascii_case(&sha1));
 
                 let mut pack_file = PackFile {
@@ -1082,7 +1074,7 @@ impl InstallPlanExecutor {
                     )]));
                 }
 
-                (entry.relative_path.into_string(), pack_file)
+                (entry.relative_path, pack_file)
             })
             .unzip();
 
@@ -1110,6 +1102,8 @@ impl InstallPlanExecutor {
             path,
         } in staged
         {
+            // The same rule as when the overrides were checked, as a type from here on.
+            let relative_path = ContentPath::parse(&relative_path)?;
             let disabled = self
                 .content_file_service
                 .locate_content_file(instance_id, &relative_path)
@@ -1118,7 +1112,7 @@ impl InstallPlanExecutor {
             let install_path = if disabled {
                 format!("{relative_path}{DISABLED_SUFFIX}")
             } else {
-                relative_path
+                relative_path.into_string()
             };
 
             self.put_file(instance_id, &install_path, &path, undo)
@@ -1135,7 +1129,7 @@ impl InstallPlanExecutor {
     async fn remove_dropped(
         &self,
         instance_id: &InstanceId,
-        content_paths: &[String],
+        content_paths: &[ContentPath],
         undo: &mut Undo,
     ) -> Result<(), InstanceError> {
         if content_paths.is_empty() {
@@ -1144,7 +1138,10 @@ impl InstallPlanExecutor {
 
         for content_path in content_paths {
             // A file that is gone already counts as removed.
-            if !self.move_aside(instance_id, content_path, undo).await? {
+            if !self
+                .move_aside(instance_id, content_path.as_str(), undo)
+                .await?
+            {
                 self.move_aside(
                     instance_id,
                     &format!("{content_path}{DISABLED_SUFFIX}"),

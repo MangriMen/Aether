@@ -5,7 +5,7 @@ use std::collections::HashSet;
 use super::super::plan_overrides;
 use super::{InstallPlanExecutor, PlanOverrides, path_key};
 use crate::features::instance::{
-    FileSide, InstallFileEntry, InstanceError, OverrideSource, app::DISABLED_SUFFIX,
+    ContentPath, FileSide, InstallFileEntry, InstanceError, OverrideSource, app::DISABLED_SUFFIX,
 };
 
 impl InstallPlanExecutor {
@@ -86,8 +86,7 @@ impl InstallPlanExecutor {
             let mut kept = Vec::with_capacity(listed.len());
 
             for file in listed {
-                self.content_file_service
-                    .check_content_path(&file.relative_path)?;
+                ContentPath::parse(&file.relative_path)?;
 
                 if !seen.insert(file.relative_path.clone()) {
                     return Err(InstanceError::ContentDuplication {

@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use crate::features::instance::app::ports::ChangeContentStateUseCasePort;
 use crate::features::{
     events::{EventEmitterExt, InstanceEvent, InstanceEventType, SharedEventEmitter},
-    instance::{InstanceError, InstanceId, InstanceLocks, app::ContentFileService},
+    instance::{ContentPath, InstanceError, InstanceId, InstanceLocks, app::ContentFileService},
 };
 
 /// How long a toggle waits for the instance's lock before the instance counts as busy.
@@ -18,14 +18,14 @@ pub enum ContentStateAction {
 
 pub struct ChangeContentState {
     pub instance_id: InstanceId,
-    pub content_paths: Vec<String>,
+    pub content_paths: Vec<ContentPath>,
     pub action: ContentStateAction,
 }
 
 impl ChangeContentState {
     pub fn single(
         instance_id: InstanceId,
-        content_path: String,
+        content_path: ContentPath,
         action: ContentStateAction,
     ) -> Self {
         Self {
@@ -37,7 +37,7 @@ impl ChangeContentState {
 
     pub fn multiple(
         instance_id: InstanceId,
-        content_paths: Vec<String>,
+        content_paths: Vec<ContentPath>,
         action: ContentStateAction,
     ) -> Self {
         Self {

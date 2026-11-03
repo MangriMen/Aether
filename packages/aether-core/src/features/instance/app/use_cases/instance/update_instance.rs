@@ -207,7 +207,7 @@ impl UpdateInstanceUseCase {
         requested: &ResolveTarget,
         pack_info: &PackInfo,
         origin: &PlanOrigin,
-    ) -> Result<Vec<(String, PackFile)>, InstanceError> {
+    ) -> Result<Vec<(ContentPath, PackFile)>, InstanceError> {
         let records = self.pack_storage.get_pack_files(instance_id).await?;
         let owned = records
             .values()
@@ -241,7 +241,7 @@ impl UpdateInstanceUseCase {
         if ownerless.is_empty() {
             return Ok(Vec::new());
         }
-        let (paths, files): (Vec<String>, Vec<PackFile>) = ownerless
+        let (paths, files): (Vec<ContentPath>, Vec<PackFile>) = ownerless
             .iter()
             .map(|(path, record)| {
                 let mut record = record.clone();
@@ -265,12 +265,12 @@ impl UpdateInstanceUseCase {
     /// Put the records adopted for an update that failed back as they were, without an owner.
     /// A failure is only logged: the update has failed already, and an adopted record is still
     /// the pack's file.
-    async fn disown(&self, instance_id: &InstanceId, adopted: Vec<(String, PackFile)>) {
+    async fn disown(&self, instance_id: &InstanceId, adopted: Vec<(ContentPath, PackFile)>) {
         if adopted.is_empty() {
             return;
         }
 
-        let (paths, files): (Vec<String>, Vec<PackFile>) = adopted.into_iter().unzip();
+        let (paths, files): (Vec<ContentPath>, Vec<PackFile>) = adopted.into_iter().unzip();
         if let Err(err) = self
             .pack_storage
             .update_pack_file_many(instance_id, &paths, &files)
@@ -285,21 +285,20 @@ impl UpdateInstanceUseCase {
     }
 }
 
-/// The ownerless records at a path of `plan`, compared as the executor compares paths: with
+/// The ownerless records at a path of `plan`, compared as the executor compares paths:
 /// either separator, and without case where the file system ignores it.
 fn ownerless_pack_files(
-    records: HashMap<String, PackFile>,
+    records: HashMap<ContentPath, PackFile>,
     plan: &InstallPlan,
-) -> Vec<(String, PackFile)> {
+) -> Vec<(ContentPath, PackFile)> {
     ownerless_pack_files_by(records, plan, cfg!(any(windows, target_os = "macos")))
 }
 
 fn ownerless_pack_files_by(
-    records: HashMap<String, PackFile>,
+    records: HashMap<ContentPath, PackFile>,
     plan: &InstallPlan,
     ignores_case: bool,
-) -> Vec<(String, PackFile)> {
-    let key = |path: &str| ContentPath::raw_key(&path.replace('\\', "/"), ignores_case);
+) -> Vec<(ContentPath, PackFile)> {
     let planned: HashSet<String> = plan
         .files
         .iter()
@@ -308,7 +307,9 @@ fn ownerless_pack_files_by(
 
     records
         .into_iter()
-        .filter(|(path, record)| record.installed_by.is_none() && planned.contains(&key(path)))
+        .filter(|(path, record)| {
+            record.installed_by.is_none() && planned.contains(&path.key(ignores_case))
+        })
         .collect()
 }
 
@@ -390,9 +391,9 @@ mod tests {
         }
     }
 
-    fn record_at(path: &str) -> HashMap<String, PackFile> {
+    fn record_at(path: &str) -> HashMap<ContentPath, PackFile> {
         HashMap::from([(
-            path.to_owned(),
+            ContentPath::parse(path).unwrap(),
             PackFile::from_hash("a.jar".into(), "hash".into()),
         )])
     }
@@ -411,14 +412,6 @@ mod tests {
      {
         let adopted =
             ownerless_pack_files_by(record_at("mods/A.jar"), &plan_of("mods/a.jar"), true);
-
-        assert_eq!(adopted.len(), 1);
-    }
-
-    #[test]
-    fn should_adopt_a_record_when_it_differs_from_the_planned_path_in_the_separator() {
-        let adopted =
-            ownerless_pack_files_by(record_at("mods\\a.jar"), &plan_of("mods/a.jar"), false);
 
         assert_eq!(adopted.len(), 1);
     }

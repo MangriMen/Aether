@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::features::instance::{
-    ContentFile, ContentFileUpdateInfo, FileSide, PlanOrigin, ProviderId,
+    ContentFile, ContentFileUpdateInfo, ContentPath, FileSide, PlanOrigin, ProviderId,
 };
 
 #[derive(Debug, Clone, Default)]
@@ -9,9 +9,9 @@ pub struct Pack {
     pub files: Vec<PackEntry>,
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct PackEntry {
-    pub file: String,
+    pub file: ContentPath,
 }
 
 #[derive(Debug, Clone)]

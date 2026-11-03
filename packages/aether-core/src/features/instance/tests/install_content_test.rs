@@ -435,7 +435,7 @@ async fn should_tell_the_provider_the_installed_version_when_installing_content(
         .pack_storage
         .update_pack_file(
             &InstanceId::try_from(INSTANCE_ID).unwrap(),
-            "mods/sodium.jar",
+            &ContentPath::parse("mods/sodium.jar").unwrap(),
             &record,
         )
         .await

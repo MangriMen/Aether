@@ -1,11 +1,13 @@
 use aether_core_plugin_api::v0::{ContentFileDto, ContentFileUpdateInfoDto, ProviderIdDto};
 
-use crate::features::instance::{ContentFile, ContentFileUpdateInfo, InvalidId, ProviderId};
+use crate::features::instance::{
+    ContentFile, ContentFileUpdateInfo, ContentPath, InvalidId, InvalidRelativePath, ProviderId,
+};
 
 impl From<ContentFile> for ContentFileDto {
     fn from(value: ContentFile) -> Self {
         Self {
-            content_path: value.content_path,
+            content_path: value.content_path.into_string(),
             content_type: value.content_type.into(),
             disabled: value.disabled,
             file_name: value.file_name,
@@ -27,12 +29,22 @@ impl From<ContentFile> for ContentFileDto {
     }
 }
 
+/// What is wrong with a content file a plugin handed over.
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+pub enum InvalidContentFile {
+    #[error(transparent)]
+    Id(#[from] InvalidId),
+
+    #[error(transparent)]
+    Path(#[from] InvalidRelativePath),
+}
+
 impl TryFrom<ContentFileDto> for ContentFile {
-    type Error = InvalidId;
+    type Error = InvalidContentFile;
 
     fn try_from(value: ContentFileDto) -> Result<Self, Self::Error> {
         Ok(Self {
-            content_path: value.content_path,
+            content_path: ContentPath::parse(&value.content_path)?,
             content_type: value.content_type.into(),
             disabled: value.disabled,
             file_name: value.file_name,
@@ -42,7 +54,7 @@ impl TryFrom<ContentFileDto> for ContentFile {
             version: None,
             update_provider_id: value
                 .update_provider_id
-                .map(TryInto::try_into)
+                .map(ProviderId::try_from)
                 .transpose()?,
             update: value
                 .update
@@ -96,7 +108,7 @@ mod tests {
     fn should_round_trip_update_info_through_msgpack_when_encoded_and_decoded() {
         let modrinth: ProviderId = "aether#modrinth".parse().unwrap();
         let file = ContentFile {
-            content_path: "mods/sodium.jar".into(),
+            content_path: ContentPath::parse("mods/sodium.jar").unwrap(),
             content_type: ContentType::Mod,
             disabled: false,
             file_name: "sodium.jar".into(),

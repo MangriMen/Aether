@@ -18,9 +18,7 @@
 
 use std::path::{Path, PathBuf};
 
-use crate::features::instance::domain::{
-    ContentPath, InstanceError, InstanceId, InstanceRelativePath,
-};
+use crate::features::instance::domain::{InstanceError, InstanceId, InstanceRelativePath};
 use crate::features::settings::{INSTANCE_METADATA_FOLDER_NAME, PLUGINS_FOLDER_NAME};
 
 fn invalid(path: &str, reason: &str) -> InstanceError {
@@ -166,23 +164,6 @@ pub fn check_plugin_write_allowed(
              under `{INSTANCE_METADATA_FOLDER_NAME}/{PLUGINS_FOLDER_NAME}/{plugin_id}/`"
         ),
     ))
-}
-
-/// Check a content path — where an install puts a mod, a resource pack, a file of a plan — before
-/// anything is downloaded for it.
-///
-/// The segment rules of [`InstanceRelativePath`], plus: nothing under `.metadata`. That is the
-/// core's state (see [`check_plugin_write_allowed`]), and content is never part of it — not even
-/// a plugin's own `.metadata/plugins/<id>/`, which a plugin writes through
-/// `write_instance_file`, not through a plan. A provider's plan is the provider's word, so the
-/// rule holds for built-in providers too. Spelled case-insensitively, as there.
-///
-/// Whether the path also stays inside the instance on disk (symlinks) is only known where the
-/// file is written, by [`resolve_instance_file_path`].
-pub fn check_content_path(relative_path: &str) -> Result<PathBuf, InstanceError> {
-    let path = ContentPath::parse(relative_path)?;
-
-    Ok(path.to_path_buf())
 }
 
 /// Refuse a payload over `limit` before it is written or read.
