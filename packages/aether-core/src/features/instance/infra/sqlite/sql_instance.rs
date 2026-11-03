@@ -154,34 +154,46 @@ pub struct SqlInstance {
     pub hook_post_exit: String,
 }
 
-impl From<Instance> for SqlInstance {
-    fn from(i: Instance) -> Self {
-        let s = i.snapshot();
+/// Serializes a unit-variant enum to its bare column string (`"neo_forge"` -> `neo_forge`).
+/// Anything that does not serialize to a JSON string is an error rather than a mangled value.
+fn enum_to_column<T: serde::Serialize>(value: &T) -> Result<String, serde_json::Error> {
+    match serde_json::to_value(value)? {
+        serde_json::Value::String(s) => Ok(s),
+        other => Err(<serde_json::Error as serde::ser::Error>::custom(format!(
+            "expected a string, got {other}"
+        ))),
+    }
+}
 
-        Self {
-            id: s.id.into(),
+fn storage_err(column: &str, id: &str, e: &serde_json::Error) -> InstanceError {
+    tracing::warn!(instance_id = id, column, error = %e, "Invalid instance column");
+    InstanceError::Storage(format!("Invalid {column} for instance {id}: {e}"))
+}
+
+impl TryFrom<Instance> for SqlInstance {
+    type Error = InstanceError;
+
+    fn try_from(i: Instance) -> Result<Self, Self::Error> {
+        let s = i.snapshot();
+        let id: String = s.id.into();
+
+        Ok(Self {
+            id: id.clone(),
             name: s.name,
             icon_path: s.icon_path,
-            install_stage: {
-                let dto: InstanceInstallStageDto = s.install_stage.into();
-                serde_json::to_string(&dto)
-                    .unwrap_or_default()
-                    .trim_matches('"')
-                    .to_owned()
-            },
+            install_stage: enum_to_column(&InstanceInstallStageDto::from(s.install_stage))
+                .map_err(|e| storage_err("install_stage", &id, &e))?,
 
             game_version: s.game_version,
-            loader: {
-                let dto: ModLoaderDto = s.loader.into();
-                serde_json::to_string(&dto)
-                    .unwrap_or_default()
-                    .trim_matches('"')
-                    .to_owned()
-            },
-            loader_version_json: s.loader_version.map(|v| {
-                let dto: LoaderVersionPreferenceDto = v.into();
-                serde_json::to_string(&dto).unwrap()
-            }),
+            loader: enum_to_column(&ModLoaderDto::from(s.loader))
+                .map_err(|e| storage_err("loader", &id, &e))?,
+            loader_version_json: s
+                .loader_version
+                .map(|v| {
+                    serde_json::to_string(&LoaderVersionPreferenceDto::from(v))
+                        .map_err(|e| storage_err("loader_version_json", &id, &e))
+                })
+                .transpose()?,
 
             // Java
             override_java_path: s.java_path.is_active,
@@ -190,9 +202,10 @@ impl From<Instance> for SqlInstance {
             // Args & Env
             override_launch_args: s.launch_args.is_active,
             launch_args_json: serde_json::to_string(&s.launch_args.data)
-                .unwrap_or_else(|_| "[]".into()),
+                .map_err(|e| storage_err("launch_args_json", &id, &e))?,
             override_env_vars: s.env_vars.is_active,
-            env_vars_json: serde_json::to_string(&s.env_vars.data).unwrap_or_else(|_| "[]".into()),
+            env_vars_json: serde_json::to_string(&s.env_vars.data)
+                .map_err(|e| storage_err("env_vars_json", &id, &e))?,
 
             // Memory
             override_memory: s.memory.is_active,
@@ -216,7 +229,7 @@ impl From<Instance> for SqlInstance {
             hook_pre_launch: s.hooks.data.pre_launch().to_string(),
             hook_wrapper: s.hooks.data.wrapper().to_string(),
             hook_post_exit: s.hooks.data.post_exit().to_string(),
-        }
+        })
     }
 }
 
@@ -239,6 +252,11 @@ impl TryFrom<SqlInstance> for Instance {
         } else {
             WindowSize::default()
         };
+
+        let launch_args = serde_json::from_str(&row.launch_args_json)
+            .map_err(|e| storage_err("launch_args_json", &row.id, &e))?;
+        let env_vars = serde_json::from_str(&row.env_vars_json)
+            .map_err(|e| storage_err("env_vars_json", &row.id, &e))?;
 
         let snapshot = InstanceSnapshot {
             id: InstanceId::try_from(row.id)?,
@@ -271,16 +289,10 @@ impl TryFrom<SqlInstance> for Instance {
             java_path: Overridable::new(row.java_path, row.override_java_path),
 
             // Launch Args
-            launch_args: Overridable::new(
-                serde_json::from_str(&row.launch_args_json).unwrap_or_default(),
-                row.override_launch_args,
-            ),
+            launch_args: Overridable::new(launch_args, row.override_launch_args),
 
             // Env Vars
-            env_vars: Overridable::new(
-                serde_json::from_str(&row.env_vars_json).unwrap_or_default(),
-                row.override_env_vars,
-            ),
+            env_vars: Overridable::new(env_vars, row.override_env_vars),
 
             // Memory
             memory: Overridable::new(memory, row.override_memory),
