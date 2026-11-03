@@ -30,6 +30,15 @@ impl InstanceName {
     pub fn into_string(self) -> String {
         self.0
     }
+
+    /// The name of a stored instance. A blank one (written before names were checked) falls back to
+    /// the instance id, so the instance stays listed and can be renamed.
+    pub fn from_stored_or_id(name: &str, id: &str) -> Self {
+        Self::parse(name).unwrap_or_else(|_| {
+            tracing::warn!("Instance {id} has a blank stored name; using its id instead");
+            Self(id.trim().to_string())
+        })
+    }
 }
 
 impl TryFrom<String> for InstanceName {
@@ -63,6 +72,18 @@ impl Deref for InstanceName {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn should_use_the_id_when_the_stored_name_is_blank() {
+        assert_eq!(
+            InstanceName::from_stored_or_id("  ", "pack").as_str(),
+            "pack"
+        );
+        assert_eq!(
+            InstanceName::from_stored_or_id(" My ", "pack").as_str(),
+            "My"
+        );
+    }
 
     #[test]
     fn should_store_the_trimmed_name_when_parsed() {

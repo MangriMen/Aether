@@ -520,7 +520,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn should_fail_to_read_an_instance_with_an_empty_name() {
+    async fn should_fall_back_to_the_id_when_the_stored_name_is_blank() {
         let storage = SqliteInstanceStorage::in_memory().await;
         storage.upsert(&instance(ModLoader::Fabric)).await.unwrap();
         sqlx::query("UPDATE instances SET name = '  ' WHERE id = 'a'")
@@ -530,8 +530,6 @@ mod tests {
 
         let result = storage.get(&InstanceId::try_from("a").unwrap()).await;
 
-        assert!(
-            matches!(result, Err(InstanceError::Storage(ref m)) if m.starts_with("Invalid name for instance a"))
-        );
+        assert_eq!(result.unwrap().name().as_str(), "a");
     }
 }

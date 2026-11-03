@@ -39,7 +39,7 @@ impl InstallInstanceUseCase {
         instance: &Instance,
         pack_pending: bool,
     ) -> Result<(), InstanceError> {
-        log::info!(
+        tracing::info!(
             "Installed instance: \"{}\" (minecraft: \"{}\", modloader: \"{:?}\" \"{:?}\")",
             instance.name(),
             instance.game_version,
@@ -123,7 +123,7 @@ impl InstallInstanceUseCase {
             )
             .await;
 
-        log::info!(
+        tracing::info!(
             "Installing instance: \"{}\" (minecraft: \"{}\", modloader: \"{:?}\" \"{:?}\")",
             instance.name(),
             instance.game_version,

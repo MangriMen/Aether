@@ -25,7 +25,6 @@ impl EditInstanceUseCasePort for EditInstanceUseCase {
         instance_id: InstanceId,
         edit_instance: EditInstance,
     ) -> Result<Instance, InstanceError> {
-        // The name is checked by `Instance::rename`, the only place that knows what a name is.
         self.instance_storage
             .update(
                 &instance_id,

@@ -261,8 +261,7 @@ impl TryFrom<SqlInstance> for Instance {
         let env_vars = serde_json::from_str(&row.env_vars_json)
             .map_err(|e| storage_err("env_vars_json", &row.id, &e))?;
 
-        let name =
-            InstanceName::try_from(row.name).map_err(|e| storage_err("name", &row.id, &e))?;
+        let name = InstanceName::from_stored_or_id(&row.name, &row.id);
 
         let snapshot = InstanceSnapshot {
             id: InstanceId::try_from(row.id)?,

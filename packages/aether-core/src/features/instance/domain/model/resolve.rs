@@ -212,7 +212,6 @@ mod tests {
     };
 
     use super::*;
-    use crate::features::instance::InstanceName;
     use crate::shared::hash::HashAlgorithm;
 
     const SHA1_ABC: &str = "a9993e364706816aba3e25717850c26c9cd0d89d";

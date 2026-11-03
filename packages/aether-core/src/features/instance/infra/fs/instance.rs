@@ -160,15 +160,11 @@ pub struct HooksV1 {
     pub post_exit: Option<String>,
 }
 
-fn invalid_name(id: &str, e: &InstanceError) -> InstanceError {
-    InstanceError::Storage(format!("Invalid name for instance {id}: {e}"))
-}
-
 impl TryFrom<InstanceV1> for Instance {
     type Error = InstanceError;
 
     fn try_from(v1: InstanceV1) -> Result<Self, Self::Error> {
-        let name = InstanceName::try_from(v1.name).map_err(|e| invalid_name(&v1.id, &e))?;
+        let name = InstanceName::from_stored_or_id(&v1.name, &v1.id);
 
         let snapshot = InstanceSnapshot {
             id: InstanceId::try_from(v1.id)?,
@@ -288,7 +284,7 @@ impl TryFrom<InstanceV2> for Instance {
     type Error = InstanceError;
 
     fn try_from(v2: InstanceV2) -> Result<Self, Self::Error> {
-        let name = InstanceName::try_from(v2.name).map_err(|e| invalid_name(&v2.id, &e))?;
+        let name = InstanceName::from_stored_or_id(&v2.name, &v2.id);
 
         let snapshot = InstanceSnapshot {
             id: InstanceId::try_from(v2.id)?,
