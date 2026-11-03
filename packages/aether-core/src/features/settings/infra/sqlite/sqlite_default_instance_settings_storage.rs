@@ -81,18 +81,8 @@ async fn read_settings(
         return Ok(DefaultInstanceSettings::default());
     };
 
-    let launch_args = serde_json::from_str(&row.launch_args_json).map_err(|e| {
-        tracing::warn!(column = "launch_args_json", error = %e, "Invalid default instance settings column");
-        SettingsError::Storage(format!(
-            "Invalid launch_args_json in default_instance_settings: {e}"
-        ))
-    })?;
-    let env_vars = serde_json::from_str(&row.env_vars_json).map_err(|e| {
-        tracing::warn!(column = "env_vars_json", error = %e, "Invalid default instance settings column");
-        SettingsError::Storage(format!(
-            "Invalid env_vars_json in default_instance_settings: {e}"
-        ))
-    })?;
+    let launch_args = lenient_json(&row.launch_args_json, "launch_args_json");
+    let env_vars = lenient_json(&row.env_vars_json, "env_vars_json");
 
     let memory = MemorySettings::new(MemoryMb::from_stored_or_default(
         row.max_memory,
@@ -117,6 +107,15 @@ async fn read_settings(
         WindowSettings::new(row.force_fullscreen, window_size),
         Hooks::new(row.hook_pre_launch, row.hook_wrapper, row.hook_post_exit),
     ))
+}
+
+/// Lenient read of a JSON column: a corrupt value is logged and replaced by the default, so the
+/// row stays editable (saving settings overwrites it).
+fn lenient_json<T: serde::de::DeserializeOwned + Default>(json: &str, column: &str) -> T {
+    serde_json::from_str(json).unwrap_or_else(|e| {
+        tracing::warn!(column, error = %e, "Invalid default instance settings column; using the default");
+        T::default()
+    })
 }
 
 async fn write_settings(
@@ -293,7 +292,7 @@ mod corrupt_json_tests {
     }
 
     #[tokio::test]
-    async fn should_fail_to_read_corrupt_launch_args() {
+    async fn should_fall_back_to_default_launch_args_when_corrupt() {
         let dir = tempfile::tempdir().unwrap();
         let storage = storage(&dir).await;
         storage
@@ -305,15 +304,13 @@ mod corrupt_json_tests {
             .await
             .unwrap();
 
-        let result = storage.get().await;
+        let settings = storage.get().await.unwrap();
 
-        assert!(
-            matches!(result, Err(SettingsError::Storage(ref m)) if m.contains("launch_args_json"))
-        );
+        assert!(settings.launch_args().is_empty());
     }
 
     #[tokio::test]
-    async fn should_fail_to_read_corrupt_env_vars() {
+    async fn should_fall_back_to_default_env_vars_when_corrupt() {
         let dir = tempfile::tempdir().unwrap();
         let storage = storage(&dir).await;
         storage
@@ -325,10 +322,8 @@ mod corrupt_json_tests {
             .await
             .unwrap();
 
-        let result = storage.get().await;
+        let settings = storage.get().await.unwrap();
 
-        assert!(
-            matches!(result, Err(SettingsError::Storage(ref m)) if m.contains("env_vars_json"))
-        );
+        assert!(settings.env_vars().is_empty());
     }
 }
