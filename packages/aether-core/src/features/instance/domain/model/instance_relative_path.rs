@@ -39,7 +39,6 @@ impl From<InvalidRelativePath> for InstanceError {
 }
 
 fn invalid(path: &str, reason: &str) -> InvalidRelativePath {
-    tracing::debug!("Refused instance relative path \"{path}\": {reason}");
     InvalidRelativePath {
         path: path.to_owned(),
         reason: reason.to_owned(),

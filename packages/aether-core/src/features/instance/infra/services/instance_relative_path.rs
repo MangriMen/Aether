@@ -97,7 +97,7 @@ pub fn resolve_instance_file_path(
 
 /// Whether `relative_path` lands in `.metadata` on disk without naming it.
 ///
-/// The `.metadata` rules ([`check_plugin_write_allowed`], [`check_content_path`]) look at the
+/// The `.metadata` rules ([`check_plugin_write_allowed`], [`ContentPath::parse`]) look at the
 /// name a path spells, and a file system may know a directory by more than its name: on Windows,
 /// `.metadata` also answers to its 8.3 short name (`METADA~1`). Which path *reaches* it is only
 /// known once the path is canonicalised, so this compares the first component of the canonical
