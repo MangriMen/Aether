@@ -355,13 +355,27 @@ impl PackStorage for SqlitePackStorage {
         content_path: &ContentPath,
         hash: &FileHash,
     ) -> Result<Option<PackFile>, InstanceError> {
-        let Some((row, updates)) = self.load_rows(instance_id, content_path).await? else {
+        // One statement: a concurrent write to any other column or to the updates is never reverted.
+        let hash = hash.to_string();
+        let content_path_str = content_path.as_str();
+        let changed = sqlx::query!(
+            "UPDATE pack_files SET hash = ? WHERE instance_id = ? AND content_path = ?",
+            hash,
+            instance_id.as_str(),
+            content_path_str
+        )
+        .execute(&self.pool)
+        .await
+        .map_err(|e| InstanceError::Storage(e.to_string()))?
+        .rows_affected();
+        if changed == 0 {
             return Ok(None);
-        };
-        let pack_file = row.into_pack_file(updates, hash.clone());
-        self.update_pack_file(instance_id, content_path, &pack_file)
-            .await?;
-        Ok(Some(pack_file))
+        }
+
+        Ok(self
+            .load_pack_file(instance_id, content_path)
+            .await?
+            .and_then(Result::ok))
     }
 
     async fn find_pack_file(
@@ -731,5 +745,53 @@ mod tests {
 
         assert!(storage.get_pack(&id).await.unwrap().files.is_empty());
         assert!(storage.get_pack_files(&id).await.unwrap().is_empty());
+    }
+
+    #[tokio::test]
+    async fn should_change_only_the_hash_when_rehashing_a_record_with_an_invalid_one() {
+        let storage = SqlitePackStorage::in_memory().await;
+        let id = InstanceId::try_from("inst").unwrap();
+        let path = ContentPath::parse("mods/a.jar").unwrap();
+        sqlx::query("INSERT INTO pack_files (instance_id, content_path, file_name, name, side, hash) VALUES ('inst', 'mods/a.jar', 'a.jar', 'Sodium', 'client', 'bad')")
+            .execute(&storage.pool)
+            .await
+            .unwrap();
+        sqlx::query("INSERT INTO pack_file_updates (instance_id, content_path, provider_id, content_id, version_id) VALUES ('inst', 'mods/a.jar', 'malformed', 'c2', 'v2')")
+            .execute(&storage.pool)
+            .await
+            .unwrap();
+
+        let rehashed = storage
+            .rehash_pack_file(&id, &path, &sha1_hash('c'))
+            .await
+            .unwrap()
+            .expect("the record exists");
+
+        assert_eq!(rehashed.hash, sha1_hash('c'));
+        assert_eq!(rehashed.name.as_deref(), Some("Sodium"));
+        assert_eq!(rehashed.side, Some(FileSide::Client));
+        let kept: i64 = sqlx::query_scalar(
+            "SELECT COUNT(*) FROM pack_file_updates WHERE content_path = 'mods/a.jar' AND provider_id = 'malformed'",
+        )
+        .fetch_one(&storage.pool)
+        .await
+        .unwrap();
+        assert_eq!(kept, 1);
+    }
+
+    #[tokio::test]
+    async fn should_return_none_when_rehashing_a_file_with_no_row() {
+        let storage = SqlitePackStorage::in_memory().await;
+
+        let rehashed = storage
+            .rehash_pack_file(
+                &InstanceId::try_from("inst").unwrap(),
+                &ContentPath::parse("mods/a.jar").unwrap(),
+                &sha1_hash('c'),
+            )
+            .await
+            .unwrap();
+
+        assert!(rehashed.is_none());
     }
 }
