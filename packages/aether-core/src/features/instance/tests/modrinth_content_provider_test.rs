@@ -3,6 +3,7 @@
 //! that takes.
 
 use crate::features::instance::PlatformId;
+use crate::features::instance::{ContentId, ContentVersionId};
 use std::{
     collections::HashMap,
     io::Write,
@@ -306,7 +307,7 @@ fn existing_fabric() -> ResolveTarget {
 
 fn params(content_id: &str, target: ResolveTarget) -> ResolveInstallPlanParams {
     ResolveInstallPlanParams {
-        content_id: content_id.into(),
+        content_id: content_id.try_into().unwrap(),
         version: None,
         installed_version: None,
         target,
@@ -344,8 +345,8 @@ async fn should_plan_a_mod_as_its_file_with_its_identity_when_resolving_a_mod() 
             hash: Some(FileHash::new(HashAlgorithm::Sha512, sha512_hex(b"sodium")).unwrap()),
             identity: Some(ContentIdentity {
                 platform: PlatformId::from_static("modrinth"),
-                content_id: "AANobbMI".into(),
-                version: "IZskON6d".into(),
+                content_id: ContentId::try_from("AANobbMI").unwrap(),
+                version: ContentVersionId::try_from("IZskON6d").unwrap(),
             }),
         }
     );
@@ -372,7 +373,7 @@ async fn should_fill_the_metadata_of_the_project_and_version_when_resolving_a_mo
     assert_eq!(
         entry.metadata,
         Some(ContentMetadata {
-            content_id: "AANobbMI".into(),
+            content_id: ContentId::try_from("AANobbMI").unwrap(),
             slug: "sodium".into(),
             name: "SODIUM".into(),
             description: Some("desc".into()),
@@ -384,7 +385,7 @@ async fn should_fill_the_metadata_of_the_project_and_version_when_resolving_a_mo
     assert_eq!(
         entry.version_metadata,
         Some(ContentVersionMetadata {
-            version_id: "IZskON6d".into(),
+            version_id: ContentVersionId::try_from("IZskON6d").unwrap(),
             version_number: "2.0.0".into(),
             name: Some("Version IZskON6d".into()),
         })
@@ -468,8 +469,8 @@ async fn should_plan_a_modpack_from_its_mrpack_when_the_target_is_a_new_instance
         new_instance.pack_info,
         Some(PackInfo {
             provider_id: ModrinthContentProvider::provider_id(),
-            modpack_id: "PACKID00".into(),
-            version_id: "PACKV002".into(),
+            modpack_id: ContentId::try_from("PACKID00").unwrap(),
+            version_id: "PACKV002".to_owned(),
         })
     );
 
@@ -482,7 +483,7 @@ async fn should_plan_a_modpack_from_its_mrpack_when_the_target_is_a_new_instance
     assert_eq!(plan.files[1].side, FileSide::Server);
     assert!(matches!(
         &plan.files[0].source,
-        ContentSource::Direct { identity: Some(identity), .. } if identity.content_id == "AANobbMI"
+        ContentSource::Direct { identity: Some(identity), .. } if identity.content_id == ContentId::try_from("AANobbMI").unwrap()
     ));
 
     let [
@@ -624,13 +625,13 @@ async fn should_install_the_newest_release_of_a_pack_when_a_newer_beta_exists() 
     assert_eq!(new_instance.pack_info.unwrap().version_id, "PACKV002");
 }
 
-async fn describe_pack_update(fixture: &Fixture, installed: &str) -> Option<String> {
+async fn describe_pack_update(fixture: &Fixture, installed: &str) -> Option<ContentVersionId> {
     fixture
         .provider
         .resolve_pack_metadata(PackSource::Content {
-            content_id: "pack".into(),
+            content_id: ContentId::try_from("pack").unwrap(),
             version: None,
-            installed_version: Some(installed.into()),
+            installed_version: Some(installed.try_into().unwrap()),
         })
         .await
         .unwrap()
@@ -687,7 +688,7 @@ async fn resolve_sodium(versions: Value, installed: &str) -> String {
     let plan = fixture
         .provider
         .resolve_install_plan(ResolveInstallPlanParams {
-            installed_version: Some(installed.into()),
+            installed_version: Some(installed.try_into().unwrap()),
             ..params("sodium", existing_fabric())
         })
         .await
@@ -706,7 +707,7 @@ async fn resolve_sodium(versions: Value, installed: &str) -> String {
         )
     };
 
-    identity.version.clone()
+    identity.version.to_string()
 }
 
 /// An installed version made for another game version cannot stay: the newest fitting version
@@ -770,11 +771,19 @@ async fn should_resolve_a_ref_to_the_primary_file_when_the_version_has_several()
 
     let resolved = fixture
         .provider
-        .resolve_file("AANobbMI", Some("IZskON6d"), "1.21.1", Some("fabric"))
+        .resolve_file(
+            &ContentId::try_from("AANobbMI").unwrap(),
+            Some(&ContentVersionId::try_from("IZskON6d").unwrap()),
+            "1.21.1",
+            Some("fabric"),
+        )
         .await
         .unwrap();
 
-    assert_eq!(resolved.version, "IZskON6d");
+    assert_eq!(
+        resolved.version,
+        ContentVersionId::try_from("IZskON6d").unwrap()
+    );
     assert_eq!(resolved.url, SODIUM_URL);
     assert_eq!(resolved.file_name, "sodium.jar");
     assert_eq!(
@@ -802,11 +811,19 @@ async fn should_resolve_a_ref_to_a_version_of_its_project_when_given_a_slug() {
 
     let resolved = fixture
         .provider
-        .resolve_file("sodium", Some("IZskON6d"), "1.21.1", Some("fabric"))
+        .resolve_file(
+            &ContentId::try_from("sodium").unwrap(),
+            Some(&ContentVersionId::try_from("IZskON6d").unwrap()),
+            "1.21.1",
+            Some("fabric"),
+        )
         .await
         .unwrap();
 
-    assert_eq!(resolved.version, "IZskON6d");
+    assert_eq!(
+        resolved.version,
+        ContentVersionId::try_from("IZskON6d").unwrap()
+    );
 }
 
 /// A version of another project would be recorded as the wrong content.
@@ -831,7 +848,12 @@ async fn should_refuse_a_version_when_it_belongs_to_another_project() {
 
     let result = fixture
         .provider
-        .resolve_file("P7dR8mSH", Some("IZskON6d"), "1.21.1", Some("fabric"))
+        .resolve_file(
+            &ContentId::try_from("P7dR8mSH").unwrap(),
+            Some(&ContentVersionId::try_from("IZskON6d").unwrap()),
+            "1.21.1",
+            Some("fabric"),
+        )
         .await;
 
     assert!(matches!(
@@ -850,7 +872,7 @@ async fn should_describe_a_pack_without_downloading_it_when_it_is_on_modrinth() 
     let metadata = fixture
         .provider
         .resolve_pack_metadata(PackSource::Content {
-            content_id: "pack".into(),
+            content_id: ContentId::try_from("pack").unwrap(),
             version: None,
             installed_version: None,
         })
@@ -881,8 +903,13 @@ async fn should_describe_a_pack_from_its_index_when_given_a_url() {
     assert_eq!(metadata.file_count, Some(2));
 }
 
-fn ids(ids: &[&str]) -> Vec<String> {
-    ids.iter().map(|&id| id.to_owned()).collect()
+fn ids<T: TryFrom<String>>(ids: &[&str]) -> Vec<T>
+where
+    T::Error: std::fmt::Debug,
+{
+    ids.iter()
+        .map(|&id| T::try_from(id.to_owned()).unwrap())
+        .collect()
 }
 
 #[tokio::test]
@@ -908,7 +935,7 @@ async fn should_describe_the_projects_modrinth_knows_when_asked_for_their_metada
         metadata,
         [
             ContentMetadata {
-                content_id: "AANobbMI".into(),
+                content_id: ContentId::try_from("AANobbMI").unwrap(),
                 slug: "sodium".into(),
                 name: "SODIUM".into(),
                 description: Some("desc".into()),
@@ -917,7 +944,7 @@ async fn should_describe_the_projects_modrinth_knows_when_asked_for_their_metada
                 icon_url: Some("https://cdn.modrinth.com/icon.png".into()),
             },
             ContentMetadata {
-                content_id: "P7dR8mSH".into(),
+                content_id: ContentId::try_from("P7dR8mSH").unwrap(),
                 slug: "fabric-api".into(),
                 name: "FABRIC-API".into(),
                 description: None,
@@ -929,7 +956,7 @@ async fn should_describe_the_projects_modrinth_knows_when_asked_for_their_metada
     );
     assert_eq!(
         fixture.http.projects_batches(),
-        [ids(&["sodium", "P7dR8mSH", "unknown"])]
+        [ids::<String>(&["sodium", "P7dR8mSH", "unknown"])]
     );
     // The authors are asked apart.
     assert!(fixture.http.batches(&format!("{API_V3}/teams")).is_empty());
@@ -1009,7 +1036,9 @@ async fn should_ask_in_batches_and_list_each_project_once_when_given_many_ids() 
         &format!("{API}/projects"),
         &json!([project("AANobbMI", "sodium", "mod")]),
     );
-    let mut asked: Vec<String> = (0..250).map(|i| format!("id{i}")).collect();
+    let mut asked: Vec<ContentId> = (0..250)
+        .map(|i| ContentId::try_from(format!("id{i}")).unwrap())
+        .collect();
     asked.extend(ids(&["id0", "id1"]));
 
     let metadata = fixture
@@ -1084,9 +1113,15 @@ async fn should_ref_the_organization_or_else_the_team_as_author_when_asked_for_m
         .into_iter()
         .map(|item| (item.content_id, (item.author, item.author_ref)))
         .collect();
-    assert_eq!(refs["TEAMPROJ"], (None, Some("team:team1".into())));
+    assert_eq!(
+        refs[&ContentId::try_from("TEAMPROJ").unwrap()],
+        (None, Some("team:team1".into()))
+    );
     // The team of a project an organization owns is not its author.
-    assert_eq!(refs["ORGPROJ0"], (None, Some("organization:org1".into())));
+    assert_eq!(
+        refs[&ContentId::try_from("ORGPROJ0").unwrap()],
+        (None, Some("organization:org1".into()))
+    );
 }
 
 #[tokio::test]
@@ -1135,10 +1170,10 @@ async fn should_name_the_owner_or_the_organization_when_asked_for_authors() {
     for batch in &mut teams {
         batch.sort();
     }
-    assert_eq!(teams, [ids(&["gone", "team1"])]);
+    assert_eq!(teams, [ids::<String>(&["gone", "team1"])]);
     assert_eq!(
         fixture.http.batches(&format!("{API_V3}/organizations")),
-        [ids(&["org1"])]
+        [ids::<String>(&["org1"])]
     );
 }
 
@@ -1239,12 +1274,12 @@ async fn should_describe_the_versions_modrinth_knows_when_asked_for_their_metada
         metadata,
         [
             ContentVersionMetadata {
-                version_id: "IZskON6d".into(),
+                version_id: ContentVersionId::try_from("IZskON6d").unwrap(),
                 version_number: "mc1.20.6-0.5.8".into(),
                 name: Some("Sodium 0.5.8".into()),
             },
             ContentVersionMetadata {
-                version_id: "NOTITLE0".into(),
+                version_id: ContentVersionId::try_from("NOTITLE0").unwrap(),
                 version_number: "1.0.0".into(),
                 name: None,
             },
@@ -1252,7 +1287,9 @@ async fn should_describe_the_versions_modrinth_knows_when_asked_for_their_metada
     );
     assert_eq!(
         fixture.http.batches(&format!("{API}/versions")),
-        [ids(&["IZskON6d", "NOTITLE0", "ODDONE00", "unknown"])]
+        [ids::<String>(&[
+            "IZskON6d", "NOTITLE0", "ODDONE00", "unknown"
+        ])]
     );
 }
 
@@ -1262,7 +1299,9 @@ async fn should_ask_for_versions_in_batches_of_each_id_once_when_given_many() {
     fixture
         .http
         .serve_json(&format!("{API}/versions"), &json!([]));
-    let mut asked: Vec<String> = (0..250).map(|i| format!("v{i}")).collect();
+    let mut asked: Vec<ContentVersionId> = (0..250)
+        .map(|i| ContentVersionId::try_from(format!("v{i}")).unwrap())
+        .collect();
     asked.extend(ids(&["v0", "v1"]));
 
     let metadata = fixture

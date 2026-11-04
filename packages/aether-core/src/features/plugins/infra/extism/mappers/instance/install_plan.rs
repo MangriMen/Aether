@@ -10,8 +10,8 @@ use aether_core_plugin_api::v0::{
 use crate::{
     features::instance::{
         ContentIdentity, ContentPath, ContentSource, FileSide, InstallFileEntry, InstallTarget,
-        InstanceError, InstanceGame, InstanceId, InvalidId, InvalidRelativePath, OptionalFile,
-        PlatformId,
+        InstanceError, InstanceGame, InstanceId, InvalidContentId, InvalidId, InvalidRelativePath,
+        OptionalFile, PlatformId,
     },
     shared::hash::{FileHash, InvalidFileHash},
 };
@@ -52,6 +52,9 @@ pub enum InvalidPlanFile {
     Platform(#[from] InvalidId),
 
     #[error(transparent)]
+    ContentId(#[from] InvalidContentId),
+
+    #[error(transparent)]
     Path(#[from] InvalidRelativePath),
 }
 
@@ -77,21 +80,21 @@ impl TryFrom<ContentSourceDto> for ContentSource {
                 version,
             } => Self::ProviderRef {
                 platform: PlatformId::try_from(platform)?,
-                content_id,
-                version,
+                content_id: content_id.try_into()?,
+                version: version.map(TryInto::try_into).transpose()?,
             },
         })
     }
 }
 
 impl TryFrom<ContentIdentityDto> for ContentIdentity {
-    type Error = InvalidId;
+    type Error = InvalidPlanFile;
 
     fn try_from(value: ContentIdentityDto) -> Result<Self, Self::Error> {
         Ok(Self {
             platform: PlatformId::try_from(value.platform)?,
-            content_id: value.content_id,
-            version: value.version,
+            content_id: value.content_id.try_into()?,
+            version: value.version.try_into()?,
         })
     }
 }
@@ -135,6 +138,7 @@ impl From<FileSideDto> for FileSide {
 
 #[cfg(test)]
 mod tests {
+    use crate::features::instance::{ContentId, ContentVersionId};
     use aether_core_plugin_api::v0::{ContentTypeDto, FileHashDto};
 
     use crate::features::instance::ContentType;
@@ -226,8 +230,8 @@ mod tests {
             InstallFileEntry {
                 source: ContentSource::ProviderRef {
                     platform: PlatformId::from_static("modrinth"),
-                    content_id: "AANobbMI".into(),
-                    version: Some("IZskON6d".into()),
+                    content_id: ContentId::try_from("AANobbMI").unwrap(),
+                    version: Some(ContentVersionId::try_from("IZskON6d").unwrap()),
                 },
                 relative_path: ContentPath::parse("mods/sodium.jar").unwrap(),
                 content_type: ContentType::Mod,
@@ -266,8 +270,8 @@ mod tests {
                 hash: Some(FileHash::new(HashAlgorithm::Sha1, SHA1_ABC).unwrap()),
                 identity: Some(ContentIdentity {
                     platform: PlatformId::from_static("modrinth"),
-                    content_id: "AANobbMI".into(),
-                    version: "IZskON6d".into(),
+                    content_id: ContentId::try_from("AANobbMI").unwrap(),
+                    version: ContentVersionId::try_from("IZskON6d").unwrap(),
                 }),
             }
         );
@@ -314,6 +318,24 @@ mod tests {
             assert!(
                 matches!(result, Err(InvalidPlanFile::Path(_))),
                 "`{path}` must be refused"
+            );
+        }
+    }
+
+    #[test]
+    fn should_reject_a_ref_when_its_content_id_is_not_a_valid_id() {
+        for (content_id, version) in [("a/b", None), ("AANobbMI", Some("v?1")), ("", None)] {
+            let dto = entry(ContentSourceDto::ProviderRef {
+                platform: "modrinth".into(),
+                content_id: content_id.into(),
+                version: version.map(Into::into),
+            });
+
+            let result = InstallFileEntry::try_from(dto);
+
+            assert!(
+                matches!(result, Err(InvalidPlanFile::ContentId(_))),
+                "{content_id:?} {version:?} must be refused"
             );
         }
     }

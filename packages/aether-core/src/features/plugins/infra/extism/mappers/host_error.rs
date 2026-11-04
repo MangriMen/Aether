@@ -197,6 +197,10 @@ fn instance_dto(value: &InstanceError) -> InstanceErrorDto {
             path: path.clone(),
             reason: reason.clone(),
         },
+        InstanceError::InvalidContentId { kind, value } => Dto::InvalidContentId {
+            kind: kind.clone(),
+            value: value.clone(),
+        },
         InstanceError::PathEscapesInstance { path, instance_id } => Dto::PathEscapesInstance {
             path: path.clone(),
             instance_id: instance_id.clone(),

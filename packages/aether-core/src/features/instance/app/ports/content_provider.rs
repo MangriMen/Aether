@@ -6,10 +6,10 @@ use crate::features::instance::app::dtos::{
     ContentCompatibilityCheckParams, ContentCompatibilityResult,
 };
 use crate::features::instance::domain::{
-    ContentAuthor, ContentItem, ContentMetadata, ContentProviderCapabilityMetadata,
-    ContentSearchParams, ContentSearchResult, ContentVersion, ContentVersionMetadata, InstallPlan,
-    Instance, InstanceError, InstanceId, PackMetadata, PackSource, ProviderId,
-    ResolveInstallPlanParams, ResolvedFile,
+    ContentAuthor, ContentId, ContentItem, ContentMetadata, ContentProviderCapabilityMetadata,
+    ContentSearchParams, ContentSearchResult, ContentVersion, ContentVersionId,
+    ContentVersionMetadata, InstallPlan, Instance, InstanceError, InstanceId, PackMetadata,
+    PackSource, ProviderId, ResolveInstallPlanParams, ResolvedFile,
 };
 
 #[async_trait]
@@ -25,10 +25,12 @@ pub trait ContentProvider: Send + Sync {
         search_content: ContentSearchParams,
     ) -> Result<ContentSearchResult, InstanceError>;
 
-    async fn get_content(&self, content_id: String) -> Result<ContentItem, InstanceError>;
+    async fn get_content(&self, content_id: ContentId) -> Result<ContentItem, InstanceError>;
 
-    async fn list_versions(&self, content_id: String)
-    -> Result<Vec<ContentVersion>, InstanceError>;
+    async fn list_versions(
+        &self,
+        content_id: ContentId,
+    ) -> Result<Vec<ContentVersion>, InstanceError>;
 
     /// Which file a [`ContentSource::ProviderRef`] of this provider's platform stands for.
     ///
@@ -40,8 +42,8 @@ pub trait ContentProvider: Send + Sync {
     /// [`ContentSource::ProviderRef`]: crate::features::instance::ContentSource::ProviderRef
     async fn resolve_file(
         &self,
-        content_id: &str,
-        version: Option<&str>,
+        content_id: &ContentId,
+        version: Option<&ContentVersionId>,
         game_version: &str,
         loader: Option<&str>,
     ) -> Result<ResolvedFile, InstanceError> {
@@ -88,7 +90,7 @@ pub trait ContentProvider: Send + Sync {
     /// this one.
     async fn get_contents_metadata(
         &self,
-        content_ids: &[String],
+        content_ids: &[ContentId],
     ) -> Result<Vec<ContentMetadata>, InstanceError> {
         let _ = content_ids;
         Err(self.unsupported("get_contents_metadata"))
@@ -117,7 +119,7 @@ pub trait ContentProvider: Send + Sync {
     /// [`InstanceError::UnsupportedOperation`], and its files are shown without a version.
     async fn get_versions_metadata(
         &self,
-        version_ids: &[String],
+        version_ids: &[ContentVersionId],
     ) -> Result<Vec<ContentVersionMetadata>, InstanceError> {
         let _ = version_ids;
         Err(self.unsupported("get_versions_metadata"))
@@ -184,11 +186,11 @@ mod tests {
             unimplemented!()
         }
 
-        async fn get_content(&self, _: String) -> Result<ContentItem, InstanceError> {
+        async fn get_content(&self, _: ContentId) -> Result<ContentItem, InstanceError> {
             unimplemented!()
         }
 
-        async fn list_versions(&self, _: String) -> Result<Vec<ContentVersion>, InstanceError> {
+        async fn list_versions(&self, _: ContentId) -> Result<Vec<ContentVersion>, InstanceError> {
             unimplemented!()
         }
 
@@ -223,7 +225,12 @@ mod tests {
             let provider = provider.clone();
             async move {
                 provider
-                    .resolve_file("AANobbMI", None, "1.21.1", Some("fabric"))
+                    .resolve_file(
+                        &ContentId::try_from("AANobbMI").unwrap(),
+                        None,
+                        "1.21.1",
+                        Some("fabric"),
+                    )
                     .await
             }
         });
@@ -232,7 +239,7 @@ mod tests {
             async move {
                 provider
                     .resolve_install_plan(ResolveInstallPlanParams {
-                        content_id: "AANobbMI".into(),
+                        content_id: ContentId::try_from("AANobbMI").unwrap(),
                         version: None,
                         installed_version: None,
                         target: ResolveTarget::New,
@@ -262,7 +269,7 @@ mod tests {
             let provider = provider.clone();
             async move {
                 provider
-                    .get_contents_metadata(&["AANobbMI".to_owned()])
+                    .get_contents_metadata(&[ContentId::try_from("AANobbMI").unwrap()])
                     .await
             }
         });
@@ -281,7 +288,7 @@ mod tests {
             let provider = provider.clone();
             async move {
                 provider
-                    .get_versions_metadata(&["IZskON6d".to_owned()])
+                    .get_versions_metadata(&[ContentVersionId::try_from("IZskON6d").unwrap()])
                     .await
             }
         });

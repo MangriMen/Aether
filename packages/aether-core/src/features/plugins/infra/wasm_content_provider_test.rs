@@ -3,6 +3,7 @@
 //! boundary, the errors a looping or crashing plugin gives the user, a busy plugin next to the
 //! others, and what WASI may do in the read-only `/instances`.
 
+use crate::features::instance::{ContentId, ContentVersionId};
 use std::{
     fmt::Write,
     path::PathBuf,
@@ -380,10 +381,18 @@ async fn should_serve_a_platform_from_a_loaded_wasm_plugin_and_drop_it_when_unlo
         .capability;
     assert_eq!(provider.metadata().platform.as_deref(), Some("curseforge"));
     let resolved = provider
-        .resolve_file("238222", None, "1.21.1", Some("fabric"))
+        .resolve_file(
+            &ContentId::try_from("238222").unwrap(),
+            None,
+            "1.21.1",
+            Some("fabric"),
+        )
         .await
         .unwrap();
-    assert_eq!(resolved.version, "4512345");
+    assert_eq!(
+        resolved.version,
+        ContentVersionId::try_from("4512345").unwrap()
+    );
     assert_eq!(resolved.file_name, "jei.jar");
     assert_eq!(
         resolved.hash,
@@ -446,15 +455,18 @@ async fn should_describe_content_when_a_wasm_plugin_answers_the_metadata_handler
     let proxy = proxy(&sandbox, PLUGIN_ID, handle);
 
     let projects = proxy
-        .get_contents_metadata(&["238222".to_owned()])
+        .get_contents_metadata(&[ContentId::try_from("238222").unwrap()])
         .await
         .unwrap();
     let versions = proxy
-        .get_versions_metadata(&["4512345".to_owned()])
+        .get_versions_metadata(&[ContentVersionId::try_from("4512345").unwrap()])
         .await
         .unwrap();
 
-    assert_eq!(projects[0].content_id, "238222");
+    assert_eq!(
+        projects[0].content_id,
+        ContentId::try_from("238222").unwrap()
+    );
     assert_eq!(projects[0].name, "Just Enough Items");
     assert_eq!(projects[0].author.as_deref(), Some("mezz"));
     assert_eq!(projects[0].author_ref.as_deref(), Some("team:abc"));
@@ -494,7 +506,7 @@ async fn should_still_describe_content_when_a_wasm_plugin_fails_naming_authors()
 
     let authors = provider_error(proxy.get_authors(&["team:abc".to_owned()]).await);
     let projects = proxy
-        .get_contents_metadata(&["238222".to_owned()])
+        .get_contents_metadata(&[ContentId::try_from("238222").unwrap()])
         .await
         .unwrap();
 
@@ -520,7 +532,16 @@ async fn should_name_the_instruction_limit_when_a_provider_loops() {
         ),
     );
 
-    let reason = provider_error(proxy.resolve_file("238222", None, "1.21.1", None).await);
+    let reason = provider_error(
+        proxy
+            .resolve_file(
+                &ContentId::try_from("238222").unwrap(),
+                None,
+                "1.21.1",
+                None,
+            )
+            .await,
+    );
 
     assert!(
         reason.contains("the plugin exceeded its instruction limit"),
@@ -542,7 +563,16 @@ async fn should_name_a_crash_when_a_provider_panics() {
         ),
     );
 
-    let reason = provider_error(proxy.resolve_file("238222", None, "1.21.1", None).await);
+    let reason = provider_error(
+        proxy
+            .resolve_file(
+                &ContentId::try_from("238222").unwrap(),
+                None,
+                "1.21.1",
+                None,
+            )
+            .await,
+    );
 
     assert!(reason.contains("the plugin crashed"), "{reason}");
 }

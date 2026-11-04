@@ -2,6 +2,7 @@
 //! `ContentMetadataService` refreshing what is missing or stale — metadata and icons — behind
 //! the list's back.
 
+use crate::features::instance::{ContentId, ContentVersionId};
 use std::{
     collections::{HashMap, HashSet},
     sync::{Arc, Mutex},
@@ -40,8 +41,8 @@ fn provider_id(capability_id: &str) -> ProviderId {
 }
 
 /// The version id the fixture records for a file of `content_id`.
-fn version_id(content_id: &str) -> String {
-    format!("{content_id}-v1")
+fn version_id(content_id: &str) -> ContentVersionId {
+    ContentVersionId::try_from(format!("{content_id}-v1")).unwrap()
 }
 
 fn version(content_id: &str, version_number: &str) -> ContentVersionMetadata {
@@ -54,7 +55,7 @@ fn version(content_id: &str, version_number: &str) -> ContentVersionMetadata {
 
 fn metadata(content_id: &str, name: &str) -> ContentMetadata {
     ContentMetadata {
-        content_id: content_id.into(),
+        content_id: content_id.try_into().unwrap(),
         slug: name.to_lowercase(),
         name: name.into(),
         description: None,
@@ -68,8 +69,8 @@ fn metadata(content_id: &str, name: &str) -> ContentMetadata {
 
 #[derive(Default)]
 struct MemoryMetadataCache {
-    items: Mutex<HashMap<(ProviderId, String), CachedContentMetadata>>,
-    versions: Mutex<HashMap<(ProviderId, String), CachedContentVersionMetadata>>,
+    items: Mutex<HashMap<(ProviderId, ContentId), CachedContentMetadata>>,
+    versions: Mutex<HashMap<(ProviderId, ContentVersionId), CachedContentVersionMetadata>>,
     authors: Mutex<HashMap<(ProviderId, String), CachedContentAuthor>>,
     /// When set, every write fails and keeps nothing.
     read_only: Mutex<bool>,
@@ -124,7 +125,10 @@ impl MemoryMetadataCache {
         let items = self.items.lock().unwrap();
         Some(
             items
-                .get(&(provider_id.clone(), content_id.to_owned()))?
+                .get(&(
+                    provider_id.clone(),
+                    ContentId::try_from(content_id).unwrap(),
+                ))?
                 .fetched_at,
         )
     }
@@ -135,8 +139,8 @@ impl ContentMetadataCache for MemoryMetadataCache {
     async fn get_many(
         &self,
         provider_id: &ProviderId,
-        content_ids: &[String],
-    ) -> HashMap<String, CachedContentMetadata> {
+        content_ids: &[ContentId],
+    ) -> HashMap<ContentId, CachedContentMetadata> {
         let items = self.items.lock().unwrap();
         content_ids
             .iter()
@@ -150,7 +154,7 @@ impl ContentMetadataCache for MemoryMetadataCache {
     async fn put_keyed_at(
         &self,
         provider_id: &ProviderId,
-        items: &[(String, ContentMetadata)],
+        items: &[(ContentId, ContentMetadata)],
         fetched_at: SystemTime,
     ) -> bool {
         if self.is_read_only() {
@@ -172,8 +176,8 @@ impl ContentMetadataCache for MemoryMetadataCache {
     async fn get_versions(
         &self,
         provider_id: &ProviderId,
-        version_ids: &[String],
-    ) -> HashMap<String, CachedContentVersionMetadata> {
+        version_ids: &[ContentVersionId],
+    ) -> HashMap<ContentVersionId, CachedContentVersionMetadata> {
         let versions = self.versions.lock().unwrap();
         version_ids
             .iter()
@@ -429,11 +433,11 @@ impl ContentProvider for FakeProvider {
         unimplemented!()
     }
 
-    async fn get_content(&self, _: String) -> Result<ContentItem, InstanceError> {
+    async fn get_content(&self, _: ContentId) -> Result<ContentItem, InstanceError> {
         unimplemented!()
     }
 
-    async fn list_versions(&self, _: String) -> Result<Vec<ContentVersion>, InstanceError> {
+    async fn list_versions(&self, _: ContentId) -> Result<Vec<ContentVersion>, InstanceError> {
         unimplemented!()
     }
 
@@ -447,9 +451,9 @@ impl ContentProvider for FakeProvider {
 
     async fn get_contents_metadata(
         &self,
-        content_ids: &[String],
+        content_ids: &[ContentId],
     ) -> Result<Vec<ContentMetadata>, InstanceError> {
-        let mut asked = content_ids.to_vec();
+        let mut asked: Vec<String> = content_ids.iter().map(ToString::to_string).collect();
         asked.sort();
         self.calls.lock().unwrap().push(asked);
 
@@ -462,9 +466,9 @@ impl ContentProvider for FakeProvider {
 
     async fn get_versions_metadata(
         &self,
-        version_ids: &[String],
+        version_ids: &[ContentVersionId],
     ) -> Result<Vec<ContentVersionMetadata>, InstanceError> {
-        let mut asked = version_ids.to_vec();
+        let mut asked: Vec<String> = version_ids.iter().map(ToString::to_string).collect();
         asked.sort();
         self.version_calls.lock().unwrap().push(asked);
 
@@ -537,8 +541,8 @@ impl Fixture {
             pack_file.update = Some(HashMap::from([(
                 provider,
                 ContentFileUpdateInfo {
-                    content_id: (*content_id).to_owned(),
-                    version: version_id(content_id),
+                    content_id: ContentId::try_from(*content_id).unwrap(),
+                    version: Some(version_id(content_id)),
                 },
             )]));
             pack_storage
@@ -846,17 +850,6 @@ async fn should_ask_again_when_the_plugin_of_the_provider_changed() {
 }
 
 #[tokio::test]
-async fn should_not_ask_about_a_file_when_its_content_id_is_empty() {
-    let provider = Arc::new(FakeProvider::new("modrinth", Answer::Items(vec![])));
-    let fixture = Fixture::new(&[("a.jar", "modrinth", "")], vec![provider.clone()]).await;
-
-    fixture.list().await;
-    Fixture::settle().await;
-
-    assert!(provider.calls().is_empty());
-}
-
-#[tokio::test]
 async fn should_tell_the_ui_once_over_when_a_list_wanted_more_during_a_refresh() {
     let gate = Arc::new(Semaphore::new(0));
     let provider = Arc::new(FakeProvider::new(
@@ -887,8 +880,8 @@ async fn should_tell_the_ui_once_over_when_a_list_wanted_more_during_a_refresh()
         file.file.update = Some(HashMap::from([(
             modrinth.clone(),
             ContentFileUpdateInfo {
-                content_id: "B".into(),
-                version: String::new(),
+                content_id: ContentId::try_from("B").unwrap(),
+                version: Some(ContentVersionId::try_from("v0").unwrap()),
             },
         )]));
         file
@@ -1295,7 +1288,7 @@ async fn should_ask_for_versions_with_the_projects_and_tell_the_ui_once_when_bot
     assert_eq!(modrinth.calls(), [["A", "B"]]);
     assert_eq!(
         modrinth.version_calls(),
-        [[version_id("A"), version_id("B")]]
+        [[version_id("A").to_string(), version_id("B").to_string()]]
     );
 
     let files = fixture.list().await;
@@ -1336,7 +1329,7 @@ async fn should_ask_only_for_the_missing_versions_when_the_projects_are_fresh() 
     let numbers = fixture.version_numbers().await;
 
     assert!(provider.calls().is_empty());
-    assert_eq!(provider.version_calls(), [[version_id("B")]]);
+    assert_eq!(provider.version_calls(), [[version_id("B").to_string()]]);
     assert_eq!(numbers["mods/a.jar"], Some("1.0".into()));
     assert_eq!(numbers["mods/b.jar"], Some("2.0".into()));
 }
@@ -1464,7 +1457,7 @@ async fn should_not_ask_again_soon_about_versions_when_the_provider_did_not_know
     assert_eq!(numbers["mods/b.jar"], None);
     assert_eq!(
         provider.version_calls(),
-        [[version_id("A"), version_id("B")]]
+        [[version_id("A").to_string(), version_id("B").to_string()]]
     );
     fixture.assert_no_event();
 }

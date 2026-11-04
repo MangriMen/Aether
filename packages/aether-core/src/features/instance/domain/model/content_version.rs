@@ -1,5 +1,7 @@
 use crate::features::minecraft::ModLoader;
 
+use super::{ContentId, ContentVersionId};
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ContentVersionDependencyType {
     Required,
@@ -10,8 +12,8 @@ pub enum ContentVersionDependencyType {
 
 #[derive(Debug, Clone)]
 pub struct ContentVersionDependency {
-    pub version_id: Option<String>,
-    pub content_id: Option<String>,
+    pub version_id: Option<ContentVersionId>,
+    pub content_id: Option<ContentId>,
     pub file_name: Option<String>,
     pub dependency_type: ContentVersionDependencyType,
 }
@@ -43,8 +45,8 @@ pub enum RequestedContentVersionStatus {
 
 #[derive(Debug, Clone)]
 pub struct ContentVersion {
-    pub id: String,
-    pub content_id: String,
+    pub id: ContentVersionId,
+    pub content_id: ContentId,
     pub author_id: String,
     pub name: String,
     pub version_number: String,

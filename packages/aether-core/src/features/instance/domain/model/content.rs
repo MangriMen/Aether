@@ -2,7 +2,9 @@ use std::{ops::Deref, str::FromStr};
 
 use crate::features::minecraft::ModLoader;
 
-use super::{CapabilityId, ContentType, InstanceId, InvalidId, PluginId};
+use super::{
+    CapabilityId, ContentId, ContentType, ContentVersionId, InstanceId, InvalidId, PluginId,
+};
 
 #[derive(Clone, Debug)]
 pub struct ContentSearchParams {
@@ -182,8 +184,8 @@ mod tests {
 
 #[derive(Clone, Debug)]
 pub struct BaseContentParams {
-    pub content_id: String,
-    pub content_version: Option<String>,
+    pub content_id: ContentId,
+    pub content_version: Option<ContentVersionId>,
     pub provider_id: ProviderId,
 }
 

@@ -1,3 +1,4 @@
+use crate::features::instance::ContentId;
 use sqlx::{SqlitePool, pool::PoolOptions};
 
 use crate::{
@@ -81,7 +82,10 @@ async fn should_read_legacy_modrinth_rows_as_aether_modrinth_when_the_table_hold
     assert_eq!(pack_file.update_provider_id, Some(aether_modrinth()));
     let update = pack_file.update.unwrap();
     assert_eq!(update.len(), 1);
-    assert_eq!(update[&aether_modrinth()].content_id, "AANobbMI");
+    assert_eq!(
+        update[&aether_modrinth()].content_id,
+        ContentId::try_from("AANobbMI").unwrap()
+    );
 }
 
 #[tokio::test]
@@ -94,7 +98,7 @@ async fn should_find_legacy_modrinth_rows_when_searching_by_aether_modrinth() {
         .find_by_provider_id(
             &InstanceId::try_from(INSTANCE_ID).unwrap(),
             &aether_modrinth(),
-            "AANobbMI",
+            &ContentId::try_from("AANobbMI").unwrap(),
         )
         .await
         .unwrap();

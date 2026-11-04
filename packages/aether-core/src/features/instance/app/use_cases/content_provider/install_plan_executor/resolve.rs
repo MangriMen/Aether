@@ -12,8 +12,8 @@ use futures::future::try_join_all;
 
 use super::{DownloadEntry, InstallPlanExecutor, ResolvedRef, TargetGame, is_pack_of};
 use crate::features::instance::{
-    ContentMetadata, ContentProvider, ContentSource, ContentVersionMetadata, InstallFileEntry,
-    InstallTarget, InstanceError, PlanOrigin, PlatformId, ProviderId,
+    ContentId, ContentMetadata, ContentProvider, ContentSource, ContentVersionMetadata,
+    InstallFileEntry, InstallTarget, InstanceError, PlanOrigin, PlatformId, ProviderId,
 };
 
 /// What a plan's direct entries say about their own content, by the provider the content list
@@ -21,7 +21,7 @@ use crate::features::instance::{
 /// always the provider that gave the plan.
 #[derive(Default)]
 pub(super) struct PlanMetadata {
-    projects: HashMap<ProviderId, Vec<(String, ContentMetadata)>>,
+    projects: HashMap<ProviderId, Vec<(ContentId, ContentMetadata)>>,
     versions: HashMap<ProviderId, Vec<ContentVersionMetadata>>,
 }
 
@@ -89,7 +89,7 @@ impl InstallPlanExecutor {
                         return Err(InstanceError::GameChangeNotAllowed {
                             instance_id: instance_id.to_string(),
                             provider_id: origin.provider_id.clone(),
-                            content_id: origin.content_id.clone(),
+                            content_id: origin.content_id.to_string(),
                         });
                     }
                 }
@@ -173,7 +173,7 @@ impl InstallPlanExecutor {
                     let resolved = provider
                         .resolve_file(
                             &content_id,
-                            version.as_deref(),
+                            version.as_ref(),
                             &game.game_version,
                             game.loader.as_ref().map(ModLoader::as_str),
                         )
@@ -224,7 +224,7 @@ impl InstallPlanExecutor {
     /// complete, and put as fetched now.
     async fn cache_metadata(&self, metadata: PlanMetadata) {
         for (provider_id, projects) in metadata.projects {
-            let ids: Vec<String> = projects.iter().map(|(id, _)| id.clone()).collect();
+            let ids: Vec<ContentId> = projects.iter().map(|(id, _)| id.clone()).collect();
             let cached = self.metadata_cache.get_many(&provider_id, &ids).await;
             let missing: Vec<_> = projects
                 .into_iter()

@@ -1,6 +1,7 @@
 use aether_core_plugin_api::v0::NewInstanceDto;
 
-use crate::features::instance::{InstanceError, InstanceName, InvalidId, NewInstance};
+use super::pack_info::InvalidPackInfo;
+use crate::features::instance::{InstanceError, InstanceName, NewInstance};
 
 impl TryFrom<NewInstanceDto> for NewInstance {
     type Error = InstanceError;
@@ -14,7 +15,7 @@ impl TryFrom<NewInstanceDto> for NewInstance {
             icon_path: value.icon_path,
             skip_install_instance: value.skip_install_instance,
             pack_info: value.pack_info.map(TryInto::try_into).transpose().map_err(
-                |err: InvalidId| InstanceError::ContentProviderError {
+                |err: InvalidPackInfo| InstanceError::ContentProviderError {
                     reason: err.to_string(),
                 },
             )?,

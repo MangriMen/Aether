@@ -15,7 +15,7 @@ use crate::{
     shared::hash::FileHash,
 };
 
-use super::{ContentSource, InstallTarget, InstanceGame};
+use super::{ContentId, ContentSource, ContentVersionId, InstallTarget, InstanceGame};
 
 /// The input of `resolve_install_plan`: which content to install, and into what.
 ///
@@ -25,14 +25,14 @@ use super::{ContentSource, InstallTarget, InstanceGame};
 /// marked, so the selection UI can be built from the plan; leaving files out is the core's call.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ResolveInstallPlanParams {
-    pub content_id: String,
+    pub content_id: ContentId,
     /// `None` — the version [`select_version`](super::select_version) picks among those
     /// compatible with the target.
-    pub version: Option<String>,
+    pub version: Option<ContentVersionId>,
     /// The platform's id of the version of this content installed in the target now, if any —
     /// a mod's from its pack-file record, a pack's from the instance's `pack_info`. Without a
     /// `version` it sets the release channel and keeps an update from rolling back.
-    pub installed_version: Option<String>,
+    pub installed_version: Option<ContentVersionId>,
     pub target: ResolveTarget,
 }
 
@@ -107,10 +107,10 @@ pub enum PackSource {
     /// take ([`select_version`](super::select_version) from `installed_version`), which is how a
     /// check for updates asks.
     Content {
-        content_id: String,
-        version: Option<String>,
+        content_id: ContentId,
+        version: Option<ContentVersionId>,
         /// The version of the pack the instance runs now (its `pack_info.version_id`).
-        installed_version: Option<String>,
+        installed_version: Option<ContentVersionId>,
     },
     /// A pack file to download (a `.mrpack`, a packwiz `pack.toml`).
     Url(String),
@@ -127,7 +127,7 @@ pub struct PackMetadata {
     /// The platform's id of this version, comparable with [`PackInfo::version_id`] — this is what
     /// a check for updates compares. `None` when the pack was not read from the platform
     /// ([`PackSource::Url`], [`PackSource::File`]) and the provider cannot tell.
-    pub version_id: Option<String>,
+    pub version_id: Option<ContentVersionId>,
     /// The version as the pack's author wrote it (`1.4.2`), for display only.
     pub version_name: Option<String>,
     pub description: Option<String>,
@@ -184,7 +184,7 @@ impl PackMetadata {
 pub struct ResolvedFile {
     /// The platform's id of the version the ref resolved to: for a ref without one, the only
     /// place the core learns which file it got.
-    pub version: String,
+    pub version: ContentVersionId,
     pub url: String,
     /// With a hash, the download is verified against it, as for [`ContentSource::Direct`].
     pub hash: Option<FileHash>,
@@ -223,8 +223,8 @@ mod tests {
     fn sodium_ref(version: Option<&str>) -> ContentSource {
         ContentSource::ProviderRef {
             platform: PlatformId::from_static("modrinth"),
-            content_id: "AANobbMI".into(),
-            version: version.map(Into::into),
+            content_id: ContentId::try_from("AANobbMI").unwrap(),
+            version: version.map(|v| v.try_into().unwrap()),
         }
     }
 
@@ -233,7 +233,7 @@ mod tests {
     #[test]
     fn should_build_a_single_mod_install_when_the_instance_exists() {
         let params = ResolveInstallPlanParams {
-            content_id: "AANobbMI".into(),
+            content_id: ContentId::try_from("AANobbMI").unwrap(),
             version: None,
             installed_version: None,
             target: ResolveTarget::Existing {
@@ -261,7 +261,7 @@ mod tests {
         );
 
         let resolved = ResolvedFile {
-            version: "IZskON6d".into(),
+            version: ContentVersionId::try_from("IZskON6d").unwrap(),
             url: "https://cdn.modrinth.com/data/AANobbMI/versions/IZskON6d/sodium.jar".into(),
             hash: Some(FileHash::new(HashAlgorithm::Sha1, SHA1_ABC).unwrap()),
             file_name: "sodium.jar".into(),
@@ -286,13 +286,13 @@ mod tests {
     #[test]
     fn should_build_a_modpack_install_when_the_instance_is_new() {
         let source = PackSource::Content {
-            content_id: "1KVo5zza".into(),
+            content_id: ContentId::try_from("1KVo5zza").unwrap(),
             version: None,
             installed_version: None,
         };
         let metadata = PackMetadata {
             name: "Fabulously Optimized".into(),
-            version_id: Some("Vq3Rr4wN".into()),
+            version_id: Some(ContentVersionId::try_from("Vq3Rr4wN").unwrap()),
             version_name: Some("6.4.0".into()),
             description: None,
             game_version: "1.21.1".into(),
@@ -314,7 +314,7 @@ mod tests {
         let pack_info = PackInfo {
             provider_id: modrinth(),
             modpack_id: params.content_id.clone(),
-            version_id: params.version.clone().unwrap(),
+            version_id: params.version.clone().unwrap().into(),
         };
 
         let plan = InstallPlan {
@@ -366,7 +366,7 @@ mod tests {
     fn should_answer_a_pack_request_with_the_pack_game_when_resolving() {
         let metadata = PackMetadata {
             name: "Fabulously Optimized".into(),
-            version_id: Some("Vq3Rr4wN".into()),
+            version_id: Some(ContentVersionId::try_from("Vq3Rr4wN").unwrap()),
             version_name: None,
             description: None,
             game_version: "1.21.4".into(),
@@ -425,7 +425,7 @@ mod tests {
     #[test]
     fn should_keep_a_resolved_file_unhashed_when_the_provider_gave_no_hash() {
         let resolved = ResolvedFile {
-            version: "4512345".into(),
+            version: ContentVersionId::try_from("4512345").unwrap(),
             url: "https://edge.forgecdn.net/files/4512/345/jei.jar".into(),
             hash: None,
             file_name: "jei.jar".into(),

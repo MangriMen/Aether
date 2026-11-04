@@ -1,5 +1,6 @@
 //! `ImportContentUseCase` copying files into an instance under the instance's lock.
 
+use crate::features::instance::ContentId;
 use std::sync::Arc;
 
 use async_trait::async_trait;
@@ -267,7 +268,7 @@ impl PackStorage for FailingRecord {
         &self,
         id: &InstanceId,
         provider_id: &ProviderId,
-        content_id: &str,
+        content_id: &ContentId,
     ) -> Result<Option<PackFile>, InstanceError> {
         self.0
             .find_by_provider_id(id, provider_id, content_id)

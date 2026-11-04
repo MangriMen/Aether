@@ -5,6 +5,7 @@
 //! fails, the instance is left as it was.
 
 use crate::features::instance::InstanceName;
+use crate::features::instance::{ContentId, ContentVersionId};
 
 use crate::features::instance::PlatformId;
 use std::{
@@ -78,15 +79,15 @@ impl ContentMetadataCache for NoMetadataCache {
     async fn get_many(
         &self,
         _: &ProviderId,
-        _: &[String],
-    ) -> HashMap<String, CachedContentMetadata> {
+        _: &[ContentId],
+    ) -> HashMap<ContentId, CachedContentMetadata> {
         HashMap::new()
     }
 
     async fn put_keyed_at(
         &self,
         _: &ProviderId,
-        _: &[(String, ContentMetadata)],
+        _: &[(ContentId, ContentMetadata)],
         _: SystemTime,
     ) -> bool {
         true
@@ -95,8 +96,8 @@ impl ContentMetadataCache for NoMetadataCache {
     async fn get_versions(
         &self,
         _: &ProviderId,
-        _: &[String],
-    ) -> HashMap<String, CachedContentVersionMetadata> {
+        _: &[ContentVersionId],
+    ) -> HashMap<ContentVersionId, CachedContentVersionMetadata> {
         HashMap::new()
     }
 
@@ -209,23 +210,23 @@ impl ContentProvider for PluginProvider {
         unimplemented!()
     }
 
-    async fn get_content(&self, _: String) -> Result<ContentItem, InstanceError> {
+    async fn get_content(&self, _: ContentId) -> Result<ContentItem, InstanceError> {
         unimplemented!()
     }
 
-    async fn list_versions(&self, _: String) -> Result<Vec<ContentVersion>, InstanceError> {
+    async fn list_versions(&self, _: ContentId) -> Result<Vec<ContentVersion>, InstanceError> {
         unimplemented!()
     }
 
     async fn resolve_file(
         &self,
-        _content_id: &str,
-        _version: Option<&str>,
+        _content_id: &ContentId,
+        _version: Option<&ContentVersionId>,
         _game_version: &str,
         _loader: Option<&str>,
     ) -> Result<ResolvedFile, InstanceError> {
         Ok(ResolvedFile {
-            version: "4512345".into(),
+            version: ContentVersionId::try_from("4512345").unwrap(),
             url: self.url.clone(),
             hash: Some(sha1_of(BODY)),
             file_name: "jei.jar".into(),
@@ -477,7 +478,7 @@ impl Fixture {
             plan,
             PlanOrigin {
                 provider_id: origin,
-                content_id: "pack".into(),
+                content_id: ContentId::try_from("pack").unwrap(),
             },
         )
         .await
@@ -733,7 +734,7 @@ async fn should_hold_a_ref_to_that_plugins_hosts_when_a_plugin_resolved_it() {
         files: vec![InstallFileEntry::new(
             ContentSource::ProviderRef {
                 platform: PlatformId::from_static("curseforge"),
-                content_id: "238222".into(),
+                content_id: ContentId::try_from("238222").unwrap(),
                 version: None,
             },
             ContentPath::parse("mods/jei.jar").unwrap(),

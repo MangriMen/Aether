@@ -1,9 +1,9 @@
 use crate::features::{
     instance::{
-        ContentItem, ContentMetadata, ContentSearchParams, ContentSearchResult, ContentType,
-        ContentVersion, ContentVersionDependency, ContentVersionDependencyType,
-        ContentVersionMetadata, ContentVersionStatus, ContentVersionType, ProviderId,
-        RequestedContentVersionStatus,
+        ContentId, ContentItem, ContentMetadata, ContentSearchParams, ContentSearchResult,
+        ContentType, ContentVersion, ContentVersionDependency, ContentVersionDependencyType,
+        ContentVersionId, ContentVersionMetadata, ContentVersionStatus, ContentVersionType,
+        ProviderId, RequestedContentVersionStatus,
         infra::content_providers::modrinth::{
             ModrinthMapperError,
             api_client::{
@@ -231,29 +231,33 @@ impl From<&ProjectResponse> for ProjectMetadataResponse {
     }
 }
 
-impl From<ProjectMetadataResponse> for ContentMetadata {
+impl TryFrom<ProjectMetadataResponse> for ContentMetadata {
+    type Error = ModrinthMapperError;
+
     /// No author: a project names only its team or organization by id, which its
     /// [`ContentMetadata::author_ref`] carries for the core to look up apart.
-    fn from(value: ProjectMetadataResponse) -> Self {
-        Self {
+    fn try_from(value: ProjectMetadataResponse) -> Result<Self, Self::Error> {
+        Ok(Self {
             author_ref: author_ref(value.organization.as_deref(), value.team.as_deref()),
-            content_id: value.id,
+            content_id: ContentId::try_from(value.id)?,
             slug: value.slug,
             name: value.title,
             description: value.description.filter(|text| !text.is_empty()),
             author: None,
             icon_url: value.icon_url.filter(|url| !url.is_empty()),
-        }
+        })
     }
 }
 
-impl From<VersionMetadataResponse> for ContentVersionMetadata {
-    fn from(value: VersionMetadataResponse) -> Self {
-        Self {
-            version_id: value.id,
+impl TryFrom<VersionMetadataResponse> for ContentVersionMetadata {
+    type Error = ModrinthMapperError;
+
+    fn try_from(value: VersionMetadataResponse) -> Result<Self, Self::Error> {
+        Ok(Self {
+            version_id: ContentVersionId::try_from(value.id)?,
             version_number: value.version_number,
             name: value.name.filter(|name| !name.is_empty()),
-        }
+        })
     }
 }
 
@@ -290,11 +294,16 @@ impl From<ModrinthRequestedStatus> for RequestedContentVersionStatus {
     }
 }
 
-impl From<ModrinthDependencyResponse> for ContentVersionDependency {
-    fn from(value: ModrinthDependencyResponse) -> Self {
-        Self {
-            version_id: value.version_id,
-            content_id: value.project_id,
+impl TryFrom<ModrinthDependencyResponse> for ContentVersionDependency {
+    type Error = ModrinthMapperError;
+
+    fn try_from(value: ModrinthDependencyResponse) -> Result<Self, Self::Error> {
+        Ok(Self {
+            version_id: value
+                .version_id
+                .map(ContentVersionId::try_from)
+                .transpose()?,
+            content_id: value.project_id.map(ContentId::try_from).transpose()?,
             file_name: value.file_name,
             dependency_type: match value.dependency_type {
                 ModrinthDependencyType::Required => ContentVersionDependencyType::Required,
@@ -302,7 +311,7 @@ impl From<ModrinthDependencyResponse> for ContentVersionDependency {
                 ModrinthDependencyType::Incompatible => ContentVersionDependencyType::Incompatible,
                 ModrinthDependencyType::Embedded => ContentVersionDependencyType::Embedded,
             },
-        }
+        })
     }
 }
 
@@ -335,16 +344,21 @@ impl TryFrom<ProjectVersionResponse> for ContentVersion {
             .filter_map(|l| l.parse::<ModLoader>().ok())
             .collect();
 
-        let web_url = format!("{MODRINTH_WEB_URL}/project/{project_id}/version/{id}");
+        let id = ContentVersionId::try_from(id)?;
+        let content_id = ContentId::try_from(project_id)?;
+        let web_url = format!("{MODRINTH_WEB_URL}/project/{content_id}/version/{id}");
 
         Ok(Self {
             id,
-            content_id: project_id,
+            content_id,
             author_id,
             name,
             version_number,
             changelog,
-            dependencies: dependencies.into_iter().map(Into::into).collect(),
+            dependencies: dependencies
+                .into_iter()
+                .map(ContentVersionDependency::try_from)
+                .collect::<Result<_, _>>()?,
             game_versions,
             version_type: version_type.into(),
             loaders,

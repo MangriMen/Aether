@@ -10,8 +10,8 @@ use futures::{StreamExt, future::join_all, stream};
 
 use crate::{
     features::instance::{
-        ContentIconCache, ContentMetadataCache, InstanceError, InstanceStorage, PackStorage,
-        ProviderId,
+        ContentIconCache, ContentId, ContentMetadataCache, InstanceError, InstanceStorage,
+        PackStorage, ProviderId,
     },
     shared::housekeeping::Housekeeping,
 };
@@ -49,7 +49,7 @@ impl ContentIconHousekeeping {
 
     /// The icon URLs of every content installed in any instance.
     async fn installed_icon_urls(&self) -> Result<HashSet<String>, InstanceError> {
-        let mut ids: HashMap<ProviderId, Vec<String>> = HashMap::new();
+        let mut ids: HashMap<ProviderId, Vec<ContentId>> = HashMap::new();
         let instances = self.instance_storage.list().await?;
         // Concurrent but bounded, in the order of the instances: the first failure in it is the
         // one returned.
@@ -66,9 +66,7 @@ impl ContentIconHousekeeping {
                 let Some(provider_id) = pack_file.update_provider_id else {
                     continue;
                 };
-                if let Some(info) = pack_file.update.as_ref().and_then(|u| u.get(&provider_id))
-                    && !info.content_id.is_empty()
-                {
+                if let Some(info) = pack_file.update.as_ref().and_then(|u| u.get(&provider_id)) {
                     ids.entry(provider_id)
                         .or_default()
                         .push(info.content_id.clone());
@@ -107,6 +105,7 @@ impl Housekeeping for ContentIconHousekeeping {
 
 #[cfg(test)]
 mod tests {
+    use crate::features::instance::ContentVersionId;
     use std::{sync::Mutex, time::SystemTime};
 
     use super::*;
@@ -149,8 +148,8 @@ mod tests {
                 HashMap::from([(
                     p.clone(),
                     ContentFileUpdateInfo {
-                        content_id: content_id.into(),
-                        version: "1".into(),
+                        content_id: content_id.try_into().unwrap(),
+                        version: Some(ContentVersionId::try_from("1").unwrap()),
                     },
                 )])
             }),
@@ -160,7 +159,7 @@ mod tests {
 
     fn metadata(content_id: &str, icon_url: Option<&str>) -> ContentMetadata {
         ContentMetadata {
-            content_id: content_id.into(),
+            content_id: content_id.try_into().unwrap(),
             slug: content_id.into(),
             name: content_id.into(),
             description: None,
@@ -247,7 +246,7 @@ mod tests {
             &self,
             _: &InstanceId,
             _: &ProviderId,
-            _: &str,
+            _: &ContentId,
         ) -> Result<Option<PackFile>, InstanceError> {
             unimplemented!()
         }
@@ -292,15 +291,15 @@ mod tests {
     }
 
     #[derive(Default)]
-    struct FakeMetadata(HashMap<(ProviderId, String), ContentMetadata>);
+    struct FakeMetadata(HashMap<(ProviderId, ContentId), ContentMetadata>);
 
     #[async_trait]
     impl ContentMetadataCache for FakeMetadata {
         async fn get_many(
             &self,
             provider_id: &ProviderId,
-            content_ids: &[String],
-        ) -> HashMap<String, CachedContentMetadata> {
+            content_ids: &[ContentId],
+        ) -> HashMap<ContentId, CachedContentMetadata> {
             content_ids
                 .iter()
                 .filter_map(|id| {
@@ -319,7 +318,7 @@ mod tests {
         async fn put_keyed_at(
             &self,
             _: &ProviderId,
-            _: &[(String, ContentMetadata)],
+            _: &[(ContentId, ContentMetadata)],
             _: SystemTime,
         ) -> bool {
             unimplemented!()
@@ -328,8 +327,8 @@ mod tests {
         async fn get_versions(
             &self,
             _: &ProviderId,
-            _: &[String],
-        ) -> HashMap<String, CachedContentVersionMetadata> {
+            _: &[ContentVersionId],
+        ) -> HashMap<ContentVersionId, CachedContentVersionMetadata> {
             unimplemented!()
         }
 
@@ -395,9 +394,10 @@ mod tests {
             (&b, "lithium", Some("https://x/lithium.png")),
             (&a, "uninstalled", Some("https://x/uninstalled.png")),
             (&a, "no-icon", None),
-            (&a, "", Some("https://x/empty-id.png")),
         ] {
-            cache.0.insert((p.clone(), id.into()), metadata(id, icon));
+            cache
+                .0
+                .insert((p.clone(), id.try_into().unwrap()), metadata(id, icon));
         }
         let packs = HashMap::from([
             (
@@ -405,7 +405,6 @@ mod tests {
                 vec![
                     pack_file(Some(&a), "sodium"),
                     pack_file(None, "manual"),
-                    pack_file(Some(&a), ""),
                     pack_file(Some(&a), "no-icon"),
                 ],
             ),

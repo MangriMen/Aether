@@ -91,6 +91,9 @@ pub enum InstanceError {
     #[error("Path \"{path}\" is not a valid path inside an instance: {reason}")]
     InvalidRelativePath { path: String, reason: String },
 
+    #[error("Invalid {kind} {value:?}")]
+    InvalidContentId { kind: String, value: String },
+
     #[error("Path \"{path}\" resolves outside instance \"{instance_id}\"")]
     PathEscapesInstance { path: String, instance_id: String },
 

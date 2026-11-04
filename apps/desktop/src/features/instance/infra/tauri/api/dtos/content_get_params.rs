@@ -16,7 +16,7 @@ impl TryFrom<ContentGetParamsDto> for ContentGetParams {
 
     fn try_from(value: ContentGetParamsDto) -> Result<Self, Self::Error> {
         Ok(Self {
-            content_id: value.content_id,
+            content_id: value.content_id.try_into()?,
             provider_id: value.provider_id.try_into()?,
         })
     }

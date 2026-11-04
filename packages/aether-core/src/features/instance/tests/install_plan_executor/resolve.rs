@@ -1,6 +1,7 @@
 //! Resolving refs and choosing the provider of a platform.
 
 use crate::features::instance::InstanceName;
+use crate::features::instance::{ContentId, ContentVersionId};
 
 use crate::features::instance::PlatformId;
 use crate::{
@@ -299,8 +300,8 @@ async fn should_pass_the_ref_version_through_unchanged_when_resolving() {
     let mut entry = provider_ref("modrinth", "AANobbMI", "mods/sodium.jar");
     entry.source = ContentSource::ProviderRef {
         platform: PlatformId::from_static("modrinth"),
-        content_id: "AANobbMI".into(),
-        version: Some("IZskON6d".into()),
+        content_id: ContentId::try_from("AANobbMI").unwrap(),
+        version: Some(ContentVersionId::try_from("IZskON6d").unwrap()),
     };
     fixture
         .execute(existing(vec![entry]), &plugin("packwiz"))

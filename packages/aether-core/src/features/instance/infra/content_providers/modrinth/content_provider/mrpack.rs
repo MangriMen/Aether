@@ -8,10 +8,11 @@ use url::Url;
 
 use crate::{
     features::instance::{
-        ContentIdentity, ContentPath, ContentSource, ContentType, FileSide, InstallFileEntry,
-        InstanceError, OptionalFile, OverrideLocation, OverrideSource, PackMetadata, PlatformId,
+        ContentId, ContentIdentity, ContentPath, ContentSource, ContentType, ContentVersionId,
+        FileSide, InstallFileEntry, InstanceError, OptionalFile, OverrideLocation, OverrideSource,
+        PackMetadata, PlatformId,
         infra::content_providers::modrinth::api_client::{
-            Hashes, ModrinthEnv, ModrinthIndex, ModrinthIndexFile, ProjectVersionResponse,
+            Hashes, ModrinthEnv, ModrinthIndex, ModrinthIndexFile,
         },
     },
     features::minecraft::ModLoader,
@@ -114,7 +115,7 @@ pub(super) async fn read_index_async(mrpack_path: &Path) -> Result<ModrinthIndex
 
 /// The project and version a Modrinth CDN URL names:
 /// `https://cdn.modrinth.com/data/<project>/versions/<version>/<file>`.
-pub(super) fn parse_cdn_url(url: &str) -> Option<(String, String)> {
+pub(super) fn parse_cdn_url(url: &str) -> Option<(ContentId, ContentVersionId)> {
     let url = Url::parse(url).ok()?;
     if url.host_str() != Some(MODRINTH_CDN_HOST) {
         return None;
@@ -124,7 +125,10 @@ pub(super) fn parse_cdn_url(url: &str) -> Option<(String, String)> {
         ["data", project_id, "versions", version_id, _, ..]
             if !project_id.is_empty() && !version_id.is_empty() =>
         {
-            Some((project_id.to_owned(), version_id.to_owned()))
+            Some((
+                ContentId::try_from(project_id).ok()?,
+                ContentVersionId::try_from(version_id).ok()?,
+            ))
         }
         _ => None,
     }
@@ -272,14 +276,14 @@ fn resolve_loader_from_manifest(manifest: &ModrinthIndex) -> (ModLoader, Option<
 /// file of, when it came from the platform; `icon_url` — the project's.
 pub(super) fn pack_metadata(
     index: &ModrinthIndex,
-    version: Option<&ProjectVersionResponse>,
+    version_id: Option<ContentVersionId>,
     icon_url: Option<String>,
 ) -> PackMetadata {
     let (mod_loader, loader_version) = resolve_loader_from_manifest(index);
 
     PackMetadata {
         name: index.name.clone(),
-        version_id: version.map(|version| version.id.clone()),
+        version_id,
         version_name: Some(index.version_id.clone()),
         description: index.summary.clone(),
         game_version: index.dependencies.minecraft.clone(),
@@ -396,7 +400,10 @@ mod tests {
     fn should_read_the_project_and_version_when_given_a_cdn_url() {
         assert_eq!(
             parse_cdn_url(SODIUM_URL),
-            Some(("AANobbMI".into(), "IZskON6d".into()))
+            Some((
+                ContentId::try_from("AANobbMI").unwrap(),
+                ContentVersionId::try_from("IZskON6d").unwrap()
+            ))
         );
         for url in [
             "https://example.com/data/AANobbMI/versions/IZskON6d/sodium.jar",
@@ -453,8 +460,8 @@ mod tests {
                 hash: Some(FileHash::new(HashAlgorithm::Sha512, "b".repeat(128)).unwrap()),
                 identity: Some(ContentIdentity {
                     platform: PlatformId::from_static("modrinth"),
-                    content_id: "AANobbMI".into(),
-                    version: "IZskON6d".into(),
+                    content_id: ContentId::try_from("AANobbMI").unwrap(),
+                    version: ContentVersionId::try_from("IZskON6d").unwrap(),
                 }),
             }
         );

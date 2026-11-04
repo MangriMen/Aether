@@ -18,7 +18,7 @@ impl TryFrom<PackInfoDto> for PackInfo {
     fn try_from(value: PackInfoDto) -> Result<Self, Self::Error> {
         Ok(Self {
             provider_id: value.provider_id.try_into()?,
-            modpack_id: value.modpack_id,
+            modpack_id: value.modpack_id.try_into()?,
             version_id: value.version,
         })
     }
@@ -28,7 +28,7 @@ impl From<PackInfo> for PackInfoDto {
     fn from(value: PackInfo) -> Self {
         Self {
             provider_id: value.provider_id.into(),
-            modpack_id: value.modpack_id,
+            modpack_id: value.modpack_id.into(),
             version: value.version_id,
         }
     }

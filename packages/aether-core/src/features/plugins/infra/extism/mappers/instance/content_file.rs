@@ -1,7 +1,8 @@
 use aether_core_plugin_api::v0::{ContentFileDto, ContentFileUpdateInfoDto, ProviderIdDto};
 
 use crate::features::instance::{
-    ContentFile, ContentFileUpdateInfo, ContentPath, InvalidId, InvalidRelativePath, ProviderId,
+    ContentFile, ContentFileUpdateInfo, ContentPath, ContentVersionId, InvalidContentId, InvalidId,
+    InvalidRelativePath, ProviderId,
 };
 
 impl From<ContentFile> for ContentFileDto {
@@ -20,8 +21,8 @@ impl From<ContentFile> for ContentFileDto {
                     .into_iter()
                     .map(|(provider_id, info)| ContentFileUpdateInfoDto {
                         provider_id: provider_id.into(),
-                        content_id: info.content_id,
-                        version: info.version,
+                        content_id: info.content_id.into(),
+                        version: info.version.map(String::from).unwrap_or_default(),
                     })
                     .collect()
             }),
@@ -34,6 +35,9 @@ impl From<ContentFile> for ContentFileDto {
 pub enum InvalidContentFile {
     #[error(transparent)]
     Id(#[from] InvalidId),
+
+    #[error(transparent)]
+    ContentId(#[from] InvalidContentId),
 
     #[error(transparent)]
     Path(#[from] InvalidRelativePath),
@@ -65,12 +69,15 @@ impl TryFrom<ContentFileDto> for ContentFile {
                             Ok((
                                 info.provider_id.try_into()?,
                                 ContentFileUpdateInfo {
-                                    content_id: info.content_id,
-                                    version: info.version,
+                                    content_id: info.content_id.try_into()?,
+                                    version: Some(info.version)
+                                        .filter(|v| !v.is_empty())
+                                        .map(ContentVersionId::try_from)
+                                        .transpose()?,
                                 },
                             ))
                         })
-                        .collect::<Result<_, InvalidId>>()
+                        .collect::<Result<_, InvalidContentFile>>()
                 })
                 .transpose()?,
         })
@@ -96,6 +103,7 @@ impl TryFrom<ProviderIdDto> for ProviderId {
 
 #[cfg(test)]
 mod tests {
+    use crate::features::instance::{ContentId, ContentVersionId};
     use std::collections::HashMap;
 
     use extism_convert::{FromBytes, Msgpack, ToBytes};
@@ -120,8 +128,8 @@ mod tests {
             update: Some(HashMap::from([(
                 modrinth.clone(),
                 ContentFileUpdateInfo {
-                    content_id: "AANobbMI".into(),
-                    version: "IZskON6d".into(),
+                    content_id: ContentId::try_from("AANobbMI").unwrap(),
+                    version: Some(ContentVersionId::try_from("IZskON6d").unwrap()),
                 },
             )])),
         };
@@ -134,8 +142,11 @@ mod tests {
 
         assert_eq!(back.update_provider_id, Some(modrinth.clone()));
         let info = &back.update.expect("update info should survive")[&modrinth];
-        assert_eq!(info.content_id, "AANobbMI");
-        assert_eq!(info.version, "IZskON6d");
+        assert_eq!(info.content_id, ContentId::try_from("AANobbMI").unwrap());
+        assert_eq!(
+            info.version,
+            Some(ContentVersionId::try_from("IZskON6d").unwrap())
+        );
     }
 
     #[test]

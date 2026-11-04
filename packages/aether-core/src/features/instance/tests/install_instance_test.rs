@@ -1,3 +1,4 @@
+use crate::features::instance::ContentId;
 use crate::features::instance::InstanceName;
 use std::sync::{Arc, Mutex};
 
@@ -134,7 +135,7 @@ impl ProgressService for NoProgress {
 fn pack_info() -> PackInfo {
     PackInfo {
         provider_id: ProviderId::from_parts("aether", "modrinth").unwrap(),
-        modpack_id: "pack".to_owned(),
+        modpack_id: ContentId::try_from("pack").unwrap(),
         version_id: "1".to_owned(),
     }
 }

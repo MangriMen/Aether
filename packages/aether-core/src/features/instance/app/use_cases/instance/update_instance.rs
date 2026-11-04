@@ -9,10 +9,10 @@ use crate::features::instance::app::ports::{InstallPlanExecutorPort, UpdateInsta
 use crate::{
     features::{
         instance::{
-            ContentPath, ContentProvider, InstallPlan, Instance, InstanceError, InstanceId,
-            InstanceInstallStage, InstanceLocks, InstanceStorage, InstanceStorageExt, PackFile,
-            PackInfo, PackSource, PackStorage, PlanOrigin, ResolveInstallPlanParams, ResolveTarget,
-            Updater,
+            ContentPath, ContentProvider, ContentVersionId, InstallPlan, Instance, InstanceError,
+            InstanceId, InstanceInstallStage, InstanceLocks, InstanceStorage, InstanceStorageExt,
+            PackFile, PackInfo, PackSource, PackStorage, PlanOrigin, ResolveInstallPlanParams,
+            ResolveTarget, Updater,
         },
         minecraft::ModLoader,
     },
@@ -39,7 +39,9 @@ pub struct UpdateInstanceUseCase {
 /// How an update went through.
 enum Updated {
     /// By a plan; the version it installed, when the provider named it.
-    Plan { version_id: Option<String> },
+    Plan {
+        version_id: Option<ContentVersionId>,
+    },
     /// By the plugin's updater, which keeps the pack info itself.
     Updater,
 }
@@ -76,7 +78,7 @@ impl UpdateInstanceUseCase {
             )
             .await
             .map_err(|_| InstanceError::UpdaterNotFound {
-                modpack_id: pack_info.modpack_id.clone(),
+                modpack_id: pack_info.modpack_id.to_string(),
             })?;
 
         updater.capability.update(instance_id).await
@@ -114,7 +116,7 @@ impl UpdateInstanceUseCase {
             .resolve_install_plan(ResolveInstallPlanParams {
                 content_id: pack_info.modpack_id.clone(),
                 version: version_id.clone(),
-                installed_version: Some(pack_info.version_id.clone()),
+                installed_version: installed_version_of(pack_info),
                 target: requested.clone(),
             })
             .await
@@ -172,12 +174,12 @@ impl UpdateInstanceUseCase {
         &self,
         provider: &dyn ContentProvider,
         pack_info: &PackInfo,
-    ) -> Result<Option<String>, InstanceError> {
+    ) -> Result<Option<ContentVersionId>, InstanceError> {
         match provider
             .resolve_pack_metadata(PackSource::Content {
                 content_id: pack_info.modpack_id.clone(),
                 version: None,
-                installed_version: Some(pack_info.version_id.clone()),
+                installed_version: installed_version_of(pack_info),
             })
             .await
         {
@@ -216,11 +218,16 @@ impl UpdateInstanceUseCase {
             return Ok(Vec::new());
         }
 
+        // A label that is no provider id names no version to look up.
+        let Some(installed_version) = installed_version_of(pack_info) else {
+            return Ok(Vec::new());
+        };
+
         let installed_plan = provider
             .resolve_install_plan(ResolveInstallPlanParams {
                 content_id: pack_info.modpack_id.clone(),
-                version: Some(pack_info.version_id.clone()),
-                installed_version: Some(pack_info.version_id.clone()),
+                version: Some(installed_version.clone()),
+                installed_version: installed_version_of(pack_info),
                 target: requested.clone(),
             })
             .await;
@@ -353,7 +360,7 @@ impl UpdateInstanceUseCasePort for UpdateInstanceUseCase {
                     && let Some(current) = instance.pack_info.as_mut()
                     && current.modpack_id == pack_info.modpack_id
                 {
-                    current.version_id = version_id;
+                    current.version_id = version_id.into();
                 }
                 Ok(())
             })
@@ -370,6 +377,11 @@ impl UpdateInstanceUseCasePort for UpdateInstanceUseCase {
 
         result.map(|_| ())
     }
+}
+
+/// The pack's version label as a provider's version id, when it is one.
+fn installed_version_of(pack_info: &PackInfo) -> Option<ContentVersionId> {
+    ContentVersionId::try_from(pack_info.version_id.as_str()).ok()
 }
 
 #[cfg(test)]

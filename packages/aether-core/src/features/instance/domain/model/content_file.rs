@@ -4,7 +4,7 @@ use crate::features::instance::{
     ContentMetadata, ContentPath, ContentVersionMetadata, PackFile, ProviderId,
 };
 
-use super::ContentType;
+use super::{ContentId, ContentType, ContentVersionId};
 
 #[derive(Debug, Clone)]
 pub struct ContentFile {
@@ -15,7 +15,7 @@ pub struct ContentFile {
     pub hash: String,
     pub name: Option<String>,
     pub size: u64,
-    pub version: Option<String>,
+    pub version: Option<ContentVersionId>,
     pub update_provider_id: Option<ProviderId>,
     pub update: Option<HashMap<ProviderId, ContentFileUpdateInfo>>,
 }
@@ -62,8 +62,9 @@ impl From<ContentFile> for ContentFileView {
 
 #[derive(Debug, Clone)]
 pub struct ContentFileUpdateInfo {
-    pub content_id: String,
-    pub version: String,
+    pub content_id: ContentId,
+    /// `None` for an old record that kept no version.
+    pub version: Option<ContentVersionId>,
 }
 
 impl ContentFile {
@@ -78,7 +79,7 @@ impl ContentFile {
             .update_provider_id
             .as_ref()
             .and_then(|id| pack_file.update.as_ref()?.get(id))
-            .map(|info| info.version.clone());
+            .and_then(|info| info.version.clone());
 
         Self {
             content_path,

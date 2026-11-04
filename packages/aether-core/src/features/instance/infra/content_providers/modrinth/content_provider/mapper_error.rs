@@ -5,4 +5,7 @@ pub enum ModrinthMapperError {
 
     #[error("Missing required field in Modrinth response: {0}")]
     MissingField(String),
+
+    #[error("Invalid id received from Modrinth: {0}")]
+    InvalidId(#[from] crate::features::instance::InvalidContentId),
 }

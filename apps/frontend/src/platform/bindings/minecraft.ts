@@ -101,6 +101,9 @@ export type InstanceErrorDto = { code: "STORAGE"; payload: {
 } } | { code: "INVALID_RELATIVE_PATH"; payload: {
 	path: string,
 	reason: string,
+} } | { code: "INVALID_CONTENT_ID"; payload: {
+	kind: string,
+	value: string,
 } } | { code: "PATH_ESCAPES_INSTANCE"; payload: {
 	path: string,
 	instance_id: string,

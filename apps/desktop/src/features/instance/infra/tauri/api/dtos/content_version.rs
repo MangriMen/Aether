@@ -90,7 +90,7 @@ impl TryFrom<ContentListVersionParamsDto> for ContentListVersionsParams {
 
     fn try_from(value: ContentListVersionParamsDto) -> Result<Self, Self::Error> {
         Ok(Self {
-            content_id: value.content_id,
+            content_id: value.content_id.try_into()?,
             provider_id: value.provider_id.try_into()?,
         })
     }
@@ -110,8 +110,8 @@ impl From<ContentVersionDependencyType> for ContentVersionDependencyTypeDto {
 impl From<ContentVersionDependency> for ContentVersionDependencyDto {
     fn from(value: ContentVersionDependency) -> Self {
         Self {
-            version_id: value.version_id,
-            content_id: value.content_id,
+            version_id: value.version_id.map(Into::into),
+            content_id: value.content_id.map(Into::into),
             file_name: value.file_name,
             dependency_type: value.dependency_type.into(),
         }
@@ -155,8 +155,8 @@ impl From<RequestedContentVersionStatus> for RequestedContentVersionStatusDto {
 impl From<ContentVersion> for ContentVersionDto {
     fn from(value: ContentVersion) -> Self {
         Self {
-            id: value.id,
-            content_id: value.content_id,
+            id: value.id.into(),
+            content_id: value.content_id.into(),
             author_id: value.author_id,
             name: value.name,
             version_number: value.version_number,

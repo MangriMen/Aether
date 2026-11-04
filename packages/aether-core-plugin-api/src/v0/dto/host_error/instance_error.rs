@@ -56,6 +56,10 @@ pub enum InstanceErrorDto {
         path: String,
         reason: String,
     },
+    InvalidContentId {
+        kind: String,
+        value: String,
+    },
     PathEscapesInstance {
         path: String,
         instance_id: String,

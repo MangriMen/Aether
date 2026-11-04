@@ -5,8 +5,8 @@ use async_trait::async_trait;
 use crate::{
     features::{
         instance::{
-            ContentPath, InstanceError, InstanceId, Pack, PackEntry, PackFile, PackStorage,
-            ProviderId, app::DISABLED_SUFFIX,
+            ContentId, ContentPath, InstanceError, InstanceId, Pack, PackEntry, PackFile,
+            PackStorage, ProviderId, app::DISABLED_SUFFIX,
         },
         settings::LocationInfo,
     },
@@ -136,7 +136,7 @@ impl PackStorage for FsPackStorage {
         &self,
         instance_id: &InstanceId,
         provider_id: &ProviderId,
-        content_id: &str,
+        content_id: &ContentId,
     ) -> Result<Option<PackFile>, InstanceError> {
         let pack = self.get_pack(instance_id).await?;
 
@@ -144,7 +144,7 @@ impl PackStorage for FsPackStorage {
             if let Ok(pack_file) = self.get_pack_file(instance_id, &entry.file).await
                 && let Some(update_map) = &pack_file.update
                 && let Some(info) = update_map.get(provider_id)
-                && info.content_id == content_id
+                && &info.content_id == content_id
             {
                 return Ok(Some(pack_file));
             }

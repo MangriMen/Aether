@@ -6,10 +6,10 @@ use crate::features::instance::app::ports::{InstallContentUseCasePort, InstallPl
 use crate::features::minecraft::ModLoader;
 use crate::{
     features::instance::{
-        AtomicInstallParams, ContentInstallParams, ContentProvider, ContentSource, ContentType,
-        InstallFileEntry, InstallPlan, InstallTarget, InstanceError, InstanceId,
-        InstanceInstallStage, InstanceLocks, InstanceStorage, ModpackInstallParams, PackStorage,
-        PlanOrigin, ProviderId, ResolveInstallPlanParams, ResolveTarget,
+        AtomicInstallParams, ContentId, ContentInstallParams, ContentProvider, ContentSource,
+        ContentType, ContentVersionId, InstallFileEntry, InstallPlan, InstallTarget, InstanceError,
+        InstanceId, InstanceInstallStage, InstanceLocks, InstanceStorage, ModpackInstallParams,
+        PackStorage, PlanOrigin, ProviderId, ResolveInstallPlanParams, ResolveTarget,
         app::extensions::InstanceStorageExt,
     },
     shared::capability::domain::CapabilityRegistry,
@@ -90,14 +90,14 @@ impl InstallContentUseCase {
         &self,
         instance_id: &InstanceId,
         provider_id: &ProviderId,
-        content_id: &str,
-    ) -> Result<Option<String>, InstanceError> {
+        content_id: &ContentId,
+    ) -> Result<Option<ContentVersionId>, InstanceError> {
         Ok(self
             .pack_storage
             .find_by_provider_id(instance_id, provider_id, content_id)
             .await?
             .and_then(|record| record.update?.remove(provider_id))
-            .map(|info| info.version))
+            .and_then(|info| info.version))
     }
 
     async fn execute_plan(
@@ -105,7 +105,7 @@ impl InstallContentUseCase {
         provider: &Arc<dyn ContentProvider>,
         plan: InstallPlan,
         requested: &ResolveTarget,
-        content_id: String,
+        content_id: ContentId,
     ) -> Result<(), InstanceError> {
         // The plugin proxy checks this for plugins; a built-in provider is not behind it, and
         // a plan for another instance than the one asked about would install into it.
@@ -182,7 +182,7 @@ impl InstallContentUseCase {
 /// The id `provider` itself gives the content of a plan of one file: the identity of that file,
 /// when it is on the provider's own platform. A plan of several files, or with overrides, is a
 /// pack's, whose files are not the content asked for.
-fn own_identity(provider: &dyn ContentProvider, plan: &InstallPlan) -> Option<String> {
+fn own_identity(provider: &dyn ContentProvider, plan: &InstallPlan) -> Option<ContentId> {
     let platform = provider.metadata().platform.as_ref()?;
 
     match plan.files.as_slice() {
@@ -205,7 +205,7 @@ fn own_identity(provider: &dyn ContentProvider, plan: &InstallPlan) -> Option<St
 /// What to ask the provider for: an atomic install goes into the instance the caller chose, a
 /// modpack into a new one; the installed version is looked up by the caller. Also the content id
 /// the caller named, which owns the installed files.
-fn resolve_params_of(params: &ContentInstallParams) -> (ResolveInstallPlanParams, String) {
+fn resolve_params_of(params: &ContentInstallParams) -> (ResolveInstallPlanParams, ContentId) {
     match params {
         ContentInstallParams::Atomic(AtomicInstallParams {
             base,

@@ -5,15 +5,15 @@ use aether_core_plugin_api::v0::{
 
 use crate::features::instance::{
     ContentVersion, ContentVersionDependency, ContentVersionDependencyType, ContentVersionStatus,
-    ContentVersionType, RequestedContentVersionStatus,
+    ContentVersionType, InvalidContentId, RequestedContentVersionStatus,
 };
 use crate::features::minecraft::ModLoader;
 
 impl From<ContentVersion> for ContentVersionDto {
     fn from(value: ContentVersion) -> Self {
         Self {
-            id: value.id,
-            content_id: value.content_id,
+            id: value.id.into(),
+            content_id: value.content_id.into(),
             author_id: value.author_id,
             name: value.name,
             version_number: value.version_number,
@@ -35,8 +35,8 @@ impl From<ContentVersion> for ContentVersionDto {
 impl From<ContentVersionDependency> for ContentVersionDependencyDto {
     fn from(value: ContentVersionDependency) -> Self {
         Self {
-            version_id: value.version_id,
-            content_id: value.content_id,
+            version_id: value.version_id.map(Into::into),
+            content_id: value.content_id.map(Into::into),
             file_name: value.file_name,
             dependency_type: value.dependency_type.into(),
         }
@@ -88,16 +88,22 @@ impl From<RequestedContentVersionStatus> for RequestedContentVersionStatusDto {
     }
 }
 
-impl From<ContentVersionDto> for ContentVersion {
-    fn from(value: ContentVersionDto) -> Self {
-        Self {
-            id: value.id,
-            content_id: value.content_id,
+impl TryFrom<ContentVersionDto> for ContentVersion {
+    type Error = InvalidContentId;
+
+    fn try_from(value: ContentVersionDto) -> Result<Self, Self::Error> {
+        Ok(Self {
+            id: value.id.try_into()?,
+            content_id: value.content_id.try_into()?,
             author_id: value.author_id,
             name: value.name,
             version_number: value.version_number,
             changelog: value.changelog,
-            dependencies: value.dependencies.into_iter().map(Into::into).collect(),
+            dependencies: value
+                .dependencies
+                .into_iter()
+                .map(TryInto::try_into)
+                .collect::<Result<_, _>>()?,
             game_versions: value.game_versions,
             version_type: value.version_type.into(),
             loaders: value.loaders.into_iter().map(ModLoader::from).collect(),
@@ -107,18 +113,20 @@ impl From<ContentVersionDto> for ContentVersion {
             date_published: value.date_published,
             downloads: value.downloads,
             web_url: value.web_url,
-        }
+        })
     }
 }
 
-impl From<ContentVersionDependencyDto> for ContentVersionDependency {
-    fn from(value: ContentVersionDependencyDto) -> Self {
-        Self {
-            version_id: value.version_id,
-            content_id: value.content_id,
+impl TryFrom<ContentVersionDependencyDto> for ContentVersionDependency {
+    type Error = InvalidContentId;
+
+    fn try_from(value: ContentVersionDependencyDto) -> Result<Self, Self::Error> {
+        Ok(Self {
+            version_id: value.version_id.map(TryInto::try_into).transpose()?,
+            content_id: value.content_id.map(TryInto::try_into).transpose()?,
             file_name: value.file_name,
             dependency_type: value.dependency_type.into(),
-        }
+        })
     }
 }
 

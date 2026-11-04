@@ -1,6 +1,7 @@
 //! What a plan's entries say about their own content is cached under the provider the content
 //! list will look it up by: the one chosen for the identity's platform.
 
+use crate::features::instance::{ContentId, ContentVersionId};
 use std::time::SystemTime;
 
 use crate::features::instance::{
@@ -15,7 +16,7 @@ const URL: &str = "https://cdn.modrinth.com/data/AANobbMI/versions/v2/sodium-2.j
 fn described(platform: &str, content_id: &str, version: &str) -> InstallFileEntry {
     InstallFileEntry {
         metadata: Some(ContentMetadata {
-            content_id: content_id.into(),
+            content_id: content_id.try_into().unwrap(),
             slug: "sodium".into(),
             name: "Sodium".into(),
             description: None,
@@ -24,7 +25,7 @@ fn described(platform: &str, content_id: &str, version: &str) -> InstallFileEntr
             icon_url: None,
         }),
         version_metadata: Some(ContentVersionMetadata {
-            version_id: version.into(),
+            version_id: version.try_into().unwrap(),
             version_number: "0.6.0".into(),
             name: None,
         }),
@@ -52,13 +53,13 @@ async fn should_cache_metadata_under_the_provider_of_the_platform_when_another_p
     let items = fixture.metadata_cache.items.lock().unwrap();
     assert_eq!(items.len(), 1);
     // Provisional: stale at once, so the next list refreshes it.
-    let project = &items[&(modrinth_id(), "AANobbMI".to_owned())];
+    let project = &items[&(modrinth_id(), ContentId::try_from("AANobbMI").unwrap())];
     assert_eq!(project.metadata.name, "Sodium");
     assert_eq!(project.fetched_at, SystemTime::UNIX_EPOCH);
     let versions = fixture.metadata_cache.versions.lock().unwrap();
     assert_eq!(versions.len(), 1);
     // Complete: fresh.
-    let version = &versions[&(modrinth_id(), "v2".to_owned())];
+    let version = &versions[&(modrinth_id(), ContentVersionId::try_from("v2").unwrap())];
     assert_eq!(version.metadata.version_number, "0.6.0");
     assert!(version.fetched_at > SystemTime::UNIX_EPOCH);
 }
@@ -77,12 +78,10 @@ async fn should_keep_the_cached_project_when_one_is_already_there() {
         },
         fetched_at,
     };
-    fixture
-        .metadata_cache
-        .items
-        .lock()
-        .unwrap()
-        .insert((modrinth_id(), "AANobbMI".to_owned()), cached.clone());
+    fixture.metadata_cache.items.lock().unwrap().insert(
+        (modrinth_id(), ContentId::try_from("AANobbMI").unwrap()),
+        cached.clone(),
+    );
 
     fixture
         .execute(
@@ -93,7 +92,10 @@ async fn should_keep_the_cached_project_when_one_is_already_there() {
         .unwrap();
 
     let items = fixture.metadata_cache.items.lock().unwrap();
-    assert_eq!(items[&(modrinth_id(), "AANobbMI".to_owned())], cached);
+    assert_eq!(
+        items[&(modrinth_id(), ContentId::try_from("AANobbMI").unwrap())],
+        cached
+    );
     // The version still goes in.
     assert_eq!(fixture.metadata_cache.versions.lock().unwrap().len(), 1);
 }
