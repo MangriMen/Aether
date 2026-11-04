@@ -5,9 +5,11 @@ use crate::features::instance::{
         legacy_provider_id::{legacy_provider_id_string, parse_stored_provider_id},
         stored_content_id::{parse_stored_content_id, parse_stored_version},
         stored_content_path::parse_stored_content_path,
+        stored_hash::parse_stored_hash,
         stored_side::parse_stored_side,
     },
 };
+use crate::shared::hash::InvalidFileHash;
 use async_trait::async_trait;
 use sqlx::{Sqlite, SqlitePool, Transaction};
 use std::collections::HashMap;
@@ -35,7 +37,8 @@ struct PackFileUpdateRow {
 }
 
 impl PackFileRow {
-    fn into_pack_file(self, updates: Vec<PackFileUpdateRow>) -> PackFile {
+    fn into_pack_file(self, updates: Vec<PackFileUpdateRow>) -> Result<PackFile, InvalidFileHash> {
+        let hash = parse_stored_hash(&self.content_path, &self.hash)?;
         let mut update_map = HashMap::new();
         // An update that no longer parses is skipped rather than failing the read, so one bad row
         // does not hide the rest of the pack.
@@ -94,10 +97,10 @@ impl PackFileRow {
 
         // The `pack_files` table has no columns for `download` and `option`, so a file read back
         // from SQLite has neither.
-        PackFile {
+        Ok(PackFile {
             file_name: self.file_name,
             name: self.name,
-            hash: self.hash,
+            hash,
             download: None,
             option: None,
             side,
@@ -110,7 +113,7 @@ impl PackFileRow {
                 Some(update_map)
             },
             installed_by,
-        }
+        })
     }
 }
 
@@ -175,6 +178,7 @@ impl SqlitePackStorage {
         .await
         .map_err(|e| InstanceError::Storage(e.to_string()))?;
 
+        let hash = pack_file.hash.to_string();
         let update_provider_id = pack_file
             .update_provider_id
             .as_ref()
@@ -206,7 +210,7 @@ impl SqlitePackStorage {
             content_path,
             pack_file.file_name,
             pack_file.name,
-            pack_file.hash,
+            hash,
             pack_file.side.map(FileSide::as_str),
             update_provider_id,
             installed_by_provider_id,
@@ -307,7 +311,8 @@ impl PackStorage for SqlitePackStorage {
         .await
         .map_err(|e| InstanceError::Storage(e.to_string()))?;
 
-        Ok(row.into_pack_file(updates))
+        row.into_pack_file(updates)
+            .map_err(|err| InstanceError::Storage(err.to_string()))
     }
 
     async fn get_pack_files(
@@ -345,7 +350,8 @@ impl PackStorage for SqlitePackStorage {
             .filter_map(|row| {
                 let content_path = parse_stored_content_path(instance_id, &row.content_path)?;
                 let file_updates = updates.remove(&row.content_path).unwrap_or_default();
-                Some((content_path, row.into_pack_file(file_updates)))
+                let pack_file = row.into_pack_file(file_updates).ok()?;
+                Some((content_path, pack_file))
             })
             .collect())
     }
@@ -506,6 +512,14 @@ mod tests {
     use super::*;
     use crate::features::instance::ContentVersionId;
 
+    fn sha1_hash(c: char) -> crate::shared::hash::FileHash {
+        crate::shared::hash::FileHash::new(
+            crate::shared::hash::HashAlgorithm::Sha1,
+            c.to_string().repeat(40),
+        )
+        .unwrap()
+    }
+
     fn cp(path: &str) -> ContentPath {
         ContentPath::parse(path).unwrap()
     }
@@ -523,7 +537,7 @@ mod tests {
                     version: Some(ContentVersionId::try_from("v1").unwrap()),
                 },
             )])),
-            ..PackFile::from_hash("a.jar".into(), "h".into())
+            ..PackFile::from_hash("a.jar".into(), sha1_hash('a'))
         };
         storage
             .update_pack_file(&id, &cp("mods/a.jar"), &file)
@@ -562,7 +576,7 @@ mod tests {
                     version: None,
                 },
             )])),
-            ..PackFile::from_hash("a.jar".into(), "h".into())
+            ..PackFile::from_hash("a.jar".into(), sha1_hash('a'))
         };
         storage
             .update_pack_file(&id, &cp("mods/a.jar"), &file)
@@ -583,13 +597,13 @@ mod tests {
             .update_pack_file(
                 &id,
                 &cp("mods/a.jar"),
-                &PackFile::from_hash("a.jar".into(), "h".into()),
+                &PackFile::from_hash("a.jar".into(), sha1_hash('a')),
             )
             .await
             .unwrap();
         for bad in ["../x.jar", ".metadata/instance.json", "mods//b.jar"] {
             sqlx::query(
-                "INSERT INTO pack_files (instance_id, content_path, file_name, hash) VALUES ('inst', ?, 'x.jar', 'h')",
+                "INSERT INTO pack_files (instance_id, content_path, file_name, hash) VALUES ('inst', ?, 'x.jar', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')",
             )
             .bind(bad)
             .execute(&storage.pool)
@@ -619,14 +633,14 @@ mod tests {
                     version: Some(ContentVersionId::try_from("v1").unwrap()),
                 },
             )])),
-            ..PackFile::from_hash("good.jar".into(), "h".into())
+            ..PackFile::from_hash("good.jar".into(), sha1_hash('a'))
         };
         storage
             .update_pack_file(&id, &cp("mods/good.jar"), &file)
             .await
             .unwrap();
         for bad in [".metadata/old.jar", "../old.jar"] {
-            sqlx::query("INSERT INTO pack_files (instance_id, content_path, file_name, hash) VALUES ('inst', ?, 'old.jar', 'h')")
+            sqlx::query("INSERT INTO pack_files (instance_id, content_path, file_name, hash) VALUES ('inst', ?, 'old.jar', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')")
                 .bind(bad)
                 .execute(&storage.pool)
                 .await
@@ -650,7 +664,7 @@ mod tests {
     async fn should_drop_a_stored_path_that_changes_when_normalized() {
         let storage = SqlitePackStorage::in_memory().await;
         let id = InstanceId::try_from("inst").unwrap();
-        sqlx::query(r"INSERT INTO pack_files (instance_id, content_path, file_name, hash) VALUES ('inst', 'mods\a.jar', 'a.jar', 'h')")
+        sqlx::query(r"INSERT INTO pack_files (instance_id, content_path, file_name, hash) VALUES ('inst', 'mods\a.jar', 'a.jar', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')")
             .execute(&storage.pool)
             .await
             .unwrap();

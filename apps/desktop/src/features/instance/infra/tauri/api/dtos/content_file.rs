@@ -100,7 +100,7 @@ impl From<ContentFileView> for ContentFileDto {
             content_type: value.content_type.into(),
             disabled: value.disabled,
             file_name: value.file_name,
-            hash: value.hash,
+            hash: value.hash.to_string(),
             name: value.name,
             size: value.size,
             version: value.version.map(Into::into),
@@ -176,7 +176,14 @@ mod tests {
 
     fn file(icon_path: Option<&str>) -> ContentFileView {
         let mut file = ContentFileView::from(ContentFile::from_pack_file(
-            PackFile::from_hash("sodium.jar".into(), "hash".into()),
+            PackFile::from_hash(
+                "sodium.jar".into(),
+                aether_core::shared::hash::FileHash::new(
+                    aether_core::shared::hash::HashAlgorithm::Sha1,
+                    "a".repeat(40),
+                )
+                .unwrap(),
+            ),
             ContentPath::parse("mods/sodium.jar").unwrap(),
             ContentType::Mod,
             1,

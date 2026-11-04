@@ -101,7 +101,7 @@ async fn should_roll_back_an_update_when_removing_a_dropped_file_fails() {
             "mods/held.jar",
             PackFile {
                 installed_by: Some(pack_of(&plugin("packwiz"))),
-                ..PackFile::from_hash("held.jar".into(), sha1("held"))
+                ..PackFile::from_hash("held.jar".into(), sha1_hash("held"))
             },
         )
         .await;

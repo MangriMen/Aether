@@ -8,9 +8,11 @@ use crate::features::instance::{
     infra::{
         legacy_provider_id::{parse_stored_provider_id, parse_v1_provider_id},
         stored_content_id::{parse_stored_content_id, parse_stored_version},
+        stored_hash::parse_stored_hash,
         stored_side::parse_stored_side,
     },
 };
+use crate::shared::hash::InvalidFileHash;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 #[serde(rename_all = "kebab-case")]
@@ -72,8 +74,12 @@ pub struct ContentFileUpdateInfoV1 {
     pub version: String,
 }
 
-impl From<PackFileV1> for PackFile {
-    fn from(value: PackFileV1) -> Self {
+impl TryFrom<PackFileV1> for PackFile {
+    type Error = InvalidFileHash;
+
+    fn try_from(value: PackFileV1) -> Result<Self, Self::Error> {
+        let hash = parse_stored_hash(&value.file_name, &value.hash)?;
+
         let update_provider_id = value
             .update_provider
             .and_then(|s| parse_v1_provider_id(&s).ok());
@@ -98,10 +104,10 @@ impl From<PackFileV1> for PackFile {
                 .collect()
         });
 
-        Self {
+        Ok(Self {
             file_name: value.file_name,
             name: value.name,
-            hash: value.hash,
+            hash,
             download: value.download.map(|d| PackFileDownload {
                 hash: d.hash,
                 url: d.url,
@@ -115,12 +121,16 @@ impl From<PackFileV1> for PackFile {
             update_provider_id,
             update,
             installed_by: None,
-        }
+        })
     }
 }
 
-impl From<PackFileV2> for PackFile {
-    fn from(value: PackFileV2) -> Self {
+impl TryFrom<PackFileV2> for PackFile {
+    type Error = InvalidFileHash;
+
+    fn try_from(value: PackFileV2) -> Result<Self, Self::Error> {
+        let hash = parse_stored_hash(&value.file_name, &value.hash)?;
+
         let update_provider_id = value
             .update_provider_id
             .as_ref()
@@ -147,10 +157,10 @@ impl From<PackFileV2> for PackFile {
                 .collect()
         });
 
-        Self {
+        Ok(Self {
             file_name: value.file_name,
             name: value.name,
-            hash: value.hash,
+            hash,
             download: value.download.map(|d| PackFileDownload {
                 hash: d.hash,
                 url: d.url,
@@ -164,7 +174,7 @@ impl From<PackFileV2> for PackFile {
             update_provider_id,
             update,
             installed_by: None,
-        }
+        })
     }
 }
 
@@ -173,7 +183,7 @@ impl From<PackFile> for PackFileV2 {
         Self {
             file_name: value.file_name,
             name: value.name,
-            hash: value.hash,
+            hash: value.hash.to_string(),
             download: value.download.map(|d| PackFileDownloadV1 {
                 hash: d.hash,
                 url: d.url,
@@ -251,7 +261,7 @@ mod tests {
         let dto: PackFileV2 = toml::from_str(
             r#"
             file-name = "sodium.jar"
-            hash = "abc"
+            hash = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
             update-provider-id = "aether#modrinth"
 
             [update."aether#modrinth"]
@@ -261,7 +271,7 @@ mod tests {
         )
         .unwrap();
 
-        let pack_file = PackFile::from(dto);
+        let pack_file = PackFile::try_from(dto).unwrap();
 
         assert!(pack_file.update.unwrap().is_empty());
     }
@@ -271,7 +281,7 @@ mod tests {
         let dto: PackFileV2 = toml::from_str(
             r#"
             file-name = "sodium.jar"
-            hash = "abc"
+            hash = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
             update-provider-id = "core:modrinth#modrinth-content"
 
             [update."core:modrinth#modrinth-content"]
@@ -281,7 +291,7 @@ mod tests {
         )
         .unwrap();
 
-        let pack_file = PackFile::from(dto);
+        let pack_file = PackFile::try_from(dto).unwrap();
 
         assert_eq!(pack_file.update_provider_id, Some(aether_modrinth()));
         let update = pack_file.update.unwrap();
@@ -297,7 +307,7 @@ mod tests {
         let pack_file = read_v1(
             r#"
             file-name = "sodium.jar"
-            hash = "abc"
+            hash = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
             update-provider = "modrinth"
 
             [update.modrinth]
@@ -317,7 +327,7 @@ mod tests {
         let pack_file = read_v2(
             r#"
             file-name = "sodium.jar"
-            hash = "abc"
+            hash = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
             update-provider-id = "aether#modrinth"
 
             [update."aether#modrinth"]
@@ -335,7 +345,7 @@ mod tests {
         let dto: PackFileV1 = toml::from_str(
             r#"
             file-name = "sodium.jar"
-            hash = "abc"
+            hash = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
             update-provider = "modrinth"
 
             [update.modrinth]
@@ -345,7 +355,7 @@ mod tests {
         )
         .unwrap();
 
-        let pack_file = PackFile::from(dto);
+        let pack_file = PackFile::try_from(dto).unwrap();
 
         assert_eq!(pack_file.update_provider_id, Some(aether_modrinth()));
         let update = pack_file.update.unwrap();
@@ -355,12 +365,25 @@ mod tests {
         );
     }
 
+    #[test]
+    fn should_refuse_the_pack_file_when_its_hash_is_not_a_digest() {
+        let dto: PackFileV2 = toml::from_str(
+            r#"
+            file-name = "sodium.jar"
+            hash = "abc"
+            "#,
+        )
+        .unwrap();
+
+        assert!(PackFile::try_from(dto).is_err());
+    }
+
     fn read_v1(text: &str) -> PackFile {
-        PackFile::from(toml::from_str::<PackFileV1>(text).unwrap())
+        PackFile::try_from(toml::from_str::<PackFileV1>(text).unwrap()).unwrap()
     }
 
     fn read_v2(text: &str) -> PackFile {
-        PackFile::from(toml::from_str::<PackFileV2>(text).unwrap())
+        PackFile::try_from(toml::from_str::<PackFileV2>(text).unwrap()).unwrap()
     }
 
     /// A damaged entry costs that entry, not the whole read.
@@ -369,7 +392,7 @@ mod tests {
         read_v2,
         r#"
         file-name = "sodium.jar"
-        hash = "abc"
+        hash = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 
         [update.no-separator]
         content-id = "broken"
@@ -384,7 +407,7 @@ mod tests {
         read_v1,
         r#"
         file-name = "sodium.jar"
-        hash = "abc"
+        hash = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 
         [update.no-separator]
         project_id = "broken"
@@ -398,7 +421,7 @@ mod tests {
         read_v1,
         r#"
         file-name = "sodium.jar"
-        hash = "abc"
+        hash = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 
         [update]
         "curseforge#cf" = "not a table"
@@ -426,13 +449,13 @@ mod tests {
         let dto: PackFileV2 = toml::from_str(
             r#"
             file-name = "sodium.jar"
-            hash = "abc"
+            hash = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
             update-provider-id = "core:modrinth#modrinth-content"
             "#,
         )
         .unwrap();
 
-        let written = PackFileV2::from(PackFile::from(dto));
+        let written = PackFileV2::from(PackFile::try_from(dto).unwrap());
 
         assert_eq!(
             written.update_provider_id.as_deref(),

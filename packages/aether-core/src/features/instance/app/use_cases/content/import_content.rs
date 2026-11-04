@@ -17,7 +17,7 @@ use crate::{
         settings::LocationInfo,
     },
     shared::{
-        hash::infra::sha1_async,
+        hash::infra::sha1_hash_async,
         io::infra::{canonicalize, read_async},
     },
 };
@@ -161,7 +161,7 @@ impl ImportContentUseCase {
             .await
             .map_err(|err| InstanceError::Storage(err.to_string()))?;
 
-        let hash = sha1_async(file_content)
+        let hash = sha1_hash_async(file_content)
             .await
             .map_err(|err| InstanceError::Storage(err.to_string()))?;
 

@@ -426,7 +426,7 @@ async fn should_not_wait_for_an_instance_lock_when_installing_a_modpack() {
 async fn should_tell_the_provider_the_installed_version_when_installing_content() {
     let provider = MockProvider::new(Some(answer_as_asked()));
     let fixture = Fixture::new(&provider).await;
-    let mut record = PackFile::from_hash("sodium.jar".into(), "hash".into());
+    let mut record = PackFile::from_hash("sodium.jar".into(), sha1_hash("hash"));
     record.update = Some(HashMap::from([(
         provider_id(),
         ContentFileUpdateInfo {
@@ -651,4 +651,9 @@ async fn should_fail_when_the_provider_has_no_plans() {
         }
     ));
     assert!(fixture.executor.calls.lock().unwrap().is_empty());
+}
+
+fn sha1_hash(seed: &str) -> crate::shared::hash::FileHash {
+    use crate::shared::hash::{FileHash, HashAlgorithm};
+    FileHash::new(HashAlgorithm::Sha1, format!("{:0>40x}", seed.len())).unwrap()
 }

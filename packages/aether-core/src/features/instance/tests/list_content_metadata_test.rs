@@ -536,7 +536,7 @@ impl Fixture {
         for (file, capability_id, content_id) in files {
             tokio::fs::write(mods.join(file), b"jar").await.unwrap();
             let provider = provider_id(capability_id);
-            let mut pack_file = PackFile::from_hash((*file).to_owned(), "hash".into());
+            let mut pack_file = PackFile::from_hash((*file).to_owned(), sha1_hash("hash"));
             pack_file.update_provider_id = Some(provider.clone());
             pack_file.update = Some(HashMap::from([(
                 provider,
@@ -1666,4 +1666,9 @@ async fn should_skip_a_file_when_its_name_cannot_be_a_content_path() {
     assert!(names.contains_key("mods/good.jar"));
     assert!(!names.keys().any(|path| path.starts_with("mods/foo.jar")));
     assert_eq!(names.len(), 1);
+}
+
+fn sha1_hash(seed: &str) -> crate::shared::hash::FileHash {
+    use crate::shared::hash::{FileHash, HashAlgorithm};
+    FileHash::new(HashAlgorithm::Sha1, format!("{:0>40x}", seed.len())).unwrap()
 }

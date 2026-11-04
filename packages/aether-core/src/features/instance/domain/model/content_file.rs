@@ -1,7 +1,10 @@
 use std::collections::HashMap;
 
-use crate::features::instance::{
-    ContentMetadata, ContentPath, ContentVersionMetadata, PackFile, ProviderId,
+use crate::{
+    features::instance::{
+        ContentMetadata, ContentPath, ContentVersionMetadata, PackFile, ProviderId,
+    },
+    shared::hash::{FileHash, HashAlgorithm, InvalidFileHash},
 };
 
 use super::{ContentId, ContentType, ContentVersionId};
@@ -12,7 +15,7 @@ pub struct ContentFile {
     pub content_type: ContentType,
     pub disabled: bool,
     pub file_name: String,
-    pub hash: String,
+    pub hash: FileHash,
     pub name: Option<String>,
     pub size: u64,
     pub version: Option<ContentVersionId>,
@@ -65,6 +68,16 @@ pub struct ContentFileUpdateInfo {
     pub content_id: ContentId,
     /// `None` for an old record that kept no version.
     pub version: Option<ContentVersionId>,
+}
+
+/// A file hash as stored or handed over by a plugin: `<algorithm>:<hex digest>` (the `Display`
+/// form), or a bare digest, which is sha1 — what records had before the algorithm was kept.
+pub fn parse_file_hash(value: &str) -> Result<FileHash, InvalidFileHash> {
+    if value.contains(':') {
+        value.parse()
+    } else {
+        FileHash::new(HashAlgorithm::Sha1, value)
+    }
 }
 
 impl ContentFile {

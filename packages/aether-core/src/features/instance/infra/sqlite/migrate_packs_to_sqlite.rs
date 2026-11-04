@@ -94,6 +94,14 @@ async fn set_aside(
 mod tests {
     use std::sync::{Arc, Mutex};
 
+    fn sha1_hash(c: char) -> crate::shared::hash::FileHash {
+        crate::shared::hash::FileHash::new(
+            crate::shared::hash::HashAlgorithm::Sha1,
+            c.to_string().repeat(40),
+        )
+        .unwrap()
+    }
+
     use async_trait::async_trait;
     use tempfile::TempDir;
 
@@ -141,7 +149,7 @@ mod tests {
         }
     }
 
-    async fn legacy_pack(fs: &FsPackStorage, instance_id: &InstanceId, path: &str, hash: &str) {
+    async fn legacy_pack(fs: &FsPackStorage, instance_id: &InstanceId, path: &str, hash: char) {
         fs.update_pack(
             instance_id,
             &Pack {
@@ -153,7 +161,7 @@ mod tests {
         fs.update_pack_file(
             instance_id,
             &cp(path),
-            &PackFile::from_hash("a.jar".into(), hash.into()),
+            &PackFile::from_hash("a.jar".into(), sha1_hash(hash)),
         )
         .await
         .unwrap();
@@ -184,7 +192,7 @@ mod tests {
     #[tokio::test]
     async fn should_migrate_legacy_pack_when_sqlite_is_empty() {
         let (_temp, instances, fs, id) = setup();
-        legacy_pack(&fs, &id, "mods/a.jar", "legacy").await;
+        legacy_pack(&fs, &id, "mods/a.jar", 'e').await;
         let sqlite = SqlitePackStorage::in_memory().await;
 
         migrate_packs_to_sqlite(&instances, &fs, &sqlite)
@@ -192,13 +200,13 @@ mod tests {
             .unwrap();
 
         let migrated = sqlite.get_pack_file(&id, &cp("mods/a.jar")).await.unwrap();
-        assert_eq!(migrated.hash, "legacy");
+        assert_eq!(migrated.hash, sha1_hash('e'));
     }
 
     #[tokio::test]
     async fn should_set_the_legacy_pack_aside_when_it_was_migrated() {
         let (_temp, instances, fs, id) = setup();
-        legacy_pack(&fs, &id, "mods/a.jar", "legacy").await;
+        legacy_pack(&fs, &id, "mods/a.jar", 'e').await;
         let sqlite = SqlitePackStorage::in_memory().await;
 
         migrate_packs_to_sqlite(&instances, &fs, &sqlite)
@@ -211,13 +219,13 @@ mod tests {
     #[tokio::test]
     async fn should_not_overwrite_pack_when_already_migrated() {
         let (_temp, instances, fs, id) = setup();
-        legacy_pack(&fs, &id, "mods/a.jar", "legacy").await;
+        legacy_pack(&fs, &id, "mods/a.jar", 'e').await;
         let sqlite = SqlitePackStorage::in_memory().await;
         sqlite
             .update_pack_file(
                 &id,
                 &cp("mods/a.jar"),
-                &PackFile::from_hash("a.jar".into(), "current".into()),
+                &PackFile::from_hash("a.jar".into(), sha1_hash('c')),
             )
             .await
             .unwrap();
@@ -227,13 +235,13 @@ mod tests {
             .unwrap();
 
         let kept = sqlite.get_pack_file(&id, &cp("mods/a.jar")).await.unwrap();
-        assert_eq!(kept.hash, "current");
+        assert_eq!(kept.hash, sha1_hash('c'));
     }
 
     #[tokio::test]
     async fn should_migrate_readable_files_in_one_go_when_one_legacy_file_is_missing() {
         let (_temp, instances, fs, id) = setup();
-        legacy_pack(&fs, &id, "mods/a.jar", "legacy").await;
+        legacy_pack(&fs, &id, "mods/a.jar", 'e').await;
         fs.update_pack(
             &id,
             &Pack {
@@ -263,7 +271,7 @@ mod tests {
     #[tokio::test]
     async fn should_not_bring_legacy_files_back_when_every_migrated_file_was_removed() {
         let (_temp, instances, fs, id) = setup();
-        legacy_pack(&fs, &id, "mods/a.jar", "legacy").await;
+        legacy_pack(&fs, &id, "mods/a.jar", 'e').await;
         let sqlite = SqlitePackStorage::in_memory().await;
         migrate_packs_to_sqlite(&instances, &fs, &sqlite)
             .await

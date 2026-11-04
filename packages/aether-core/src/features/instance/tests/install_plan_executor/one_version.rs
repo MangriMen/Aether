@@ -20,7 +20,7 @@ fn modmenu_record(path: &str, body: &str, version: &str, origin: PlanOrigin) -> 
         installed_by: Some(origin),
         update_provider_id: Some(modrinth_id()),
         update: Some(modrinth_update(MODMENU, version)),
-        ..PackFile::from_hash(file_name(path), sha1(body))
+        ..PackFile::from_hash(file_name(path), sha1_hash(body))
     }
 }
 

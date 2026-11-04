@@ -113,13 +113,14 @@ impl PackStorage for FsPackStorage {
         let pack_file_result: Result<PackFileV2, _> = read_toml_async(&path).await;
 
         if let Ok(dto) = pack_file_result {
-            Ok(dto.into())
+            PackFile::try_from(dto).map_err(|err| InstanceError::Storage(err.to_string()))
         } else {
             let v1_result: Result<PackFileV1, _> = read_toml_async(&path).await;
 
             match v1_result {
                 Ok(v1) => {
-                    let migrated: PackFile = v1.into();
+                    let migrated = PackFile::try_from(v1)
+                        .map_err(|err| InstanceError::Storage(err.to_string()))?;
 
                     let _ = self
                         .update_pack_file(instance_id, content_path, &migrated)
@@ -258,6 +259,14 @@ impl PackStorage for FsPackStorage {
 mod tests {
     use tempfile::TempDir;
 
+    fn sha1_hash(c: char) -> crate::shared::hash::FileHash {
+        crate::shared::hash::FileHash::new(
+            crate::shared::hash::HashAlgorithm::Sha1,
+            c.to_string().repeat(40),
+        )
+        .unwrap()
+    }
+
     use super::*;
 
     #[tokio::test]
@@ -270,7 +279,11 @@ mod tests {
         let id = InstanceId::try_from("inst").unwrap();
         let good = ContentPath::parse("mods/a.jar").unwrap();
         storage
-            .update_pack_file(&id, &good, &PackFile::from_hash("a.jar".into(), "h".into()))
+            .update_pack_file(
+                &id,
+                &good,
+                &PackFile::from_hash("a.jar".into(), sha1_hash('a')),
+            )
             .await
             .unwrap();
         tokio::fs::write(
@@ -287,7 +300,7 @@ mod tests {
         assert_eq!(pack.files.len(), 1);
         assert_eq!(pack.files[0].file, good);
         assert_eq!(files.len(), 1);
-        assert_eq!(files[&good].hash, "h");
+        assert_eq!(files[&good].hash, sha1_hash('a'));
     }
 
     #[tokio::test]
@@ -300,7 +313,11 @@ mod tests {
         let id = InstanceId::try_from("inst").unwrap();
         let good = ContentPath::parse("mods/a.jar").unwrap();
         storage
-            .update_pack_file(&id, &good, &PackFile::from_hash("a.jar".into(), "h".into()))
+            .update_pack_file(
+                &id,
+                &good,
+                &PackFile::from_hash("a.jar".into(), sha1_hash('a')),
+            )
             .await
             .unwrap();
         tokio::fs::write(

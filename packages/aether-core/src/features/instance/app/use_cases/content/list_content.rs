@@ -17,7 +17,7 @@ use crate::{
         },
         settings::LocationInfo,
     },
-    shared::{hash::infra::sha1_async, io::infra::read_async},
+    shared::{hash::infra::sha1_hash_async, io::infra::read_async},
 };
 
 pub struct ListContentUseCase {
@@ -229,7 +229,7 @@ impl ListContentUseCase {
         let file_content = read_async(file_path)
             .await
             .map_err(|err| InstanceError::Storage(err.to_string()))?;
-        let hash = sha1_async(file_content)
+        let hash = sha1_hash_async(file_content)
             .await
             .map_err(|err| InstanceError::Storage(err.to_string()))?;
         let pack_file = PackFile::from_hash(file_name.to_owned(), hash);

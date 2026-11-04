@@ -389,6 +389,14 @@ mod tests {
     use super::*;
     use crate::features::instance::{ContentSource, ContentType, InstallFileEntry};
 
+    fn sha1_hash(c: char) -> crate::shared::hash::FileHash {
+        crate::shared::hash::FileHash::new(
+            crate::shared::hash::HashAlgorithm::Sha1,
+            c.to_string().repeat(40),
+        )
+        .unwrap()
+    }
+
     fn plan_of(path: &str) -> InstallPlan {
         InstallPlan {
             target: crate::features::instance::InstallTarget::existing(
@@ -406,7 +414,7 @@ mod tests {
     fn record_at(path: &str) -> HashMap<ContentPath, PackFile> {
         HashMap::from([(
             ContentPath::parse(path).unwrap(),
-            PackFile::from_hash("a.jar".into(), "hash".into()),
+            PackFile::from_hash("a.jar".into(), sha1_hash('a')),
         )])
     }
 
