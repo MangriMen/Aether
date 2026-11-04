@@ -143,8 +143,10 @@ pub(crate) fn parse_plugin_path(
 /// since one would let a plugin have the core read or copy any file of the user's. `..`, roots,
 /// `\` and drive or UNC prefixes are already refused by [`PluginPath::parse`], before the
 /// filesystem is touched (a UNC path alone would make Windows connect to the named server). The
-/// file must exist and stay inside the mount after resolving symlinks and short names; the
-/// canonical path is returned, so a symlink swapped in later does not redirect the core.
+/// file must exist and stay inside the mount after resolving symlinks and short names, and the
+/// canonical path is returned. That holds at the time of the check only: `/cache` is writable
+/// by the plugin, so a component swapped for a symlink after this returns is not caught here;
+/// whatever opens the path later has to guard against that itself.
 pub(crate) fn resolve_plugin_path(
     location_info: &LocationInfo,
     plugin_id: &PluginId,
@@ -1049,10 +1051,10 @@ mod tests {
             "/mnt/c/Windows/System32/cmd.exe",
             r"C:\Windows\System32\cmd.exe",
             "C:/Windows",
-            r"\server\share\file",
-            r"\?\C:\Windows",
-            r"\?\UNC\server\share",
-            r"\.\pipe\name",
+            r"\\server\share\file",
+            r"\\?\C:\Windows",
+            r"\\?\UNC\server\share",
+            r"\\.\pipe\name",
             r"C:\PROGRA~1",
         ] {
             assert_refused(&layout, path, MountSet::ALL);
@@ -1066,8 +1068,8 @@ mod tests {
         // A `\` is refused on every host, so these never reach the file system.
         for path in [
             r"/cache/C:\Windows",
-            r"/cache/\server\share",
-            r"/cache/\?\C:\Windows",
+            r"/cache/\\server\share",
+            r"/cache/\\?\C:\Windows",
         ] {
             assert_refused(&layout, path, MountSet::ALL);
         }

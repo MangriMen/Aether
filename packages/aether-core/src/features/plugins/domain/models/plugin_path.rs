@@ -35,29 +35,43 @@ pub struct InvalidPluginPath {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct PluginPath(String);
 
+/// `path` as `/` and a relative part checked by `parse_relative`, normalized.
+fn parse_absolute(
+    path: &str,
+    parse_relative: fn(&str, Separators) -> Result<String, PathRejection>,
+) -> Result<String, InvalidPluginPath> {
+    let invalid = |reason| InvalidPluginPath {
+        path: path.to_owned(),
+        reason,
+    };
+
+    let Some(relative) = path.strip_prefix('/') else {
+        return Err(invalid(PluginPathRejection::NotAbsolute));
+    };
+
+    if relative.is_empty() {
+        return Err(invalid(PluginPathRejection::Root));
+    }
+
+    // The shared rules would call the rest of `//x` absolute; here it is an empty segment.
+    if relative.starts_with('/') {
+        return Err(invalid(PathRejection::EmptySegment.into()));
+    }
+
+    parse_relative(relative, Separators::SlashOnly)
+        .map(|normalized| format!("/{normalized}"))
+        .map_err(|rejection| invalid(rejection.into()))
+}
+
+/// `path` is `base` or lies under it, by whole segments.
+fn is_within(path: &str, base: &str) -> bool {
+    path.strip_prefix(base)
+        .is_some_and(|rest| rest.is_empty() || rest.starts_with('/'))
+}
+
 impl PluginPath {
     pub fn parse(path: &str) -> Result<Self, InvalidPluginPath> {
-        let invalid = |reason| InvalidPluginPath {
-            path: path.to_owned(),
-            reason,
-        };
-
-        let Some(relative) = path.strip_prefix('/') else {
-            return Err(invalid(PluginPathRejection::NotAbsolute));
-        };
-
-        if relative.is_empty() {
-            return Err(invalid(PluginPathRejection::Root));
-        }
-
-        // The shared rules would call the rest of `//x` absolute; here it is an empty segment.
-        if relative.starts_with('/') {
-            return Err(invalid(PathRejection::EmptySegment.into()));
-        }
-
-        safe_path::parse_relative(relative, Separators::SlashOnly)
-            .map(|normalized| Self(format!("/{normalized}")))
-            .map_err(|rejection| invalid(rejection.into()))
+        parse_absolute(path, safe_path::parse_relative).map(Self)
     }
 
     pub fn as_str(&self) -> &str {
@@ -75,18 +89,38 @@ impl PluginPath {
         &'a self,
         base: &PluginPath,
     ) -> Option<impl Iterator<Item = &'a str> + use<'a>> {
-        let rest = self.0.strip_prefix(&base.0)?;
-        if !(rest.is_empty() || rest.starts_with('/')) {
+        if !is_within(&self.0, &base.0) {
             return None;
         }
 
-        // `rest` is empty or `/a/b`: splitting yields a leading empty piece either way.
-        Some(rest.split('/').skip(1))
+        // The rest is empty or `/a/b`: splitting yields a leading empty piece either way.
+        Some(self.0[base.0.len()..].split('/').skip(1))
     }
 
     /// Whether this path is `base` or lies under it.
     pub fn is_within(&self, base: &PluginPath) -> bool {
-        self.strip_prefix(base).is_some()
+        is_within(&self.0, &base.0)
+    }
+}
+
+/// Where a folder of the user's is mounted in a plugin's sandbox (`/mnt/d/packs`).
+///
+/// Only the structure of a [`PluginPath`] is required: `/` and one or more segments, none of
+/// them empty, `.` or `..`, with no `\` or NUL. The rules for names a host file system treats
+/// specially are left out on purpose: the mount point is derived from the folder's real path
+/// ([`super::to_wasi_path`]) and is never joined onto a host folder, so a folder the user's file
+/// system allows (`/home/u/aux`, `My Pack `) must not be refused for its name.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct PluginMountPoint(String);
+
+impl PluginMountPoint {
+    pub fn parse(path: &str) -> Result<Self, InvalidPluginPath> {
+        parse_absolute(path, safe_path::parse_relative_structure).map(Self)
+    }
+
+    /// Whether this mount point is `path`, lies over it or under it.
+    pub fn overlaps(&self, path: &PluginPath) -> bool {
+        is_within(&self.0, &path.0) || is_within(&path.0, &self.0)
     }
 }
 
@@ -199,5 +233,43 @@ mod tests {
         assert!(!PluginPath::parse("/cachex/a").unwrap().is_within(&cache));
         assert!(!PluginPath::parse("/Cache/a").unwrap().is_within(&cache));
         assert!(!cache.is_within(&PluginPath::parse("/cache/a").unwrap()));
+    }
+
+    #[rstest]
+    #[case::device_name("/home/u/aux")]
+    #[case::device_name_with_extension("/mnt/d/Modpacks/aux.packs")]
+    #[case::numbered_device("/mnt/d/com1.d")]
+    #[case::trailing_space("/home/u/My Pack ")]
+    #[case::trailing_dot("/home/u/pack.")]
+    #[case::colon("/home/u/a:b")]
+    fn should_accept_a_mount_point_when_a_host_allows_the_folder_name(#[case] path: &str) {
+        assert!(PluginMountPoint::parse(path).is_ok(), "{path:?}");
+    }
+
+    #[rstest]
+    #[case::relative("packs", PluginPathRejection::NotAbsolute)]
+    #[case::root("/", PluginPathRejection::Root)]
+    #[case::double_slash("//packs", PathRejection::EmptySegment.into())]
+    #[case::trailing_slash("/packs/", PathRejection::EmptySegment.into())]
+    #[case::current_dir("/packs/./x", PathRejection::DotSegment.into())]
+    #[case::parent_dir("/packs/../cache", PathRejection::DotSegment.into())]
+    #[case::backslash(r"/packs\..\cache", PathRejection::Backslash.into())]
+    #[case::nul_byte("/packs/a\0b", PathRejection::NulByte.into())]
+    fn should_refuse_a_mount_point_when_its_structure_is_unsafe(
+        #[case] path: &str,
+        #[case] expected: PluginPathRejection,
+    ) {
+        assert_eq!(PluginMountPoint::parse(path).unwrap_err().reason, expected);
+    }
+
+    #[test]
+    fn should_overlap_a_core_mount_only_by_whole_segments() {
+        let cache = PluginPath::parse("/cache").unwrap();
+        let overlaps = |path| PluginMountPoint::parse(path).unwrap().overlaps(&cache);
+
+        assert!(overlaps("/cache"));
+        assert!(overlaps("/cache/sub"));
+        assert!(!overlaps("/cached"));
+        assert!(!overlaps("/mnt/cache"));
     }
 }

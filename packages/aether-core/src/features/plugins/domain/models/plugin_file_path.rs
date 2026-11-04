@@ -6,8 +6,8 @@ use crate::shared::safe_path::{self, Separators};
 /// A file inside a plugin's directory, as the manifest names it (`load.file`).
 ///
 /// The only way to build one is [`TryFrom<PathBuf>`], which holds the path to the shared segment
-/// rules ([`safe_path`]): relative, no empty, `.` or `..` segment, no drive letter, NUL or
-/// reserved device name. The path is joined onto the plugin directory, so without this a manifest
+/// rules ([`safe_path`]) once any leading `./` is taken off: relative, no empty, `.` or `..`
+/// segment, no drive letter, NUL or reserved device name. The path is joined onto the plugin directory, so without this a manifest
 /// could make the loader read (and hash) a file outside it. `/` and `\` both separate, so a
 /// manifest names the same file on every platform.
 #[derive(Debug, Clone, Eq, Hash, PartialEq)]
@@ -25,7 +25,13 @@ impl TryFrom<PathBuf> for PluginFilePath {
     fn try_from(path: PathBuf) -> Result<Self, Self::Error> {
         let refused = || ManifestError::InvalidLoadFile(path.display().to_string());
 
-        let text = path.to_str().ok_or_else(refused)?;
+        let mut text = path.to_str().ok_or_else(refused)?;
+        // `./plugin.wasm` is a common way to write a file beside the manifest: a leading `.`
+        // names the plugin directory itself, so it is taken off. Anywhere else it is refused.
+        while let Some(rest) = text.strip_prefix("./").or_else(|| text.strip_prefix(".\\")) {
+            text = rest;
+        }
+
         let normalized =
             safe_path::parse_relative(text, Separators::SlashOrBackslash).map_err(|reason| {
                 tracing::debug!("Refusing `load.file` {text:?}: {reason}");
@@ -94,7 +100,23 @@ mod tests {
     }
 
     #[rstest]
-    #[case::current_dir_prefix("./plugin.wasm")]
+    #[case::current_dir_prefix("./plugin.wasm", "plugin.wasm")]
+    #[case::repeated_current_dir_prefix("././bin/plugin.wasm", "bin/plugin.wasm")]
+    #[case::backslash_current_dir_prefix(r".\bin\plugin.wasm", "bin/plugin.wasm")]
+    fn should_take_off_a_leading_current_dir_when_parsing_a_load_file(
+        #[case] file: &str,
+        #[case] expected: &str,
+    ) {
+        assert_eq!(
+            parse(file).unwrap().as_path(),
+            expected.split('/').collect::<PathBuf>()
+        );
+    }
+
+    #[rstest]
+    #[case::only_current_dir("./")]
+    #[case::current_dir_inside("bin/./plugin.wasm")]
+    #[case::current_dir_then_parent("./../plugin.wasm")]
     #[case::repeated_separator("bin//plugin.wasm")]
     #[case::trailing_separator("plugin.wasm/")]
     #[case::backslash_traversal(r"bin\..\..\x.wasm")]

@@ -3,7 +3,7 @@ use std::{
     path::{Component, Path, PathBuf},
 };
 
-use super::plugin_path::{PluginPath, PluginPathRejection};
+use super::plugin_path::{PluginMountPoint, PluginPath, PluginPathRejection};
 use crate::features::{instance::PluginId, settings::LocationInfo};
 
 /// Where a plugin sees its own cache directory.
@@ -87,8 +87,8 @@ pub enum AllowedPathRejection {
     HostIsRoot,
     /// The plugin path does not start with `/`.
     PluginNotAbsolute,
-    /// The plugin path is not plain `/`-separated names (see [`PluginPath`]): it has an empty,
-    /// `.` or `..` segment, a `\`, a drive letter, a device name or another unsafe form.
+    /// The plugin path is not plain `/`-separated names (see [`PluginMountPoint`]): it has an
+    /// empty, `.` or `..` segment, a `\` or a NUL byte.
     PluginNotNormalized,
     /// The plugin path is `/` itself, which would hide every other mount.
     PluginIsRoot,
@@ -107,7 +107,7 @@ impl std::fmt::Display for AllowedPathRejection {
             Self::PluginNotAbsolute => "the plugin path must start with `/`",
             Self::PluginNotNormalized => {
                 "the plugin path must be plain `/`-separated names, without empty, `.` or `..` \
-                 parts, `\\`, drive letters or device names"
+                 parts or `\\`"
             }
             Self::PluginIsRoot => "the plugin path must not be `/`",
             Self::PluginReserved => "the plugin path overlaps `/cache` or `/instances`",
@@ -206,12 +206,12 @@ impl FolderMounts {
     }
 }
 
-/// The plugin side of a folder of the user's, parsed: a [`PluginPath`] clear of every
+/// The plugin side of a folder of the user's, parsed: a [`PluginMountPoint`] clear of every
 /// [`CoreMount`].
-fn validate_plugin_path(plugin: &str) -> Result<PluginPath, AllowedPathRejection> {
+fn validate_plugin_path(plugin: &str) -> Result<PluginMountPoint, AllowedPathRejection> {
     // `..` here would not escape on the host — the mount is a capability — but it would make
     // the reserved-mount check below compare names that do not mean what they say.
-    let path = PluginPath::parse(plugin).map_err(|err| match err.reason {
+    let path = PluginMountPoint::parse(plugin).map_err(|err| match err.reason {
         PluginPathRejection::NotAbsolute => AllowedPathRejection::PluginNotAbsolute,
         PluginPathRejection::Root => AllowedPathRejection::PluginIsRoot,
         PluginPathRejection::Segment(_) => AllowedPathRejection::PluginNotNormalized,
@@ -220,7 +220,7 @@ fn validate_plugin_path(plugin: &str) -> Result<PluginPath, AllowedPathRejection
     if CoreMount::ALL
         .into_iter()
         .map(CoreMount::plugin_root_path)
-        .any(|mount| path.is_within(&mount) || mount.is_within(&path))
+        .any(|mount| path.overlaps(&mount))
     {
         return Err(AllowedPathRejection::PluginReserved);
     }
@@ -658,10 +658,6 @@ mod tests {
             // `packs\..\cache` with `/cache` and see no overlap.
             r"/packs\..\cache",
             r"/packs\sub",
-            "/C:/packs",
-            "/packs/nul",
-            "/packs/COM1.d",
-            "/packs/sub.",
             "/packs/a\0b",
         ] {
             assert_eq!(
@@ -670,6 +666,24 @@ mod tests {
                 "{plugin:?}"
             );
         }
+    }
+
+    #[test]
+    fn should_accept_a_folder_when_its_name_is_special_only_to_some_file_system() {
+        // The mount point is the folder's own path in WASI form, never a file the core opens:
+        // a name the user's file system allows is not refused for what Windows makes of it.
+        for name in ["aux", "aux.packs", "com1.d", "My Pack ", "pack.", "a:b"] {
+            let folder = AllowedPath {
+                host: absolute(&format!("Modpacks/{name}")),
+                plugin: format!("/mnt/d/Modpacks/{name}"),
+                read_only: true,
+            };
+
+            assert_eq!(folder.validate(), Ok(()), "{name:?}");
+        }
+
+        let picked = AllowedPath::read_only_folder(Path::new("/home/u/aux"));
+        assert_eq!(picked.plugin, "/home/u/aux");
     }
 
     #[test]

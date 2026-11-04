@@ -58,6 +58,41 @@ pub enum Separators {
 /// drive letter or a `:` that Windows reads as one ([`is_refused_colon`]), a segment ending with
 /// a dot or a space, a reserved Windows device name, and under [`Separators::SlashOnly`] any `\`.
 pub fn parse_relative(path: &str, separators: Separators) -> Result<String, PathRejection> {
+    let normalized = parse_structure(path, separators, check_segment)?;
+
+    // Belt and braces: whatever the host's own parser makes of the rebuilt path, it must still
+    // be nothing but plain names. This is what would catch a form the rules above did not
+    // anticipate on some platform.
+    if !normalized
+        .split('/')
+        .collect::<PathBuf>()
+        .components()
+        .all(|component| matches!(component, Component::Normal(_)))
+    {
+        return Err(PathRejection::NotPlain);
+    }
+
+    Ok(normalized)
+}
+
+/// [`parse_relative`] without the rules for names the host's file system treats specially (a
+/// `:`, a trailing dot or space, a device name): only the structure of the path is checked.
+///
+/// For a name that is never joined onto a host folder but stands for one, such as the place a
+/// folder of the user's is mounted in a sandbox: it is derived from the folder's real path, and
+/// that folder may well be called `aux` or `My Pack ` on a file system that allows it.
+pub fn parse_relative_structure(
+    path: &str,
+    separators: Separators,
+) -> Result<String, PathRejection> {
+    parse_structure(path, separators, check_structural_segment)
+}
+
+fn parse_structure(
+    path: &str,
+    separators: Separators,
+    check: fn(usize, &str) -> Result<(), PathRejection>,
+) -> Result<String, PathRejection> {
     if path.is_empty() {
         return Err(PathRejection::Empty);
     }
@@ -74,37 +109,33 @@ pub fn parse_relative(path: &str, separators: Separators) -> Result<String, Path
         return Err(PathRejection::Absolute);
     }
 
-    let mut rebuilt = PathBuf::new();
     let mut normalized = String::with_capacity(path.len());
 
     for (index, segment) in path.split(['/', '\\']).enumerate() {
-        check_segment(index, segment)?;
+        check(index, segment)?;
 
-        rebuilt.push(segment);
         if index > 0 {
             normalized.push('/');
         }
         normalized.push_str(segment);
     }
 
-    // Belt and braces: whatever the host's own parser makes of the rebuilt path, it must still
-    // be nothing but plain names. This is what would catch a form the rules above did not
-    // anticipate on some platform.
-    if !rebuilt
-        .components()
-        .all(|component| matches!(component, Component::Normal(_)))
-    {
-        return Err(PathRejection::NotPlain);
-    }
-
     Ok(normalized)
+}
+
+fn check_structural_segment(_index: usize, segment: &str) -> Result<(), PathRejection> {
+    match segment {
+        "" => Err(PathRejection::EmptySegment),
+        "." | ".." => Err(PathRejection::DotSegment),
+        _ => Ok(()),
+    }
 }
 
 /// The rules for the `index`th segment of a relative path.
 fn check_segment(index: usize, segment: &str) -> Result<(), PathRejection> {
+    check_structural_segment(index, segment)?;
+
     match segment {
-        "" => Err(PathRejection::EmptySegment),
-        "." | ".." => Err(PathRejection::DotSegment),
         _ if is_refused_colon(index, segment) => Err(PathRejection::Colon),
         _ if segment.ends_with(['.', ' ']) => Err(PathRejection::TrailingDotOrSpace),
         _ if is_reserved_windows_name(segment) => Err(PathRejection::ReservedName),
@@ -204,6 +235,42 @@ mod tests {
                     "{path:?} under {separators:?}"
                 );
             }
+        }
+    }
+
+    #[test]
+    fn should_accept_names_the_host_treats_specially_when_only_the_structure_is_checked() {
+        for path in [
+            "home/u/aux",
+            "Modpacks/aux.packs",
+            "My Pack ",
+            "x/com1.d",
+            "a./b",
+        ] {
+            assert_eq!(
+                parse_relative_structure(path, Separators::SlashOnly),
+                Ok(path.to_owned()),
+                "{path:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn should_still_refuse_an_unsafe_structure_when_only_the_structure_is_checked() {
+        for (path, expected) in [
+            ("", PathRejection::Empty),
+            ("a\0b", PathRejection::NulByte),
+            (r"a\b", PathRejection::Backslash),
+            ("/a", PathRejection::Absolute),
+            ("a//b", PathRejection::EmptySegment),
+            ("a/./b", PathRejection::DotSegment),
+            ("a/../b", PathRejection::DotSegment),
+        ] {
+            assert_eq!(
+                parse_relative_structure(path, Separators::SlashOnly),
+                Err(expected),
+                "{path:?}"
+            );
         }
     }
 
