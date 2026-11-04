@@ -311,10 +311,7 @@ mod tests {
             .await
             .unwrap();
         let location = LocationInfo::new(temp.path().join("settings"), temp.path().to_path_buf());
-        let record_path = location
-            .instance_pack_dir(&id)
-            .join("mods")
-            .join("a.toml");
+        let record_path = location.instance_pack_dir(&id).join("mods").join("a.toml");
         let stored = tokio::fs::read_to_string(&record_path).await.unwrap();
         tokio::fs::write(&record_path, stored.replace(&"e".repeat(40), "bad"))
             .await
