@@ -17,12 +17,12 @@ use serde::{Serialize, de::DeserializeOwned};
 
 use crate::features::{
     instance::{
-        ContentAuthor, ContentCompatibilityCheckParams, ContentCompatibilityResult, ContentItem,
-        ContentMetadata, ContentProvider, ContentProviderCapabilityMetadata, ContentSearchParams,
-        ContentSearchResult, ContentVersion, ContentVersionMetadata, InstallFileEntry, InstallPlan,
-        InstallTarget, Instance, InstanceError, InstanceId, OverrideLocation, OverrideSource,
-        PackMetadata, PackSource, PluginId, ProviderId, ResolveInstallPlanParams, ResolveTarget,
-        ResolvedFile,
+        ContentAuthor, ContentCompatibilityCheckParams, ContentCompatibilityResult, ContentId,
+        ContentItem, ContentMetadata, ContentProvider, ContentProviderCapabilityMetadata,
+        ContentSearchParams, ContentSearchResult, ContentVersion, ContentVersionId,
+        ContentVersionMetadata, InstallFileEntry, InstallPlan, InstallTarget, Instance,
+        InstanceError, InstanceId, OverrideLocation, OverrideSource, PackMetadata, PackSource,
+        PluginId, ProviderId, ResolveInstallPlanParams, ResolveTarget, ResolvedFile,
     },
     plugins::{
         PluginCheckCompatibilityParams, PluginContentProviderCapability, PluginError, PluginHandle,
@@ -217,9 +217,9 @@ impl PluginContentProviderProxy {
                 version,
                 installed_version,
             } => PackSourceDto::Content {
-                content_id,
-                version,
-                installed_version,
+                content_id: content_id.into(),
+                version: version.map(Into::into),
+                installed_version: installed_version.map(Into::into),
             },
             PackSource::Url(url) => PackSourceDto::Url(url),
             PackSource::File(path) => PackSourceDto::File(
@@ -360,12 +360,12 @@ impl ContentProvider for PluginContentProviderProxy {
         })
     }
 
-    async fn get_content(&self, content_id: String) -> Result<ContentItem, InstanceError> {
+    async fn get_content(&self, content_id: ContentId) -> Result<ContentItem, InstanceError> {
         let result_dto: aether_core_plugin_api::v0::ContentItemDto = self
             .call_plugin(
                 "get_content",
                 &self.capability.handlers.get_content,
-                content_id,
+                String::from(content_id),
             )
             .await?;
         Ok(result_dto.into())
@@ -373,22 +373,26 @@ impl ContentProvider for PluginContentProviderProxy {
 
     async fn list_versions(
         &self,
-        content_id: String,
+        content_id: ContentId,
     ) -> Result<Vec<ContentVersion>, InstanceError> {
         let handler = self.handler(
             self.capability.handlers.list_version.as_ref(),
             "list_versions",
         )?;
         let result_dto: Vec<ContentVersionDto> = self
-            .call_plugin("list_versions", handler, content_id)
+            .call_plugin("list_versions", handler, String::from(content_id))
             .await?;
-        Ok(result_dto.into_iter().map(Into::into).collect())
+        result_dto
+            .into_iter()
+            .map(ContentVersion::try_from)
+            .collect::<Result<_, _>>()
+            .map_err(|err| self.invalid_answer("list_versions", err))
     }
 
     async fn resolve_file(
         &self,
-        content_id: &str,
-        version: Option<&str>,
+        content_id: &ContentId,
+        version: Option<&ContentVersionId>,
         game_version: &str,
         loader: Option<&str>,
     ) -> Result<ResolvedFile, InstanceError> {
@@ -397,8 +401,8 @@ impl ContentProvider for PluginContentProviderProxy {
             "resolve_file",
         )?;
         let params = ResolveFileParamsDto {
-            content_id: content_id.to_owned(),
-            version: version.map(ToOwned::to_owned),
+            content_id: content_id.to_string(),
+            version: version.map(ToString::to_string),
             game_version: game_version.to_owned(),
             loader: loader.map(ToOwned::to_owned),
         };
@@ -442,12 +446,14 @@ impl ContentProvider for PluginContentProviderProxy {
         let result_dto: PackMetadataDto = self
             .call_plugin("resolve_pack_metadata", handler, source)
             .await?;
-        Ok(result_dto.into())
+        result_dto
+            .try_into()
+            .map_err(|err| self.invalid_answer("resolve_pack_metadata", err))
     }
 
     async fn get_contents_metadata(
         &self,
-        content_ids: &[String],
+        content_ids: &[ContentId],
     ) -> Result<Vec<ContentMetadata>, InstanceError> {
         let handler = self.handler(
             self.capability.handlers.get_contents_metadata.as_ref(),
@@ -459,7 +465,7 @@ impl ContentProvider for PluginContentProviderProxy {
                 "get_contents_metadata",
                 handler,
                 GetContentsMetadataParamsDto {
-                    content_ids: content_ids.to_vec(),
+                    content_ids: content_ids.iter().map(ToString::to_string).collect(),
                 },
             )
             .await?;
@@ -468,7 +474,7 @@ impl ContentProvider for PluginContentProviderProxy {
         // against what was asked; it stays within the plugin's own provider, and no more than
         // one item per asked id is kept.
         let asked = |dto: &ContentMetadataDto| {
-            content_ids.contains(&dto.content_id)
+            content_ids.iter().any(|id| id.as_str() == dto.content_id)
                 || content_ids
                     .iter()
                     .any(|id| id.eq_ignore_ascii_case(&dto.slug))
@@ -478,12 +484,15 @@ impl ContentProvider for PluginContentProviderProxy {
                 handler,
                 result_dto,
                 asked,
-                |dto| !dto.content_id.trim().is_empty() && !dto.name.trim().is_empty(),
+                |dto| {
+                    ContentId::try_from(dto.content_id.as_str()).is_ok()
+                        && !dto.name.trim().is_empty()
+                },
                 |dto| &dto.content_id,
             )
             .into_iter()
             .take(content_ids.len())
-            .map(content_metadata_from_dto)
+            .filter_map(content_metadata_from_dto)
             .map(|mut metadata| {
                 // A ref no handler can resolve would only fail every lookup of it.
                 if self.capability.handlers.get_authors.is_none() {
@@ -528,7 +537,7 @@ impl ContentProvider for PluginContentProviderProxy {
 
     async fn get_versions_metadata(
         &self,
-        version_ids: &[String],
+        version_ids: &[ContentVersionId],
     ) -> Result<Vec<ContentVersionMetadata>, InstanceError> {
         let handler = self.handler(
             self.capability.handlers.get_versions_metadata.as_ref(),
@@ -540,21 +549,24 @@ impl ContentProvider for PluginContentProviderProxy {
                 "get_versions_metadata",
                 handler,
                 GetVersionsMetadataParamsDto {
-                    version_ids: version_ids.to_vec(),
+                    version_ids: version_ids.iter().map(ToString::to_string).collect(),
                 },
             )
             .await?;
-        let asked: HashSet<&str> = version_ids.iter().map(String::as_str).collect();
+        let asked: HashSet<&str> = version_ids.iter().map(ContentVersionId::as_str).collect();
         Ok(self
             .keep_answered(
                 handler,
                 result_dto,
                 |dto| asked.contains(dto.version_id.as_str()),
-                |dto| !dto.version_number.trim().is_empty(),
+                |dto| {
+                    ContentVersionId::try_from(dto.version_id.as_str()).is_ok()
+                        && !dto.version_number.trim().is_empty()
+                },
                 |dto| &dto.version_id,
             )
             .into_iter()
-            .map(version_metadata_from_dto)
+            .filter_map(version_metadata_from_dto)
             .collect())
     }
 
@@ -607,13 +619,13 @@ fn describe_resolve_target(target: &ResolveTarget) -> String {
 /// An icon is taken only as an `https` address, which the host fetches itself (a file path or
 /// any other scheme is dropped, so the plugin cannot point the host at a file of the user's;
 /// the icon cache refuses private hosts).
-fn content_metadata_from_dto(dto: ContentMetadataDto) -> ContentMetadata {
+fn content_metadata_from_dto(dto: ContentMetadataDto) -> Option<ContentMetadata> {
     let icon_url = dto
         .icon_url
         .filter(|icon_url| url::Url::parse(icon_url).is_ok_and(|url| url.scheme() == "https"));
 
-    ContentMetadata {
-        content_id: dto.content_id,
+    Some(ContentMetadata {
+        content_id: dto.content_id.try_into().ok()?,
         slug: dto.slug,
         name: dto.name,
         description: dto.description,
@@ -622,7 +634,7 @@ fn content_metadata_from_dto(dto: ContentMetadataDto) -> ContentMetadata {
             !author_ref.trim().is_empty() && author_ref.len() <= MAX_AUTHOR_REF_LEN
         }),
         icon_url,
-    }
+    })
 }
 
 /// The longest ref the host keeps and sends back to a plugin; it is an opaque token (a team or
@@ -636,10 +648,10 @@ fn author_name(name: &str) -> String {
 }
 
 /// An empty title is no title.
-fn version_metadata_from_dto(dto: ContentVersionMetadataDto) -> ContentVersionMetadata {
-    ContentVersionMetadata {
-        version_id: dto.version_id,
+fn version_metadata_from_dto(dto: ContentVersionMetadataDto) -> Option<ContentVersionMetadata> {
+    Some(ContentVersionMetadata {
+        version_id: dto.version_id.try_into().ok()?,
         version_number: dto.version_number,
         name: dto.name.filter(|name| !name.trim().is_empty()),
-    }
+    })
 }

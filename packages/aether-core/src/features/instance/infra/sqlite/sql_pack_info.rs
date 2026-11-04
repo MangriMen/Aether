@@ -1,6 +1,11 @@
 use tracing::warn;
 
-use crate::features::instance::{PackInfo, infra::legacy_provider_id::parse_stored_provider_id};
+use crate::features::instance::{
+    PackInfo,
+    infra::{
+        legacy_provider_id::parse_stored_provider_id, stored_content_id::parse_stored_content_id,
+    },
+};
 
 #[allow(clippy::struct_field_names)]
 pub struct SqlPackInfo {
@@ -21,10 +26,12 @@ impl SqlPackInfo {
             return None;
         };
 
+        let owner = format!("pack \"{}\"", self.modpack_id);
+
         Some(PackInfo {
             provider_id,
-            modpack_id: self.modpack_id,
-            version_id: self.version_id,
+            modpack_id: parse_stored_content_id(&owner, self.modpack_id)?,
+            version_id: parse_stored_content_id(&owner, self.version_id)?,
         })
     }
 }
@@ -33,8 +40,8 @@ impl From<PackInfo> for SqlPackInfo {
     fn from(p: PackInfo) -> Self {
         Self {
             provider_id: p.provider_id.to_string(),
-            modpack_id: p.modpack_id,
-            version_id: p.version_id,
+            modpack_id: p.modpack_id.into(),
+            version_id: p.version_id.into(),
         }
     }
 }
@@ -44,6 +51,17 @@ mod tests {
     use super::*;
     use crate::features::instance::ProviderId;
 
+    #[test]
+    fn should_read_no_pack_when_a_stored_id_is_not_a_valid_id() {
+        let pack_info = SqlPackInfo {
+            provider_id: "aether#modrinth".to_owned(),
+            modpack_id: "a/b".to_owned(),
+            version_id: "v1".to_owned(),
+        }
+        .into_pack_info();
+
+        assert!(pack_info.is_none());
+    }
     #[test]
     fn should_read_no_pack_when_the_provider_id_is_unparsable() {
         let pack_info = SqlPackInfo {

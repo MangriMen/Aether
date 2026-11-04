@@ -15,8 +15,8 @@ use std::{fmt, path::PathBuf, str::FromStr};
 use crate::{
     features::{
         instance::{
-            ContentMetadata, ContentPath, ContentType, ContentVersionMetadata, Instance,
-            InstanceId, NewInstance, PlatformId, ProviderId,
+            ContentId, ContentMetadata, ContentPath, ContentType, ContentVersionId,
+            ContentVersionMetadata, Instance, InstanceId, NewInstance, PlatformId, ProviderId,
         },
         minecraft::{LoaderVersionPreference, ModLoader},
     },
@@ -43,7 +43,7 @@ pub struct InstallPlan {
 pub struct PlanOrigin {
     /// Also whose word the plan's direct URLs are: they are downloaded under its network policy.
     pub provider_id: ProviderId,
-    pub content_id: String,
+    pub content_id: ContentId,
 }
 
 /// The instance a plan applies to. This is the whole difference between install and update:
@@ -231,8 +231,8 @@ pub enum ContentSource {
     /// compares them for equality.
     ProviderRef {
         platform: PlatformId,
-        content_id: String,
-        version: Option<String>,
+        content_id: ContentId,
+        version: Option<ContentVersionId>,
     },
 }
 
@@ -252,8 +252,8 @@ impl ContentSource {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ContentIdentity {
     pub platform: PlatformId,
-    pub content_id: String,
-    pub version: String,
+    pub content_id: ContentId,
+    pub version: ContentVersionId,
 }
 
 /// Human-readable, for logs and error messages. Not a format to parse back.
@@ -323,8 +323,8 @@ mod tests {
     fn provider_ref(platform: &str, content_id: &str, version: Option<&str>) -> ContentSource {
         ContentSource::ProviderRef {
             platform: PlatformId::try_from(platform).unwrap(),
-            content_id: content_id.into(),
-            version: version.map(Into::into),
+            content_id: content_id.try_into().unwrap(),
+            version: version.map(|v| v.try_into().unwrap()),
         }
     }
 

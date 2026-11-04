@@ -11,12 +11,13 @@ use tracing::warn;
 use crate::{
     features::{
         instance::{
-            CapabilityId, CapabilityMetadata, ContentAuthor, ContentIdentity, ContentItem,
-            ContentMetadata, ContentPath, ContentProvider, ContentProviderCapabilityMetadata,
-            ContentSearchParams, ContentSearchResult, ContentSource, ContentType, ContentVersion,
-            ContentVersionMetadata, InstallFileEntry, InstallPlan, Instance, InstanceError,
-            InstanceId, PackInfo, PackMetadata, PackSource, PlatformId, PluginId, ProviderId,
-            ReleaseChannel, ResolveInstallPlanParams, ResolveTarget, ResolvedFile,
+            CapabilityId, CapabilityMetadata, ContentAuthor, ContentId, ContentIdentity,
+            ContentItem, ContentMetadata, ContentPath, ContentProvider,
+            ContentProviderCapabilityMetadata, ContentSearchParams, ContentSearchResult,
+            ContentSource, ContentType, ContentVersion, ContentVersionId, ContentVersionMetadata,
+            InstallFileEntry, InstallPlan, Instance, InstanceError, InstanceId, InvalidContentId,
+            PackInfo, PackMetadata, PackSource, PlatformId, PluginId, ProviderId, ReleaseChannel,
+            ResolveInstallPlanParams, ResolveTarget, ResolvedFile,
             app::{ContentCompatibilityCheckParams, ContentCompatibilityResult},
             infra::content_providers::modrinth::{
                 ModrinthMapperError,
@@ -265,7 +266,7 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
         let file = Self::primary_file(version)?;
 
         Ok(ResolvedFile {
-            version: version.id.clone(),
+            version: response_id::<ContentVersionId>(&version.id)?,
             url: file.url.clone(),
             hash: Some(mrpack::sha512_of(&file.hashes)?),
             file_name: file.filename.clone(),
@@ -364,9 +365,9 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
         let entry = InstallFileEntry {
             size: resolved.size,
             name: resolved.name,
-            metadata: Some(Self::project_metadata(project)),
+            metadata: Some(Self::project_metadata(project)?),
             version_metadata: Some(ContentVersionMetadata {
-                version_id: version.id.clone(),
+                version_id: response_id::<ContentVersionId>(&version.id)?,
                 version_number: version.version_number.clone(),
                 name: Some(version.name.clone()).filter(|name| !name.is_empty()),
             }),
@@ -376,7 +377,7 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
                     hash: resolved.hash,
                     identity: Some(ContentIdentity {
                         platform: PlatformId::from_static(ModrinthContentProvider::PLATFORM),
-                        content_id: project.id.clone(),
+                        content_id: response_id::<ContentId>(&project.id)?,
                         version: resolved.version,
                     }),
                 },
@@ -401,8 +402,10 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
     /// What the project says about itself, for the cache, as `get_contents_metadata` gives it:
     /// without an author, which is another request an install does not wait for, but with the
     /// ref the next list asks `get_authors` for it by.
-    fn project_metadata(project: &ProjectResponse) -> ContentMetadata {
-        ProjectMetadataResponse::from(project).into()
+    fn project_metadata(project: &ProjectResponse) -> Result<ContentMetadata, InstanceError> {
+        ProjectMetadataResponse::from(project)
+            .try_into()
+            .map_err(|err| mapper_failure(&err))
     }
 
     async fn resolve_pack_plan(
@@ -418,16 +421,19 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
             }
         };
 
+        let project_id = response_id::<ContentId>(&project.id)?;
+        let version_id = response_id::<ContentVersionId>(&version.id)?;
         let archive_path = self.cached_mrpack(&version).await?;
         let index = mrpack::read_index_async(&archive_path).await?;
 
-        let metadata = mrpack::pack_metadata(&index, Some(&version), project.icon_url.clone());
+        let metadata =
+            mrpack::pack_metadata(&index, Some(version_id.clone()), project.icon_url.clone());
         let files = mrpack::plan_files(&index)?;
         let target = params.target.into_pack_install_target(&metadata, || {
             Some(PackInfo {
                 provider_id: ModrinthContentProvider::provider_id(),
-                modpack_id: project.id.clone(),
-                version_id: version.id.clone(),
+                modpack_id: project_id,
+                version_id,
             })
         })?;
 
@@ -443,9 +449,9 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
     /// archive, and is left out.
     async fn platform_pack_metadata(
         &self,
-        content_id: &str,
-        version: Option<&str>,
-        installed_version: Option<&str>,
+        content_id: &ContentId,
+        version: Option<&ContentVersionId>,
+        installed_version: Option<&ContentVersionId>,
     ) -> Result<PackMetadata, InstanceError> {
         let project = self
             .api
@@ -453,10 +459,13 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
             .await
             .map_err(InstanceError::ContentDownloadError)?;
         let version = match version {
-            Some(version) => self.version_of(&project.id, version).await?,
+            Some(version) => self.version_of(&project.id, version.as_str()).await?,
             None => {
-                self.pack_version_to_install(&project.id, installed_version)
-                    .await?
+                self.pack_version_to_install(
+                    &project.id,
+                    installed_version.map(ContentVersionId::as_str),
+                )
+                .await?
             }
         };
 
@@ -477,7 +486,7 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
 
         Ok(PackMetadata {
             name: project.title,
-            version_id: Some(version.id),
+            version_id: Some(response_id::<ContentVersionId>(&version.id)?),
             version_name: Some(version.version_number),
             description: Some(project.description),
             game_version,
@@ -544,16 +553,24 @@ impl<RC: RequestClient> ContentProvider for ModrinthContentProvider<RC> {
 
     async fn resolve_file(
         &self,
-        content_id: &str,
-        version: Option<&str>,
+        content_id: &ContentId,
+        version: Option<&ContentVersionId>,
         game_version: &str,
         loader: Option<&str>,
     ) -> Result<ResolvedFile, InstanceError> {
         let version = match version {
-            Some(version) => self.version_of(content_id, version).await?,
-            None => {
-                self.get_project_version_for_game_version(content_id, game_version, loader, None)
+            Some(version) => {
+                self.version_of(content_id.as_str(), version.as_str())
                     .await?
+            }
+            None => {
+                self.get_project_version_for_game_version(
+                    content_id.as_str(),
+                    game_version,
+                    loader,
+                    None,
+                )
+                .await?
             }
         };
 
@@ -600,8 +617,8 @@ impl<RC: RequestClient> ContentProvider for ModrinthContentProvider<RC> {
             } => {
                 self.platform_pack_metadata(
                     &content_id,
-                    version.as_deref(),
-                    installed_version.as_deref(),
+                    version.as_ref(),
+                    installed_version.as_ref(),
                 )
                 .await
             }
@@ -625,17 +642,18 @@ impl<RC: RequestClient> ContentProvider for ModrinthContentProvider<RC> {
     /// asked both by its id and its slug is listed once.
     async fn get_contents_metadata(
         &self,
-        content_ids: &[String],
+        content_ids: &[ContentId],
     ) -> Result<Vec<ContentMetadata>, InstanceError> {
-        let content_ids = unique(content_ids.iter().cloned());
+        let content_ids = unique(content_ids.iter().map(ToString::to_string));
         let batches =
             fetch_batched(&content_ids, |batch| self.api.get_projects_metadata(batch)).await?;
         let mut listed = HashSet::new();
-        Ok(batches
+        batches
             .into_iter()
             .filter(|project| listed.insert(project.id.clone()))
-            .map(ContentMetadata::from)
-            .collect())
+            .map(ContentMetadata::try_from)
+            .collect::<Result<_, _>>()
+            .map_err(|err| mapper_failure(&err))
     }
 
     /// An organization's ref asked of `GET /organizations`, by the organization's name; a
@@ -684,12 +702,16 @@ impl<RC: RequestClient> ContentProvider for ModrinthContentProvider<RC> {
 
     async fn get_versions_metadata(
         &self,
-        version_ids: &[String],
+        version_ids: &[ContentVersionId],
     ) -> Result<Vec<ContentVersionMetadata>, InstanceError> {
-        let version_ids = unique(version_ids.iter().cloned());
+        let version_ids = unique(version_ids.iter().map(ToString::to_string));
         let versions =
             fetch_batched(&version_ids, |batch| self.api.get_versions_metadata(batch)).await?;
-        Ok(versions.into_iter().map(Into::into).collect())
+        versions
+            .into_iter()
+            .map(ContentVersionMetadata::try_from)
+            .collect::<Result<_, _>>()
+            .map_err(|err| mapper_failure(&err))
     }
 
     async fn check_compatibility(
@@ -725,7 +747,7 @@ impl<RC: RequestClient> ContentProvider for ModrinthContentProvider<RC> {
         Ok(compatibility_map)
     }
 
-    async fn get_content(&self, content_id: String) -> Result<ContentItem, InstanceError> {
+    async fn get_content(&self, content_id: ContentId) -> Result<ContentItem, InstanceError> {
         self.api
             .get_project(&content_id)
             .await
@@ -738,7 +760,7 @@ impl<RC: RequestClient> ContentProvider for ModrinthContentProvider<RC> {
 
     async fn list_versions(
         &self,
-        content_id: String,
+        content_id: ContentId,
     ) -> Result<Vec<ContentVersion>, InstanceError> {
         let versions = self
             .api
@@ -748,9 +770,29 @@ impl<RC: RequestClient> ContentProvider for ModrinthContentProvider<RC> {
 
         Ok(versions
             .into_iter()
-            .filter_map(|v| v.try_into().ok()) // Skip versions that failed to map
+            .filter_map(|v| {
+                let id = v.id.clone();
+                v.try_into()
+                    .inspect_err(|err: &ModrinthMapperError| {
+                        tracing::debug!("Skipping Modrinth version {id} that failed to map: {err}");
+                    })
+                    .ok()
+            })
             .collect())
     }
+}
+
+fn mapper_failure(err: &ModrinthMapperError) -> InstanceError {
+    InstanceError::ContentProviderError {
+        reason: err.to_string(),
+    }
+}
+
+fn response_id<T>(id: &str) -> Result<T, InstanceError>
+where
+    T: TryFrom<String, Error = InvalidContentId>,
+{
+    T::try_from(id.to_owned()).map_err(|err| mapper_failure(&err.into()))
 }
 
 fn no_pack_versions(project_id: &str) -> InstanceError {

@@ -3,7 +3,10 @@ use tracing::warn;
 
 use crate::features::instance::{
     PackInfo, ProviderId,
-    infra::legacy_provider_id::{parse_stored_provider_id_parts, parse_v1_provider_id},
+    infra::{
+        legacy_provider_id::{parse_stored_provider_id_parts, parse_v1_provider_id},
+        stored_content_id::parse_stored_content_id,
+    },
 };
 
 /// The pack of a V1 instance. Its `plugin_id` was a bare id: `modrinth` for the built-in Modrinth
@@ -29,11 +32,12 @@ impl PackInfoV1 {
                 );
             })
             .ok()?;
+        let owner = format!("pack \"{}\"", self.modpack_id);
 
         Some(PackInfo {
             provider_id,
-            modpack_id: self.modpack_id,
-            version_id: self.version,
+            modpack_id: parse_stored_content_id(&owner, self.modpack_id)?,
+            version_id: parse_stored_content_id(&owner, self.version)?,
         })
     }
 }
@@ -76,11 +80,12 @@ impl PackInfoV2 {
                 );
             })
             .ok()?;
+        let owner = format!("pack \"{}\"", self.modpack_id);
 
         Some(PackInfo {
             provider_id,
-            modpack_id: self.modpack_id,
-            version_id: self.version_id,
+            modpack_id: parse_stored_content_id(&owner, self.modpack_id)?,
+            version_id: parse_stored_content_id(&owner, self.version_id)?,
         })
     }
 }
@@ -89,8 +94,8 @@ impl From<PackInfo> for PackInfoV2 {
     fn from(value: PackInfo) -> Self {
         Self {
             provider_id: value.provider_id.into(),
-            modpack_id: value.modpack_id,
-            version_id: value.version_id,
+            modpack_id: value.modpack_id.into(),
+            version_id: value.version_id.into(),
         }
     }
 }
@@ -98,6 +103,7 @@ impl From<PackInfo> for PackInfoV2 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::features::instance::{ContentId, ContentVersionId};
 
     #[test]
     fn should_read_no_pack_when_the_stored_provider_id_is_invalid() {
@@ -149,8 +155,14 @@ mod tests {
             pack_info.provider_id,
             "aether#modrinth".parse::<ProviderId>().unwrap()
         );
-        assert_eq!(pack_info.modpack_id, "1KVo5zza");
-        assert_eq!(pack_info.version_id, "v1");
+        assert_eq!(
+            pack_info.modpack_id,
+            ContentId::try_from("1KVo5zza").unwrap()
+        );
+        assert_eq!(
+            pack_info.version_id,
+            ContentVersionId::try_from("v1").unwrap()
+        );
     }
 
     #[test]

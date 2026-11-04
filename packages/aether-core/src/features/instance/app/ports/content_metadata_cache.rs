@@ -6,7 +6,7 @@ use std::{
 use async_trait::async_trait;
 
 use crate::features::instance::domain::{
-    ContentAuthor, ContentMetadata, ContentVersionMetadata, ProviderId,
+    ContentAuthor, ContentId, ContentMetadata, ContentVersionId, ContentVersionMetadata, ProviderId,
 };
 
 /// How long [`ContentMetadata`] is taken as current. Past it, the cached item is still shown —
@@ -87,8 +87,8 @@ pub trait ContentMetadataCache: Send + Sync {
     async fn get_many(
         &self,
         provider_id: &ProviderId,
-        content_ids: &[String],
-    ) -> HashMap<String, CachedContentMetadata>;
+        content_ids: &[ContentId],
+    ) -> HashMap<ContentId, CachedContentMetadata>;
 
     /// Cache `items` of `provider_id` as fetched just now, each under the content id it is
     /// paired with, replacing what was there. Whether they were written.
@@ -98,7 +98,7 @@ pub trait ContentMetadataCache: Send + Sync {
     async fn put_keyed(
         &self,
         provider_id: &ProviderId,
-        items: &[(String, ContentMetadata)],
+        items: &[(ContentId, ContentMetadata)],
     ) -> bool {
         self.put_keyed_at(provider_id, items, SystemTime::now())
             .await
@@ -109,7 +109,7 @@ pub trait ContentMetadataCache: Send + Sync {
     async fn put_keyed_at(
         &self,
         provider_id: &ProviderId,
-        items: &[(String, ContentMetadata)],
+        items: &[(ContentId, ContentMetadata)],
         fetched_at: SystemTime,
     ) -> bool;
 
@@ -128,8 +128,8 @@ pub trait ContentMetadataCache: Send + Sync {
     async fn get_versions(
         &self,
         provider_id: &ProviderId,
-        version_ids: &[String],
-    ) -> HashMap<String, CachedContentVersionMetadata>;
+        version_ids: &[ContentVersionId],
+    ) -> HashMap<ContentVersionId, CachedContentVersionMetadata>;
 
     /// Cache `items` of `provider_id` as fetched just now, each under its own
     /// [`ContentVersionMetadata::version_id`], replacing what was there. Whether they were
@@ -160,7 +160,7 @@ mod tests {
     fn cached(fetched_at: SystemTime) -> CachedContentMetadata {
         CachedContentMetadata {
             metadata: ContentMetadata {
-                content_id: "AANobbMI".into(),
+                content_id: ContentId::try_from("AANobbMI").unwrap(),
                 slug: "sodium".into(),
                 name: "Sodium".into(),
                 description: None,
@@ -193,7 +193,7 @@ mod tests {
     fn cached_version(fetched_at: SystemTime) -> CachedContentVersionMetadata {
         CachedContentVersionMetadata {
             metadata: ContentVersionMetadata {
-                version_id: "IZskON6d".into(),
+                version_id: ContentVersionId::try_from("IZskON6d").unwrap(),
                 version_number: "mc1.20.6-0.5.8".into(),
                 name: None,
             },

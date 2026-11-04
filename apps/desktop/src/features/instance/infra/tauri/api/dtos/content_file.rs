@@ -103,7 +103,7 @@ impl From<ContentFileView> for ContentFileDto {
             hash: value.hash,
             name: value.name,
             size: value.size,
-            version: value.version,
+            version: value.version.map(Into::into),
             update_provider_id: value.update_provider_id.map(Into::into),
             update: value.update.map(|updates| {
                 let mut updates: Vec<ContentFileUpdateDto> = updates
@@ -133,8 +133,8 @@ impl From<ContentFileView> for ContentFileDto {
 impl From<ContentFileUpdateInfo> for ContentFileUpdateInfoDto {
     fn from(value: ContentFileUpdateInfo) -> Self {
         Self {
-            content_id: value.content_id,
-            version: value.version,
+            content_id: value.content_id.into(),
+            version: value.version.into(),
         }
     }
 }
@@ -142,7 +142,7 @@ impl From<ContentFileUpdateInfo> for ContentFileUpdateInfoDto {
 impl From<ContentMetadata> for ContentMetadataDto {
     fn from(value: ContentMetadata) -> Self {
         Self {
-            content_id: value.content_id,
+            content_id: value.content_id.into(),
             slug: value.slug,
             name: value.name,
             description: value.description,
@@ -156,7 +156,7 @@ impl From<ContentMetadata> for ContentMetadataDto {
 impl From<ContentVersionMetadata> for ContentVersionMetadataDto {
     fn from(value: ContentVersionMetadata) -> Self {
         Self {
-            version_id: value.version_id,
+            version_id: value.version_id.into(),
             version_number: value.version_number,
             name: value.name,
         }
@@ -165,6 +165,7 @@ impl From<ContentVersionMetadata> for ContentVersionMetadataDto {
 
 #[cfg(test)]
 mod tests {
+    use aether_core::features::instance::{ContentId, ContentVersionId};
     use std::collections::HashMap;
 
     use aether_core::features::instance::{
@@ -182,7 +183,7 @@ mod tests {
             false,
         ));
         file.metadata = Some(ContentMetadata {
-            content_id: "AANobbMI".into(),
+            content_id: ContentId::try_from("AANobbMI").unwrap(),
             slug: "sodium".into(),
             name: "Sodium".into(),
             description: None,
@@ -217,7 +218,7 @@ mod tests {
     fn should_expose_the_version_metadata_in_camel_case_when_cached() {
         let mut file = file(None);
         file.version_metadata = Some(ContentVersionMetadata {
-            version_id: "IZskON6d".into(),
+            version_id: ContentVersionId::try_from("IZskON6d").unwrap(),
             version_number: "mc1.20.6-0.5.8".into(),
             name: Some("Sodium 0.5.8".into()),
         });
@@ -239,8 +240,8 @@ mod tests {
         let provider =
             |plugin: &str, capability: &str| ProviderId::from_parts(plugin, capability).unwrap();
         let info = |content_id: &str| ContentFileUpdateInfo {
-            content_id: content_id.into(),
-            version: "1".into(),
+            content_id: content_id.try_into().unwrap(),
+            version: ContentVersionId::try_from("1").unwrap(),
         };
         let mut file = file(None);
         file.file.update = Some(HashMap::from([

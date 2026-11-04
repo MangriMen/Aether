@@ -9,10 +9,10 @@ use crate::features::instance::app::ports::{InstallPlanExecutorPort, UpdateInsta
 use crate::{
     features::{
         instance::{
-            ContentPath, ContentProvider, InstallPlan, Instance, InstanceError, InstanceId,
-            InstanceInstallStage, InstanceLocks, InstanceStorage, InstanceStorageExt, PackFile,
-            PackInfo, PackSource, PackStorage, PlanOrigin, ResolveInstallPlanParams, ResolveTarget,
-            Updater,
+            ContentPath, ContentProvider, ContentVersionId, InstallPlan, Instance, InstanceError,
+            InstanceId, InstanceInstallStage, InstanceLocks, InstanceStorage, InstanceStorageExt,
+            PackFile, PackInfo, PackSource, PackStorage, PlanOrigin, ResolveInstallPlanParams,
+            ResolveTarget, Updater,
         },
         minecraft::ModLoader,
     },
@@ -39,7 +39,9 @@ pub struct UpdateInstanceUseCase {
 /// How an update went through.
 enum Updated {
     /// By a plan; the version it installed, when the provider named it.
-    Plan { version_id: Option<String> },
+    Plan {
+        version_id: Option<ContentVersionId>,
+    },
     /// By the plugin's updater, which keeps the pack info itself.
     Updater,
 }
@@ -76,7 +78,7 @@ impl UpdateInstanceUseCase {
             )
             .await
             .map_err(|_| InstanceError::UpdaterNotFound {
-                modpack_id: pack_info.modpack_id.clone(),
+                modpack_id: pack_info.modpack_id.to_string(),
             })?;
 
         updater.capability.update(instance_id).await
@@ -172,7 +174,7 @@ impl UpdateInstanceUseCase {
         &self,
         provider: &dyn ContentProvider,
         pack_info: &PackInfo,
-    ) -> Result<Option<String>, InstanceError> {
+    ) -> Result<Option<ContentVersionId>, InstanceError> {
         match provider
             .resolve_pack_metadata(PackSource::Content {
                 content_id: pack_info.modpack_id.clone(),

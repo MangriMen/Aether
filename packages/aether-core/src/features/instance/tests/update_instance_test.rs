@@ -3,6 +3,7 @@
 //! were recorded, and the plugin updater for a provider without plans.
 
 use crate::features::instance::InstanceName;
+use crate::features::instance::{ContentId, ContentVersionId};
 
 use std::{
     collections::HashMap,
@@ -53,15 +54,15 @@ impl ContentMetadataCache for NoMetadataCache {
     async fn get_many(
         &self,
         _: &ProviderId,
-        _: &[String],
-    ) -> HashMap<String, CachedContentMetadata> {
+        _: &[ContentId],
+    ) -> HashMap<ContentId, CachedContentMetadata> {
         HashMap::new()
     }
 
     async fn put_keyed_at(
         &self,
         _: &ProviderId,
-        _: &[(String, ContentMetadata)],
+        _: &[(ContentId, ContentMetadata)],
         _: SystemTime,
     ) -> bool {
         true
@@ -70,8 +71,8 @@ impl ContentMetadataCache for NoMetadataCache {
     async fn get_versions(
         &self,
         _: &ProviderId,
-        _: &[String],
-    ) -> HashMap<String, CachedContentVersionMetadata> {
+        _: &[ContentVersionId],
+    ) -> HashMap<ContentVersionId, CachedContentVersionMetadata> {
         HashMap::new()
     }
 
@@ -104,7 +105,7 @@ fn provider_id() -> ProviderId {
 fn origin() -> PlanOrigin {
     PlanOrigin {
         provider_id: provider_id(),
-        content_id: PACK_ID.into(),
+        content_id: PACK_ID.try_into().unwrap(),
     }
 }
 
@@ -224,11 +225,11 @@ impl ContentProvider for PackProvider {
         unimplemented!()
     }
 
-    async fn get_content(&self, _: String) -> Result<ContentItem, InstanceError> {
+    async fn get_content(&self, _: ContentId) -> Result<ContentItem, InstanceError> {
         unimplemented!()
     }
 
-    async fn list_versions(&self, _: String) -> Result<Vec<ContentVersion>, InstanceError> {
+    async fn list_versions(&self, _: ContentId) -> Result<Vec<ContentVersion>, InstanceError> {
         unimplemented!()
     }
 
@@ -241,13 +242,14 @@ impl ContentProvider for PackProvider {
         }
         self.asked_plans.lock().unwrap().push(params.clone());
 
-        let version_id = params.version.unwrap_or_else(|| "v2".into());
-        let version =
-            self.versions
-                .get(&version_id)
-                .ok_or_else(|| InstanceError::ContentProviderError {
-                    reason: format!("no version {version_id}"),
-                })?;
+        let version_id = params
+            .version
+            .unwrap_or_else(|| ContentVersionId::try_from("v2").unwrap());
+        let version = self.versions.get(version_id.as_str()).ok_or_else(|| {
+            InstanceError::ContentProviderError {
+                reason: format!("no version {version_id}"),
+            }
+        })?;
         let ResolveTarget::Existing { instance_id, .. } = params.target else {
             unimplemented!("updates only")
         };
@@ -273,7 +275,7 @@ impl ContentProvider for PackProvider {
 
         Ok(PackMetadata {
             name: "Pack".into(),
-            version_id: Some("v2".into()),
+            version_id: Some(ContentVersionId::try_from("v2").unwrap()),
             version_name: None,
             description: None,
             game_version: "1.21.1".into(),
@@ -538,8 +540,8 @@ impl Fixture {
         )
         .with_pack_info(Some(PackInfo {
             provider_id: provider_id(),
-            modpack_id: PACK_ID.into(),
-            version_id: "v1".into(),
+            modpack_id: PACK_ID.try_into().unwrap(),
+            version_id: ContentVersionId::try_from("v1").unwrap(),
         }))
         .build();
         instance.install_stage = InstanceInstallStage::Installed;
@@ -671,7 +673,7 @@ impl Fixture {
     }
 
     fn version_id(&self) -> String {
-        self.storage.instance().pack_info.unwrap().version_id
+        self.storage.instance().pack_info.unwrap().version_id.into()
     }
 }
 
@@ -690,17 +692,17 @@ async fn should_update_the_pack_through_a_plan_and_record_its_version_when_a_new
     assert_eq!(
         *provider.asked_metadata.lock().unwrap(),
         [PackSource::Content {
-            content_id: PACK_ID.into(),
+            content_id: PACK_ID.try_into().unwrap(),
             version: None,
-            installed_version: Some("v1".into()),
+            installed_version: Some(ContentVersionId::try_from("v1").unwrap()),
         }]
     );
     assert_eq!(
         provider.asked_plans(),
         [ResolveInstallPlanParams {
-            content_id: PACK_ID.into(),
-            version: Some("v2".into()),
-            installed_version: Some("v1".into()),
+            content_id: PACK_ID.try_into().unwrap(),
+            version: Some(ContentVersionId::try_from("v2").unwrap()),
+            installed_version: Some(ContentVersionId::try_from("v1").unwrap()),
             target: ResolveTarget::Existing {
                 instance_id: InstanceId::try_from(INSTANCE_ID).unwrap(),
                 game_version: "1.21.1".into(),
@@ -866,7 +868,10 @@ async fn should_adopt_the_files_when_a_pack_was_installed_without_owners() {
             .iter()
             .map(|params| params.version.clone())
             .collect::<Vec<_>>(),
-        [Some("v2".into()), Some("v1".into())]
+        [
+            Some(ContentVersionId::try_from("v2").unwrap()),
+            Some(ContentVersionId::try_from("v1").unwrap())
+        ]
     );
 }
 

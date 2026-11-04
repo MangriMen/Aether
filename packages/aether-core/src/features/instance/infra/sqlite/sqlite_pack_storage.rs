@@ -1,8 +1,9 @@
 use crate::features::instance::{
-    ContentFileUpdateInfo, ContentPath, FileSide, InstanceError, InstanceId, Pack, PackEntry,
-    PackFile, PackStorage, PlanOrigin, ProviderId,
+    ContentFileUpdateInfo, ContentId, ContentPath, FileSide, InstanceError, InstanceId, Pack,
+    PackEntry, PackFile, PackStorage, PlanOrigin, ProviderId,
     infra::{
         legacy_provider_id::{legacy_provider_id_string, parse_stored_provider_id},
+        stored_content_id::parse_stored_content_id,
         stored_content_path::parse_stored_content_path,
         stored_side::parse_stored_side,
     },
@@ -41,11 +42,21 @@ impl PackFileRow {
         for u in updates {
             match parse_stored_provider_id(&u.provider_id) {
                 Ok(provider_id) => {
+                    let owner = format!(
+                        "update \"{}\" of pack file \"{}\"",
+                        u.provider_id, self.content_path
+                    );
+                    let (Some(content_id), Some(version)) = (
+                        parse_stored_content_id(&owner, u.content_id),
+                        parse_stored_content_id(&owner, u.version_id),
+                    ) else {
+                        continue;
+                    };
                     update_map.insert(
                         provider_id,
                         ContentFileUpdateInfo {
-                            content_id: u.content_id,
-                            version: u.version_id,
+                            content_id,
+                            version,
                         },
                     );
                 }
@@ -63,10 +74,13 @@ impl PackFileRow {
         // one is never removed by a plan, which is the safe side.
         let installed_by = match (self.installed_by_provider_id, self.installed_by_content_id) {
             (Some(provider_id), Some(content_id)) => match parse_stored_provider_id(&provider_id) {
-                Ok(provider_id) => Some(PlanOrigin {
-                    provider_id,
-                    content_id,
-                }),
+                Ok(provider_id) => {
+                    let owner = format!("the owner of pack file \"{}\"", self.content_path);
+                    parse_stored_content_id(&owner, content_id).map(|content_id| PlanOrigin {
+                        provider_id,
+                        content_id,
+                    })
+                }
                 Err(err) => {
                     tracing::warn!(
                         "Ignoring the owner of pack file \"{}\": {err}",
@@ -223,8 +237,8 @@ impl SqlitePackStorage {
                     instance_id.as_str(),
                     content_path,
                     pid_str,
-                    info.content_id,
-                    info.version
+                    info.content_id.as_str(),
+                    info.version.as_str()
                 )
                 .execute(&mut **tx)
                 .await
@@ -341,7 +355,7 @@ impl PackStorage for SqlitePackStorage {
         &self,
         instance_id: &InstanceId,
         provider_id: &ProviderId,
-        content_id: &str,
+        content_id: &ContentId,
     ) -> Result<Option<PackFile>, InstanceError> {
         let pid = provider_id.to_string();
         // Rows are not rewritten: a file saved under a provider's earlier id is matched by that
@@ -352,7 +366,7 @@ impl PackStorage for SqlitePackStorage {
             instance_id.as_str(),
             pid,
             legacy_pid,
-            content_id
+            content_id.as_str()
         )
         .fetch_all(&self.pool)
         .await
@@ -491,6 +505,7 @@ impl PackStorage for SqlitePackStorage {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::features::instance::ContentVersionId;
 
     fn cp(path: &str) -> ContentPath {
         ContentPath::parse(path).unwrap()
@@ -505,8 +520,8 @@ mod tests {
             update: Some(HashMap::from([(
                 good.clone(),
                 ContentFileUpdateInfo {
-                    content_id: "c1".into(),
-                    version: "v1".into(),
+                    content_id: ContentId::try_from("c1").unwrap(),
+                    version: ContentVersionId::try_from("v1").unwrap(),
                 },
             )])),
             ..PackFile::from_hash("a.jar".into(), "h".into())
@@ -528,7 +543,10 @@ mod tests {
         for read in [&single, &all[&cp("mods/a.jar")]] {
             let updates = read.update.as_ref().unwrap();
             assert_eq!(updates.len(), 1);
-            assert_eq!(updates[&good].content_id, "c1");
+            assert_eq!(
+                updates[&good].content_id,
+                ContentId::try_from("c1").unwrap()
+            );
         }
     }
 
@@ -572,8 +590,8 @@ mod tests {
             update: Some(HashMap::from([(
                 provider.clone(),
                 ContentFileUpdateInfo {
-                    content_id: "c1".into(),
-                    version: "v1".into(),
+                    content_id: ContentId::try_from("c1").unwrap(),
+                    version: ContentVersionId::try_from("v1").unwrap(),
                 },
             )])),
             ..PackFile::from_hash("good.jar".into(), "h".into())
@@ -596,7 +614,7 @@ mod tests {
         }
 
         let found = storage
-            .find_by_provider_id(&id, &provider, "c1")
+            .find_by_provider_id(&id, &provider, &ContentId::try_from("c1").unwrap())
             .await
             .unwrap();
 

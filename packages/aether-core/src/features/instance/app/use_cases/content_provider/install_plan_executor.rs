@@ -82,10 +82,10 @@ use crate::{
             ProgressStage,
         },
         instance::{
-            ContentDownloader, ContentFileService, ContentFileUpdateInfo, ContentPath,
-            ContentProvider, FileSide, InstallPlan, InstallTarget, Instance, InstanceError,
-            InstanceId, InstanceStorage, OverrideLocation, PackFile, PackStorage, PlanOrigin,
-            PlatformProviderSelection, ProviderId,
+            ContentDownloader, ContentFileService, ContentFileUpdateInfo, ContentId, ContentPath,
+            ContentProvider, ContentVersionId, FileSide, InstallPlan, InstallTarget, Instance,
+            InstanceError, InstanceId, InstanceStorage, OverrideLocation, PackFile, PackStorage,
+            PlanOrigin, PlatformProviderSelection, ProviderId,
             app::{
                 DISABLED_SUFFIX,
                 ports::{
@@ -180,7 +180,7 @@ impl PlanProgress<'_> {
                             pack_version: entry
                                 .resolved
                                 .as_ref()
-                                .map(|resolved| resolved.version.clone())
+                                .map(|resolved| resolved.version.to_string())
                                 .unwrap_or_default(),
                         },
                         1.0,
@@ -418,8 +418,8 @@ struct DownloadEntry {
 #[derive(Debug, Clone, PartialEq)]
 struct ResolvedRef {
     provider_id: ProviderId,
-    content_id: String,
-    version: String,
+    content_id: ContentId,
+    version: ContentVersionId,
 }
 
 impl ResolvedRef {
@@ -760,7 +760,7 @@ impl InstallPlanExecutor {
         let pack_name = match target {
             InstallTarget::Existing { instance_id, .. } => {
                 self.instance_storage.get(instance_id).await.map_or_else(
-                    |_: InstanceError| origin.content_id.clone(),
+                    |_: InstanceError| origin.content_id.to_string(),
                     |instance| instance.name().to_string(),
                 )
             }
@@ -774,7 +774,7 @@ impl InstallPlanExecutor {
                     instance_path: instance_path.clone(),
                     pack_name,
                     icon: None,
-                    pack_id: Some(origin.content_id.clone()),
+                    pack_id: Some(origin.content_id.to_string()),
                     pack_version: None,
                 },
                 total,

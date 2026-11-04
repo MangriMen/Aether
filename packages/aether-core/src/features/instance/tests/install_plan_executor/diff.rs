@@ -1,5 +1,6 @@
 //! Diffing a plan against what the instance already has.
 
+use crate::features::instance::ContentId;
 use crate::features::instance::InstanceName;
 
 use crate::{
@@ -246,7 +247,7 @@ async fn should_keep_a_dropped_record_when_its_path_is_out_of_the_content_area()
     .bind(INSTANCE_ID)
     .bind(sha1("stale"))
     .bind(pack.provider_id.to_string())
-    .bind(&pack.content_id)
+    .bind(pack.content_id.as_str())
     .execute(fixture.pack_storage.pool())
     .await
     .unwrap();
@@ -294,7 +295,7 @@ async fn should_leave_files_alone_when_the_pack_did_not_install_them() {
             "other pack",
             Some(PlanOrigin {
                 provider_id: plugin("packwiz"),
-                content_id: "other-pack".into(),
+                content_id: ContentId::try_from("other-pack").unwrap(),
             }),
         )
         .await;
@@ -311,7 +312,7 @@ async fn should_leave_files_alone_when_the_pack_did_not_install_them() {
             "sodium",
             Some(PlanOrigin {
                 provider_id: modrinth_id(),
-                content_id: "AANobbMI".into(),
+                content_id: ContentId::try_from("AANobbMI").unwrap(),
             }),
         )
         .await;
@@ -361,7 +362,7 @@ async fn should_not_remove_pack_files_when_the_plan_is_for_a_single_mod() {
             )]),
             PlanOrigin {
                 provider_id: modrinth_id(),
-                content_id: "AANobbMI".into(),
+                content_id: ContentId::try_from("AANobbMI").unwrap(),
             },
         )
         .await
@@ -435,7 +436,7 @@ async fn should_replace_an_older_install_when_it_is_of_the_same_content() {
             )]),
             PlanOrigin {
                 provider_id: modrinth_id(),
-                content_id: "AANobbMI".into(),
+                content_id: ContentId::try_from("AANobbMI").unwrap(),
             },
         )
         .await

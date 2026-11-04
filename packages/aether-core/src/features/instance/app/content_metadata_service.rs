@@ -22,8 +22,8 @@ use crate::{
         instance::{
             CachedContentAuthor, CachedContentIcon, CachedContentMetadata,
             CachedContentVersionMetadata, ContentAuthor, ContentFile, ContentFileView,
-            ContentIconCache, ContentMetadata, ContentMetadataCache, ContentProvider,
-            ContentVersionMetadata, InstanceError, InstanceId, ProviderId,
+            ContentIconCache, ContentId, ContentMetadata, ContentMetadataCache, ContentProvider,
+            ContentVersionId, ContentVersionMetadata, InstanceError, InstanceId, ProviderId,
         },
     },
     shared::capability::domain::CapabilityRegistry,
@@ -92,7 +92,7 @@ impl Lookup {
             Self::Versions => info.version.as_str(),
             Self::Authors => return None,
         };
-        (!id.is_empty()).then_some((provider_id, id))
+        Some((provider_id, id))
     }
 
     /// What `cache` has of `ids` of `provider_id`, fresh or stale.
@@ -103,8 +103,26 @@ impl Lookup {
         ids: &[String],
     ) -> Cached {
         match self {
-            Self::Projects => Cached::Projects(cache.get_many(provider_id, ids).await),
-            Self::Versions => Cached::Versions(cache.get_versions(provider_id, ids).await),
+            Self::Projects => {
+                let ids = parse_ids::<ContentId>(ids);
+                let found = cache.get_many(provider_id, &ids).await;
+                Cached::Projects(
+                    found
+                        .into_iter()
+                        .map(|(id, item)| (id.into(), item))
+                        .collect(),
+                )
+            }
+            Self::Versions => {
+                let ids = parse_ids::<ContentVersionId>(ids);
+                let found = cache.get_versions(provider_id, &ids).await;
+                Cached::Versions(
+                    found
+                        .into_iter()
+                        .map(|(id, item)| (id.into(), item))
+                        .collect(),
+                )
+            }
             Self::Authors => Cached::Authors(cache.get_authors(provider_id, ids).await),
         }
     }
@@ -117,15 +135,22 @@ impl Lookup {
     ) -> Result<(Fetched, Vec<String>), InstanceError> {
         match self {
             Self::Projects => {
-                let items = provider.get_contents_metadata(ids).await?;
-                let (keyed, unknown) = key_by_asked(ids, items);
+                let asked = parse_ids::<ContentId>(ids);
+                let items = provider.get_contents_metadata(&asked).await?;
+                let (keyed, unknown) = key_by_asked(&asked, items);
+                let unknown = unknown.into_iter().map(String::from).collect();
                 Ok((Fetched::Projects(keyed), unknown))
             }
             Self::Versions => {
-                let items = provider.get_versions_metadata(ids).await?;
+                let asked = parse_ids::<ContentVersionId>(ids);
+                let items = provider.get_versions_metadata(&asked).await?;
                 let unknown = ids
                     .iter()
-                    .filter(|id| !items.iter().any(|item| &item.version_id == *id))
+                    .filter(|id| {
+                        !items
+                            .iter()
+                            .any(|item| item.version_id.as_str() == id.as_str())
+                    })
                     .cloned()
                     .collect();
                 Ok((Fetched::Versions(items), unknown))
@@ -141,6 +166,13 @@ impl Lookup {
             }
         }
     }
+}
+
+/// The ids of `ids` that are valid ones; they come from typed ids, so none is dropped.
+fn parse_ids<T: TryFrom<String>>(ids: &[String]) -> Vec<T> {
+    ids.iter()
+        .filter_map(|id| T::try_from(id.clone()).ok())
+        .collect()
 }
 
 /// The ref to look the author of `metadata` up by, when it names none itself.
@@ -246,7 +278,7 @@ impl Cached {
 /// What a provider answered about one lookup, keyed for the cache: projects under the ids they
 /// were asked by, versions and authors under their own.
 enum Fetched {
-    Projects(Vec<(String, ContentMetadata)>),
+    Projects(Vec<(ContentId, ContentMetadata)>),
     Versions(Vec<ContentVersionMetadata>),
     Authors(Vec<ContentAuthor>),
 }
@@ -897,9 +929,9 @@ impl Inner {
 /// Every item goes under its own id; one that answers an asked id by its slug (the provider
 /// takes either) goes under the asked id as well, or that id would stay missing for good.
 fn key_by_asked(
-    asked: &[String],
+    asked: &[ContentId],
     items: Vec<ContentMetadata>,
-) -> (Vec<(String, ContentMetadata)>, Vec<String>) {
+) -> (Vec<(ContentId, ContentMetadata)>, Vec<ContentId>) {
     let mut keyed = Vec::with_capacity(items.len());
     let mut unknown = Vec::new();
 
@@ -930,7 +962,7 @@ mod tests {
 
     fn metadata(content_id: &str, slug: &str) -> ContentMetadata {
         ContentMetadata {
-            content_id: content_id.into(),
+            content_id: content_id.try_into().unwrap(),
             slug: slug.into(),
             name: slug.into(),
             description: None,
@@ -942,11 +974,10 @@ mod tests {
 
     #[test]
     fn should_key_an_item_also_by_the_asked_id_when_asked_by_slug() {
-        let asked = vec![
-            "AANobbMI".to_owned(),
-            "Lithium".to_owned(),
-            "gone".to_owned(),
-        ];
+        let asked: Vec<ContentId> = ["AANobbMI", "Lithium", "gone"]
+            .into_iter()
+            .map(|id| ContentId::try_from(id).unwrap())
+            .collect();
         let items = vec![
             metadata("AANobbMI", "sodium"),
             metadata("gvQqBUqZ", "lithium"),
@@ -956,7 +987,10 @@ mod tests {
 
         let keys: Vec<&str> = keyed.iter().map(|(key, _)| key.as_str()).collect();
         assert_eq!(keys, ["Lithium", "AANobbMI", "gvQqBUqZ"]);
-        assert_eq!(keyed[0].1.content_id, "gvQqBUqZ");
-        assert_eq!(unknown, ["gone"]);
+        assert_eq!(
+            keyed[0].1.content_id,
+            ContentId::try_from("gvQqBUqZ").unwrap()
+        );
+        assert_eq!(unknown, [ContentId::try_from("gone").unwrap()]);
     }
 }

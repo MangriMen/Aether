@@ -1,6 +1,7 @@
 //! Targets of a plan, its limits, and checking it as data.
 
 use crate::features::instance::InstanceName;
+use crate::features::instance::{ContentId, ContentVersionId};
 
 use tempfile::TempDir;
 
@@ -66,8 +67,8 @@ async fn should_create_the_instance_of_a_pack_when_the_plan_is_for_a_pack() {
         skip_install_instance: Some(true),
         pack_info: Some(PackInfo {
             provider_id: plugin("packwiz"),
-            modpack_id: "pack".into(),
-            version_id: "1".into(),
+            modpack_id: ContentId::try_from("pack").unwrap(),
+            version_id: ContentVersionId::try_from("1").unwrap(),
         }),
     };
 

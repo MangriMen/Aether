@@ -1,5 +1,6 @@
 //! `ListContentUseCase` reading an instance's content folders.
 
+use crate::features::instance::{ContentId, ContentVersionId};
 use std::{collections::HashMap, sync::Arc, time::SystemTime};
 
 use async_trait::async_trait;
@@ -27,15 +28,15 @@ impl ContentMetadataCache for NoCache {
     async fn get_many(
         &self,
         _: &ProviderId,
-        _: &[String],
-    ) -> HashMap<String, CachedContentMetadata> {
+        _: &[ContentId],
+    ) -> HashMap<ContentId, CachedContentMetadata> {
         HashMap::new()
     }
 
     async fn put_keyed_at(
         &self,
         _: &ProviderId,
-        _: &[(String, ContentMetadata)],
+        _: &[(ContentId, ContentMetadata)],
         _: SystemTime,
     ) -> bool {
         true
@@ -44,8 +45,8 @@ impl ContentMetadataCache for NoCache {
     async fn get_versions(
         &self,
         _: &ProviderId,
-        _: &[String],
-    ) -> HashMap<String, CachedContentVersionMetadata> {
+        _: &[ContentVersionId],
+    ) -> HashMap<ContentVersionId, CachedContentVersionMetadata> {
         HashMap::new()
     }
 

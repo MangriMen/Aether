@@ -10,7 +10,7 @@ const MODMENU: &str = "mOgUt4GM";
 fn modmenu_on_its_own() -> PlanOrigin {
     PlanOrigin {
         provider_id: modrinth_id(),
-        content_id: MODMENU.into(),
+        content_id: MODMENU.try_into().unwrap(),
     }
 }
 

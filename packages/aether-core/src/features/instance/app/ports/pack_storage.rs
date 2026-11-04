@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use async_trait::async_trait;
 
 use crate::features::instance::domain::{
-    ContentPath, InstanceError, InstanceId, Pack, PackFile, ProviderId,
+    ContentId, ContentPath, InstanceError, InstanceId, Pack, PackFile, ProviderId,
 };
 
 #[async_trait]
@@ -39,7 +39,7 @@ pub trait PackStorage: Send + Sync {
         &self,
         instance_id: &InstanceId,
         provider_id: &ProviderId,
-        content_id: &str,
+        content_id: &ContentId,
     ) -> Result<Option<PackFile>, InstanceError>;
 
     async fn update_pack_file(

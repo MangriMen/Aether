@@ -204,8 +204,8 @@ impl TryFrom<BaseContentParamsDto> for BaseContentParams {
 
     fn try_from(value: BaseContentParamsDto) -> Result<Self, Self::Error> {
         Ok(Self {
-            content_id: value.content_id,
-            content_version: value.content_version,
+            content_id: value.content_id.try_into()?,
+            content_version: value.content_version.map(TryInto::try_into).transpose()?,
             provider_id: value.provider_id.try_into()?,
         })
     }
@@ -277,5 +277,51 @@ impl From<ContentItemDto> for ContentItem {
             versions: value.versions,
             content_type: value.content_type.into(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn base(content_id: &str, content_version: Option<&str>) -> BaseContentParamsDto {
+        BaseContentParamsDto {
+            content_id: content_id.into(),
+            content_version: content_version.map(Into::into),
+            provider_id: ProviderIdDto {
+                plugin_id: "aether".into(),
+                capability_id: "modrinth".into(),
+            },
+        }
+    }
+
+    #[test]
+    fn should_refuse_a_content_id_when_it_is_not_a_valid_id() {
+        for bad in ["", " a", "a/b", "a%2e"] {
+            let result = BaseContentParams::try_from(base(bad, None));
+
+            assert!(
+                matches!(result, Err(InstanceError::InvalidContentId { .. })),
+                "{bad:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn should_refuse_a_content_version_when_it_is_not_a_valid_id() {
+        let result = BaseContentParams::try_from(base("AANobbMI", Some("v?1")));
+
+        assert!(matches!(
+            result,
+            Err(InstanceError::InvalidContentId { .. })
+        ));
+    }
+
+    #[test]
+    fn should_accept_the_ids_of_a_provider_when_they_are_valid() {
+        let params = BaseContentParams::try_from(base("AANobbMI", Some("IZskON6d"))).unwrap();
+
+        assert_eq!(params.content_id.as_str(), "AANobbMI");
+        assert_eq!(params.content_version.unwrap().as_str(), "IZskON6d");
     }
 }

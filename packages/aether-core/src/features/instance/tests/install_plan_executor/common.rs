@@ -1,5 +1,6 @@
 use crate::features::instance::InstanceName;
 use crate::features::instance::PlatformId;
+use crate::features::instance::{ContentId, ContentVersionId};
 use std::{
     collections::HashMap,
     io::Write,
@@ -103,39 +104,44 @@ impl ContentProvider for MockProvider {
         unimplemented!()
     }
 
-    async fn get_content(&self, _: String) -> Result<ContentItem, InstanceError> {
+    async fn get_content(&self, _: ContentId) -> Result<ContentItem, InstanceError> {
         unimplemented!()
     }
 
-    async fn list_versions(&self, _: String) -> Result<Vec<ContentVersion>, InstanceError> {
+    async fn list_versions(&self, _: ContentId) -> Result<Vec<ContentVersion>, InstanceError> {
         unimplemented!()
     }
 
     async fn resolve_file(
         &self,
-        content_id: &str,
-        version: Option<&str>,
+        content_id: &ContentId,
+        version: Option<&ContentVersionId>,
         game_version: &str,
         loader: Option<&str>,
     ) -> Result<ResolvedFile, InstanceError> {
         self.calls.lock().unwrap().push((
-            content_id.into(),
-            version.map(Into::into),
+            content_id.to_string(),
+            version.map(ToString::to_string),
             game_version.into(),
             loader.map(Into::into),
         ));
 
-        if content_id == "unsupported" {
+        if content_id.as_str() == "unsupported" {
             return Err(self.unsupported("resolve_file"));
         }
 
         Ok(ResolvedFile {
-            version: version.unwrap_or("newest").into(),
+            version: version
+                .cloned()
+                .unwrap_or_else(|| ContentVersionId::try_from("newest").unwrap()),
             url: self.url_for(content_id),
             hash: Some(FileHash::new(HashAlgorithm::Sha1, SHA1_ABC).unwrap()),
             file_name: format!("{content_id}.jar"),
             size: None,
-            name: Some(format!("{content_id} {}", version.unwrap_or("newest"))),
+            name: Some(format!(
+                "{content_id} {}",
+                version.map_or("newest", ContentVersionId::as_str)
+            )),
         })
     }
 
@@ -589,8 +595,9 @@ impl ContentFileService for FailingRestore {
 /// Keeps what is put in it, in memory, with when it was put as fetched.
 #[derive(Default)]
 pub(super) struct MemoryMetadataCache {
-    pub(super) items: Mutex<HashMap<(ProviderId, String), CachedContentMetadata>>,
-    pub(super) versions: Mutex<HashMap<(ProviderId, String), CachedContentVersionMetadata>>,
+    pub(super) items: Mutex<HashMap<(ProviderId, ContentId), CachedContentMetadata>>,
+    pub(super) versions:
+        Mutex<HashMap<(ProviderId, ContentVersionId), CachedContentVersionMetadata>>,
 }
 
 #[async_trait]
@@ -598,8 +605,8 @@ impl ContentMetadataCache for MemoryMetadataCache {
     async fn get_many(
         &self,
         provider_id: &ProviderId,
-        content_ids: &[String],
-    ) -> HashMap<String, CachedContentMetadata> {
+        content_ids: &[ContentId],
+    ) -> HashMap<ContentId, CachedContentMetadata> {
         let items = self.items.lock().unwrap();
         content_ids
             .iter()
@@ -613,7 +620,7 @@ impl ContentMetadataCache for MemoryMetadataCache {
     async fn put_keyed_at(
         &self,
         provider_id: &ProviderId,
-        items: &[(String, ContentMetadata)],
+        items: &[(ContentId, ContentMetadata)],
         fetched_at: SystemTime,
     ) -> bool {
         let mut cached = self.items.lock().unwrap();
@@ -632,8 +639,8 @@ impl ContentMetadataCache for MemoryMetadataCache {
     async fn get_versions(
         &self,
         provider_id: &ProviderId,
-        version_ids: &[String],
-    ) -> HashMap<String, CachedContentVersionMetadata> {
+        version_ids: &[ContentVersionId],
+    ) -> HashMap<ContentVersionId, CachedContentVersionMetadata> {
         let versions = self.versions.lock().unwrap();
         version_ids
             .iter()
@@ -944,7 +951,7 @@ pub(super) fn file_name(relative_path: &str) -> String {
 pub(super) fn pack_of(provider_id: &ProviderId) -> PlanOrigin {
     PlanOrigin {
         provider_id: provider_id.clone(),
-        content_id: PACK_ID.into(),
+        content_id: PACK_ID.try_into().unwrap(),
     }
 }
 
@@ -984,8 +991,8 @@ pub(super) fn neoforge_1_21_4() -> InstanceGame {
 pub(super) fn installed_from(provider_id: &ProviderId, modpack_id: &str) -> PackInfo {
     PackInfo {
         provider_id: provider_id.clone(),
-        modpack_id: modpack_id.into(),
-        version_id: "v1".into(),
+        modpack_id: modpack_id.try_into().unwrap(),
+        version_id: ContentVersionId::try_from("v1").unwrap(),
     }
 }
 
@@ -993,7 +1000,7 @@ pub(super) fn provider_ref(platform: &str, content_id: &str, path: &str) -> Inst
     InstallFileEntry::new(
         ContentSource::ProviderRef {
             platform: PlatformId::try_from(platform).unwrap(),
-            content_id: content_id.into(),
+            content_id: content_id.try_into().unwrap(),
             version: None,
         },
         ContentPath::parse(path).unwrap(),
@@ -1033,8 +1040,8 @@ pub(super) fn modrinth_update(
     HashMap::from([(
         modrinth_id(),
         ContentFileUpdateInfo {
-            content_id: content_id.into(),
-            version: version.into(),
+            content_id: content_id.try_into().unwrap(),
+            version: version.try_into().unwrap(),
         },
     )])
 }
@@ -1053,8 +1060,8 @@ pub(super) fn identified(
             hash: Some(FileHash::new(HashAlgorithm::Sha1, sha1(url)).unwrap()),
             identity: Some(ContentIdentity {
                 platform: PlatformId::try_from(platform).unwrap(),
-                content_id: content_id.into(),
-                version: version.into(),
+                content_id: content_id.try_into().unwrap(),
+                version: version.try_into().unwrap(),
             }),
         },
         ContentPath::parse(path).unwrap(),

@@ -2,6 +2,7 @@
 //! asks for, under which owner the files are recorded, and the stage a new pack's instance ends in.
 
 use crate::features::instance::InstanceName;
+use crate::features::instance::{ContentId, ContentVersionId};
 
 use crate::features::instance::PlatformId;
 use std::{
@@ -46,8 +47,8 @@ fn provider_id() -> ProviderId {
 fn pack_info(modpack_id: &str) -> PackInfo {
     PackInfo {
         provider_id: provider_id(),
-        modpack_id: modpack_id.into(),
-        version_id: "v1".into(),
+        modpack_id: modpack_id.try_into().unwrap(),
+        version_id: ContentVersionId::try_from("v1").unwrap(),
     }
 }
 
@@ -103,8 +104,8 @@ impl MockProvider {
                 hash: None,
                 identity: Some(ContentIdentity {
                     platform: PlatformId::try_from(platform).unwrap(),
-                    content_id: content_id.into(),
-                    version: "v2".into(),
+                    content_id: content_id.try_into().unwrap(),
+                    version: ContentVersionId::try_from("v2").unwrap(),
                 }),
             },
             ContentPath::parse("mods/sodium.jar").unwrap(),
@@ -128,11 +129,11 @@ impl ContentProvider for MockProvider {
         unimplemented!()
     }
 
-    async fn get_content(&self, _: String) -> Result<ContentItem, InstanceError> {
+    async fn get_content(&self, _: ContentId) -> Result<ContentItem, InstanceError> {
         unimplemented!()
     }
 
-    async fn list_versions(&self, _: String) -> Result<Vec<ContentVersion>, InstanceError> {
+    async fn list_versions(&self, _: ContentId) -> Result<Vec<ContentVersion>, InstanceError> {
         unimplemented!()
     }
 
@@ -312,8 +313,8 @@ impl Fixture {
 
 fn base(content_id: &str) -> BaseContentParams {
     BaseContentParams {
-        content_id: content_id.into(),
-        content_version: Some("v2".into()),
+        content_id: content_id.try_into().unwrap(),
+        content_version: Some(ContentVersionId::try_from("v2").unwrap()),
         provider_id: provider_id(),
     }
 }
@@ -352,8 +353,8 @@ async fn should_install_content_under_the_content_owner_when_an_instance_is_chos
     assert_eq!(
         *provider.asked.lock().unwrap(),
         vec![ResolveInstallPlanParams {
-            content_id: "sodium".into(),
-            version: Some("v2".into()),
+            content_id: ContentId::try_from("sodium").unwrap(),
+            version: Some(ContentVersionId::try_from("v2").unwrap()),
             installed_version: None,
             target: ResolveTarget::Existing {
                 instance_id: InstanceId::try_from(INSTANCE_ID).unwrap(),
@@ -366,7 +367,7 @@ async fn should_install_content_under_the_content_owner_when_an_instance_is_chos
         *fixture.executor.calls.lock().unwrap(),
         vec![PlanOrigin {
             provider_id: provider_id(),
-            content_id: "sodium".into(),
+            content_id: ContentId::try_from("sodium").unwrap(),
         }]
     );
     assert_eq!(
@@ -429,8 +430,8 @@ async fn should_tell_the_provider_the_installed_version_when_installing_content(
     record.update = Some(HashMap::from([(
         provider_id(),
         ContentFileUpdateInfo {
-            content_id: "sodium".into(),
-            version: "beta-1".into(),
+            content_id: ContentId::try_from("sodium").unwrap(),
+            version: ContentVersionId::try_from("beta-1").unwrap(),
         },
     )]));
     fixture
@@ -490,7 +491,7 @@ async fn should_own_the_new_instance_by_the_recorded_pack_when_a_modpack_is_inst
         *fixture.executor.calls.lock().unwrap(),
         vec![PlanOrigin {
             provider_id: provider_id(),
-            content_id: "project-id".into(),
+            content_id: ContentId::try_from("project-id").unwrap(),
         }]
     );
     assert_eq!(
@@ -516,7 +517,7 @@ async fn should_own_a_mod_under_the_id_of_its_file_when_it_is_asked_for_by_slug(
         *fixture.executor.calls.lock().unwrap(),
         vec![PlanOrigin {
             provider_id: provider_id(),
-            content_id: "AANobbMI".into(),
+            content_id: ContentId::try_from("AANobbMI").unwrap(),
         }]
     );
 }
@@ -538,7 +539,7 @@ async fn should_keep_the_asked_id_when_the_file_is_of_another_platform() {
 
     assert_eq!(
         fixture.executor.calls.lock().unwrap()[0].content_id,
-        "sodium"
+        ContentId::try_from("sodium").unwrap()
     );
 }
 

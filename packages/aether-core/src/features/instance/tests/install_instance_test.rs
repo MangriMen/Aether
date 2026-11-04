@@ -1,4 +1,5 @@
 use crate::features::instance::InstanceName;
+use crate::features::instance::{ContentId, ContentVersionId};
 use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
@@ -134,8 +135,8 @@ impl ProgressService for NoProgress {
 fn pack_info() -> PackInfo {
     PackInfo {
         provider_id: ProviderId::from_parts("aether", "modrinth").unwrap(),
-        modpack_id: "pack".to_owned(),
-        version_id: "1".to_owned(),
+        modpack_id: ContentId::try_from("pack").unwrap(),
+        version_id: ContentVersionId::try_from("1").unwrap(),
     }
 }
 

@@ -7,6 +7,7 @@ use crate::features::instance::{
     ContentFileUpdateInfo, PackFile, PackFileDownload, PackFileOption, ProviderId, ProviderIdError,
     infra::{
         legacy_provider_id::{parse_stored_provider_id, parse_v1_provider_id},
+        stored_content_id::parse_stored_content_id,
         stored_side::parse_stored_side,
     },
 };
@@ -84,9 +85,9 @@ impl From<PackFileV1> for PackFile {
                 .into_iter()
                 .filter_map(|(k, v)| {
                     let provider_id = parse_update_key(&value.file_name, &k, parse_v1_provider_id)?;
-                    let Some(info) = migrate_update_info(&v) else {
+                    let Some(info) = migrate_update_info(&value.file_name, &v) else {
                         warn!(
-                            "Skipping update info \"{k}\" of pack file \"{}\": not a table",
+                            "Skipping update info \"{k}\" of pack file \"{}\": not a table or without valid ids",
                             value.file_name
                         );
                         return None;
@@ -134,11 +135,12 @@ impl From<PackFileV2> for PackFile {
                     let provider_id =
                         parse_update_key(&value.file_name, &k, parse_stored_provider_id)?;
 
+                    let owner = format!("pack file \"{}\"", value.file_name);
                     Some((
                         provider_id,
                         ContentFileUpdateInfo {
-                            content_id: v.content_id,
-                            version: v.version,
+                            content_id: parse_stored_content_id(&owner, v.content_id)?,
+                            version: parse_stored_content_id(&owner, v.version)?,
                         },
                     ))
                 })
@@ -190,8 +192,8 @@ impl From<PackFile> for PackFileV2 {
                         (
                             k.to_string(),
                             ContentFileUpdateInfoV1 {
-                                content_id: v.content_id,
-                                version: v.version,
+                                content_id: v.content_id.into(),
+                                version: v.version.into(),
                             },
                         )
                     })
@@ -213,28 +215,28 @@ fn parse_update_key(
         .ok()
 }
 
-fn migrate_update_info(v: &serde_json::Value) -> Option<ContentFileUpdateInfo> {
+fn migrate_update_info(file_name: &str, v: &serde_json::Value) -> Option<ContentFileUpdateInfo> {
     let obj = v.as_object()?;
-    let content_id = obj
-        .get("contentId")
-        .or_else(|| obj.get("project_id"))
-        .and_then(|v| v.as_str())
-        .unwrap_or_default()
-        .to_string();
-    let version = obj
-        .get("version")
-        .and_then(|v| v.as_str())
-        .unwrap_or_default()
-        .to_string();
+    let stored = |value: Option<&serde_json::Value>| {
+        value
+            .and_then(|v| v.as_str())
+            .unwrap_or_default()
+            .to_string()
+    };
+    let owner = format!("pack file \"{file_name}\"");
 
     Some(ContentFileUpdateInfo {
-        content_id,
-        version,
+        content_id: parse_stored_content_id(
+            &owner,
+            stored(obj.get("contentId").or_else(|| obj.get("project_id"))),
+        )?,
+        version: parse_stored_content_id(&owner, stored(obj.get("version")))?,
     })
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::features::instance::ContentId;
     use crate::features::instance::ProviderId;
     use rstest::rstest;
 
@@ -242,6 +244,26 @@ mod tests {
 
     fn aether_modrinth() -> ProviderId {
         "aether#modrinth".parse().unwrap()
+    }
+
+    #[test]
+    fn should_drop_the_update_info_when_a_stored_id_is_not_a_valid_id() {
+        let dto: PackFileV2 = toml::from_str(
+            r#"
+            file-name = "sodium.jar"
+            hash = "abc"
+            update-provider-id = "aether#modrinth"
+
+            [update."aether#modrinth"]
+            content-id = ""
+            version = "v1"
+            "#,
+        )
+        .unwrap();
+
+        let pack_file = PackFile::from(dto);
+
+        assert!(pack_file.update.unwrap().is_empty());
     }
 
     #[test]
@@ -264,7 +286,10 @@ mod tests {
         assert_eq!(pack_file.update_provider_id, Some(aether_modrinth()));
         let update = pack_file.update.unwrap();
         assert_eq!(update.len(), 1);
-        assert_eq!(update[&aether_modrinth()].content_id, "AANobbMI");
+        assert_eq!(
+            update[&aether_modrinth()].content_id,
+            ContentId::try_from("AANobbMI").unwrap()
+        );
     }
 
     #[test]
@@ -286,7 +311,10 @@ mod tests {
 
         assert_eq!(pack_file.update_provider_id, Some(aether_modrinth()));
         let update = pack_file.update.unwrap();
-        assert_eq!(update[&aether_modrinth()].content_id, "AANobbMI");
+        assert_eq!(
+            update[&aether_modrinth()].content_id,
+            ContentId::try_from("AANobbMI").unwrap()
+        );
     }
 
     fn read_v1(text: &str) -> PackFile {
@@ -349,7 +377,10 @@ mod tests {
         let update = read(text).update.unwrap();
 
         assert_eq!(update.len(), 1);
-        assert_eq!(update[&aether_modrinth()].content_id, "AANobbMI");
+        assert_eq!(
+            update[&aether_modrinth()].content_id,
+            ContentId::try_from("AANobbMI").unwrap()
+        );
     }
 
     #[test]

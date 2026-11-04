@@ -2,6 +2,7 @@
 //! the new format becomes a registered provider whose trait methods call the functions it names.
 
 use crate::features::instance::PlatformId;
+use crate::features::instance::{ContentId, ContentVersionId};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
@@ -217,8 +218,8 @@ fn existing_target() -> ResolveTarget {
 
 fn plan_params(target: ResolveTarget) -> ResolveInstallPlanParams {
     ResolveInstallPlanParams {
-        content_id: "238222".into(),
-        version: Some("4512345".into()),
+        content_id: ContentId::try_from("238222").unwrap(),
+        version: Some(ContentVersionId::try_from("4512345").unwrap()),
         installed_version: None,
         target,
     }
@@ -362,7 +363,12 @@ async fn should_call_the_resolve_file_handler_the_file_names_when_resolving_a_fi
 
     let resolved = fixture
         .proxy
-        .resolve_file("238222", None, "1.21.1", Some("fabric"))
+        .resolve_file(
+            &ContentId::try_from("238222").unwrap(),
+            None,
+            "1.21.1",
+            Some("fabric"),
+        )
         .await
         .unwrap();
 
@@ -376,7 +382,10 @@ async fn should_call_the_resolve_file_handler_the_file_names_when_resolving_a_fi
             loader: Some("fabric".into()),
         }
     );
-    assert_eq!(resolved.version, "4512345");
+    assert_eq!(
+        resolved.version,
+        ContentVersionId::try_from("4512345").unwrap()
+    );
     assert_eq!(
         resolved.hash,
         Some(FileHash::new(HashAlgorithm::Sha1, SHA1_ABC).unwrap())
@@ -424,8 +433,8 @@ async fn should_call_the_resolve_install_plan_handler_the_file_names_when_resolv
         plan.files[0].source,
         ContentSource::ProviderRef {
             platform: PlatformId::from_static("curseforge"),
-            content_id: "238222".into(),
-            version: Some("4512345".into()),
+            content_id: ContentId::try_from("238222").unwrap(),
+            version: Some(ContentVersionId::try_from("4512345").unwrap()),
         }
     );
     assert_eq!(plan.files[0].side, FileSide::Client);
@@ -456,7 +465,7 @@ async fn should_call_the_pack_metadata_handler_the_file_names_when_resolving_pac
     let metadata = fixture
         .proxy
         .resolve_pack_metadata(PackSource::Content {
-            content_id: "925200".into(),
+            content_id: ContentId::try_from("925200").unwrap(),
             version: None,
             installed_version: None,
         })
@@ -547,7 +556,7 @@ async fn should_keep_an_author_ref_when_describing_content_and_drop_a_blank_one(
 
     let projects = fixture
         .proxy
-        .get_contents_metadata(&["1", "2", "3", "4"].map(str::to_owned))
+        .get_contents_metadata(&["1", "2", "3", "4"].map(|id| ContentId::try_from(id).unwrap()))
         .await
         .unwrap();
 
@@ -597,7 +606,7 @@ async fn should_drop_an_author_ref_when_the_plugin_has_no_authors_handler() {
 
     let projects = fixture
         .proxy
-        .get_contents_metadata(&["1".to_owned()])
+        .get_contents_metadata(&[ContentId::try_from("1").unwrap()])
         .await
         .unwrap();
 
@@ -661,7 +670,7 @@ async fn should_call_the_metadata_handlers_the_file_names_when_describing_conten
 
     let projects = fixture
         .proxy
-        .get_contents_metadata(&["238222".to_owned()])
+        .get_contents_metadata(&[ContentId::try_from("238222").unwrap()])
         .await
         .unwrap();
     assert_eq!(
@@ -679,7 +688,7 @@ async fn should_call_the_metadata_handlers_the_file_names_when_describing_conten
 
     let versions = fixture
         .proxy
-        .get_versions_metadata(&["5000000".to_owned()])
+        .get_versions_metadata(&[ContentVersionId::try_from("5000000").unwrap()])
         .await
         .unwrap();
     assert_eq!(
@@ -713,7 +722,7 @@ async fn should_drop_an_icon_when_it_is_not_a_web_address() {
 
     let projects = fixture
         .proxy
-        .get_contents_metadata(&["1", "2", "3", "4"].map(str::to_owned))
+        .get_contents_metadata(&["1", "2", "3", "4"].map(|id| ContentId::try_from(id).unwrap()))
         .await
         .unwrap();
 
@@ -740,7 +749,10 @@ async fn should_keep_the_other_projects_when_one_described_project_has_no_name()
 
     let projects = fixture
         .proxy
-        .get_contents_metadata(&["1".to_owned(), "2".to_owned()])
+        .get_contents_metadata(&[
+            ContentId::try_from("1").unwrap(),
+            ContentId::try_from("2").unwrap(),
+        ])
         .await
         .unwrap();
 
@@ -769,12 +781,12 @@ async fn should_drop_projects_nobody_asked_about_and_repeated_ones() {
 
     let projects = fixture
         .proxy
-        .get_contents_metadata(&["1".to_owned()])
+        .get_contents_metadata(&[ContentId::try_from("1").unwrap()])
         .await
         .unwrap();
 
     assert_eq!(projects.len(), 1);
-    assert_eq!(projects[0].content_id, "1");
+    assert_eq!(projects[0].content_id, ContentId::try_from("1").unwrap());
 }
 
 #[tokio::test]
@@ -789,11 +801,14 @@ async fn should_keep_a_project_when_it_answers_an_id_asked_by_its_slug() {
 
     let projects = fixture
         .proxy
-        .get_contents_metadata(&["Slug-238222".to_owned()])
+        .get_contents_metadata(&[ContentId::try_from("Slug-238222").unwrap()])
         .await
         .unwrap();
 
-    assert_eq!(projects[0].content_id, "238222");
+    assert_eq!(
+        projects[0].content_id,
+        ContentId::try_from("238222").unwrap()
+    );
 }
 
 #[tokio::test]
@@ -818,12 +833,18 @@ async fn should_drop_versions_nobody_asked_about_and_numberless_ones() {
 
     let versions = fixture
         .proxy
-        .get_versions_metadata(&["1".to_owned(), "2".to_owned()])
+        .get_versions_metadata(&[
+            ContentVersionId::try_from("1").unwrap(),
+            ContentVersionId::try_from("2").unwrap(),
+        ])
         .await
         .unwrap();
 
     assert_eq!(versions.len(), 1);
-    assert_eq!(versions[0].version_id, "1");
+    assert_eq!(
+        versions[0].version_id,
+        ContentVersionId::try_from("1").unwrap()
+    );
 }
 
 #[tokio::test]
@@ -842,7 +863,7 @@ async fn should_report_metadata_as_unsupported_when_the_provider_has_no_handler_
     assert_unsupported(
         fixture
             .proxy
-            .get_contents_metadata(&["238222".to_owned()])
+            .get_contents_metadata(&[ContentId::try_from("238222").unwrap()])
             .await
             .unwrap_err(),
         "get_contents_metadata",
@@ -850,7 +871,7 @@ async fn should_report_metadata_as_unsupported_when_the_provider_has_no_handler_
     assert_unsupported(
         fixture
             .proxy
-            .get_versions_metadata(&["5000000".to_owned()])
+            .get_versions_metadata(&[ContentVersionId::try_from("5000000").unwrap()])
             .await
             .unwrap_err(),
         "get_versions_metadata",
@@ -882,7 +903,12 @@ async fn should_report_operations_as_unsupported_when_the_provider_has_no_handle
     assert_unsupported(
         fixture
             .proxy
-            .resolve_file("238222", None, "1.21.1", None)
+            .resolve_file(
+                &ContentId::try_from("238222").unwrap(),
+                None,
+                "1.21.1",
+                None,
+            )
             .await
             .unwrap_err(),
         "resolve_file",
@@ -925,7 +951,7 @@ async fn should_report_optional_operations_as_unsupported_when_the_provider_has_
     assert_unsupported(
         fixture
             .proxy
-            .list_versions("238222".into())
+            .list_versions(ContentId::try_from("238222").unwrap())
             .await
             .unwrap_err(),
         "list_versions",
@@ -954,7 +980,7 @@ async fn should_report_a_handler_as_unsupported_when_it_is_missing_from_the_plug
     assert_unsupported(
         fixture
             .proxy
-            .list_versions("238222".into())
+            .list_versions(ContentId::try_from("238222").unwrap())
             .await
             .unwrap_err(),
         "list_versions",
@@ -1471,7 +1497,12 @@ async fn should_register_a_plugin_when_it_implements_only_the_resolve_handlers()
     );
 
     let resolved = provider
-        .resolve_file("238222", Some("4512345"), "1.21.1", None)
+        .resolve_file(
+            &ContentId::try_from("238222").unwrap(),
+            Some(&ContentVersionId::try_from("4512345").unwrap()),
+            "1.21.1",
+            None,
+        )
         .await
         .unwrap();
 

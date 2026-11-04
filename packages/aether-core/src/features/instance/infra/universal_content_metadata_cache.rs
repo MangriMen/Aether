@@ -11,6 +11,8 @@
 
 use std::{
     collections::HashMap,
+    fmt,
+    hash::Hash,
     time::{Duration, SystemTime},
 };
 
@@ -19,7 +21,8 @@ use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 use crate::{
     features::instance::{
-        ContentAuthor, ContentMetadata, ContentVersionMetadata, ProviderId,
+        ContentAuthor, ContentId, ContentMetadata, ContentVersionId, ContentVersionMetadata,
+        InvalidContentId, ProviderId,
         app::{
             CachedContentAuthor, CachedContentMetadata, CachedContentVersionMetadata,
             CachedMetadata, ContentMetadataCache,
@@ -81,20 +84,22 @@ struct ContentVersionMetadataRecord {
 impl From<&ContentVersionMetadata> for ContentVersionMetadataRecord {
     fn from(value: &ContentVersionMetadata) -> Self {
         Self {
-            version_id: value.version_id.clone(),
+            version_id: value.version_id.to_string(),
             version_number: value.version_number.clone(),
             name: value.name.clone(),
         }
     }
 }
 
-impl From<ContentVersionMetadataRecord> for ContentVersionMetadata {
-    fn from(value: ContentVersionMetadataRecord) -> Self {
-        Self {
-            version_id: value.version_id,
+impl TryFrom<ContentVersionMetadataRecord> for ContentVersionMetadata {
+    type Error = InvalidContentId;
+
+    fn try_from(value: ContentVersionMetadataRecord) -> Result<Self, Self::Error> {
+        Ok(Self {
+            version_id: value.version_id.try_into()?,
             version_number: value.version_number,
             name: value.name,
-        }
+        })
     }
 }
 
@@ -115,7 +120,7 @@ struct ContentMetadataRecord {
 impl From<&ContentMetadata> for ContentMetadataRecord {
     fn from(value: &ContentMetadata) -> Self {
         Self {
-            content_id: value.content_id.clone(),
+            content_id: value.content_id.to_string(),
             slug: value.slug.clone(),
             name: value.name.clone(),
             description: value.description.clone(),
@@ -126,17 +131,19 @@ impl From<&ContentMetadata> for ContentMetadataRecord {
     }
 }
 
-impl From<ContentMetadataRecord> for ContentMetadata {
-    fn from(value: ContentMetadataRecord) -> Self {
-        Self {
-            content_id: value.content_id,
+impl TryFrom<ContentMetadataRecord> for ContentMetadata {
+    type Error = InvalidContentId;
+
+    fn try_from(value: ContentMetadataRecord) -> Result<Self, Self::Error> {
+        Ok(Self {
+            content_id: value.content_id.try_into()?,
             slug: value.slug,
             name: value.name,
             description: value.description,
             author: value.author,
             author_ref: value.author_ref,
             icon_url: value.icon_url,
-        }
+        })
     }
 }
 
@@ -144,7 +151,11 @@ impl From<ContentMetadataRecord> for ContentMetadata {
 /// `#`), so no two pairs share a key.
 ///
 /// [`is_valid_id`]: crate::features::instance::is_valid_id
-fn key<R>(namespace: &'static str, provider_id: &ProviderId, id: &str) -> CacheKey<CachedValue<R>> {
+fn key<R>(
+    namespace: &'static str,
+    provider_id: &ProviderId,
+    id: &impl fmt::Display,
+) -> CacheKey<CachedValue<R>> {
     CacheKey::new(namespace, CacheId::Named(format!("{provider_id}:{id}")))
 }
 
@@ -159,14 +170,16 @@ impl<C: Cache> UniversalContentMetadataCache<C> {
 
     /// The rows of `ids` found in `namespace` for `provider_id`, as items of type `T`, keyed by
     /// id. An id with no row is absent.
-    async fn get_records<R, T>(
+    async fn get_records<I, R, T>(
         &self,
         namespace: &'static str,
         provider_id: &ProviderId,
-        ids: &[String],
-    ) -> HashMap<String, CachedMetadata<T>>
+        ids: &[I],
+    ) -> HashMap<I, CachedMetadata<T>>
     where
-        R: DeserializeOwned + Send + Sync + Into<T>,
+        I: fmt::Display + Clone + Eq + Hash,
+        R: DeserializeOwned + Send + Sync + TryInto<T>,
+        R::Error: fmt::Display,
     {
         let keys: Vec<_> = ids
             .iter()
@@ -178,10 +191,17 @@ impl<C: Cache> UniversalContentMetadataCache<C> {
             .zip(found)
             .filter_map(|(id, cached)| {
                 let cached = cached?;
+                let metadata = cached
+                    .value
+                    .try_into()
+                    .inspect_err(|err| {
+                        tracing::debug!("Ignoring an unreadable cached record of {id}: {err}");
+                    })
+                    .ok()?;
                 Some((
                     id.clone(),
                     CachedMetadata {
-                        metadata: cached.value.into(),
+                        metadata,
                         fetched_at: cached.updated_at,
                     },
                 ))
@@ -191,11 +211,11 @@ impl<C: Cache> UniversalContentMetadataCache<C> {
 
     /// Put `records` of `provider_id` in `namespace`, each under the id it is paired with, as
     /// fetched at `fetched_at`; replacing what was there. Whether they were written.
-    async fn put_records<R>(
+    async fn put_records<I: fmt::Display, R>(
         &self,
         namespace: &'static str,
         provider_id: &ProviderId,
-        records: Vec<(&str, R)>,
+        records: Vec<(&I, R)>,
         fetched_at: SystemTime,
     ) -> bool
     where
@@ -224,7 +244,7 @@ impl<C: Cache> UniversalContentMetadataCache<C> {
             .iter()
             .map(|item| {
                 let record = ContentVersionMetadataRecord::from(item);
-                (item.version_id.as_str(), record)
+                (&item.version_id, record)
             })
             .collect();
         self.put_records(VERSION_NAMESPACE, provider_id, records, fetched_at)
@@ -239,7 +259,7 @@ impl<C: Cache> UniversalContentMetadataCache<C> {
     ) -> bool {
         let records = items
             .iter()
-            .map(|item| (item.author_ref.as_str(), ContentAuthorRecord::from(item)))
+            .map(|item| (&item.author_ref, ContentAuthorRecord::from(item)))
             .collect();
         self.put_records(AUTHOR_NAMESPACE, provider_id, records, fetched_at)
             .await
@@ -251,21 +271,21 @@ impl<C: Cache> ContentMetadataCache for UniversalContentMetadataCache<C> {
     async fn get_many(
         &self,
         provider_id: &ProviderId,
-        content_ids: &[String],
-    ) -> HashMap<String, CachedContentMetadata> {
-        self.get_records::<ContentMetadataRecord, _>(NAMESPACE, provider_id, content_ids)
+        content_ids: &[ContentId],
+    ) -> HashMap<ContentId, CachedContentMetadata> {
+        self.get_records::<_, ContentMetadataRecord, _>(NAMESPACE, provider_id, content_ids)
             .await
     }
 
     async fn put_keyed_at(
         &self,
         provider_id: &ProviderId,
-        items: &[(String, ContentMetadata)],
+        items: &[(ContentId, ContentMetadata)],
         fetched_at: SystemTime,
     ) -> bool {
         let records = items
             .iter()
-            .map(|(content_id, item)| (content_id.as_str(), ContentMetadataRecord::from(item)))
+            .map(|(content_id, item)| (content_id, ContentMetadataRecord::from(item)))
             .collect();
         self.put_records(NAMESPACE, provider_id, records, fetched_at)
             .await
@@ -274,9 +294,9 @@ impl<C: Cache> ContentMetadataCache for UniversalContentMetadataCache<C> {
     async fn get_versions(
         &self,
         provider_id: &ProviderId,
-        version_ids: &[String],
-    ) -> HashMap<String, CachedContentVersionMetadata> {
-        self.get_records::<ContentVersionMetadataRecord, _>(
+        version_ids: &[ContentVersionId],
+    ) -> HashMap<ContentVersionId, CachedContentVersionMetadata> {
+        self.get_records::<_, ContentVersionMetadataRecord, _>(
             VERSION_NAMESPACE,
             provider_id,
             version_ids,
@@ -298,7 +318,7 @@ impl<C: Cache> ContentMetadataCache for UniversalContentMetadataCache<C> {
         provider_id: &ProviderId,
         author_refs: &[String],
     ) -> HashMap<String, CachedContentAuthor> {
-        self.get_records::<ContentAuthorRecord, _>(AUTHOR_NAMESPACE, provider_id, author_refs)
+        self.get_records::<_, ContentAuthorRecord, _>(AUTHOR_NAMESPACE, provider_id, author_refs)
             .await
     }
 
@@ -342,7 +362,7 @@ mod tests {
 
     fn metadata(content_id: &str, name: &str) -> ContentMetadata {
         ContentMetadata {
-            content_id: content_id.into(),
+            content_id: content_id.try_into().unwrap(),
             slug: name.to_lowercase(),
             name: name.into(),
             description: Some("desc".into()),
@@ -354,12 +374,17 @@ mod tests {
         }
     }
 
-    fn keyed(item: ContentMetadata) -> (String, ContentMetadata) {
+    fn keyed(item: ContentMetadata) -> (ContentId, ContentMetadata) {
         (item.content_id.clone(), item)
     }
 
-    fn ids(ids: &[&str]) -> Vec<String> {
-        ids.iter().map(|&id| id.to_owned()).collect()
+    fn ids<T: TryFrom<String>>(ids: &[&str]) -> Vec<T>
+    where
+        T::Error: std::fmt::Debug,
+    {
+        ids.iter()
+            .map(|&id| T::try_from(id.to_owned()).unwrap())
+            .collect()
     }
 
     #[tokio::test]
@@ -381,9 +406,17 @@ mod tests {
             .await;
 
         assert_eq!(found.len(), 2);
-        assert_eq!(found["AANobbMI"].metadata, metadata("AANobbMI", "Sodium"));
-        assert_eq!(found["P7dR8mSH"].metadata.name, "Fabric API");
-        assert!(!found["AANobbMI"].is_stale(SystemTime::now()));
+        assert_eq!(
+            found[&ContentId::try_from("AANobbMI").unwrap()].metadata,
+            metadata("AANobbMI", "Sodium")
+        );
+        assert_eq!(
+            found[&ContentId::try_from("P7dR8mSH").unwrap()]
+                .metadata
+                .name,
+            "Fabric API"
+        );
+        assert!(!found[&ContentId::try_from("AANobbMI").unwrap()].is_stale(SystemTime::now()));
     }
 
     #[tokio::test]
@@ -400,8 +433,16 @@ mod tests {
         let other = cache.get_many(&provider("other"), &ids(&["same"])).await;
         let none = cache.get_many(&provider("third"), &ids(&["same"])).await;
 
-        assert_eq!(modrinth["same"].metadata.name, "Modrinth one");
-        assert_eq!(other["same"].metadata.name, "Other one");
+        assert_eq!(
+            modrinth[&ContentId::try_from("same").unwrap()]
+                .metadata
+                .name,
+            "Modrinth one"
+        );
+        assert_eq!(
+            other[&ContentId::try_from("same").unwrap()].metadata.name,
+            "Other one"
+        );
         assert!(none.is_empty());
     }
 
@@ -420,7 +461,7 @@ mod tests {
 
         let found = cache.get_many(&modrinth, &ids(&["AANobbMI"])).await;
 
-        let item = &found["AANobbMI"];
+        let item = &found[&ContentId::try_from("AANobbMI").unwrap()];
         assert_eq!(item.metadata.name, "Sodium");
         assert_eq!(item.fetched_at, fetched_at);
         assert!(item.is_stale(SystemTime::now()));
@@ -444,8 +485,13 @@ mod tests {
             .await;
         let found = cache.get_many(&modrinth, &ids(&["AANobbMI"])).await;
 
-        assert_eq!(found["AANobbMI"].metadata.name, "Sodium");
-        assert!(!found["AANobbMI"].is_stale(SystemTime::now()));
+        assert_eq!(
+            found[&ContentId::try_from("AANobbMI").unwrap()]
+                .metadata
+                .name,
+            "Sodium"
+        );
+        assert!(!found[&ContentId::try_from("AANobbMI").unwrap()].is_stale(SystemTime::now()));
     }
 
     #[tokio::test]
@@ -455,19 +501,25 @@ mod tests {
         let sodium = metadata("AANobbMI", "Sodium");
 
         cache
-            .put_keyed(&modrinth, &[("sodium".to_owned(), sodium.clone())])
+            .put_keyed(
+                &modrinth,
+                &[(ContentId::try_from("sodium").unwrap(), sodium.clone())],
+            )
             .await;
         let found = cache
             .get_many(&modrinth, &ids(&["sodium", "AANobbMI"]))
             .await;
 
         assert_eq!(found.len(), 1);
-        assert_eq!(found["sodium"].metadata, sodium);
+        assert_eq!(
+            found[&ContentId::try_from("sodium").unwrap()].metadata,
+            sodium
+        );
     }
 
     fn version(version_id: &str, version_number: &str) -> ContentVersionMetadata {
         ContentVersionMetadata {
-            version_id: version_id.into(),
+            version_id: version_id.try_into().unwrap(),
             version_number: version_number.into(),
             name: Some(format!("Sodium {version_number}")),
         }
@@ -489,8 +541,13 @@ mod tests {
             .await;
 
         assert_eq!(found.len(), 1);
-        assert_eq!(found["IZskON6d"].metadata, version("IZskON6d", "0.5.8"));
-        assert!(!found["IZskON6d"].is_stale(SystemTime::now()));
+        assert_eq!(
+            found[&ContentVersionId::try_from("IZskON6d").unwrap()].metadata,
+            version("IZskON6d", "0.5.8")
+        );
+        assert!(
+            !found[&ContentVersionId::try_from("IZskON6d").unwrap()].is_stale(SystemTime::now())
+        );
         assert!(other.is_empty());
     }
 
@@ -508,8 +565,18 @@ mod tests {
         let projects = cache.get_many(&modrinth, &ids(&["same"])).await;
         let versions = cache.get_versions(&modrinth, &ids(&["same"])).await;
 
-        assert_eq!(projects["same"].metadata.name, "Sodium");
-        assert_eq!(versions["same"].metadata.version_number, "0.5.8");
+        assert_eq!(
+            projects[&ContentId::try_from("same").unwrap()]
+                .metadata
+                .name,
+            "Sodium"
+        );
+        assert_eq!(
+            versions[&ContentVersionId::try_from("same").unwrap()]
+                .metadata
+                .version_number,
+            "0.5.8"
+        );
     }
 
     #[tokio::test]
@@ -524,7 +591,7 @@ mod tests {
 
         let found = cache.get_versions(&modrinth, &ids(&["IZskON6d"])).await;
 
-        let item = &found["IZskON6d"];
+        let item = &found[&ContentVersionId::try_from("IZskON6d").unwrap()];
         assert_eq!(item.metadata.version_number, "0.5.8");
         assert_eq!(item.fetched_at, fetched_at);
         assert!(item.is_stale(SystemTime::now()));
@@ -543,14 +610,14 @@ mod tests {
             .put_records(
                 NAMESPACE,
                 &modrinth,
-                vec![("AANobbMI", old_row)],
+                vec![(&ContentId::try_from("AANobbMI").unwrap(), old_row)],
                 SystemTime::now(),
             )
             .await;
 
         let found = cache.get_many(&modrinth, &ids(&["AANobbMI"])).await;
 
-        let item = &found["AANobbMI"].metadata;
+        let item = &found[&ContentId::try_from("AANobbMI").unwrap()].metadata;
         assert_eq!(item.name, "Sodium");
         assert_eq!(item.author.as_deref(), Some("jellysquid3"));
         assert_eq!(item.author_ref, None);
@@ -611,7 +678,12 @@ mod tests {
         let projects = cache.get_many(&modrinth, &ids(&["same"])).await;
         let authors = cache.get_authors(&modrinth, &ids(&["same"])).await;
 
-        assert_eq!(projects["same"].metadata.name, "Sodium");
+        assert_eq!(
+            projects[&ContentId::try_from("same").unwrap()]
+                .metadata
+                .name,
+            "Sodium"
+        );
         assert_eq!(authors["same"].metadata.name, "jellysquid3");
     }
 

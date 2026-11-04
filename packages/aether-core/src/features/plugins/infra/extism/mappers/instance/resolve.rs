@@ -7,16 +7,18 @@ use aether_core_plugin_api::v0::{
 };
 
 use crate::{
-    features::instance::{PackMetadata, ResolveInstallPlanParams, ResolveTarget, ResolvedFile},
+    features::instance::{
+        InvalidContentId, PackMetadata, ResolveInstallPlanParams, ResolveTarget, ResolvedFile,
+    },
     shared::hash::{FileHash, InvalidFileHash},
 };
 
 impl From<ResolveInstallPlanParams> for ResolveInstallPlanParamsDto {
     fn from(value: ResolveInstallPlanParams) -> Self {
         Self {
-            content_id: value.content_id,
-            version: value.version,
-            installed_version: value.installed_version,
+            content_id: value.content_id.into(),
+            version: value.version.map(Into::into),
+            installed_version: value.installed_version.map(Into::into),
             target: value.target.into(),
         }
     }
@@ -39,12 +41,22 @@ impl From<ResolveTarget> for ResolveTargetDto {
     }
 }
 
+/// What is wrong with a file a plugin resolved a ref to.
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+pub enum InvalidResolvedFile {
+    #[error(transparent)]
+    Hash(#[from] InvalidFileHash),
+
+    #[error(transparent)]
+    ContentId(#[from] InvalidContentId),
+}
+
 impl TryFrom<ResolvedFileDto> for ResolvedFile {
-    type Error = InvalidFileHash;
+    type Error = InvalidResolvedFile;
 
     fn try_from(value: ResolvedFileDto) -> Result<Self, Self::Error> {
         Ok(Self {
-            version: value.version,
+            version: value.version.try_into()?,
             url: value.url,
             hash: value.hash.map(FileHash::try_from).transpose()?,
             file_name: value.file_name,
@@ -54,11 +66,13 @@ impl TryFrom<ResolvedFileDto> for ResolvedFile {
     }
 }
 
-impl From<PackMetadataDto> for PackMetadata {
-    fn from(value: PackMetadataDto) -> Self {
-        Self {
+impl TryFrom<PackMetadataDto> for PackMetadata {
+    type Error = InvalidContentId;
+
+    fn try_from(value: PackMetadataDto) -> Result<Self, Self::Error> {
+        Ok(Self {
             name: value.name,
-            version_id: value.version_id,
+            version_id: value.version_id.map(TryInto::try_into).transpose()?,
             version_name: value.version_name,
             description: value.description,
             game_version: value.game_version,
@@ -69,6 +83,6 @@ impl From<PackMetadataDto> for PackMetadata {
                 .file_count
                 .and_then(|count| usize::try_from(count).ok()),
             icon_url: value.icon_url,
-        }
+        })
     }
 }

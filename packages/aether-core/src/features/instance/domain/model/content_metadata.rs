@@ -1,10 +1,12 @@
+use super::{ContentId, ContentVersionId};
+
 /// What a provider says about a project of its own, to show an installed file by: the
 /// project's name and icon rather than the version name the file was installed with.
 ///
 /// Keyed by the provider and [`Self::content_id`], the provider's own id of the project.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ContentMetadata {
-    pub content_id: String,
+    pub content_id: ContentId,
     pub slug: String,
     pub name: String,
     pub description: Option<String>,
@@ -38,7 +40,7 @@ pub struct ContentVersionMetadata {
     /// The provider's own id of the version, as [`ContentFileUpdateInfo::version`] holds it.
     ///
     /// [`ContentFileUpdateInfo::version`]: super::ContentFileUpdateInfo::version
-    pub version_id: String,
+    pub version_id: ContentVersionId,
     /// The version as its authors number it.
     pub version_number: String,
     /// The version's title (`Sodium 0.6.13`), when the provider has one apart from its number.

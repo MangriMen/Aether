@@ -67,6 +67,10 @@ pub enum InstanceErrorDto {
         path: String,
         reason: String,
     },
+    InvalidContentId {
+        kind: String,
+        value: String,
+    },
     PathEscapesInstance {
         path: String,
         instance_id: String,
@@ -184,6 +188,10 @@ impl From<&InstanceError> for InstanceErrorDto {
             InstanceError::InvalidRelativePath { path, reason } => Self::InvalidRelativePath {
                 path: path.clone(),
                 reason: reason.clone(),
+            },
+            InstanceError::InvalidContentId { kind, value } => Self::InvalidContentId {
+                kind: kind.clone(),
+                value: value.clone(),
             },
             InstanceError::PathEscapesInstance { path, instance_id } => Self::PathEscapesInstance {
                 path: path.clone(),
