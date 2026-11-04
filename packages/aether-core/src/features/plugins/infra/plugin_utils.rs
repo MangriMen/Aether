@@ -146,7 +146,10 @@ pub(crate) fn parse_plugin_path(
 /// file must exist and stay inside the mount after resolving symlinks and short names, and the
 /// canonical path is returned. That holds at the time of the check only: `/cache` is writable
 /// by the plugin, so a component swapped for a symlink after this returns is not caught here;
-/// whatever opens the path later has to guard against that itself.
+/// whatever opens the path later has to guard against that itself. Not every caller does: an
+/// override archive is opened with a plain `File::open`, which follows a symlink in any
+/// component, the file included, and a directory source is reached through its parents by
+/// path (see `plan_overrides`).
 pub(crate) fn resolve_plugin_path(
     location_info: &LocationInfo,
     plugin_id: &PluginId,

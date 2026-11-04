@@ -7,9 +7,9 @@ use crate::shared::safe_path::{self, Separators};
 ///
 /// The only way to build one is [`TryFrom<PathBuf>`], which holds the path to the shared segment
 /// rules ([`safe_path`]) once any leading `./` is taken off: relative, no empty, `.` or `..`
-/// segment, no drive letter, NUL or reserved device name. The path is joined onto the plugin directory, so without this a manifest
-/// could make the loader read (and hash) a file outside it. `/` and `\` both separate, so a
-/// manifest names the same file on every platform.
+/// segment, no drive letter, NUL or reserved device name. The path is joined onto the plugin
+/// directory, so without this a manifest could make the loader read (and hash) a file outside
+/// it. `/` and `\` both separate, so a manifest names the same file on every platform.
 #[derive(Debug, Clone, Eq, Hash, PartialEq)]
 pub struct PluginFilePath(PathBuf);
 

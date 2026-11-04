@@ -10,8 +10,11 @@
 //! never through a symlink ([`open_in`]), so a directory swapped for a symlink after listing does
 //! not lead out of it. The root itself is reached by its path ([`open_root`]): only its last
 //! component is not followed, so a parent of it swapped for a symlink after the path was
-//! resolved is not caught. What an archive unpacks to is bounded over all sources of a plan together
-//! (`ContentInstallLimits`): files when listed, bytes as staged, so a lying header does not help.
+//! resolved is not caught. An archive source is opened by its path with a plain `File::open`
+//! ([`open_archive`]), which follows symlinks in every component, the file included: an archive
+//! swapped for a symlink after its path was resolved is not caught either. What an archive
+//! unpacks to is bounded over all sources of a plan together (`ContentInstallLimits`): files
+//! when listed, bytes as staged, so a lying header does not help.
 
 use std::{
     fs::File,

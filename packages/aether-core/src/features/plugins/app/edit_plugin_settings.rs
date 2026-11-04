@@ -144,6 +144,11 @@ fn apply_edit_changes(
             }
 
             if !Path::new(&path.host).exists() {
+                warn!(
+                    "Plugin '{plugin_id}': dropping folder '{}' -> '{}' from its settings: the \
+                     host folder does not exist",
+                    path.host, path.plugin
+                );
                 continue;
             }
 
