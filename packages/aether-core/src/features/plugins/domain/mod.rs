@@ -15,8 +15,8 @@ pub use models::{
 };
 pub(crate) use models::{
     AsCapabilityMetadata, CoreMount, GrantableHost, PLUGIN_API_VERSION, PLUGIN_CACHE_MOUNT,
-    core_folders, effective_allowed_hosts, is_blocked_ip, is_filesystem_root, is_host_allowed,
-    partition_mountable, to_wasi_path,
+    PluginPath, core_folders, effective_allowed_hosts, is_blocked_ip, is_filesystem_root,
+    is_host_allowed, partition_mountable, to_wasi_path,
 };
 pub use plugin_handle::PluginHandle;
 pub use plugin_instance::PluginInstance;

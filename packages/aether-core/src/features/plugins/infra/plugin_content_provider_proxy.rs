@@ -1,5 +1,6 @@
 use std::{
     collections::{HashMap, HashSet},
+    path::PathBuf,
     sync::Arc,
 };
 
@@ -33,7 +34,7 @@ use crate::features::{
 use crate::features::plugins::infra::extism::models::PluginInstanceExt;
 use crate::features::plugins::infra::pack_instances::deploying_packs;
 use crate::features::plugins::infra::plugin_utils::{
-    MountSet, host_path_to_plugin, resolve_plugin_path,
+    MountSet, host_path_to_plugin, parse_plugin_path, resolve_plugin_path,
 };
 
 /// A content provider implemented by a plugin, calling the functions its `capabilities.json`
@@ -150,13 +151,9 @@ impl PluginContentProviderProxy {
         if let InstallTarget::New(instance) = &mut target
             && let Some(icon_path) = instance.icon_path.take()
         {
-            let host_path = resolve_plugin_path(
-                &self.location_info,
-                &self.plugin_id,
-                &icon_path,
-                MountSet::CACHE,
-            )
-            .map_err(|err| self.invalid_answer(handler_name, err))?;
+            let host_path = self
+                .cache_file_to_host(&icon_path)
+                .map_err(|err| self.invalid_answer(handler_name, err))?;
             instance.icon_path = Some(host_path.to_string_lossy().into_owned());
         }
 
@@ -181,26 +178,28 @@ impl PluginContentProviderProxy {
         })
     }
 
-    /// Override paths name files in the plugin's own `/cache` and nothing else (see
-    /// [`resolve_plugin_path`]).
+    /// The host file behind `path`, a path the plugin sent that must name a file of its own
+    /// `/cache` (see [`resolve_plugin_path`]).
+    fn cache_file_to_host(&self, path: &str) -> Result<PathBuf, PluginError> {
+        let path = parse_plugin_path(&self.plugin_id, path)?;
+        resolve_plugin_path(&self.location_info, &self.plugin_id, &path, MountSet::CACHE)
+    }
+
+    /// Override paths name files in the plugin's own `/cache` and nothing else.
     fn override_source_from_dto(
         &self,
         dto: OverrideSourceDto,
     ) -> Result<OverrideSource, PluginError> {
-        let to_host = |path: &str| {
-            resolve_plugin_path(&self.location_info, &self.plugin_id, path, MountSet::CACHE)
-        };
-
         let location = match dto.location {
             OverrideLocationDto::Archive {
                 archive_path,
                 subdir,
             } => OverrideLocation::Archive {
-                archive_path: to_host(&archive_path)?,
+                archive_path: self.cache_file_to_host(&archive_path)?,
                 subdir,
             },
             OverrideLocationDto::Directory { path } => OverrideLocation::Directory {
-                path: to_host(&path)?,
+                path: self.cache_file_to_host(&path)?,
             },
         };
 

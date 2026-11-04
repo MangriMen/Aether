@@ -12,7 +12,7 @@ pub(crate) use crate::features::plugins::{
 use crate::{
     features::{
         instance::PluginId,
-        plugins::{CoreMount, PluginError},
+        plugins::{CoreMount, PluginError, PluginPath},
         settings::LocationInfo,
     },
     shared::serializable_command::domain::SerializableCommand,
@@ -123,49 +123,50 @@ pub(crate) fn get_default_allowed_paths(
         .collect()
 }
 
+/// `raw`, a path a plugin sent, parsed as a [`PluginPath`]; refused as an access violation
+/// otherwise, like any path the plugin may not have.
+pub(crate) fn parse_plugin_path(
+    plugin_id: &PluginId,
+    raw: &str,
+) -> Result<PluginPath, PluginError> {
+    PluginPath::parse(raw).map_err(|err| {
+        tracing::debug!("Plugin '{plugin_id}' sent a path the core refuses: {err}");
+        access_violation(plugin_id, raw)
+    })
+}
+
 /// The host file behind `plugin_path`, a plugin-side path such as `/cache/pack.zip`, held to
 /// the mounts in `mounts`.
 ///
 /// The only way from a plugin's spelling of a path to one the core opens, and closed by
 /// default: anything but `<mount root>[/<relative path>]` is refused, a host path included,
-/// since one would let a plugin have the core read or copy any file of the user's. `..`, roots
-/// and drive or UNC prefixes in the relative part are refused before the filesystem is touched
-/// (a UNC path alone would make Windows connect to the named server). The file must exist and
-/// stay inside the mount after resolving symlinks and short names; the canonical path is
-/// returned, so a symlink swapped in later does not redirect the core.
+/// since one would let a plugin have the core read or copy any file of the user's. `..`, roots,
+/// `\` and drive or UNC prefixes are already refused by [`PluginPath::parse`], before the
+/// filesystem is touched (a UNC path alone would make Windows connect to the named server). The
+/// file must exist and stay inside the mount after resolving symlinks and short names; the
+/// canonical path is returned, so a symlink swapped in later does not redirect the core.
 pub(crate) fn resolve_plugin_path(
     location_info: &LocationInfo,
     plugin_id: &PluginId,
-    plugin_path: &str,
+    plugin_path: &PluginPath,
     mounts: MountSet,
 ) -> Result<PathBuf, PluginError> {
-    let deny = || access_violation(plugin_id, plugin_path);
+    let deny = || access_violation(plugin_id, plugin_path.as_str());
 
     let (mount, relative) = mounts
         .0
         .iter()
         .find_map(|mount| {
             plugin_path
-                .strip_prefix(mount.plugin_root())
-                .filter(|rest| rest.is_empty() || rest.starts_with('/'))
-                .map(|rest| (*mount, rest.trim_start_matches('/')))
+                .strip_prefix(&mount.plugin_root_path())
+                .map(|relative| (*mount, relative))
         })
         .ok_or_else(deny)?;
 
-    let relative = Path::new(relative);
-    let is_plain = relative.components().all(|component| match component {
-        Component::CurDir => true,
-        // `file:stream` names an NTFS alternate data stream, not the file it reads as.
-        Component::Normal(name) => !(cfg!(windows) && name.to_string_lossy().contains(':')),
-        Component::Prefix(_) | Component::RootDir | Component::ParentDir => false,
-    });
-    if !is_plain {
-        return Err(deny());
-    }
-
     let base = mount.host_root(location_info, plugin_id);
     let canonical_base = canonicalize_or_deny(plugin_id, &base)?;
-    let canonical_host = canonicalize_or_deny(plugin_id, &base.join(relative))?;
+    let host = relative.fold(base, |host, segment| host.join(segment));
+    let canonical_host = canonicalize_or_deny(plugin_id, &host)?;
 
     if !canonical_host.starts_with(&canonical_base) {
         return Err(deny());
@@ -265,7 +266,8 @@ fn command_value_to_host(
     location_info: &LocationInfo,
 ) -> Result<String, PluginError> {
     if let Some(mount_path) = value.strip_prefix('#') {
-        return resolve_plugin_path(location_info, id, mount_path, MountSet::ALL)
+        let mount_path = parse_plugin_path(id, mount_path)?;
+        return resolve_plugin_path(location_info, id, &mount_path, MountSet::ALL)
             .map(|path| path.to_string_lossy().into_owned());
     }
 
@@ -565,13 +567,8 @@ mod tests {
         // `ro:` narrows WASI only: `run_command` still has to reach into `/instances`.
         let layout = layout();
 
-        let resolved = resolve_plugin_path(
-            &layout.location_info,
-            &plugin_id(),
-            &format!("/instances/{INSTANCE_ID}"),
-            MountSet::ALL,
-        )
-        .expect("an instance path must still resolve");
+        let resolved = resolve(&layout, &format!("/instances/{INSTANCE_ID}"), MountSet::ALL)
+            .expect("an instance path must still resolve");
 
         assert_eq!(
             crate::shared::io::infra::canonicalize(&resolved).unwrap(),
@@ -916,9 +913,8 @@ mod tests {
         )
         .unwrap();
 
-        let host = resolve_plugin_path(
-            &layout.location_info,
-            &plugin_id(),
+        let host = resolve(
+            &layout,
             "/cache/packwiz-installer-bootstrap.jar",
             MountSet::CACHE,
         )
@@ -927,10 +923,16 @@ mod tests {
         assert_eq!(host, expected);
     }
 
+    /// A path as a plugin sends it: parsed at the boundary, then resolved.
+    fn resolve(layout: &Layout, path: &str, mounts: MountSet) -> Result<PathBuf, PluginError> {
+        let path = parse_plugin_path(&plugin_id(), path)?;
+        resolve_plugin_path(&layout.location_info, &plugin_id(), &path, mounts)
+    }
+
     fn assert_refused(layout: &Layout, path: &str, mounts: MountSet) {
         assert!(
             matches!(
-                resolve_plugin_path(&layout.location_info, &plugin_id(), path, mounts),
+                resolve(layout, path, mounts),
                 Err(PluginError::AccessViolation { .. })
             ),
             "{path} must be refused"
@@ -968,13 +970,44 @@ mod tests {
         for path in [
             "/cache".to_owned(),
             "/cache/packwiz-installer-bootstrap.jar".to_owned(),
-            "/cache/./packwiz-installer-bootstrap.jar".to_owned(),
             "/instances".to_owned(),
             format!("/instances/{INSTANCE_ID}"),
-            format!("/instances/{INSTANCE_ID}/"),
         ] {
-            resolve_plugin_path(&layout.location_info, &plugin_id(), &path, MountSet::ALL)
+            resolve(&layout, &path, MountSet::ALL)
                 .unwrap_or_else(|err| panic!("{path} must resolve: {err}"));
+        }
+    }
+
+    #[test]
+    fn should_refuse_a_path_when_it_names_an_existing_file_in_a_spelling_that_is_not_plain() {
+        let layout = layout();
+
+        // Each would reach a file that is there; the spelling alone is refused, on every host.
+        for path in [
+            "/cache/./packwiz-installer-bootstrap.jar".to_owned(),
+            "/cache//packwiz-installer-bootstrap.jar".to_owned(),
+            r"/cache\packwiz-installer-bootstrap.jar".to_owned(),
+            format!("/instances/{INSTANCE_ID}/"),
+            format!(r"/instances/{INSTANCE_ID}\"),
+            format!("/instances/../instances/{INSTANCE_ID}"),
+        ] {
+            assert_refused(&layout, &path, MountSet::ALL);
+        }
+    }
+
+    #[test]
+    fn should_refuse_a_path_when_a_segment_is_a_device_name_or_ends_with_a_dot() {
+        let layout = layout();
+
+        for path in [
+            "/cache/nul",
+            "/cache/CON.txt",
+            "/cache/com1",
+            "/cache/packwiz-installer-bootstrap.jar.",
+            "/cache/packwiz-installer-bootstrap.jar ",
+            "/cache/a\0b",
+        ] {
+            assert_refused(&layout, path, MountSet::ALL);
         }
     }
 
@@ -1016,10 +1049,10 @@ mod tests {
             "/mnt/c/Windows/System32/cmd.exe",
             r"C:\Windows\System32\cmd.exe",
             "C:/Windows",
-            r"\\server\share\file",
-            r"\\?\C:\Windows",
-            r"\\?\UNC\server\share",
-            r"\\.\pipe\name",
+            r"\server\share\file",
+            r"\?\C:\Windows",
+            r"\?\UNC\server\share",
+            r"\.\pipe\name",
             r"C:\PROGRA~1",
         ] {
             assert_refused(&layout, path, MountSet::ALL);
@@ -1030,23 +1063,28 @@ mod tests {
     fn should_refuse_a_prefix_or_root_when_it_is_inside_the_relative_part() {
         let layout = layout();
 
+        // A `\` is refused on every host, so these never reach the file system.
         for path in [
             r"/cache/C:\Windows",
+            r"/cache/\server\share",
+            r"/cache/\?\C:\Windows",
+        ] {
+            assert_refused(&layout, path, MountSet::ALL);
+        }
+
+        for path in [
             "/cache/C:/Windows",
-            r"/cache/\\server\share",
-            r"/cache/\\?\C:\Windows",
             "/cache/packwiz-installer-bootstrap.jar:stream",
         ] {
-            let result =
-                resolve_plugin_path(&layout.location_info, &plugin_id(), path, MountSet::ALL);
+            let result = resolve(&layout, path, MountSet::ALL);
             if cfg!(windows) {
                 assert!(
                     matches!(result, Err(PluginError::AccessViolation { .. })),
                     "{path} must be refused"
                 );
             } else {
-                // Backslashes and colons are plain file name characters off Windows: whatever
-                // such a name resolves to has to stay in the mount.
+                // Colons are plain file name characters off Windows: whatever such a name
+                // resolves to has to stay in the mount.
                 match result {
                     Ok(host) => assert!(
                         host.starts_with(
@@ -1067,7 +1105,6 @@ mod tests {
     }
 
     #[test]
-    #[cfg(windows)]
     fn should_refuse_a_traversal_when_it_is_spelled_with_backslashes() {
         let layout = layout();
 
@@ -1136,6 +1173,41 @@ mod tests {
                 ),
                 "{arg} must be refused"
             );
+        }
+    }
+
+    #[test]
+    fn should_refuse_a_hash_path_when_it_is_not_plain_names_in_args_or_current_dir() {
+        let layout = layout();
+        let refused = |command: &CommandDto| {
+            matches!(
+                plugin_command_to_host(
+                    &plugin_id(),
+                    command,
+                    &layout.location_info,
+                    &layout.allowed()
+                ),
+                Err(PluginError::AccessViolation { .. })
+            )
+        };
+
+        for arg in [
+            "#/cache/./packwiz-installer-bootstrap.jar",
+            r"#/cache\packwiz-installer-bootstrap.jar",
+            "#/cache/nul",
+        ] {
+            let mut command = packwiz_command(&layout.java_bin.to_string_lossy());
+            command.args.push(arg.to_owned());
+            assert!(refused(&command), "{arg} must be refused");
+        }
+
+        for current_dir in [
+            format!("#/instances/{INSTANCE_ID}/"),
+            format!("#/instances//{INSTANCE_ID}"),
+        ] {
+            let mut command = packwiz_command(&layout.java_bin.to_string_lossy());
+            command.current_dir = Some(PathBuf::from(&current_dir));
+            assert!(refused(&command), "{current_dir} must be refused");
         }
     }
 

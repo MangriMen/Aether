@@ -232,6 +232,24 @@ mod tests {
     }
 
     #[test]
+    fn should_refuse_a_folder_when_its_plugin_path_is_not_plain_names() {
+        let dir = tempfile::tempdir().unwrap();
+
+        for plugin in [
+            "/packs/./sub",
+            "/packs/../cache",
+            "/packs/nul",
+            "/packs/sub.",
+        ] {
+            assert_eq!(
+                rejection(&edit(vec![folder(dir.path(), plugin)])),
+                Some(AllowedPathRejection::PluginNotNormalized),
+                "{plugin}"
+            );
+        }
+    }
+
+    #[test]
     fn should_refuse_a_folder_when_it_is_the_plugins_cache_instances_or_plugins_folder() {
         let launcher = Launcher::new();
         let location_info = &launcher.location_info;
