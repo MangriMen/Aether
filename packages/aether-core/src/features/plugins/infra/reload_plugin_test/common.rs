@@ -8,7 +8,6 @@ use std::{
     time::Duration,
 };
 
-use crate::shared::update_action::UpdateAction;
 use async_trait::async_trait;
 use extism::{Function, Manifest, PluginBuilder, UserData, Wasm};
 use tokio::sync::Notify;
@@ -32,7 +31,10 @@ use crate::{
         },
         settings::{LocationInfo, Settings, SettingsError, SettingsStorage},
     },
-    shared::capability::{CapabilityRegistry, infra::MemoryCapabilityRegistry},
+    shared::{
+        capability::{CapabilityRegistry, infra::MemoryCapabilityRegistry},
+        update_action::UpdateAction,
+    },
 };
 
 pub(super) const PLUGIN_ID: &str = "packwiz";

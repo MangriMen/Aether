@@ -1,10 +1,12 @@
 use async_trait::async_trait;
 
-use crate::shared::update_action::UpdateAction;
-
-use crate::features::settings::{
-    CacheUsage, ClearCacheOutcome, DefaultInstanceSettings, Settings, SettingsError, StorageUsage,
-    app::{EditDefaultInstanceSettings, EditSettings},
+use crate::{
+    features::settings::{
+        CacheUsage, ClearCacheOutcome, DefaultInstanceSettings, Settings, SettingsError,
+        StorageUsage,
+        app::{EditDefaultInstanceSettings, EditSettings},
+    },
+    shared::update_action::UpdateAction,
 };
 
 // ── Storage ports ──

@@ -46,11 +46,13 @@ impl PlatformProviderSelection for SettingsPlatformProviderSelection {
 
 #[cfg(test)]
 mod tests {
-    use crate::shared::update_action::UpdateAction;
     use tokio::sync::Mutex;
 
     use super::*;
-    use crate::features::settings::{Settings, SettingsError};
+    use crate::{
+        features::settings::{Settings, SettingsError},
+        shared::update_action::UpdateAction,
+    };
 
     struct FixedSettings(Mutex<Settings>);
 
