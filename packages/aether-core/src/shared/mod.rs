@@ -14,3 +14,4 @@ pub mod request_client;
 pub mod serde_semver;
 pub mod serializable_command;
 pub mod system;
+pub mod update_action;

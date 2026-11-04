@@ -8,6 +8,7 @@ use std::{
     time::Duration,
 };
 
+use crate::shared::update_action::UpdateAction;
 use async_trait::async_trait;
 use extism::{Function, Manifest, PluginBuilder, UserData, Wasm};
 use tokio::sync::Notify;
@@ -94,12 +95,11 @@ impl SettingsStorage for MemorySettings {
 
     async fn update_mut(
         &self,
-        f: Box<dyn FnOnce(Settings) -> (Settings, bool) + Send>,
+        f: Box<dyn for<'a> FnOnce(&'a mut Settings) -> UpdateAction<()> + Send>,
     ) -> Result<Settings, SettingsError> {
         let mut settings = self.0.lock().unwrap();
-        let (updated, _) = f(settings.clone());
-        *settings = updated.clone();
-        Ok(updated)
+        f(&mut settings);
+        Ok(settings.clone())
     }
 }
 

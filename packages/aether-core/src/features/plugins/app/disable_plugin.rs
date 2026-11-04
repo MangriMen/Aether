@@ -10,6 +10,7 @@ use crate::features::{
     },
     settings::SettingsStorage,
 };
+use crate::shared::update_action::UpdateAction;
 
 pub(crate) struct DisablePluginUseCase {
     plugin_registry: Arc<PluginRegistry>,
@@ -89,9 +90,8 @@ impl DisablePluginUseCase {
     async fn remove_from_enabled_plugins(&self, plugin_id: &PluginId) -> Result<(), PluginError> {
         let owned = plugin_id.to_owned();
         self.settings_storage
-            .update_mut(Box::new(move |mut settings| {
-                let changed = settings.disable_plugin(&owned);
-                (settings, changed)
+            .update_mut(Box::new(move |settings| {
+                UpdateAction::from_changed(settings.disable_plugin(&owned))
             }))
             .await?;
         Ok(())

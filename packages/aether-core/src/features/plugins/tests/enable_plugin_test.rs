@@ -16,6 +16,7 @@ use crate::features::{
     },
     settings::{Settings, SettingsError, SettingsStorage},
 };
+use crate::shared::update_action::UpdateAction;
 
 // ─── Inline mocks ──────────────────────────────────────────────
 
@@ -83,12 +84,11 @@ impl SettingsStorage for MockSettingsStorage {
 
     async fn update_mut(
         &self,
-        f: Box<dyn FnOnce(Settings) -> (Settings, bool) + Send>,
+        f: Box<dyn for<'a> FnOnce(&'a mut Settings) -> UpdateAction<()> + Send>,
     ) -> Result<Settings, SettingsError> {
         let mut guard = self.settings.lock().unwrap();
-        let (updated, _changed) = f(guard.clone());
-        *guard = updated.clone();
-        Ok(updated)
+        f(&mut guard);
+        Ok(guard.clone())
     }
 }
 

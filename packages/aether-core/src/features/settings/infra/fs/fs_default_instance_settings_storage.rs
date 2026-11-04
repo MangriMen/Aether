@@ -47,18 +47,18 @@ impl DefaultInstanceSettingsStorage for FsDefaultInstanceSettingsStorage {
 
     async fn update_mut(
         &self,
-        f: Box<dyn FnOnce(DefaultInstanceSettings) -> (DefaultInstanceSettings, bool) + Send>,
+        f: Box<dyn for<'a> FnOnce(&'a mut DefaultInstanceSettings) -> UpdateAction<()> + Send>,
     ) -> Result<DefaultInstanceSettings, SettingsError> {
         let settings: DefaultInstanceSettings = self
             .store
             .update_with_default(move |dto| {
-                let domain_settings = DefaultInstanceSettings::from(dto.clone());
-                let (domain_settings, changed) = f(domain_settings);
-                if changed {
-                    *dto = DefaultInstanceSettingsV1::from(&domain_settings);
-                    UpdateAction::Save(domain_settings)
-                } else {
-                    UpdateAction::NoChanges(domain_settings)
+                let mut domain_settings = DefaultInstanceSettings::from(dto.clone());
+                match f(&mut domain_settings) {
+                    UpdateAction::Save(()) => {
+                        *dto = DefaultInstanceSettingsV1::from(&domain_settings);
+                        UpdateAction::Save(domain_settings)
+                    }
+                    UpdateAction::NoChanges(()) => UpdateAction::NoChanges(domain_settings),
                 }
             })
             .await?;

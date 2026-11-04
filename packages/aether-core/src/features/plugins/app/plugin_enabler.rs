@@ -8,6 +8,7 @@ use crate::features::{
     },
     settings::SettingsStorage,
 };
+use crate::shared::update_action::UpdateAction;
 
 /// The steps enabling a plugin takes whether or not the user forces it: what differs between
 /// [`EnablePluginUseCase`](super::EnablePluginUseCase) and
@@ -120,9 +121,8 @@ impl PluginEnabler {
     ) -> Result<(), PluginError> {
         let owned = plugin_id.to_owned();
         self.settings_storage
-            .update_mut(Box::new(move |mut settings| {
-                let changed = settings.enable_plugin(&owned);
-                (settings, changed)
+            .update_mut(Box::new(move |settings| {
+                UpdateAction::from_changed(settings.enable_plugin(&owned))
             }))
             .await?;
         Ok(())

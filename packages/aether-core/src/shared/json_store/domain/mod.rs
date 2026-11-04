@@ -1,3 +1,1 @@
-mod update_action;
-
-pub use update_action::*;
+pub use crate::shared::update_action::UpdateAction;

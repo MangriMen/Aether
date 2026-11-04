@@ -6,6 +6,7 @@ use crate::features::settings::{
     Settings, SettingsError, SettingsStorage,
     app::{EditSettings, ports::EditSettingsUseCasePort},
 };
+use crate::shared::update_action::UpdateAction;
 
 pub struct EditSettingsUseCase {
     settings_storage: Arc<dyn SettingsStorage>,
@@ -23,9 +24,8 @@ impl EditSettingsUseCasePort for EditSettingsUseCase {
         edit_settings.validate()?;
 
         self.settings_storage
-            .update_mut(Box::new(move |mut settings| {
-                let changed = edit_settings.apply_to(&mut settings);
-                (settings, changed)
+            .update_mut(Box::new(move |settings| {
+                UpdateAction::from_changed(edit_settings.apply_to(settings))
             }))
             .await
     }
@@ -55,12 +55,11 @@ mod tests {
 
         async fn update_mut(
             &self,
-            f: Box<dyn FnOnce(Settings) -> (Settings, bool) + Send>,
+            f: Box<dyn for<'a> FnOnce(&'a mut Settings) -> UpdateAction<()> + Send>,
         ) -> Result<Settings, SettingsError> {
             let mut guard = self.0.lock().await;
-            let (updated, _) = f(guard.clone());
-            *guard = updated.clone();
-            Ok(updated)
+            f(&mut guard);
+            Ok(guard.clone())
         }
     }
 
