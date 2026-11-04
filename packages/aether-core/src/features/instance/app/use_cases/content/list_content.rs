@@ -234,6 +234,17 @@ impl ListContentUseCase {
         let hash = sha1_hash_async(file_content)
             .await
             .map_err(|err| InstanceError::Storage(err.to_string()))?;
+
+        // A record that exists but could not be used keeps everything but its hash.
+        if entries_by_path.contains_key(content_path)
+            && let Some(pack_file) = self
+                .pack_storage
+                .rehash_pack_file(instance_id, content_path, &hash)
+                .await?
+        {
+            return Ok(pack_file);
+        }
+
         let pack_file = PackFile::from_hash(file_name.to_owned(), hash);
 
         self.pack_storage

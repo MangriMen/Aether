@@ -202,6 +202,31 @@ impl PackStorage for FsPackStorage {
             .map_err(|err| InstanceError::Storage(err.to_string()))
     }
 
+    async fn rehash_pack_file(
+        &self,
+        instance_id: &InstanceId,
+        content_path: &ContentPath,
+        hash: &FileHash,
+    ) -> Result<Option<PackFile>, InstanceError> {
+        let path = self.get_pack_file_path(instance_id, content_path);
+        if !path.exists() {
+            return Ok(None);
+        }
+
+        let v2: Result<PackFileV2, _> = read_toml_async(&path).await;
+        let pack_file = if let Ok(dto) = v2 {
+            dto.into_pack_file(hash.clone())
+        } else {
+            let v1: PackFileV1 = read_toml_async(&path)
+                .await
+                .map_err(|e| InstanceError::Storage(e.to_string()))?;
+            v1.into_pack_file(hash.clone())
+        };
+        self.update_pack_file(instance_id, content_path, &pack_file)
+            .await?;
+        Ok(Some(pack_file))
+    }
+
     async fn find_pack_file(
         &self,
         instance_id: &InstanceId,

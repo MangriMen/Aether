@@ -9,7 +9,7 @@ use crate::features::instance::{
         stored_side::parse_stored_side,
     },
 };
-use crate::shared::hash::InvalidFileHash;
+use crate::shared::hash::{FileHash, InvalidFileHash};
 use async_trait::async_trait;
 use sqlx::{Sqlite, SqlitePool, Transaction};
 use std::collections::HashMap;
@@ -37,8 +37,17 @@ struct PackFileUpdateRow {
 }
 
 impl PackFileRow {
-    fn into_pack_file(self, updates: Vec<PackFileUpdateRow>) -> Result<PackFile, InvalidFileHash> {
+    /// The record, or why its stored hash is not one.
+    fn into_checked_pack_file(
+        self,
+        updates: Vec<PackFileUpdateRow>,
+    ) -> Result<PackFile, InvalidFileHash> {
         let hash = parse_stored_hash(&self.content_path, &self.hash)?;
+        Ok(self.into_pack_file(updates, hash))
+    }
+
+    /// The record with `hash` in place of the stored one.
+    fn into_pack_file(self, updates: Vec<PackFileUpdateRow>, hash: FileHash) -> PackFile {
         let mut update_map = HashMap::new();
         // An update that no longer parses is skipped rather than failing the read, so one bad row
         // does not hide the rest of the pack.
@@ -97,7 +106,7 @@ impl PackFileRow {
 
         // The `pack_files` table has no columns for `download` and `option`, so a file read back
         // from SQLite has neither.
-        Ok(PackFile {
+        PackFile {
             file_name: self.file_name,
             name: self.name,
             hash,
@@ -113,7 +122,7 @@ impl PackFileRow {
                 Some(update_map)
             },
             installed_by,
-        })
+        }
     }
 }
 
@@ -122,12 +131,12 @@ impl SqlitePackStorage {
         Self { pool }
     }
 
-    /// The row of a file: `None` when there is none, `Err` when its stored hash is invalid.
-    async fn load_pack_file(
+    /// The row of a file and its updates: `None` when there is none.
+    async fn load_rows(
         &self,
         instance_id: &InstanceId,
         content_path: &ContentPath,
-    ) -> Result<Option<Result<PackFile, InvalidFileHash>>, InstanceError> {
+    ) -> Result<Option<(PackFileRow, Vec<PackFileUpdateRow>)>, InstanceError> {
         let content_path = content_path.as_str();
         let row = sqlx::query_as!(
             PackFileRow,
@@ -152,7 +161,19 @@ impl SqlitePackStorage {
         .await
         .map_err(|e| InstanceError::Storage(e.to_string()))?;
 
-        Ok(Some(row.into_pack_file(updates)))
+        Ok(Some((row, updates)))
+    }
+
+    /// The record of a file: `None` when there is none, `Err` when its stored hash is invalid.
+    async fn load_pack_file(
+        &self,
+        instance_id: &InstanceId,
+        content_path: &ContentPath,
+    ) -> Result<Option<Result<PackFile, InvalidFileHash>>, InstanceError> {
+        Ok(self
+            .load_rows(instance_id, content_path)
+            .await?
+            .map(|(row, updates)| row.into_checked_pack_file(updates)))
     }
 
     /// A storage over a fresh in-memory database with every migration applied. Foreign keys are
@@ -328,6 +349,21 @@ impl PackStorage for SqlitePackStorage {
             .map_err(|err| InstanceError::Storage(err.to_string()))
     }
 
+    async fn rehash_pack_file(
+        &self,
+        instance_id: &InstanceId,
+        content_path: &ContentPath,
+        hash: &FileHash,
+    ) -> Result<Option<PackFile>, InstanceError> {
+        let Some((row, updates)) = self.load_rows(instance_id, content_path).await? else {
+            return Ok(None);
+        };
+        let pack_file = row.into_pack_file(updates, hash.clone());
+        self.update_pack_file(instance_id, content_path, &pack_file)
+            .await?;
+        Ok(Some(pack_file))
+    }
+
     async fn find_pack_file(
         &self,
         instance_id: &InstanceId,
@@ -374,7 +410,7 @@ impl PackStorage for SqlitePackStorage {
             .filter_map(|row| {
                 let content_path = parse_stored_content_path(instance_id, &row.content_path)?;
                 let file_updates = updates.remove(&row.content_path).unwrap_or_default();
-                let pack_file = row.into_pack_file(file_updates).ok()?;
+                let pack_file = row.into_checked_pack_file(file_updates).ok()?;
                 Some((content_path, pack_file))
             })
             .collect())

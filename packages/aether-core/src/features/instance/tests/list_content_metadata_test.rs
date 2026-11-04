@@ -26,7 +26,7 @@ use crate::{
             ContentFileView, ContentIconCache, ContentIconError, ContentItem, ContentMetadata,
             ContentMetadataCache, ContentMetadataService, ContentProvider,
             ContentProviderCapabilityMetadata, ContentSearchParams, ContentSearchResult,
-            ContentVersion, ContentVersionMetadata, Instance, InstanceError, InstanceId,
+            ContentVersion, ContentVersionMetadata, FileSide, Instance, InstanceError, InstanceId,
             ListContentUseCase, PackFile, PackStorage, ProviderId, infra::SqlitePackStorage,
         },
         settings::LocationInfo,
@@ -730,13 +730,15 @@ async fn should_not_ask_the_provider_when_everything_is_cached_and_fresh() {
 }
 
 #[tokio::test]
-async fn should_list_the_file_and_write_a_new_record_when_its_stored_hash_is_invalid() {
+async fn should_rehash_the_file_and_keep_the_rest_of_the_record_when_its_stored_hash_is_invalid() {
     let fixture = Fixture::new(
         &[("a.jar", "modrinth", "A"), ("b.jar", "modrinth", "B")],
         vec![],
     )
     .await;
-    sqlx::query("UPDATE pack_files SET hash = 'bad' WHERE content_path = 'mods/a.jar'")
+    sqlx::query(
+        "UPDATE pack_files SET hash = 'bad', name = 'Sodium', side = 'client',          installed_by_provider_id = 'aether#modrinth', installed_by_content_id = 'A'          WHERE content_path = 'mods/a.jar'",
+    )
         .execute(fixture.pack_storage.pool())
         .await
         .unwrap();
@@ -755,6 +757,14 @@ async fn should_list_the_file_and_write_a_new_record_when_its_stored_hash_is_inv
     assert_eq!(
         record.hash.hex(),
         "f92e777f4341930bad9b2422283c4680d00dbc06"
+    );
+    assert_eq!(record.update_provider_id, Some(provider_id("modrinth")));
+    assert!(record.update.is_some_and(|update| update.len() == 1));
+    assert_eq!(record.name.as_deref(), Some("Sodium"));
+    assert_eq!(record.side, Some(FileSide::Client));
+    assert_eq!(
+        record.installed_by.map(|origin| origin.content_id),
+        Some(ContentId::try_from("A").unwrap())
     );
 }
 

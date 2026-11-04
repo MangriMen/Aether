@@ -291,12 +291,21 @@ mod tests {
         assert!(sqlite.get_pack(&id).await.unwrap().files.is_empty());
     }
 
-    #[tokio::test]
-    async fn should_keep_the_provider_link_and_rehash_when_a_legacy_record_has_an_invalid_hash() {
+    /// A legacy pack with one record, `mods/a.jar`, whose stored hash is invalid and which links
+    /// to a provider. `on_disk` is where the jar is put (relative to the instance), if anywhere.
+    async fn legacy_pack_with_invalid_hash(
+        on_disk: Option<&str>,
+    ) -> (
+        SqlitePackStorage,
+        MemInstanceStorage,
+        FsPackStorage,
+        InstanceId,
+        TempDir,
+    ) {
         let (temp, instances, fs, id) = setup();
         let provider: crate::features::instance::ProviderId = "aether#modrinth".parse().unwrap();
         let mut record = PackFile::from_hash("a.jar".into(), sha1_hash('e'));
-        record.update_provider_id = Some(provider.clone());
+        record.update_provider_id = Some(provider);
         fs.update_pack(
             &id,
             &Pack {
@@ -316,20 +325,48 @@ mod tests {
         tokio::fs::write(&record_path, stored.replace(&"e".repeat(40), "bad"))
             .await
             .unwrap();
-        let jar = location.instance_dir(&id).join("mods");
-        tokio::fs::create_dir_all(&jar).await.unwrap();
-        tokio::fs::write(jar.join("a.jar"), b"jar").await.unwrap();
+        if let Some(file) = on_disk {
+            let jar = location.instance_dir(&id).join(file);
+            tokio::fs::create_dir_all(jar.parent().unwrap())
+                .await
+                .unwrap();
+            tokio::fs::write(jar, b"jar").await.unwrap();
+        }
         let sqlite = SqlitePackStorage::in_memory().await;
-
         migrate_packs_to_sqlite(&instances, &fs, &sqlite)
             .await
             .unwrap();
+        (sqlite, instances, fs, id, temp)
+    }
+
+    const JAR_SHA1: &str = "f92e777f4341930bad9b2422283c4680d00dbc06";
+
+    #[tokio::test]
+    async fn should_keep_the_provider_link_and_rehash_when_a_legacy_record_has_an_invalid_hash() {
+        let (sqlite, _instances, _fs, id, _temp) =
+            legacy_pack_with_invalid_hash(Some("mods/a.jar")).await;
 
         let migrated = sqlite.get_pack_file(&id, &cp("mods/a.jar")).await.unwrap();
-        assert_eq!(migrated.update_provider_id, Some(provider));
         assert_eq!(
-            migrated.hash.hex(),
-            "f92e777f4341930bad9b2422283c4680d00dbc06"
+            migrated.update_provider_id,
+            Some("aether#modrinth".parse().unwrap())
         );
+        assert_eq!(migrated.hash.hex(), JAR_SHA1);
+    }
+
+    #[tokio::test]
+    async fn should_rehash_the_disabled_copy_when_a_legacy_record_has_an_invalid_hash() {
+        let (sqlite, _instances, _fs, id, _temp) =
+            legacy_pack_with_invalid_hash(Some("mods/a.jar.disabled")).await;
+
+        let migrated = sqlite.get_pack_file(&id, &cp("mods/a.jar")).await.unwrap();
+        assert_eq!(migrated.hash.hex(), JAR_SHA1);
+    }
+
+    #[tokio::test]
+    async fn should_skip_the_record_when_a_legacy_record_has_an_invalid_hash_and_no_file() {
+        let (sqlite, _instances, _fs, id, _temp) = legacy_pack_with_invalid_hash(None).await;
+
+        assert!(sqlite.get_pack_file(&id, &cp("mods/a.jar")).await.is_err());
     }
 }

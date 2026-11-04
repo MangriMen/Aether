@@ -2,6 +2,8 @@ use std::collections::HashMap;
 
 use async_trait::async_trait;
 
+use crate::shared::hash::FileHash;
+
 use crate::features::instance::domain::{
     ContentId, ContentPath, InstanceError, InstanceId, Pack, PackFile, ProviderId,
 };
@@ -29,6 +31,18 @@ pub trait PackStorage: Send + Sync {
         self.get_pack_file(instance_id, content_path)
             .await
             .map(Some)
+    }
+
+    /// Replaces only the hash of the record of a file, whatever the stored one is, and returns
+    /// the record; `None` when there is none. The way to repair a record
+    /// [`Self::find_pack_file`] could not use, without losing its provider link and the rest.
+    async fn rehash_pack_file(
+        &self,
+        _instance_id: &InstanceId,
+        _content_path: &ContentPath,
+        _hash: &FileHash,
+    ) -> Result<Option<PackFile>, InstanceError> {
+        Ok(None)
     }
 
     /// Every file recorded for the instance, by content path — what an install plan is diffed
