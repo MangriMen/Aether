@@ -116,7 +116,7 @@ impl UpdateInstanceUseCase {
             .resolve_install_plan(ResolveInstallPlanParams {
                 content_id: pack_info.modpack_id.clone(),
                 version: version_id.clone(),
-                installed_version: Some(pack_info.version_id.clone()),
+                installed_version: installed_version_of(pack_info),
                 target: requested.clone(),
             })
             .await
@@ -179,7 +179,7 @@ impl UpdateInstanceUseCase {
             .resolve_pack_metadata(PackSource::Content {
                 content_id: pack_info.modpack_id.clone(),
                 version: None,
-                installed_version: Some(pack_info.version_id.clone()),
+                installed_version: installed_version_of(pack_info),
             })
             .await
         {
@@ -218,11 +218,16 @@ impl UpdateInstanceUseCase {
             return Ok(Vec::new());
         }
 
+        // A label that is no provider id names no version to look up.
+        let Some(installed_version) = installed_version_of(pack_info) else {
+            return Ok(Vec::new());
+        };
+
         let installed_plan = provider
             .resolve_install_plan(ResolveInstallPlanParams {
                 content_id: pack_info.modpack_id.clone(),
-                version: Some(pack_info.version_id.clone()),
-                installed_version: Some(pack_info.version_id.clone()),
+                version: Some(installed_version.clone()),
+                installed_version: installed_version_of(pack_info),
                 target: requested.clone(),
             })
             .await;
@@ -355,7 +360,7 @@ impl UpdateInstanceUseCasePort for UpdateInstanceUseCase {
                     && let Some(current) = instance.pack_info.as_mut()
                     && current.modpack_id == pack_info.modpack_id
                 {
-                    current.version_id = version_id;
+                    current.version_id = version_id.into();
                 }
                 Ok(())
             })
@@ -372,6 +377,11 @@ impl UpdateInstanceUseCasePort for UpdateInstanceUseCase {
 
         result.map(|_| ())
     }
+}
+
+/// The pack's version label as a provider's version id, when it is one.
+fn installed_version_of(pack_info: &PackInfo) -> Option<ContentVersionId> {
+    ContentVersionId::try_from(pack_info.version_id.as_str()).ok()
 }
 
 #[cfg(test)]

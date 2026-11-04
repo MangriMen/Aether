@@ -5,7 +5,7 @@ use super::InstanceError;
 /// A value refused by [`ContentId::try_from`] or [`ContentVersionId::try_from`].
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 #[error(
-    "Invalid {kind} {value:?}: must be non-empty, without surrounding whitespace, control characters or any of / \\ ? # %"
+    "Invalid {kind} {value:?}: must be non-empty, not \".\" or \"..\", without surrounding whitespace, control characters or any of / \\ ? # %"
 )]
 pub struct InvalidContentId {
     pub kind: &'static str,
@@ -23,6 +23,7 @@ impl From<InvalidContentId> for InstanceError {
 
 fn is_valid(value: &str) -> bool {
     !value.is_empty()
+        && !matches!(value, "." | "..")
         && value.trim() == value
         && !value
             .chars()
@@ -127,7 +128,7 @@ mod tests {
     #[test]
     fn should_refuse_ids_when_they_break_the_rule() {
         for bad in [
-            "", " a", "a ", "a/b", "a\\b", "a?b", "a#b", "a%2e", "a\u{0}b", "a\nb",
+            "", ".", "..", " a", "a ", "a/b", "a\\b", "a?b", "a#b", "a%2e", "a\u{0}b", "a\nb",
         ] {
             let err = ContentId::try_from(bad).unwrap_err();
             assert_eq!(err.value, bad);

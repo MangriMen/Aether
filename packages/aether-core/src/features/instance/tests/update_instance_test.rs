@@ -541,7 +541,7 @@ impl Fixture {
         .with_pack_info(Some(PackInfo {
             provider_id: provider_id(),
             modpack_id: PACK_ID.try_into().unwrap(),
-            version_id: ContentVersionId::try_from("v1").unwrap(),
+            version_id: "v1".to_owned(),
         }))
         .build();
         instance.install_stage = InstanceInstallStage::Installed;
@@ -673,7 +673,7 @@ impl Fixture {
     }
 
     fn version_id(&self) -> String {
-        self.storage.instance().pack_info.unwrap().version_id.into()
+        self.storage.instance().pack_info.unwrap().version_id
     }
 }
 

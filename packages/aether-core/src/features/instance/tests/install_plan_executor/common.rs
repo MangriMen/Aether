@@ -992,7 +992,7 @@ pub(super) fn installed_from(provider_id: &ProviderId, modpack_id: &str) -> Pack
     PackInfo {
         provider_id: provider_id.clone(),
         modpack_id: modpack_id.try_into().unwrap(),
-        version_id: ContentVersionId::try_from("v1").unwrap(),
+        version_id: "v1".to_owned(),
     }
 }
 
@@ -1041,7 +1041,7 @@ pub(super) fn modrinth_update(
         modrinth_id(),
         ContentFileUpdateInfo {
             content_id: content_id.try_into().unwrap(),
-            version: version.try_into().unwrap(),
+            version: Some(version.try_into().unwrap()),
         },
     )])
 }

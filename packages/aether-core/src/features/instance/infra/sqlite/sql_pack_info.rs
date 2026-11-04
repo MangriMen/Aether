@@ -31,7 +31,7 @@ impl SqlPackInfo {
         Some(PackInfo {
             provider_id,
             modpack_id: parse_stored_content_id(&owner, self.modpack_id)?,
-            version_id: parse_stored_content_id(&owner, self.version_id)?,
+            version_id: self.version_id,
         })
     }
 }
@@ -41,7 +41,7 @@ impl From<PackInfo> for SqlPackInfo {
         Self {
             provider_id: p.provider_id.to_string(),
             modpack_id: p.modpack_id.into(),
-            version_id: p.version_id.into(),
+            version_id: p.version_id,
         }
     }
 }
@@ -52,7 +52,7 @@ mod tests {
     use crate::features::instance::ProviderId;
 
     #[test]
-    fn should_read_no_pack_when_a_stored_id_is_not_a_valid_id() {
+    fn should_read_no_pack_when_the_modpack_id_is_not_a_valid_id() {
         let pack_info = SqlPackInfo {
             provider_id: "aether#modrinth".to_owned(),
             modpack_id: "a/b".to_owned(),
@@ -61,6 +61,22 @@ mod tests {
         .into_pack_info();
 
         assert!(pack_info.is_none());
+    }
+
+    #[test]
+    fn should_keep_the_pack_when_its_version_is_a_free_form_label() {
+        for label in ["2024/06", ""] {
+            let pack_info = SqlPackInfo {
+                provider_id: "packwiz#packwiz".to_owned(),
+                modpack_id: "pack".to_owned(),
+                version_id: label.to_owned(),
+            }
+            .into_pack_info()
+            .unwrap();
+
+            assert_eq!(pack_info.version_id, label);
+            assert_eq!(SqlPackInfo::from(pack_info).version_id, label);
+        }
     }
     #[test]
     fn should_read_no_pack_when_the_provider_id_is_unparsable() {

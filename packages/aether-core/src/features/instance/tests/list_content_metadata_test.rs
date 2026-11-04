@@ -542,7 +542,7 @@ impl Fixture {
                 provider,
                 ContentFileUpdateInfo {
                     content_id: ContentId::try_from(*content_id).unwrap(),
-                    version: version_id(content_id),
+                    version: Some(version_id(content_id)),
                 },
             )]));
             pack_storage
@@ -881,7 +881,7 @@ async fn should_tell_the_ui_once_over_when_a_list_wanted_more_during_a_refresh()
             modrinth.clone(),
             ContentFileUpdateInfo {
                 content_id: ContentId::try_from("B").unwrap(),
-                version: ContentVersionId::try_from("v0").unwrap(),
+                version: Some(ContentVersionId::try_from("v0").unwrap()),
             },
         )]));
         file

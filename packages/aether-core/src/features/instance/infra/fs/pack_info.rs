@@ -37,7 +37,7 @@ impl PackInfoV1 {
         Some(PackInfo {
             provider_id,
             modpack_id: parse_stored_content_id(&owner, self.modpack_id)?,
-            version_id: parse_stored_content_id(&owner, self.version)?,
+            version_id: self.version,
         })
     }
 }
@@ -85,7 +85,7 @@ impl PackInfoV2 {
         Some(PackInfo {
             provider_id,
             modpack_id: parse_stored_content_id(&owner, self.modpack_id)?,
-            version_id: parse_stored_content_id(&owner, self.version_id)?,
+            version_id: self.version_id,
         })
     }
 }
@@ -95,7 +95,7 @@ impl From<PackInfo> for PackInfoV2 {
         Self {
             provider_id: value.provider_id.into(),
             modpack_id: value.modpack_id.into(),
-            version_id: value.version_id.into(),
+            version_id: value.version_id,
         }
     }
 }
@@ -103,7 +103,7 @@ impl From<PackInfo> for PackInfoV2 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::features::instance::{ContentId, ContentVersionId};
+    use crate::features::instance::ContentId;
 
     #[test]
     fn should_read_no_pack_when_the_stored_provider_id_is_invalid() {
@@ -136,6 +136,28 @@ mod tests {
         );
     }
 
+    #[test]
+    fn should_keep_the_pack_when_its_version_is_a_free_form_label() {
+        for label in ["2024/06", ""] {
+            let v2 = PackInfoV2 {
+                provider_id: ProviderIdV1 {
+                    plugin_id: "packwiz".to_owned(),
+                    capability_id: "packwiz".to_owned(),
+                },
+                modpack_id: "pack".to_owned(),
+                version_id: label.to_owned(),
+            };
+            assert_eq!(v2.into_pack_info().unwrap().version_id, label);
+
+            let v1 = PackInfoV1 {
+                plugin_id: "packwiz".to_owned(),
+                modpack_id: "pack".to_owned(),
+                version: label.to_owned(),
+            };
+            assert_eq!(v1.into_pack_info().unwrap().version_id, label);
+        }
+    }
+
     fn v1(plugin_id: &str) -> PackInfo {
         serde_json::from_str::<PackInfoV1>(&format!(
             r#"{{ "pluginId": "{plugin_id}", "modpackId": "1KVo5zza", "version": "v1" }}"#
@@ -159,10 +181,7 @@ mod tests {
             pack_info.modpack_id,
             ContentId::try_from("1KVo5zza").unwrap()
         );
-        assert_eq!(
-            pack_info.version_id,
-            ContentVersionId::try_from("v1").unwrap()
-        );
+        assert_eq!(pack_info.version_id, "v1");
     }
 
     #[test]

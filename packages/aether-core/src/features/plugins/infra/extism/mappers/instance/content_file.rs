@@ -1,7 +1,7 @@
 use aether_core_plugin_api::v0::{ContentFileDto, ContentFileUpdateInfoDto, ProviderIdDto};
 
 use crate::features::instance::{
-    ContentFile, ContentFileUpdateInfo, ContentPath, InvalidContentId, InvalidId,
+    ContentFile, ContentFileUpdateInfo, ContentPath, ContentVersionId, InvalidContentId, InvalidId,
     InvalidRelativePath, ProviderId,
 };
 
@@ -22,7 +22,7 @@ impl From<ContentFile> for ContentFileDto {
                     .map(|(provider_id, info)| ContentFileUpdateInfoDto {
                         provider_id: provider_id.into(),
                         content_id: info.content_id.into(),
-                        version: info.version.into(),
+                        version: info.version.map(String::from).unwrap_or_default(),
                     })
                     .collect()
             }),
@@ -70,7 +70,10 @@ impl TryFrom<ContentFileDto> for ContentFile {
                                 info.provider_id.try_into()?,
                                 ContentFileUpdateInfo {
                                     content_id: info.content_id.try_into()?,
-                                    version: info.version.try_into()?,
+                                    version: Some(info.version)
+                                        .filter(|v| !v.is_empty())
+                                        .map(ContentVersionId::try_from)
+                                        .transpose()?,
                                 },
                             ))
                         })
@@ -126,7 +129,7 @@ mod tests {
                 modrinth.clone(),
                 ContentFileUpdateInfo {
                     content_id: ContentId::try_from("AANobbMI").unwrap(),
-                    version: ContentVersionId::try_from("IZskON6d").unwrap(),
+                    version: Some(ContentVersionId::try_from("IZskON6d").unwrap()),
                 },
             )])),
         };
@@ -142,7 +145,7 @@ mod tests {
         assert_eq!(info.content_id, ContentId::try_from("AANobbMI").unwrap());
         assert_eq!(
             info.version,
-            ContentVersionId::try_from("IZskON6d").unwrap()
+            Some(ContentVersionId::try_from("IZskON6d").unwrap())
         );
     }
 

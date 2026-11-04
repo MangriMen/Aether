@@ -7,7 +7,7 @@ use crate::features::instance::{
     ContentFileUpdateInfo, PackFile, PackFileDownload, PackFileOption, ProviderId, ProviderIdError,
     infra::{
         legacy_provider_id::{parse_stored_provider_id, parse_v1_provider_id},
-        stored_content_id::parse_stored_content_id,
+        stored_content_id::{parse_stored_content_id, parse_stored_version},
         stored_side::parse_stored_side,
     },
 };
@@ -140,7 +140,7 @@ impl From<PackFileV2> for PackFile {
                         provider_id,
                         ContentFileUpdateInfo {
                             content_id: parse_stored_content_id(&owner, v.content_id)?,
-                            version: parse_stored_content_id(&owner, v.version)?,
+                            version: parse_stored_version(&owner, v.version),
                         },
                     ))
                 })
@@ -193,7 +193,7 @@ impl From<PackFile> for PackFileV2 {
                             k.to_string(),
                             ContentFileUpdateInfoV1 {
                                 content_id: v.content_id.into(),
-                                version: v.version.into(),
+                                version: v.version.map(String::from).unwrap_or_default(),
                             },
                         )
                     })
@@ -230,7 +230,7 @@ fn migrate_update_info(file_name: &str, v: &serde_json::Value) -> Option<Content
             &owner,
             stored(obj.get("contentId").or_else(|| obj.get("project_id"))),
         )?,
-        version: parse_stored_content_id(&owner, stored(obj.get("version")))?,
+        version: parse_stored_version(&owner, stored(obj.get("version"))),
     })
 }
 
@@ -290,6 +290,44 @@ mod tests {
             update[&aether_modrinth()].content_id,
             ContentId::try_from("AANobbMI").unwrap()
         );
+    }
+
+    #[test]
+    fn should_keep_the_update_info_without_a_version_when_a_v1_record_has_an_empty_one() {
+        let pack_file = read_v1(
+            r#"
+            file-name = "sodium.jar"
+            hash = "abc"
+            update-provider = "modrinth"
+
+            [update.modrinth]
+            project_id = "AANobbMI"
+            version = ""
+            "#,
+        );
+
+        let update = pack_file.update.unwrap();
+        let info = &update[&aether_modrinth()];
+        assert_eq!(info.content_id, ContentId::try_from("AANobbMI").unwrap());
+        assert_eq!(info.version, None);
+    }
+
+    #[test]
+    fn should_keep_the_update_info_without_a_version_when_a_v2_version_is_invalid() {
+        let pack_file = read_v2(
+            r#"
+            file-name = "sodium.jar"
+            hash = "abc"
+            update-provider-id = "aether#modrinth"
+
+            [update."aether#modrinth"]
+            content-id = "AANobbMI"
+            version = "a/b"
+            "#,
+        );
+
+        let update = pack_file.update.unwrap();
+        assert_eq!(update[&aether_modrinth()].version, None);
     }
 
     #[test]

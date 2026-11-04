@@ -97,7 +97,7 @@ impl InstallContentUseCase {
             .find_by_provider_id(instance_id, provider_id, content_id)
             .await?
             .and_then(|record| record.update?.remove(provider_id))
-            .map(|info| info.version))
+            .and_then(|info| info.version))
     }
 
     async fn execute_plan(

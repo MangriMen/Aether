@@ -48,7 +48,7 @@ async fn should_record_installed_files_under_the_plan_origin_when_the_plan_succe
     assert_eq!(sodium.update_provider_id, Some(modrinth_id()));
     let info = &sodium.update.as_ref().unwrap()[&modrinth_id()];
     assert_eq!(
-        (info.content_id.as_str(), info.version.as_str()),
+        (info.content_id.as_str(), info.version.as_deref().unwrap()),
         ("AANobbMI", "newest")
     );
 }
@@ -629,7 +629,7 @@ async fn should_treat_a_direct_file_as_that_content_when_it_has_an_identity() {
     assert_eq!(sodium.update_provider_id, Some(modrinth_id()));
     let info = &sodium.update.as_ref().unwrap()[&modrinth_id()];
     assert_eq!(
-        (info.content_id.as_str(), info.version.as_str()),
+        (info.content_id.as_str(), info.version.as_deref().unwrap()),
         ("AANobbMI", "v2")
     );
     assert_eq!(

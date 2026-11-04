@@ -149,7 +149,7 @@ mod tests {
                     p.clone(),
                     ContentFileUpdateInfo {
                         content_id: content_id.try_into().unwrap(),
-                        version: ContentVersionId::try_from("1").unwrap(),
+                        version: Some(ContentVersionId::try_from("1").unwrap()),
                     },
                 )])
             }),

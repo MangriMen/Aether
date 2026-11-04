@@ -48,7 +48,7 @@ fn pack_info(modpack_id: &str) -> PackInfo {
     PackInfo {
         provider_id: provider_id(),
         modpack_id: modpack_id.try_into().unwrap(),
-        version_id: ContentVersionId::try_from("v1").unwrap(),
+        version_id: "v1".to_owned(),
     }
 }
 
@@ -431,7 +431,7 @@ async fn should_tell_the_provider_the_installed_version_when_installing_content(
         provider_id(),
         ContentFileUpdateInfo {
             content_id: ContentId::try_from("sodium").unwrap(),
-            version: ContentVersionId::try_from("beta-1").unwrap(),
+            version: Some(ContentVersionId::try_from("beta-1").unwrap()),
         },
     )]));
     fixture

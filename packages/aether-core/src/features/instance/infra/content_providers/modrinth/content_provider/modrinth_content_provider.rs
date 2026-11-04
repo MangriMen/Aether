@@ -433,7 +433,7 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
             Some(PackInfo {
                 provider_id: ModrinthContentProvider::provider_id(),
                 modpack_id: project_id,
-                version_id,
+                version_id: version_id.into(),
             })
         })?;
 

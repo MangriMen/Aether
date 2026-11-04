@@ -1069,7 +1069,7 @@ impl InstallPlanExecutor {
                         resolved.provider_id,
                         ContentFileUpdateInfo {
                             content_id: resolved.content_id,
-                            version: resolved.version,
+                            version: Some(resolved.version),
                         },
                     )]));
                 }

@@ -470,7 +470,7 @@ async fn should_plan_a_modpack_from_its_mrpack_when_the_target_is_a_new_instance
         Some(PackInfo {
             provider_id: ModrinthContentProvider::provider_id(),
             modpack_id: ContentId::try_from("PACKID00").unwrap(),
-            version_id: ContentVersionId::try_from("PACKV002").unwrap(),
+            version_id: "PACKV002".to_owned(),
         })
     );
 
@@ -622,10 +622,7 @@ async fn should_install_the_newest_release_of_a_pack_when_a_newer_beta_exists() 
     let InstallTarget::New(new_instance) = plan.target else {
         panic!("a new instance expected")
     };
-    assert_eq!(
-        new_instance.pack_info.unwrap().version_id,
-        ContentVersionId::try_from("PACKV002").unwrap()
-    );
+    assert_eq!(new_instance.pack_info.unwrap().version_id, "PACKV002");
 }
 
 async fn describe_pack_update(fixture: &Fixture, installed: &str) -> Option<ContentVersionId> {

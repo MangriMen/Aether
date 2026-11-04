@@ -314,7 +314,7 @@ mod tests {
         let pack_info = PackInfo {
             provider_id: modrinth(),
             modpack_id: params.content_id.clone(),
-            version_id: params.version.clone().unwrap(),
+            version_id: params.version.clone().unwrap().into(),
         };
 
         let plan = InstallPlan {

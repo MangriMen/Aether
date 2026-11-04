@@ -134,7 +134,7 @@ impl From<ContentFileUpdateInfo> for ContentFileUpdateInfoDto {
     fn from(value: ContentFileUpdateInfo) -> Self {
         Self {
             content_id: value.content_id.into(),
-            version: value.version.into(),
+            version: value.version.map(String::from).unwrap_or_default(),
         }
     }
 }
@@ -241,7 +241,7 @@ mod tests {
             |plugin: &str, capability: &str| ProviderId::from_parts(plugin, capability).unwrap();
         let info = |content_id: &str| ContentFileUpdateInfo {
             content_id: content_id.try_into().unwrap(),
-            version: ContentVersionId::try_from("1").unwrap(),
+            version: Some(ContentVersionId::try_from("1").unwrap()),
         };
         let mut file = file(None);
         file.file.update = Some(HashMap::from([

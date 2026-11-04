@@ -79,8 +79,8 @@ impl Lookup {
     /// The provider and the provider's id that `file` is described by: the content id of the
     /// project it was installed from, or the id of the version it was installed as — that
     /// recorded for the provider that updates the file. `None` for a file of no provider (added
-    /// by hand and not recognised), or of no recorded id (an empty one, as old records have),
-    /// and for [`Self::Authors`], which a file does not record.
+    /// by hand and not recognised), or, for [`Self::Versions`], of no recorded version (old
+    /// records have none), and for [`Self::Authors`], which a file does not record.
     ///
     /// Not `PackFile::installed_by`: that is the plan that installed the file, a modpack's own
     /// id for every file of the pack.
@@ -89,7 +89,7 @@ impl Lookup {
         let info = file.update.as_ref()?.get(provider_id)?;
         let id = match self {
             Self::Projects => info.content_id.as_str(),
-            Self::Versions => info.version.as_str(),
+            Self::Versions => info.version.as_ref()?.as_str(),
             Self::Authors => return None,
         };
         Some((provider_id, id))

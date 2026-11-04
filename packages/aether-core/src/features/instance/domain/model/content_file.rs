@@ -63,7 +63,8 @@ impl From<ContentFile> for ContentFileView {
 #[derive(Debug, Clone)]
 pub struct ContentFileUpdateInfo {
     pub content_id: ContentId,
-    pub version: ContentVersionId,
+    /// `None` for an old record that kept no version.
+    pub version: Option<ContentVersionId>,
 }
 
 impl ContentFile {
@@ -78,7 +79,7 @@ impl ContentFile {
             .update_provider_id
             .as_ref()
             .and_then(|id| pack_file.update.as_ref()?.get(id))
-            .map(|info| info.version.clone());
+            .and_then(|info| info.version.clone());
 
         Self {
             content_path,
