@@ -14,6 +14,17 @@ impl TryFrom<FileHashDto> for FileHash {
     }
 }
 
+impl From<FileHash> for FileHashDto {
+    fn from(value: FileHash) -> Self {
+        let hex = value.hex().to_owned();
+        match value.algorithm() {
+            HashAlgorithm::Sha1 => Self::Sha1(hex),
+            HashAlgorithm::Sha256 => Self::Sha256(hex),
+            HashAlgorithm::Sha512 => Self::Sha512(hex),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

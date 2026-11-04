@@ -1,6 +1,7 @@
 use aether_core::features::instance::{
     ContentFileUpdateInfo, ContentFileView, ContentMetadata, ContentVersionMetadata,
 };
+use aether_core::shared::hash::{FileHash, HashAlgorithm};
 use serde::{Deserialize, Serialize};
 use serde_with::{DisplayFromStr, serde_as};
 use specta::Type;
@@ -18,7 +19,7 @@ pub struct ContentFileDto {
     pub content_type: ContentTypeDto,
     pub disabled: bool,
     pub file_name: String,
-    pub hash: String,
+    pub hash: FileHashDto,
     pub name: Option<String>,
     #[specta(type = String)]
     #[serde_as(as = "DisplayFromStr")]
@@ -55,6 +56,26 @@ pub struct ContentMetadataDto {
     /// The icon as cached on disk, as a URL of the app's asset protocol, as the instance's
     /// `iconPath`. Shown in place of `iconUrl` when set; `None` until the icon has arrived.
     pub icon_path: Option<String>,
+}
+
+/// The digest of a file, hex-encoded, tagged with its algorithm.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Type)]
+#[serde(rename_all = "camelCase")]
+pub enum FileHashDto {
+    Sha1(String),
+    Sha256(String),
+    Sha512(String),
+}
+
+impl From<FileHash> for FileHashDto {
+    fn from(value: FileHash) -> Self {
+        let hex = value.hex().to_owned();
+        match value.algorithm() {
+            HashAlgorithm::Sha1 => Self::Sha1(hex),
+            HashAlgorithm::Sha256 => Self::Sha256(hex),
+            HashAlgorithm::Sha512 => Self::Sha512(hex),
+        }
+    }
 }
 
 /// What a provider says about the version of an installed file.
@@ -100,7 +121,7 @@ impl From<ContentFileView> for ContentFileDto {
             content_type: value.content_type.into(),
             disabled: value.disabled,
             file_name: value.file_name,
-            hash: value.hash.hex().to_owned(),
+            hash: value.hash.into(),
             name: value.name,
             size: value.size,
             version: value.version.map(Into::into),

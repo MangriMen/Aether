@@ -108,7 +108,7 @@ export type ContentFileDto = {
 	contentType: ContentTypeDto,
 	disabled: boolean,
 	fileName: string,
-	hash: string,
+	hash: FileHashDto,
 	name: string | null,
 	size: string,
 	version: string | null,
@@ -293,6 +293,9 @@ export type EventErrorDto = { code: "NOT_INITIALIZED" } | { code: "NO_LOADING_BA
 } } | { code: "STORAGE_ERROR"; payload: {
 	details: string,
 } };
+
+/**  The digest of a file, hex-encoded, tagged with its algorithm. */
+export type FileHashDto = ({ sha1: string }) & { sha256?: never; sha512?: never } | ({ sha256: string }) & { sha1?: never; sha512?: never } | ({ sha512: string }) & { sha1?: never; sha256?: never };
 
 export type FileWatcherErrorDto = { code: "PATH_NOT_FOUND"; payload: {
 	path: string,

@@ -2,7 +2,7 @@ use aether_core_plugin_api::v0::{ContentFileDto, ContentFileUpdateInfoDto, Provi
 
 use crate::features::instance::{
     ContentFile, ContentFileUpdateInfo, ContentPath, ContentVersionId, InvalidContentId, InvalidId,
-    InvalidRelativePath, ProviderId, parse_file_hash,
+    InvalidRelativePath, ProviderId,
 };
 use crate::shared::hash::InvalidFileHash;
 
@@ -13,7 +13,7 @@ impl From<ContentFile> for ContentFileDto {
             content_type: value.content_type.into(),
             disabled: value.disabled,
             file_name: value.file_name,
-            hash: value.hash.hex().to_owned(),
+            hash: value.hash.into(),
             name: value.name,
             size: value.size,
             update_provider_id: value.update_provider_id.map(Into::into),
@@ -56,7 +56,7 @@ impl TryFrom<ContentFileDto> for ContentFile {
             content_type: value.content_type.into(),
             disabled: value.disabled,
             file_name: value.file_name,
-            hash: parse_file_hash(&value.hash)?,
+            hash: value.hash.try_into()?,
             name: value.name,
             size: value.size,
             version: None,
@@ -114,6 +114,7 @@ mod tests {
 
     use super::*;
     use crate::features::instance::ContentType;
+    use aether_core_plugin_api::v0::FileHashDto;
 
     /// Update info keyed by provider id crosses the plugin boundary both ways.
     #[test]
@@ -158,6 +159,27 @@ mod tests {
     }
 
     #[test]
+    fn should_keep_the_algorithm_when_a_sha256_hash_crosses_the_plugin_boundary() {
+        let hash = FileHashDto::Sha256("ab".repeat(32));
+        let dto = ContentFileDto::from(
+            ContentFile::try_from(ContentFileDto {
+                hash: hash.clone(),
+                content_path: "mods/a.jar".into(),
+                content_type: ContentType::Mod.into(),
+                disabled: false,
+                file_name: "a.jar".into(),
+                name: None,
+                size: 1,
+                update_provider_id: None,
+                update: None,
+            })
+            .unwrap(),
+        );
+
+        assert_eq!(dto.hash, hash);
+    }
+
+    #[test]
     fn should_refuse_a_content_file_dto_when_the_hash_is_not_a_digest() {
         let file = ContentFile {
             hash: crate::shared::hash::FileHash::new(
@@ -176,7 +198,7 @@ mod tests {
             update: None,
         };
         let mut dto = ContentFileDto::from(file);
-        dto.hash = "123".into();
+        dto.hash = FileHashDto::Sha1("123".into());
 
         let err = ContentFile::try_from(dto).unwrap_err();
 

@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use super::ContentTypeDto;
+use crate::v0::dto::FileHashDto;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
 #[serde(rename_all = "camelCase")]
@@ -16,8 +17,8 @@ pub struct ContentFileDto {
     pub content_type: ContentTypeDto,
     pub disabled: bool,
     pub file_name: String,
-    /// Hex digest of the file (sha1 for files the app hashes itself).
-    pub hash: String,
+    /// Digest of the file: sha1 for files the app hashes itself, else whatever the pack recorded.
+    pub hash: FileHashDto,
     pub name: Option<String>,
     pub size: u64,
     pub update_provider_id: Option<ProviderIdDto>,
@@ -48,7 +49,7 @@ mod tests {
             content_type: ContentTypeDto::Mod,
             disabled: false,
             file_name: "mod.jar".into(),
-            hash: "123".into(),
+            hash: FileHashDto::Sha1("a".repeat(40)),
             name: None,
             size: 1024,
             update_provider_id: None,
@@ -72,7 +73,7 @@ mod tests {
             content_type: ContentTypeDto::Mod,
             disabled: false,
             file_name: "sodium.jar".into(),
-            hash: "123".into(),
+            hash: FileHashDto::Sha1("a".repeat(40)),
             name: None,
             size: 1024,
             update_provider_id: Some(provider_id.clone()),
