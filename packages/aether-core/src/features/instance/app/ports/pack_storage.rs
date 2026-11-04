@@ -35,7 +35,8 @@ pub trait PackStorage: Send + Sync {
 
     /// Replaces only the hash of the record of a file, whatever the stored one is, and returns
     /// the record; `None` when there is none. The way to repair a record
-    /// [`Self::find_pack_file`] could not use, without losing its provider link and the rest.
+    /// [`Self::find_pack_file`] could not use: the rest of the record is kept as it was read, so
+    /// fields that no longer parse are dropped.
     async fn rehash_pack_file(
         &self,
         _instance_id: &InstanceId,

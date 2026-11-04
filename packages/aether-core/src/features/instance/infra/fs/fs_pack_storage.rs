@@ -209,7 +209,10 @@ impl PackStorage for FsPackStorage {
         hash: &FileHash,
     ) -> Result<Option<PackFile>, InstanceError> {
         let path = self.get_pack_file_path(instance_id, content_path);
-        if !path.exists() {
+        if !tokio::fs::try_exists(&path)
+            .await
+            .map_err(|err| InstanceError::Storage(err.to_string()))?
+        {
             return Ok(None);
         }
 
@@ -457,5 +460,93 @@ file = "mods/a.jar"
 
         assert_eq!(pack.files.len(), 1);
         assert_eq!(pack.files[0].file, good);
+    }
+
+    const V2_RECORD: &str = r#"
+file-name = "sodium.jar"
+hash = "bad"
+update-provider-id = "aether#modrinth"
+
+[update."aether#modrinth"]
+content-id = "AANobbMI"
+version = "v1"
+"#;
+
+    const V1_RECORD: &str = r#"
+file-name = "sodium.jar"
+hash = "bad"
+update-provider = "modrinth"
+
+[update.modrinth]
+project_id = "AANobbMI"
+version = "v1"
+"#;
+
+    async fn rehash_stored(
+        temp: &TempDir,
+        record: &str,
+    ) -> (FsPackStorage, InstanceId, ContentPath, PackFile) {
+        let storage = FsPackStorage::new(Arc::new(LocationInfo::new(
+            temp.path().join("settings"),
+            temp.path().to_path_buf(),
+        )));
+        let id = InstanceId::try_from("inst").unwrap();
+        let path = ContentPath::parse("mods/sodium.jar").unwrap();
+        let file = storage.get_pack_file_path(&id, &path);
+        tokio::fs::create_dir_all(file.parent().unwrap())
+            .await
+            .unwrap();
+        tokio::fs::write(&file, record).await.unwrap();
+
+        let rehashed = storage
+            .rehash_pack_file(&id, &path, &sha1_hash('c'))
+            .await
+            .unwrap()
+            .expect("the record exists");
+        (storage, id, path, rehashed)
+    }
+
+    #[rstest::rstest]
+    #[case::v2(V2_RECORD)]
+    #[case::v1(V1_RECORD)]
+    #[tokio::test]
+    async fn should_replace_only_the_hash_when_rehashing_a_stored_record(#[case] record: &str) {
+        let temp = TempDir::new().unwrap();
+        let (storage, id, path, rehashed) = rehash_stored(&temp, record).await;
+
+        let provider: ProviderId = "aether#modrinth".parse().unwrap();
+        assert_eq!(rehashed.hash, sha1_hash('c'));
+        assert_eq!(rehashed.update_provider_id, Some(provider.clone()));
+        assert_eq!(
+            rehashed.update.as_ref().unwrap()[&provider].content_id,
+            ContentId::try_from("AANobbMI").unwrap()
+        );
+        let written = storage.get_pack_file(&id, &path).await.unwrap();
+        assert_eq!(written.hash, sha1_hash('c'));
+        assert_eq!(written.update_provider_id, Some(provider));
+        let text = tokio::fs::read_to_string(storage.get_pack_file_path(&id, &path))
+            .await
+            .unwrap();
+        assert!(text.contains("update-provider-id"), "{text}");
+    }
+
+    #[tokio::test]
+    async fn should_return_none_when_rehashing_a_file_with_no_record() {
+        let temp = TempDir::new().unwrap();
+        let storage = FsPackStorage::new(Arc::new(LocationInfo::new(
+            temp.path().join("settings"),
+            temp.path().to_path_buf(),
+        )));
+
+        let rehashed = storage
+            .rehash_pack_file(
+                &InstanceId::try_from("inst").unwrap(),
+                &ContentPath::parse("mods/a.jar").unwrap(),
+                &sha1_hash('c'),
+            )
+            .await
+            .unwrap();
+
+        assert!(rehashed.is_none());
     }
 }
