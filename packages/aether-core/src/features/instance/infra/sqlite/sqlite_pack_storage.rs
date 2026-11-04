@@ -122,6 +122,39 @@ impl SqlitePackStorage {
         Self { pool }
     }
 
+    /// The row of a file: `None` when there is none, `Err` when its stored hash is invalid.
+    async fn load_pack_file(
+        &self,
+        instance_id: &InstanceId,
+        content_path: &ContentPath,
+    ) -> Result<Option<Result<PackFile, InvalidFileHash>>, InstanceError> {
+        let content_path = content_path.as_str();
+        let row = sqlx::query_as!(
+            PackFileRow,
+            "SELECT content_path, file_name, name, hash, side, update_provider_id, installed_by_provider_id, installed_by_content_id FROM pack_files WHERE instance_id = ? AND content_path = ?",
+            instance_id.as_str(),
+            content_path
+        )
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|e| InstanceError::Storage(e.to_string()))?;
+        let Some(row) = row else {
+            return Ok(None);
+        };
+
+        let updates = sqlx::query_as!(
+            PackFileUpdateRow,
+            "SELECT content_path, provider_id, content_id, version_id FROM pack_file_updates WHERE instance_id = ? AND content_path = ?",
+            instance_id.as_str(),
+            content_path
+        )
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| InstanceError::Storage(e.to_string()))?;
+
+        Ok(Some(row.into_pack_file(updates)))
+    }
+
     /// A storage over a fresh in-memory database with every migration applied. Foreign keys are
     /// off: no `instances` row backs the packs.
     #[cfg(test)]
@@ -289,30 +322,21 @@ impl PackStorage for SqlitePackStorage {
         instance_id: &InstanceId,
         content_path: &ContentPath,
     ) -> Result<PackFile, InstanceError> {
-        let content_path = content_path.as_str();
-        let row = sqlx::query_as!(
-            PackFileRow,
-            "SELECT content_path, file_name, name, hash, side, update_provider_id, installed_by_provider_id, installed_by_content_id FROM pack_files WHERE instance_id = ? AND content_path = ?",
-            instance_id.as_str(),
-            content_path
-        )
-        .fetch_optional(&self.pool)
-        .await
-        .map_err(|e| InstanceError::Storage(e.to_string()))?
-        .ok_or_else(|| InstanceError::Storage(format!("Pack file not found: {content_path}")))?;
-
-        let updates = sqlx::query_as!(
-            PackFileUpdateRow,
-            "SELECT content_path, provider_id, content_id, version_id FROM pack_file_updates WHERE instance_id = ? AND content_path = ?",
-            instance_id.as_str(),
-            content_path
-        )
-        .fetch_all(&self.pool)
-        .await
-        .map_err(|e| InstanceError::Storage(e.to_string()))?;
-
-        row.into_pack_file(updates)
+        self.load_pack_file(instance_id, content_path)
+            .await?
+            .ok_or_else(|| InstanceError::Storage(format!("Pack file not found: {content_path}")))?
             .map_err(|err| InstanceError::Storage(err.to_string()))
+    }
+
+    async fn find_pack_file(
+        &self,
+        instance_id: &InstanceId,
+        content_path: &ContentPath,
+    ) -> Result<Option<PackFile>, InstanceError> {
+        Ok(self
+            .load_pack_file(instance_id, content_path)
+            .await?
+            .and_then(Result::ok))
     }
 
     async fn get_pack_files(

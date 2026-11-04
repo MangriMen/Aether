@@ -1,4 +1,4 @@
-use std::{path::PathBuf, sync::Arc};
+use std::{collections::HashMap, path::PathBuf, sync::Arc};
 
 use async_trait::async_trait;
 
@@ -10,14 +10,19 @@ use crate::{
         },
         settings::LocationInfo,
     },
-    shared::io::infra::{
-        ensure_read_toml_async, read_toml_async, remove_dir_all, remove_file, rename,
-        write_toml_async,
+    shared::{
+        hash::{FileHash, InvalidFileHash, infra::sha1_hash_async},
+        io::infra::{
+            ensure_read_toml_async, read_async, read_toml_async, remove_dir_all, remove_file,
+            rename, write_toml_async,
+        },
     },
 };
 
 use super::pack_file::{PackFileV1, PackFileV2, PackV2};
-use crate::features::instance::infra::stored_content_path::parse_stored_content_path;
+use crate::features::instance::infra::{
+    stored_content_path::parse_stored_content_path, stored_hash::parse_stored_hash,
+};
 
 pub struct FsPackStorage {
     location_info: Arc<LocationInfo>,
@@ -49,6 +54,90 @@ impl FsPackStorage {
         rename(&dir, &target)
             .await
             .map_err(|err| InstanceError::Storage(err.to_string()))
+    }
+
+    /// Reads a legacy record for migration: one with an invalid hash keeps its other fields (the
+    /// provider link, update info, owner) and gets the sha1 of the file on disk, if it is there.
+    pub async fn get_legacy_pack_file(
+        &self,
+        instance_id: &InstanceId,
+        content_path: &ContentPath,
+    ) -> Result<PackFile, InstanceError> {
+        self.read_pack_file(instance_id, content_path, true)
+            .await?
+            .map_err(|err| InstanceError::Storage(err.to_string()))
+    }
+
+    /// The record, or why its hash is not one. With `rehash`, an invalid hash is replaced by the
+    /// sha1 of the file on disk.
+    async fn read_pack_file(
+        &self,
+        instance_id: &InstanceId,
+        content_path: &ContentPath,
+        rehash: bool,
+    ) -> Result<Result<PackFile, InvalidFileHash>, InstanceError> {
+        let path = self.get_pack_file_path(instance_id, content_path);
+
+        let v2: Result<PackFileV2, _> = read_toml_async(&path).await;
+        let (file_name, stored_hash) = if let Ok(dto) = &v2 {
+            (dto.file_name.clone(), dto.hash.clone())
+        } else {
+            let v1: PackFileV1 = read_toml_async(&path)
+                .await
+                .map_err(|e| InstanceError::Storage(e.to_string()))?;
+            (v1.file_name, v1.hash)
+        };
+
+        let hash = match parse_stored_hash(&file_name, &stored_hash) {
+            Ok(hash) => hash,
+            Err(err) if rehash => match self.sha1_on_disk(instance_id, content_path).await {
+                Some(hash) => hash,
+                None => return Ok(Err(err)),
+            },
+            Err(err) => return Ok(Err(err)),
+        };
+
+        if let Ok(dto) = v2 {
+            return Ok(Ok(dto.into_pack_file(hash)));
+        }
+
+        let v1: PackFileV1 = read_toml_async(&path)
+            .await
+            .map_err(|e| InstanceError::Storage(e.to_string()))?;
+        let migrated = v1.into_pack_file(hash);
+        let _ = self
+            .update_pack_file(instance_id, content_path, &migrated)
+            .await;
+        Ok(Ok(migrated))
+    }
+
+    async fn sha1_on_disk(
+        &self,
+        instance_id: &InstanceId,
+        content_path: &ContentPath,
+    ) -> Option<FileHash> {
+        let enabled = self
+            .location_info
+            .instance_dir(instance_id)
+            .join(content_path.to_path_buf());
+        let mut disabled = enabled.clone().into_os_string();
+        disabled.push(DISABLED_SUFFIX);
+
+        for path in [enabled, PathBuf::from(disabled)] {
+            let Ok(content) = read_async(&path).await else {
+                continue;
+            };
+            match sha1_hash_async(content).await {
+                Ok(hash) => {
+                    tracing::warn!(
+                        "Rehashed \"{content_path}\" of \"{instance_id}\": its stored hash is invalid"
+                    );
+                    return Some(hash);
+                }
+                Err(err) => tracing::warn!("Failed to hash \"{content_path}\": {err}"),
+            }
+        }
+        None
     }
 
     fn get_pack_path(&self, instance_id: &InstanceId) -> PathBuf {
@@ -108,29 +197,36 @@ impl PackStorage for FsPackStorage {
         instance_id: &InstanceId,
         content_path: &ContentPath,
     ) -> Result<PackFile, InstanceError> {
-        let path = self.get_pack_file_path(instance_id, content_path);
+        self.read_pack_file(instance_id, content_path, false)
+            .await?
+            .map_err(|err| InstanceError::Storage(err.to_string()))
+    }
 
-        let pack_file_result: Result<PackFileV2, _> = read_toml_async(&path).await;
+    async fn find_pack_file(
+        &self,
+        instance_id: &InstanceId,
+        content_path: &ContentPath,
+    ) -> Result<Option<PackFile>, InstanceError> {
+        Ok(self
+            .read_pack_file(instance_id, content_path, false)
+            .await?
+            .ok())
+    }
 
-        if let Ok(dto) = pack_file_result {
-            PackFile::try_from(dto).map_err(|err| InstanceError::Storage(err.to_string()))
-        } else {
-            let v1_result: Result<PackFileV1, _> = read_toml_async(&path).await;
+    async fn get_pack_files(
+        &self,
+        instance_id: &InstanceId,
+    ) -> Result<HashMap<ContentPath, PackFile>, InstanceError> {
+        let mut files = HashMap::new();
 
-            match v1_result {
-                Ok(v1) => {
-                    let migrated = PackFile::try_from(v1)
-                        .map_err(|err| InstanceError::Storage(err.to_string()))?;
-
-                    let _ = self
-                        .update_pack_file(instance_id, content_path, &migrated)
-                        .await;
-
-                    Ok(migrated)
-                }
-                Err(e) => Err(InstanceError::Storage(e.to_string())),
+        for entry in self.get_pack(instance_id).await?.files {
+            // A record with an invalid hash is left out, like a file nothing recorded.
+            if let Ok(pack_file) = self.read_pack_file(instance_id, &entry.file, false).await? {
+                files.insert(entry.file, pack_file);
             }
         }
+
+        Ok(files)
     }
 
     async fn find_by_provider_id(

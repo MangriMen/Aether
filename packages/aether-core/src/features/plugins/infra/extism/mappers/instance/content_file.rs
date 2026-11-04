@@ -13,7 +13,7 @@ impl From<ContentFile> for ContentFileDto {
             content_type: value.content_type.into(),
             disabled: value.disabled,
             file_name: value.file_name,
-            hash: value.hash.to_string(),
+            hash: value.hash.hex().to_owned(),
             name: value.name,
             size: value.size,
             update_provider_id: value.update_provider_id.map(Into::into),

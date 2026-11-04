@@ -16,6 +16,7 @@ pub struct ContentFileDto {
     pub content_type: ContentTypeDto,
     pub disabled: bool,
     pub file_name: String,
+    /// Lowercase hex sha1 digest of the file.
     pub hash: String,
     pub name: Option<String>,
     pub size: u64,

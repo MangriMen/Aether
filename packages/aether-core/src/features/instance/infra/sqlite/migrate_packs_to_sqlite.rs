@@ -44,7 +44,10 @@ pub async fn migrate_packs_to_sqlite(
         let mut pack_files = Vec::new();
         for entry in pack.files {
             let content_path = entry.file;
-            match fs_storage.get_pack_file(instance_id, &content_path).await {
+            match fs_storage
+                .get_legacy_pack_file(instance_id, &content_path)
+                .await
+            {
                 Ok(pack_file) => {
                     content_paths.push(content_path);
                     pack_files.push(pack_file);
@@ -286,5 +289,50 @@ mod tests {
             .unwrap();
 
         assert!(sqlite.get_pack(&id).await.unwrap().files.is_empty());
+    }
+
+    #[tokio::test]
+    async fn should_keep_the_provider_link_and_rehash_when_a_legacy_record_has_an_invalid_hash() {
+        let (temp, instances, fs, id) = setup();
+        let provider: crate::features::instance::ProviderId = "aether#modrinth".parse().unwrap();
+        let mut record = PackFile::from_hash("a.jar".into(), sha1_hash('e'));
+        record.update_provider_id = Some(provider.clone());
+        fs.update_pack(
+            &id,
+            &Pack {
+                files: vec![PackEntry {
+                    file: cp("mods/a.jar"),
+                }],
+            },
+        )
+        .await
+        .unwrap();
+        fs.update_pack_file(&id, &cp("mods/a.jar"), &record)
+            .await
+            .unwrap();
+        let location = LocationInfo::new(temp.path().join("settings"), temp.path().to_path_buf());
+        let record_path = location
+            .instance_pack_dir(&id)
+            .join("mods")
+            .join("a.toml");
+        let stored = tokio::fs::read_to_string(&record_path).await.unwrap();
+        tokio::fs::write(&record_path, stored.replace(&"e".repeat(40), "bad"))
+            .await
+            .unwrap();
+        let jar = location.instance_dir(&id).join("mods");
+        tokio::fs::create_dir_all(&jar).await.unwrap();
+        tokio::fs::write(jar.join("a.jar"), b"jar").await.unwrap();
+        let sqlite = SqlitePackStorage::in_memory().await;
+
+        migrate_packs_to_sqlite(&instances, &fs, &sqlite)
+            .await
+            .unwrap();
+
+        let migrated = sqlite.get_pack_file(&id, &cp("mods/a.jar")).await.unwrap();
+        assert_eq!(migrated.update_provider_id, Some(provider));
+        assert_eq!(
+            migrated.hash.hex(),
+            "f92e777f4341930bad9b2422283c4680d00dbc06"
+        );
     }
 }

@@ -505,6 +505,7 @@ struct Fixture {
     _temp: TempDir,
     mods: std::path::PathBuf,
     use_case: ListContentUseCase,
+    pack_storage: Arc<SqlitePackStorage>,
     service: Arc<ContentMetadataService>,
     cache: Arc<MemoryMetadataCache>,
     icons: Arc<FakeIcons>,
@@ -577,7 +578,8 @@ impl Fixture {
         Self {
             _temp: temp,
             mods,
-            use_case: ListContentUseCase::new(pack_storage, location_info, service.clone()),
+            use_case: ListContentUseCase::new(pack_storage.clone(), location_info, service.clone()),
+            pack_storage,
             service,
             cache,
             icons,
@@ -725,6 +727,35 @@ async fn should_not_ask_the_provider_when_everything_is_cached_and_fresh() {
     assert!(provider.calls().is_empty());
     assert!(provider.version_calls().is_empty());
     fixture.assert_no_event();
+}
+
+#[tokio::test]
+async fn should_list_the_file_and_write_a_new_record_when_its_stored_hash_is_invalid() {
+    let fixture = Fixture::new(
+        &[("a.jar", "modrinth", "A"), ("b.jar", "modrinth", "B")],
+        vec![],
+    )
+    .await;
+    sqlx::query("UPDATE pack_files SET hash = 'bad' WHERE content_path = 'mods/a.jar'")
+        .execute(fixture.pack_storage.pool())
+        .await
+        .unwrap();
+
+    let listed = fixture.list().await;
+
+    assert_eq!(listed.len(), 2);
+    let record = fixture
+        .pack_storage
+        .get_pack_file(
+            &InstanceId::try_from(INSTANCE_ID).unwrap(),
+            &ContentPath::parse("mods/a.jar").unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(
+        record.hash.hex(),
+        "f92e777f4341930bad9b2422283c4680d00dbc06"
+    );
 }
 
 #[tokio::test]

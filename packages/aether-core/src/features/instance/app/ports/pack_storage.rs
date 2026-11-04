@@ -19,6 +19,18 @@ pub trait PackStorage: Send + Sync {
         content_path: &ContentPath,
     ) -> Result<PackFile, InstanceError>;
 
+    /// The record of a file, or `None` when there is no usable one: its stored hash is invalid.
+    /// Such a record is as good as none: the caller hashes the file again and writes a new one.
+    async fn find_pack_file(
+        &self,
+        instance_id: &InstanceId,
+        content_path: &ContentPath,
+    ) -> Result<Option<PackFile>, InstanceError> {
+        self.get_pack_file(instance_id, content_path)
+            .await
+            .map(Some)
+    }
+
     /// Every file recorded for the instance, by content path — what an install plan is diffed
     /// against. The default asks for each file of [`Self::get_pack`] in turn.
     async fn get_pack_files(

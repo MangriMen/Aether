@@ -12,7 +12,7 @@ use crate::features::instance::{
         stored_side::parse_stored_side,
     },
 };
-use crate::shared::hash::InvalidFileHash;
+use crate::shared::hash::{FileHash, InvalidFileHash};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 #[serde(rename_all = "kebab-case")]
@@ -74,11 +74,10 @@ pub struct ContentFileUpdateInfoV1 {
     pub version: String,
 }
 
-impl TryFrom<PackFileV1> for PackFile {
-    type Error = InvalidFileHash;
-
-    fn try_from(value: PackFileV1) -> Result<Self, Self::Error> {
-        let hash = parse_stored_hash(&value.file_name, &value.hash)?;
+impl PackFileV1 {
+    /// The record with `hash` in place of the stored one.
+    pub fn into_pack_file(self, hash: FileHash) -> PackFile {
+        let value = self;
 
         let update_provider_id = value
             .update_provider
@@ -104,7 +103,7 @@ impl TryFrom<PackFileV1> for PackFile {
                 .collect()
         });
 
-        Ok(Self {
+        PackFile {
             file_name: value.file_name,
             name: value.name,
             hash,
@@ -121,15 +120,23 @@ impl TryFrom<PackFileV1> for PackFile {
             update_provider_id,
             update,
             installed_by: None,
-        })
+        }
     }
 }
 
-impl TryFrom<PackFileV2> for PackFile {
+impl TryFrom<PackFileV1> for PackFile {
     type Error = InvalidFileHash;
 
-    fn try_from(value: PackFileV2) -> Result<Self, Self::Error> {
+    fn try_from(value: PackFileV1) -> Result<Self, Self::Error> {
         let hash = parse_stored_hash(&value.file_name, &value.hash)?;
+        Ok(value.into_pack_file(hash))
+    }
+}
+
+impl PackFileV2 {
+    /// The record with `hash` in place of the stored one.
+    pub fn into_pack_file(self, hash: FileHash) -> PackFile {
+        let value = self;
 
         let update_provider_id = value
             .update_provider_id
@@ -157,7 +164,7 @@ impl TryFrom<PackFileV2> for PackFile {
                 .collect()
         });
 
-        Ok(Self {
+        PackFile {
             file_name: value.file_name,
             name: value.name,
             hash,
@@ -174,7 +181,16 @@ impl TryFrom<PackFileV2> for PackFile {
             update_provider_id,
             update,
             installed_by: None,
-        })
+        }
+    }
+}
+
+impl TryFrom<PackFileV2> for PackFile {
+    type Error = InvalidFileHash;
+
+    fn try_from(value: PackFileV2) -> Result<Self, Self::Error> {
+        let hash = parse_stored_hash(&value.file_name, &value.hash)?;
+        Ok(value.into_pack_file(hash))
     }
 }
 

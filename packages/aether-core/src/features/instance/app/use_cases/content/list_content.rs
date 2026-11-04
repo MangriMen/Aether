@@ -219,11 +219,13 @@ impl ListContentUseCase {
         content_path: &ContentPath,
         entries_by_path: &DashMap<ContentPath, PackEntry>,
     ) -> Result<PackFile, InstanceError> {
-        if let Some(entry) = entries_by_path.get(content_path) {
-            return self
+        if let Some(entry) = entries_by_path.get(content_path)
+            && let Some(pack_file) = self
                 .pack_storage
-                .get_pack_file(instance_id, &entry.file)
-                .await;
+                .find_pack_file(instance_id, &entry.file)
+                .await?
+        {
+            return Ok(pack_file);
         }
 
         let file_content = read_async(file_path)
