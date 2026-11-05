@@ -39,7 +39,7 @@ use crate::features::plugins::infra::plugin_utils::{
     MountSet, host_path_to_plugin, parse_plugin_path, resolve_plugin_path,
     resolve_plugin_path_anchored,
 };
-use crate::shared::web_url::display_url;
+use crate::shared::web_url::display_icon_url;
 
 /// A content provider implemented by a plugin, calling the functions its `capabilities.json`
 /// names.
@@ -633,11 +633,11 @@ fn describe_resolve_target(target: &ResolveTarget) -> String {
     }
 }
 
-/// An icon is taken only as an `https` address, which the host fetches itself (a file path or
-/// any other scheme is dropped, with a warning, so the plugin cannot point the host at a file of
-/// the user's; the icon cache refuses private hosts).
+/// An icon is taken only as an `https` address of a public host, which the host fetches itself:
+/// anything else is dropped, with a warning, so the plugin cannot point the host or the UI at a
+/// file of the user's or a machine of their network.
 fn content_metadata_from_dto(dto: ContentMetadataDto) -> Option<ContentMetadata> {
-    let icon_url = display_url("icon of a plugin's project", dto.icon_url);
+    let icon_url = display_icon_url("icon of a plugin's project", dto.icon_url);
 
     Some(ContentMetadata {
         content_id: dto.content_id.try_into().ok()?,

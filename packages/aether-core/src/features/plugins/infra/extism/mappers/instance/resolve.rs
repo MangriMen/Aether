@@ -19,7 +19,7 @@ use crate::{
     },
 };
 
-use crate::shared::web_url::display_url;
+use crate::shared::web_url::display_icon_url;
 
 impl From<ResolveInstallPlanParams> for ResolveInstallPlanParamsDto {
     fn from(value: ResolveInstallPlanParams) -> Self {
@@ -103,7 +103,7 @@ impl TryFrom<PackMetadataDto> for PackMetadata {
             file_count: value
                 .file_count
                 .and_then(|count| usize::try_from(count).ok()),
-            icon_url: display_url("icon of a plugin's pack", value.icon_url),
+            icon_url: display_icon_url("icon of a plugin's pack", value.icon_url),
         })
     }
 }

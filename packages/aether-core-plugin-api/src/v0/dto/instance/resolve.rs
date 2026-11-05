@@ -126,7 +126,7 @@ pub struct PackMetadataDto {
     /// How many files installing the pack would bring, when known without resolving them.
     #[serde(default)]
     pub file_count: Option<u64>,
-    /// An `https` URL of the pack's icon; any other value is dropped by the host.
+    /// An `https` URL of the pack's icon on a public host; any other value is dropped by the host.
     #[serde(default)]
     pub icon_url: Option<String>,
 }

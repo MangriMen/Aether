@@ -10,7 +10,7 @@ pub mod json_store;
 pub mod keyed_locks;
 pub mod limits;
 pub mod overridable;
-pub mod public_address;
+pub(crate) mod public_address;
 pub mod request_client;
 pub mod safe_path;
 pub mod serde_semver;

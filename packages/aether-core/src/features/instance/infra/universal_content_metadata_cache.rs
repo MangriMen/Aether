@@ -30,7 +30,7 @@ use crate::{
     },
     shared::{
         cache::{Cache, CacheId, CacheKey, CachedValue},
-        web_url::HttpsUrl,
+        web_url::parse_optional_url,
     },
 };
 
@@ -145,12 +145,12 @@ impl TryFrom<ContentMetadataRecord> for ContentMetadata {
             description: value.description,
             author: value.author,
             author_ref: value.author_ref,
-            // Only shown: a bad icon costs the icon, not the record.
-            icon_url: value.icon_url.and_then(|url| {
-                HttpsUrl::parse(&url)
-                    .inspect_err(|err| tracing::warn!("Ignoring a cached content icon: {err}"))
-                    .ok()
-            }),
+            // Only shown: a bad icon costs the icon, not the record. Read on every list, so not
+            // warned about each time.
+            icon_url: parse_optional_url(value.icon_url.as_deref())
+                .inspect_err(|err| tracing::debug!("Ignoring a cached content icon: {err}"))
+                .ok()
+                .flatten(),
         })
     }
 }
@@ -339,6 +339,8 @@ impl<C: Cache> ContentMetadataCache for UniversalContentMetadataCache<C> {
 #[cfg(test)]
 mod tests {
     use sqlx::{SqlitePool, pool::PoolOptions};
+
+    use crate::shared::web_url::HttpsUrl;
 
     use crate::{
         core::migrations::run_migrations,
@@ -634,13 +636,18 @@ mod tests {
         assert_eq!(item.author_ref, None);
     }
 
+    #[rstest::rstest]
+    #[case::http("http://example.com/icon.png")]
+    #[case::empty("")]
     #[tokio::test]
-    async fn should_load_a_project_without_its_icon_when_the_cached_icon_is_not_https() {
+    async fn should_load_a_project_without_its_icon_when_the_cached_icon_is_not_https(
+        #[case] icon_url: &str,
+    ) {
         let cache = create_cache().await;
         let modrinth = provider("modrinth");
         let row = serde_json::json!({
             "content_id": "AANobbMI", "slug": "sodium", "name": "Sodium",
-            "description": null, "author": null, "icon_url": "http://example.com/icon.png"
+            "description": null, "author": null, "icon_url": icon_url
         });
         cache
             .put_records(

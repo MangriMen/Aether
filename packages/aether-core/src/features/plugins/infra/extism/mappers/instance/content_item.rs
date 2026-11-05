@@ -1,7 +1,7 @@
 use aether_core_plugin_api::v0::ContentItemDto;
 
 use crate::features::instance::ContentItem;
-use crate::shared::web_url::display_url;
+use crate::shared::web_url::{display_icon_url, display_url};
 
 /// A link or an icon the item has none of goes to the plugin as an empty string.
 impl From<ContentItem> for ContentItemDto {
@@ -25,7 +25,7 @@ impl From<ContentItemDto> for ContentItem {
     fn from(value: ContentItemDto) -> Self {
         Self {
             url: display_url("page of a plugin's content item", Some(value.url)),
-            icon_url: display_url("icon of a plugin's content item", Some(value.icon_url)),
+            icon_url: display_icon_url("icon of a plugin's content item", Some(value.icon_url)),
             id: value.id,
             slug: value.slug,
             name: value.name,

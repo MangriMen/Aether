@@ -724,18 +724,8 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn should_reject_a_url_when_it_is_not_a_public_https_one() {
+    async fn should_reject_a_url_when_it_names_no_public_host() {
         let fixture = Fixture::new();
-
-        // What is not https never reaches the cache: it is no `HttpsUrl`.
-        for url in [
-            "file:///etc/passwd",
-            "not a url",
-            "../../icon.png",
-            "http://cdn.example.com/icon.png",
-        ] {
-            assert!(HttpsUrl::parse(url).is_err(), "{url}");
-        }
 
         for url in [
             "https://localhost/icon.png",

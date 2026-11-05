@@ -14,7 +14,8 @@ pub struct ContentItemDto {
     /// The content's page, an `http` or `https` URL; empty when it has none. Any other value is
     /// dropped by the host.
     pub url: String,
-    /// An `https` URL of the icon; empty when it has none. Any other value is dropped by the host.
+    /// An `https` URL of the icon on a public host; empty when it has none. Any other value, or
+    /// one naming `localhost` or a private address, is dropped by the host.
     pub icon_url: String,
     pub versions: Vec<String>,
     pub content_type: ContentTypeDto,

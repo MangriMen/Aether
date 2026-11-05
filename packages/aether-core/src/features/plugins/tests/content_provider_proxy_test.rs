@@ -752,13 +752,17 @@ async fn should_drop_an_icon_when_it_is_not_a_web_address() {
                 project_metadata("2", Some("/cache/icon.png")),
                 project_metadata("3", Some("https://example.com/icon.png")),
                 project_metadata("4", Some("http://example.com/icon.png")),
+                project_metadata("5", Some("https://192.168.1.1/icon.png")),
+                project_metadata("6", Some("https://localhost/icon.png")),
             ]),
         )],
     );
 
     let projects = fixture
         .proxy
-        .get_contents_metadata(&["1", "2", "3", "4"].map(|id| ContentId::try_from(id).unwrap()))
+        .get_contents_metadata(
+            &["1", "2", "3", "4", "5", "6"].map(|id| ContentId::try_from(id).unwrap()),
+        )
         .await
         .unwrap();
 
@@ -769,6 +773,8 @@ async fn should_drop_an_icon_when_it_is_not_a_web_address() {
         Some("https://example.com/icon.png")
     );
     assert_eq!(projects[3].icon_url, None, "cleartext http is not fetched");
+    assert_eq!(projects[4].icon_url, None, "a private address is not shown");
+    assert_eq!(projects[5].icon_url, None, "localhost is not shown");
 }
 
 #[tokio::test]

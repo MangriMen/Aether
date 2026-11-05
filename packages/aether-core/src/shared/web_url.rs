@@ -31,6 +31,9 @@ pub enum InvalidUrlReason {
     #[error("it contains whitespace, a control character or a backslash")]
     ForbiddenCharacter,
 
+    #[error("it is not an absolute URL")]
+    NoScheme,
+
     #[error("the scheme must be {expected}")]
     Scheme { expected: &'static str },
 
@@ -72,22 +75,20 @@ const HTTP_OR_HTTPS: Schemes = Schemes {
     expected: "http or https",
 };
 
-/// `value` as an [`InvalidUrl`] keeps it: without what precedes an `@` in its authority, which
-/// may be a password, and cut to [`SHOWN_LEN`]. Done on the text, as the value may not parse.
+/// `value` as an [`InvalidUrl`] keeps it: cut to [`SHOWN_LEN`], and without anything up to the
+/// last `@` after the scheme. Done on the text, as the value may not parse; the last `@` and not
+/// the end of the authority, as a password may hold `/`, `?` or `#`.
 fn shown(value: &str) -> String {
     let after_scheme = value.find(':').map_or(0, |colon| colon + 1);
     let authority_start = value[after_scheme..]
         .find(|c| c != '/' && c != '\\')
         .map_or(value.len(), |offset| after_scheme + offset);
-    let authority = &value[authority_start..];
-    let authority_end = authority
-        .find(['/', '\\', '?', '#'])
-        .unwrap_or(authority.len());
+    let rest = &value[authority_start..];
 
     let redacted;
-    let value = match authority[..authority_end].rfind('@') {
+    let value = match rest.rfind('@') {
         Some(at) => {
-            redacted = format!("{}{}", &value[..authority_start], &authority[at + 1..]);
+            redacted = format!("{}{}", &value[..authority_start], &rest[at + 1..]);
             redacted.as_str()
         }
         None => value,
@@ -103,6 +104,16 @@ fn shown(value: &str) -> String {
     format!("{}…", &value[..end])
 }
 
+/// Whether `value` starts with a scheme of some kind (`ftp:`, `D:`), as RFC 3986 writes one.
+fn has_scheme(value: &str) -> bool {
+    value.split_once(':').is_some_and(|(scheme, _)| {
+        scheme.starts_with(|c: char| c.is_ascii_alphabetic())
+            && scheme
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || matches!(c, '+' | '-' | '.'))
+    })
+}
+
 fn parse_web_url(value: &str, schemes: &Schemes, kind: &'static str) -> Result<Url, InvalidUrl> {
     let refuse = |reason| InvalidUrl {
         kind,
@@ -116,13 +127,6 @@ fn parse_web_url(value: &str, schemes: &Schemes, kind: &'static str) -> Result<U
     if value.len() > MAX_URL_LEN {
         return Err(refuse(InvalidUrlReason::TooLong { max: MAX_URL_LEN }));
     }
-    if value
-        .chars()
-        .any(|c| c.is_whitespace() || c.is_control() || c == '\\')
-    {
-        return Err(refuse(InvalidUrlReason::ForbiddenCharacter));
-    }
-
     // Checked on the text, before parsing: the parser would take `https:host` or `https:///host`
     // for `https://host/`.
     let authority = schemes.allowed.iter().find_map(|scheme| {
@@ -131,10 +135,20 @@ fn parse_web_url(value: &str, schemes: &Schemes, kind: &'static str) -> Result<U
         (name.eq_ignore_ascii_case(scheme) && slashes == "://").then(|| &value[prefix.len()..])
     });
     let Some(authority) = authority else {
-        return Err(refuse(InvalidUrlReason::Scheme {
-            expected: schemes.expected,
+        return Err(refuse(if has_scheme(value) {
+            InvalidUrlReason::Scheme {
+                expected: schemes.expected,
+            }
+        } else {
+            InvalidUrlReason::NoScheme
         }));
     };
+    if value
+        .chars()
+        .any(|c| c.is_whitespace() || c.is_control() || c == '\\')
+    {
+        return Err(refuse(InvalidUrlReason::ForbiddenCharacter));
+    }
     if authority.is_empty() || authority.starts_with('/') {
         return Err(refuse(InvalidUrlReason::NoHost));
     }
@@ -264,24 +278,44 @@ define_web_url!(
     "web URL"
 );
 
-impl From<HttpsUrl> for HttpUrl {
-    fn from(url: HttpsUrl) -> Self {
-        Self(url.0)
-    }
+/// A URL from a source that writes "none" as an empty string: `Ok(None)` when it is absent or
+/// empty.
+pub fn parse_optional_url<U>(value: Option<&str>) -> Result<Option<U>, InvalidUrl>
+where
+    U: for<'a> TryFrom<&'a str, Error = InvalidUrl>,
+{
+    value
+        .filter(|value| !value.is_empty())
+        .map(U::try_from)
+        .transpose()
 }
 
-/// A link or an icon a record is shown with, from a source that writes "none" as an empty
-/// string: `None` when it is absent or empty, and when it is not a URL of kind `U`, which is
-/// logged as the `what` of the record. Nothing depends on it, so a bad one costs the value and
-/// not the record; a URL to download is parsed strictly instead.
+/// A link or an icon a record is shown with, as [`parse_optional_url`] reads it, with one that
+/// is not a URL of kind `U` logged as the `what` of the record and dropped. Nothing depends on
+/// it, so a bad one costs the value and not the record; a URL to download is parsed strictly
+/// instead.
 pub fn display_url<U>(what: &str, value: Option<String>) -> Option<U>
 where
     U: for<'a> TryFrom<&'a str, Error = InvalidUrl>,
 {
-    let value = value.filter(|value| !value.is_empty())?;
-    U::try_from(value.as_str())
+    let value = value?;
+    parse_optional_url(Some(value.as_str()))
         .inspect_err(|err| tracing::warn!("Dropping the {what}: {err}"))
         .ok()
+        .flatten()
+}
+
+/// An icon a plugin names, as [`display_url`] reads it, dropped too when it names no public host
+/// (see [`HttpsUrl::names_public_host`]). The UI shows such a URL itself until the icon cache has
+/// a copy, so a private address would be reached from the webview.
+pub fn display_icon_url(what: &str, value: Option<String>) -> Option<HttpsUrl> {
+    display_url::<HttpsUrl>(what, value).filter(|url| {
+        let public = url.names_public_host();
+        if !public {
+            tracing::warn!("Dropping the {what}: {url} names no public host");
+        }
+        public
+    })
 }
 
 #[cfg(test)]
@@ -340,18 +374,21 @@ mod tests {
     #[case::javascript("javascript:alert(1)", InvalidUrlReason::Scheme { expected: "https" })]
     #[case::data("data:image/png;base64,AAAA", InvalidUrlReason::Scheme { expected: "https" })]
     #[case::file("file:///etc/passwd", InvalidUrlReason::Scheme { expected: "https" })]
-    #[case::relative("/cache/icon.png", InvalidUrlReason::Scheme { expected: "https" })]
+    #[case::relative("/cache/icon.png", InvalidUrlReason::NoScheme)]
+    #[case::not_a_url("not a url", InvalidUrlReason::NoScheme)]
+    #[case::windows_path(r"D:\packs\pack.toml", InvalidUrlReason::Scheme { expected: "https" })]
     #[case::no_slashes("https:example.com/a.jar", InvalidUrlReason::Scheme { expected: "https" })]
     #[case::one_slash("https:/example.com/a.jar", InvalidUrlReason::Scheme { expected: "https" })]
     #[case::scheme_only("https://", InvalidUrlReason::NoHost)]
     #[case::three_slashes("https:///example.com/a.jar", InvalidUrlReason::NoHost)]
     #[case::port_only("https://:443/a.jar", InvalidUrlReason::NoHost)]
-    #[case::leading_space(" https://example.com/", InvalidUrlReason::ForbiddenCharacter)]
+    #[case::leading_space(" https://example.com/", InvalidUrlReason::NoScheme)]
     #[case::trailing_newline("https://example.com/\n", InvalidUrlReason::ForbiddenCharacter)]
     #[case::inner_tab("https://exa\tmple.com/", InvalidUrlReason::ForbiddenCharacter)]
     #[case::inner_space("https://example.com/a b.jar", InvalidUrlReason::ForbiddenCharacter)]
     #[case::nul("https://example.com/\0", InvalidUrlReason::ForbiddenCharacter)]
-    #[case::backslash("https:\\\\example.com\\a.jar", InvalidUrlReason::ForbiddenCharacter)]
+    #[case::backslash_slashes(r"https:\\example.com\a.jar", InvalidUrlReason::Scheme { expected: "https" })]
+    #[case::backslash_path(r"https://example.com\a.jar", InvalidUrlReason::ForbiddenCharacter)]
     #[case::bad_port(
         "https://example.com:99999/",
         InvalidUrlReason::Malformed(url::ParseError::InvalidPort)
@@ -390,6 +427,9 @@ mod tests {
     #[case::inner_space("https://user:secret@exa mple.com/a.jar")]
     #[case::one_slash("https:/user:secret@example.com/a.jar")]
     #[case::backslashes("https:\\\\user:secret@example.com\\a.jar")]
+    #[case::hash_in_password("https://user:p#ss@host/a.jar")]
+    #[case::question_mark_in_password("https://user:p?ss@host/a.jar")]
+    #[case::slash_in_password("https://user:p/ss@host/a.jar")]
     fn should_not_echo_credentials_when_a_url_is_refused_for_another_reason(#[case] value: &str) {
         let err = HttpsUrl::parse(value).unwrap_err();
 
@@ -493,9 +533,31 @@ mod tests {
     }
 
     #[test]
-    fn should_take_an_https_url_for_a_web_url_when_converted() {
-        let url = HttpUrl::from(HttpsUrl::parse("https://example.com/").unwrap());
+    fn should_read_an_absent_or_empty_url_as_none_when_parsing_an_optional_one() {
+        assert_eq!(parse_optional_url::<HttpsUrl>(None), Ok(None));
+        assert_eq!(parse_optional_url::<HttpsUrl>(Some("")), Ok(None));
+        assert!(parse_optional_url::<HttpsUrl>(Some("http://example.com/")).is_err());
+    }
 
-        assert_eq!(url.as_str(), "https://example.com/");
+    #[test]
+    fn should_keep_an_icon_when_it_names_a_public_host() {
+        assert_eq!(
+            display_icon_url("icon", Some("https://cdn.modrinth.com/icon.png".into())),
+            Some(HttpsUrl::parse("https://cdn.modrinth.com/icon.png").unwrap())
+        );
+    }
+
+    /// The UI shows a plugin's icon URL itself until the cache has a copy: a private host would
+    /// be reached from the webview.
+    #[rstest]
+    #[case::private_ipv4("https://192.168.1.1/icon.png")]
+    #[case::localhost("https://localhost/icon.png")]
+    #[case::localhost_subdomain("https://router.localhost/icon.png")]
+    #[case::trailing_dot_loopback("https://127.0.0.1./icon.png")]
+    #[case::nat64_private("https://[64:ff9b::a00:1]/icon.png")]
+    #[case::six_to_four_private("https://[2002:c0a8:101::1]/icon.png")]
+    #[case::not_https("http://cdn.modrinth.com/icon.png")]
+    fn should_drop_an_icon_when_it_names_no_public_host(#[case] value: &str) {
+        assert_eq!(display_icon_url("icon", Some(value.into())), None);
     }
 }
