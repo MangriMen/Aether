@@ -69,8 +69,8 @@ impl CoreMount {
 pub struct AllowedPath {
     /// Absolute path on the host.
     pub host: String,
-    /// Absolute path inside the plugin sandbox, `/`-separated.
-    pub plugin: String,
+    /// Absolute path inside the plugin sandbox, `/`-separated, clear of every [`CoreMount`].
+    pub plugin: PluginMountPoint,
     /// The plugin may only read the folder. The default: a plugin gets to write only where the
     /// user explicitly said so.
     pub read_only: bool,
@@ -119,29 +119,73 @@ impl std::fmt::Display for AllowedPathRejection {
     }
 }
 
-impl AllowedPath {
-    /// `folder` mounted read-only where the plugin will look for it: under its WASI name, the
-    /// one the core hands the plugin a file of that folder by.
-    pub fn read_only_folder(folder: &Path) -> Self {
-        let host = folder.to_string_lossy().into_owned();
+/// A folder of the user's as it arrives (a settings file, the settings screen), before the
+/// plugin side is checked: [`Self::parse`] is the only way to an [`AllowedPath`].
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AllowedPathInput {
+    /// Path on the host.
+    pub host: String,
+    /// Path inside the plugin sandbox; a host-style path (`D:\packs`) is turned into the
+    /// plugin's name for it (`/mnt/d/packs`).
+    pub plugin: String,
+    pub read_only: bool,
+}
 
+impl AllowedPathInput {
+    /// Writes the plugin path the one way it is stored and compared, and checks it: a plain
+    /// absolute path ([`PluginMountPoint`]) clear of every [`CoreMount`].
+    pub fn parse(self) -> Result<AllowedPath, AllowedPathRejection> {
+        let wasi = to_wasi_path(&self.plugin);
+        // `/` and `\` trim down to nothing, which is the root and not a missing leading `/`.
+        let plugin = if wasi.is_empty() && self.plugin.starts_with(['/', '\\']) {
+            parse_mount_point("/")
+        } else {
+            parse_mount_point(&wasi)
+        }?;
+
+        Ok(AllowedPath {
+            host: self.host,
+            plugin,
+            read_only: self.read_only,
+        })
+    }
+}
+
+impl From<AllowedPath> for AllowedPathInput {
+    fn from(path: AllowedPath) -> Self {
         Self {
-            plugin: to_wasi_path(&host),
-            host,
-            read_only: true,
+            host: path.host,
+            plugin: path.plugin.into(),
+            read_only: path.read_only,
         }
     }
+}
 
-    /// The plugin path written the one way it is stored and compared: a host-style path the
-    /// user typed or picked (`D:\packs`) becomes the plugin's name for it (`/mnt/d/packs`).
-    #[must_use]
-    pub fn normalized(mut self) -> Self {
-        self.plugin = to_wasi_path(&self.plugin);
-        self
+/// A saved folder that was left out of the settings read, because the plugin side of it is not
+/// a path a plugin may have: one written by hand, or before the checks existed. The rest of the
+/// file is read as usual.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct IgnoredAllowedPath {
+    pub path: AllowedPathInput,
+    pub reason: AllowedPathRejection,
+}
+
+impl AllowedPath {
+    /// `folder` mounted read-only where the plugin will look for it: under its WASI name, the
+    /// one the core hands the plugin a file of that folder by. Refused if that name is not a mount
+    /// point a plugin may have.
+    pub fn read_only_folder(folder: &Path) -> Result<Self, AllowedPathRejection> {
+        AllowedPathInput {
+            host: folder.to_string_lossy().into_owned(),
+            plugin: folder.to_string_lossy().into_owned(),
+            read_only: true,
+        }
+        .parse()
     }
 
-    /// Checks both sides of the mapping, not the existence of the host folder: a folder that is
-    /// gone is dropped from the settings rather than refused.
+    /// Checks the host side of the mapping, not the existence of the host folder: a folder that
+    /// is gone is dropped from the settings rather than refused. The plugin side was checked
+    /// when the path was parsed.
     pub fn validate(&self) -> Result<(), AllowedPathRejection> {
         let host = Path::new(&self.host);
 
@@ -155,7 +199,7 @@ impl AllowedPath {
             return Err(AllowedPathRejection::HostIsRoot);
         }
 
-        validate_plugin_path(&self.plugin).map(drop)
+        Ok(())
     }
 
     /// [`Self::validate`], and the host folder must not overlap any of [`core_folders`]: it
@@ -178,15 +222,16 @@ impl AllowedPath {
     }
 }
 
-fn exposes(host: &str, plugin: &str, file: &Path) -> bool {
-    plugin == to_wasi_path(host) && is_within(&to_wasi_path(&file.to_string_lossy()), plugin)
+fn exposes(host: &str, plugin: &PluginMountPoint, file: &Path) -> bool {
+    plugin.as_str() == to_wasi_path(host)
+        && is_within(&to_wasi_path(&file.to_string_lossy()), plugin.as_str())
 }
 
 /// The user's folders as an instance gets them, keyed like the map Extism builds (the later
 /// entry winning). Two lists that mount the same are equal whatever their order or repeats, so
 /// comparing with the settings tells exactly whether a restart would change what the plugin sees.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub struct FolderMounts(BTreeMap<(String, bool), String>);
+pub struct FolderMounts(BTreeMap<(String, bool), PluginMountPoint>);
 
 impl FolderMounts {
     pub fn of<'a>(paths: impl IntoIterator<Item = &'a AllowedPath>) -> Self {
@@ -208,7 +253,7 @@ impl FolderMounts {
 
 /// The plugin side of a folder of the user's, parsed: a [`PluginMountPoint`] clear of every
 /// [`CoreMount`].
-fn validate_plugin_path(plugin: &str) -> Result<PluginMountPoint, AllowedPathRejection> {
+fn parse_mount_point(plugin: &str) -> Result<PluginMountPoint, AllowedPathRejection> {
     // `..` here would not escape on the host — the mount is a capability — but it would make
     // the reserved-mount check below compare names that do not mean what they say.
     let path = PluginMountPoint::parse(plugin).map_err(|err| match err.reason {
@@ -254,8 +299,9 @@ pub(crate) fn core_folders(location_info: &LocationInfo, plugin_id: &PluginId) -
 }
 
 /// The folders of a plugin's settings that its instance is built with, and those it is not,
-/// each with why. The settings file is not only written by the edits that check a folder: it
-/// may predate a check, or have been changed by hand, so what is stored is not all mounted.
+/// each with why. The plugin side of a folder is valid by construction ([`PluginMountPoint`]);
+/// the host side is not: the file may predate a check, or have been changed by hand, so what is
+/// stored is not all mounted.
 /// Whatever asks what a plugin can open goes by the first list, never by the settings as saved.
 pub(crate) fn partition_mountable<'a>(
     paths: &'a [AllowedPath],
@@ -398,9 +444,19 @@ mod tests {
     fn mapping(plugin: &str) -> AllowedPath {
         AllowedPath {
             host: absolute("packs"),
+            plugin: plugin.into(),
+            read_only: true,
+        }
+    }
+
+    /// The plugin side alone, parsed the way settings are.
+    fn plugin_side(plugin: &str) -> Result<AllowedPath, AllowedPathRejection> {
+        AllowedPathInput {
+            host: absolute("packs"),
             plugin: plugin.to_owned(),
             read_only: true,
         }
+        .parse()
     }
 
     #[test]
@@ -434,7 +490,7 @@ mod tests {
     fn should_refuse_plugin_paths_when_they_lie_over_or_under_the_core_mounts() {
         for plugin in ["/cache", "/cache/x", "/instances", "/instances/a/b"] {
             assert_eq!(
-                mapping(plugin).validate(),
+                plugin_side(plugin),
                 Err(AllowedPathRejection::PluginReserved),
                 "{plugin}"
             );
@@ -444,7 +500,7 @@ mod tests {
     fn host_mapping(host: &Path, plugin: &str) -> AllowedPath {
         AllowedPath {
             host: host.to_string_lossy().into_owned(),
-            plugin: plugin.to_owned(),
+            plugin: plugin.into(),
             read_only: false,
         }
     }
@@ -635,16 +691,23 @@ mod tests {
     #[test]
     fn should_refuse_a_plugin_path_when_it_is_malformed() {
         assert_eq!(
-            mapping("packs").validate(),
+            plugin_side("packs"),
             Err(AllowedPathRejection::PluginNotAbsolute)
         );
         assert_eq!(
-            mapping("/").validate(),
-            Err(AllowedPathRejection::PluginIsRoot)
+            plugin_side(""),
+            Err(AllowedPathRejection::PluginNotAbsolute)
         );
-        for plugin in ["/packs/../instances", "/./cache", "/a//b", "/a/"] {
+        for root in ["/", "//", "\\"] {
             assert_eq!(
-                mapping(plugin).validate(),
+                plugin_side(root),
+                Err(AllowedPathRejection::PluginIsRoot),
+                "{root}"
+            );
+        }
+        for plugin in ["/packs/../instances", "/./cache"] {
+            assert_eq!(
+                plugin_side(plugin),
                 Err(AllowedPathRejection::PluginNotNormalized),
                 "{plugin}"
             );
@@ -652,16 +715,30 @@ mod tests {
     }
 
     #[test]
+    fn should_normalize_a_plugin_path_when_it_has_repeated_or_trailing_separators() {
+        for (written, stored) in [
+            ("/a//b", "/a/b"),
+            ("/a/", "/a"),
+            (r"/packs\sub", "/packs/sub"),
+        ] {
+            let path = plugin_side(written).unwrap();
+            assert_eq!(path.plugin.as_str(), stored, "{written}");
+        }
+        assert_eq!(
+            plugin_side("/a/../b"),
+            Err(AllowedPathRejection::PluginNotNormalized)
+        );
+    }
+    #[test]
     fn should_refuse_a_plugin_path_when_a_segment_is_not_a_plain_name() {
         for plugin in [
             // One segment off Windows, three on it: the reserved check would compare
             // `packs\..\cache` with `/cache` and see no overlap.
             r"/packs\..\cache",
-            r"/packs\sub",
             "/packs/a\0b",
         ] {
             assert_eq!(
-                mapping(plugin).validate(),
+                plugin_side(plugin),
                 Err(AllowedPathRejection::PluginNotNormalized),
                 "{plugin:?}"
             );
@@ -673,17 +750,19 @@ mod tests {
         // The mount point is the folder's own path in WASI form, never a file the core opens:
         // a name the user's file system allows is not refused for what Windows makes of it.
         for name in ["aux", "aux.packs", "com1.d", "My Pack ", "pack.", "a:b"] {
-            let folder = AllowedPath {
+            let folder = AllowedPathInput {
                 host: absolute(&format!("Modpacks/{name}")),
                 plugin: format!("/mnt/d/Modpacks/{name}"),
                 read_only: true,
-            };
+            }
+            .parse()
+            .unwrap();
 
             assert_eq!(folder.validate(), Ok(()), "{name:?}");
         }
 
-        let picked = AllowedPath::read_only_folder(Path::new("/home/u/aux"));
-        assert_eq!(picked.plugin, "/home/u/aux");
+        let picked = AllowedPath::read_only_folder(Path::new("/home/u/aux")).unwrap();
+        assert_eq!(picked.plugin.as_str(), "/home/u/aux");
     }
 
     #[test]
@@ -695,22 +774,20 @@ mod tests {
 
     #[test]
     fn should_normalize_a_plugin_path_when_it_is_host_style() {
-        let path = AllowedPath {
-            plugin: r"D:\packs\\simple\".to_owned(),
-            ..mapping("")
-        }
-        .normalized();
+        for plugin in [r"D:\packs\\simple\", "/mnt/d/packs//simple/"] {
+            let path = plugin_side(plugin).unwrap();
 
-        assert_eq!(path.plugin, "/mnt/d/packs/simple");
-        assert_eq!(path.validate(), Ok(()));
+            assert_eq!(path.plugin.as_str(), "/mnt/d/packs/simple", "{plugin}");
+            assert_eq!(path.validate(), Ok(()));
+        }
     }
 
     #[test]
     fn should_mount_a_picked_folder_read_only_under_its_wasi_name_when_given_read_only_access() {
-        let path = AllowedPath::read_only_folder(Path::new(r"D:\packs\simple"));
+        let path = AllowedPath::read_only_folder(Path::new(r"D:\packs\simple")).unwrap();
 
         assert_eq!(path.host, r"D:\packs\simple");
-        assert_eq!(path.plugin, "/mnt/d/packs/simple");
+        assert_eq!(path.plugin.as_str(), "/mnt/d/packs/simple");
         assert!(path.read_only);
     }
 
@@ -718,8 +795,8 @@ mod tests {
     fn should_leave_out_a_folder_when_it_cannot_be_mounted() {
         let root = tempfile::tempdir().unwrap();
         let cache = root.path().join("cache");
-        let packs = AllowedPath::read_only_folder(&root.path().join("packs"));
-        let in_core = AllowedPath::read_only_folder(&cache.join("sub"));
+        let packs = AllowedPath::read_only_folder(&root.path().join("packs")).unwrap();
+        let in_core = AllowedPath::read_only_folder(&cache.join("sub")).unwrap();
         let relative = AllowedPath {
             host: "packs".to_owned(),
             ..packs.clone()
@@ -782,7 +859,7 @@ mod tests {
 
     #[test]
     fn should_expose_only_files_when_they_are_under_a_mount_of_their_own_name() {
-        let folder = AllowedPath::read_only_folder(Path::new(r"D:\packs"));
+        let folder = AllowedPath::read_only_folder(Path::new(r"D:\packs")).unwrap();
 
         assert!(folder.exposes(&PathBuf::from(r"D:\packs\simple\pack.toml")));
         assert!(folder.exposes(&PathBuf::from(r"d:/packs/pack.toml")));
@@ -790,7 +867,7 @@ mod tests {
         assert!(!folder.exposes(&PathBuf::from(r"E:\packs\pack.toml")));
 
         let renamed = AllowedPath {
-            plugin: "/packs".to_owned(),
+            plugin: "/packs".into(),
             ..folder
         };
         assert!(
@@ -801,8 +878,8 @@ mod tests {
 
     #[test]
     fn should_expose_a_file_through_mounts_when_one_of_them_exposes_it() {
-        let packs = AllowedPath::read_only_folder(Path::new(r"D:\packs"));
-        let other = AllowedPath::read_only_folder(Path::new(r"D:\other"));
+        let packs = AllowedPath::read_only_folder(Path::new(r"D:\packs")).unwrap();
+        let other = AllowedPath::read_only_folder(Path::new(r"D:\other")).unwrap();
         let file = PathBuf::from(r"D:\packs\simple\pack.toml");
 
         assert!(FolderMounts::of(&[other.clone(), packs]).exposes(&file));

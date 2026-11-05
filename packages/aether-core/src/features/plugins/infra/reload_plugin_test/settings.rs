@@ -11,7 +11,7 @@ use super::common::*;
 
 fn edit_folders(folders: Vec<AllowedPath>) -> EditPluginSettings {
     EditPluginSettings {
-        allowed_paths: Some(folders),
+        allowed_paths: Some(folders.into_iter().map(Into::into).collect()),
         ..EditPluginSettings::default()
     }
 }
@@ -47,8 +47,8 @@ async fn should_need_a_restart_until_it_restarts_when_a_folder_is_edited_on_a_ru
     let harness = Harness::enabled().await;
     let settings = Arc::new(MemoryPluginSettings::default());
     let (first, second) = (tempfile::tempdir().unwrap(), tempfile::tempdir().unwrap());
-    let first = AllowedPath::read_only_folder(first.path());
-    let second = AllowedPath::read_only_folder(second.path());
+    let first = AllowedPath::read_only_folder(first.path()).unwrap();
+    let second = AllowedPath::read_only_folder(second.path()).unwrap();
     let handle = harness.handle();
 
     harness
@@ -109,7 +109,7 @@ async fn should_refuse_the_restart_and_still_need_it_when_the_plugin_is_busy() {
         .edit(&settings)
         .execute(
             plugin_id(),
-            edit_folders(vec![AllowedPath::read_only_folder(folder.path())]),
+            edit_folders(vec![AllowedPath::read_only_folder(folder.path()).unwrap()]),
         )
         .await
         .unwrap();
@@ -141,7 +141,7 @@ async fn should_keep_each_other_when_two_changes_are_made_at_once() {
     let settings = Arc::new(SlowPluginSettings::default());
     let storage = Arc::clone(&settings) as Arc<dyn PluginSettingsStorage>;
     let folder = tempfile::tempdir().unwrap();
-    let folder = AllowedPath::read_only_folder(folder.path());
+    let folder = AllowedPath::read_only_folder(folder.path()).unwrap();
 
     let edit = EditPluginSettingsUseCase::new(
         Arc::clone(&harness.plugins),

@@ -70,3 +70,48 @@ impl PluginSettingsStorage for FsPluginSettingsStorage {
             .await
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::features::plugins::partition_mountable;
+
+    #[tokio::test]
+    async fn should_keep_a_bad_folder_in_the_file_when_an_unrelated_upsert_is_saved() {
+        let root = tempfile::tempdir().unwrap();
+        let storage = FsPluginSettingsStorage::new(Arc::new(LocationInfo::new(
+            root.path().join("settings"),
+            root.path().join("config"),
+        )));
+        let plugin_id = PluginId::from_static("packwiz");
+        let file = storage.get_plugin_settings_path(&plugin_id);
+        std::fs::create_dir_all(file.parent().unwrap()).unwrap();
+        let good = root.path().join("good");
+        std::fs::create_dir_all(&good).unwrap();
+        std::fs::write(
+            &file,
+            format!(
+                "allowedHosts = []\nallowedPaths = [\n  {{ host = {good:?}, plugin = \"/good\" }},\n  \
+                 {{ host = \"/home/u/a\", plugin = \"/cache\", readOnly = false }},\n]\n"
+            ),
+        )
+        .unwrap();
+
+        let mut settings = storage.get(&plugin_id).await.unwrap().unwrap();
+        settings.allowed_hosts.push("example.com".to_owned());
+        storage.upsert(&plugin_id, &settings).await.unwrap();
+
+        let reread = storage.get(&plugin_id).await.unwrap().unwrap();
+        assert_eq!(reread.allowed_hosts, ["example.com"]);
+        assert_eq!(reread.allowed_paths.len(), 1);
+        assert_eq!(reread.ignored_paths.len(), 1);
+        assert_eq!(reread.ignored_paths[0].path.host, "/home/u/a");
+        assert_eq!(reread.ignored_paths[0].path.plugin, "/cache");
+        assert!(!reread.ignored_paths[0].path.read_only);
+
+        // The ignored entry is kept, not granted: only the valid folder is mounted.
+        let (mountable, _) = partition_mountable(&reread.allowed_paths, &[]);
+        assert_eq!(mountable.len(), 1);
+        assert_eq!(mountable[0].plugin.as_str(), "/good");
+    }
+}

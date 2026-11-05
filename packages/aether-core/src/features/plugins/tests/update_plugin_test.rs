@@ -664,7 +664,7 @@ async fn should_keep_a_folder_granted_when_it_is_granted_during_an_update() {
     let settings = fixture.settings.get(&plugin_id()).await.unwrap().unwrap();
     assert_eq!(
         settings.allowed_paths,
-        [AllowedPath::read_only_folder(pack.path())]
+        [AllowedPath::read_only_folder(pack.path()).unwrap()]
     );
     assert_eq!(settings.allowed_hosts, ["extra.example.com"]);
 }

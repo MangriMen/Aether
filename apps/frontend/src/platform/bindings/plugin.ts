@@ -22,6 +22,11 @@ export const commands = {
 	getSettings: (id: string) => __TAURI_INVOKE<{
 	allowedHosts?: string[],
 	allowedPaths?: AllowedPathDto[],
+	/**
+	 *  Saved folders that were left out because the plugin side is not a path a plugin may
+	 *  have. They are gone from the file once the settings are saved.
+	 */
+	ignoredPaths?: IgnoredAllowedPathDto[],
 } | null>("plugin:plugin|get_settings", { id }),
 	editSettings: (id: string, editSettings: EditPluginSettingsDto, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:plugin|edit_settings", { id, editSettings, requestId }),
 	/**
@@ -170,6 +175,12 @@ export type HostAccessDto =
 { type: "needed"; host: string } | 
 /**  The host was added to the plugin's allowed hosts. */
 { type: "granted"; host: string };
+
+/**  A saved folder that was not read, and why. */
+export type IgnoredAllowedPathDto = {
+	path: AllowedPathDto,
+	reason: AllowedPathRejectionDto,
+};
 
 export type ImporterCapabilityMetadataDto = {
 	/** Optional field label shown in the importer UI. */
@@ -494,6 +505,11 @@ export type PluginMetadataDto = {
 export type PluginSettingsDto = {
 	allowedHosts?: string[],
 	allowedPaths?: AllowedPathDto[],
+	/**
+	 *  Saved folders that were left out because the plugin side is not a path a plugin may
+	 *  have. They are gone from the file once the settings are saved.
+	 */
+	ignoredPaths?: IgnoredAllowedPathDto[],
 };
 
 export type PluginSourceDto = { source: "remote"; source_type: PluginSourceTypeDto; identifier: string; current_tag: string; current_version: string } | { source: "local" };

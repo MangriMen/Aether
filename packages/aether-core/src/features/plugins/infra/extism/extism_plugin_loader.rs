@@ -377,11 +377,11 @@ fn resolve_allowed_paths(
     }
 
     if let Some(settings) = settings {
-        // The settings file is not only written by the edits that check a folder: it may predate
-        // a check, or have been changed by hand. A relative host would be opened against the
-        // launcher's working directory; a plugin path over `/cache` or `/instances`, or a host
-        // over a core folder, would take that mount's place in Extism's map or open `plugins/`
-        // to the plugin. Such a folder is left out, and the plugin loads without it.
+        // The plugin side is valid by construction (`PluginMountPoint`, clear of the core
+        // mounts). The host side may not be: the file may predate a check, or have been changed
+        // by hand. A relative host would be opened against the launcher's working directory; a
+        // host over a core folder would open `plugins/` to the plugin or take a core mount's
+        // place in Extism's map. Such a folder is left out, and the plugin loads without it.
         let (kept, refused) = partition_mountable(&settings.allowed_paths, core_folders);
         for (path, reason) in refused {
             tracing::warn!(
@@ -395,7 +395,7 @@ fn resolve_allowed_paths(
         allowed_paths.extend(kept.into_iter().map(|path| {
             PathMapping(
                 to_extism_mount_key(&path.host, path.read_only),
-                PathBuf::from(&path.plugin),
+                PathBuf::from(path.plugin.as_str()),
             )
         }));
     }
@@ -680,14 +680,6 @@ mod tests {
             allowed_paths: vec![
                 user_folder("packs".into(), "/packs"),
                 user_folder("../..".into(), "/launcher"),
-                user_folder(absolute("evil-cache"), "/cache"),
-                user_folder(absolute("evil-instances"), "/instances/a"),
-                user_folder(absolute("everything"), "/"),
-                user_folder(absolute("unrooted"), "unrooted"),
-                user_folder(absolute("dotted"), "/a/../instances"),
-                // A `\` is one name to the reserved-mount check but a separator on Windows.
-                user_folder(absolute("backslashed"), r"/a\..\cache"),
-                user_folder(absolute("nul-byte"), "/a/b\0c"),
                 user_folder(absolute(""), "/drive"),
                 user_folder(absolute("kept"), "/kept"),
             ],

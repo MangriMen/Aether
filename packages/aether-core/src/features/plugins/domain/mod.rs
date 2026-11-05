@@ -3,15 +3,15 @@ mod plugin_handle;
 mod plugin_instance;
 
 pub use models::{
-    AllowedHostRejection, AllowedPath, AllowedPathRejection, ApiConfig, Compatibility,
-    ExtractedPlugin, FolderMounts, LoadConfig, LoadConfigType, ManifestError, PathMapping, Plugin,
-    PluginCallError, PluginCapabilities, PluginCheckCompatibilityParams, PluginContent,
-    PluginContentProviderCapability, PluginError, PluginImportInstance, PluginImporterCapability,
-    PluginInternalEvent, PluginManifest, PluginManifestPreview, PluginMetadata,
-    PluginProviderError, PluginSettings, PluginSource, PluginSourceType, PluginState,
-    PluginStateReason, PluginUpdaterCapability, PluginVerification, ProviderHandlers,
-    ProviderPluginPreview, ProviderReleaseInfo, ProviderUpdateInfo, RuntimeConfig,
-    SkippedPluginDir, SkippedPluginDirReason,
+    AllowedHostRejection, AllowedPath, AllowedPathInput, AllowedPathRejection, ApiConfig,
+    Compatibility, ExtractedPlugin, FolderMounts, IgnoredAllowedPath, LoadConfig, LoadConfigType,
+    ManifestError, PathMapping, Plugin, PluginCallError, PluginCapabilities,
+    PluginCheckCompatibilityParams, PluginContent, PluginContentProviderCapability, PluginError,
+    PluginImportInstance, PluginImporterCapability, PluginInternalEvent, PluginManifest,
+    PluginManifestPreview, PluginMetadata, PluginProviderError, PluginSettings, PluginSource,
+    PluginSourceType, PluginState, PluginStateReason, PluginUpdaterCapability, PluginVerification,
+    ProviderHandlers, ProviderPluginPreview, ProviderReleaseInfo, ProviderUpdateInfo,
+    RuntimeConfig, SkippedPluginDir, SkippedPluginDirReason,
 };
 pub(crate) use models::{
     AsCapabilityMetadata, CoreMount, GrantableHost, PLUGIN_API_VERSION, PLUGIN_CACHE_MOUNT,

@@ -114,6 +114,10 @@ impl PluginPath {
 pub struct PluginMountPoint(String);
 
 impl PluginMountPoint {
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+
     pub fn parse(path: &str) -> Result<Self, InvalidPluginPath> {
         parse_absolute(path, safe_path::parse_relative_structure).map(Self)
     }
@@ -127,6 +131,26 @@ impl PluginMountPoint {
 impl fmt::Display for PluginPath {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(&self.0)
+    }
+}
+
+impl fmt::Display for PluginMountPoint {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
+impl From<PluginMountPoint> for String {
+    fn from(path: PluginMountPoint) -> Self {
+        path.0
+    }
+}
+
+/// For tests, which write mount points as literals.
+#[cfg(test)]
+impl From<&str> for PluginMountPoint {
+    fn from(path: &str) -> Self {
+        Self::parse(path).expect("a test mount point is valid")
     }
 }
 

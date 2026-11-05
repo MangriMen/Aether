@@ -6,8 +6,9 @@ use crate::features::{
         ImporterCapabilityMetadata, PlatformId, UpdaterCapabilityMetadata,
     },
     plugins::{
-        AllowedPath, ManifestError, PluginCapabilities, PluginContentProviderCapability,
-        PluginImporterCapability, PluginSettings, PluginUpdaterCapability, ProviderHandlers,
+        AllowedPath, AllowedPathInput, IgnoredAllowedPath, ManifestError, PluginCapabilities,
+        PluginContentProviderCapability, PluginImporterCapability, PluginSettings,
+        PluginUpdaterCapability, ProviderHandlers,
     },
 };
 
@@ -110,7 +111,7 @@ fn read_only_by_default() -> bool {
     true
 }
 
-impl From<AllowedPathV1> for AllowedPath {
+impl From<AllowedPathV1> for AllowedPathInput {
     fn from(v1: AllowedPathV1) -> Self {
         match v1 {
             AllowedPathV1::Mapping {
@@ -135,7 +136,7 @@ impl From<AllowedPath> for AllowedPathV1 {
     fn from(path: AllowedPath) -> Self {
         Self::Mapping {
             host: path.host,
-            plugin: path.plugin,
+            plugin: path.plugin.into(),
             read_only: path.read_only,
         }
     }
@@ -243,9 +244,34 @@ impl TryFrom<PluginCapabilitiesV1> for PluginCapabilities {
 
 impl From<PluginSettingsV1> for PluginSettings {
     fn from(v1: PluginSettingsV1) -> Self {
+        let mut allowed_paths = Vec::with_capacity(v1.allowed_paths.len());
+        let mut ignored_paths = Vec::new();
+
+        // One folder that is not valid must not make the whole file unreadable.
+        for path in v1.allowed_paths {
+            let input = AllowedPathInput::from(path);
+
+            match input.clone().parse() {
+                Ok(path) => allowed_paths.push(path),
+                Err(reason) => {
+                    // Debug, not warn: the file is read on every get and list.
+                    tracing::debug!(
+                        "Ignoring folder '{}' -> '{}' in the plugin settings: {reason}.",
+                        input.host,
+                        input.plugin
+                    );
+                    ignored_paths.push(IgnoredAllowedPath {
+                        path: input,
+                        reason,
+                    });
+                }
+            }
+        }
+
         Self {
             allowed_hosts: v1.allowed_hosts,
-            allowed_paths: v1.allowed_paths.into_iter().map(Into::into).collect(),
+            allowed_paths,
+            ignored_paths,
             force_enabled_at_api_version: v1.force_enabled_at_api_version,
         }
     }
@@ -314,7 +340,22 @@ impl From<PluginSettings> for PluginSettingsV1 {
     fn from(v: PluginSettings) -> Self {
         Self {
             allowed_hosts: v.allowed_hosts,
-            allowed_paths: v.allowed_paths.into_iter().map(Into::into).collect(),
+            // Ignored entries are written back as they were read: a hand-edited folder is not
+            // lost by an unrelated save.
+            allowed_paths: v
+                .allowed_paths
+                .into_iter()
+                .map(Into::into)
+                .chain(
+                    v.ignored_paths
+                        .into_iter()
+                        .map(|ignored| AllowedPathV1::Mapping {
+                            host: ignored.path.host,
+                            plugin: ignored.path.plugin,
+                            read_only: ignored.path.read_only,
+                        }),
+                )
+                .collect(),
             force_enabled_at_api_version: v.force_enabled_at_api_version,
         }
     }
@@ -323,6 +364,7 @@ impl From<PluginSettings> for PluginSettingsV1 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::features::plugins::AllowedPathRejection;
 
     fn rejected_field(json: &str) -> Option<String> {
         let v1: PluginCapabilitiesV1 = serde_json::from_str(json).unwrap();
@@ -387,7 +429,7 @@ mod tests {
             PluginSettings::from(v1).allowed_paths,
             [AllowedPath {
                 host: r"D:\".to_owned(),
-                plugin: "/mnt/d".to_owned(),
+                plugin: "/mnt/d".into(),
                 read_only: true,
             }]
         );
@@ -399,12 +441,12 @@ mod tests {
             allowed_paths: vec![
                 AllowedPath {
                     host: r"D:\packs".to_owned(),
-                    plugin: "/mnt/d/packs".to_owned(),
+                    plugin: "/mnt/d/packs".into(),
                     read_only: true,
                 },
                 AllowedPath {
                     host: r"D:\out".to_owned(),
-                    plugin: "/mnt/d/out".to_owned(),
+                    plugin: "/mnt/d/out".into(),
                     read_only: false,
                 },
             ],
@@ -418,6 +460,72 @@ mod tests {
         assert_eq!(
             PluginSettings::from(read).allowed_paths,
             settings.allowed_paths
+        );
+    }
+
+    #[test]
+    fn should_ignore_only_the_folders_that_are_not_valid_when_the_settings_are_read() {
+        let v1: PluginSettingsV1 = toml::from_str(
+            r#"
+            allowedHosts = ["example.com"]
+            allowedPaths = [
+                { host = "/home/u/packs", plugin = "/mnt/packs" },
+                { host = "/home/u/a", plugin = "/packs/../cache" },
+                { host = "/home/u/b", plugin = "/cache/x", readOnly = false },
+                ["/home/u/c", "relative"],
+                ["/home/u/d", "/mnt/d"],
+            ]
+            "#,
+        )
+        .unwrap();
+
+        let settings = PluginSettings::from(v1);
+
+        assert_eq!(settings.allowed_hosts, ["example.com"]);
+        let kept: Vec<_> = settings
+            .allowed_paths
+            .iter()
+            .map(|path| path.host.as_str())
+            .collect();
+        assert_eq!(kept, ["/home/u/packs", "/home/u/d"]);
+        let ignored: Vec<_> = settings
+            .ignored_paths
+            .iter()
+            .map(|ignored| (ignored.path.host.as_str(), ignored.reason))
+            .collect();
+        assert_eq!(
+            ignored,
+            [
+                ("/home/u/a", AllowedPathRejection::PluginNotNormalized),
+                ("/home/u/b", AllowedPathRejection::PluginReserved),
+                ("/home/u/c", AllowedPathRejection::PluginNotAbsolute),
+            ]
+        );
+    }
+
+    #[test]
+    fn should_write_an_ignored_folder_back_as_it_was_when_settings_are_saved() {
+        let settings = PluginSettings {
+            ignored_paths: vec![IgnoredAllowedPath {
+                path: AllowedPathInput {
+                    host: "/home/u/a".to_owned(),
+                    plugin: "/cache".to_owned(),
+                    read_only: false,
+                },
+                reason: AllowedPathRejection::PluginReserved,
+            }],
+            ..PluginSettings::default()
+        };
+
+        let v1 = PluginSettingsV1::from(settings);
+
+        assert_eq!(
+            v1.allowed_paths,
+            [AllowedPathV1::Mapping {
+                host: "/home/u/a".to_owned(),
+                plugin: "/cache".to_owned(),
+                read_only: false,
+            }]
         );
     }
 }

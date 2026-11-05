@@ -67,16 +67,15 @@ impl GrantPluginFolderAccessUseCase {
         dry_run: bool,
     ) -> Result<FolderAccess, PluginError> {
         let folder = folder_of(&plugin_id, &file)?;
-        let added = AllowedPath::read_only_folder(&folder);
+        let invalid = |reason| PluginError::InvalidAllowedPath {
+            plugin_id: plugin_id.clone(),
+            path: folder.to_string_lossy().into_owned(),
+            reason,
+        };
+        let added = AllowedPath::read_only_folder(&folder).map_err(invalid)?;
 
         let core_folders = core_folders(&self.location_info, &plugin_id);
-        added.validate_against(&core_folders).map_err(|reason| {
-            PluginError::InvalidAllowedPath {
-                plugin_id: plugin_id.clone(),
-                path: added.host.clone(),
-                reason,
-            }
-        })?;
+        added.validate_against(&core_folders).map_err(invalid)?;
 
         let saved = {
             let _settings_lock = self.plugin_registry.lock_settings(&plugin_id).await;
