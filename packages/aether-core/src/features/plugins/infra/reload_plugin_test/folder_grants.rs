@@ -62,6 +62,9 @@ async fn should_give_the_folder_read_only_and_restart_the_plugin_when_a_pack_is_
     assert_eq!(settings.folders().len(), 1);
 }
 
+// Only a drive can be mounted under its own WASI name: `/` is no mount point on unix, where
+// a saved root lands in the ignored entries instead.
+#[cfg(windows)]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn should_give_the_folder_when_a_saved_one_over_it_is_left_out_by_the_loader() {
     let harness = Harness::enabled().await;
