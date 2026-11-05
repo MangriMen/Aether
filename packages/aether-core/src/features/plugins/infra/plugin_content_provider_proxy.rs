@@ -18,12 +18,13 @@ use serde::{Serialize, de::DeserializeOwned};
 
 use crate::features::{
     instance::{
-        ContentAuthor, ContentCompatibilityCheckParams, ContentCompatibilityResult, ContentId,
-        ContentItem, ContentMetadata, ContentProvider, ContentProviderCapabilityMetadata,
-        ContentSearchParams, ContentSearchResult, ContentVersion, ContentVersionId,
-        ContentVersionMetadata, InstallFileEntry, InstallPlan, InstallTarget, Instance,
-        InstanceError, InstanceId, OverrideLocation, OverrideSource, PackMetadata, PackSource,
-        PluginId, ProviderId, ResolveInstallPlanParams, ResolveTarget, ResolvedFile,
+        AnchoredPath, ContentAuthor, ContentCompatibilityCheckParams, ContentCompatibilityResult,
+        ContentId, ContentItem, ContentMetadata, ContentProvider,
+        ContentProviderCapabilityMetadata, ContentSearchParams, ContentSearchResult,
+        ContentVersion, ContentVersionId, ContentVersionMetadata, InstallFileEntry, InstallPlan,
+        InstallTarget, Instance, InstanceError, InstanceId, OverrideLocation, OverrideSource,
+        PackMetadata, PackSource, PluginId, ProviderId, ResolveInstallPlanParams, ResolveTarget,
+        ResolvedFile,
     },
     plugins::{
         PluginCheckCompatibilityParams, PluginContentProviderCapability, PluginError, PluginHandle,
@@ -35,6 +36,7 @@ use crate::features::plugins::infra::extism::models::PluginInstanceExt;
 use crate::features::plugins::infra::pack_instances::deploying_packs;
 use crate::features::plugins::infra::plugin_utils::{
     MountSet, host_path_to_plugin, parse_plugin_path, resolve_plugin_path,
+    resolve_plugin_path_anchored,
 };
 
 /// A content provider implemented by a plugin, calling the functions its `capabilities.json`
@@ -147,7 +149,9 @@ impl PluginContentProviderProxy {
         }
 
         // Held to the plugin's cache like the overrides: a host path would let the plugin show
-        // any file of the user's as the instance icon.
+        // any file of the user's as the instance icon. Unlike them it is passed on as a plain
+        // host path and read with links followed, so a link swapped in after this check is
+        // still followed (see `resolve_plugin_path`).
         if let InstallTarget::New(instance) = &mut target
             && let Some(icon_path) = instance.icon_path.take()
         {
@@ -185,7 +189,9 @@ impl PluginContentProviderProxy {
         resolve_plugin_path(&self.location_info, &self.plugin_id, &path, MountSet::CACHE)
     }
 
-    /// Override paths name files in the plugin's own `/cache` and nothing else.
+    /// Override paths name files in the plugin's own `/cache` and nothing else. They stay
+    /// anchored at the root of `/cache`: the plugin writes there, so the core opens what is under
+    /// it without following a link the plugin may put in after this check.
     fn override_source_from_dto(
         &self,
         dto: OverrideSourceDto,
@@ -195,15 +201,37 @@ impl PluginContentProviderProxy {
                 archive_path,
                 subdir,
             } => OverrideLocation::Archive {
-                archive_path: self.cache_file_to_host(&archive_path)?,
+                archive_path: self.cache_file_anchored(&archive_path)?,
                 subdir,
             },
             OverrideLocationDto::Directory { path } => OverrideLocation::Directory {
-                path: self.cache_file_to_host(&path)?,
+                path: self.cache_file_anchored(&path)?,
             },
         };
 
         Ok(OverrideSource::new(location, dto.side.into()))
+    }
+
+    /// [`Self::cache_file_to_host`], anchored at the root of the plugin's `/cache`.
+    fn cache_file_anchored(&self, path: &str) -> Result<AnchoredPath, PluginError> {
+        let plugin_path = parse_plugin_path(&self.plugin_id, path)?;
+        let (root, relative) = resolve_plugin_path_anchored(
+            &self.location_info,
+            &self.plugin_id,
+            &plugin_path,
+            MountSet::CACHE,
+        )?;
+
+        AnchoredPath::new(root, relative).map_err(|err| {
+            tracing::debug!(
+                "Plugin '{}' sent a path the core refuses: {err}",
+                self.plugin_id
+            );
+            PluginError::AccessViolation {
+                plugin_id: self.plugin_id.clone(),
+                path: path.to_owned(),
+            }
+        })
     }
 
     /// A pack file is handed over under the plugin's own name for it; a file the plugin cannot

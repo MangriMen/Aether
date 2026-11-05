@@ -6,8 +6,8 @@ use std::{io::Write, path::PathBuf};
 
 use crate::features::{
     instance::{
-        FileSide, InstallPlan, InstallTarget, InstanceError, NewInstance, OverrideLocation,
-        OverrideSource,
+        AnchoredPath, FileSide, InstallPlan, InstallTarget, InstanceError, NewInstance,
+        OverrideLocation, OverrideSource,
     },
     minecraft::ModLoader,
 };
@@ -379,7 +379,7 @@ async fn should_copy_an_overrides_directory_recursively_when_it_is_nested() {
             InstallPlan {
                 overrides: vec![OverrideSource::new(
                     OverrideLocation::Directory {
-                        path: source.clone(),
+                        path: AnchoredPath::at_parent(&source),
                     },
                     FileSide::Both,
                 )],

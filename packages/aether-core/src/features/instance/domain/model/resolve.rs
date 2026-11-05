@@ -206,9 +206,11 @@ impl ResolvedFile {
 
 #[cfg(test)]
 mod tests {
+    use std::path::Path;
+
     use crate::features::instance::{
-        ContentPath, ContentType, FileSide, InstallFileEntry, InstallPlan, OverrideLocation,
-        OverrideSource, PlatformId, ProviderId,
+        AnchoredPath, ContentPath, ContentType, FileSide, InstallFileEntry, InstallPlan,
+        OverrideLocation, OverrideSource, PlatformId, ProviderId,
     };
 
     use super::*;
@@ -338,7 +340,7 @@ mod tests {
             ],
             overrides: vec![OverrideSource::new(
                 OverrideLocation::Archive {
-                    archive_path: "cache/fo.mrpack".into(),
+                    archive_path: AnchoredPath::at_parent(Path::new("cache/fo.mrpack")),
                     subdir: "overrides".into(),
                 },
                 FileSide::Both,
