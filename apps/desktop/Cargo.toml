@@ -71,11 +71,11 @@ mime_guess = "2.0.5"
 open = { version = "5.4.0", features = ["shellexecute-on-windows"] }
 percent-encoding = "2.3.2"
 # Native error dialog for failures before the Tauri windows exist (same backend as tauri-plugin-dialog).
-# `xdg-portal` is required on Linux: rfd's build script panics without a backend, and feature
-# unification with tauri-plugin-dialog's rfd 0.16 no longer applies now that versions differ.
+# `gtk3` is required on Linux: rfd's build script panics without a backend, and it must match the one
+# tauri-plugin-dialog enables (rfd refuses gtk3 + xdg-portal together now that versions unify).
 rfd = { version = "0.17", default-features = false, features = [
   "common-controls-v6",
-  "xdg-portal",
+  "gtk3",
 ] }
 reqwest = { version = "0.13.4", features = ["json", "stream", "deflate", "gzip", "brotli"] }
 reqwest-middleware = "0.5.2"
