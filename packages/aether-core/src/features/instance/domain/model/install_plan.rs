@@ -349,7 +349,7 @@ impl AnchoredPath {
 
     /// `path` anchored at its parent: only its last component is opened without following a
     /// symlink. For a path the core made itself, never for one a plugin names.
-    pub fn at_parent(path: &Path) -> Self {
+    pub(crate) fn at_parent(path: &Path) -> Self {
         match (path.parent(), path.file_name()) {
             (Some(parent), Some(name)) => Self {
                 root: if parent.as_os_str().is_empty() {
@@ -404,6 +404,24 @@ mod tests {
             content_id: content_id.try_into().unwrap(),
             version: version.map(|v| v.try_into().unwrap()),
         }
+    }
+
+    #[test]
+    fn should_refuse_an_anchored_path_when_it_is_not_a_chain_of_plain_names() {
+        let mut bad = vec!["../x", "a/../x", "./x"];
+        if cfg!(windows) {
+            bad.extend(["C:x", "C:\\x", "\\\\server\\share\\x"]);
+        } else {
+            bad.push("/x");
+        }
+        for relative in bad {
+            let result = AnchoredPath::new(PathBuf::from("root"), PathBuf::from(relative));
+            assert!(
+                matches!(result, Err(InstanceError::InvalidRelativePath { .. })),
+                "{relative}: {result:?}"
+            );
+        }
+        assert!(AnchoredPath::new(PathBuf::from("root"), PathBuf::from("a/b")).is_ok());
     }
 
     #[test]

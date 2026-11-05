@@ -204,6 +204,12 @@ async fn should_refuse_an_override_when_a_directory_on_its_path_became_a_link() 
 
     std::fs::remove_dir_all(overrides.join("sub")).unwrap();
     link_dir(&outside, &overrides.join("sub"));
+    assert!(
+        std::fs::symlink_metadata(overrides.join("sub"))
+            .unwrap()
+            .file_type()
+            .is_symlink()
+    );
 
     let staging = dir.path().join("staging");
     let err = stage_overrides(vec![(source, files)], &staging, 100)
@@ -232,6 +238,12 @@ async fn should_refuse_overrides_when_their_directory_became_a_link() {
 
     std::fs::remove_dir_all(&overrides).unwrap();
     link_dir(&outside, &overrides);
+    assert!(
+        std::fs::symlink_metadata(&overrides)
+            .unwrap()
+            .file_type()
+            .is_symlink()
+    );
 
     let err = stage_overrides(vec![(source, files)], &dir.path().join("staging"), 100)
         .await
@@ -294,6 +306,12 @@ async fn should_refuse_overrides_when_a_parent_of_their_source_became_a_link() {
 
     std::fs::remove_dir_all(root.join("packs")).unwrap();
     link_dir(&secret, &root.join("packs"));
+    assert!(
+        std::fs::symlink_metadata(root.join("packs"))
+            .unwrap()
+            .file_type()
+            .is_symlink()
+    );
 
     for source in [&archive, &directory] {
         let err = list_overrides(source, 10).await.err().unwrap();
@@ -332,6 +350,12 @@ async fn should_refuse_an_archive_when_it_became_a_link() {
             panic!("could not link {}: {err}", archive_path.display());
         }
     }
+    assert!(
+        std::fs::symlink_metadata(&archive_path)
+            .unwrap()
+            .file_type()
+            .is_symlink()
+    );
 
     let err = stage_overrides(vec![(source, files)], &dir.path().join("staging"), 1000)
         .await
@@ -356,6 +380,7 @@ async fn should_refuse_an_archive_when_it_is_a_directory() {
     std::fs::remove_file(&archive_path).unwrap();
     std::fs::create_dir_all(archive_path.join("overrides")).unwrap();
     std::fs::write(archive_path.join("overrides").join("a.txt"), "x").unwrap();
+    assert!(std::fs::symlink_metadata(&archive_path).unwrap().is_dir());
 
     let is_refused_open = |err: &InstanceError| matches!(err, InstanceError::Storage(reason) if reason.contains("Failed to open overrides archive"));
     let err = list_overrides(&source, 10).await.err().unwrap();

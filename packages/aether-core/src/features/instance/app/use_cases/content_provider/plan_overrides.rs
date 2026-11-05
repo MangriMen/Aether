@@ -11,7 +11,9 @@
 //! source, and of each file of a directory source, is opened from a handle on the one before it
 //! without following a symlink (a junction on Windows). A component swapped for a link at any
 //! time, after the plugin's path was checked or after the source was listed, fails the open
-//! instead of leading out of the root ([`open_file_nofollow_in`]). What an archive unpacks to is
+//! instead of leading out of the root ([`open_file_nofollow_in`]). On Windows cap-std's
+//! `Dir::entries` lists by the path of the open handle, so what a listing returns is not trusted
+//! for safety; only the later no-follow open from the anchor is. What an archive unpacks to is
 //! bounded over all sources of a plan together (`ContentInstallLimits`): files when listed, bytes
 //! as staged, so a lying header does not help.
 
