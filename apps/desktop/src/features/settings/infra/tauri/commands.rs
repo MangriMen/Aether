@@ -4,6 +4,7 @@ use tauri::State;
 use crate::{
     FrontendResult,
     core::ContainerState,
+    core::infra::FrontendError,
     core::{AppSettingsStorageState, WindowManagerState},
     features::settings::app::{EditAppSettingsUseCase, GetAppSettingsUseCase},
     shared::{
@@ -118,7 +119,8 @@ async fn is_cache_busy(container: State<'_, ContainerState>) -> FrontendResult<b
 #[specta::specta]
 async fn get_max_ram() -> FrontendResult<RamSettingsDto> {
     Ok(RamSettingsDto {
-        total_memory: aether_core::shared::system::infra::get_total_memory(),
+        total_memory: aether_core::shared::system::infra::get_total_memory()
+            .map_err(|err| FrontendError::Generic(err.to_string()))?,
     })
 }
 

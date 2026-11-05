@@ -502,7 +502,7 @@ mod tests {
 
     #[tokio::test]
     async fn should_kill_the_grandchildren_when_the_run_outlives_the_time_limit() {
-        let mut system = sysinfo::System::new();
+        let mut system = sysinfo::System::new().expect("system info should be available");
         let (command, mut tree, grandchildren) = tree_with_grandchildren(&mut system).await;
 
         let err = collect_capped(
@@ -537,7 +537,7 @@ mod tests {
         ));
         let mut tree = ProcessTree::spawn(&command).expect("child should run");
 
-        let mut system = sysinfo::System::new();
+        let mut system = sysinfo::System::new().expect("system info should be available");
         let mut grandchild = Vec::new();
         eventually("the grandchild is running", || {
             let pid = std::fs::read_to_string(pid_file.path())
@@ -574,7 +574,7 @@ mod tests {
 
     #[tokio::test]
     async fn should_kill_the_grandchildren_when_the_run_is_cancelled() {
-        let mut system = sysinfo::System::new();
+        let mut system = sysinfo::System::new().expect("system info should be available");
         let (_, tree, grandchildren) = tree_with_grandchildren(&mut system).await;
 
         // A cancelled `run_command` drops its future, and the tree with it.
