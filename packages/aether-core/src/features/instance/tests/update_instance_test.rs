@@ -5,6 +5,7 @@ use crate::features::minecraft::GameVersion;
 
 use crate::features::instance::InstanceName;
 use crate::features::instance::{ContentId, ContentVersionId};
+use crate::shared::web_url::HttpsUrl;
 
 use std::{
     collections::HashMap,
@@ -126,7 +127,7 @@ fn sha1_hash(body: &str) -> FileHash {
 fn pack_file(name: &str, path: &str) -> InstallFileEntry {
     InstallFileEntry::new(
         ContentSource::direct(
-            url(name),
+            HttpsUrl::parse(&url(name)).unwrap(),
             Some(FileHash::new(HashAlgorithm::Sha1, sha1(&url(name))).unwrap()),
         ),
         ContentPath::parse(path).unwrap(),
@@ -308,11 +309,12 @@ impl ContentDownloader for UrlDownloader {
     async fn download(
         &self,
         _: &ProviderId,
-        url: &str,
+        url: &HttpsUrl,
         _: Option<&FileHash>,
         destination: &Path,
         _: Option<BytesProgress<'_>>,
     ) -> Result<u64, InstanceError> {
+        let url = url.as_str();
         if url.contains("fail") {
             return Err(InstanceError::ContentDownloadError(url.into()));
         }

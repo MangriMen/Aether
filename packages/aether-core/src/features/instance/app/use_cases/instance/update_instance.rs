@@ -388,6 +388,7 @@ fn installed_version_of(pack_info: &PackInfo) -> Option<ContentVersionId> {
 mod tests {
     use super::*;
     use crate::features::instance::{ContentSource, ContentType, InstallFileEntry};
+    use crate::shared::web_url::HttpsUrl;
 
     fn sha1_hash(c: char) -> crate::shared::hash::FileHash {
         crate::shared::hash::FileHash::new(
@@ -403,7 +404,7 @@ mod tests {
                 InstanceId::try_from("instance").unwrap(),
             ),
             files: vec![InstallFileEntry::new(
-                ContentSource::direct("https://example.com/a.jar".into(), None),
+                ContentSource::direct(HttpsUrl::parse("https://example.com/a.jar").unwrap(), None),
                 ContentPath::parse(path).unwrap(),
                 ContentType::Mod,
             )],

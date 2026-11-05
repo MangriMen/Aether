@@ -25,7 +25,7 @@ use crate::{
         },
         minecraft::{GameVersion, LoaderVersionPreference, ModLoader},
     },
-    shared::hash::FileHash,
+    shared::{hash::FileHash, web_url::HttpsUrl},
 };
 
 /// Everything a provider wants installed, and where.
@@ -211,7 +211,7 @@ pub enum ContentSource {
     /// Modrinth CDN URL names the project and the version). The file is then recorded for
     /// updates as a resolved ref would be; without it the file is only bytes at a URL.
     Direct {
-        url: String,
+        url: HttpsUrl,
         hash: Option<FileHash>,
         identity: Option<ContentIdentity>,
     },
@@ -243,7 +243,7 @@ pub enum ContentSource {
 
 impl ContentSource {
     /// A direct source with no known identity.
-    pub fn direct(url: String, hash: Option<FileHash>) -> Self {
+    pub fn direct(url: HttpsUrl, hash: Option<FileHash>) -> Self {
         Self::Direct {
             url,
             hash,
@@ -267,7 +267,7 @@ impl fmt::Display for ContentSource {
         match self {
             Self::Direct {
                 url, hash: None, ..
-            } => f.write_str(url),
+            } => f.write_str(url.as_str()),
             Self::Direct {
                 url,
                 hash: Some(hash),
@@ -428,14 +428,18 @@ mod tests {
     fn should_build_a_direct_source_when_given_manifest_strings() {
         // A packwiz index entry: `hash-format = "sha1"`, `hash = "<HEX>"`.
         let source = ContentSource::direct(
-            "https://cdn.modrinth.com/data/AANobbMI/versions/IZskON6d/sodium.jar".into(),
+            HttpsUrl::parse("https://cdn.modrinth.com/data/AANobbMI/versions/IZskON6d/sodium.jar")
+                .unwrap(),
             Some(FileHash::new(HashAlgorithm::Sha1, SHA1_ABC.to_ascii_uppercase()).unwrap()),
         );
 
         assert_eq!(
             source,
             ContentSource::direct(
-                "https://cdn.modrinth.com/data/AANobbMI/versions/IZskON6d/sodium.jar".into(),
+                HttpsUrl::parse(
+                    "https://cdn.modrinth.com/data/AANobbMI/versions/IZskON6d/sodium.jar"
+                )
+                .unwrap(),
                 Some(FileHash::new(HashAlgorithm::Sha1, SHA1_ABC).unwrap())
             )
         );
@@ -444,10 +448,13 @@ mod tests {
     #[test]
     fn should_display_a_direct_source_when_formatted() {
         let url = "https://example.com/a.jar";
-        assert_eq!(ContentSource::direct(url.into(), None).to_string(), url);
+        assert_eq!(
+            ContentSource::direct(HttpsUrl::parse(url).unwrap(), None).to_string(),
+            url
+        );
         assert_eq!(
             ContentSource::direct(
-                url.into(),
+                HttpsUrl::parse(url).unwrap(),
                 Some(FileHash::new(HashAlgorithm::Sha1, SHA1_ABC).unwrap())
             )
             .to_string(),

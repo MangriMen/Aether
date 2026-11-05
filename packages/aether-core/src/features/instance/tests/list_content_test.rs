@@ -1,6 +1,7 @@
 //! `ListContentUseCase` reading an instance's content folders.
 
 use crate::features::instance::{ContentId, ContentVersionId};
+use crate::shared::web_url::HttpsUrl;
 use std::{collections::HashMap, sync::Arc, time::SystemTime};
 
 use async_trait::async_trait;
@@ -71,15 +72,15 @@ struct NoIcons;
 
 #[async_trait]
 impl ContentIconCache for NoIcons {
-    async fn lookup(&self, _: &str) -> CachedContentIcon {
+    async fn lookup(&self, _: &HttpsUrl) -> CachedContentIcon {
         CachedContentIcon::Missing
     }
 
-    async fn fetch(&self, _: &str) -> Result<bool, ContentIconError> {
+    async fn fetch(&self, _: &HttpsUrl) -> Result<bool, ContentIconError> {
         Err(ContentIconError::NotAnImage)
     }
 
-    async fn retain(&self, _: &std::collections::HashSet<String>) -> usize {
+    async fn retain(&self, _: &std::collections::HashSet<HttpsUrl>) -> usize {
         0
     }
 }

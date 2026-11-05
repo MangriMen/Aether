@@ -3,6 +3,7 @@
 //! the list's back.
 
 use crate::features::instance::{ContentId, ContentVersionId};
+use crate::shared::web_url::HttpsUrl;
 use std::{
     collections::{HashMap, HashSet},
     sync::{Arc, Mutex},
@@ -294,7 +295,8 @@ fn asset_id(url: &str) -> String {
 
 #[async_trait]
 impl ContentIconCache for FakeIcons {
-    async fn lookup(&self, url: &str) -> CachedContentIcon {
+    async fn lookup(&self, url: &HttpsUrl) -> CachedContentIcon {
+        let url = url.as_str();
         match self.present.lock().unwrap().get(url) {
             Some((asset_id, revalidate)) => CachedContentIcon::Present {
                 asset_id: asset_id.clone(),
@@ -305,7 +307,8 @@ impl ContentIconCache for FakeIcons {
         }
     }
 
-    async fn fetch(&self, url: &str) -> Result<bool, ContentIconError> {
+    async fn fetch(&self, url: &HttpsUrl) -> Result<bool, ContentIconError> {
+        let url = url.as_str();
         self.fetches.lock().unwrap().push(url.into());
         if let Some(gate) = &self.gate {
             gate.acquire().await.unwrap().forget();
@@ -323,7 +326,7 @@ impl ContentIconCache for FakeIcons {
         Ok(true)
     }
 
-    async fn retain(&self, _: &std::collections::HashSet<String>) -> usize {
+    async fn retain(&self, _: &std::collections::HashSet<HttpsUrl>) -> usize {
         0
     }
 }
@@ -1034,7 +1037,7 @@ const ICON_X: &str = "https://cdn.example.com/x.webp";
 const ICON_Y: &str = "https://cdn.example.com/y.png";
 
 fn with_icon(mut item: ContentMetadata, url: &str) -> ContentMetadata {
-    item.icon_url = Some(url.into());
+    item.icon_url = Some(HttpsUrl::parse(url).unwrap());
     item
 }
 

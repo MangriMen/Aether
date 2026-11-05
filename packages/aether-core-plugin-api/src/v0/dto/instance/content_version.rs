@@ -65,5 +65,7 @@ pub struct ContentVersionDto {
     pub requested_status: Option<RequestedContentVersionStatusDto>,
     pub date_published: String,
     pub downloads: i64,
+    /// The version's page, an `http` or `https` URL; empty when it has none. Any other value is
+    /// dropped by the host.
     pub web_url: String,
 }

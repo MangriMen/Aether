@@ -5,6 +5,7 @@
 use crate::features::minecraft::GameVersion;
 
 use crate::features::instance::{ContentId, ContentVersionId};
+use crate::shared::web_url::HttpsUrl;
 use std::{
     fmt::Write,
     path::PathBuf,
@@ -617,8 +618,10 @@ async fn should_search_elsewhere_and_queue_its_own_search_when_a_plugin_is_busy(
     let pack = tokio::spawn({
         let busy = busy.clone();
         async move {
-            busy.resolve_pack_metadata(PackSource::Url("https://example.com/pack.zip".into()))
-                .await
+            busy.resolve_pack_metadata(PackSource::Url(
+                HttpsUrl::parse("https://example.com/pack.zip").unwrap(),
+            ))
+            .await
         }
     });
     gate.entered().await;

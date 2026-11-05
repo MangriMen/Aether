@@ -16,7 +16,10 @@ use crate::{
         },
         minecraft::{GameVersion, InvalidGameVersion},
     },
-    shared::hash::{FileHash, InvalidFileHash},
+    shared::{
+        hash::{FileHash, InvalidFileHash},
+        web_url::{HttpsUrl, InvalidUrl},
+    },
 };
 
 /// The id a plugin names is parsed here: one that is not a plain directory name names no
@@ -61,10 +64,13 @@ pub enum InvalidPlanFile {
 
     #[error(transparent)]
     Path(#[from] InvalidRelativePath),
+
+    #[error(transparent)]
+    Url(#[from] InvalidUrl),
 }
 
 /// A hash from a plugin is validated and lowercased here, as `download_to_cache` does: the
-/// core relies on a [`FileHash`] being a well-formed digest.
+/// core relies on a [`FileHash`] being a well-formed digest. A URL to download has to be `https`.
 impl TryFrom<ContentSourceDto> for ContentSource {
     type Error = InvalidPlanFile;
 
@@ -75,7 +81,7 @@ impl TryFrom<ContentSourceDto> for ContentSource {
                 hash,
                 identity,
             } => Self::Direct {
-                url,
+                url: HttpsUrl::try_from(url)?,
                 hash: hash.map(FileHash::try_from).transpose()?,
                 identity: identity.map(ContentIdentity::try_from).transpose()?,
             },
@@ -291,7 +297,7 @@ mod tests {
         assert_eq!(
             source,
             ContentSource::Direct {
-                url: "https://example.com/a.jar".into(),
+                url: HttpsUrl::parse("https://example.com/a.jar").unwrap(),
                 hash: Some(FileHash::new(HashAlgorithm::Sha1, SHA1_ABC).unwrap()),
                 identity: Some(ContentIdentity {
                     platform: PlatformId::from_static("modrinth"),
@@ -315,6 +321,31 @@ mod tests {
             }));
 
             assert!(result.is_err(), "{hash:?} must be refused");
+        }
+    }
+
+    /// The host downloads a plan's URLs itself: one that is not `https`, or not a URL, fails the
+    /// plan instead of being passed on.
+    #[test]
+    fn should_reject_a_direct_url_when_it_is_not_https() {
+        for url in [
+            "http://example.com/a.jar",
+            "file:///C:/Users/me/a.jar",
+            "/cache/a.jar",
+            "javascript:alert(1)",
+            "https://user:secret@example.com/a.jar",
+            "",
+        ] {
+            let result = InstallFileEntry::try_from(entry(ContentSourceDto::Direct {
+                url: url.into(),
+                hash: None,
+                identity: None,
+            }));
+
+            assert!(
+                matches!(result, Err(InvalidPlanFile::Url(_))),
+                "`{url}` must be refused"
+            );
         }
     }
 

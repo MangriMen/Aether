@@ -28,7 +28,10 @@ use crate::{
             CachedMetadata, ContentMetadataCache,
         },
     },
-    shared::cache::{Cache, CacheId, CacheKey, CachedValue},
+    shared::{
+        cache::{Cache, CacheId, CacheKey, CachedValue},
+        web_url::parse_optional_url,
+    },
 };
 
 /// One namespace for all providers, the provider in the key: a namespace is static, provider
@@ -126,7 +129,7 @@ impl From<&ContentMetadata> for ContentMetadataRecord {
             description: value.description.clone(),
             author: value.author.clone(),
             author_ref: value.author_ref.clone(),
-            icon_url: value.icon_url.clone(),
+            icon_url: value.icon_url.as_ref().map(ToString::to_string),
         }
     }
 }
@@ -142,7 +145,12 @@ impl TryFrom<ContentMetadataRecord> for ContentMetadata {
             description: value.description,
             author: value.author,
             author_ref: value.author_ref,
-            icon_url: value.icon_url,
+            // Only shown: a bad icon costs the icon, not the record. Read on every list, so not
+            // warned about each time.
+            icon_url: parse_optional_url(value.icon_url.as_deref())
+                .inspect_err(|err| tracing::debug!("Ignoring a cached content icon: {err}"))
+                .ok()
+                .flatten(),
         })
     }
 }
@@ -332,6 +340,8 @@ impl<C: Cache> ContentMetadataCache for UniversalContentMetadataCache<C> {
 mod tests {
     use sqlx::{SqlitePool, pool::PoolOptions};
 
+    use crate::shared::web_url::HttpsUrl;
+
     use crate::{
         core::migrations::run_migrations,
         features::instance::app::{
@@ -368,9 +378,12 @@ mod tests {
             description: Some("desc".into()),
             author: None,
             author_ref: Some(format!("team:{content_id}")),
-            icon_url: Some(format!(
-                "https://cdn.modrinth.com/data/{content_id}/abc.png"
-            )),
+            icon_url: Some(
+                HttpsUrl::parse(&format!(
+                    "https://cdn.modrinth.com/data/{content_id}/abc.png"
+                ))
+                .unwrap(),
+            ),
         }
     }
 
@@ -621,6 +634,35 @@ mod tests {
         assert_eq!(item.name, "Sodium");
         assert_eq!(item.author.as_deref(), Some("jellysquid3"));
         assert_eq!(item.author_ref, None);
+    }
+
+    #[rstest::rstest]
+    #[case::http("http://example.com/icon.png")]
+    #[case::empty("")]
+    #[tokio::test]
+    async fn should_load_a_project_without_its_icon_when_the_cached_icon_is_not_https(
+        #[case] icon_url: &str,
+    ) {
+        let cache = create_cache().await;
+        let modrinth = provider("modrinth");
+        let row = serde_json::json!({
+            "content_id": "AANobbMI", "slug": "sodium", "name": "Sodium",
+            "description": null, "author": null, "icon_url": icon_url
+        });
+        cache
+            .put_records(
+                NAMESPACE,
+                &modrinth,
+                vec![(&ContentId::try_from("AANobbMI").unwrap(), row)],
+                SystemTime::now(),
+            )
+            .await;
+
+        let found = cache.get_many(&modrinth, &ids(&["AANobbMI"])).await;
+
+        let item = &found[&ContentId::try_from("AANobbMI").unwrap()].metadata;
+        assert_eq!(item.name, "Sodium");
+        assert_eq!(item.icon_url, None);
     }
 
     fn author(author_ref: &str, name: &str) -> ContentAuthor {

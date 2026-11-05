@@ -4,7 +4,7 @@ use crate::{
     features::instance::{
         ContentFile, ContentFileUpdateInfo, ContentPath, FileSide, PlanOrigin, ProviderId,
     },
-    shared::hash::FileHash,
+    shared::{hash::FileHash, web_url::HttpsUrl},
 };
 
 #[derive(Debug, Clone, Default)]
@@ -39,7 +39,7 @@ pub struct PackFileDownload {
     /// File hash for verification
     pub hash: String,
     /// URL to download the file from
-    pub url: String,
+    pub url: HttpsUrl,
 }
 
 #[derive(Debug, Clone)]

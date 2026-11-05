@@ -34,6 +34,7 @@ use crate::{
     },
     shared::io::infra::create_dir_all,
     shared::request_client::{Request, RequestClient},
+    shared::web_url::{HttpsUrl, display_url},
 };
 
 use super::{
@@ -267,7 +268,7 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
 
         Ok(ResolvedFile {
             version: response_id::<ContentVersionId>(&version.id)?,
-            url: file.url.clone(),
+            url: response_url(&file.url)?,
             hash: Some(mrpack::sha512_of(&file.hashes)?),
             file_name: file.filename.clone(),
             size: u64::try_from(file.size).ok(),
@@ -290,6 +291,7 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
             )));
         }
 
+        let url = response_url(&file.url)?;
         let hash = mrpack::sha512_of(&file.hashes)?;
         // Named by the hash: the same archive is downloaded once whoever asks for it, and a file
         // gets this name only once verified against it.
@@ -308,13 +310,13 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
         }
         self.download_client
             .download_to_file(
-                Request::get(&file.url).with_hash(hash),
+                Request::get(url.as_str()).with_hash(hash),
                 &path,
                 self.max_mrpack_bytes,
                 None,
             )
             .await
-            .map_err(|err| InstanceError::ContentDownloadError(format!("{}: {err}", file.url)))?;
+            .map_err(|err| InstanceError::ContentDownloadError(format!("{url}: {err}")))?;
         self.prune_mrpack_cache(&path).await;
 
         Ok(path)
@@ -426,8 +428,11 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
         let archive_path = self.cached_mrpack(&version).await?;
         let index = mrpack::read_index_async(&archive_path).await?;
 
-        let metadata =
-            mrpack::pack_metadata(&index, Some(version_id.clone()), project.icon_url.clone())?;
+        let metadata = mrpack::pack_metadata(
+            &index,
+            Some(version_id.clone()),
+            display_url("icon of a Modrinth project", project.icon_url.clone()),
+        )?;
         let files = mrpack::plan_files(&index)?;
         let target = params.target.into_pack_install_target(&metadata, || {
             Some(PackInfo {
@@ -497,12 +502,12 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
             mod_loader,
             loader_version: None,
             file_count: None,
-            icon_url: project.icon_url,
+            icon_url: display_url("icon of a Modrinth project", project.icon_url),
         })
     }
 
     /// A `.mrpack` at a URL, read once and not kept. One on Modrinth's CDN names its version.
-    async fn url_pack_metadata(&self, url: &str) -> Result<PackMetadata, InstanceError> {
+    async fn url_pack_metadata(&self, url: &HttpsUrl) -> Result<PackMetadata, InstanceError> {
         let temp_dir = self.location_info.temp_dir();
         create_dir_all(&temp_dir)
             .await
@@ -510,7 +515,12 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
         let path = temp_dir.join(format!("pack-{}.mrpack", uuid::Uuid::new_v4()));
 
         self.download_client
-            .download_to_file(Request::get(url), &path, self.max_mrpack_bytes, None)
+            .download_to_file(
+                Request::get(url.as_str()),
+                &path,
+                self.max_mrpack_bytes,
+                None,
+            )
             .await
             .map_err(|err| InstanceError::ContentDownloadError(format!("{url}: {err}")))?;
         let index = mrpack::read_index_async(&path).await;
@@ -795,6 +805,11 @@ where
     T: TryFrom<String, Error = InvalidContentId>,
 {
     T::try_from(id.to_owned()).map_err(|err| mapper_failure(&err.into()))
+}
+
+/// A URL Modrinth answered with, to fetch.
+fn response_url(url: &str) -> Result<HttpsUrl, InstanceError> {
+    HttpsUrl::parse(url).map_err(|err| mapper_failure(&err.into()))
 }
 
 fn no_pack_versions(project_id: &str) -> InstanceError {

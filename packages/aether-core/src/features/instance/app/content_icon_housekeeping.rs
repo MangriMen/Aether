@@ -13,7 +13,7 @@ use crate::{
         ContentIconCache, ContentId, ContentMetadataCache, InstanceError, InstanceStorage,
         PackStorage, ProviderId,
     },
-    shared::housekeeping::Housekeeping,
+    shared::{housekeeping::Housekeeping, web_url::HttpsUrl},
 };
 
 /// How many instances' pack files are read at once at startup.
@@ -48,7 +48,7 @@ impl ContentIconHousekeeping {
     }
 
     /// The icon URLs of every content installed in any instance.
-    async fn installed_icon_urls(&self) -> Result<HashSet<String>, InstanceError> {
+    async fn installed_icon_urls(&self) -> Result<HashSet<HttpsUrl>, InstanceError> {
         let mut ids: HashMap<ProviderId, Vec<ContentId>> = HashMap::new();
         let instances = self.instance_storage.list().await?;
         // Concurrent but bounded, in the order of the instances: the first failure in it is the
@@ -167,7 +167,7 @@ mod tests {
             description: None,
             author: None,
             author_ref: None,
-            icon_url: icon_url.map(Into::into),
+            icon_url: icon_url.map(|url| HttpsUrl::parse(url).unwrap()),
         }
     }
 
@@ -353,20 +353,20 @@ mod tests {
 
     #[derive(Default)]
     struct FakeIcons {
-        retained: Mutex<Option<HashSet<String>>>,
+        retained: Mutex<Option<HashSet<HttpsUrl>>>,
     }
 
     #[async_trait]
     impl ContentIconCache for FakeIcons {
-        async fn lookup(&self, _: &str) -> CachedContentIcon {
+        async fn lookup(&self, _: &HttpsUrl) -> CachedContentIcon {
             unimplemented!()
         }
 
-        async fn fetch(&self, _: &str) -> Result<bool, ContentIconError> {
+        async fn fetch(&self, _: &HttpsUrl) -> Result<bool, ContentIconError> {
             unimplemented!()
         }
 
-        async fn retain(&self, keep: &HashSet<String>) -> usize {
+        async fn retain(&self, keep: &HashSet<HttpsUrl>) -> usize {
             *self.retained.lock().unwrap() = Some(keep.clone());
             7
         }
@@ -421,8 +421,8 @@ mod tests {
         assert_eq!(
             icons.retained.lock().unwrap().clone(),
             Some(HashSet::from([
-                "https://x/sodium.png".to_string(),
-                "https://x/lithium.png".to_string(),
+                HttpsUrl::parse("https://x/sodium.png").unwrap(),
+                HttpsUrl::parse("https://x/lithium.png").unwrap(),
             ]))
         );
     }

@@ -9,6 +9,8 @@ use crate::features::instance::{
 };
 use crate::features::minecraft::{GameVersion, ModLoader};
 
+use crate::shared::web_url::display_url;
+
 impl From<ContentVersion> for ContentVersionDto {
     fn from(value: ContentVersion) -> Self {
         Self {
@@ -27,7 +29,7 @@ impl From<ContentVersion> for ContentVersionDto {
             requested_status: value.requested_status.map(Into::into),
             date_published: value.date_published,
             downloads: value.downloads,
-            web_url: value.web_url,
+            web_url: value.web_url.map(String::from).unwrap_or_default(),
         }
     }
 }
@@ -112,7 +114,7 @@ impl TryFrom<ContentVersionDto> for ContentVersion {
             requested_status: value.requested_status.map(Into::into),
             date_published: value.date_published,
             downloads: value.downloads,
-            web_url: value.web_url,
+            web_url: display_url("page of a plugin's content version", Some(value.web_url)),
         })
     }
 }

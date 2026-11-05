@@ -7,6 +7,7 @@ use crate::features::minecraft::GameVersion;
 
 use crate::features::instance::InstanceName;
 use crate::features::instance::{ContentId, ContentVersionId};
+use crate::shared::web_url::HttpsUrl;
 
 use crate::features::instance::PlatformId;
 use std::{
@@ -228,7 +229,7 @@ impl ContentProvider for PluginProvider {
     ) -> Result<ResolvedFile, InstanceError> {
         Ok(ResolvedFile {
             version: ContentVersionId::try_from("4512345").unwrap(),
-            url: self.url.clone(),
+            url: HttpsUrl::from_test_server(&self.url),
             hash: Some(sha1_of(BODY)),
             file_name: "jei.jar".into(),
             size: None,
@@ -537,11 +538,11 @@ impl Fixture {
     }
 }
 
-fn direct_plan(url: String, hash: Option<FileHash>) -> InstallPlan {
+fn direct_plan(url: &str, hash: Option<FileHash>) -> InstallPlan {
     InstallPlan {
         target: InstallTarget::existing(InstanceId::try_from(INSTANCE_ID).unwrap()),
         files: vec![InstallFileEntry::new(
-            ContentSource::direct(url, hash),
+            ContentSource::direct(HttpsUrl::from_test_server(url), hash),
             ContentPath::parse("mods/jei.jar").unwrap(),
             ContentType::Mod,
         )],
@@ -572,7 +573,7 @@ async fn should_refuse_a_plugin_url_when_it_is_outside_its_allowed_hosts() {
 
     let err = fixture
         .execute(
-            direct_plan(other.url("/jei.jar"), Some(sha1_of(BODY))),
+            direct_plan(&other.url("/jei.jar"), Some(sha1_of(BODY))),
             plugin_origin(),
         )
         .await
@@ -593,7 +594,7 @@ async fn should_download_a_builtin_url_through_the_app_client_when_it_has_no_plu
 
     fixture
         .execute(
-            direct_plan(other.url("/jei.jar"), Some(sha1_of(BODY))),
+            direct_plan(&other.url("/jei.jar"), Some(sha1_of(BODY))),
             builtin_origin(),
         )
         .await
@@ -610,7 +611,7 @@ async fn should_download_a_plugin_url_when_it_is_on_an_allowed_host() {
 
     fixture
         .execute(
-            direct_plan(allowed.url("/jei.jar"), Some(sha1_of(BODY))),
+            direct_plan(&allowed.url("/jei.jar"), Some(sha1_of(BODY))),
             plugin_origin(),
         )
         .await
@@ -639,7 +640,7 @@ async fn should_honour_hosts_when_they_were_added_in_the_plugin_settings() {
     let allowed = TestServer::start(ALLOWED, serve_body()).await;
 
     fixture
-        .execute(direct_plan(allowed.url("/jei.jar"), None), plugin_origin())
+        .execute(direct_plan(&allowed.url("/jei.jar"), None), plugin_origin())
         .await
         .unwrap();
 
@@ -687,7 +688,13 @@ async fn should_apply_hosts_when_they_changed_between_two_files_of_a_plan() {
         let downloader = &downloader;
         async move {
             downloader
-                .download(&plugin_origin(), &url, None, &destination, None)
+                .download(
+                    &plugin_origin(),
+                    &HttpsUrl::from_test_server(&url),
+                    None,
+                    &destination,
+                    None,
+                )
                 .await
         }
     };
@@ -712,7 +719,7 @@ async fn should_refuse_a_url_when_it_is_from_an_unknown_plugin() {
     let allowed = TestServer::start(ALLOWED, serve_body()).await;
 
     let err = fixture
-        .execute(direct_plan(allowed.url("/jei.jar"), None), plugin_origin())
+        .execute(direct_plan(&allowed.url("/jei.jar"), None), plugin_origin())
         .await
         .unwrap_err();
 
@@ -741,7 +748,8 @@ async fn should_hold_a_ref_to_that_plugins_hosts_when_a_plugin_resolved_it() {
             ContentPath::parse("mods/jei.jar").unwrap(),
             ContentType::Mod,
         )],
-        ..direct_plan(String::new(), None)
+        target: InstallTarget::existing(InstanceId::try_from(INSTANCE_ID).unwrap()),
+        overrides: Vec::new(),
     };
     let err = fixture.execute(plan, builtin_origin()).await.unwrap_err();
 
@@ -763,7 +771,7 @@ async fn should_write_nothing_when_the_hash_does_not_match() {
 
         let err = fixture
             .execute(
-                direct_plan(allowed.url("/jei.jar"), Some(sha1_of(b"other bytes"))),
+                direct_plan(&allowed.url("/jei.jar"), Some(sha1_of(b"other bytes"))),
                 origin.clone(),
             )
             .await
@@ -787,17 +795,24 @@ async fn should_install_no_file_of_a_plan_when_one_fails() {
     let plan = InstallPlan {
         files: vec![
             InstallFileEntry::new(
-                ContentSource::direct(allowed.url("/good.jar"), Some(sha1_of(BODY))),
+                ContentSource::direct(
+                    HttpsUrl::from_test_server(&allowed.url("/good.jar")),
+                    Some(sha1_of(BODY)),
+                ),
                 ContentPath::parse("mods/good.jar").unwrap(),
                 ContentType::Mod,
             ),
             InstallFileEntry::new(
-                ContentSource::direct(allowed.url("/bad.jar"), Some(sha1_of(b"other bytes"))),
+                ContentSource::direct(
+                    HttpsUrl::from_test_server(&allowed.url("/bad.jar")),
+                    Some(sha1_of(b"other bytes")),
+                ),
                 ContentPath::parse("mods/bad.jar").unwrap(),
                 ContentType::Mod,
             ),
         ],
-        ..direct_plan(String::new(), None)
+        target: InstallTarget::existing(InstanceId::try_from(INSTANCE_ID).unwrap()),
+        overrides: Vec::new(),
     };
     let err = fixture.execute(plan, plugin_origin()).await.unwrap_err();
 

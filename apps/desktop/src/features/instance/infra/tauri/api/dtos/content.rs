@@ -8,6 +8,7 @@ use aether_core::features::{
     },
     minecraft::GameVersion,
 };
+use aether_core::shared::web_url::display_url;
 use serde::{Deserialize, Serialize};
 use serde_with::{DisplayFromStr, serde_as};
 use specta::Type;
@@ -267,14 +268,15 @@ impl From<ContentItem> for ContentItemDto {
             description: value.description,
             long_description: value.long_description,
             author: value.author,
-            url: value.url,
-            icon_url: value.icon_url,
+            url: value.url.map(String::from).unwrap_or_default(),
+            icon_url: value.icon_url.map(String::from).unwrap_or_default(),
             versions: value.versions,
             content_type: value.content_type.into(),
         }
     }
 }
 
+/// The item comes back from the UI as it was sent there, so its links are only checked again.
 impl From<ContentItemDto> for ContentItem {
     fn from(value: ContentItemDto) -> Self {
         Self {
@@ -284,8 +286,8 @@ impl From<ContentItemDto> for ContentItem {
             description: value.description,
             long_description: value.long_description,
             author: value.author,
-            url: value.url,
-            icon_url: value.icon_url,
+            url: display_url("page of a content item from the UI", Some(value.url)),
+            icon_url: display_url("icon of a content item from the UI", Some(value.icon_url)),
             versions: value.versions,
             content_type: value.content_type.into(),
         }

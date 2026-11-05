@@ -2,6 +2,8 @@ use std::collections::HashSet;
 
 use async_trait::async_trait;
 
+use crate::shared::web_url::HttpsUrl;
+
 /// What the icon cache holds for an icon URL.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum CachedContentIcon {
@@ -46,14 +48,14 @@ pub enum ContentIconError {
 #[async_trait]
 pub trait ContentIconCache: Send + Sync {
     /// What is cached for `url`.
-    async fn lookup(&self, url: &str) -> CachedContentIcon;
+    async fn lookup(&self, url: &HttpsUrl) -> CachedContentIcon;
 
     /// Fetch the icon of `url`, or ask whether the cached one changed. `Ok(true)` when a new
     /// file is in place, `Ok(false)` when the cached one is still current.
-    async fn fetch(&self, url: &str) -> Result<bool, ContentIconError>;
+    async fn fetch(&self, url: &HttpsUrl) -> Result<bool, ContentIconError>;
 
     /// Delete the icons of URLs not in `keep`, and what an interrupted fetch left behind. An
     /// icon fetched just now stays whatever `keep` says: its owner may not be in it yet. How
     /// many icons went.
-    async fn retain(&self, keep: &HashSet<String>) -> usize;
+    async fn retain(&self, keep: &HashSet<HttpsUrl>) -> usize;
 }

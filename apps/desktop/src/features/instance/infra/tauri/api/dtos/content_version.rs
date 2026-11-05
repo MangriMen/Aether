@@ -170,7 +170,7 @@ impl From<ContentVersion> for ContentVersionDto {
             requested_status: value.requested_status.map(Into::into),
             date_published: value.date_published,
             downloads: value.downloads,
-            web_url: value.web_url,
+            web_url: value.web_url.map(String::from).unwrap_or_default(),
         }
     }
 }

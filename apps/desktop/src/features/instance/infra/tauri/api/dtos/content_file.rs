@@ -168,7 +168,7 @@ impl From<ContentMetadata> for ContentMetadataDto {
             name: value.name,
             description: value.description,
             author: value.author,
-            icon_url: value.icon_url,
+            icon_url: value.icon_url.map(String::from),
             icon_path: None,
         }
     }
@@ -194,6 +194,7 @@ mod tests {
     };
 
     use super::*;
+    use aether_core::shared::web_url::HttpsUrl;
 
     fn file(icon_path: Option<&str>) -> ContentFileView {
         let mut file = ContentFileView::from(ContentFile::from_pack_file(
@@ -217,7 +218,9 @@ mod tests {
             description: None,
             author: None,
             author_ref: None,
-            icon_url: Some("https://cdn.modrinth.com/data/AANobbMI/icon.png".into()),
+            icon_url: Some(
+                HttpsUrl::parse("https://cdn.modrinth.com/data/AANobbMI/icon.png").unwrap(),
+            ),
         });
         file.icon_path = icon_path.map(Into::into);
         file

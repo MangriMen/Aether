@@ -5,6 +5,7 @@ use crate::features::minecraft::GameVersion;
 
 use crate::features::instance::PlatformId;
 use crate::features::instance::{ContentId, ContentVersionId};
+use crate::shared::web_url::HttpsUrl;
 use std::{
     collections::HashMap,
     io::Write,
@@ -342,7 +343,7 @@ async fn should_plan_a_mod_as_its_file_with_its_identity_when_resolving_a_mod() 
     assert_eq!(
         entry.source,
         ContentSource::Direct {
-            url: SODIUM_URL.into(),
+            url: HttpsUrl::parse(SODIUM_URL).unwrap(),
             hash: Some(FileHash::new(HashAlgorithm::Sha512, sha512_hex(b"sodium")).unwrap()),
             identity: Some(ContentIdentity {
                 platform: PlatformId::from_static("modrinth"),
@@ -380,7 +381,7 @@ async fn should_fill_the_metadata_of_the_project_and_version_when_resolving_a_mo
             description: Some("desc".into()),
             author: None,
             author_ref: Some("team:team".into()),
-            icon_url: Some("https://cdn.modrinth.com/icon.png".into()),
+            icon_url: Some(HttpsUrl::parse("https://cdn.modrinth.com/icon.png").unwrap()),
         })
     );
     assert_eq!(
@@ -787,7 +788,7 @@ async fn should_resolve_a_ref_to_the_primary_file_when_the_version_has_several()
         resolved.version,
         ContentVersionId::try_from("IZskON6d").unwrap()
     );
-    assert_eq!(resolved.url, SODIUM_URL);
+    assert_eq!(resolved.url.as_str(), SODIUM_URL);
     assert_eq!(resolved.file_name, "sodium.jar");
     assert_eq!(
         resolved.hash,
@@ -949,7 +950,7 @@ async fn should_describe_a_pack_from_its_index_when_given_a_url() {
 
     let metadata = fixture
         .provider
-        .resolve_pack_metadata(PackSource::Url(PACK_URL.into()))
+        .resolve_pack_metadata(PackSource::Url(HttpsUrl::parse(PACK_URL).unwrap()))
         .await
         .unwrap();
 
@@ -997,7 +998,7 @@ async fn should_describe_the_projects_modrinth_knows_when_asked_for_their_metada
                 description: Some("desc".into()),
                 author: None,
                 author_ref: Some("team:team".into()),
-                icon_url: Some("https://cdn.modrinth.com/icon.png".into()),
+                icon_url: Some(HttpsUrl::parse("https://cdn.modrinth.com/icon.png").unwrap()),
             },
             ContentMetadata {
                 content_id: ContentId::try_from("P7dR8mSH").unwrap(),
@@ -1039,6 +1040,27 @@ async fn should_skip_a_malformed_project_and_return_the_rest_when_asked_for_meta
         .map(|item| item.content_id.as_str())
         .collect();
     assert_eq!(found, ["AANobbMI"]);
+}
+
+/// An icon is only shown: one that is not `https` costs the project its icon, not its name.
+#[tokio::test]
+async fn should_describe_a_project_without_its_icon_when_the_icon_is_not_https() {
+    let fixture = Fixture::new();
+    let mut sodium = project("AANobbMI", "sodium", "mod");
+    sodium["icon_url"] = json!("http://cdn.modrinth.com/icon.png");
+    fixture
+        .http
+        .serve_json(&format!("{API}/projects"), &json!([sodium]));
+
+    let metadata = fixture
+        .provider
+        .get_contents_metadata(&ids(&["AANobbMI"]))
+        .await
+        .unwrap();
+
+    assert_eq!(metadata.len(), 1);
+    assert_eq!(metadata[0].name, "SODIUM");
+    assert_eq!(metadata[0].icon_url, None);
 }
 
 #[tokio::test]

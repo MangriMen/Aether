@@ -4,6 +4,7 @@ use crate::features::minecraft::GameVersion;
 
 use crate::features::instance::InstanceName;
 use crate::features::instance::{ContentId, ContentVersionId};
+use crate::shared::web_url::HttpsUrl;
 
 use crate::features::instance::PlatformId;
 use std::{
@@ -101,7 +102,7 @@ impl MockProvider {
         provider.metadata.platform = Some(PlatformId::try_from(platform).unwrap());
         provider.files = vec![InstallFileEntry::new(
             ContentSource::Direct {
-                url: "https://cdn.example/sodium.jar".into(),
+                url: HttpsUrl::parse("https://cdn.example/sodium.jar").unwrap(),
                 hash: None,
                 identity: Some(ContentIdentity {
                     platform: PlatformId::try_from(platform).unwrap(),

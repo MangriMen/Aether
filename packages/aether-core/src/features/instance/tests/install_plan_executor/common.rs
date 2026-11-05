@@ -2,6 +2,7 @@ use crate::features::instance::InstanceName;
 use crate::features::instance::PlatformId;
 use crate::features::instance::{ContentId, ContentVersionId};
 use crate::features::minecraft::GameVersion;
+use crate::shared::web_url::HttpsUrl;
 use std::{
     collections::HashMap,
     io::Write,
@@ -135,7 +136,7 @@ impl ContentProvider for MockProvider {
             version: version
                 .cloned()
                 .unwrap_or_else(|| ContentVersionId::try_from("newest").unwrap()),
-            url: self.url_for(content_id),
+            url: HttpsUrl::parse(&self.url_for(content_id)).unwrap(),
             hash: Some(FileHash::new(HashAlgorithm::Sha1, SHA1_ABC).unwrap()),
             file_name: format!("{content_id}.jar"),
             size: None,
@@ -184,11 +185,12 @@ impl ContentDownloader for RecordingDownloader {
     async fn download(
         &self,
         origin: &ProviderId,
-        url: &str,
+        url: &HttpsUrl,
         hash: Option<&FileHash>,
         destination: &Path,
         on_bytes: Option<BytesProgress<'_>>,
     ) -> Result<u64, InstanceError> {
+        let url = url.as_str();
         self.downloads.lock().unwrap().push(Download {
             origin: origin.to_string(),
             url: url.into(),
@@ -1015,7 +1017,7 @@ pub(super) fn provider_ref(platform: &str, content_id: &str, path: &str) -> Inst
 
 pub(super) fn direct(url: &str, path: &str) -> InstallFileEntry {
     InstallFileEntry::new(
-        ContentSource::direct(url.into(), None),
+        ContentSource::direct(HttpsUrl::parse(url).unwrap(), None),
         ContentPath::parse(path).unwrap(),
         ContentType::Mod,
     )
@@ -1024,7 +1026,7 @@ pub(super) fn direct(url: &str, path: &str) -> InstallFileEntry {
 /// A direct entry with the hash of what the recording downloader writes for it: its URL.
 pub(super) fn hashed(url: &str, path: &str) -> InstallFileEntry {
     InstallFileEntry::new(
-        ContentSource::direct(url.into(), Some(sha1_hash(url))),
+        ContentSource::direct(HttpsUrl::parse(url).unwrap(), Some(sha1_hash(url))),
         ContentPath::parse(path).unwrap(),
         ContentType::Mod,
     )
@@ -1058,7 +1060,7 @@ pub(super) fn identified(
 ) -> InstallFileEntry {
     InstallFileEntry::new(
         ContentSource::Direct {
-            url: url.into(),
+            url: HttpsUrl::parse(url).unwrap(),
             hash: Some(sha1_hash(url)),
             identity: Some(ContentIdentity {
                 platform: PlatformId::try_from(platform).unwrap(),

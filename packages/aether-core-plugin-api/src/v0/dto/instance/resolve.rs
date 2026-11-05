@@ -30,7 +30,8 @@ pub struct ResolveFileParamsDto {
 pub struct ResolvedFileDto {
     /// The platform's id of the file the ref resolved to.
     pub version: String,
-    /// Downloaded under the same rules as a `direct` source of a plan.
+    /// Downloaded under the same rules as a `direct` source of a plan: an `https` URL, or the
+    /// answer is refused.
     pub url: String,
     #[serde(default)]
     pub hash: Option<FileHashDto>,
@@ -125,6 +126,7 @@ pub struct PackMetadataDto {
     /// How many files installing the pack would bring, when known without resolving them.
     #[serde(default)]
     pub file_count: Option<u64>,
+    /// An `https` URL of the pack's icon on a public host; any other value is dropped by the host.
     #[serde(default)]
     pub icon_url: Option<String>,
 }
