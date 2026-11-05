@@ -6,20 +6,15 @@
 //! Whether the path also stays inside the instance on disk (symlinks) is a different question,
 //! answered where the file is reached.
 //!
-//! Note that the segment rules are applied to the raw string rather than through `std::path`.
-//! A plugin's path is not this host's path: on Linux `mods\..\..\evil` is a single `Normal`
-//! component, so letting the host's parser decide would make the very same input mean different
-//! things on different platforms.
-//!
-//! The one rule that differs by platform is a `:` inside a name: on Windows it is a drive, a
-//! prefix or a data stream, elsewhere an ordinary character of a file name the user may have.
-//! A first segment spelled as a drive (`C:`) is refused everywhere, as it is absolute-looking.
+//! The segment rules themselves are shared with the other paths the core takes from outside
+//! (see [`crate::shared::safe_path`]).
 
 use std::fmt;
-use std::path::{Component, PathBuf};
+use std::path::PathBuf;
 
 use super::InstanceError;
 use crate::features::settings::INSTANCE_METADATA_FOLDER_NAME;
+use crate::shared::safe_path::{self, PathRejection, Separators};
 
 /// A path refused by [`InstanceRelativePath::parse`] or [`ContentPath::parse`].
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
@@ -49,89 +44,22 @@ fn invalid(path: &str, reason: &str) -> InvalidRelativePath {
 ///
 /// Both `/` and `\` are treated as separators no matter which host this runs on, so a path that
 /// is refused on Windows is refused on Linux too — but for a `:` inside a name past a drive-like
-/// first segment ([`is_refused_colon`]). The value is normalized: every `\` is a `/`.
+/// first segment. The value is normalized: every `\` is a `/`.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct InstanceRelativePath(String);
 
 impl InstanceRelativePath {
     /// Check `relative_path` against the segment rules and normalize it.
     pub fn parse(relative_path: &str) -> Result<Self, InvalidRelativePath> {
-        if relative_path.is_empty() {
-            return Err(invalid(relative_path, "path is empty"));
-        }
-
-        if relative_path.contains('\0') {
-            return Err(invalid(relative_path, "path contains a NUL byte"));
-        }
-
-        if relative_path.starts_with('/') || relative_path.starts_with('\\') {
-            return Err(invalid(
-                relative_path,
-                "path is absolute; only paths relative to the instance root are accepted",
-            ));
-        }
-
-        let mut result = PathBuf::new();
-        let mut normalized = String::with_capacity(relative_path.len());
-
-        for (index, segment) in relative_path.split(['/', '\\']).enumerate() {
-            match segment {
-                "" => {
-                    return Err(invalid(
-                        relative_path,
-                        "path has an empty segment (a repeated or trailing separator)",
-                    ));
-                }
-                "." | ".." => {
-                    return Err(invalid(
-                        relative_path,
-                        "path contains a `.` or `..` segment",
-                    ));
-                }
-                _ if is_refused_colon(index, segment) => {
-                    return Err(invalid(
-                        relative_path,
-                        "path segment contains `:` (drive letter, UNC prefix or data stream)",
-                    ));
-                }
-                // Windows drops a trailing dot or space from a name, so `.metadata.` *is*
-                // `.metadata` there: the segment would name another file than the one checked.
-                _ if segment.ends_with(['.', ' ']) => {
-                    return Err(invalid(
-                        relative_path,
-                        "path segment ends with a dot or a space",
-                    ));
-                }
-                _ if is_reserved_windows_name(segment) => {
-                    return Err(invalid(
-                        relative_path,
-                        "path segment is a reserved Windows device name",
-                    ));
-                }
-                _ => {
-                    result.push(segment);
-                    if index > 0 {
-                        normalized.push('/');
-                    }
-                    normalized.push_str(segment);
-                }
-            }
-        }
-
-        // Belt and braces: whatever the host's own parser makes of the rebuilt path, it must
-        // still be nothing but plain names. This is what would catch a form the rules above did
-        // not anticipate on some platform.
-        if !result
-            .components()
-            .all(|component| matches!(component, Component::Normal(_)))
-        {
-            return Err(invalid(
-                relative_path,
-                "path does not consist of plain name segments",
-            ));
-        }
-
-        Ok(Self(normalized))
+        safe_path::parse_relative(relative_path, Separators::SlashOrBackslash)
+            .map(Self)
+            .map_err(|rejection| match rejection {
+                PathRejection::Absolute => invalid(
+                    relative_path,
+                    "path is absolute; only paths relative to the instance root are accepted",
+                ),
+                other => invalid(relative_path, &other.to_string()),
+            })
     }
 
     pub fn as_str(&self) -> &str {
@@ -155,48 +83,6 @@ impl InstanceRelativePath {
 impl fmt::Display for InstanceRelativePath {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(&self.0)
-    }
-}
-
-/// Whether a `:` in the `index`th segment refuses the path.
-///
-/// On Windows a drive letter (`C:`), a UNC/verbatim prefix, or an alternate data stream
-/// (`file.txt:secret`) all show up as a `:` inside a segment, so any `:` is refused. Elsewhere it
-/// is part of a name (`mods/a:b.jar` is a file a Linux user may have), and only a first segment
-/// spelled as a drive is refused, so a path absolute on Windows is refused on every platform.
-fn is_refused_colon(index: usize, segment: &str) -> bool {
-    if cfg!(windows) {
-        return segment.contains(':');
-    }
-
-    let bytes = segment.as_bytes();
-    index == 0 && bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':'
-}
-
-/// Whether `segment` names a Windows device (`CON`, `NUL`, `COM1`, ...).
-///
-/// Windows resolves such a name to the device whatever the case and whatever follows the first dot
-/// or colon (`nul.txt`, `COM1.tar.gz`, `aux:stream`), so a file with it cannot be created or read
-/// as a file there. Refused on every host for the same reason `\` is a separator everywhere: a
-/// pack must mean the same thing on every platform it is shared to.
-fn is_reserved_windows_name(segment: &str) -> bool {
-    let stem = segment.split(['.', ':']).next().unwrap_or_default();
-    let stem = stem.trim_end_matches(' ').to_ascii_uppercase();
-
-    match stem.as_str() {
-        "CON" | "PRN" | "AUX" | "NUL" | "CONIN$" | "CONOUT$" => true,
-        _ => {
-            let numbered = |prefix: &str| {
-                stem.strip_prefix(prefix).is_some_and(|rest| {
-                    let mut chars = rest.chars();
-                    matches!(
-                        (chars.next(), chars.next()),
-                        (Some('1'..='9' | '\u{b9}' | '\u{b2}' | '\u{b3}'), None)
-                    )
-                })
-            };
-            numbered("COM") || numbered("LPT")
-        }
     }
 }
 

@@ -17,9 +17,9 @@ pub(crate) use domain::{
     AsCapabilityMetadata, Compatibility, CoreMount, ExtractedPlugin, FolderMounts, GrantableHost,
     ManifestError, PLUGIN_API_VERSION, PLUGIN_CACHE_MOUNT, Plugin, PluginCallError,
     PluginCheckCompatibilityParams, PluginContent, PluginHandle, PluginImportInstance,
-    PluginInstance, PluginInternalEvent, PluginState, PluginStateReason, PluginVerification,
-    core_folders, effective_allowed_hosts, is_blocked_ip, is_filesystem_root, is_host_allowed,
-    partition_mountable, to_wasi_path,
+    PluginInstance, PluginInternalEvent, PluginPath, PluginState, PluginStateReason,
+    PluginVerification, core_folders, effective_allowed_hosts, is_blocked_ip, is_filesystem_root,
+    is_host_allowed, partition_mountable, to_wasi_path,
 };
 
 pub use app::{

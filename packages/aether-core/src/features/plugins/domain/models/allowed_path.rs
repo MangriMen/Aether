@@ -3,6 +3,7 @@ use std::{
     path::{Component, Path, PathBuf},
 };
 
+use super::plugin_path::{PluginMountPoint, PluginPath, PluginPathRejection};
 use crate::features::{instance::PluginId, settings::LocationInfo};
 
 /// Where a plugin sees its own cache directory.
@@ -35,6 +36,11 @@ impl CoreMount {
             Self::Cache => PLUGIN_CACHE_MOUNT,
             Self::Instances => PLUGIN_INSTANCES_MOUNT,
         }
+    }
+
+    /// [`Self::plugin_root`] as a path to compare plugin paths with.
+    pub(crate) fn plugin_root_path(self) -> PluginPath {
+        PluginPath::parse(self.plugin_root()).expect("a core mount root is a plain plugin path")
     }
 
     /// The host folder behind the mount, for `plugin_id`.
@@ -81,7 +87,8 @@ pub enum AllowedPathRejection {
     HostIsRoot,
     /// The plugin path does not start with `/`.
     PluginNotAbsolute,
-    /// The plugin path has empty, `.` or `..` segments.
+    /// The plugin path is not plain `/`-separated names (see [`PluginMountPoint`]): it has an
+    /// empty, `.` or `..` segment, a `\` or a NUL byte.
     PluginNotNormalized,
     /// The plugin path is `/` itself, which would hide every other mount.
     PluginIsRoot,
@@ -99,7 +106,8 @@ impl std::fmt::Display for AllowedPathRejection {
             Self::HostIsRoot => "a whole drive is never given to a plugin",
             Self::PluginNotAbsolute => "the plugin path must start with `/`",
             Self::PluginNotNormalized => {
-                "the plugin path must not contain empty, `.` or `..` parts"
+                "the plugin path must be plain `/`-separated names, without empty, `.` or `..` \
+                 parts or `\\`"
             }
             Self::PluginIsRoot => "the plugin path must not be `/`",
             Self::PluginReserved => "the plugin path overlaps `/cache` or `/instances`",
@@ -147,7 +155,7 @@ impl AllowedPath {
             return Err(AllowedPathRejection::HostIsRoot);
         }
 
-        validate_plugin_path(&self.plugin)
+        validate_plugin_path(&self.plugin).map(drop)
     }
 
     /// [`Self::validate`], and the host folder must not overlap any of [`core_folders`]: it
@@ -198,33 +206,26 @@ impl FolderMounts {
     }
 }
 
-fn validate_plugin_path(plugin: &str) -> Result<(), AllowedPathRejection> {
-    let Some(rest) = plugin.strip_prefix('/') else {
-        return Err(AllowedPathRejection::PluginNotAbsolute);
-    };
-
-    if rest.is_empty() {
-        return Err(AllowedPathRejection::PluginIsRoot);
-    }
-
+/// The plugin side of a folder of the user's, parsed: a [`PluginMountPoint`] clear of every
+/// [`CoreMount`].
+fn validate_plugin_path(plugin: &str) -> Result<PluginMountPoint, AllowedPathRejection> {
     // `..` here would not escape on the host — the mount is a capability — but it would make
     // the reserved-mount check below compare names that do not mean what they say.
-    if rest
-        .split('/')
-        .any(|segment| segment.is_empty() || segment == "." || segment == "..")
-    {
-        return Err(AllowedPathRejection::PluginNotNormalized);
-    }
+    let path = PluginMountPoint::parse(plugin).map_err(|err| match err.reason {
+        PluginPathRejection::NotAbsolute => AllowedPathRejection::PluginNotAbsolute,
+        PluginPathRejection::Root => AllowedPathRejection::PluginIsRoot,
+        PluginPathRejection::Segment(_) => AllowedPathRejection::PluginNotNormalized,
+    })?;
 
     if CoreMount::ALL
         .into_iter()
-        .map(CoreMount::plugin_root)
-        .any(|mount| is_within(plugin, mount) || is_within(mount, plugin))
+        .map(CoreMount::plugin_root_path)
+        .any(|mount| path.overlaps(&mount))
     {
         return Err(AllowedPathRejection::PluginReserved);
     }
 
-    Ok(())
+    Ok(path)
 }
 
 /// The host folders a folder of the user's must stay clear of: those the core mounts for the
@@ -647,6 +648,48 @@ mod tests {
                 Err(AllowedPathRejection::PluginNotNormalized),
                 "{plugin}"
             );
+        }
+    }
+
+    #[test]
+    fn should_refuse_a_plugin_path_when_a_segment_is_not_a_plain_name() {
+        for plugin in [
+            // One segment off Windows, three on it: the reserved check would compare
+            // `packs\..\cache` with `/cache` and see no overlap.
+            r"/packs\..\cache",
+            r"/packs\sub",
+            "/packs/a\0b",
+        ] {
+            assert_eq!(
+                mapping(plugin).validate(),
+                Err(AllowedPathRejection::PluginNotNormalized),
+                "{plugin:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn should_accept_a_folder_when_its_name_is_special_only_to_some_file_system() {
+        // The mount point is the folder's own path in WASI form, never a file the core opens:
+        // a name the user's file system allows is not refused for what Windows makes of it.
+        for name in ["aux", "aux.packs", "com1.d", "My Pack ", "pack.", "a:b"] {
+            let folder = AllowedPath {
+                host: absolute(&format!("Modpacks/{name}")),
+                plugin: format!("/mnt/d/Modpacks/{name}"),
+                read_only: true,
+            };
+
+            assert_eq!(folder.validate(), Ok(()), "{name:?}");
+        }
+
+        let picked = AllowedPath::read_only_folder(Path::new("/home/u/aux"));
+        assert_eq!(picked.plugin, "/home/u/aux");
+    }
+
+    #[test]
+    fn should_parse_every_core_mount_root_when_comparing_plugin_paths() {
+        for mount in CoreMount::ALL {
+            assert_eq!(mount.plugin_root_path().as_str(), mount.plugin_root());
         }
     }
 

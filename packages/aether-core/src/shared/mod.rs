@@ -11,6 +11,7 @@ pub mod keyed_locks;
 pub mod limits;
 pub mod overridable;
 pub mod request_client;
+pub mod safe_path;
 pub mod serde_semver;
 pub mod serializable_command;
 pub mod system;

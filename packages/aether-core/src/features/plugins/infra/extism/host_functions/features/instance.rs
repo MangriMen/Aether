@@ -18,7 +18,7 @@ use crate::{
     features::plugins::LoadConfig,
     features::plugins::infra::{
         pack_instances::{is_deploying_packs, record_pack_instance},
-        plugin_utils::{MountSet, resolve_plugin_path},
+        plugin_utils::{MountSet, parse_plugin_path, resolve_plugin_path},
     },
     features::settings::LocationInfo,
 };
@@ -87,7 +87,10 @@ pub(crate) fn new_instance_from_plugin(
     let icon_path = dto
         .icon_path
         .as_deref()
-        .map(|icon| resolve_plugin_path(location_info, plugin_id, icon, MountSet::CACHE))
+        .map(|icon| {
+            let icon = parse_plugin_path(plugin_id, icon)?;
+            resolve_plugin_path(location_info, plugin_id, &icon, MountSet::CACHE)
+        })
         .transpose()?
         .map(|host| host.to_string_lossy().into_owned());
 
@@ -1090,6 +1093,36 @@ mod tests {
         ] {
             new_instance_from_plugin(&plugin_id(), dto_with_icon(Some(&icon)), &location_info)
                 .expect_err("an icon outside the plugin cache must be refused");
+        }
+    }
+
+    #[tokio::test]
+    async fn should_refuse_the_icon_when_its_path_is_not_plain_names() {
+        let (_temp_dir, location_info, _service) = setup().await;
+        let cache = location_info.plugin_cache_dir(&plugin_id());
+        std::fs::create_dir_all(&cache).unwrap();
+        std::fs::write(cache.join("icon.png"), b"png").unwrap();
+
+        // The file is there; only the spelling is refused.
+        for icon in [
+            "/cache/./icon.png",
+            "/cache//icon.png",
+            r"/cache\icon.png",
+            "/cache/icon.png/",
+        ] {
+            let err =
+                new_instance_from_plugin(&plugin_id(), dto_with_icon(Some(icon)), &location_info)
+                    .expect_err(icon);
+
+            assert!(
+                matches!(
+                    err.raw.as_ref(),
+                    crate::ErrorKind::PluginError(
+                        crate::features::plugins::PluginError::AccessViolation { .. }
+                    )
+                ),
+                "{icon}: {err:?}"
+            );
         }
     }
 

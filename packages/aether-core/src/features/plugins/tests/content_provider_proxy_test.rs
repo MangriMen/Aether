@@ -1381,6 +1381,61 @@ async fn should_refuse_a_new_instance_icon_when_it_is_outside_the_plugin_cache()
 }
 
 #[tokio::test]
+async fn should_refuse_an_icon_or_override_path_when_it_is_not_plain_names() {
+    // Each spelling names a file that is in the cache: the path itself is refused.
+    for path in [
+        "/cache/./pack.zip",
+        "/cache//pack.zip",
+        r"/cache\pack.zip",
+        "/cache/pack.zip/",
+    ] {
+        let override_fixture = Fixture::new(
+            RESOLVE_ONLY_CAPABILITIES,
+            vec![(
+                "cf_resolve_install_plan",
+                encode(plan_for(
+                    existing_plan_target("instance"),
+                    vec![OverrideSourceDto {
+                        location: OverrideLocationDto::Archive {
+                            archive_path: path.into(),
+                            subdir: "overrides".into(),
+                        },
+                        side: FileSideDto::Both,
+                    }],
+                )),
+            )],
+        );
+        override_fixture.cache_file("pack.zip");
+
+        assert_invalid_answer(
+            override_fixture
+                .proxy
+                .resolve_install_plan(plan_params(existing_target()))
+                .await,
+        );
+
+        let icon_fixture = Fixture::new(
+            RESOLVE_ONLY_CAPABILITIES,
+            vec![(
+                "cf_resolve_install_plan",
+                encode(plan_for(
+                    new_instance_with_icon(Some(path.into())),
+                    Vec::new(),
+                )),
+            )],
+        );
+        icon_fixture.cache_file("pack.zip");
+
+        assert_invalid_answer(
+            icon_fixture
+                .proxy
+                .resolve_install_plan(plan_params(ResolveTarget::New))
+                .await,
+        );
+    }
+}
+
+#[tokio::test]
 async fn should_hand_a_pack_file_over_under_the_plugin_path_when_the_plugin_can_read_it() {
     let fixture = Fixture::new(
         RESOLVE_ONLY_CAPABILITIES,

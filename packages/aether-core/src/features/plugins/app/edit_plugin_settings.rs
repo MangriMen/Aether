@@ -88,6 +88,11 @@ pub(super) async fn settings_to_edit(
 /// saved. A host folder that does not exist is dropped instead: it may be one given earlier
 /// and since removed, which should not block every later edit. A file is refused: the user
 /// would believe the plugin got a folder it cannot open.
+///
+/// Only a folder the edit adds is held to that. One already saved that fails a check (it
+/// predates the check, or the folder became a file) is dropped with a warning: the settings
+/// screen sends every saved folder back with each edit, so refusing it would block every
+/// unrelated change, and the loader does not mount it anyway.
 fn apply_edit_changes(
     plugin_id: &PluginId,
     core_folders: &[PathBuf],
@@ -99,24 +104,52 @@ fn apply_edit_changes(
     }
 
     if let Some(allowed_paths) = edit_settings.allowed_paths {
+        let saved: Vec<AllowedPath> = settings
+            .allowed_paths
+            .iter()
+            .cloned()
+            .map(AllowedPath::normalized)
+            .collect();
         let mut kept = Vec::with_capacity(allowed_paths.len());
 
         for path in allowed_paths {
             let path = path.normalized();
-            let rejected = |reason| PluginError::InvalidAllowedPath {
-                plugin_id: plugin_id.to_owned(),
-                path: path.host.clone(),
-                reason,
-            };
 
-            path.validate_against(core_folders).map_err(rejected)?;
+            let checked = path.validate_against(core_folders).and_then(|()| {
+                let host = Path::new(&path.host);
+                if host.exists() && !host.is_dir() {
+                    Err(AllowedPathRejection::HostNotAFolder)
+                } else {
+                    Ok(())
+                }
+            });
 
-            let host = Path::new(&path.host);
-            if !host.exists() {
-                continue;
+            match checked {
+                Ok(()) => {}
+                Err(reason) if saved.contains(&path) => {
+                    warn!(
+                        "Plugin '{plugin_id}': dropping saved folder '{}' -> '{}' from its \
+                         settings: {reason}",
+                        path.host, path.plugin
+                    );
+                    continue;
+                }
+                Err(reason) => {
+                    return Err(PluginError::InvalidAllowedPath {
+                        plugin_id: plugin_id.to_owned(),
+                        path: path.host.clone(),
+                        reason,
+                    });
+                }
             }
-            if !host.is_dir() {
-                return Err(rejected(AllowedPathRejection::HostNotAFolder));
+
+            if !Path::new(&path.host).exists() {
+                warn!(
+                    "Plugin '{plugin_id}': dropping folder '{}' -> '{}' from its settings: the \
+                     host folder does not exist",
+                    path.host, path.plugin
+                );
+                continue;
             }
 
             kept.push(path);
@@ -229,6 +262,106 @@ mod tests {
                 "{plugin}: {result:?}"
             );
         }
+    }
+
+    #[test]
+    fn should_refuse_a_folder_when_its_plugin_path_is_not_plain_names() {
+        let dir = tempfile::tempdir().unwrap();
+
+        for plugin in ["/packs/./sub", "/packs/../cache", "/packs/a\0b"] {
+            assert_eq!(
+                rejection(&edit(vec![folder(dir.path(), plugin)])),
+                Some(AllowedPathRejection::PluginNotNormalized),
+                "{plugin}"
+            );
+        }
+    }
+
+    /// Names Windows reserves or trims are ordinary folder names elsewhere; the folder is
+    /// mounted under its own path, so its name is no reason to refuse it.
+    #[cfg(unix)]
+    #[test]
+    fn should_keep_a_folder_when_its_name_is_special_only_to_windows() {
+        let launcher = Launcher::new();
+        let dir = tempfile::tempdir().unwrap();
+        let folders: Vec<_> = ["aux", "aux.packs", "com1.d", "My Pack ", "pack."]
+            .into_iter()
+            .map(|name| {
+                let folder = dir.path().join(name);
+                std::fs::create_dir(&folder).unwrap();
+                AllowedPath::read_only_folder(&folder)
+            })
+            .collect();
+
+        let settings = launcher.edit(folders.clone()).unwrap();
+
+        assert_eq!(settings.allowed_paths, folders);
+    }
+
+    #[test]
+    fn should_save_an_unrelated_edit_when_a_saved_folder_fails_a_check() {
+        let launcher = Launcher::new();
+        let dir = tempfile::tempdir().unwrap();
+        let file = dir.path().join("pack.toml");
+        std::fs::write(&file, b"").unwrap();
+        let added_dir = tempfile::tempdir().unwrap();
+
+        // Saved before the checks existed, or changed on disk since: a relative host, a plugin
+        // path that is not plain, a folder that is now a file.
+        let stale = vec![
+            AllowedPath {
+                host: "packs".to_owned(),
+                plugin: "/packs".to_owned(),
+                read_only: true,
+            },
+            folder(dir.path(), "/a/../b"),
+            folder(&file, "/file"),
+        ];
+        let added = AllowedPath::read_only_folder(added_dir.path());
+        let mut sent = stale.clone();
+        sent.push(added.clone());
+
+        let settings = apply_edit_changes(
+            &PluginId::from_static("packwiz"),
+            &core_folders(&launcher.location_info, &PluginId::from_static("packwiz")),
+            PluginSettings {
+                allowed_paths: stale,
+                ..PluginSettings::default()
+            },
+            EditPluginSettings {
+                allowed_hosts: Some(vec!["example.com".into()]),
+                allowed_paths: Some(sent),
+            },
+        )
+        .expect("a stale saved folder must not block the edit");
+
+        assert_eq!(settings.allowed_paths, [added.normalized()]);
+        assert_eq!(settings.allowed_hosts, ["example.com"]);
+    }
+
+    #[test]
+    fn should_refuse_a_new_folder_when_it_fails_a_check_even_beside_saved_ones() {
+        let launcher = Launcher::new();
+        let saved_dir = tempfile::tempdir().unwrap();
+        let saved = AllowedPath::read_only_folder(saved_dir.path());
+
+        let result = apply_edit_changes(
+            &PluginId::from_static("packwiz"),
+            &core_folders(&launcher.location_info, &PluginId::from_static("packwiz")),
+            PluginSettings {
+                allowed_paths: vec![saved.clone()],
+                ..PluginSettings::default()
+            },
+            EditPluginSettings {
+                allowed_paths: Some(vec![saved, folder(saved_dir.path(), "/a/../b")]),
+                ..EditPluginSettings::default()
+            },
+        );
+
+        assert_eq!(
+            rejection(&result),
+            Some(AllowedPathRejection::PluginNotNormalized)
+        );
     }
 
     #[test]

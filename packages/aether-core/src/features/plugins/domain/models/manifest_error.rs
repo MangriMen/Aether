@@ -15,7 +15,9 @@ pub enum ManifestError {
     #[error("Invalid path mapping")]
     InvalidPathMapping,
 
-    #[error("Invalid `load.file` \"{0}\": it must be a relative path inside the plugin directory")]
+    #[error(
+        "Invalid `load.file` \"{0}\": it must be a plain relative path inside the plugin directory"
+    )]
     InvalidLoadFile(String),
 
     #[error(

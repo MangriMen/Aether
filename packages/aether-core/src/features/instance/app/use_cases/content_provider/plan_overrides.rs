@@ -8,8 +8,13 @@
 //! as a whole. Symlinks are never materialised, as they could point out of the instance or the
 //! source. A directory source is read from a handle on its root, one component at a time and
 //! never through a symlink ([`open_in`]), so a directory swapped for a symlink after listing does
-//! not lead out of it. What an archive unpacks to is bounded over all sources of a plan together
-//! (`ContentInstallLimits`): files when listed, bytes as staged, so a lying header does not help.
+//! not lead out of it. The root itself is reached by its path ([`open_root`]): only its last
+//! component is not followed, so a parent of it swapped for a symlink after the path was
+//! resolved is not caught. An archive source is opened by its path with a plain `File::open`
+//! ([`open_archive`]), which follows symlinks in every component, the file included: an archive
+//! swapped for a symlink after its path was resolved is not caught either. What an archive
+//! unpacks to is bounded over all sources of a plan together (`ContentInstallLimits`): files
+//! when listed, bytes as staged, so a lying header does not help.
 
 use std::{
     fs::File,
@@ -270,7 +275,8 @@ fn list_directory(root: &Path, max_files: usize) -> Result<Vec<OverrideFile>, In
     Ok(files)
 }
 
-/// A handle on the root of a directory source, its last component not followed either.
+/// A handle on the root of a directory source, its last component not followed either. The
+/// components before it are, as the path is opened through the ambient file system.
 fn open_root(root: &Path) -> Result<Dir, InstanceError> {
     let opened = match (root.parent(), root.file_name()) {
         (Some(parent), Some(name)) if !parent.as_os_str().is_empty() => {

@@ -685,6 +685,9 @@ mod tests {
                 user_folder(absolute("everything"), "/"),
                 user_folder(absolute("unrooted"), "unrooted"),
                 user_folder(absolute("dotted"), "/a/../instances"),
+                // A `\` is one name to the reserved-mount check but a separator on Windows.
+                user_folder(absolute("backslashed"), r"/a\..\cache"),
+                user_folder(absolute("nul-byte"), "/a/b\0c"),
                 user_folder(absolute(""), "/drive"),
                 user_folder(absolute("kept"), "/kept"),
             ],
