@@ -1,8 +1,8 @@
 use std::path::PathBuf;
 
 use aether_core::features::plugins::{
-    AllowedHostRejection, AllowedPath, AllowedPathRejection, EditPluginSettings, FolderAccess,
-    HostAccess, PluginSettings,
+    AllowedHostRejection, AllowedPath, AllowedPathInput, AllowedPathRejection, EditPluginSettings,
+    FolderAccess, HostAccess, IgnoredAllowedPath, PluginSettings,
 };
 use serde::{Deserialize, Serialize};
 use specta::Type;
@@ -15,6 +15,11 @@ pub struct PluginSettingsDto {
 
     #[serde(default)]
     pub allowed_paths: Vec<AllowedPathDto>,
+
+    /// Saved folders that were left out because the plugin side is not a path a plugin may
+    /// have. They are gone from the file once the settings are saved.
+    #[serde(default)]
+    pub ignored_paths: Vec<IgnoredAllowedPathDto>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Type)]
@@ -37,6 +42,14 @@ pub struct AllowedPathDto {
     pub plugin_path: String,
     /// `true` unless the user lets the plugin write there.
     pub read_only: bool,
+}
+
+/// A saved folder that was not read, and why.
+#[derive(Serialize, Deserialize, Debug, Clone, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct IgnoredAllowedPathDto {
+    pub path: AllowedPathDto,
+    pub reason: AllowedPathRejectionDto,
 }
 
 #[derive(Serialize, Debug, Type)]
@@ -71,7 +84,7 @@ pub enum AllowedHostRejectionDto {
     Wildcard,
 }
 
-#[derive(Serialize, Debug, Clone, Copy, Type)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, Type)]
 #[serde(rename_all = "snake_case")]
 pub enum AllowedPathRejectionDto {
     HostNotAbsolute,
@@ -89,6 +102,7 @@ impl From<PluginSettings> for PluginSettingsDto {
         Self {
             allowed_hosts: value.allowed_hosts,
             allowed_paths: value.allowed_paths.into_iter().map(Into::into).collect(),
+            ignored_paths: value.ignored_paths.into_iter().map(Into::into).collect(),
         }
     }
 }
@@ -108,18 +122,31 @@ impl From<AllowedPath> for AllowedPathDto {
     fn from(value: AllowedPath) -> Self {
         Self {
             host_path: value.host,
-            plugin_path: value.plugin,
+            plugin_path: value.plugin.into(),
             read_only: value.read_only,
         }
     }
 }
 
-impl From<AllowedPathDto> for AllowedPath {
+impl From<AllowedPathDto> for AllowedPathInput {
     fn from(value: AllowedPathDto) -> Self {
         Self {
             host: value.host_path,
             plugin: value.plugin_path,
             read_only: value.read_only,
+        }
+    }
+}
+
+impl From<IgnoredAllowedPath> for IgnoredAllowedPathDto {
+    fn from(value: IgnoredAllowedPath) -> Self {
+        Self {
+            path: AllowedPathDto {
+                host_path: value.path.host,
+                plugin_path: value.path.plugin,
+                read_only: value.path.read_only,
+            },
+            reason: value.reason.into(),
         }
     }
 }

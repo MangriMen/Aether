@@ -45,7 +45,7 @@ async fn should_give_the_folder_read_only_and_restart_the_plugin_when_a_pack_is_
     );
     assert_eq!(
         settings.folders(),
-        [AllowedPath::read_only_folder(&folder)],
+        [AllowedPath::read_only_folder(&folder).unwrap()],
         "the folder of the pack, not the file and not the drive"
     );
     assert!(old.is_retired(), "the plugin runs with the folder mounted");
@@ -69,7 +69,7 @@ async fn should_give_the_folder_when_a_saved_one_over_it_is_left_out_by_the_load
     // A whole drive saved before it was refused: the loader leaves it out, so it gives the
     // plugin nothing.
     let temp = tempfile::tempdir().unwrap();
-    let drive = AllowedPath::read_only_folder(temp.path().ancestors().last().unwrap());
+    let drive = AllowedPath::read_only_folder(temp.path().ancestors().last().unwrap()).unwrap();
     assert!(drive.exposes(&file));
     let settings = Arc::new(MemoryPluginSettings(Mutex::new(Some(PluginSettings {
         allowed_paths: vec![drive.clone()],
@@ -98,7 +98,10 @@ async fn should_give_the_folder_when_a_saved_one_over_it_is_left_out_by_the_load
     assert!(harness.handle().folders().exposes(&file));
     assert_eq!(
         settings.folders(),
-        [drive, AllowedPath::read_only_folder(file.parent().unwrap())]
+        [
+            drive,
+            AllowedPath::read_only_folder(file.parent().unwrap()).unwrap()
+        ]
     );
     assert!(!harness.restart_needed(&settings).await);
 }
@@ -137,7 +140,7 @@ async fn should_keep_the_rights_and_add_the_new_folder_when_a_folder_was_already
     let elsewhere = tempfile::tempdir().unwrap();
     let given = AllowedPath {
         read_only: false,
-        ..AllowedPath::read_only_folder(elsewhere.path())
+        ..AllowedPath::read_only_folder(elsewhere.path()).unwrap()
     };
     let settings = Arc::new(MemoryPluginSettings(Mutex::new(Some(PluginSettings {
         allowed_paths: vec![given.clone()],
@@ -152,7 +155,10 @@ async fn should_keep_the_rights_and_add_the_new_folder_when_a_folder_was_already
 
     assert_eq!(
         settings.folders(),
-        [given, AllowedPath::read_only_folder(file.parent().unwrap())]
+        [
+            given,
+            AllowedPath::read_only_folder(file.parent().unwrap()).unwrap()
+        ]
     );
 }
 
@@ -261,7 +267,7 @@ async fn should_restart_the_plugin_when_its_folder_is_saved_but_not_mounted() {
     let (_root, file) = pack_file();
     let folder = file.parent().unwrap().to_path_buf();
     let settings = Arc::new(MemoryPluginSettings(Mutex::new(Some(PluginSettings {
-        allowed_paths: vec![AllowedPath::read_only_folder(&folder)],
+        allowed_paths: vec![AllowedPath::read_only_folder(&folder).unwrap()],
         ..PluginSettings::default()
     }))));
     let old = harness.handle();
@@ -326,7 +332,7 @@ async fn should_refuse_a_folder_when_the_plugin_is_loading() {
 
     // A saved folder may or may not be read by the load: not reported as allowed.
     let saved = Arc::new(MemoryPluginSettings(Mutex::new(Some(PluginSettings {
-        allowed_paths: vec![AllowedPath::read_only_folder(file.parent().unwrap())],
+        allowed_paths: vec![AllowedPath::read_only_folder(file.parent().unwrap()).unwrap()],
         ..PluginSettings::default()
     }))));
     let saved_dry_run = harness.grant(&saved).execute(plugin_id(), file, true).await;

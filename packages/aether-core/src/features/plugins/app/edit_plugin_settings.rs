@@ -10,7 +10,7 @@ use crate::{
     features::{
         instance::PluginId,
         plugins::{
-            AllowedPath, AllowedPathRejection, PluginError, PluginRegistry, PluginSettings,
+            AllowedPathInput, AllowedPathRejection, PluginError, PluginRegistry, PluginSettings,
             PluginSettingsStorage, core_folders,
         },
         settings::LocationInfo,
@@ -23,7 +23,7 @@ use super::ports::EditPluginSettingsUseCasePort;
 #[derive(Debug, Default)]
 pub struct EditPluginSettings {
     pub allowed_hosts: Option<Vec<String>>,
-    pub allowed_paths: Option<Vec<AllowedPath>>,
+    pub allowed_paths: Option<Vec<AllowedPathInput>>,
 }
 
 /// Saves the user's changes to a plugin's settings, running or not. Hosts take effect on the
@@ -104,16 +104,18 @@ fn apply_edit_changes(
     }
 
     if let Some(allowed_paths) = edit_settings.allowed_paths {
-        let saved: Vec<AllowedPath> = settings
-            .allowed_paths
-            .iter()
-            .cloned()
-            .map(AllowedPath::normalized)
-            .collect();
+        let saved = &settings.allowed_paths;
         let mut kept = Vec::with_capacity(allowed_paths.len());
 
-        for path in allowed_paths {
-            let path = path.normalized();
+        for input in allowed_paths {
+            let host = input.host.clone();
+            let path = input
+                .parse()
+                .map_err(|reason| PluginError::InvalidAllowedPath {
+                    plugin_id: plugin_id.to_owned(),
+                    path: host,
+                    reason,
+                })?;
 
             let checked = path.validate_against(core_folders).and_then(|()| {
                 let host = Path::new(&path.host);
@@ -176,6 +178,8 @@ impl EditPluginSettingsUseCasePort for EditPluginSettingsUseCase {
 mod tests {
     use tempfile::TempDir;
 
+    use crate::features::plugins::AllowedPath;
+
     use super::*;
 
     /// Under a directory of its own, so that the core folders are told apart from the test
@@ -196,7 +200,7 @@ mod tests {
             }
         }
 
-        fn edit(&self, paths: Vec<AllowedPath>) -> Result<PluginSettings, PluginError> {
+        fn edit(&self, paths: Vec<AllowedPathInput>) -> Result<PluginSettings, PluginError> {
             apply_edit_changes(
                 &PluginId::from_static("packwiz"),
                 &core_folders(&self.location_info, &PluginId::from_static("packwiz")),
@@ -209,7 +213,7 @@ mod tests {
         }
     }
 
-    fn edit(paths: Vec<AllowedPath>) -> Result<PluginSettings, PluginError> {
+    fn edit(paths: Vec<AllowedPathInput>) -> Result<PluginSettings, PluginError> {
         Launcher::new().edit(paths)
     }
 
@@ -220,10 +224,10 @@ mod tests {
         }
     }
 
-    fn folder(dir: &Path, plugin: &str) -> AllowedPath {
-        AllowedPath {
+    fn folder(dir: &Path, plugin: &str) -> AllowedPathInput {
+        AllowedPathInput {
             host: dir.to_string_lossy().into_owned(),
-            plugin: plugin.to_owned(),
+            plugin: plugin.into(),
             read_only: true,
         }
     }
@@ -236,7 +240,7 @@ mod tests {
         let settings = edit(vec![folder(dir.path(), &host)]).unwrap();
 
         assert_eq!(
-            settings.allowed_paths[0].plugin,
+            settings.allowed_paths[0].plugin.as_str(),
             crate::features::plugins::to_wasi_path(&host)
         );
         assert!(settings.allowed_paths[0].read_only);
@@ -246,7 +250,6 @@ mod tests {
     fn should_refuse_a_folder_when_it_lies_over_a_core_mount() {
         let dir = tempfile::tempdir().unwrap();
 
-        // `/` normalizes to an empty path, refused as not absolute.
         for plugin in ["/instances", "/cache/x", "/"] {
             let result = edit(vec![folder(dir.path(), plugin)]);
 
@@ -255,7 +258,7 @@ mod tests {
                     result,
                     Err(PluginError::InvalidAllowedPath {
                         reason: AllowedPathRejection::PluginReserved
-                            | AllowedPathRejection::PluginNotAbsolute,
+                            | AllowedPathRejection::PluginIsRoot,
                         ..
                     })
                 ),
@@ -289,11 +292,13 @@ mod tests {
             .map(|name| {
                 let folder = dir.path().join(name);
                 std::fs::create_dir(&folder).unwrap();
-                AllowedPath::read_only_folder(&folder)
+                AllowedPath::read_only_folder(&folder).unwrap()
             })
             .collect();
 
-        let settings = launcher.edit(folders.clone()).unwrap();
+        let settings = launcher
+            .edit(folders.iter().cloned().map(Into::into).collect())
+            .unwrap();
 
         assert_eq!(settings.allowed_paths, folders);
     }
@@ -306,20 +311,19 @@ mod tests {
         std::fs::write(&file, b"").unwrap();
         let added_dir = tempfile::tempdir().unwrap();
 
-        // Saved before the checks existed, or changed on disk since: a relative host, a plugin
-        // path that is not plain, a folder that is now a file.
+        // Saved before the checks existed, or changed on disk since: a relative host, a folder
+        // that is now a file.
         let stale = vec![
             AllowedPath {
                 host: "packs".to_owned(),
-                plugin: "/packs".to_owned(),
+                plugin: "/packs".into(),
                 read_only: true,
             },
-            folder(dir.path(), "/a/../b"),
-            folder(&file, "/file"),
+            folder(&file, "/file").parse().unwrap(),
         ];
-        let added = AllowedPath::read_only_folder(added_dir.path());
-        let mut sent = stale.clone();
-        sent.push(added.clone());
+        let added = AllowedPath::read_only_folder(added_dir.path()).unwrap();
+        let mut sent: Vec<AllowedPathInput> = stale.iter().cloned().map(Into::into).collect();
+        sent.push(added.clone().into());
 
         let settings = apply_edit_changes(
             &PluginId::from_static("packwiz"),
@@ -335,7 +339,7 @@ mod tests {
         )
         .expect("a stale saved folder must not block the edit");
 
-        assert_eq!(settings.allowed_paths, [added.normalized()]);
+        assert_eq!(settings.allowed_paths, [added]);
         assert_eq!(settings.allowed_hosts, ["example.com"]);
     }
 
@@ -343,7 +347,7 @@ mod tests {
     fn should_refuse_a_new_folder_when_it_fails_a_check_even_beside_saved_ones() {
         let launcher = Launcher::new();
         let saved_dir = tempfile::tempdir().unwrap();
-        let saved = AllowedPath::read_only_folder(saved_dir.path());
+        let saved = AllowedPath::read_only_folder(saved_dir.path()).unwrap();
 
         let result = apply_edit_changes(
             &PluginId::from_static("packwiz"),
@@ -353,7 +357,7 @@ mod tests {
                 ..PluginSettings::default()
             },
             EditPluginSettings {
-                allowed_paths: Some(vec![saved, folder(saved_dir.path(), "/a/../b")]),
+                allowed_paths: Some(vec![saved.into(), folder(saved_dir.path(), "/a/../b")]),
                 ..EditPluginSettings::default()
             },
         );
@@ -395,9 +399,9 @@ mod tests {
 
     #[test]
     fn should_refuse_a_relative_host_path_when_it_exists_too() {
-        let result = edit(vec![AllowedPath {
+        let result = edit(vec![AllowedPathInput {
             host: ".".to_owned(),
-            plugin: "/here".to_owned(),
+            plugin: "/here".into(),
             read_only: true,
         }]);
 
@@ -433,7 +437,7 @@ mod tests {
         let settings = edit(vec![folder(&gone, "/gone"), folder(dir.path(), "/kept")]).unwrap();
 
         assert_eq!(settings.allowed_paths.len(), 1);
-        assert_eq!(settings.allowed_paths[0].plugin, "/kept");
+        assert_eq!(settings.allowed_paths[0].plugin.as_str(), "/kept");
     }
 
     /// Settings saved over a file that no longer parses, as the file system storage reports it.

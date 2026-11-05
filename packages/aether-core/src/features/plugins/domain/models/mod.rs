@@ -23,7 +23,9 @@ pub use allowed_host::AllowedHostRejection;
 pub(crate) use allowed_host::{
     GrantableHost, effective_allowed_hosts, is_blocked_ip, is_host_allowed,
 };
-pub use allowed_path::{AllowedPath, AllowedPathRejection, FolderMounts};
+pub use allowed_path::{
+    AllowedPath, AllowedPathInput, AllowedPathRejection, FolderMounts, IgnoredAllowedPath,
+};
 pub(crate) use allowed_path::{
     CoreMount, PLUGIN_CACHE_MOUNT, core_folders, is_filesystem_root, partition_mountable,
     to_wasi_path,
