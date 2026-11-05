@@ -1,4 +1,5 @@
 use crate::features::instance::InstanceName;
+use crate::features::minecraft::GameVersion;
 use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
@@ -75,7 +76,7 @@ struct DefaultLoaderVersion;
 impl LoaderVersionService for DefaultLoaderVersion {
     async fn resolve(
         &self,
-        _: &str,
+        _: &GameVersion,
         _: &ModLoader,
         _: Option<&LoaderVersionPreference>,
     ) -> Result<Option<modded::LoaderVersion>, MinecraftDomainError> {
@@ -84,7 +85,7 @@ impl LoaderVersionService for DefaultLoaderVersion {
 
     async fn try_get_default(
         &self,
-        _: &str,
+        _: &GameVersion,
         _: &ModLoader,
     ) -> Result<Option<LoaderVersionPreference>, MinecraftDomainError> {
         Ok(Some(LoaderVersionPreference::Exact("0.16.9".into())))
@@ -96,7 +97,7 @@ impl LoaderVersionService for DefaultLoaderVersion {
 struct RecordingInstall {
     storage: Arc<MemInstanceStorage>,
     fail: bool,
-    installed: Mutex<Vec<(String, ModLoader, Option<LoaderVersionPreference>)>>,
+    installed: Mutex<Vec<(GameVersion, ModLoader, Option<LoaderVersionPreference>)>>,
 }
 
 #[async_trait]
@@ -144,7 +145,7 @@ impl Fixture {
         let mut instance = InstanceBuilder::new(
             InstanceId::try_from(INSTANCE_ID).unwrap(),
             InstanceName::parse("Instance").unwrap(),
-            "1.21.1".into(),
+            GameVersion::from_static("1.21.1"),
             ModLoader::Fabric,
         )
         .with_loader_version(Some(LoaderVersionPreference::Exact("0.16.5".into())))
@@ -175,14 +176,14 @@ impl Fixture {
             .await
     }
 
-    fn installed(&self) -> Vec<(String, ModLoader, Option<LoaderVersionPreference>)> {
+    fn installed(&self) -> Vec<(GameVersion, ModLoader, Option<LoaderVersionPreference>)> {
         self.install.installed.lock().unwrap().clone()
     }
 }
 
 fn game(game_version: &str, mod_loader: ModLoader, loader_version: Option<&str>) -> InstanceGame {
     InstanceGame {
-        game_version: game_version.into(),
+        game_version: GameVersion::parse(game_version).unwrap(),
         mod_loader,
         loader_version: loader_version
             .map(|version| LoaderVersionPreference::Exact(version.into())),
@@ -220,7 +221,7 @@ async fn should_move_the_instance_to_the_new_game_and_install_it_when_the_game_c
         .unwrap();
 
     let expected = (
-        "1.21.4".to_owned(),
+        GameVersion::from_static("1.21.4"),
         ModLoader::NeoForge,
         Some(LoaderVersionPreference::Exact("21.4.1".into())),
     );

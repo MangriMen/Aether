@@ -106,6 +106,7 @@ impl Housekeeping for ContentIconHousekeeping {
 #[cfg(test)]
 mod tests {
     use crate::features::instance::ContentVersionId;
+    use crate::features::minecraft::GameVersion;
     use crate::shared::hash::{FileHash, HashAlgorithm};
     use std::{sync::Mutex, time::SystemTime};
 
@@ -126,7 +127,7 @@ mod tests {
         InstanceBuilder::new(
             InstanceId::try_from(id).unwrap(),
             InstanceName::parse(id).unwrap(),
-            "1.21.1".into(),
+            GameVersion::from_static("1.21.1"),
             ModLoader::Fabric,
         )
         .build()

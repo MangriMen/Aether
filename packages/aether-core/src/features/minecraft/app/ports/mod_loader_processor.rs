@@ -4,14 +4,14 @@ use std::path::Path;
 use crate::features::{
     events::ProgressBarId,
     java::Java,
-    minecraft::{MinecraftDomainError, vanilla},
+    minecraft::{GameVersion, MinecraftDomainError, vanilla},
 };
 
 #[async_trait]
 pub trait ModLoaderProcessor: Send + Sync {
     async fn run(
         &self,
-        game_version: String,
+        game_version: GameVersion,
         version_jar: String,
         minecraft_path: &Path,
         version_info: &mut vanilla::VersionInfo,

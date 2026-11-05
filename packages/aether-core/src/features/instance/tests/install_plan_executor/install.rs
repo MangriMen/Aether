@@ -1,4 +1,5 @@
 //! Targets of a plan, its limits, and checking it as data.
+use crate::features::minecraft::GameVersion;
 
 use crate::features::instance::ContentId;
 use crate::features::instance::InstanceName;
@@ -25,7 +26,7 @@ async fn should_create_a_new_instance_and_install_into_it_when_the_target_is_new
     fixture.register(&modrinth).await;
     let spec = NewInstance {
         name: InstanceName::parse("Pack").unwrap(),
-        game_version: "1.20.1".into(),
+        game_version: GameVersion::from_static("1.20.1"),
         mod_loader: ModLoader::Vanilla,
         loader_version: None,
         icon_path: None,
@@ -60,7 +61,7 @@ async fn should_create_the_instance_of_a_pack_when_the_plan_is_for_a_pack() {
     let fixture = Fixture::new().await;
     let spec = NewInstance {
         name: InstanceName::parse("Pack").unwrap(),
-        game_version: "1.20.1".into(),
+        game_version: GameVersion::from_static("1.20.1"),
         mod_loader: ModLoader::Vanilla,
         loader_version: None,
         icon_path: None,
@@ -109,7 +110,7 @@ async fn should_remove_a_new_instance_when_it_could_not_be_filled() {
             InstallPlan {
                 target: InstallTarget::New(NewInstance {
                     name: InstanceName::parse("Pack").unwrap(),
-                    game_version: "1.20.1".into(),
+                    game_version: GameVersion::from_static("1.20.1"),
                     mod_loader: ModLoader::Vanilla,
                     loader_version: None,
                     icon_path: None,
@@ -153,7 +154,7 @@ async fn should_not_create_the_instance_when_a_download_fails() {
             InstallPlan {
                 target: InstallTarget::New(NewInstance {
                     name: InstanceName::parse("Pack").unwrap(),
-                    game_version: "1.20.1".into(),
+                    game_version: GameVersion::from_static("1.20.1"),
                     mod_loader: ModLoader::Fabric,
                     loader_version: None,
                     icon_path: None,

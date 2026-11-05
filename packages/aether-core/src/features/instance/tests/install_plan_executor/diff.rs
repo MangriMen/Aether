@@ -1,4 +1,5 @@
 //! Diffing a plan against what the instance already has.
+use crate::features::minecraft::GameVersion;
 
 use crate::features::instance::ContentId;
 use crate::features::instance::InstanceName;
@@ -62,7 +63,7 @@ async fn should_record_the_files_of_a_new_instance_when_it_is_created() {
             InstallPlan {
                 target: InstallTarget::New(NewInstance {
                     name: InstanceName::parse("Pack").unwrap(),
-                    game_version: "1.20.1".into(),
+                    game_version: GameVersion::from_static("1.20.1"),
                     mod_loader: ModLoader::Fabric,
                     loader_version: None,
                     icon_path: None,

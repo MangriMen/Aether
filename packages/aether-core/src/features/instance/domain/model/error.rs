@@ -5,7 +5,7 @@ use uuid::Uuid;
 use crate::features::{
     auth::AuthApplicationError,
     instance::{ContentType, PlatformId, ProviderId},
-    minecraft::MinecraftApplicationError,
+    minecraft::{InvalidGameVersion, MinecraftApplicationError},
     process::ProcessError,
     settings::SettingsError,
 };
@@ -94,6 +94,9 @@ pub enum InstanceError {
     #[error("Invalid {kind} {value:?}")]
     InvalidContentId { kind: String, value: String },
 
+    #[error("Invalid Minecraft version {value:?}: {reason}")]
+    InvalidGameVersion { value: String, reason: String },
+
     #[error("Path \"{path}\" resolves outside instance \"{instance_id}\"")]
     PathEscapesInstance { path: String, instance_id: String },
 
@@ -156,6 +159,15 @@ pub enum InstanceError {
 
     #[error(transparent)]
     CredentialsError(#[from] AuthApplicationError),
+}
+
+impl From<InvalidGameVersion> for InstanceError {
+    fn from(err: InvalidGameVersion) -> Self {
+        InstanceError::InvalidGameVersion {
+            value: err.value,
+            reason: err.reason.to_string(),
+        }
+    }
 }
 
 #[cfg(test)]

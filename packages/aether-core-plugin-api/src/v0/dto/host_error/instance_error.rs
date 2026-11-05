@@ -60,6 +60,10 @@ pub enum InstanceErrorDto {
         kind: String,
         value: String,
     },
+    InvalidGameVersion {
+        value: String,
+        reason: String,
+    },
     PathEscapesInstance {
         path: String,
         instance_id: String,

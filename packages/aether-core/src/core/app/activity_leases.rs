@@ -65,6 +65,7 @@ impl InstallContentUseCasePort for Leased<dyn InstallContentUseCasePort> {
 
 #[cfg(test)]
 mod tests {
+    use crate::features::minecraft::GameVersion;
     use std::time::Duration;
 
     use tokio::sync::oneshot;
@@ -120,7 +121,7 @@ mod tests {
         leased: Arc<Leased<dyn MinecraftInstallService>>,
     ) -> Result<(), MinecraftApplicationError> {
         let params = InstallMinecraftParams {
-            game_version: "1.21.1".into(),
+            game_version: GameVersion::from_static("1.21.1"),
             loader: ModLoader::Vanilla,
             loader_version: None,
             install_dir: std::path::PathBuf::new(),

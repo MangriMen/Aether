@@ -3,7 +3,7 @@ use chrono::{DateTime, Utc};
 use crate::{
     features::{
         instance::InstanceSnapshot,
-        minecraft::{LoaderVersionPreference, ModLoader},
+        minecraft::{GameVersion, LoaderVersionPreference, ModLoader},
         settings::{Hooks, MemorySettings, WindowSettings},
     },
     shared::overridable::domain::Overridable,
@@ -21,7 +21,7 @@ pub struct Instance {
     pub install_stage: InstanceInstallStage,
 
     // Metadata
-    pub game_version: String,
+    pub game_version: GameVersion,
     pub loader: ModLoader,
     pub loader_version: Option<LoaderVersionPreference>,
 
@@ -258,7 +258,7 @@ pub struct InstanceBuilder {
     id: InstanceId,
     name: InstanceName,
 
-    game_version: String,
+    game_version: GameVersion,
     loader: ModLoader,
     loader_version: Option<LoaderVersionPreference>,
 
@@ -271,7 +271,7 @@ impl InstanceBuilder {
     pub fn new(
         id: InstanceId,
         name: InstanceName,
-        game_version: String,
+        game_version: GameVersion,
         loader: ModLoader,
     ) -> Self {
         Self {
@@ -354,7 +354,7 @@ mod tests {
         InstanceBuilder::new(
             InstanceId::generate(),
             InstanceName::parse(name).unwrap(),
-            "1.20.1".to_string(),
+            GameVersion::from_static("1.20.1"),
             ModLoader::Fabric,
         )
         .build()
@@ -368,7 +368,7 @@ mod tests {
             name: InstanceName::parse(name).unwrap(),
             icon_path: Some("icon.png".into()),
             install_stage: InstanceInstallStage::Installed,
-            game_version: "1.20.1".to_string(),
+            game_version: GameVersion::from_static("1.20.1"),
             loader: ModLoader::Fabric,
             loader_version: Some(LoaderVersionPreference::Stable),
             java_path: Overridable::new("java17".into(), true),
@@ -513,7 +513,7 @@ mod tests {
         let instance = InstanceBuilder::new(
             InstanceId::try_from("id").unwrap(),
             InstanceName::parse("name").unwrap(),
-            "1.20".into(),
+            GameVersion::from_static("1.20"),
             ModLoader::Forge,
         )
         .with_loader_version(Some(LoaderVersionPreference::Latest))

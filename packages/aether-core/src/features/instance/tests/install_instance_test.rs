@@ -1,5 +1,6 @@
 use crate::features::instance::ContentId;
 use crate::features::instance::InstanceName;
+use crate::features::minecraft::GameVersion;
 use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
@@ -154,7 +155,7 @@ async fn run_install(
     let mut instance = InstanceBuilder::new(
         InstanceId::try_from("inst").unwrap(),
         InstanceName::parse("inst").unwrap(),
-        "1.20.1".to_owned(),
+        GameVersion::from_static("1.20.1"),
         ModLoader::Vanilla,
     )
     .with_pack_info(pack)
@@ -264,7 +265,7 @@ async fn should_be_installing_while_a_working_instance_is_reinstalled() {
     let mut instance = InstanceBuilder::new(
         InstanceId::try_from("inst").unwrap(),
         InstanceName::parse("inst").unwrap(),
-        "1.20.1".to_owned(),
+        GameVersion::from_static("1.20.1"),
         ModLoader::Vanilla,
     )
     .build();
@@ -302,7 +303,7 @@ async fn should_reset_only_transient_stages_on_startup_sweep() {
         let mut i = InstanceBuilder::new(
             InstanceId::try_from(name).unwrap(),
             InstanceName::parse(name).unwrap(),
-            "1.20.1".to_owned(),
+            GameVersion::from_static("1.20.1"),
             ModLoader::Vanilla,
         )
         .build();
@@ -423,7 +424,7 @@ async fn should_put_the_bar_of_the_game_under_the_parent_bar_when_there_is_one()
     let instance = InstanceBuilder::new(
         InstanceId::try_from("inst").unwrap(),
         InstanceName::parse("inst").unwrap(),
-        "1.20.1".to_owned(),
+        GameVersion::from_static("1.20.1"),
         ModLoader::Vanilla,
     )
     .build();
@@ -506,7 +507,7 @@ async fn should_keep_an_edit_made_while_the_game_installs() {
     let instance = InstanceBuilder::new(
         InstanceId::try_from("inst").unwrap(),
         InstanceName::parse("inst").unwrap(),
-        "1.20.1".to_owned(),
+        GameVersion::from_static("1.20.1"),
         ModLoader::Vanilla,
     )
     .build();

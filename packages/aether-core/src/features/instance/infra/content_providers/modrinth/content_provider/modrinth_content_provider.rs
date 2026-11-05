@@ -29,7 +29,7 @@ use crate::{
             },
             select_version,
         },
-        minecraft::ModLoader,
+        minecraft::{GameVersion, ModLoader},
         settings::LocationInfo,
     },
     shared::io::infra::create_dir_all,
@@ -137,7 +137,7 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
     pub async fn get_project_version_for_game_version(
         &self,
         project_id: &str,
-        game_version: &str,
+        game_version: &GameVersion,
         loader: Option<&str>,
         installed: Option<&str>,
     ) -> Result<ProjectVersionResponse, InstanceError> {
@@ -161,7 +161,7 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
         find_best_version(&versions, game_version, loader, installed.as_ref())
             .cloned()
             .ok_or_else(|| InstanceError::ContentForGameVersionNotFound {
-                game_version: game_version.to_owned(),
+                game_version: game_version.to_string(),
             })
     }
 
@@ -427,7 +427,7 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
         let index = mrpack::read_index_async(&archive_path).await?;
 
         let metadata =
-            mrpack::pack_metadata(&index, Some(version_id.clone()), project.icon_url.clone());
+            mrpack::pack_metadata(&index, Some(version_id.clone()), project.icon_url.clone())?;
         let files = mrpack::plan_files(&index)?;
         let target = params.target.into_pack_install_target(&metadata, || {
             Some(PackInfo {
@@ -469,11 +469,14 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
             }
         };
 
-        let game_version = version.game_versions.first().cloned().ok_or_else(|| {
-            InstanceError::ContentProviderError {
-                reason: format!("Modrinth version {} names no game version", version.id),
-            }
-        })?;
+        let game_version =
+            version
+                .game_versions
+                .first()
+                .ok_or_else(|| InstanceError::ContentProviderError {
+                    reason: format!("Modrinth version {} names no game version", version.id),
+                })?;
+        let game_version = GameVersion::parse(game_version)?;
         let mod_loader = [
             ModLoader::Fabric,
             ModLoader::Forge,
@@ -514,7 +517,7 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
 
         Ok(PackMetadata {
             version_id: mrpack::parse_cdn_url(url).map(|(_, version_id)| version_id),
-            ..mrpack::pack_metadata(&index?, None, None)
+            ..mrpack::pack_metadata(&index?, None, None)?
         })
     }
 }
@@ -555,7 +558,7 @@ impl<RC: RequestClient> ContentProvider for ModrinthContentProvider<RC> {
         &self,
         content_id: &ContentId,
         version: Option<&ContentVersionId>,
-        game_version: &str,
+        game_version: &GameVersion,
         loader: Option<&str>,
     ) -> Result<ResolvedFile, InstanceError> {
         let version = match version {
@@ -623,11 +626,9 @@ impl<RC: RequestClient> ContentProvider for ModrinthContentProvider<RC> {
                 .await
             }
             PackSource::Url(url) => self.url_pack_metadata(&url).await,
-            PackSource::File(path) => Ok(mrpack::pack_metadata(
-                &mrpack::read_index_async(&path).await?,
-                None,
-                None,
-            )),
+            PackSource::File(path) => {
+                mrpack::pack_metadata(&mrpack::read_index_async(&path).await?, None, None)
+            }
         }
     }
 

@@ -164,7 +164,7 @@ fn is_refused_colon(index: usize, segment: &str) -> bool {
 /// or colon (`nul.txt`, `COM1.tar.gz`, `aux:stream`), so a file with it cannot be created or read
 /// as a file there. Refused on every host for the same reason `\` is a separator everywhere: a
 /// path must mean the same thing on every platform it is shared to.
-fn is_reserved_windows_name(segment: &str) -> bool {
+pub fn is_reserved_windows_name(segment: &str) -> bool {
     let stem = segment.split(['.', ':']).next().unwrap_or_default();
     let stem = stem.trim_end_matches(' ').to_ascii_uppercase();
 

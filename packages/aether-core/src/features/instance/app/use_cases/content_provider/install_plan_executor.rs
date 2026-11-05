@@ -94,7 +94,7 @@ use crate::{
                 },
             },
         },
-        minecraft::ModLoader,
+        minecraft::{GameVersion, ModLoader},
         settings::LocationInfo,
     },
     shared::{
@@ -379,13 +379,13 @@ impl PlanBudget {
 
 /// What a ref is resolved against: the game version and loader the target runs, or will run.
 struct TargetGame {
-    game_version: String,
+    game_version: GameVersion,
     /// `None` for vanilla.
     loader: Option<ModLoader>,
 }
 
 impl TargetGame {
-    fn new(game_version: String, loader: ModLoader) -> Self {
+    fn new(game_version: GameVersion, loader: ModLoader) -> Self {
         Self {
             game_version,
             loader: (loader != ModLoader::Vanilla).then_some(loader),

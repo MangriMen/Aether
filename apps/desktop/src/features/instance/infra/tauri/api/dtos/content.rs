@@ -1,8 +1,12 @@
 use std::str::FromStr;
 
-use aether_core::features::instance::{
-    AtomicInstallParams, BaseContentParams, ContentInstallParams, ContentItem, ContentSearchParams,
-    ContentSearchResult, InstanceError, InstanceId, ModpackInstallParams, ProviderId,
+use aether_core::features::{
+    instance::{
+        AtomicInstallParams, BaseContentParams, ContentInstallParams, ContentItem,
+        ContentSearchParams, ContentSearchResult, InstanceError, InstanceId, ModpackInstallParams,
+        ProviderId,
+    },
+    minecraft::GameVersion,
 };
 use serde::{Deserialize, Serialize};
 use serde_with::{DisplayFromStr, serde_as};
@@ -158,7 +162,15 @@ impl TryFrom<ContentSearchParamsDto> for ContentSearchParams {
             page: value.page,
             page_size: value.page_size,
             query: value.query,
-            game_versions: value.game_versions,
+            game_versions: value
+                .game_versions
+                .map(|versions| {
+                    versions
+                        .into_iter()
+                        .map(GameVersion::try_from)
+                        .collect::<Result<_, _>>()
+                })
+                .transpose()?,
             loader: value.loader.map(Into::into),
         })
     }
@@ -218,7 +230,7 @@ impl TryFrom<AtomicInstallParamsDto> for AtomicInstallParams {
         Ok(Self {
             base: value.base.try_into()?,
             instance_id: InstanceId::try_from(value.instance_id)?,
-            game_version: value.game_version,
+            game_version: GameVersion::try_from(value.game_version)?,
             loader: value.loader.map(Into::into),
             content_type: value.content_type.into(),
         })
@@ -323,5 +335,50 @@ mod tests {
 
         assert_eq!(params.content_id.as_str(), "AANobbMI");
         assert_eq!(params.content_version.unwrap().as_str(), "IZskON6d");
+    }
+
+    fn search(game_versions: &[&str]) -> ContentSearchParamsDto {
+        ContentSearchParamsDto {
+            content_type: ContentTypeDto::Mod,
+            provider_id: base("AANobbMI", None).provider_id,
+            page: 1,
+            page_size: 20,
+            query: None,
+            game_versions: Some(game_versions.iter().map(|v| (*v).to_owned()).collect()),
+            loader: None,
+        }
+    }
+
+    #[test]
+    fn should_refuse_the_search_when_a_game_version_is_not_a_valid_id() {
+        let result = ContentSearchParams::try_from(search(&["1.21.1", "../x"]));
+
+        assert!(matches!(
+            result,
+            Err(InstanceError::InvalidGameVersion { ref value, .. }) if value == "../x"
+        ));
+    }
+
+    #[test]
+    fn should_keep_the_game_versions_of_the_search_when_they_are_valid() {
+        let params = ContentSearchParams::try_from(search(&["1.21.1", "24w14a"])).unwrap();
+
+        assert_eq!(params.game_versions.unwrap(), ["1.21.1", "24w14a"]);
+    }
+
+    #[test]
+    fn should_refuse_an_install_when_its_game_version_is_not_a_valid_id() {
+        let result = AtomicInstallParams::try_from(AtomicInstallParamsDto {
+            base: base("AANobbMI", None),
+            instance_id: "instance".into(),
+            game_version: String::new(),
+            loader: None,
+            content_type: ContentTypeDto::Mod,
+        });
+
+        assert!(matches!(
+            result,
+            Err(InstanceError::InvalidGameVersion { .. })
+        ));
     }
 }

@@ -1,4 +1,5 @@
 //! Resolving refs and choosing the provider of a platform.
+use crate::features::minecraft::GameVersion;
 
 use crate::features::instance::InstanceName;
 use crate::features::instance::{ContentId, ContentVersionId};
@@ -94,7 +95,7 @@ async fn should_caption_the_bar_with_the_instance_name_when_the_plan_runs() {
     let fixture = Fixture::new().await;
     let new_instance = NewInstance {
         name: InstanceName::parse("My Pack").unwrap(),
-        game_version: "1.20.1".into(),
+        game_version: GameVersion::from_static("1.20.1"),
         mod_loader: ModLoader::Vanilla,
         loader_version: None,
         icon_path: None,

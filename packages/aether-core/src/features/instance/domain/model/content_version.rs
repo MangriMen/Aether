@@ -1,4 +1,4 @@
-use crate::features::minecraft::ModLoader;
+use crate::features::minecraft::{GameVersion, ModLoader};
 
 use super::{ContentId, ContentVersionId};
 
@@ -52,7 +52,7 @@ pub struct ContentVersion {
     pub version_number: String,
     pub changelog: Option<String>,
     pub dependencies: Vec<ContentVersionDependency>,
-    pub game_versions: Vec<String>,
+    pub game_versions: Vec<GameVersion>,
     pub version_type: ContentVersionType,
     pub loaders: Vec<ModLoader>,
     pub featured: bool,

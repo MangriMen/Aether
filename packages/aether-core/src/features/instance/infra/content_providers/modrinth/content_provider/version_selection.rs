@@ -59,7 +59,10 @@ pub(super) fn is_version_compatible(
     project: &ProjectResponse,
     instance: &Instance,
 ) -> bool {
-    let is_game_version_compatible = version.game_versions.contains(&instance.game_version);
+    let is_game_version_compatible = version
+        .game_versions
+        .iter()
+        .any(|gv| *gv == *instance.game_version);
 
     if !is_game_version_compatible {
         return false;

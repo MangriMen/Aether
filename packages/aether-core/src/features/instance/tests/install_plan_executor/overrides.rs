@@ -1,4 +1,5 @@
 //! Overrides a pack ships as they are.
+use crate::features::minecraft::GameVersion;
 
 use crate::features::instance::InstanceName;
 
@@ -408,7 +409,7 @@ async fn should_apply_overrides_when_the_instance_is_new() {
             InstallPlan {
                 target: InstallTarget::New(NewInstance {
                     name: InstanceName::parse("Pack").unwrap(),
-                    game_version: "1.21.1".into(),
+                    game_version: GameVersion::from_static("1.21.1"),
                     mod_loader: ModLoader::Fabric,
                     loader_version: None,
                     icon_path: None,

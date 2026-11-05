@@ -14,11 +14,11 @@ use crate::{
             JavaQueryService,
         },
         minecraft::{
-            JvmArgumentsParams, LaunchSettings, LoaderVersionPreference, LoaderVersionService,
-            MinecraftApplicationError, MinecraftDownloader, MinecraftLaunchCommandService,
-            ModLoader, VersionManifestService, get_class_paths, get_compatible_java_version,
-            get_jvm_arguments, get_logging_argument, resolve_minecraft_version, vanilla,
-            version_jar_name,
+            GameVersion, JvmArgumentsParams, LaunchSettings, LoaderVersionPreference,
+            LoaderVersionService, MinecraftApplicationError, MinecraftDownloader,
+            MinecraftLaunchCommandService, ModLoader, VersionManifestService, get_class_paths,
+            get_compatible_java_version, get_jvm_arguments, get_logging_argument,
+            resolve_minecraft_version, vanilla, version_jar_name,
         },
         settings::LocationInfo,
     },
@@ -30,7 +30,7 @@ use super::get_minecraft_arguments::get_minecraft_arguments;
 
 #[derive(Debug, Clone)]
 pub struct GetMinecraftLaunchCommandParams {
-    pub game_version: String,
+    pub game_version: GameVersion,
     pub loader: ModLoader,
     pub loader_version: Option<LoaderVersionPreference>,
     pub launch_dir: PathBuf,

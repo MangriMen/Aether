@@ -1,7 +1,7 @@
 use super::InstanceName;
 use crate::features::{
     instance::PackInfo,
-    minecraft::{LoaderVersionPreference, ModLoader},
+    minecraft::{GameVersion, LoaderVersionPreference, ModLoader},
 };
 
 /// Everything needed to create an instance.
@@ -12,7 +12,7 @@ use crate::features::{
 #[derive(Debug, Clone, PartialEq)]
 pub struct NewInstance {
     pub name: InstanceName,
-    pub game_version: String,
+    pub game_version: GameVersion,
     pub mod_loader: ModLoader,
     pub loader_version: Option<LoaderVersionPreference>,
     pub icon_path: Option<String>,

@@ -15,7 +15,7 @@ use crate::{
             Hashes, ModrinthEnv, ModrinthIndex, ModrinthIndexFile,
         },
     },
-    features::minecraft::ModLoader,
+    features::minecraft::{GameVersion, ModLoader},
     shared::{
         hash::{FileHash, HashAlgorithm},
         limits::{MAX_MRPACK_FILES, MAX_MRPACK_INDEX_BYTES},
@@ -279,20 +279,20 @@ pub(super) fn pack_metadata(
     index: &ModrinthIndex,
     version_id: Option<ContentVersionId>,
     icon_url: Option<String>,
-) -> PackMetadata {
+) -> Result<PackMetadata, InstanceError> {
     let (mod_loader, loader_version) = resolve_loader_from_manifest(index);
 
-    PackMetadata {
+    Ok(PackMetadata {
         name: index.name.clone(),
         version_id,
         version_name: Some(index.version_id.clone()),
         description: index.summary.clone(),
-        game_version: index.dependencies.minecraft.clone(),
+        game_version: GameVersion::parse(&index.dependencies.minecraft)?,
         mod_loader,
         loader_version,
         file_count: Some(index.files.len()),
         icon_url,
-    }
+    })
 }
 
 #[cfg(test)]
@@ -609,7 +609,8 @@ mod tests {
             &index(vec![index_file("mods/a.jar", &[SODIUM_URL], None)]),
             None,
             None,
-        );
+        )
+        .unwrap();
 
         assert_eq!(metadata.name, "Pack");
         assert_eq!(metadata.version_id, None);
@@ -618,5 +619,18 @@ mod tests {
         assert_eq!(metadata.mod_loader, ModLoader::NeoForge);
         assert_eq!(metadata.loader_version.as_deref(), Some("21.1.77"));
         assert_eq!(metadata.file_count, Some(1));
+    }
+
+    #[test]
+    fn should_refuse_the_pack_when_its_game_version_is_not_a_valid_id() {
+        let mut index = index(Vec::new());
+        index.dependencies.minecraft = "../../escape".into();
+
+        let err = pack_metadata(&index, None, None).unwrap_err();
+
+        assert!(
+            matches!(err, InstanceError::InvalidGameVersion { ref value, .. } if value == "../../escape"),
+            "{err:?}"
+        );
     }
 }

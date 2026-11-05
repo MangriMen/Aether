@@ -140,6 +140,7 @@ impl InstanceStorage for FsInstanceStorage {
 
 #[cfg(test)]
 mod tests {
+    use crate::features::minecraft::GameVersion;
     use std::sync::Arc;
 
     use tempfile::TempDir;
@@ -152,16 +153,19 @@ mod tests {
         let instance = InstanceBuilder::new(
             id.clone(),
             InstanceName::parse("Stored").unwrap(),
-            "1.20.1".to_owned(),
+            GameVersion::from_static("1.20.1"),
             ModLoader::Vanilla,
         )
         .build();
         storage.upsert(&instance).await.unwrap();
     }
 
-    /// Stores `kept` as usual and `broken` with an id in its file that leaves the instances
-    /// directory, as a plugin could have put there.
-    async fn setup_broken() -> (TempDir, FsInstanceStorage, InstanceId, InstanceId) {
+    /// Stores `kept` as usual and `broken` with `field` in its file set to `value`, as a plugin
+    /// or an older version could have put there.
+    async fn setup_broken(
+        field: &str,
+        value: &str,
+    ) -> (TempDir, FsInstanceStorage, InstanceId, InstanceId) {
         let temp_dir = TempDir::new().unwrap();
         let location_info = Arc::new(LocationInfo::new(
             temp_dir.path().join("settings"),
@@ -176,7 +180,7 @@ mod tests {
         let path = location_info.instance_metadata_file(&broken);
         let mut json: serde_json::Value =
             serde_json::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
-        json["id"] = "../plugins/planted".into();
+        json[field] = value.into();
         std::fs::write(&path, json.to_string()).unwrap();
 
         (temp_dir, storage, kept, broken)
@@ -184,7 +188,7 @@ mod tests {
 
     #[tokio::test]
     async fn should_not_find_an_instance_when_the_id_in_its_file_leaves_the_instances_directory() {
-        let (_temp_dir, storage, _kept, broken) = setup_broken().await;
+        let (_temp_dir, storage, _kept, broken) = setup_broken("id", "../plugins/planted").await;
 
         let err = storage.get(&broken).await.unwrap_err();
 
@@ -193,10 +197,25 @@ mod tests {
 
     #[tokio::test]
     async fn should_skip_an_instance_when_the_id_in_its_file_is_invalid() {
-        let (_temp_dir, storage, kept, _broken) = setup_broken().await;
+        let (_temp_dir, storage, kept, _broken) = setup_broken("id", "../plugins/planted").await;
 
         let instances = storage.list().await.unwrap();
 
+        assert_eq!(instances.len(), 1);
+        assert_eq!(instances[0].id(), &kept);
+    }
+
+    #[tokio::test]
+    async fn should_refuse_an_instance_when_the_game_version_in_its_file_is_invalid() {
+        let (_temp_dir, storage, kept, broken) = setup_broken("game_version", "../x").await;
+
+        let err = storage.get(&broken).await.unwrap_err();
+        let instances = storage.list().await.unwrap();
+
+        assert!(
+            matches!(err, InstanceError::InvalidGameVersion { ref value, .. } if value == "../x"),
+            "{err}"
+        );
         assert_eq!(instances.len(), 1);
         assert_eq!(instances[0].id(), &kept);
     }

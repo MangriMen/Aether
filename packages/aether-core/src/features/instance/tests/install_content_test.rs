@@ -1,5 +1,6 @@
 //! `InstallContentUseCase` asks the provider for a plan and hands it to the executor: what it
 //! asks for, under which owner the files are recorded, and the stage a new pack's instance ends in.
+use crate::features::minecraft::GameVersion;
 
 use crate::features::instance::InstanceName;
 use crate::features::instance::{ContentId, ContentVersionId};
@@ -55,7 +56,7 @@ fn pack_info(modpack_id: &str) -> PackInfo {
 fn new_instance(pack_info: Option<PackInfo>) -> NewInstance {
     NewInstance {
         name: InstanceName::parse("Pack").unwrap(),
-        game_version: "1.21.1".into(),
+        game_version: GameVersion::from_static("1.21.1"),
         mod_loader: ModLoader::Fabric,
         loader_version: None,
         icon_path: None,
@@ -280,7 +281,7 @@ impl Fixture {
             let mut instance = InstanceBuilder::new(
                 InstanceId::try_from(id).unwrap(),
                 InstanceName::parse(id).unwrap(),
-                "1.21.1".into(),
+                GameVersion::from_static("1.21.1"),
                 ModLoader::Fabric,
             )
             .with_pack_info(pack_info)
@@ -323,7 +324,7 @@ fn atomic(content_type: ContentType, loader: Option<&str>) -> ContentInstallPara
     ContentInstallParams::Atomic(AtomicInstallParams {
         base: base("sodium"),
         instance_id: InstanceId::try_from(INSTANCE_ID).unwrap(),
-        game_version: "1.21.1".into(),
+        game_version: GameVersion::from_static("1.21.1"),
         loader: loader.map(|l| l.parse().unwrap()),
         content_type,
     })
@@ -358,7 +359,7 @@ async fn should_install_content_under_the_content_owner_when_an_instance_is_chos
             installed_version: None,
             target: ResolveTarget::Existing {
                 instance_id: InstanceId::try_from(INSTANCE_ID).unwrap(),
-                game_version: "1.21.1".into(),
+                game_version: GameVersion::from_static("1.21.1"),
                 loader: Some(ModLoader::Fabric),
             },
         }]
@@ -547,7 +548,7 @@ fn atomic_into(instance_id: &str, content_id: &str) -> ContentInstallParams {
     ContentInstallParams::Atomic(AtomicInstallParams {
         base: base(content_id),
         instance_id: InstanceId::try_from(instance_id).unwrap(),
-        game_version: "1.21.1".into(),
+        game_version: GameVersion::from_static("1.21.1"),
         loader: Some(ModLoader::Fabric),
         content_type: ContentType::Mod,
     })

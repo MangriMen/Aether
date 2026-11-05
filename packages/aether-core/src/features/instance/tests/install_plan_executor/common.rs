@@ -1,6 +1,7 @@
 use crate::features::instance::InstanceName;
 use crate::features::instance::PlatformId;
 use crate::features::instance::{ContentId, ContentVersionId};
+use crate::features::minecraft::GameVersion;
 use std::{
     collections::HashMap,
     io::Write,
@@ -116,13 +117,13 @@ impl ContentProvider for MockProvider {
         &self,
         content_id: &ContentId,
         version: Option<&ContentVersionId>,
-        game_version: &str,
+        game_version: &GameVersion,
         loader: Option<&str>,
     ) -> Result<ResolvedFile, InstanceError> {
         self.calls.lock().unwrap().push((
             content_id.to_string(),
             version.map(ToString::to_string),
-            game_version.into(),
+            game_version.to_string(),
             loader.map(Into::into),
         ));
 
@@ -778,7 +779,7 @@ impl Fixture {
         let instance = InstanceBuilder::new(
             InstanceId::try_from(INSTANCE_ID).unwrap(),
             InstanceName::parse("Instance").unwrap(),
-            "1.21.1".into(),
+            GameVersion::from_static("1.21.1"),
             ModLoader::Fabric,
         )
         .with_pack_info(self.pack_info.clone())
@@ -985,7 +986,7 @@ pub(super) fn existing_on(game: &InstanceGame, files: Vec<InstallFileEntry>) -> 
 
 pub(super) fn neoforge_1_21_4() -> InstanceGame {
     InstanceGame {
-        game_version: "1.21.4".into(),
+        game_version: GameVersion::from_static("1.21.4"),
         mod_loader: ModLoader::NeoForge,
         loader_version: Some(LoaderVersionPreference::Exact("21.4.1".into())),
     }

@@ -1,6 +1,7 @@
 //! `ModrinthContentProvider` on the resolve contract, against a fake HTTP client serving the
 //! Modrinth API and CDN from memory: what plan a mod and a modpack become, and which requests
 //! that takes.
+use crate::features::minecraft::GameVersion;
 
 use crate::features::instance::PlatformId;
 use crate::features::instance::{ContentId, ContentVersionId};
@@ -300,7 +301,7 @@ fn mrpack() -> Vec<u8> {
 fn existing_fabric() -> ResolveTarget {
     ResolveTarget::Existing {
         instance_id: InstanceId::try_from("instance").unwrap(),
-        game_version: "1.21.1".into(),
+        game_version: GameVersion::from_static("1.21.1"),
         loader: Some(ModLoader::Fabric),
     }
 }
@@ -748,7 +749,7 @@ async fn should_move_the_instance_to_the_game_of_the_pack_when_the_pack_is_updat
         InstallTarget::Existing {
             instance_id: InstanceId::try_from("instance").unwrap(),
             game: Some(InstanceGame {
-                game_version: "1.21.4".into(),
+                game_version: GameVersion::from_static("1.21.4"),
                 mod_loader: ModLoader::NeoForge,
                 loader_version: Some(LoaderVersionPreference::Exact("21.4.10".into())),
             }),
@@ -776,7 +777,7 @@ async fn should_resolve_a_ref_to_the_primary_file_when_the_version_has_several()
         .resolve_file(
             &ContentId::try_from("AANobbMI").unwrap(),
             Some(&ContentVersionId::try_from("IZskON6d").unwrap()),
-            "1.21.1",
+            &GameVersion::from_static("1.21.1"),
             Some("fabric"),
         )
         .await
@@ -816,7 +817,7 @@ async fn should_resolve_a_ref_to_a_version_of_its_project_when_given_a_slug() {
         .resolve_file(
             &ContentId::try_from("sodium").unwrap(),
             Some(&ContentVersionId::try_from("IZskON6d").unwrap()),
-            "1.21.1",
+            &GameVersion::from_static("1.21.1"),
             Some("fabric"),
         )
         .await
@@ -853,7 +854,7 @@ async fn should_refuse_a_version_when_it_belongs_to_another_project() {
         .resolve_file(
             &ContentId::try_from("P7dR8mSH").unwrap(),
             Some(&ContentVersionId::try_from("IZskON6d").unwrap()),
-            "1.21.1",
+            &GameVersion::from_static("1.21.1"),
             Some("fabric"),
         )
         .await;

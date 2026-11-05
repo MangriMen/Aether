@@ -1,4 +1,5 @@
 use crate::features::instance::InstanceName;
+use crate::features::minecraft::GameVersion;
 use std::{path::Path, sync::Arc};
 
 use async_trait::async_trait;
@@ -65,7 +66,7 @@ struct MockLoaderService {
 impl LoaderVersionService for MockLoaderService {
     async fn resolve(
         &self,
-        _game_version: &str,
+        _game_version: &GameVersion,
         _loader: &ModLoader,
         _loader_version: Option<&LoaderVersionPreference>,
     ) -> Result<
@@ -77,7 +78,7 @@ impl LoaderVersionService for MockLoaderService {
 
     async fn try_get_default(
         &self,
-        _game_version: &str,
+        _game_version: &GameVersion,
         _loader: &ModLoader,
     ) -> Result<Option<LoaderVersionPreference>, crate::features::minecraft::MinecraftDomainError>
     {
@@ -92,7 +93,7 @@ struct FailingLoaderService;
 impl LoaderVersionService for FailingLoaderService {
     async fn resolve(
         &self,
-        _game_version: &str,
+        _game_version: &GameVersion,
         _loader: &ModLoader,
         _loader_version: Option<&LoaderVersionPreference>,
     ) -> Result<
@@ -108,7 +109,7 @@ impl LoaderVersionService for FailingLoaderService {
 
     async fn try_get_default(
         &self,
-        _game_version: &str,
+        _game_version: &GameVersion,
         _loader: &ModLoader,
     ) -> Result<Option<LoaderVersionPreference>, crate::features::minecraft::MinecraftDomainError>
     {
@@ -313,7 +314,7 @@ async fn should_create_a_vanilla_instance_when_given_valid_params() {
 
     let new_instance = NewInstance {
         name: InstanceName::parse("Test Instance").unwrap(),
-        game_version: "1.21".to_string(),
+        game_version: GameVersion::from_static("1.21"),
         mod_loader: ModLoader::Vanilla,
         loader_version: None,
         icon_path: None,
@@ -369,7 +370,7 @@ async fn should_create_an_instance_when_given_a_loader_and_an_explicit_version()
 
     let new_instance = NewInstance {
         name: InstanceName::parse("Fabric Test").unwrap(),
-        game_version: "1.20.1".to_string(),
+        game_version: GameVersion::from_static("1.20.1"),
         mod_loader: ModLoader::Fabric,
         loader_version: Some(LoaderVersionPreference::Exact("0.16.5".to_string())),
         icon_path: None,
@@ -418,7 +419,7 @@ async fn should_pick_the_default_loader_version_when_none_is_given() {
 
     let new_instance = NewInstance {
         name: InstanceName::parse("Forge Test").unwrap(),
-        game_version: "1.20.1".to_string(),
+        game_version: GameVersion::from_static("1.20.1"),
         mod_loader: ModLoader::Forge,
         loader_version: None,
         icon_path: None,
@@ -483,7 +484,7 @@ async fn should_run_the_install_service_when_an_instance_is_created() {
 
     let new_instance = NewInstance {
         name: InstanceName::parse("Install Test").unwrap(),
-        game_version: "1.21".to_string(),
+        game_version: GameVersion::from_static("1.21"),
         mod_loader: ModLoader::Vanilla,
         loader_version: None,
         icon_path: None,
@@ -545,7 +546,7 @@ async fn should_skip_the_install_when_it_is_not_requested() {
 
     let new_instance = NewInstance {
         name: InstanceName::parse("Skip Install").unwrap(),
-        game_version: "1.21".to_string(),
+        game_version: GameVersion::from_static("1.21"),
         mod_loader: ModLoader::Vanilla,
         loader_version: None,
         icon_path: None,
@@ -589,7 +590,7 @@ async fn should_sanitize_the_name_when_it_has_unsafe_characters() {
 
     let new_instance = NewInstance {
         name: InstanceName::parse("Bad/Name:*Test?").unwrap(),
-        game_version: "1.21".to_string(),
+        game_version: GameVersion::from_static("1.21"),
         mod_loader: ModLoader::Vanilla,
         loader_version: None,
         icon_path: None,
@@ -634,7 +635,7 @@ async fn should_not_create_a_directory_when_the_loader_cannot_be_resolved() {
 
     let new_instance = NewInstance {
         name: InstanceName::parse("Fabric Test").unwrap(),
-        game_version: "1.20.1".to_string(),
+        game_version: GameVersion::from_static("1.20.1"),
         mod_loader: ModLoader::Fabric,
         loader_version: Some(LoaderVersionPreference::Exact("0.0.0".to_string())),
         icon_path: None,
@@ -710,7 +711,7 @@ async fn should_roll_back_when_storage_fails() {
 
     let new_instance = NewInstance {
         name: InstanceName::parse("Rollback Test").unwrap(),
-        game_version: "1.21".to_string(),
+        game_version: GameVersion::from_static("1.21"),
         mod_loader: ModLoader::Vanilla,
         loader_version: None,
         icon_path: None,
@@ -751,7 +752,7 @@ async fn should_store_the_asset_id_when_the_new_instance_has_an_icon() {
         .execute(
             NewInstance {
                 name: InstanceName::parse("With Icon").unwrap(),
-                game_version: "1.21".to_string(),
+                game_version: GameVersion::from_static("1.21"),
                 mod_loader: ModLoader::Vanilla,
                 loader_version: None,
                 icon_path: Some(icon.to_string_lossy().into_owned()),
@@ -790,7 +791,7 @@ async fn should_create_the_instance_without_an_icon_when_the_icon_cannot_be_impo
         .execute(
             NewInstance {
                 name: InstanceName::parse("Missing Icon").unwrap(),
-                game_version: "1.21".to_string(),
+                game_version: GameVersion::from_static("1.21"),
                 mod_loader: ModLoader::Vanilla,
                 loader_version: None,
                 icon_path: Some(
@@ -845,7 +846,7 @@ async fn should_release_the_imported_icon_when_the_instance_directory_cannot_be_
         .execute(
             NewInstance {
                 name: InstanceName::parse("No Dir").unwrap(),
-                game_version: "1.21".to_string(),
+                game_version: GameVersion::from_static("1.21"),
                 mod_loader: ModLoader::Vanilla,
                 loader_version: None,
                 icon_path: Some(icon.to_string_lossy().into_owned()),

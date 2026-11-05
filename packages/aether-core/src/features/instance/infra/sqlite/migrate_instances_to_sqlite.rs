@@ -72,6 +72,7 @@ async fn mark_migrated(fs_storage: &FsInstanceStorage, instances: Vec<&Instance>
 
 #[cfg(test)]
 mod tests {
+    use crate::features::minecraft::GameVersion;
     use std::sync::Arc;
 
     use tempfile::TempDir;
@@ -95,7 +96,7 @@ mod tests {
             let instance = InstanceBuilder::new(
                 InstanceId::try_from(*id).unwrap(),
                 InstanceName::parse(id).unwrap(),
-                "1.21.1".into(),
+                GameVersion::from_static("1.21.1"),
                 ModLoader::Fabric,
             )
             .build();

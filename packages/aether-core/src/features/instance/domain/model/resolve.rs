@@ -10,7 +10,7 @@ use std::path::PathBuf;
 use crate::{
     features::{
         instance::{InstanceError, InstanceId, InstanceName, NewInstance, PackInfo},
-        minecraft::{LoaderVersionPreference, ModLoader},
+        minecraft::{GameVersion, LoaderVersionPreference, ModLoader},
     },
     shared::hash::FileHash,
 };
@@ -45,7 +45,7 @@ pub enum ResolveTarget {
     /// of that pack they are only the current state, and the plan may name a new game.
     Existing {
         instance_id: InstanceId,
-        game_version: String,
+        game_version: GameVersion,
         /// `None` for a vanilla instance.
         loader: Option<ModLoader>,
     },
@@ -131,7 +131,7 @@ pub struct PackMetadata {
     /// The version as the pack's author wrote it (`1.4.2`), for display only.
     pub version_name: Option<String>,
     pub description: Option<String>,
-    pub game_version: String,
+    pub game_version: GameVersion,
     pub mod_loader: ModLoader,
     /// `None` — the pack does not pin one, or the provider cannot tell without reading the pack
     /// itself (a preview from the platform's API).
@@ -240,7 +240,7 @@ mod tests {
             installed_version: None,
             target: ResolveTarget::Existing {
                 instance_id: InstanceId::try_from("instance").unwrap(),
-                game_version: "1.21.1".into(),
+                game_version: GameVersion::from_static("1.21.1"),
                 loader: Some(ModLoader::Fabric),
             },
         };
@@ -297,7 +297,7 @@ mod tests {
             version_id: Some(ContentVersionId::try_from("Vq3Rr4wN").unwrap()),
             version_name: Some("6.4.0".into()),
             description: None,
-            game_version: "1.21.1".into(),
+            game_version: GameVersion::from_static("1.21.1"),
             mod_loader: ModLoader::Fabric,
             loader_version: Some("0.16.5".into()),
             file_count: Some(2),
@@ -371,7 +371,7 @@ mod tests {
             version_id: Some(ContentVersionId::try_from("Vq3Rr4wN").unwrap()),
             version_name: None,
             description: None,
-            game_version: "1.21.4".into(),
+            game_version: GameVersion::from_static("1.21.4"),
             mod_loader: ModLoader::Fabric,
             loader_version: Some("0.16.9".into()),
             file_count: None,
@@ -379,7 +379,7 @@ mod tests {
         };
         let existing = ResolveTarget::Existing {
             instance_id: InstanceId::try_from("instance").unwrap(),
-            game_version: "1.21.1".into(),
+            game_version: GameVersion::from_static("1.21.1"),
             loader: Some(ModLoader::Fabric),
         };
 
@@ -390,7 +390,7 @@ mod tests {
             InstallTarget::Existing {
                 instance_id: InstanceId::try_from("instance").unwrap(),
                 game: Some(InstanceGame {
-                    game_version: "1.21.4".into(),
+                    game_version: GameVersion::from_static("1.21.4"),
                     mod_loader: ModLoader::Fabric,
                     loader_version: Some(LoaderVersionPreference::Exact("0.16.9".into())),
                 }),
@@ -411,7 +411,7 @@ mod tests {
             version_id: None,
             version_name: None,
             description: None,
-            game_version: "1.21.1".into(),
+            game_version: GameVersion::from_static("1.21.1"),
             mod_loader: ModLoader::Vanilla,
             loader_version: None,
             file_count: None,
@@ -445,7 +445,7 @@ mod tests {
     fn should_accept_only_a_plan_for_the_requested_target_when_resolving() {
         let existing = ResolveTarget::Existing {
             instance_id: InstanceId::try_from("instance").unwrap(),
-            game_version: "1.21.1".into(),
+            game_version: GameVersion::from_static("1.21.1"),
             loader: None,
         };
         let same = InstallTarget::existing(InstanceId::try_from("instance").unwrap());
@@ -453,7 +453,7 @@ mod tests {
         let same_with_game = InstallTarget::Existing {
             instance_id: InstanceId::try_from("instance").unwrap(),
             game: Some(InstanceGame {
-                game_version: "1.21.4".into(),
+                game_version: GameVersion::from_static("1.21.4"),
                 mod_loader: ModLoader::Fabric,
                 loader_version: None,
             }),
@@ -461,7 +461,7 @@ mod tests {
         let other = InstallTarget::existing(InstanceId::try_from("other").unwrap());
         let new = InstallTarget::New(NewInstance {
             name: InstanceName::parse("Pack").unwrap(),
-            game_version: "1.21.1".into(),
+            game_version: GameVersion::from_static("1.21.1"),
             mod_loader: ModLoader::Fabric,
             loader_version: None,
             icon_path: None,

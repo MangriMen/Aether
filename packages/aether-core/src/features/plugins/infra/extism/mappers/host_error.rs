@@ -201,6 +201,10 @@ fn instance_dto(value: &InstanceError) -> InstanceErrorDto {
             kind: kind.clone(),
             value: value.clone(),
         },
+        InstanceError::InvalidGameVersion { value, reason } => Dto::InvalidGameVersion {
+            value: value.clone(),
+            reason: reason.clone(),
+        },
         InstanceError::PathEscapesInstance { path, instance_id } => Dto::PathEscapesInstance {
             path: path.clone(),
             instance_id: instance_id.clone(),

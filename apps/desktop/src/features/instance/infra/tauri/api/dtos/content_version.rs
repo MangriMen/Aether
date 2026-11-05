@@ -162,7 +162,7 @@ impl From<ContentVersion> for ContentVersionDto {
             version_number: value.version_number,
             changelog: value.changelog,
             dependencies: value.dependencies.into_iter().map(Into::into).collect(),
-            game_versions: value.game_versions,
+            game_versions: value.game_versions.into_iter().map(String::from).collect(),
             version_type: value.version_type.into(),
             loaders: value.loaders.into_iter().map(Into::into).collect(),
             featured: value.featured,

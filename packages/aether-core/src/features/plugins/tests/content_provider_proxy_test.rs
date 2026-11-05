@@ -1,5 +1,6 @@
 //! The content provider contract end to end, without a WASM runtime: a `capabilities.json` in
 //! the new format becomes a registered provider whose trait methods call the functions it names.
+use crate::features::minecraft::GameVersion;
 
 use crate::features::instance::PlatformId;
 use crate::features::instance::{ContentId, ContentVersionId};
@@ -211,7 +212,7 @@ impl Fixture {
 fn existing_target() -> ResolveTarget {
     ResolveTarget::Existing {
         instance_id: InstanceId::try_from("instance").unwrap(),
-        game_version: "1.21.1".into(),
+        game_version: GameVersion::from_static("1.21.1"),
         loader: Some(ModLoader::Fabric),
     }
 }
@@ -366,7 +367,7 @@ async fn should_call_the_resolve_file_handler_the_file_names_when_resolving_a_fi
         .resolve_file(
             &ContentId::try_from("238222").unwrap(),
             None,
-            "1.21.1",
+            &GameVersion::from_static("1.21.1"),
             Some("fabric"),
         )
         .await
@@ -906,7 +907,7 @@ async fn should_report_operations_as_unsupported_when_the_provider_has_no_handle
             .resolve_file(
                 &ContentId::try_from("238222").unwrap(),
                 None,
-                "1.21.1",
+                &GameVersion::from_static("1.21.1"),
                 None,
             )
             .await
@@ -1067,7 +1068,7 @@ async fn should_pass_on_the_game_when_a_plan_names_one_for_the_instance() {
         InstallTarget::Existing {
             instance_id: InstanceId::try_from("instance").unwrap(),
             game: Some(InstanceGame {
-                game_version: "1.21.4".into(),
+                game_version: GameVersion::from_static("1.21.4"),
                 mod_loader: ModLoader::Fabric,
                 loader_version: None,
             }),
@@ -1565,7 +1566,7 @@ async fn should_register_a_plugin_when_it_implements_only_the_resolve_handlers()
         .resolve_file(
             &ContentId::try_from("238222").unwrap(),
             Some(&ContentVersionId::try_from("4512345").unwrap()),
-            "1.21.1",
+            &GameVersion::from_static("1.21.1"),
             None,
         )
         .await

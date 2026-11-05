@@ -23,7 +23,7 @@ use crate::{
             ContentVersionMetadata, Instance, InstanceError, InstanceId, NewInstance, PlatformId,
             ProviderId,
         },
-        minecraft::{LoaderVersionPreference, ModLoader},
+        minecraft::{GameVersion, LoaderVersionPreference, ModLoader},
     },
     shared::hash::FileHash,
 };
@@ -81,7 +81,7 @@ impl InstallTarget {
 /// [`NewInstance`] describes them, and as a pack update may change them.
 #[derive(Debug, Clone, PartialEq)]
 pub struct InstanceGame {
-    pub game_version: String,
+    pub game_version: GameVersion,
     pub mod_loader: ModLoader,
     /// `None` — not pinned: the instance keeps its loader version while the game version and
     /// loader stay, and gets the default one for a new game or loader, as a new instance does.
@@ -471,7 +471,7 @@ mod tests {
         crate::features::instance::InstanceBuilder::new(
             crate::features::instance::InstanceId::try_from("instance").unwrap(),
             InstanceName::parse("Instance").unwrap(),
-            "1.21.1".into(),
+            GameVersion::from_static("1.21.1"),
             ModLoader::Fabric,
         )
         .with_loader_version(loader_version.map(|v| LoaderVersionPreference::Exact(v.into())))
@@ -484,7 +484,7 @@ mod tests {
         loader_version: Option<&str>,
     ) -> InstanceGame {
         InstanceGame {
-            game_version: game_version.into(),
+            game_version: GameVersion::parse(game_version).unwrap(),
             mod_loader,
             loader_version: loader_version.map(|v| LoaderVersionPreference::Exact(v.into())),
         }
@@ -507,7 +507,7 @@ mod tests {
         let instance = crate::features::instance::InstanceBuilder::new(
             crate::features::instance::InstanceId::try_from("instance").unwrap(),
             InstanceName::parse("Instance").unwrap(),
-            "1.21.1".into(),
+            GameVersion::from_static("1.21.1"),
             ModLoader::Vanilla,
         )
         .build();

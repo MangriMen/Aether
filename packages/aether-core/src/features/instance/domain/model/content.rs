@@ -1,6 +1,6 @@
 use std::{ops::Deref, str::FromStr};
 
-use crate::features::minecraft::ModLoader;
+use crate::features::minecraft::{GameVersion, ModLoader};
 
 use super::{
     CapabilityId, ContentId, ContentType, ContentVersionId, InstanceId, InvalidId, PluginId,
@@ -13,7 +13,7 @@ pub struct ContentSearchParams {
     pub page: i64,
     pub page_size: i64,
     pub query: Option<String>,
-    pub game_versions: Option<Vec<String>>,
+    pub game_versions: Option<Vec<GameVersion>>,
     pub loader: Option<ModLoader>,
 }
 
@@ -193,7 +193,7 @@ pub struct BaseContentParams {
 pub struct AtomicInstallParams {
     pub base: BaseContentParams,
     pub instance_id: InstanceId,
-    pub game_version: String,
+    pub game_version: GameVersion,
     pub loader: Option<ModLoader>,
     pub content_type: ContentType,
 }

@@ -111,6 +111,7 @@ impl FileEventHandler for InstanceEventHandler {
 
 #[cfg(test)]
 mod tests {
+    use crate::features::minecraft::GameVersion;
     use std::path::PathBuf;
     use std::time::Duration;
 
@@ -151,7 +152,7 @@ mod tests {
         let mut instance = InstanceBuilder::new(
             InstanceId::try_from("abc").unwrap(),
             InstanceName::parse("My Pack").unwrap(),
-            "1.20.1".to_string(),
+            GameVersion::from_static("1.20.1"),
             ModLoader::Vanilla,
         )
         .build();

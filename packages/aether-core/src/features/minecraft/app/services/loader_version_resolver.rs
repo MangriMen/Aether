@@ -1,5 +1,6 @@
 use crate::features::minecraft::{
-    LoaderVersionPreference, LoaderVersionService, MinecraftDomainError, ModLoader, modded,
+    GameVersion, LoaderVersionPreference, LoaderVersionService, MinecraftDomainError, ModLoader,
+    modded,
 };
 
 use super::super::ports::MetadataStorage;
@@ -14,7 +15,7 @@ pub struct LoaderVersionResolver {
 impl LoaderVersionService for LoaderVersionResolver {
     async fn resolve(
         &self,
-        game_version: &str,
+        game_version: &GameVersion,
         loader: &ModLoader,
         loader_version: Option<&LoaderVersionPreference>,
     ) -> Result<Option<modded::LoaderVersion>, MinecraftDomainError> {
@@ -42,7 +43,7 @@ impl LoaderVersionService for LoaderVersionResolver {
 
     async fn try_get_default(
         &self,
-        game_version: &str,
+        game_version: &GameVersion,
         loader: &ModLoader,
     ) -> Result<Option<LoaderVersionPreference>, MinecraftDomainError> {
         if matches!(loader, ModLoader::Vanilla) {
@@ -79,7 +80,7 @@ impl LoaderVersionResolver {
 
     pub async fn resolve(
         &self,
-        game_version: &str,
+        game_version: &GameVersion,
         loader: &ModLoader,
         loader_version: Option<&LoaderVersionPreference>,
     ) -> Result<Option<modded::LoaderVersion>, MinecraftDomainError> {
@@ -88,7 +89,7 @@ impl LoaderVersionResolver {
 
     pub async fn try_get_default(
         &self,
-        game_version: &str,
+        game_version: &GameVersion,
         loader: &ModLoader,
     ) -> Result<Option<LoaderVersionPreference>, MinecraftDomainError> {
         LoaderVersionService::try_get_default(self, game_version, loader).await

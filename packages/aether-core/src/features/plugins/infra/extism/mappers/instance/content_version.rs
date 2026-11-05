@@ -7,7 +7,7 @@ use crate::features::instance::{
     ContentVersion, ContentVersionDependency, ContentVersionDependencyType, ContentVersionStatus,
     ContentVersionType, InvalidContentId, RequestedContentVersionStatus,
 };
-use crate::features::minecraft::ModLoader;
+use crate::features::minecraft::{GameVersion, ModLoader};
 
 impl From<ContentVersion> for ContentVersionDto {
     fn from(value: ContentVersion) -> Self {
@@ -19,7 +19,7 @@ impl From<ContentVersion> for ContentVersionDto {
             version_number: value.version_number,
             changelog: value.changelog,
             dependencies: value.dependencies.into_iter().map(Into::into).collect(),
-            game_versions: value.game_versions,
+            game_versions: value.game_versions.into_iter().map(String::from).collect(),
             version_type: value.version_type.into(),
             loaders: value.loaders.into_iter().map(ModLoaderDto::from).collect(),
             featured: value.featured,
@@ -104,7 +104,7 @@ impl TryFrom<ContentVersionDto> for ContentVersion {
                 .into_iter()
                 .map(TryInto::try_into)
                 .collect::<Result<_, _>>()?,
-            game_versions: value.game_versions,
+            game_versions: GameVersion::parse_list(value.game_versions, "plugin content version"),
             version_type: value.version_type.into(),
             loaders: value.loaders.into_iter().map(ModLoader::from).collect(),
             featured: value.featured,
@@ -172,5 +172,36 @@ impl From<RequestedContentVersionStatusDto> for RequestedContentVersionStatus {
             RequestedContentVersionStatusDto::Draft => Self::Draft,
             RequestedContentVersionStatusDto::Unlisted => Self::Unlisted,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn should_drop_only_the_invalid_game_versions_when_a_plugin_lists_them() {
+        let dto = ContentVersionDto {
+            id: "IZskON6d".into(),
+            content_id: "AANobbMI".into(),
+            author_id: "author".into(),
+            name: "Sodium".into(),
+            version_number: "0.6.0".into(),
+            changelog: None,
+            dependencies: Vec::new(),
+            game_versions: vec!["1.21.1".into(), "../x".into(), "1.21.4".into()],
+            version_type: ContentVersionTypeDto::Release,
+            loaders: Vec::new(),
+            featured: false,
+            status: ContentVersionStatusDto::Listed,
+            requested_status: None,
+            date_published: "2024-01-01T00:00:00Z".into(),
+            downloads: 0,
+            web_url: String::new(),
+        };
+
+        let version = ContentVersion::try_from(dto).unwrap();
+
+        assert_eq!(version.game_versions, ["1.21.1", "1.21.4"]);
     }
 }

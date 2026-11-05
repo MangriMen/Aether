@@ -10,7 +10,9 @@ impl From<ContentSearchParams> for ContentSearchParamsDto {
             page: value.page,
             page_size: value.page_size,
             query: value.query,
-            game_versions: value.game_versions,
+            game_versions: value
+                .game_versions
+                .map(|versions| versions.into_iter().map(String::from).collect()),
             loader: value.loader.map(ModLoaderDto::from),
         }
     }

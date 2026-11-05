@@ -426,6 +426,7 @@ pub read_instance_file(user_data: PluginContext; params: Msgpack<ReadInstanceFil
 
 #[cfg(test)]
 mod tests {
+    use crate::features::minecraft::GameVersion;
     use std::sync::{
         Arc,
         atomic::{AtomicBool, Ordering},
@@ -463,7 +464,7 @@ mod tests {
                 Ok(InstanceBuilder::new(
                     InstanceId::try_from(INSTANCE_ID).unwrap(),
                     InstanceName::parse("Test").unwrap(),
-                    "1.20.1".to_owned(),
+                    GameVersion::from_static("1.20.1"),
                     ModLoader::Vanilla,
                 )
                 .build())
@@ -859,7 +860,7 @@ mod tests {
             Ok(InstanceBuilder::new(
                 InstanceId::generate(),
                 InstanceName::parse("Test").unwrap(),
-                "1.20.1".to_owned(),
+                GameVersion::from_static("1.20.1"),
                 ModLoader::Vanilla,
             )
             .build())
