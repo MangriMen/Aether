@@ -501,6 +501,7 @@ async fn should_plan_a_modpack_from_its_mrpack_when_the_target_is_a_new_instance
         panic!("archive overrides expected: {:?}", plan.overrides)
     };
     assert_eq!(subdir, "overrides");
+    let archive_path = archive_path.to_path_buf();
     assert!(archive_path.starts_with(fixture.location_info.cache_dir()));
     assert!(archive_path.is_file());
     // The sides' own directories are layered over it, from the same archive.
@@ -552,6 +553,7 @@ async fn should_clear_stale_archives_when_the_plan_points_at_a_fresh_one() {
     let OverrideLocation::Archive { archive_path, .. } = &first.overrides[0].location else {
         panic!("archive overrides expected")
     };
+    let archive_path = &archive_path.to_path_buf();
     let dir = archive_path.parent().unwrap();
     let stale = dir.join("stale.mrpack");
     std::fs::write(&stale, b"old").unwrap();

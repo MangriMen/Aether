@@ -10,13 +10,18 @@
 //! a plan may replace or remove is told by
 //! [`PackFile::installed_by`](super::PackFile::installed_by), the [`PlanOrigin`] that installed it.
 
-use std::{fmt, path::PathBuf, str::FromStr};
+use std::{
+    fmt,
+    path::{Component, Path, PathBuf},
+    str::FromStr,
+};
 
 use crate::{
     features::{
         instance::{
             ContentId, ContentMetadata, ContentPath, ContentType, ContentVersionId,
-            ContentVersionMetadata, Instance, InstanceId, NewInstance, PlatformId, ProviderId,
+            ContentVersionMetadata, Instance, InstanceError, InstanceId, NewInstance, PlatformId,
+            ProviderId,
         },
         minecraft::{LoaderVersionPreference, ModLoader},
     },
@@ -304,12 +309,85 @@ impl OverrideSource {
 pub enum OverrideLocation {
     /// The `subdir` directory inside a zip archive.
     Archive {
-        archive_path: PathBuf,
+        archive_path: AnchoredPath,
         subdir: String,
     },
     Directory {
-        path: PathBuf,
+        path: AnchoredPath,
     },
+}
+
+/// A host path split into a `root` the core trusts and a `relative` path under it that it does
+/// not.
+///
+/// The root is opened by its path, symlinks and all; every component of `relative` is then
+/// opened from the one before it without following a symlink. A path a plugin names is anchored
+/// at the root of the plugin's mount, which the plugin cannot replace, so nothing the plugin can
+/// write is ever followed.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AnchoredPath {
+    root: PathBuf,
+    relative: PathBuf,
+}
+
+impl AnchoredPath {
+    /// `relative` under `root`; refused unless it is a chain of plain names (empty for `root`
+    /// itself).
+    pub fn new(root: PathBuf, relative: PathBuf) -> Result<Self, InstanceError> {
+        let plain = relative
+            .components()
+            .all(|component| matches!(component, Component::Normal(_)));
+        if !plain {
+            return Err(InstanceError::InvalidRelativePath {
+                path: relative.display().to_string(),
+                reason: "not a chain of plain names under its root".to_owned(),
+            });
+        }
+
+        Ok(Self { root, relative })
+    }
+
+    /// `path` anchored at its parent: only its last component is opened without following a
+    /// symlink. For a path the core made itself, never for one a plugin names.
+    pub fn at_parent(path: &Path) -> Self {
+        match (path.parent(), path.file_name()) {
+            (Some(parent), Some(name)) => Self {
+                root: if parent.as_os_str().is_empty() {
+                    PathBuf::from(".")
+                } else {
+                    parent.to_owned()
+                },
+                relative: PathBuf::from(name),
+            },
+            _ => Self {
+                root: path.to_owned(),
+                relative: PathBuf::new(),
+            },
+        }
+    }
+
+    pub fn root(&self) -> &Path {
+        &self.root
+    }
+
+    pub fn relative(&self) -> &Path {
+        &self.relative
+    }
+
+    /// The whole host path, for messages and for whatever does not open it.
+    pub fn to_path_buf(&self) -> PathBuf {
+        if self.relative.as_os_str().is_empty() {
+            self.root.clone()
+        } else {
+            self.root.join(&self.relative)
+        }
+    }
+}
+
+impl fmt::Display for AnchoredPath {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.to_path_buf().display().fmt(f)
+    }
 }
 
 #[cfg(test)]

@@ -18,7 +18,7 @@ use crate::{
             EventError, ProgressBarId, ProgressEventType, ProgressService, ProgressServiceExt,
         },
         instance::{
-            CachedContentAuthor, CachedContentMetadata, CachedContentVersionMetadata,
+            AnchoredPath, CachedContentAuthor, CachedContentMetadata, CachedContentVersionMetadata,
             CapabilityMetadata, ChangeInstanceGameUseCasePort, ContentAuthor,
             ContentCompatibilityCheckParams, ContentCompatibilityResult, ContentDownloader,
             ContentFileUpdateInfo, ContentIdentity, ContentItem, ContentMetadata,
@@ -1092,18 +1092,18 @@ pub(super) fn zip_archive(fixture: &Fixture, entries: &[(&str, &str)]) -> PathBu
     path
 }
 
-pub(super) fn archive_overrides(archive_path: PathBuf) -> Vec<OverrideSource> {
+pub(super) fn archive_overrides(archive_path: impl AsRef<Path>) -> Vec<OverrideSource> {
     vec![archive_subdir(archive_path, "overrides", FileSide::Both)]
 }
 
 pub(super) fn archive_subdir(
-    archive_path: PathBuf,
+    archive_path: impl AsRef<Path>,
     subdir: &str,
     side: FileSide,
 ) -> OverrideSource {
     OverrideSource::new(
         OverrideLocation::Archive {
-            archive_path,
+            archive_path: AnchoredPath::at_parent(archive_path.as_ref()),
             subdir: subdir.into(),
         },
         side,

@@ -23,10 +23,10 @@ use crate::{
     features::{
         events::{Event, EventEmitter, EventError, PluginEvent},
         instance::{
-            ContentCompatibilityCheckParams, ContentItem, ContentProvider, ContentSource,
-            ContentType, FileSide, Importer, InstallTarget, InstanceError, InstanceGame,
-            InstanceId, NewInstance, OverrideLocation, OverrideSource, PackSource, ProviderId,
-            ResolveInstallPlanParams, ResolveTarget, Updater,
+            AnchoredPath, ContentCompatibilityCheckParams, ContentItem, ContentProvider,
+            ContentSource, ContentType, FileSide, Importer, InstallTarget, InstanceError,
+            InstanceGame, InstanceId, NewInstance, OverrideLocation, OverrideSource, PackSource,
+            ProviderId, ResolveInstallPlanParams, ResolveTarget, Updater,
         },
         minecraft::ModLoader,
         plugins::{
@@ -1226,7 +1226,17 @@ async fn should_translate_override_paths_when_they_are_in_the_plugin_cache() {
         .await
         .unwrap();
 
-    let archive_path = crate::shared::io::infra::canonicalize(archive).unwrap();
+    // Anchored at the root of the cache, the part the plugin writes to kept apart.
+    let cache_root = crate::shared::io::infra::canonicalize(
+        fixture.location_info.plugin_cache_dir(&plugin_id()),
+    )
+    .unwrap();
+    let archive_path =
+        AnchoredPath::new(cache_root, ["downloads", "pack.zip"].iter().collect()).unwrap();
+    assert_eq!(
+        archive_path.to_path_buf(),
+        crate::shared::io::infra::canonicalize(archive).unwrap()
+    );
     assert_eq!(
         plan.overrides,
         [

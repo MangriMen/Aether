@@ -8,9 +8,9 @@ use url::Url;
 
 use crate::{
     features::instance::{
-        ContentId, ContentIdentity, ContentPath, ContentSource, ContentType, ContentVersionId,
-        FileSide, InstallFileEntry, InstanceError, OptionalFile, OverrideLocation, OverrideSource,
-        PackMetadata, PlatformId,
+        AnchoredPath, ContentId, ContentIdentity, ContentPath, ContentSource, ContentType,
+        ContentVersionId, FileSide, InstallFileEntry, InstanceError, OptionalFile,
+        OverrideLocation, OverrideSource, PackMetadata, PlatformId,
         infra::content_providers::modrinth::api_client::{
             Hashes, ModrinthEnv, ModrinthIndex, ModrinthIndexFile,
         },
@@ -157,13 +157,14 @@ pub(super) fn plan_files(index: &ModrinthIndex) -> Result<Vec<InstallFileEntry>,
 
 /// The override directories of the archive, every side's included: as with the files, leaving
 /// out the server's is the core's decision. A directory the archive lacks lists no files.
+/// The archive is the core's own download, so it is anchored at the directory it is in.
 pub(super) fn plan_overrides(archive_path: &Path) -> Vec<OverrideSource> {
     OVERRIDES_DIRS
         .iter()
         .map(|&(subdir, side)| {
             OverrideSource::new(
                 OverrideLocation::Archive {
-                    archive_path: archive_path.to_owned(),
+                    archive_path: AnchoredPath::at_parent(archive_path),
                     subdir: subdir.to_owned(),
                 },
                 side,
@@ -566,7 +567,7 @@ mod tests {
                     archive_path,
                     subdir,
                 } => {
-                    assert_eq!(archive_path, Path::new("cache/pack.mrpack"));
+                    assert_eq!(archive_path.to_path_buf(), Path::new("cache/pack.mrpack"));
                     (subdir.as_str(), source.side)
                 }
                 OverrideLocation::Directory { .. } => panic!("an archive's: {source:?}"),

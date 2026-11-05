@@ -6,26 +6,26 @@
 //!
 //! Security: an archive with any entry escaping its root (`../evil`, an absolute path) is refused
 //! as a whole. Symlinks are never materialised, as they could point out of the instance or the
-//! source. A directory source is read from a handle on its root, one component at a time and
-//! never through a symlink ([`open_in`]), so a directory swapped for a symlink after listing does
-//! not lead out of it. The root itself is reached by its path ([`open_root`]): only its last
-//! component is not followed, so a parent of it swapped for a symlink after the path was
-//! resolved is not caught. An archive source is opened by its path with a plain `File::open`
-//! ([`open_archive`]), which follows symlinks in every component, the file included: an archive
-//! swapped for a symlink after its path was resolved is not caught either. What an archive
-//! unpacks to is bounded over all sources of a plan together (`ContentInstallLimits`): files
-//! when listed, bytes as staged, so a lying header does not help.
+//! source. Every source is an [`AnchoredPath`]: its root, which the core trusts (the mount root
+//! for a path a plugin names), is opened by its path, and from there every component of the
+//! source, and of each file of a directory source, is opened from a handle on the one before it
+//! without following a symlink (a junction on Windows). A component swapped for a link at any
+//! time, after the plugin's path was checked or after the source was listed, fails the open
+//! instead of leading out of the root ([`open_file_nofollow_in`]). What an archive unpacks to is
+//! bounded over all sources of a plan together (`ContentInstallLimits`): files when listed, bytes
+//! as staged, so a lying header does not help.
 
 use std::{
+    ffi::OsStr,
     fs::File,
     io::{Read, copy},
-    path::{Path, PathBuf},
+    path::{Component, Path, PathBuf},
 };
 
 use cap_fs_ext::{DirExt, FollowSymlinks, OpenOptionsFollowExt};
 use cap_std::{ambient_authority, fs::Dir};
 
-use crate::features::instance::{InstanceError, OverrideLocation};
+use crate::features::instance::{AnchoredPath, InstanceError, OverrideLocation};
 
 /// One file of the overrides, by the path it gets in the instance.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -91,7 +91,7 @@ pub(super) async fn stage_overrides(
                 OverrideLocation::Archive { archive_path, .. } => {
                     (Some(open_archive(archive_path)?), None)
                 }
-                OverrideLocation::Directory { path } => (None, Some(open_root(path)?)),
+                OverrideLocation::Directory { path } => (None, Some(open_source_dir(path)?)),
             };
 
             for file in files {
@@ -154,7 +154,7 @@ pub(super) async fn stage_overrides(
 }
 
 fn list_archive(
-    archive_path: &Path,
+    archive_path: &AnchoredPath,
     subdir: &str,
     max_files: usize,
 ) -> Result<Vec<OverrideFile>, InstanceError> {
@@ -183,10 +183,7 @@ fn list_archive(
         if entry.enclosed_name().is_none() || is_absolute(name) {
             return Err(InstanceError::InvalidRelativePath {
                 path: name.to_owned(),
-                reason: format!(
-                    "the entry of \"{}\" escapes the archive",
-                    archive_path.display()
-                ),
+                reason: format!("the entry of \"{archive_path}\" escapes the archive"),
             });
         }
 
@@ -211,18 +208,22 @@ fn list_archive(
     Ok(files)
 }
 
-fn list_directory(root: &Path, max_files: usize) -> Result<Vec<OverrideFile>, InstanceError> {
+fn list_directory(
+    root: &AnchoredPath,
+    max_files: usize,
+) -> Result<Vec<OverrideFile>, InstanceError> {
     fn walk(
-        dir: &Path,
+        dir: &Dir,
         prefix: &str,
         max_files: usize,
         files: &mut Vec<OverrideFile>,
     ) -> Result<(), InstanceError> {
-        let mut entries = std::fs::read_dir(dir)
+        let mut entries = dir
+            .entries()
             .map_err(|err| storage(&err))?
             .collect::<Result<Vec<_>, _>>()
             .map_err(|err| storage(&err))?;
-        entries.sort_by_key(std::fs::DirEntry::file_name);
+        entries.sort_by_key(cap_std::fs::DirEntry::file_name);
 
         for entry in entries {
             if files.len() > max_files {
@@ -233,7 +234,7 @@ fn list_directory(root: &Path, max_files: usize) -> Result<Vec<OverrideFile>, In
             let name = name
                 .to_str()
                 .ok_or_else(|| InstanceError::InvalidRelativePath {
-                    path: entry.path().display().to_string(),
+                    path: format!("{prefix}{}", name.to_string_lossy()),
                     reason: "override file name is not valid UTF-8".to_owned(),
                 })?;
             let relative_path = format!("{prefix}{name}");
@@ -241,12 +242,8 @@ fn list_directory(root: &Path, max_files: usize) -> Result<Vec<OverrideFile>, In
             // `DirEntry::file_type` does not follow symlinks.
             let file_type = entry.file_type().map_err(|err| storage(&err))?;
             if file_type.is_dir() {
-                walk(
-                    &entry.path(),
-                    &format!("{relative_path}/"),
-                    max_files,
-                    files,
-                )?;
+                let subdir = dir.open_dir_nofollow(name).map_err(|err| storage(&err))?;
+                walk(&subdir, &format!("{relative_path}/"), max_files, files)?;
             } else if file_type.is_file() {
                 let declared_size = entry.metadata().map_err(|err| storage(&err))?.len();
                 files.push(OverrideFile {
@@ -262,69 +259,99 @@ fn list_directory(root: &Path, max_files: usize) -> Result<Vec<OverrideFile>, In
         Ok(())
     }
 
-    let is_dir = std::fs::symlink_metadata(root).is_ok_and(|metadata| metadata.is_dir());
-    if !is_dir {
-        return Err(InstanceError::Storage(format!(
-            "Overrides directory \"{}\" is not a directory",
-            root.display()
-        )));
-    }
-
+    let dir = open_source_dir(root)?;
     let mut files = Vec::new();
-    walk(root, "", max_files, &mut files)?;
+    walk(&dir, "", max_files, &mut files)?;
     Ok(files)
 }
 
-/// A handle on the root of a directory source, its last component not followed either. The
-/// components before it are, as the path is opened through the ambient file system.
-fn open_root(root: &Path) -> Result<Dir, InstanceError> {
-    let opened = match (root.parent(), root.file_name()) {
-        (Some(parent), Some(name)) if !parent.as_os_str().is_empty() => {
-            Dir::open_ambient_dir(parent, ambient_authority())
-                .and_then(|parent| parent.open_dir_nofollow(name))
-        }
-        _ => Dir::open_ambient_dir(root, ambient_authority()),
-    };
+/// A handle on a directory source, reached from its root without following a symlink.
+fn open_source_dir(path: &AnchoredPath) -> Result<Dir, InstanceError> {
+    let opened = open_root(path.root()).and_then(|root| {
+        let names = plain_components(path.relative())?;
+        Ok(open_dirs_nofollow(&root, &names)?.unwrap_or(root))
+    });
 
     opened.map_err(|err| {
         InstanceError::Storage(format!(
-            "Failed to open overrides directory \"{}\": {err}",
-            root.display()
+            "Failed to open overrides directory \"{path}\": {err}"
         ))
     })
 }
 
-/// Open the regular file at `relative_path` (`/`-separated) under `root`, every component
-/// opened from the one before it without following a symlink: a symlink anywhere on the way
-/// (a junction on Windows) fails the open instead of leading elsewhere.
+/// Open an archive source, reached from its root without following a symlink.
+fn open_archive(archive_path: &AnchoredPath) -> Result<zip::ZipArchive<File>, InstanceError> {
+    let file = open_root(archive_path.root())
+        .and_then(|root| open_file_nofollow_in(&root, archive_path.relative()))
+        .map_err(|err| {
+            InstanceError::Storage(format!(
+                "Failed to open overrides archive \"{archive_path}\": {err}"
+            ))
+        })?;
+
+    zip::ZipArchive::new(file).map_err(|err| invalid_archive(&err))
+}
+
+/// The root of an [`AnchoredPath`], opened by its path: the core trusts it, links and all.
+fn open_root(root: &Path) -> std::io::Result<Dir> {
+    Dir::open_ambient_dir(root, ambient_authority())
+}
+
+/// Open the regular file at `relative_path` (`/`-separated, as listed) under `root`.
 fn open_in(root: &Dir, relative_path: &str) -> std::io::Result<File> {
-    let invalid = |reason: &str| std::io::Error::new(std::io::ErrorKind::InvalidInput, reason);
-
-    let mut components: Vec<&str> = relative_path.split('/').collect();
-    if components
-        .iter()
-        .any(|component| matches!(*component, "" | "." | ".."))
+    if relative_path
+        .split('/')
+        .any(|component| matches!(component, "" | "." | ".."))
     {
-        return Err(invalid("not a plain relative path"));
-    }
-    let name = components
-        .pop()
-        .ok_or_else(|| invalid("not a plain relative path"))?;
-
-    let mut dir: Option<Dir> = None;
-    for component in components {
-        let next = dir.as_ref().unwrap_or(root).open_dir_nofollow(component)?;
-        dir = Some(next);
+        return Err(invalid_input("not a plain relative path"));
     }
 
+    open_file_nofollow_in(root, Path::new(relative_path))
+}
+
+/// Open the regular file at `path` under `dir`, every component opened from a handle on the one
+/// before it without following a symlink: a symlink anywhere on the way (a junction on Windows)
+/// fails the open instead of leading elsewhere.
+fn open_file_nofollow_in(dir: &Dir, path: &Path) -> std::io::Result<File> {
+    let names = plain_components(path)?;
+    let (name, parents) = names
+        .split_last()
+        .ok_or_else(|| invalid_input("not a file path"))?;
+
+    let parent = open_dirs_nofollow(dir, parents)?;
     let mut options = cap_std::fs::OpenOptions::new();
     options.read(true).follow(FollowSymlinks::No);
-    let file = dir.as_ref().unwrap_or(root).open_with(name, &options)?;
+    let file = parent.as_ref().unwrap_or(dir).open_with(name, &options)?;
     if !file.metadata()?.is_file() {
-        return Err(invalid("not a regular file"));
+        return Err(invalid_input("not a regular file"));
     }
 
     Ok(file.into_std())
+}
+
+/// The directory at `names` under `dir`, each opened from the one before without following a
+/// symlink; `None` for no names, `dir` itself.
+fn open_dirs_nofollow(dir: &Dir, names: &[&OsStr]) -> std::io::Result<Option<Dir>> {
+    let mut opened: Option<Dir> = None;
+    for name in names {
+        let next = opened.as_ref().unwrap_or(dir).open_dir_nofollow(name)?;
+        opened = Some(next);
+    }
+    Ok(opened)
+}
+
+/// The names `path` is made of, refused unless each is a plain name.
+fn plain_components(path: &Path) -> std::io::Result<Vec<&OsStr>> {
+    path.components()
+        .map(|component| match component {
+            Component::Normal(name) => Ok(name),
+            _ => Err(invalid_input("not a plain relative path")),
+        })
+        .collect()
+}
+
+fn invalid_input(reason: &str) -> std::io::Error {
+    std::io::Error::new(std::io::ErrorKind::InvalidInput, reason.to_owned())
 }
 
 /// Whether an archive entry's name is rooted or starts with a drive or other prefix, read with
@@ -335,17 +362,6 @@ fn is_absolute(name: &str) -> bool {
             .split(['/', '\\'])
             .next()
             .is_some_and(|first| first.contains(':'))
-}
-
-fn open_archive(archive_path: &Path) -> Result<zip::ZipArchive<File>, InstanceError> {
-    let file = File::open(archive_path).map_err(|err| {
-        InstanceError::Storage(format!(
-            "Failed to open overrides archive \"{}\": {err}",
-            archive_path.display()
-        ))
-    })?;
-
-    zip::ZipArchive::new(file).map_err(|err| invalid_archive(&err))
 }
 
 fn invalid_archive(err: &zip::result::ZipError) -> InstanceError {

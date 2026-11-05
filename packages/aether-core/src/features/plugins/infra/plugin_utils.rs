@@ -144,18 +144,49 @@ pub(crate) fn parse_plugin_path(
 /// `\` and drive or UNC prefixes are already refused by [`PluginPath::parse`], before the
 /// filesystem is touched (a UNC path alone would make Windows connect to the named server). The
 /// file must exist and stay inside the mount after resolving symlinks and short names, and the
-/// canonical path is returned. That holds at the time of the check only: `/cache` is writable
-/// by the plugin, so a component swapped for a symlink after this returns is not caught here;
-/// whatever opens the path later has to guard against that itself. Not every caller does: an
-/// override archive is opened with a plain `File::open`, which follows a symlink in any
-/// component, the file included, and a directory source is reached through its parents by
-/// path (see `plan_overrides`).
+/// canonical path is returned.
+///
+/// That holds at the time of the check only: `/cache` is writable by the plugin, so a component
+/// swapped for a symlink after this returns is followed by whatever opens the path. A caller
+/// that opens it has to use [`resolve_plugin_path_anchored`] instead and open the relative part
+/// without following links, as override sources do (see `plan_overrides`). The icon of an
+/// instance a plugin creates still goes through here and is read by path, links followed.
 pub(crate) fn resolve_plugin_path(
     location_info: &LocationInfo,
     plugin_id: &PluginId,
     plugin_path: &PluginPath,
     mounts: MountSet,
 ) -> Result<PathBuf, PluginError> {
+    resolve_in_mount(location_info, plugin_id, plugin_path, mounts).map(|(_, host)| host)
+}
+
+/// [`resolve_plugin_path`] split at the mount: the canonical host root of the mount, which the
+/// plugin cannot replace, and the canonical path of the file under it. Opening the relative part
+/// from the root one component at a time without following a link reaches the file checked here
+/// or fails, whatever the plugin changes in its mount meanwhile.
+pub(crate) fn resolve_plugin_path_anchored(
+    location_info: &LocationInfo,
+    plugin_id: &PluginId,
+    plugin_path: &PluginPath,
+    mounts: MountSet,
+) -> Result<(PathBuf, PathBuf), PluginError> {
+    let (root, host) = resolve_in_mount(location_info, plugin_id, plugin_path, mounts)?;
+    let relative = host
+        .strip_prefix(&root)
+        .map_err(|_| access_violation(plugin_id, plugin_path.as_str()))?
+        .to_owned();
+
+    Ok((root, relative))
+}
+
+/// The canonical host root of the mount `plugin_path` is in and the canonical host path it
+/// names, checked to be under that root.
+fn resolve_in_mount(
+    location_info: &LocationInfo,
+    plugin_id: &PluginId,
+    plugin_path: &PluginPath,
+    mounts: MountSet,
+) -> Result<(PathBuf, PathBuf), PluginError> {
     let deny = || access_violation(plugin_id, plugin_path.as_str());
 
     let (mount, relative) = mounts
@@ -177,7 +208,7 @@ pub(crate) fn resolve_plugin_path(
         return Err(deny());
     }
 
-    Ok(canonical_host)
+    Ok((canonical_base, canonical_host))
 }
 
 /// The plugin-side path of an existing host file under one of the plugin's mounts (`/cache`,
