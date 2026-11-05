@@ -79,6 +79,8 @@ pub(crate) async fn handle_instance_create(
 
 /// The icon of an instance a plugin makes is a file of the plugin's own `/cache`: a host path
 /// would have the core copy any file of the user's into the asset store, where the UI reads it.
+/// Checked here only: the icon is read later by path, so a link the plugin swaps in meanwhile
+/// is followed (see `resolve_plugin_path`).
 pub(crate) fn new_instance_from_plugin(
     plugin_id: &PluginId,
     dto: NewInstanceDto,

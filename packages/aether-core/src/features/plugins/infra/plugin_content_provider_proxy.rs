@@ -149,7 +149,9 @@ impl PluginContentProviderProxy {
         }
 
         // Held to the plugin's cache like the overrides: a host path would let the plugin show
-        // any file of the user's as the instance icon.
+        // any file of the user's as the instance icon. Unlike them it is passed on as a plain
+        // host path and read with links followed, so a link swapped in after this check is
+        // still followed (see `resolve_plugin_path`).
         if let InstallTarget::New(instance) = &mut target
             && let Some(icon_path) = instance.icon_path.take()
         {
