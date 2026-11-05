@@ -4,7 +4,7 @@ use async_trait::async_trait;
 
 use crate::{
     features::instance::domain::{InstanceError, ProviderId},
-    shared::{hash::FileHash, request_client::BytesProgress},
+    shared::{hash::FileHash, request_client::BytesProgress, web_url::HttpsUrl},
 };
 
 /// Downloads the files of an install plan, each under the network policy of whoever supplied
@@ -27,7 +27,7 @@ pub trait ContentDownloader: Send + Sync {
     async fn download(
         &self,
         origin: &ProviderId,
-        url: &str,
+        url: &HttpsUrl,
         hash: Option<&FileHash>,
         destination: &Path,
         on_bytes: Option<BytesProgress<'_>>,

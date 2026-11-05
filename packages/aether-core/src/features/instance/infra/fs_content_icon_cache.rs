@@ -31,6 +31,7 @@ use crate::{
         housekeeping::CacheCleaner,
         io::infra::{REPLACING_TEMP_PREFIX, write_replacing_async},
         request_client::{FileDownload, Request, RequestClient},
+        web_url::HttpsUrl,
     },
 };
 
@@ -113,56 +114,31 @@ impl FsContentIconCache {
 }
 
 /// The name of the icon of `url`, without extension.
-fn stem(url: &str) -> String {
-    let mut hex = sha256_hex(url.as_bytes());
+fn stem(url: &HttpsUrl) -> String {
+    let mut hex = sha256_hex(url.as_str().as_bytes());
     hex.truncate(32);
     hex
 }
 
 /// Whether `url` names its content by hash, so the same URL never brings another icon: a run
 /// of 32 or more hex digits in its path, as the sha1 of Modrinth's `…/<sha1>_96.webp`.
-fn names_content_by_hash(url: &url::Url) -> bool {
-    url.path()
+fn names_content_by_hash(url: &HttpsUrl) -> bool {
+    url.as_url()
+        .path()
         .split(|c: char| !c.is_ascii_hexdigit())
         .any(|run| run.len() >= 32)
 }
 
 /// An icon is fetched with the application's own client, from a URL a provider (a plugin,
-/// possibly) gave, so it has to name a public host over `https`: not a machine of the user's
-/// own network, which a request from here would reach. Only an address written out in the URL
-/// is told apart; a name that resolves to a private one is not.
-fn parse(url: &str) -> Result<url::Url, ContentIconError> {
-    let invalid = || ContentIconError::InvalidUrl(url.to_owned());
-    let parsed = url::Url::parse(url).map_err(|_| invalid())?;
-    let public = parsed.scheme() == "https"
-        && match parsed.host() {
-            Some(url::Host::Domain(domain)) => {
-                let domain = domain.trim_end_matches('.').to_ascii_lowercase();
-                domain != "localhost" && !domain.ends_with(".localhost")
-            }
-            Some(url::Host::Ipv4(ip)) => is_public_ipv4(ip),
-            Some(url::Host::Ipv6(ip)) => ip.to_ipv4_mapped().map_or_else(
-                || {
-                    !(ip.is_loopback()
-                        || ip.is_unspecified()
-                        || ip.is_unique_local()
-                        || ip.is_unicast_link_local())
-                },
-                is_public_ipv4,
-            ),
-            None => false,
-        };
-    if public { Ok(parsed) } else { Err(invalid()) }
-}
-
-fn is_public_ipv4(ip: std::net::Ipv4Addr) -> bool {
-    !(ip.is_loopback()
-        || ip.is_private()
-        || ip.is_link_local()
-        || ip.is_unspecified()
-        || ip.is_broadcast()
-        // Carrier-grade NAT, 100.64.0.0/10.
-        || (ip.octets()[0] == 100 && ip.octets()[1] & 0xc0 == 64))
+/// possibly) gave, so it has to name a public host: not a machine of the user's own network,
+/// which a request from here would reach. Only an address written out in the URL is told apart;
+/// a name that resolves to a private one is not.
+fn check_public(url: &HttpsUrl) -> Result<(), ContentIconError> {
+    if url.names_public_host() {
+        Ok(())
+    } else {
+        Err(ContentIconError::InvalidUrl(url.to_string()))
+    }
 }
 
 /// The extension of the image format `head` (the first bytes of a file) starts, if taken.
@@ -215,10 +191,10 @@ fn storage_error(err: impl std::fmt::Display) -> ContentIconError {
 
 #[async_trait]
 impl ContentIconCache for FsContentIconCache {
-    async fn lookup(&self, url: &str) -> CachedContentIcon {
-        let Ok(parsed) = parse(url) else {
+    async fn lookup(&self, url: &HttpsUrl) -> CachedContentIcon {
+        if check_public(url).is_err() {
             return CachedContentIcon::Missing;
-        };
+        }
         let stem = stem(url);
         let Some((_, extension, _)) = self.find(&stem).await else {
             return CachedContentIcon::Missing;
@@ -228,7 +204,7 @@ impl ContentIconCache for FsContentIconCache {
 
         // A URL that names its content by hash never brings another file. Any other one does
         // only on a fetch that writes the validators anew, so their time tells the files apart.
-        let (revalidate, revision) = if names_content_by_hash(&parsed) {
+        let (revalidate, revision) = if names_content_by_hash(url) {
             (false, None)
         } else {
             let checked_at = self
@@ -248,9 +224,9 @@ impl ContentIconCache for FsContentIconCache {
         }
     }
 
-    async fn fetch(&self, url: &str) -> Result<bool, ContentIconError> {
-        let parsed = parse(url)?;
-        let immutable = names_content_by_hash(&parsed);
+    async fn fetch(&self, url: &HttpsUrl) -> Result<bool, ContentIconError> {
+        check_public(url)?;
+        let immutable = names_content_by_hash(url);
         let stem = stem(url);
 
         let existing = self.find(&stem).await;
@@ -258,7 +234,7 @@ impl ContentIconCache for FsContentIconCache {
             return Ok(false);
         }
 
-        let mut request = Request::get(url).with_timeout(FETCH_TIMEOUT);
+        let mut request = Request::get(url.as_str()).with_timeout(FETCH_TIMEOUT);
         if existing.is_some()
             && let Some(validators) = self.read_validators(&stem).await
         {
@@ -347,13 +323,13 @@ impl ContentIconCache for FsContentIconCache {
         Ok(true)
     }
 
-    async fn retain(&self, keep: &HashSet<String>) -> usize {
+    async fn retain(&self, keep: &HashSet<HttpsUrl>) -> usize {
         let Ok(mut entries) = tokio::fs::read_dir(&self.dir).await else {
             return 0;
         };
 
         let now = SystemTime::now();
-        let kept: HashSet<String> = keep.iter().map(|url| stem(url)).collect();
+        let kept: HashSet<String> = keep.iter().map(stem).collect();
         let mut removed = 0;
         let mut validators = Vec::new();
         while let Ok(Some(entry)) = entries.next_entry().await {
@@ -465,6 +441,10 @@ mod tests {
         features::events::ProgressBarId,
         shared::request_client::{BytesProgress, RequestError, SavedDownload},
     };
+
+    fn https(url: &str) -> HttpsUrl {
+        HttpsUrl::parse(url).unwrap()
+    }
 
     const HASHED_URL: &str =
         "https://cdn.modrinth.com/data/AANobbMI/295862f4724dc3f78df3447ad6072b2dcd3ef0c9_96.webp";
@@ -617,7 +597,7 @@ mod tests {
         }
 
         async fn present(&self, url: &str) -> (String, bool) {
-            match self.cache.lookup(url).await {
+            match self.cache.lookup(&https(url)).await {
                 CachedContentIcon::Present {
                     asset_id,
                     revalidate,
@@ -628,7 +608,7 @@ mod tests {
         }
 
         async fn revision(&self, url: &str) -> Option<u64> {
-            match self.cache.lookup(url).await {
+            match self.cache.lookup(&https(url)).await {
                 CachedContentIcon::Present { revision, .. } => revision,
                 CachedContentIcon::Missing => panic!("no icon for {url}"),
             }
@@ -636,7 +616,7 @@ mod tests {
 
         /// Make the validators of `url` look checked `age` ago.
         fn age_validators(&self, url: &str, age: Duration) {
-            let path = self.dir.join(format!("{}.json", stem(url)));
+            let path = self.dir.join(format!("{}.json", stem(&https(url))));
             let mut validators: Validators =
                 serde_json::from_slice(&std::fs::read(&path).unwrap()).unwrap();
             validators.checked_at = unix_secs(SystemTime::now() - age);
@@ -655,13 +635,11 @@ mod tests {
 
     #[test]
     fn should_take_a_url_as_naming_its_content_when_its_path_has_a_long_hex_run() {
-        assert!(names_content_by_hash(&url::Url::parse(HASHED_URL).unwrap()));
-        assert!(!names_content_by_hash(
-            &url::Url::parse(LEGACY_URL).unwrap()
-        ));
-        assert!(!names_content_by_hash(
-            &url::Url::parse("https://cdn.example.com/deadbeef/icon.png").unwrap()
-        ));
+        assert!(names_content_by_hash(&https(HASHED_URL)));
+        assert!(!names_content_by_hash(&https(LEGACY_URL)));
+        assert!(!names_content_by_hash(&https(
+            "https://cdn.example.com/deadbeef/icon.png"
+        )));
     }
 
     #[tokio::test]
@@ -671,13 +649,13 @@ mod tests {
         fixture.http.reply(HASHED_URL, image(WEBP, "image/png"));
 
         assert_eq!(
-            fixture.cache.lookup(HASHED_URL).await,
+            fixture.cache.lookup(&https(HASHED_URL)).await,
             CachedContentIcon::Missing
         );
-        assert!(fixture.cache.fetch(HASHED_URL).await.unwrap());
+        assert!(fixture.cache.fetch(&https(HASHED_URL)).await.unwrap());
 
         let (asset_id, revalidate) = fixture.present(HASHED_URL).await;
-        let name = format!("{}.webp", stem(HASHED_URL));
+        let name = format!("{}.webp", stem(&https(HASHED_URL)));
         assert_eq!(asset_id, format!("{CONTENT_ICONS_FOLDER}/{name}"));
         assert!(!revalidate);
         assert_eq!(fixture.revision(HASHED_URL).await, None);
@@ -690,9 +668,9 @@ mod tests {
     async fn should_not_ask_again_for_an_icon_when_its_url_names_it_by_hash() {
         let fixture = Fixture::new();
         fixture.http.reply(HASHED_URL, image(WEBP, "image/webp"));
-        fixture.cache.fetch(HASHED_URL).await.unwrap();
+        fixture.cache.fetch(&https(HASHED_URL)).await.unwrap();
 
-        assert!(!fixture.cache.fetch(HASHED_URL).await.unwrap());
+        assert!(!fixture.cache.fetch(&https(HASHED_URL)).await.unwrap());
 
         assert_eq!(fixture.http.requests().len(), 1);
     }
@@ -718,12 +696,15 @@ mod tests {
         for url in [html, garbage, svg] {
             assert!(
                 matches!(
-                    fixture.cache.fetch(url).await,
+                    fixture.cache.fetch(&https(url)).await,
                     Err(ContentIconError::NotAnImage)
                 ),
                 "{url}"
             );
-            assert_eq!(fixture.cache.lookup(url).await, CachedContentIcon::Missing);
+            assert_eq!(
+                fixture.cache.lookup(&https(url)).await,
+                CachedContentIcon::Missing
+            );
         }
         assert!(fixture.files().is_empty(), "{:?}", fixture.files());
     }
@@ -736,7 +717,7 @@ mod tests {
         fixture.http.reply(LEGACY_URL, image(huge, "image/png"));
 
         assert!(matches!(
-            fixture.cache.fetch(LEGACY_URL).await,
+            fixture.cache.fetch(&https(LEGACY_URL)).await,
             Err(ContentIconError::Request(_))
         ));
         assert!(fixture.files().is_empty(), "{:?}", fixture.files());
@@ -746,11 +727,17 @@ mod tests {
     async fn should_reject_a_url_when_it_is_not_a_public_https_one() {
         let fixture = Fixture::new();
 
+        // What is not https never reaches the cache: it is no `HttpsUrl`.
         for url in [
             "file:///etc/passwd",
             "not a url",
             "../../icon.png",
             "http://cdn.example.com/icon.png",
+        ] {
+            assert!(HttpsUrl::parse(url).is_err(), "{url}");
+        }
+
+        for url in [
             "https://localhost/icon.png",
             "https://app.localhost./icon.png",
             "https://127.0.0.1/icon.png",
@@ -764,10 +751,13 @@ mod tests {
             "https://[::ffff:192.168.1.1]/icon.png",
         ] {
             assert!(matches!(
-                fixture.cache.fetch(url).await,
+                fixture.cache.fetch(&https(url)).await,
                 Err(ContentIconError::InvalidUrl(_))
             ));
-            assert_eq!(fixture.cache.lookup(url).await, CachedContentIcon::Missing);
+            assert_eq!(
+                fixture.cache.lookup(&https(url)).await,
+                CachedContentIcon::Missing
+            );
         }
         assert!(fixture.http.requests().is_empty());
     }
@@ -783,13 +773,13 @@ mod tests {
                 etag: Some("\"v1\""),
             },
         );
-        fixture.cache.fetch(LEGACY_URL).await.unwrap();
+        fixture.cache.fetch(&https(LEGACY_URL)).await.unwrap();
         assert!(!fixture.present(LEGACY_URL).await.1, "fresh");
 
         fixture.age_validators(LEGACY_URL, CONTENT_METADATA_TTL + Duration::from_hours(1));
         assert!(fixture.present(LEGACY_URL).await.1, "due");
 
-        assert!(!fixture.cache.fetch(LEGACY_URL).await.unwrap());
+        assert!(!fixture.cache.fetch(&https(LEGACY_URL)).await.unwrap());
 
         let requests = fixture.http.requests();
         assert_eq!(requests[1], (LEGACY_URL.into(), Some("\"v1\"".into())));
@@ -802,10 +792,10 @@ mod tests {
     async fn should_replace_the_icon_when_a_revalidation_brings_another() {
         let fixture = Fixture::new();
         fixture.http.reply(LEGACY_URL, image(PNG, "image/png"));
-        fixture.cache.fetch(LEGACY_URL).await.unwrap();
+        fixture.cache.fetch(&https(LEGACY_URL)).await.unwrap();
         fixture.http.reply(LEGACY_URL, image(WEBP, "image/webp"));
 
-        assert!(fixture.cache.fetch(LEGACY_URL).await.unwrap());
+        assert!(fixture.cache.fetch(&https(LEGACY_URL)).await.unwrap());
 
         let (asset_id, _) = fixture.present(LEGACY_URL).await;
         assert_eq!(
@@ -814,7 +804,7 @@ mod tests {
                 .and_then(|ext| ext.to_str()),
             Some("webp")
         );
-        let stem = stem(LEGACY_URL);
+        let stem = stem(&https(LEGACY_URL));
         assert_eq!(
             fixture.files(),
             [format!("{stem}.json"), format!("{stem}.webp")]
@@ -825,12 +815,12 @@ mod tests {
     async fn should_change_the_revision_when_a_revalidation_brings_another_icon() {
         let fixture = Fixture::new();
         fixture.http.reply(LEGACY_URL, image(PNG, "image/png"));
-        fixture.cache.fetch(LEGACY_URL).await.unwrap();
+        fixture.cache.fetch(&https(LEGACY_URL)).await.unwrap();
         fixture.age_validators(LEGACY_URL, CONTENT_METADATA_TTL + Duration::from_hours(1));
         let before = fixture.revision(LEGACY_URL).await;
         fixture.http.reply(LEGACY_URL, image(PNG, "image/png"));
 
-        assert!(fixture.cache.fetch(LEGACY_URL).await.unwrap());
+        assert!(fixture.cache.fetch(&https(LEGACY_URL)).await.unwrap());
 
         let after = fixture.revision(LEGACY_URL).await;
         assert!(before.is_some() && after.is_some());
@@ -841,14 +831,14 @@ mod tests {
     async fn should_keep_the_old_icon_when_a_revalidation_fails() {
         let fixture = Fixture::new();
         fixture.http.reply(LEGACY_URL, image(PNG, "image/png"));
-        fixture.cache.fetch(LEGACY_URL).await.unwrap();
+        fixture.cache.fetch(&https(LEGACY_URL)).await.unwrap();
         fixture.http.reply(LEGACY_URL, Reply::Fail);
 
-        assert!(fixture.cache.fetch(LEGACY_URL).await.is_err());
+        assert!(fixture.cache.fetch(&https(LEGACY_URL)).await.is_err());
         fixture
             .http
             .reply(LEGACY_URL, image(b"<html>", "text/html"));
-        assert!(fixture.cache.fetch(LEGACY_URL).await.is_err());
+        assert!(fixture.cache.fetch(&https(LEGACY_URL)).await.is_err());
 
         let (asset_id, _) = fixture.present(LEGACY_URL).await;
         assert_eq!(std::fs::read(fixture.path_of(&asset_id)).unwrap(), PNG);
@@ -862,7 +852,7 @@ mod tests {
         let fresh = "https://cdn.example.com/fresh/icon.png";
         for url in [wanted, fresh, LEGACY_URL] {
             fixture.http.reply(url, image(PNG, "image/png"));
-            fixture.cache.fetch(url).await.unwrap();
+            fixture.cache.fetch(&https(url)).await.unwrap();
         }
         let (old_icon, _) = fixture.present(wanted).await;
         set_age(
@@ -880,10 +870,10 @@ mod tests {
         let in_progress = fixture.dir.join(".download-def.part");
         std::fs::write(&in_progress, b"partial").unwrap();
 
-        let keep = HashSet::from([wanted.to_owned()]);
+        let keep = HashSet::from([https(wanted)]);
         assert_eq!(fixture.cache.retain(&keep).await, 1);
 
-        let (wanted_stem, fresh_stem) = (stem(wanted), stem(fresh));
+        let (wanted_stem, fresh_stem) = (stem(&https(wanted)), stem(&https(fresh)));
         assert_eq!(
             fixture.files(),
             [
@@ -901,8 +891,8 @@ mod tests {
         let fixture = Fixture::new();
         fixture.http.reply(HASHED_URL, image(WEBP, "image/webp"));
         fixture.http.reply(LEGACY_URL, image(PNG, "image/png"));
-        fixture.cache.fetch(HASHED_URL).await.unwrap();
-        fixture.cache.fetch(LEGACY_URL).await.unwrap();
+        fixture.cache.fetch(&https(HASHED_URL)).await.unwrap();
+        fixture.cache.fetch(&https(LEGACY_URL)).await.unwrap();
         let in_progress = fixture.dir.join(".download-def.part");
         std::fs::write(&in_progress, b"partial").unwrap();
 
@@ -910,7 +900,7 @@ mod tests {
 
         assert_eq!(fixture.files(), [".download-def.part".to_owned()]);
         assert_eq!(
-            fixture.cache.lookup(HASHED_URL).await,
+            fixture.cache.lookup(&https(HASHED_URL)).await,
             CachedContentIcon::Missing
         );
     }

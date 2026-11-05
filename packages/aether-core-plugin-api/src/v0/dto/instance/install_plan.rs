@@ -104,8 +104,8 @@ pub enum FileSideDto {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum ContentSourceDto {
-    /// A URL to download, checked against the plugin's `allowedHosts` like its own requests.
-    /// With a hash, the download is verified against it.
+    /// An `https` URL to download, checked against the plugin's `allowedHosts` like its own
+    /// requests; any other refuses the plan. With a hash, the download is verified against it.
     Direct {
         url: String,
         #[serde(default)]

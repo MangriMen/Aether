@@ -4,6 +4,7 @@ use crate::features::minecraft::GameVersion;
 
 use crate::features::instance::PlatformId;
 use crate::features::instance::{ContentId, ContentVersionId};
+use crate::shared::web_url::HttpsUrl;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
@@ -396,6 +397,40 @@ async fn should_call_the_resolve_file_handler_the_file_names_when_resolving_a_fi
 }
 
 #[tokio::test]
+async fn should_refuse_a_resolved_file_when_its_url_is_not_https() {
+    let fixture = Fixture::new(
+        RESOLVE_ONLY_CAPABILITIES,
+        vec![(
+            "cf_resolve_file",
+            encode(ResolvedFileDto {
+                version: "4512345".into(),
+                url: "http://edge.forgecdn.net/files/4512/345/jei.jar".into(),
+                hash: None,
+                file_name: "jei.jar".into(),
+                size: None,
+                name: None,
+            }),
+        )],
+    );
+
+    let err = fixture
+        .proxy
+        .resolve_file(
+            &ContentId::try_from("238222").unwrap(),
+            None,
+            "1.21.1",
+            None,
+        )
+        .await
+        .unwrap_err();
+
+    assert!(
+        matches!(&err, InstanceError::ContentProviderError { reason } if reason.contains("https")),
+        "{err}"
+    );
+}
+
+#[tokio::test]
 async fn should_call_the_resolve_install_plan_handler_the_file_names_when_resolving_a_plan() {
     let fixture = Fixture::new(
         RESOLVE_ONLY_CAPABILITIES,
@@ -683,7 +718,7 @@ async fn should_call_the_metadata_handlers_the_file_names_when_describing_conten
     assert_eq!(projects[0].name, "Just Enough Items");
     assert_eq!(projects[0].author.as_deref(), Some("mezz"));
     assert_eq!(
-        projects[0].icon_url.as_deref(),
+        projects[0].icon_url.as_ref().map(HttpsUrl::as_str),
         Some("https://media.forgecdn.net/jei.png")
     );
 
@@ -730,7 +765,7 @@ async fn should_drop_an_icon_when_it_is_not_a_web_address() {
     assert_eq!(projects[0].icon_url, None);
     assert_eq!(projects[1].icon_url, None);
     assert_eq!(
-        projects[2].icon_url.as_deref(),
+        projects[2].icon_url.as_ref().map(HttpsUrl::as_str),
         Some("https://example.com/icon.png")
     );
     assert_eq!(projects[3].icon_url, None, "cleartext http is not fetched");
@@ -925,7 +960,9 @@ async fn should_report_operations_as_unsupported_when_the_provider_has_no_handle
     assert_unsupported(
         fixture
             .proxy
-            .resolve_pack_metadata(PackSource::Url("https://example.com/pack.zip".into()))
+            .resolve_pack_metadata(PackSource::Url(
+                HttpsUrl::parse("https://example.com/pack.zip").unwrap(),
+            ))
             .await
             .unwrap_err(),
         "resolve_pack_metadata",
@@ -1167,8 +1204,8 @@ async fn should_refuse_a_compatibility_answer_when_a_key_is_not_a_plain_name() {
             description: None,
             long_description: None,
             author: "mezz".to_owned(),
-            url: String::new(),
-            icon_url: String::new(),
+            url: None,
+            icon_url: None,
             versions: Vec::new(),
             content_type: ContentType::Mod,
         },

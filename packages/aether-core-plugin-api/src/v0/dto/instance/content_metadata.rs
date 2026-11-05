@@ -60,8 +60,8 @@ pub struct ContentMetadataDto {
     #[serde(default)]
     pub author_ref: Option<String>,
     /// An `https` URL of the icon. The host downloads it itself, so the plugin needs no network
-    /// access to it; a URL of another scheme, or naming `localhost` or an address of a private
-    /// network, is dropped.
+    /// access to it; a URL of another scheme, with credentials, or naming `localhost` or an
+    /// address of a private network, is dropped.
     #[serde(default)]
     pub icon_url: Option<String>,
 }

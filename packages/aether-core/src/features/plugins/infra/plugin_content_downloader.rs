@@ -17,6 +17,7 @@ use crate::{
         hash::FileHash,
         limits::{ContentInstallLimits, PluginSandboxLimits},
         request_client::{BytesProgress, Request, RequestClient},
+        web_url::HttpsUrl,
     },
 };
 
@@ -90,7 +91,7 @@ impl ProviderContentDownloader {
         self
     }
 
-    fn failed(url: &str, err: impl std::fmt::Display) -> InstanceError {
+    fn failed(url: &HttpsUrl, err: impl std::fmt::Display) -> InstanceError {
         InstanceError::ContentDownloadError(format!("{url}: {err}"))
     }
 
@@ -158,13 +159,13 @@ impl ContentDownloader for ProviderContentDownloader {
     async fn download(
         &self,
         origin: &ProviderId,
-        url: &str,
+        url: &HttpsUrl,
         hash: Option<&FileHash>,
         destination: &Path,
         on_bytes: Option<BytesProgress<'_>>,
     ) -> Result<u64, InstanceError> {
         if origin.is_builtin() {
-            let mut request = Request::get(url);
+            let mut request = Request::get(url.as_str());
             if let Some(hash) = hash {
                 request = request.with_hash(hash.clone());
             }
@@ -190,7 +191,7 @@ impl ContentDownloader for ProviderContentDownloader {
         download_with(
             &client,
             &allowed_hosts,
-            url,
+            url.as_str(),
             hash.cloned(),
             destination,
             self.sandbox_limits.max_download_bytes,

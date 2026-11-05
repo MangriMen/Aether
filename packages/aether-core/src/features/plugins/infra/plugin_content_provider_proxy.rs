@@ -39,6 +39,7 @@ use crate::features::plugins::infra::plugin_utils::{
     MountSet, host_path_to_plugin, parse_plugin_path, resolve_plugin_path,
     resolve_plugin_path_anchored,
 };
+use crate::shared::web_url::display_url;
 
 /// A content provider implemented by a plugin, calling the functions its `capabilities.json`
 /// names.
@@ -249,7 +250,7 @@ impl PluginContentProviderProxy {
                 version: version.map(Into::into),
                 installed_version: installed_version.map(Into::into),
             },
-            PackSource::Url(url) => PackSourceDto::Url(url),
+            PackSource::Url(url) => PackSourceDto::Url(url.into()),
             PackSource::File(path) => PackSourceDto::File(
                 host_path_to_plugin(&self.location_info, &self.plugin_id, &path).ok_or_else(
                     || InstanceError::ContentProviderError {
@@ -360,7 +361,6 @@ impl ContentProvider for PluginContentProviderProxy {
         let result_dto: ContentSearchResultDto = self
             .call_plugin("search", &self.capability.handlers.search, dto)
             .await?;
-        // Convert back from DTO — build domain result manually
         Ok(ContentSearchResult {
             page: result_dto.page,
             page_size: result_dto.page_size,
@@ -372,18 +372,7 @@ impl ContentProvider for PluginContentProviderProxy {
             items: result_dto
                 .items
                 .into_iter()
-                .map(|item| ContentItem {
-                    id: item.id,
-                    slug: item.slug,
-                    name: item.name,
-                    description: item.description,
-                    long_description: item.long_description,
-                    author: item.author,
-                    url: item.url,
-                    icon_url: item.icon_url,
-                    versions: item.versions,
-                    content_type: item.content_type.into(),
-                })
+                .map(ContentItem::from)
                 .collect(),
         })
     }
@@ -645,12 +634,10 @@ fn describe_resolve_target(target: &ResolveTarget) -> String {
 }
 
 /// An icon is taken only as an `https` address, which the host fetches itself (a file path or
-/// any other scheme is dropped, so the plugin cannot point the host at a file of the user's;
-/// the icon cache refuses private hosts).
+/// any other scheme is dropped, with a warning, so the plugin cannot point the host at a file of
+/// the user's; the icon cache refuses private hosts).
 fn content_metadata_from_dto(dto: ContentMetadataDto) -> Option<ContentMetadata> {
-    let icon_url = dto
-        .icon_url
-        .filter(|icon_url| url::Url::parse(icon_url).is_ok_and(|url| url.scheme() == "https"));
+    let icon_url = display_url("icon of a plugin's project", dto.icon_url);
 
     Some(ContentMetadata {
         content_id: dto.content_id.try_into().ok()?,

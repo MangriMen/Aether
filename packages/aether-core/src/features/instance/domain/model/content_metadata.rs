@@ -1,3 +1,5 @@
+use crate::shared::web_url::HttpsUrl;
+
 use super::{ContentId, ContentVersionId};
 
 /// What a provider says about a project of its own, to show an installed file by: the
@@ -18,7 +20,7 @@ pub struct ContentMetadata {
     ///
     /// [`ContentProvider::get_authors`]: crate::features::instance::ContentProvider::get_authors
     pub author_ref: Option<String>,
-    pub icon_url: Option<String>,
+    pub icon_url: Option<HttpsUrl>,
 }
 
 /// Who authors projects of a provider, as [`ContentMetadata::author_ref`] names them.

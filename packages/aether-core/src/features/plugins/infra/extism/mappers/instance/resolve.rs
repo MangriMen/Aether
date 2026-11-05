@@ -13,8 +13,13 @@ use crate::{
         },
         minecraft::{GameVersion, InvalidGameVersion},
     },
-    shared::hash::{FileHash, InvalidFileHash},
+    shared::{
+        hash::{FileHash, InvalidFileHash},
+        web_url::{HttpsUrl, InvalidUrl},
+    },
 };
+
+use crate::shared::web_url::display_url;
 
 impl From<ResolveInstallPlanParams> for ResolveInstallPlanParamsDto {
     fn from(value: ResolveInstallPlanParams) -> Self {
@@ -52,6 +57,9 @@ pub enum InvalidResolvedFile {
 
     #[error(transparent)]
     ContentId(#[from] InvalidContentId),
+
+    #[error(transparent)]
+    Url(#[from] InvalidUrl),
 }
 
 impl TryFrom<ResolvedFileDto> for ResolvedFile {
@@ -60,7 +68,7 @@ impl TryFrom<ResolvedFileDto> for ResolvedFile {
     fn try_from(value: ResolvedFileDto) -> Result<Self, Self::Error> {
         Ok(Self {
             version: value.version.try_into()?,
-            url: value.url,
+            url: HttpsUrl::try_from(value.url)?,
             hash: value.hash.map(FileHash::try_from).transpose()?,
             file_name: value.file_name,
             size: value.size,
@@ -95,7 +103,7 @@ impl TryFrom<PackMetadataDto> for PackMetadata {
             file_count: value
                 .file_count
                 .and_then(|count| usize::try_from(count).ok()),
-            icon_url: value.icon_url,
+            icon_url: display_url("icon of a plugin's pack", value.icon_url),
         })
     }
 }

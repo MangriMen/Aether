@@ -1,4 +1,7 @@
-use crate::features::minecraft::{GameVersion, ModLoader};
+use crate::{
+    features::minecraft::{GameVersion, ModLoader},
+    shared::web_url::HttpUrl,
+};
 
 use super::{ContentId, ContentVersionId};
 
@@ -60,5 +63,6 @@ pub struct ContentVersion {
     pub requested_status: Option<RequestedContentVersionStatus>,
     pub date_published: String,
     pub downloads: i64,
-    pub web_url: String,
+    /// The version's page, to link to.
+    pub web_url: Option<HttpUrl>,
 }

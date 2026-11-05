@@ -148,6 +148,7 @@ mod tests {
     use crate::features::instance::{CapabilityId, CapabilityMetadata, ResolveTarget};
 
     use super::*;
+    use crate::shared::web_url::HttpsUrl;
 
     /// A provider that implements none of the resolve methods.
     struct BareProvider {
@@ -252,7 +253,9 @@ mod tests {
             let provider = provider.clone();
             async move {
                 provider
-                    .resolve_pack_metadata(PackSource::Url("https://example.com/pack.toml".into()))
+                    .resolve_pack_metadata(PackSource::Url(
+                        HttpsUrl::parse("https://example.com/pack.toml").unwrap(),
+                    ))
                     .await
             }
         });

@@ -12,7 +12,7 @@ use crate::{
         instance::{InstanceError, InstanceId, InstanceName, NewInstance, PackInfo},
         minecraft::{GameVersion, LoaderVersionPreference, ModLoader},
     },
-    shared::hash::FileHash,
+    shared::{hash::FileHash, web_url::HttpsUrl},
 };
 
 use super::{ContentId, ContentSource, ContentVersionId, InstallTarget, InstanceGame};
@@ -113,7 +113,7 @@ pub enum PackSource {
         installed_version: Option<ContentVersionId>,
     },
     /// A pack file to download (a `.mrpack`, a packwiz `pack.toml`).
-    Url(String),
+    Url(HttpsUrl),
     /// A pack file on this machine. A host path: anything a plugin names is translated at the
     /// plugin boundary, as for [`OverrideSource`](super::OverrideSource).
     File(PathBuf),
@@ -139,7 +139,7 @@ pub struct PackMetadata {
     /// How many files installing the pack would bring, when known without resolving them
     /// (a packwiz preview reads only `pack.toml`, not its index).
     pub file_count: Option<usize>,
-    pub icon_url: Option<String>,
+    pub icon_url: Option<HttpsUrl>,
 }
 
 impl PackMetadata {
@@ -185,7 +185,7 @@ pub struct ResolvedFile {
     /// The platform's id of the version the ref resolved to: for a ref without one, the only
     /// place the core learns which file it got.
     pub version: ContentVersionId,
-    pub url: String,
+    pub url: HttpsUrl,
     /// With a hash, the download is verified against it, as for [`ContentSource::Direct`].
     pub hash: Option<FileHash>,
     pub file_name: String,
@@ -264,7 +264,10 @@ mod tests {
 
         let resolved = ResolvedFile {
             version: ContentVersionId::try_from("IZskON6d").unwrap(),
-            url: "https://cdn.modrinth.com/data/AANobbMI/versions/IZskON6d/sodium.jar".into(),
+            url: HttpsUrl::parse(
+                "https://cdn.modrinth.com/data/AANobbMI/versions/IZskON6d/sodium.jar",
+            )
+            .unwrap(),
             hash: Some(FileHash::new(HashAlgorithm::Sha1, SHA1_ABC).unwrap()),
             file_name: "sodium.jar".into(),
             size: Some(1024),
@@ -331,7 +334,10 @@ mod tests {
                 ),
                 InstallFileEntry::new(
                     ContentSource::direct(
-                        "https://cdn.modrinth.com/data/YL57xq9U/versions/x/iris.jar".into(),
+                        HttpsUrl::parse(
+                            "https://cdn.modrinth.com/data/YL57xq9U/versions/x/iris.jar",
+                        )
+                        .unwrap(),
                         None,
                     ),
                     ContentPath::parse("mods/iris.jar").unwrap(),
@@ -428,7 +434,7 @@ mod tests {
     fn should_keep_a_resolved_file_unhashed_when_the_provider_gave_no_hash() {
         let resolved = ResolvedFile {
             version: ContentVersionId::try_from("4512345").unwrap(),
-            url: "https://edge.forgecdn.net/files/4512/345/jei.jar".into(),
+            url: HttpsUrl::parse("https://edge.forgecdn.net/files/4512/345/jei.jar").unwrap(),
             hash: None,
             file_name: "jei.jar".into(),
             size: None,

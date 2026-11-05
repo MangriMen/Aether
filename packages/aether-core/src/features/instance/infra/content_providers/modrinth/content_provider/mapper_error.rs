@@ -8,4 +8,7 @@ pub enum ModrinthMapperError {
 
     #[error("Invalid id received from Modrinth: {0}")]
     InvalidId(#[from] crate::features::instance::InvalidContentId),
+
+    #[error("Invalid URL received from Modrinth: {0}")]
+    InvalidUrl(#[from] crate::shared::web_url::InvalidUrl),
 }

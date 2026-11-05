@@ -4,8 +4,6 @@
 
 use std::{io::Read, path::Path};
 
-use url::Url;
-
 use crate::{
     features::instance::{
         AnchoredPath, ContentId, ContentIdentity, ContentPath, ContentSource, ContentType,
@@ -19,6 +17,7 @@ use crate::{
     shared::{
         hash::{FileHash, HashAlgorithm},
         limits::{MAX_MRPACK_FILES, MAX_MRPACK_INDEX_BYTES},
+        web_url::HttpsUrl,
     },
 };
 
@@ -115,13 +114,12 @@ pub(super) async fn read_index_async(mrpack_path: &Path) -> Result<ModrinthIndex
 
 /// The project and version a Modrinth CDN URL names:
 /// `https://cdn.modrinth.com/data/<project>/versions/<version>/<file>`.
-pub(super) fn parse_cdn_url(url: &str) -> Option<(ContentId, ContentVersionId)> {
-    let url = Url::parse(url).ok()?;
-    if url.host_str() != Some(MODRINTH_CDN_HOST) {
+pub(super) fn parse_cdn_url(url: &HttpsUrl) -> Option<(ContentId, ContentVersionId)> {
+    if url.host_str() != MODRINTH_CDN_HOST {
         return None;
     }
 
-    match url.path_segments()?.collect::<Vec<_>>()[..] {
+    match url.as_url().path_segments()?.collect::<Vec<_>>()[..] {
         ["data", project_id, "versions", version_id, _, ..]
             if !project_id.is_empty() && !version_id.is_empty() =>
         {
@@ -135,7 +133,7 @@ pub(super) fn parse_cdn_url(url: &str) -> Option<(ContentId, ContentVersionId)> 
 }
 
 /// Which Modrinth content a URL is, when it is a file on Modrinth's CDN.
-pub(super) fn cdn_identity(url: &str) -> Option<ContentIdentity> {
+pub(super) fn cdn_identity(url: &HttpsUrl) -> Option<ContentIdentity> {
     parse_cdn_url(url).map(|(content_id, version)| ContentIdentity {
         platform: PlatformId::from_static(ModrinthContentProvider::PLATFORM),
         content_id,
@@ -177,7 +175,7 @@ fn plan_file(file: &ModrinthIndexFile) -> Result<InstallFileEntry, InstanceError
     let url = file
         .downloads
         .iter()
-        .find(|url| is_allowed_download(url))
+        .find_map(|url| allowed_download(url))
         .ok_or_else(|| {
             invalid_pack(format!(
                 "No download of \"{}\" is on a host the .mrpack format allows",
@@ -198,9 +196,9 @@ fn plan_file(file: &ModrinthIndexFile) -> Result<InstallFileEntry, InstanceError
         size: Some(file.file_size),
         ..InstallFileEntry::new(
             ContentSource::Direct {
-                url: url.clone(),
+                identity: cdn_identity(&url),
+                url,
                 hash: Some(hash),
-                identity: cdn_identity(url),
             },
             relative_path,
             content_type,
@@ -208,13 +206,11 @@ fn plan_file(file: &ModrinthIndexFile) -> Result<InstallFileEntry, InstanceError
     })
 }
 
-fn is_allowed_download(url: &str) -> bool {
-    Url::parse(url).is_ok_and(|url| {
-        url.scheme() == "https"
-            && url
-                .host_str()
-                .is_some_and(|host| ALLOWED_DOWNLOAD_HOSTS.contains(&host))
-    })
+/// `url` as a download, if it is an `https` URL on a host the format allows.
+fn allowed_download(url: &str) -> Option<HttpsUrl> {
+    HttpsUrl::parse(url)
+        .ok()
+        .filter(|url| ALLOWED_DOWNLOAD_HOSTS.contains(&url.host_str()))
 }
 
 /// The content type by the top folder of the path. A pack may place a file anywhere; outside
@@ -278,7 +274,7 @@ fn resolve_loader_from_manifest(manifest: &ModrinthIndex) -> (ModLoader, Option<
 pub(super) fn pack_metadata(
     index: &ModrinthIndex,
     version_id: Option<ContentVersionId>,
-    icon_url: Option<String>,
+    icon_url: Option<HttpsUrl>,
 ) -> Result<PackMetadata, InstanceError> {
     let (mod_loader, loader_version) = resolve_loader_from_manifest(index);
 
@@ -400,7 +396,7 @@ mod tests {
     #[test]
     fn should_read_the_project_and_version_when_given_a_cdn_url() {
         assert_eq!(
-            parse_cdn_url(SODIUM_URL),
+            parse_cdn_url(&HttpsUrl::parse(SODIUM_URL).unwrap()),
             Some((
                 ContentId::try_from("AANobbMI").unwrap(),
                 ContentVersionId::try_from("IZskON6d").unwrap()
@@ -410,9 +406,8 @@ mod tests {
             "https://example.com/data/AANobbMI/versions/IZskON6d/sodium.jar",
             "https://cdn.modrinth.com/data/AANobbMI/sodium.jar",
             "https://cdn.modrinth.com/data/AANobbMI/versions/IZskON6d",
-            "not a url",
         ] {
-            assert_eq!(parse_cdn_url(url), None, "{url}");
+            assert_eq!(parse_cdn_url(&HttpsUrl::parse(url).unwrap()), None, "{url}");
         }
     }
 
@@ -457,7 +452,7 @@ mod tests {
         assert_eq!(
             files[0].source,
             ContentSource::Direct {
-                url: SODIUM_URL.into(),
+                url: HttpsUrl::parse(SODIUM_URL).unwrap(),
                 hash: Some(FileHash::new(HashAlgorithm::Sha512, "b".repeat(128)).unwrap()),
                 identity: Some(ContentIdentity {
                     platform: PlatformId::from_static("modrinth"),
@@ -470,7 +465,7 @@ mod tests {
         assert_eq!(files[0].size, Some(42));
         assert!(matches!(
             &files[1].source,
-            ContentSource::Direct { url, identity: None, .. } if url == github
+            ContentSource::Direct { url, identity: None, .. } if url.as_str() == github
         ));
     }
 
@@ -489,7 +484,7 @@ mod tests {
 
         assert!(matches!(
             &files[0].source,
-            ContentSource::Direct { url, .. } if url == SODIUM_URL
+            ContentSource::Direct { url, .. } if url.as_str() == SODIUM_URL
         ));
     }
 

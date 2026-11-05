@@ -1,6 +1,9 @@
 use std::{ops::Deref, str::FromStr};
 
-use crate::features::minecraft::{GameVersion, ModLoader};
+use crate::{
+    features::minecraft::{GameVersion, ModLoader},
+    shared::web_url::{HttpUrl, HttpsUrl},
+};
 
 use super::{
     CapabilityId, ContentId, ContentType, ContentVersionId, InstanceId, InvalidId, PluginId,
@@ -242,8 +245,9 @@ pub struct ContentItem {
     pub description: Option<String>,
     pub long_description: Option<String>,
     pub author: String,
-    pub url: String,
-    pub icon_url: String,
+    /// The content's page, to link to.
+    pub url: Option<HttpUrl>,
+    pub icon_url: Option<HttpsUrl>,
     pub versions: Vec<String>,
     pub content_type: ContentType,
 }

@@ -100,6 +100,7 @@ use crate::{
     shared::{
         capability::domain::CapabilityRegistry,
         hash::{FileHash, HashAlgorithm, infra::hash_file_hex_async},
+        web_url::HttpsUrl,
     },
 };
 pub(super) use installed_state::is_pack_of;
@@ -397,7 +398,7 @@ impl TargetGame {
 #[derive(Debug, Clone, PartialEq)]
 struct DownloadEntry {
     relative_path: ContentPath,
-    url: String,
+    url: HttpsUrl,
     hash: Option<FileHash>,
     /// The provider that supplied `url`: the plan's for a direct source, the resolving
     /// provider's for a ref.

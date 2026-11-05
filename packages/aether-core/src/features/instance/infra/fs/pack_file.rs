@@ -12,7 +12,10 @@ use crate::features::instance::{
         stored_side::parse_stored_side,
     },
 };
-use crate::shared::hash::{FileHash, InvalidFileHash};
+use crate::shared::{
+    hash::{FileHash, InvalidFileHash},
+    web_url::HttpsUrl,
+};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 #[serde(rename_all = "kebab-case")]
@@ -84,6 +87,9 @@ impl PackFileV1 {
             .and_then(|s| parse_v1_provider_id(&s).ok());
 
         let side = parse_stored_side(&value.file_name, value.side.as_deref());
+        let download = value
+            .download
+            .and_then(|download| parse_stored_download(&value.file_name, download));
 
         let update = value.update.map(|old_map| {
             old_map
@@ -107,10 +113,7 @@ impl PackFileV1 {
             file_name: value.file_name,
             name: value.name,
             hash,
-            download: value.download.map(|d| PackFileDownload {
-                hash: d.hash,
-                url: d.url,
-            }),
+            download,
             option: value.option.map(|o| PackFileOption {
                 optional: o.optional,
                 default: o.default,
@@ -144,6 +147,9 @@ impl PackFileV2 {
             .and_then(|s| parse_stored_provider_id(s).ok());
 
         let side = parse_stored_side(&value.file_name, value.side.as_deref());
+        let download = value
+            .download
+            .and_then(|download| parse_stored_download(&value.file_name, download));
 
         let update = value.update.map(|old_map| {
             old_map
@@ -168,10 +174,7 @@ impl PackFileV2 {
             file_name: value.file_name,
             name: value.name,
             hash,
-            download: value.download.map(|d| PackFileDownload {
-                hash: d.hash,
-                url: d.url,
-            }),
+            download,
             option: value.option.map(|o| PackFileOption {
                 optional: o.optional,
                 default: o.default,
@@ -202,7 +205,7 @@ impl From<PackFile> for PackFileV2 {
             hash: value.hash.to_string(),
             download: value.download.map(|d| PackFileDownloadV1 {
                 hash: d.hash,
-                url: d.url,
+                url: d.url.into(),
             }),
             option: value.option.map(|o| PackFileOptionV1 {
                 optional: o.optional,
@@ -225,6 +228,24 @@ impl From<PackFile> for PackFileV2 {
                     })
                     .collect()
             }),
+        }
+    }
+}
+
+/// Where a pack file is stored as downloaded from, or `None` — with a warning — when the URL is
+/// not an `https` one: nothing downloads from it, so a bad one costs the URL, not the file.
+fn parse_stored_download(
+    file_name: &str,
+    download: PackFileDownloadV1,
+) -> Option<PackFileDownload> {
+    match HttpsUrl::parse(&download.url) {
+        Ok(url) => Some(PackFileDownload {
+            hash: download.hash,
+            url,
+        }),
+        Err(err) => {
+            warn!("Ignoring the download of pack file \"{file_name}\": {err}");
+            None
         }
     }
 }
@@ -290,6 +311,34 @@ mod tests {
         let pack_file = PackFile::try_from(dto).unwrap();
 
         assert!(pack_file.update.unwrap().is_empty());
+    }
+
+    #[rstest]
+    #[case::https("https://cdn.modrinth.com/data/a/versions/b/sodium.jar", true)]
+    #[case::http("http://cdn.modrinth.com/data/a/versions/b/sodium.jar", false)]
+    #[case::not_a_url("sodium.jar", false)]
+    fn should_keep_the_file_and_only_an_https_download_when_reading_one(
+        #[case] url: &str,
+        #[case] kept: bool,
+    ) {
+        let dto: PackFileV2 = toml::from_str(&format!(
+            r#"
+            file-name = "sodium.jar"
+            hash = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
+            [download]
+            hash = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            url = "{url}"
+            "#
+        ))
+        .unwrap();
+
+        let pack_file = PackFile::try_from(dto).unwrap();
+
+        assert_eq!(
+            pack_file.download.map(|download| download.url.to_string()),
+            kept.then(|| url.to_owned())
+        );
     }
 
     #[test]

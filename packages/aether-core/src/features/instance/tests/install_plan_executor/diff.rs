@@ -3,6 +3,7 @@ use crate::features::minecraft::GameVersion;
 
 use crate::features::instance::ContentId;
 use crate::features::instance::InstanceName;
+use crate::shared::web_url::HttpsUrl;
 
 use crate::{
     features::{
@@ -146,7 +147,7 @@ async fn should_check_the_file_on_disk_with_the_plan_algorithm_when_it_exists() 
         .execute(
             existing(vec![InstallFileEntry::new(
                 ContentSource::direct(
-                    url.into(),
+                    HttpsUrl::parse(url).unwrap(),
                     Some(FileHash::new(HashAlgorithm::Sha512, sha512).unwrap()),
                 ),
                 ContentPath::parse("mods/a.jar").unwrap(),

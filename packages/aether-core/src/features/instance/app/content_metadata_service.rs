@@ -26,7 +26,7 @@ use crate::{
             ContentVersionId, ContentVersionMetadata, InstanceError, InstanceId, ProviderId,
         },
     },
-    shared::capability::domain::CapabilityRegistry,
+    shared::{capability::domain::CapabilityRegistry, web_url::HttpsUrl},
 };
 
 /// How long an id its provider did not know is left alone before it is asked about again.
@@ -313,7 +313,7 @@ impl Fetched {
     }
 
     /// The icon URLs of what was fetched: of projects; versions and authors have none.
-    fn into_icon_urls(self) -> Vec<String> {
+    fn into_icon_urls(self) -> Vec<HttpsUrl> {
         match self {
             Self::Projects(items) => items
                 .into_iter()
@@ -356,9 +356,9 @@ struct Inner {
     unknown: Mutex<HashMap<(ProviderId, Lookup, String), Instant>>,
     /// Icons being fetched, by URL: a refresh that wants one already on its way waits for that
     /// fetch rather than starting another.
-    icon_fetches: Mutex<HashMap<String, IconFetch>>,
+    icon_fetches: Mutex<HashMap<HttpsUrl, IconFetch>>,
     /// Icons that failed to arrive, with when: not fetched again before [`ICON_RETRY_AFTER`].
-    icon_failures: Mutex<HashMap<String, Instant>>,
+    icon_failures: Mutex<HashMap<HttpsUrl, Instant>>,
 }
 
 impl ContentMetadataService {
@@ -479,7 +479,7 @@ impl ContentMetadataService {
             file.version_metadata_pending = version_metadata_pending;
         }
 
-        let icon_urls: HashSet<String> = files
+        let icon_urls: HashSet<HttpsUrl> = files
             .iter()
             .filter_map(|file| file.metadata.as_ref()?.icon_url.clone())
             .collect();
@@ -511,7 +511,7 @@ impl ContentMetadataService {
         &self,
         instance_id: &InstanceId,
         due: HashMap<LookupKey, Vec<String>>,
-        mut due_icons: HashSet<String>,
+        mut due_icons: HashSet<HttpsUrl>,
     ) {
         let Some(guard) = RefreshGuard::acquire(&self.inner, instance_id) else {
             return;
@@ -836,7 +836,7 @@ impl Inner {
     }
 
     /// What the icon cache has of `urls`, [`ICON_LOOKUP_CONCURRENCY`] at a time.
-    async fn lookup_icons(&self, urls: HashSet<String>) -> HashMap<String, CachedContentIcon> {
+    async fn lookup_icons(&self, urls: HashSet<HttpsUrl>) -> HashMap<HttpsUrl, CachedContentIcon> {
         futures::stream::iter(urls)
             .map(|url| async move {
                 let icon = self.icons.lookup(&url).await;
@@ -848,7 +848,7 @@ impl Inner {
     }
 
     /// Of `icons`, the URLs to fetch: missing or due to be revalidated, and not failed lately.
-    fn due_icons(&self, icons: HashMap<String, CachedContentIcon>) -> HashSet<String> {
+    fn due_icons(&self, icons: HashMap<HttpsUrl, CachedContentIcon>) -> HashSet<HttpsUrl> {
         let failures = self
             .icon_failures
             .lock()
@@ -870,7 +870,7 @@ impl Inner {
 
     /// Fetch the icons of `urls`, [`ICON_FETCH_CONCURRENCY`] at a time. Whether any new one
     /// arrived.
-    async fn fetch_icons(self: &Arc<Self>, urls: HashSet<String>) -> bool {
+    async fn fetch_icons(self: &Arc<Self>, urls: HashSet<HttpsUrl>) -> bool {
         futures::stream::iter(urls)
             .map(|url| self.fetch_icon(url))
             .buffer_unordered(ICON_FETCH_CONCURRENCY)
@@ -880,7 +880,7 @@ impl Inner {
 
     /// The fetch of the icon of `url`: the one on its way, or a new one. A failure is logged
     /// and remembered, and is no new icon.
-    fn fetch_icon(self: &Arc<Self>, url: String) -> IconFetch {
+    fn fetch_icon(self: &Arc<Self>, url: HttpsUrl) -> IconFetch {
         let mut fetches = self
             .icon_fetches
             .lock()
@@ -914,13 +914,13 @@ impl Inner {
         fetch
     }
 
-    fn remember_icon_failure(&self, url: &str) {
+    fn remember_icon_failure(&self, url: &HttpsUrl) {
         let mut failures = self
             .icon_failures
             .lock()
             .unwrap_or_else(PoisonError::into_inner);
         failures.retain(|_, at| at.elapsed() < ICON_RETRY_AFTER);
-        failures.insert(url.to_owned(), Instant::now());
+        failures.insert(url.clone(), Instant::now());
     }
 }
 

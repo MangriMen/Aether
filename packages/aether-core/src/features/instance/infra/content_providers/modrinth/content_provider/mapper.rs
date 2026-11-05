@@ -17,6 +17,7 @@ use crate::features::{
     },
     minecraft::{GameVersion, ModLoader},
 };
+use crate::shared::web_url::{HttpUrl, display_url};
 
 /// How a Modrinth [`ContentMetadata::author_ref`] naming an organization by its id starts.
 const ORGANIZATION_REF: &str = "organization:";
@@ -61,6 +62,12 @@ pub(super) fn author_ref(organization: Option<&str>, team: Option<&str>) -> Opti
         .filter(named)
         .map(organization_ref)
         .or_else(|| team.filter(named).map(team_ref))
+}
+
+/// The page of a project or version on Modrinth's site. Only linked to, as the icons are only
+/// shown: a bad one is dropped (see [`display_url`]) and costs the item nothing else.
+fn page_url(what: &str, path: &str) -> Option<HttpUrl> {
+    display_url(what, Some(format!("{MODRINTH_WEB_URL}/{path}")))
 }
 
 fn get_facet_vector<T: AsRef<str>>(facet: &str, values: &[T]) -> Vec<String> {
@@ -156,7 +163,10 @@ impl TryFrom<Hit> for ContentItem {
             ModrinthMapperError::UnknownProjectType(project_type.clone()),
         )?;
 
-        let url = format!("{MODRINTH_WEB_URL}/{project_type}/{slug}");
+        let url = page_url(
+            "page of a Modrinth project",
+            &format!("{project_type}/{slug}"),
+        );
 
         Ok(Self {
             id: project_id,
@@ -167,7 +177,7 @@ impl TryFrom<Hit> for ContentItem {
             content_type,
             url,
             author,
-            icon_url,
+            icon_url: display_url("icon of a Modrinth project", Some(icon_url)),
             versions,
         })
     }
@@ -194,7 +204,10 @@ impl TryFrom<ProjectResponse> for ContentItem {
             ModrinthMapperError::UnknownProjectType(project_type.clone()),
         )?;
 
-        let url = format!("{MODRINTH_WEB_URL}/{project_type}/{slug}");
+        let url = page_url(
+            "page of a Modrinth project",
+            &format!("{project_type}/{slug}"),
+        );
 
         Ok(Self {
             id,
@@ -204,7 +217,7 @@ impl TryFrom<ProjectResponse> for ContentItem {
             long_description: Some(body),
             author: team,
             url,
-            icon_url: icon_url.unwrap_or_default(),
+            icon_url: display_url("icon of a Modrinth project", icon_url),
             versions,
             content_type,
         })
@@ -244,7 +257,7 @@ impl TryFrom<ProjectMetadataResponse> for ContentMetadata {
             name: value.title,
             description: value.description.filter(|text| !text.is_empty()),
             author: None,
-            icon_url: value.icon_url.filter(|url| !url.is_empty()),
+            icon_url: display_url("icon of a Modrinth project", value.icon_url),
         })
     }
 }
@@ -346,7 +359,10 @@ impl TryFrom<ProjectVersionResponse> for ContentVersion {
 
         let id = ContentVersionId::try_from(id)?;
         let content_id = ContentId::try_from(project_id)?;
-        let web_url = format!("{MODRINTH_WEB_URL}/project/{content_id}/version/{id}");
+        let web_url = page_url(
+            "page of a Modrinth version",
+            &format!("project/{content_id}/version/{id}"),
+        );
 
         Ok(Self {
             id,
