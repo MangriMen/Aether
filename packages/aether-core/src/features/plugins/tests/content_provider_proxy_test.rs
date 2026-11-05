@@ -418,7 +418,7 @@ async fn should_refuse_a_resolved_file_when_its_url_is_not_https() {
         .resolve_file(
             &ContentId::try_from("238222").unwrap(),
             None,
-            "1.21.1",
+            &GameVersion::from_static("1.21.1"),
             None,
         )
         .await
