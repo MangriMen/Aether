@@ -37,7 +37,7 @@ pub struct PackFile {
 #[derive(Debug, Clone)]
 pub struct PackFileDownload {
     /// File hash for verification
-    pub hash: String,
+    pub hash: FileHash,
     /// URL to download the file from
     pub url: HttpsUrl,
 }

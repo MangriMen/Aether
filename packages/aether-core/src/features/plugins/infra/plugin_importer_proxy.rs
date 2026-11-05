@@ -9,13 +9,12 @@ use crate::features::{
 use crate::features::plugins::infra::extism::models::PluginInstanceExt;
 use crate::features::plugins::infra::pack_instances::deploying_packs;
 use crate::features::plugins::infra::plugin_utils::to_wasi_path;
+use crate::shared::web_url::HttpUrl;
 
 /// `http://...` or `https://...`: the only addresses an importer is given instead of a path.
 /// Any other `scheme://` is left to the path normalization, as is a Windows drive (`C://`).
 fn is_url(input: &str) -> bool {
-    input.split_once("://").is_some_and(|(scheme, _)| {
-        scheme.eq_ignore_ascii_case("http") || scheme.eq_ignore_ascii_case("https")
-    })
+    HttpUrl::parse(input).is_ok()
 }
 
 pub struct PluginImporterProxy {
@@ -112,6 +111,13 @@ mod tests {
             pack_instances::{is_deploying_packs, record_pack_instance},
         },
     };
+
+    #[test]
+    fn should_not_take_input_for_a_url_when_its_scheme_is_not_http() {
+        assert!(!is_url("file:///C:/packs/pack.mrpack"));
+        assert!(!is_url("ftp://example.com/pack.zip"));
+        assert!(is_url("https://example.com/pack.zip"));
+    }
 
     /// Exports `import`, which calls the host function `create` once, as an importer calls
     /// `instance_create`.

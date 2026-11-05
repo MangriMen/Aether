@@ -11,6 +11,7 @@ use crate::features::instance::{
         stored_hash::parse_stored_hash,
         stored_side::parse_stored_side,
     },
+    parse_file_hash,
 };
 use crate::shared::{
     hash::{FileHash, InvalidFileHash},
@@ -89,6 +90,7 @@ impl PackFileV1 {
         let side = parse_stored_side(&value.file_name, value.side.as_deref());
         let download = value
             .download
+            .as_ref()
             .and_then(|download| parse_stored_download(&value.file_name, download));
 
         let update = value.update.map(|old_map| {
@@ -149,6 +151,7 @@ impl PackFileV2 {
         let side = parse_stored_side(&value.file_name, value.side.as_deref());
         let download = value
             .download
+            .as_ref()
             .and_then(|download| parse_stored_download(&value.file_name, download));
 
         let update = value.update.map(|old_map| {
@@ -204,7 +207,7 @@ impl From<PackFile> for PackFileV2 {
             name: value.name,
             hash: value.hash.to_string(),
             download: value.download.map(|d| PackFileDownloadV1 {
-                hash: d.hash,
+                hash: d.hash.to_string(),
                 url: d.url.into(),
             }),
             option: value.option.map(|o| PackFileOptionV1 {
@@ -236,13 +239,13 @@ impl From<PackFile> for PackFileV2 {
 /// not an `https` one: nothing downloads from it, so a bad one costs the URL, not the file.
 fn parse_stored_download(
     file_name: &str,
-    download: PackFileDownloadV1,
+    download: &PackFileDownloadV1,
 ) -> Option<PackFileDownload> {
+    let hash = parse_file_hash(&download.hash)
+        .inspect_err(|err| warn!("Ignoring the download of pack file \"{file_name}\": {err}"))
+        .ok()?;
     match HttpsUrl::parse(&download.url) {
-        Ok(url) => Some(PackFileDownload {
-            hash: download.hash,
-            url,
-        }),
+        Ok(url) => Some(PackFileDownload { hash, url }),
         Err(err) => {
             warn!("Ignoring the download of pack file \"{file_name}\": {err}");
             None
@@ -339,6 +342,25 @@ mod tests {
             pack_file.download.map(|download| download.url.to_string()),
             kept.then(|| url.to_owned())
         );
+    }
+
+    #[test]
+    fn should_drop_the_download_when_its_hash_is_not_a_valid_hash() {
+        let dto: PackFileV2 = toml::from_str(
+            r#"
+            file-name = "sodium.jar"
+            hash = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
+            [download]
+            hash = "not-a-hash"
+            url = "https://cdn.modrinth.com/data/a/versions/b/sodium.jar"
+            "#,
+        )
+        .unwrap();
+
+        let pack_file = PackFile::try_from(dto).unwrap();
+
+        assert!(pack_file.download.is_none());
     }
 
     #[test]
