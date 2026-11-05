@@ -62,7 +62,7 @@ pub struct ContentVersion {
     pub status: ContentVersionStatus,
     pub requested_status: Option<RequestedContentVersionStatus>,
     pub date_published: String,
-    pub downloads: i64,
+    pub downloads: u64,
     /// The version's page, to link to.
     pub web_url: Option<HttpUrl>,
 }

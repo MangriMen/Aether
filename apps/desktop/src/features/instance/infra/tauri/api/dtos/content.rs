@@ -4,7 +4,7 @@ use aether_core::features::{
     instance::{
         AtomicInstallParams, BaseContentParams, ContentInstallParams, ContentItem,
         ContentSearchParams, ContentSearchResult, InstanceError, InstanceId, ModpackInstallParams,
-        ProviderId,
+        PageIndex, PageSize, ProviderId,
     },
     minecraft::GameVersion,
 };
@@ -160,8 +160,8 @@ impl TryFrom<ContentSearchParamsDto> for ContentSearchParams {
         Ok(Self {
             content_type: value.content_type.into(),
             provider_id: value.provider_id.try_into()?,
-            page: value.page,
-            page_size: value.page_size,
+            page: PageIndex::parse(value.page)?,
+            page_size: PageSize::parse(value.page_size)?,
             query: value.query,
             game_versions: value
                 .game_versions

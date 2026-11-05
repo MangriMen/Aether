@@ -31,7 +31,7 @@ use crate::{
         events::{Event, EventEmitter, EventError, PluginEvent},
         instance::{
             ContentProvider, ContentSearchParams, ContentType, Importer, InstanceError, InstanceId,
-            PackSource, ProviderId, Updater,
+            PackSource, PageIndex, PageSize, ProviderId, Updater,
         },
         plugins::{
             ApiConfig, LoadConfig, Plugin, PluginCapabilities, PluginContentProviderCapability,
@@ -289,8 +289,8 @@ fn search_params(plugin_id: &PluginId) -> ContentSearchParams {
     ContentSearchParams {
         content_type: ContentType::Mod,
         provider_id: ProviderId::from_parts(plugin_id, "curseforge").unwrap(),
-        page: 1,
-        page_size: 20,
+        page: PageIndex::FIRST,
+        page_size: PageSize::parse(20).unwrap(),
         query: Some("jei".into()),
         game_versions: None,
         loader: None,

@@ -28,7 +28,7 @@ impl From<ContentVersion> for ContentVersionDto {
             status: value.status.into(),
             requested_status: value.requested_status.map(Into::into),
             date_published: value.date_published,
-            downloads: value.downloads,
+            downloads: i64::try_from(value.downloads).unwrap_or(i64::MAX),
             web_url: value.web_url.map(String::from).unwrap_or_default(),
         }
     }
@@ -113,7 +113,7 @@ impl TryFrom<ContentVersionDto> for ContentVersion {
             status: value.status.into(),
             requested_status: value.requested_status.map(Into::into),
             date_published: value.date_published,
-            downloads: value.downloads,
+            downloads: u64::try_from(value.downloads).unwrap_or_default(),
             web_url: display_url("page of a plugin's content version", Some(value.web_url)),
         })
     }

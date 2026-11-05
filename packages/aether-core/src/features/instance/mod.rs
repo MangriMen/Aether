@@ -16,12 +16,13 @@ pub use domain::{
     ImporterCapabilityMetadata, InstallFileEntry, InstallPlan, InstallTarget, Instance,
     InstanceBuilder, InstanceError, InstanceField, InstanceGame, InstanceId, InstanceInstallStage,
     InstanceName, InstanceRelativePath, InstanceSnapshot, InstanceValidationErrorReason,
-    InvalidContentId, InvalidId, InvalidRelativePath, ModpackInstallParams, NewInstance,
-    OptionalFile, OverrideLocation, OverrideSource, Pack, PackEntry, PackFile, PackFileDownload,
-    PackFileOption, PackInfo, PackMetadata, PackSource, PlanOrigin, PlatformId, PluginId,
-    ProviderId, ProviderIdError, ReleaseChannel, RequestedContentVersionStatus,
-    ResolveInstallPlanParams, ResolveTarget, ResolvedFile, UpdaterCapabilityMetadata, is_valid_id,
-    parse_file_hash, select_version,
+    InvalidContentId, InvalidId, InvalidPagination, InvalidRelativePath, ModpackInstallParams,
+    NewInstance, OptionalFile, OverrideLocation, OverrideSource, Pack, PackEntry, PackFile,
+    PackFileDownload, PackFileOption, PackInfo, PackMetadata, PackSource, PageIndex, PageSize,
+    PaginationField, PaginationRejection, PlanOrigin, PlatformId, PluginId, ProviderId,
+    ProviderIdError, ReleaseChannel, RequestedContentVersionStatus, ResolveInstallPlanParams,
+    ResolveTarget, ResolvedFile, UpdaterCapabilityMetadata, is_valid_id, parse_file_hash,
+    select_version,
 };
 
 // ── App layer: Use Cases (Inbound Ports) ──

@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 use uuid::Uuid;
 
+use super::InvalidPagination;
 use crate::features::{
     auth::AuthApplicationError,
     instance::{ContentType, PlatformId, ProviderId},
@@ -97,6 +98,13 @@ pub enum InstanceError {
     #[error("Invalid Minecraft version {value:?}: {reason}")]
     InvalidGameVersion { value: String, reason: String },
 
+    #[error("Invalid {field} {value}: {reason}")]
+    InvalidPagination {
+        field: String,
+        value: String,
+        reason: String,
+    },
+
     #[error("Path \"{path}\" resolves outside instance \"{instance_id}\"")]
     PathEscapesInstance { path: String, instance_id: String },
 
@@ -165,6 +173,16 @@ impl From<InvalidGameVersion> for InstanceError {
     fn from(err: InvalidGameVersion) -> Self {
         InstanceError::InvalidGameVersion {
             value: err.value,
+            reason: err.reason.to_string(),
+        }
+    }
+}
+
+impl From<InvalidPagination> for InstanceError {
+    fn from(err: InvalidPagination) -> Self {
+        InstanceError::InvalidPagination {
+            field: err.field.to_string(),
+            value: err.value.to_string(),
             reason: err.reason.to_string(),
         }
     }

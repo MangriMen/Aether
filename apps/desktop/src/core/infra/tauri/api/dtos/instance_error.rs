@@ -75,6 +75,11 @@ pub enum InstanceErrorDto {
         value: String,
         reason: String,
     },
+    InvalidPagination {
+        field: String,
+        value: String,
+        reason: String,
+    },
     PathEscapesInstance {
         path: String,
         instance_id: String,
@@ -198,6 +203,15 @@ impl From<&InstanceError> for InstanceErrorDto {
                 value: value.clone(),
             },
             InstanceError::InvalidGameVersion { value, reason } => Self::InvalidGameVersion {
+                value: value.clone(),
+                reason: reason.clone(),
+            },
+            InstanceError::InvalidPagination {
+                field,
+                value,
+                reason,
+            } => Self::InvalidPagination {
+                field: field.clone(),
                 value: value.clone(),
                 reason: reason.clone(),
             },

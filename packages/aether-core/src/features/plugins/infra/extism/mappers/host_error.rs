@@ -205,6 +205,15 @@ fn instance_dto(value: &InstanceError) -> InstanceErrorDto {
             value: value.clone(),
             reason: reason.clone(),
         },
+        InstanceError::InvalidPagination {
+            field,
+            value,
+            reason,
+        } => Dto::InvalidPagination {
+            field: field.clone(),
+            value: value.clone(),
+            reason: reason.clone(),
+        },
         InstanceError::PathEscapesInstance { path, instance_id } => Dto::PathEscapesInstance {
             path: path.clone(),
             instance_id: instance_id.clone(),

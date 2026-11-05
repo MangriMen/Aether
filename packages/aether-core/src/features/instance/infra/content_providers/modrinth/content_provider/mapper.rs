@@ -103,8 +103,8 @@ impl TryFrom<ContentSearchParams> for ProjectSearchParams {
 
         Ok(Self {
             index: SearchIndex::Relevance,
-            offset: (value.page - 1) * value.page_size,
-            limit: value.page_size,
+            offset: i64::try_from(value.page.offset(value.page_size)).unwrap_or(i64::MAX),
+            limit: value.page_size.into(),
             facets,
             query: value.query,
         })
@@ -382,8 +382,32 @@ impl TryFrom<ProjectVersionResponse> for ContentVersion {
             status: status.into(),
             requested_status: requested_status.map(Into::into),
             date_published,
-            downloads,
+            downloads: u64::try_from(downloads).unwrap_or_default(),
             web_url,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::features::instance::{PageIndex, PageSize};
+
+    #[test]
+    fn should_skip_the_previous_pages_when_computing_the_search_offset() {
+        let params = ContentSearchParams {
+            content_type: ContentType::Mod,
+            provider_id: ProviderId::from_parts("aether", "modrinth").unwrap(),
+            page: PageIndex::parse(3).unwrap(),
+            page_size: PageSize::parse(20).unwrap(),
+            query: None,
+            game_versions: None,
+            loader: None,
+        };
+
+        let search = ProjectSearchParams::try_from(params).unwrap();
+
+        assert_eq!(search.offset, 40);
+        assert_eq!(search.limit, 20);
     }
 }
