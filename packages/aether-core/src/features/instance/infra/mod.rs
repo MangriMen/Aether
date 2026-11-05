@@ -8,6 +8,7 @@ mod services;
 mod sqlite;
 mod stored_content_id;
 mod stored_content_path;
+mod stored_hash;
 mod stored_side;
 mod universal_content_metadata_cache;
 

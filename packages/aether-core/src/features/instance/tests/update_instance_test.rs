@@ -117,6 +117,10 @@ fn sha1(body: &str) -> String {
     sha1_smol::Sha1::from(body).hexdigest()
 }
 
+fn sha1_hash(body: &str) -> FileHash {
+    FileHash::new(HashAlgorithm::Sha1, sha1(body)).unwrap()
+}
+
 /// A file of the pack, hashed as the downloader below writes it: its URL is its body.
 fn pack_file(name: &str, path: &str) -> InstallFileEntry {
     InstallFileEntry::new(
@@ -631,7 +635,7 @@ impl Fixture {
                 &ContentPath::parse(path).unwrap(),
                 &PackFile {
                     installed_by,
-                    ..PackFile::from_hash(name.into(), sha1(&url(name)))
+                    ..PackFile::from_hash(name.into(), sha1_hash(&url(name)))
                 },
             )
             .await

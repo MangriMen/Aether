@@ -106,6 +106,7 @@ impl Housekeeping for ContentIconHousekeeping {
 #[cfg(test)]
 mod tests {
     use crate::features::instance::ContentVersionId;
+    use crate::shared::hash::{FileHash, HashAlgorithm};
     use std::{sync::Mutex, time::SystemTime};
 
     use super::*;
@@ -139,7 +140,7 @@ mod tests {
         PackFile {
             file_name: format!("{content_id}.jar"),
             name: None,
-            hash: String::new(),
+            hash: FileHash::new(HashAlgorithm::Sha1, "a".repeat(40)).unwrap(),
             download: None,
             option: None,
             side: None,

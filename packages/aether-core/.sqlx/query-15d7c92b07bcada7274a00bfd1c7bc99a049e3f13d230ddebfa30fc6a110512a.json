@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE pack_files SET hash = ? WHERE instance_id = ? AND content_path = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "15d7c92b07bcada7274a00bfd1c7bc99a049e3f13d230ddebfa30fc6a110512a"
+}

@@ -914,7 +914,7 @@ impl Fixture {
             relative_path,
             PackFile {
                 installed_by,
-                ..PackFile::from_hash(file_name(relative_path), sha1(body))
+                ..PackFile::from_hash(file_name(relative_path), sha1_hash(body))
             },
         )
         .await;
@@ -941,6 +941,10 @@ impl Fixture {
 
 pub(super) fn sha1(body: &str) -> String {
     sha1_smol::Sha1::from(body).hexdigest()
+}
+
+pub(super) fn sha1_hash(body: &str) -> FileHash {
+    FileHash::new(HashAlgorithm::Sha1, sha1(body)).unwrap()
 }
 
 pub(super) fn file_name(relative_path: &str) -> String {
@@ -1019,10 +1023,7 @@ pub(super) fn direct(url: &str, path: &str) -> InstallFileEntry {
 /// A direct entry with the hash of what the recording downloader writes for it: its URL.
 pub(super) fn hashed(url: &str, path: &str) -> InstallFileEntry {
     InstallFileEntry::new(
-        ContentSource::direct(
-            url.into(),
-            Some(FileHash::new(HashAlgorithm::Sha1, sha1(url)).unwrap()),
-        ),
+        ContentSource::direct(url.into(), Some(sha1_hash(url))),
         ContentPath::parse(path).unwrap(),
         ContentType::Mod,
     )
@@ -1057,7 +1058,7 @@ pub(super) fn identified(
     InstallFileEntry::new(
         ContentSource::Direct {
             url: url.into(),
-            hash: Some(FileHash::new(HashAlgorithm::Sha1, sha1(url)).unwrap()),
+            hash: Some(sha1_hash(url)),
             identity: Some(ContentIdentity {
                 platform: PlatformId::try_from(platform).unwrap(),
                 content_id: content_id.try_into().unwrap(),

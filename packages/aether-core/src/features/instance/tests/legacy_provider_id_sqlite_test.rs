@@ -43,7 +43,7 @@ async fn insert_legacy_pack_file(pool: &SqlitePool) {
 
     sqlx::query(
         "INSERT INTO pack_files (instance_id, content_path, file_name, hash, update_provider_id) \
-         VALUES (?, ?, 'sodium.jar', 'abc', ?)",
+         VALUES (?, ?, 'sodium.jar', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', ?)",
     )
     .bind(INSTANCE_ID)
     .bind(CONTENT_PATH)

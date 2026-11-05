@@ -1,4 +1,4 @@
-use std::{path::PathBuf, sync::Arc};
+use std::{collections::HashMap, path::PathBuf, sync::Arc};
 
 use async_trait::async_trait;
 
@@ -10,14 +10,19 @@ use crate::{
         },
         settings::LocationInfo,
     },
-    shared::io::infra::{
-        ensure_read_toml_async, read_toml_async, remove_dir_all, remove_file, rename,
-        write_toml_async,
+    shared::{
+        hash::{FileHash, InvalidFileHash, infra::sha1_hash_async},
+        io::infra::{
+            ensure_read_toml_async, read_async, read_toml_async, remove_dir_all, remove_file,
+            rename, write_toml_async,
+        },
     },
 };
 
 use super::pack_file::{PackFileV1, PackFileV2, PackV2};
-use crate::features::instance::infra::stored_content_path::parse_stored_content_path;
+use crate::features::instance::infra::{
+    stored_content_path::parse_stored_content_path, stored_hash::parse_stored_hash,
+};
 
 pub struct FsPackStorage {
     location_info: Arc<LocationInfo>,
@@ -49,6 +54,90 @@ impl FsPackStorage {
         rename(&dir, &target)
             .await
             .map_err(|err| InstanceError::Storage(err.to_string()))
+    }
+
+    /// Reads a legacy record for migration: one with an invalid hash keeps its other fields (the
+    /// provider link, update info, owner) and gets the sha1 of the file on disk, if it is there.
+    pub async fn get_legacy_pack_file(
+        &self,
+        instance_id: &InstanceId,
+        content_path: &ContentPath,
+    ) -> Result<PackFile, InstanceError> {
+        self.read_pack_file(instance_id, content_path, true)
+            .await?
+            .map_err(|err| InstanceError::Storage(err.to_string()))
+    }
+
+    /// The record, or why its hash is not one. With `rehash`, an invalid hash is replaced by the
+    /// sha1 of the file on disk.
+    async fn read_pack_file(
+        &self,
+        instance_id: &InstanceId,
+        content_path: &ContentPath,
+        rehash: bool,
+    ) -> Result<Result<PackFile, InvalidFileHash>, InstanceError> {
+        let path = self.get_pack_file_path(instance_id, content_path);
+
+        let v2: Result<PackFileV2, _> = read_toml_async(&path).await;
+        let (file_name, stored_hash) = if let Ok(dto) = &v2 {
+            (dto.file_name.clone(), dto.hash.clone())
+        } else {
+            let v1: PackFileV1 = read_toml_async(&path)
+                .await
+                .map_err(|e| InstanceError::Storage(e.to_string()))?;
+            (v1.file_name, v1.hash)
+        };
+
+        let hash = match parse_stored_hash(&file_name, &stored_hash) {
+            Ok(hash) => hash,
+            Err(err) if rehash => match self.sha1_on_disk(instance_id, content_path).await {
+                Some(hash) => hash,
+                None => return Ok(Err(err)),
+            },
+            Err(err) => return Ok(Err(err)),
+        };
+
+        if let Ok(dto) = v2 {
+            return Ok(Ok(dto.into_pack_file(hash)));
+        }
+
+        let v1: PackFileV1 = read_toml_async(&path)
+            .await
+            .map_err(|e| InstanceError::Storage(e.to_string()))?;
+        let migrated = v1.into_pack_file(hash);
+        let _ = self
+            .update_pack_file(instance_id, content_path, &migrated)
+            .await;
+        Ok(Ok(migrated))
+    }
+
+    async fn sha1_on_disk(
+        &self,
+        instance_id: &InstanceId,
+        content_path: &ContentPath,
+    ) -> Option<FileHash> {
+        let enabled = self
+            .location_info
+            .instance_dir(instance_id)
+            .join(content_path.to_path_buf());
+        let mut disabled = enabled.clone().into_os_string();
+        disabled.push(DISABLED_SUFFIX);
+
+        for path in [enabled, PathBuf::from(disabled)] {
+            let Ok(content) = read_async(&path).await else {
+                continue;
+            };
+            match sha1_hash_async(content).await {
+                Ok(hash) => {
+                    tracing::warn!(
+                        "Rehashed \"{content_path}\" of \"{instance_id}\": its stored hash is invalid"
+                    );
+                    return Some(hash);
+                }
+                Err(err) => tracing::warn!("Failed to hash \"{content_path}\": {err}"),
+            }
+        }
+        None
     }
 
     fn get_pack_path(&self, instance_id: &InstanceId) -> PathBuf {
@@ -108,28 +197,64 @@ impl PackStorage for FsPackStorage {
         instance_id: &InstanceId,
         content_path: &ContentPath,
     ) -> Result<PackFile, InstanceError> {
+        self.read_pack_file(instance_id, content_path, false)
+            .await?
+            .map_err(|err| InstanceError::Storage(err.to_string()))
+    }
+
+    async fn rehash_pack_file(
+        &self,
+        instance_id: &InstanceId,
+        content_path: &ContentPath,
+        hash: &FileHash,
+    ) -> Result<Option<PackFile>, InstanceError> {
         let path = self.get_pack_file_path(instance_id, content_path);
+        if !tokio::fs::try_exists(&path)
+            .await
+            .map_err(|err| InstanceError::Storage(err.to_string()))?
+        {
+            return Ok(None);
+        }
 
-        let pack_file_result: Result<PackFileV2, _> = read_toml_async(&path).await;
-
-        if let Ok(dto) = pack_file_result {
-            Ok(dto.into())
+        let v2: Result<PackFileV2, _> = read_toml_async(&path).await;
+        let pack_file = if let Ok(dto) = v2 {
+            dto.into_pack_file(hash.clone())
         } else {
-            let v1_result: Result<PackFileV1, _> = read_toml_async(&path).await;
+            let v1: PackFileV1 = read_toml_async(&path)
+                .await
+                .map_err(|e| InstanceError::Storage(e.to_string()))?;
+            v1.into_pack_file(hash.clone())
+        };
+        self.update_pack_file(instance_id, content_path, &pack_file)
+            .await?;
+        Ok(Some(pack_file))
+    }
 
-            match v1_result {
-                Ok(v1) => {
-                    let migrated: PackFile = v1.into();
+    async fn find_pack_file(
+        &self,
+        instance_id: &InstanceId,
+        content_path: &ContentPath,
+    ) -> Result<Option<PackFile>, InstanceError> {
+        Ok(self
+            .read_pack_file(instance_id, content_path, false)
+            .await?
+            .ok())
+    }
 
-                    let _ = self
-                        .update_pack_file(instance_id, content_path, &migrated)
-                        .await;
+    async fn get_pack_files(
+        &self,
+        instance_id: &InstanceId,
+    ) -> Result<HashMap<ContentPath, PackFile>, InstanceError> {
+        let mut files = HashMap::new();
 
-                    Ok(migrated)
-                }
-                Err(e) => Err(InstanceError::Storage(e.to_string())),
+        for entry in self.get_pack(instance_id).await?.files {
+            // A record with an invalid hash is left out, like a file nothing recorded.
+            if let Ok(pack_file) = self.read_pack_file(instance_id, &entry.file, false).await? {
+                files.insert(entry.file, pack_file);
             }
         }
+
+        Ok(files)
     }
 
     async fn find_by_provider_id(
@@ -258,6 +383,14 @@ impl PackStorage for FsPackStorage {
 mod tests {
     use tempfile::TempDir;
 
+    fn sha1_hash(c: char) -> crate::shared::hash::FileHash {
+        crate::shared::hash::FileHash::new(
+            crate::shared::hash::HashAlgorithm::Sha1,
+            c.to_string().repeat(40),
+        )
+        .unwrap()
+    }
+
     use super::*;
 
     #[tokio::test]
@@ -270,7 +403,11 @@ mod tests {
         let id = InstanceId::try_from("inst").unwrap();
         let good = ContentPath::parse("mods/a.jar").unwrap();
         storage
-            .update_pack_file(&id, &good, &PackFile::from_hash("a.jar".into(), "h".into()))
+            .update_pack_file(
+                &id,
+                &good,
+                &PackFile::from_hash("a.jar".into(), sha1_hash('a')),
+            )
             .await
             .unwrap();
         tokio::fs::write(
@@ -287,7 +424,7 @@ mod tests {
         assert_eq!(pack.files.len(), 1);
         assert_eq!(pack.files[0].file, good);
         assert_eq!(files.len(), 1);
-        assert_eq!(files[&good].hash, "h");
+        assert_eq!(files[&good].hash, sha1_hash('a'));
     }
 
     #[tokio::test]
@@ -300,7 +437,11 @@ mod tests {
         let id = InstanceId::try_from("inst").unwrap();
         let good = ContentPath::parse("mods/a.jar").unwrap();
         storage
-            .update_pack_file(&id, &good, &PackFile::from_hash("a.jar".into(), "h".into()))
+            .update_pack_file(
+                &id,
+                &good,
+                &PackFile::from_hash("a.jar".into(), sha1_hash('a')),
+            )
             .await
             .unwrap();
         tokio::fs::write(
@@ -319,5 +460,93 @@ file = "mods/a.jar"
 
         assert_eq!(pack.files.len(), 1);
         assert_eq!(pack.files[0].file, good);
+    }
+
+    const V2_RECORD: &str = r#"
+file-name = "sodium.jar"
+hash = "bad"
+update-provider-id = "aether#modrinth"
+
+[update."aether#modrinth"]
+content-id = "AANobbMI"
+version = "v1"
+"#;
+
+    const V1_RECORD: &str = r#"
+file-name = "sodium.jar"
+hash = "bad"
+update-provider = "modrinth"
+
+[update.modrinth]
+project_id = "AANobbMI"
+version = "v1"
+"#;
+
+    async fn rehash_stored(
+        temp: &TempDir,
+        record: &str,
+    ) -> (FsPackStorage, InstanceId, ContentPath, PackFile) {
+        let storage = FsPackStorage::new(Arc::new(LocationInfo::new(
+            temp.path().join("settings"),
+            temp.path().to_path_buf(),
+        )));
+        let id = InstanceId::try_from("inst").unwrap();
+        let path = ContentPath::parse("mods/sodium.jar").unwrap();
+        let file = storage.get_pack_file_path(&id, &path);
+        tokio::fs::create_dir_all(file.parent().unwrap())
+            .await
+            .unwrap();
+        tokio::fs::write(&file, record).await.unwrap();
+
+        let rehashed = storage
+            .rehash_pack_file(&id, &path, &sha1_hash('c'))
+            .await
+            .unwrap()
+            .expect("the record exists");
+        (storage, id, path, rehashed)
+    }
+
+    #[rstest::rstest]
+    #[case::v2(V2_RECORD)]
+    #[case::v1(V1_RECORD)]
+    #[tokio::test]
+    async fn should_replace_only_the_hash_when_rehashing_a_stored_record(#[case] record: &str) {
+        let temp = TempDir::new().unwrap();
+        let (storage, id, path, rehashed) = rehash_stored(&temp, record).await;
+
+        let provider: ProviderId = "aether#modrinth".parse().unwrap();
+        assert_eq!(rehashed.hash, sha1_hash('c'));
+        assert_eq!(rehashed.update_provider_id, Some(provider.clone()));
+        assert_eq!(
+            rehashed.update.as_ref().unwrap()[&provider].content_id,
+            ContentId::try_from("AANobbMI").unwrap()
+        );
+        let written = storage.get_pack_file(&id, &path).await.unwrap();
+        assert_eq!(written.hash, sha1_hash('c'));
+        assert_eq!(written.update_provider_id, Some(provider));
+        let text = tokio::fs::read_to_string(storage.get_pack_file_path(&id, &path))
+            .await
+            .unwrap();
+        assert!(text.contains("update-provider-id"), "{text}");
+    }
+
+    #[tokio::test]
+    async fn should_return_none_when_rehashing_a_file_with_no_record() {
+        let temp = TempDir::new().unwrap();
+        let storage = FsPackStorage::new(Arc::new(LocationInfo::new(
+            temp.path().join("settings"),
+            temp.path().to_path_buf(),
+        )));
+
+        let rehashed = storage
+            .rehash_pack_file(
+                &InstanceId::try_from("inst").unwrap(),
+                &ContentPath::parse("mods/a.jar").unwrap(),
+                &sha1_hash('c'),
+            )
+            .await
+            .unwrap();
+
+        assert!(rehashed.is_none());
     }
 }

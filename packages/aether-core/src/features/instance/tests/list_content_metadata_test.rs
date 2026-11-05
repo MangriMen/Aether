@@ -26,7 +26,7 @@ use crate::{
             ContentFileView, ContentIconCache, ContentIconError, ContentItem, ContentMetadata,
             ContentMetadataCache, ContentMetadataService, ContentProvider,
             ContentProviderCapabilityMetadata, ContentSearchParams, ContentSearchResult,
-            ContentVersion, ContentVersionMetadata, Instance, InstanceError, InstanceId,
+            ContentVersion, ContentVersionMetadata, FileSide, Instance, InstanceError, InstanceId,
             ListContentUseCase, PackFile, PackStorage, ProviderId, infra::SqlitePackStorage,
         },
         settings::LocationInfo,
@@ -505,6 +505,7 @@ struct Fixture {
     _temp: TempDir,
     mods: std::path::PathBuf,
     use_case: ListContentUseCase,
+    pack_storage: Arc<SqlitePackStorage>,
     service: Arc<ContentMetadataService>,
     cache: Arc<MemoryMetadataCache>,
     icons: Arc<FakeIcons>,
@@ -536,7 +537,7 @@ impl Fixture {
         for (file, capability_id, content_id) in files {
             tokio::fs::write(mods.join(file), b"jar").await.unwrap();
             let provider = provider_id(capability_id);
-            let mut pack_file = PackFile::from_hash((*file).to_owned(), "hash".into());
+            let mut pack_file = PackFile::from_hash((*file).to_owned(), sha1_hash("hash"));
             pack_file.update_provider_id = Some(provider.clone());
             pack_file.update = Some(HashMap::from([(
                 provider,
@@ -577,7 +578,8 @@ impl Fixture {
         Self {
             _temp: temp,
             mods,
-            use_case: ListContentUseCase::new(pack_storage, location_info, service.clone()),
+            use_case: ListContentUseCase::new(pack_storage.clone(), location_info, service.clone()),
+            pack_storage,
             service,
             cache,
             icons,
@@ -725,6 +727,45 @@ async fn should_not_ask_the_provider_when_everything_is_cached_and_fresh() {
     assert!(provider.calls().is_empty());
     assert!(provider.version_calls().is_empty());
     fixture.assert_no_event();
+}
+
+#[tokio::test]
+async fn should_rehash_the_file_and_keep_the_rest_of_the_record_when_its_stored_hash_is_invalid() {
+    let fixture = Fixture::new(
+        &[("a.jar", "modrinth", "A"), ("b.jar", "modrinth", "B")],
+        vec![],
+    )
+    .await;
+    sqlx::query(
+        "UPDATE pack_files SET hash = 'bad', name = 'Sodium', side = 'client',          installed_by_provider_id = 'aether#modrinth', installed_by_content_id = 'A'          WHERE content_path = 'mods/a.jar'",
+    )
+        .execute(fixture.pack_storage.pool())
+        .await
+        .unwrap();
+
+    let listed = fixture.list().await;
+
+    assert_eq!(listed.len(), 2);
+    let record = fixture
+        .pack_storage
+        .get_pack_file(
+            &InstanceId::try_from(INSTANCE_ID).unwrap(),
+            &ContentPath::parse("mods/a.jar").unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(
+        record.hash.hex(),
+        "f92e777f4341930bad9b2422283c4680d00dbc06"
+    );
+    assert_eq!(record.update_provider_id, Some(provider_id("modrinth")));
+    assert!(record.update.is_some_and(|update| update.len() == 1));
+    assert_eq!(record.name.as_deref(), Some("Sodium"));
+    assert_eq!(record.side, Some(FileSide::Client));
+    assert_eq!(
+        record.installed_by.map(|origin| origin.content_id),
+        Some(ContentId::try_from("A").unwrap())
+    );
 }
 
 #[tokio::test]
@@ -1666,4 +1707,9 @@ async fn should_skip_a_file_when_its_name_cannot_be_a_content_path() {
     assert!(names.contains_key("mods/good.jar"));
     assert!(!names.keys().any(|path| path.starts_with("mods/foo.jar")));
     assert_eq!(names.len(), 1);
+}
+
+fn sha1_hash(seed: &str) -> crate::shared::hash::FileHash {
+    use crate::shared::hash::{FileHash, HashAlgorithm};
+    FileHash::new(HashAlgorithm::Sha1, format!("{:0>40x}", seed.len())).unwrap()
 }

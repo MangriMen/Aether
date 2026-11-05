@@ -17,7 +17,7 @@ use crate::{
         },
         settings::LocationInfo,
     },
-    shared::{hash::infra::sha1_async, io::infra::read_async},
+    shared::{hash::infra::sha1_hash_async, io::infra::read_async},
 };
 
 pub struct ListContentUseCase {
@@ -219,19 +219,32 @@ impl ListContentUseCase {
         content_path: &ContentPath,
         entries_by_path: &DashMap<ContentPath, PackEntry>,
     ) -> Result<PackFile, InstanceError> {
-        if let Some(entry) = entries_by_path.get(content_path) {
-            return self
+        if let Some(entry) = entries_by_path.get(content_path)
+            && let Some(pack_file) = self
                 .pack_storage
-                .get_pack_file(instance_id, &entry.file)
-                .await;
+                .find_pack_file(instance_id, &entry.file)
+                .await?
+        {
+            return Ok(pack_file);
         }
 
         let file_content = read_async(file_path)
             .await
             .map_err(|err| InstanceError::Storage(err.to_string()))?;
-        let hash = sha1_async(file_content)
+        let hash = sha1_hash_async(file_content)
             .await
             .map_err(|err| InstanceError::Storage(err.to_string()))?;
+
+        // A record that exists but could not be used keeps everything but its hash.
+        if entries_by_path.contains_key(content_path)
+            && let Some(pack_file) = self
+                .pack_storage
+                .rehash_pack_file(instance_id, content_path, &hash)
+                .await?
+        {
+            return Ok(pack_file);
+        }
+
         let pack_file = PackFile::from_hash(file_name.to_owned(), hash);
 
         self.pack_storage

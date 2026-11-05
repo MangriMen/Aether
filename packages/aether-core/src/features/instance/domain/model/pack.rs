@@ -1,7 +1,10 @@
 use std::collections::HashMap;
 
-use crate::features::instance::{
-    ContentFile, ContentFileUpdateInfo, ContentPath, FileSide, PlanOrigin, ProviderId,
+use crate::{
+    features::instance::{
+        ContentFile, ContentFileUpdateInfo, ContentPath, FileSide, PlanOrigin, ProviderId,
+    },
+    shared::hash::FileHash,
 };
 
 #[derive(Debug, Clone, Default)]
@@ -18,7 +21,7 @@ pub struct PackEntry {
 pub struct PackFile {
     pub file_name: String,
     pub name: Option<String>,
-    pub hash: String,
+    pub hash: FileHash,
     pub download: Option<PackFileDownload>,
     pub option: Option<PackFileOption>,
     pub side: Option<FileSide>,
@@ -65,7 +68,7 @@ impl From<ContentFile> for PackFile {
 }
 
 impl PackFile {
-    pub fn from_hash(file_name: String, hash: String) -> Self {
+    pub fn from_hash(file_name: String, hash: FileHash) -> Self {
         Self {
             name: None,
             file_name,

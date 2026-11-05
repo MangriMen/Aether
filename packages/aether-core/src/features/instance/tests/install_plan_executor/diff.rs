@@ -39,7 +39,7 @@ async fn should_record_installed_files_under_the_plan_origin_when_the_plan_succe
     let a = &records["mods/a.jar"];
     assert_eq!(a.installed_by, Some(pack_of(&plugin("packwiz"))));
     assert_eq!(a.file_name, "a.jar");
-    assert_eq!(a.hash, sha1(url));
+    assert_eq!(a.hash, sha1_hash(url));
     assert!(a.update.is_none());
 
     // A ref's file is recorded with what it resolved to, under the provider that resolved it.
@@ -85,7 +85,7 @@ async fn should_record_the_files_of_a_new_instance_when_it_is_created() {
     // Read from the file: the plan had no hash to take it from.
     assert_eq!(
         records["mods/a.jar"].hash,
-        sha1("https://cdn.example/a.jar")
+        sha1_hash("https://cdn.example/a.jar")
     );
 }
 
@@ -131,7 +131,7 @@ async fn should_check_the_file_on_disk_with_the_plan_algorithm_when_it_exists() 
     fixture
         .record(
             "mods/a.jar",
-            PackFile::from_hash("a.jar".into(), "stale".into()),
+            PackFile::from_hash("a.jar".into(), sha1_hash("stale")),
         )
         .await;
     let sha512 = crate::shared::hash::infra::hash_hex_async(
@@ -160,7 +160,7 @@ async fn should_check_the_file_on_disk_with_the_plan_algorithm_when_it_exists() 
     // The record now holds the file's sha1, read from it.
     assert_eq!(
         fixture.records(INSTANCE_ID).await["mods/a.jar"].hash,
-        sha1(url)
+        sha1_hash(url)
     );
 }
 
@@ -189,7 +189,7 @@ async fn should_replace_a_file_when_its_hash_changed() {
     );
     assert_eq!(
         fixture.records(INSTANCE_ID).await["mods/a.jar"].hash,
-        sha1(url)
+        sha1_hash(url)
     );
 }
 
@@ -405,7 +405,7 @@ async fn should_replace_an_older_install_when_it_is_of_the_same_content() {
     let legacy = |path: &str| PackFile {
         update_provider_id: Some(modrinth_id()),
         update: Some(modrinth_update("AANobbMI", "v1")),
-        ..PackFile::from_hash(file_name(path), sha1("old"))
+        ..PackFile::from_hash(file_name(path), sha1_hash("old"))
     };
     fixture.put("mods/sodium-1.jar", "old");
     fixture
@@ -459,7 +459,7 @@ async fn should_keep_a_disabled_file_when_it_did_not_change() {
             "mods/a.jar",
             PackFile {
                 installed_by: Some(pack_of(&plugin("packwiz"))),
-                ..PackFile::from_hash("a.jar".into(), sha1(url))
+                ..PackFile::from_hash("a.jar".into(), sha1_hash(url))
             },
         )
         .await;
@@ -492,7 +492,7 @@ async fn should_replace_a_disabled_file_and_keep_it_disabled_when_it_changed() {
             "mods/a.jar",
             PackFile {
                 installed_by: Some(pack_of(&plugin("packwiz"))),
-                ..PackFile::from_hash("a.jar".into(), sha1("old version"))
+                ..PackFile::from_hash("a.jar".into(), sha1_hash("old version"))
             },
         )
         .await;
@@ -515,7 +515,7 @@ async fn should_replace_a_disabled_file_and_keep_it_disabled_when_it_changed() {
     );
     let records = fixture.records(INSTANCE_ID).await;
     assert_eq!(records.len(), 1);
-    assert_eq!(records["mods/a.jar"].hash, sha1(url));
+    assert_eq!(records["mods/a.jar"].hash, sha1_hash(url));
 }
 
 /// Disabled file, new version under a new name: the ref names the same content as the dropped
@@ -532,7 +532,7 @@ async fn should_carry_the_disabled_state_to_a_new_version_when_the_content_is_th
                 installed_by: Some(pack_of(&plugin("packwiz"))),
                 update_provider_id: Some(modrinth_id()),
                 update: Some(modrinth_update("AANobbMI", "v1")),
-                ..PackFile::from_hash("sodium-1.jar".into(), sha1("sodium 1"))
+                ..PackFile::from_hash("sodium-1.jar".into(), sha1_hash("sodium 1"))
             },
         )
         .await;
@@ -569,7 +569,7 @@ async fn should_install_a_direct_file_enabled_when_its_path_is_new() {
             "mods/a-1.jar",
             PackFile {
                 installed_by: Some(pack_of(&plugin("packwiz"))),
-                ..PackFile::from_hash("a-1.jar".into(), sha1("a 1"))
+                ..PackFile::from_hash("a-1.jar".into(), sha1_hash("a 1"))
             },
         )
         .await;
@@ -600,7 +600,7 @@ async fn should_treat_a_direct_file_as_that_content_when_it_has_an_identity() {
                 installed_by: Some(pack_of(&modrinth_id())),
                 update_provider_id: Some(modrinth_id()),
                 update: Some(modrinth_update("AANobbMI", "v1")),
-                ..PackFile::from_hash("sodium-1.jar".into(), sha1("sodium 1"))
+                ..PackFile::from_hash("sodium-1.jar".into(), sha1_hash("sodium 1"))
             },
         )
         .await;

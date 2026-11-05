@@ -21,7 +21,7 @@ pub use domain::{
     PackFileOption, PackInfo, PackMetadata, PackSource, PlanOrigin, PlatformId, PluginId,
     ProviderId, ProviderIdError, ReleaseChannel, RequestedContentVersionStatus,
     ResolveInstallPlanParams, ResolveTarget, ResolvedFile, UpdaterCapabilityMetadata, is_valid_id,
-    select_version,
+    parse_file_hash, select_version,
 };
 
 // ── App layer: Use Cases (Inbound Ports) ──

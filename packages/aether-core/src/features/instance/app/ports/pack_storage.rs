@@ -2,6 +2,8 @@ use std::collections::HashMap;
 
 use async_trait::async_trait;
 
+use crate::shared::hash::FileHash;
+
 use crate::features::instance::domain::{
     ContentId, ContentPath, InstanceError, InstanceId, Pack, PackFile, ProviderId,
 };
@@ -18,6 +20,31 @@ pub trait PackStorage: Send + Sync {
         instance_id: &InstanceId,
         content_path: &ContentPath,
     ) -> Result<PackFile, InstanceError>;
+
+    /// The record of a file, or `None` when there is no usable one: its stored hash is invalid.
+    /// Such a record is as good as none: the caller hashes the file again and writes a new one.
+    async fn find_pack_file(
+        &self,
+        instance_id: &InstanceId,
+        content_path: &ContentPath,
+    ) -> Result<Option<PackFile>, InstanceError> {
+        self.get_pack_file(instance_id, content_path)
+            .await
+            .map(Some)
+    }
+
+    /// Replaces only the hash of the record of a file, whatever the stored one is, and returns
+    /// the record; `None` when there is none. The way to repair a record
+    /// [`Self::find_pack_file`] could not use: the rest of the record is kept as it was read, so
+    /// fields that no longer parse are dropped.
+    async fn rehash_pack_file(
+        &self,
+        _instance_id: &InstanceId,
+        _content_path: &ContentPath,
+        _hash: &FileHash,
+    ) -> Result<Option<PackFile>, InstanceError> {
+        Ok(None)
+    }
 
     /// Every file recorded for the instance, by content path — what an install plan is diffed
     /// against. The default asks for each file of [`Self::get_pack`] in turn.

@@ -4,6 +4,7 @@ use crate::features::instance::{
     ContentFile, ContentFileUpdateInfo, ContentPath, ContentVersionId, InvalidContentId, InvalidId,
     InvalidRelativePath, ProviderId,
 };
+use crate::shared::hash::InvalidFileHash;
 
 impl From<ContentFile> for ContentFileDto {
     fn from(value: ContentFile) -> Self {
@@ -12,7 +13,7 @@ impl From<ContentFile> for ContentFileDto {
             content_type: value.content_type.into(),
             disabled: value.disabled,
             file_name: value.file_name,
-            hash: value.hash,
+            hash: value.hash.into(),
             name: value.name,
             size: value.size,
             update_provider_id: value.update_provider_id.map(Into::into),
@@ -41,6 +42,9 @@ pub enum InvalidContentFile {
 
     #[error(transparent)]
     Path(#[from] InvalidRelativePath),
+
+    #[error(transparent)]
+    Hash(#[from] InvalidFileHash),
 }
 
 impl TryFrom<ContentFileDto> for ContentFile {
@@ -52,7 +56,7 @@ impl TryFrom<ContentFileDto> for ContentFile {
             content_type: value.content_type.into(),
             disabled: value.disabled,
             file_name: value.file_name,
-            hash: value.hash,
+            hash: value.hash.try_into()?,
             name: value.name,
             size: value.size,
             version: None,
@@ -110,6 +114,7 @@ mod tests {
 
     use super::*;
     use crate::features::instance::ContentType;
+    use aether_core_plugin_api::v0::FileHashDto;
 
     /// Update info keyed by provider id crosses the plugin boundary both ways.
     #[test]
@@ -120,7 +125,11 @@ mod tests {
             content_type: ContentType::Mod,
             disabled: false,
             file_name: "sodium.jar".into(),
-            hash: "123".into(),
+            hash: crate::shared::hash::FileHash::new(
+                crate::shared::hash::HashAlgorithm::Sha1,
+                "a".repeat(40),
+            )
+            .unwrap(),
             name: None,
             size: 1024,
             version: None,
@@ -147,6 +156,53 @@ mod tests {
             info.version,
             Some(ContentVersionId::try_from("IZskON6d").unwrap())
         );
+    }
+
+    #[test]
+    fn should_keep_the_algorithm_when_a_sha256_hash_crosses_the_plugin_boundary() {
+        let hash = FileHashDto::Sha256("ab".repeat(32));
+        let dto = ContentFileDto::from(
+            ContentFile::try_from(ContentFileDto {
+                hash: hash.clone(),
+                content_path: "mods/a.jar".into(),
+                content_type: ContentType::Mod.into(),
+                disabled: false,
+                file_name: "a.jar".into(),
+                name: None,
+                size: 1,
+                update_provider_id: None,
+                update: None,
+            })
+            .unwrap(),
+        );
+
+        assert_eq!(dto.hash, hash);
+    }
+
+    #[test]
+    fn should_refuse_a_content_file_dto_when_the_hash_is_not_a_digest() {
+        let file = ContentFile {
+            hash: crate::shared::hash::FileHash::new(
+                crate::shared::hash::HashAlgorithm::Sha1,
+                "a".repeat(40),
+            )
+            .unwrap(),
+            content_path: ContentPath::parse("mods/a.jar").unwrap(),
+            content_type: ContentType::Mod,
+            disabled: false,
+            file_name: "a.jar".into(),
+            name: None,
+            size: 1,
+            version: None,
+            update_provider_id: None,
+            update: None,
+        };
+        let mut dto = ContentFileDto::from(file);
+        dto.hash = FileHashDto::Sha1("123".into());
+
+        let err = ContentFile::try_from(dto).unwrap_err();
+
+        assert!(matches!(err, InvalidContentFile::Hash(_)));
     }
 
     #[test]

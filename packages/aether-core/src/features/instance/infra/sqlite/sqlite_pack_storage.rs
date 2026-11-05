@@ -5,9 +5,11 @@ use crate::features::instance::{
         legacy_provider_id::{legacy_provider_id_string, parse_stored_provider_id},
         stored_content_id::{parse_stored_content_id, parse_stored_version},
         stored_content_path::parse_stored_content_path,
+        stored_hash::parse_stored_hash,
         stored_side::parse_stored_side,
     },
 };
+use crate::shared::hash::{FileHash, InvalidFileHash};
 use async_trait::async_trait;
 use sqlx::{Sqlite, SqlitePool, Transaction};
 use std::collections::HashMap;
@@ -35,7 +37,17 @@ struct PackFileUpdateRow {
 }
 
 impl PackFileRow {
-    fn into_pack_file(self, updates: Vec<PackFileUpdateRow>) -> PackFile {
+    /// The record, or why its stored hash is not one.
+    fn into_checked_pack_file(
+        self,
+        updates: Vec<PackFileUpdateRow>,
+    ) -> Result<PackFile, InvalidFileHash> {
+        let hash = parse_stored_hash(&self.content_path, &self.hash)?;
+        Ok(self.into_pack_file(updates, hash))
+    }
+
+    /// The record with `hash` in place of the stored one.
+    fn into_pack_file(self, updates: Vec<PackFileUpdateRow>, hash: FileHash) -> PackFile {
         let mut update_map = HashMap::new();
         // An update that no longer parses is skipped rather than failing the read, so one bad row
         // does not hide the rest of the pack.
@@ -97,7 +109,7 @@ impl PackFileRow {
         PackFile {
             file_name: self.file_name,
             name: self.name,
-            hash: self.hash,
+            hash,
             download: None,
             option: None,
             side,
@@ -117,6 +129,51 @@ impl PackFileRow {
 impl SqlitePackStorage {
     pub fn new(pool: SqlitePool) -> Self {
         Self { pool }
+    }
+
+    /// The row of a file and its updates: `None` when there is none.
+    async fn load_rows(
+        &self,
+        instance_id: &InstanceId,
+        content_path: &ContentPath,
+    ) -> Result<Option<(PackFileRow, Vec<PackFileUpdateRow>)>, InstanceError> {
+        let content_path = content_path.as_str();
+        let row = sqlx::query_as!(
+            PackFileRow,
+            "SELECT content_path, file_name, name, hash, side, update_provider_id, installed_by_provider_id, installed_by_content_id FROM pack_files WHERE instance_id = ? AND content_path = ?",
+            instance_id.as_str(),
+            content_path
+        )
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|e| InstanceError::Storage(e.to_string()))?;
+        let Some(row) = row else {
+            return Ok(None);
+        };
+
+        let updates = sqlx::query_as!(
+            PackFileUpdateRow,
+            "SELECT content_path, provider_id, content_id, version_id FROM pack_file_updates WHERE instance_id = ? AND content_path = ?",
+            instance_id.as_str(),
+            content_path
+        )
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| InstanceError::Storage(e.to_string()))?;
+
+        Ok(Some((row, updates)))
+    }
+
+    /// The record of a file: `None` when there is none, `Err` when its stored hash is invalid.
+    async fn load_pack_file(
+        &self,
+        instance_id: &InstanceId,
+        content_path: &ContentPath,
+    ) -> Result<Option<Result<PackFile, InvalidFileHash>>, InstanceError> {
+        Ok(self
+            .load_rows(instance_id, content_path)
+            .await?
+            .map(|(row, updates)| row.into_checked_pack_file(updates)))
     }
 
     /// A storage over a fresh in-memory database with every migration applied. Foreign keys are
@@ -175,6 +232,7 @@ impl SqlitePackStorage {
         .await
         .map_err(|e| InstanceError::Storage(e.to_string()))?;
 
+        let hash = pack_file.hash.to_string();
         let update_provider_id = pack_file
             .update_provider_id
             .as_ref()
@@ -206,7 +264,7 @@ impl SqlitePackStorage {
             content_path,
             pack_file.file_name,
             pack_file.name,
-            pack_file.hash,
+            hash,
             pack_file.side.map(FileSide::as_str),
             update_provider_id,
             installed_by_provider_id,
@@ -285,29 +343,50 @@ impl PackStorage for SqlitePackStorage {
         instance_id: &InstanceId,
         content_path: &ContentPath,
     ) -> Result<PackFile, InstanceError> {
-        let content_path = content_path.as_str();
-        let row = sqlx::query_as!(
-            PackFileRow,
-            "SELECT content_path, file_name, name, hash, side, update_provider_id, installed_by_provider_id, installed_by_content_id FROM pack_files WHERE instance_id = ? AND content_path = ?",
+        self.load_pack_file(instance_id, content_path)
+            .await?
+            .ok_or_else(|| InstanceError::Storage(format!("Pack file not found: {content_path}")))?
+            .map_err(|err| InstanceError::Storage(err.to_string()))
+    }
+
+    async fn rehash_pack_file(
+        &self,
+        instance_id: &InstanceId,
+        content_path: &ContentPath,
+        hash: &FileHash,
+    ) -> Result<Option<PackFile>, InstanceError> {
+        // One statement: a concurrent write to any other column or to the updates is never reverted.
+        let hash = hash.to_string();
+        let content_path_str = content_path.as_str();
+        let changed = sqlx::query!(
+            "UPDATE pack_files SET hash = ? WHERE instance_id = ? AND content_path = ?",
+            hash,
             instance_id.as_str(),
-            content_path
+            content_path_str
         )
-        .fetch_optional(&self.pool)
+        .execute(&self.pool)
         .await
         .map_err(|e| InstanceError::Storage(e.to_string()))?
-        .ok_or_else(|| InstanceError::Storage(format!("Pack file not found: {content_path}")))?;
+        .rows_affected();
+        if changed == 0 {
+            return Ok(None);
+        }
 
-        let updates = sqlx::query_as!(
-            PackFileUpdateRow,
-            "SELECT content_path, provider_id, content_id, version_id FROM pack_file_updates WHERE instance_id = ? AND content_path = ?",
-            instance_id.as_str(),
-            content_path
-        )
-        .fetch_all(&self.pool)
-        .await
-        .map_err(|e| InstanceError::Storage(e.to_string()))?;
+        Ok(self
+            .load_pack_file(instance_id, content_path)
+            .await?
+            .and_then(Result::ok))
+    }
 
-        Ok(row.into_pack_file(updates))
+    async fn find_pack_file(
+        &self,
+        instance_id: &InstanceId,
+        content_path: &ContentPath,
+    ) -> Result<Option<PackFile>, InstanceError> {
+        Ok(self
+            .load_pack_file(instance_id, content_path)
+            .await?
+            .and_then(Result::ok))
     }
 
     async fn get_pack_files(
@@ -345,7 +424,8 @@ impl PackStorage for SqlitePackStorage {
             .filter_map(|row| {
                 let content_path = parse_stored_content_path(instance_id, &row.content_path)?;
                 let file_updates = updates.remove(&row.content_path).unwrap_or_default();
-                Some((content_path, row.into_pack_file(file_updates)))
+                let pack_file = row.into_checked_pack_file(file_updates).ok()?;
+                Some((content_path, pack_file))
             })
             .collect())
     }
@@ -506,6 +586,14 @@ mod tests {
     use super::*;
     use crate::features::instance::ContentVersionId;
 
+    fn sha1_hash(c: char) -> crate::shared::hash::FileHash {
+        crate::shared::hash::FileHash::new(
+            crate::shared::hash::HashAlgorithm::Sha1,
+            c.to_string().repeat(40),
+        )
+        .unwrap()
+    }
+
     fn cp(path: &str) -> ContentPath {
         ContentPath::parse(path).unwrap()
     }
@@ -523,7 +611,7 @@ mod tests {
                     version: Some(ContentVersionId::try_from("v1").unwrap()),
                 },
             )])),
-            ..PackFile::from_hash("a.jar".into(), "h".into())
+            ..PackFile::from_hash("a.jar".into(), sha1_hash('a'))
         };
         storage
             .update_pack_file(&id, &cp("mods/a.jar"), &file)
@@ -562,7 +650,7 @@ mod tests {
                     version: None,
                 },
             )])),
-            ..PackFile::from_hash("a.jar".into(), "h".into())
+            ..PackFile::from_hash("a.jar".into(), sha1_hash('a'))
         };
         storage
             .update_pack_file(&id, &cp("mods/a.jar"), &file)
@@ -583,13 +671,13 @@ mod tests {
             .update_pack_file(
                 &id,
                 &cp("mods/a.jar"),
-                &PackFile::from_hash("a.jar".into(), "h".into()),
+                &PackFile::from_hash("a.jar".into(), sha1_hash('a')),
             )
             .await
             .unwrap();
         for bad in ["../x.jar", ".metadata/instance.json", "mods//b.jar"] {
             sqlx::query(
-                "INSERT INTO pack_files (instance_id, content_path, file_name, hash) VALUES ('inst', ?, 'x.jar', 'h')",
+                "INSERT INTO pack_files (instance_id, content_path, file_name, hash) VALUES ('inst', ?, 'x.jar', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')",
             )
             .bind(bad)
             .execute(&storage.pool)
@@ -619,14 +707,14 @@ mod tests {
                     version: Some(ContentVersionId::try_from("v1").unwrap()),
                 },
             )])),
-            ..PackFile::from_hash("good.jar".into(), "h".into())
+            ..PackFile::from_hash("good.jar".into(), sha1_hash('a'))
         };
         storage
             .update_pack_file(&id, &cp("mods/good.jar"), &file)
             .await
             .unwrap();
         for bad in [".metadata/old.jar", "../old.jar"] {
-            sqlx::query("INSERT INTO pack_files (instance_id, content_path, file_name, hash) VALUES ('inst', ?, 'old.jar', 'h')")
+            sqlx::query("INSERT INTO pack_files (instance_id, content_path, file_name, hash) VALUES ('inst', ?, 'old.jar', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')")
                 .bind(bad)
                 .execute(&storage.pool)
                 .await
@@ -650,12 +738,60 @@ mod tests {
     async fn should_drop_a_stored_path_that_changes_when_normalized() {
         let storage = SqlitePackStorage::in_memory().await;
         let id = InstanceId::try_from("inst").unwrap();
-        sqlx::query(r"INSERT INTO pack_files (instance_id, content_path, file_name, hash) VALUES ('inst', 'mods\a.jar', 'a.jar', 'h')")
+        sqlx::query(r"INSERT INTO pack_files (instance_id, content_path, file_name, hash) VALUES ('inst', 'mods\a.jar', 'a.jar', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')")
             .execute(&storage.pool)
             .await
             .unwrap();
 
         assert!(storage.get_pack(&id).await.unwrap().files.is_empty());
         assert!(storage.get_pack_files(&id).await.unwrap().is_empty());
+    }
+
+    #[tokio::test]
+    async fn should_change_only_the_hash_when_rehashing_a_record_with_an_invalid_one() {
+        let storage = SqlitePackStorage::in_memory().await;
+        let id = InstanceId::try_from("inst").unwrap();
+        let path = ContentPath::parse("mods/a.jar").unwrap();
+        sqlx::query("INSERT INTO pack_files (instance_id, content_path, file_name, name, side, hash) VALUES ('inst', 'mods/a.jar', 'a.jar', 'Sodium', 'client', 'bad')")
+            .execute(&storage.pool)
+            .await
+            .unwrap();
+        sqlx::query("INSERT INTO pack_file_updates (instance_id, content_path, provider_id, content_id, version_id) VALUES ('inst', 'mods/a.jar', 'malformed', 'c2', 'v2')")
+            .execute(&storage.pool)
+            .await
+            .unwrap();
+
+        let rehashed = storage
+            .rehash_pack_file(&id, &path, &sha1_hash('c'))
+            .await
+            .unwrap()
+            .expect("the record exists");
+
+        assert_eq!(rehashed.hash, sha1_hash('c'));
+        assert_eq!(rehashed.name.as_deref(), Some("Sodium"));
+        assert_eq!(rehashed.side, Some(FileSide::Client));
+        let kept: i64 = sqlx::query_scalar(
+            "SELECT COUNT(*) FROM pack_file_updates WHERE content_path = 'mods/a.jar' AND provider_id = 'malformed'",
+        )
+        .fetch_one(&storage.pool)
+        .await
+        .unwrap();
+        assert_eq!(kept, 1);
+    }
+
+    #[tokio::test]
+    async fn should_return_none_when_rehashing_a_file_with_no_row() {
+        let storage = SqlitePackStorage::in_memory().await;
+
+        let rehashed = storage
+            .rehash_pack_file(
+                &InstanceId::try_from("inst").unwrap(),
+                &ContentPath::parse("mods/a.jar").unwrap(),
+                &sha1_hash('c'),
+            )
+            .await
+            .unwrap();
+
+        assert!(rehashed.is_none());
     }
 }

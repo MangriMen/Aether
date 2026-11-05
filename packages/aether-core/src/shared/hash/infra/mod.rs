@@ -3,7 +3,7 @@ use std::{io::Read, path::Path};
 use sha2::{Digest, Sha256, Sha512};
 use tokio::task::{JoinError, spawn_blocking};
 
-use crate::shared::hash::HashAlgorithm;
+use crate::shared::hash::{FileHash, HashAlgorithm};
 
 /// The hashing runs on the blocking pool, so the error is that task failing to finish: it
 /// panicked, or the runtime shut down under it.
@@ -19,6 +19,15 @@ where
     spawn_blocking(move || sha1_smol::Sha1::from(input.as_ref()).hexdigest())
         .await
         .map_err(task_failed)
+}
+
+/// The sha1 of `input` as a validated hash.
+pub(crate) async fn sha1_hash_async<T>(input: T) -> std::io::Result<FileHash>
+where
+    T: AsRef<[u8]> + Send + 'static,
+{
+    let hex = sha1_async(input).await?;
+    FileHash::new(HashAlgorithm::Sha1, hex).map_err(std::io::Error::other)
 }
 
 /// Lowercase hex sha256 of `input`.

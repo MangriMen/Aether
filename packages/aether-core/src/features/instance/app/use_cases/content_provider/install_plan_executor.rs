@@ -516,7 +516,7 @@ struct StagedFile {
     file: PlannedFile,
     path: PathBuf,
     /// What the pack storage records it under ([`sha1_of`]).
-    sha1: String,
+    sha1: FileHash,
 }
 
 /// The overrides of a plan for this side, source by source in the order they are applied,
@@ -534,7 +534,7 @@ impl PlanOverrides {
 /// A planned file now in the instance, as it is recorded.
 struct InstalledFile {
     entry: DownloadEntry,
-    sha1: String,
+    sha1: FileHash,
 }
 
 /// One change a run made to the files of an instance, by the exact path on disk (`.disabled`
@@ -1046,7 +1046,7 @@ impl InstallPlanExecutor {
             .map(|InstalledFile { entry, sha1 }| {
                 let same_bytes = records
                     .get(&entry.relative_path)
-                    .filter(|record| record.hash.eq_ignore_ascii_case(&sha1));
+                    .filter(|record| record.hash == sha1);
 
                 let mut pack_file = PackFile {
                     file_name: entry.relative_path.file_name().to_owned(),
@@ -1160,12 +1160,16 @@ impl InstallPlanExecutor {
 
 /// The sha1 the pack storage records a file under: `known` when it is one (the file was checked
 /// against it), else read from the file.
-async fn sha1_of(path: &Path, known: Option<&FileHash>) -> Result<String, InstanceError> {
+async fn sha1_of(path: &Path, known: Option<&FileHash>) -> Result<FileHash, InstanceError> {
     match known {
-        Some(hash) if hash.algorithm() == HashAlgorithm::Sha1 => Ok(hash.hex().to_owned()),
-        _ => hash_file_hex_async(HashAlgorithm::Sha1, path)
-            .await
-            .map_err(|err| InstanceError::Storage(err.to_string())),
+        Some(hash) if hash.algorithm() == HashAlgorithm::Sha1 => Ok(hash.clone()),
+        _ => {
+            let hex = hash_file_hex_async(HashAlgorithm::Sha1, path)
+                .await
+                .map_err(|err| InstanceError::Storage(err.to_string()))?;
+            FileHash::new(HashAlgorithm::Sha1, hex)
+                .map_err(|err| InstanceError::Storage(err.to_string()))
+        }
     }
 }
 
