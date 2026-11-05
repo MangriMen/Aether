@@ -299,8 +299,9 @@ pub(crate) fn core_folders(location_info: &LocationInfo, plugin_id: &PluginId) -
 }
 
 /// The folders of a plugin's settings that its instance is built with, and those it is not,
-/// each with why. The settings file is not only written by the edits that check a folder: it
-/// may predate a check, or have been changed by hand, so what is stored is not all mounted.
+/// each with why. The plugin side of a folder is valid by construction ([`PluginMountPoint`]);
+/// the host side is not: the file may predate a check, or have been changed by hand, so what is
+/// stored is not all mounted.
 /// Whatever asks what a plugin can open goes by the first list, never by the settings as saved.
 pub(crate) fn partition_mountable<'a>(
     paths: &'a [AllowedPath],
@@ -713,6 +714,21 @@ mod tests {
         }
     }
 
+    #[test]
+    fn should_normalize_a_plugin_path_when_it_has_repeated_or_trailing_separators() {
+        for (written, stored) in [
+            ("/a//b", "/a/b"),
+            ("/a/", "/a"),
+            (r"/packs\sub", "/packs/sub"),
+        ] {
+            let path = plugin_side(written).unwrap();
+            assert_eq!(path.plugin.as_str(), stored, "{written}");
+        }
+        assert_eq!(
+            plugin_side("/a/../b"),
+            Err(AllowedPathRejection::PluginNotNormalized)
+        );
+    }
     #[test]
     fn should_refuse_a_plugin_path_when_a_segment_is_not_a_plain_name() {
         for plugin in [

@@ -254,7 +254,8 @@ impl From<PluginSettingsV1> for PluginSettings {
             match input.clone().parse() {
                 Ok(path) => allowed_paths.push(path),
                 Err(reason) => {
-                    tracing::warn!(
+                    // Debug, not warn: the file is read on every get and list.
+                    tracing::debug!(
                         "Ignoring folder '{}' -> '{}' in the plugin settings: {reason}.",
                         input.host,
                         input.plugin
@@ -339,7 +340,22 @@ impl From<PluginSettings> for PluginSettingsV1 {
     fn from(v: PluginSettings) -> Self {
         Self {
             allowed_hosts: v.allowed_hosts,
-            allowed_paths: v.allowed_paths.into_iter().map(Into::into).collect(),
+            // Ignored entries are written back as they were read: a hand-edited folder is not
+            // lost by an unrelated save.
+            allowed_paths: v
+                .allowed_paths
+                .into_iter()
+                .map(Into::into)
+                .chain(
+                    v.ignored_paths
+                        .into_iter()
+                        .map(|ignored| AllowedPathV1::Mapping {
+                            host: ignored.path.host,
+                            plugin: ignored.path.plugin,
+                            read_only: ignored.path.read_only,
+                        }),
+                )
+                .collect(),
             force_enabled_at_api_version: v.force_enabled_at_api_version,
         }
     }
@@ -488,21 +504,28 @@ mod tests {
     }
 
     #[test]
-    fn should_not_write_an_ignored_folder_back_when_settings_are_saved() {
+    fn should_write_an_ignored_folder_back_as_it_was_when_settings_are_saved() {
         let settings = PluginSettings {
             ignored_paths: vec![IgnoredAllowedPath {
                 path: AllowedPathInput {
                     host: "/home/u/a".to_owned(),
                     plugin: "/cache".to_owned(),
-                    read_only: true,
+                    read_only: false,
                 },
                 reason: AllowedPathRejection::PluginReserved,
             }],
             ..PluginSettings::default()
         };
 
-        let written = toml::to_string(&PluginSettingsV1::from(settings)).unwrap();
+        let v1 = PluginSettingsV1::from(settings);
 
-        assert!(!written.contains("/home/u/a"), "{written}");
+        assert_eq!(
+            v1.allowed_paths,
+            [AllowedPathV1::Mapping {
+                host: "/home/u/a".to_owned(),
+                plugin: "/cache".to_owned(),
+                read_only: false,
+            }]
+        );
     }
 }

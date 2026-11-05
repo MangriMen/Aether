@@ -377,11 +377,11 @@ fn resolve_allowed_paths(
     }
 
     if let Some(settings) = settings {
-        // The settings file is not only written by the edits that check a folder: it may predate
-        // a check, or have been changed by hand. A relative host would be opened against the
-        // launcher's working directory; a plugin path over `/cache` or `/instances`, or a host
-        // over a core folder, would take that mount's place in Extism's map or open `plugins/`
-        // to the plugin. Such a folder is left out, and the plugin loads without it.
+        // The plugin side is valid by construction (`PluginMountPoint`, clear of the core
+        // mounts). The host side may not be: the file may predate a check, or have been changed
+        // by hand. A relative host would be opened against the launcher's working directory; a
+        // host over a core folder would open `plugins/` to the plugin or take a core mount's
+        // place in Extism's map. Such a folder is left out, and the plugin loads without it.
         let (kept, refused) = partition_mountable(&settings.allowed_paths, core_folders);
         for (path, reason) in refused {
             tracing::warn!(
