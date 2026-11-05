@@ -1,4 +1,7 @@
-use aether_core::features::instance::{InstanceError, InstanceName, NewInstance};
+use aether_core::features::{
+    instance::{InstanceError, InstanceName, NewInstance},
+    minecraft::GameVersion,
+};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
@@ -35,12 +38,48 @@ impl TryFrom<NewInstanceDto> for NewInstance {
     fn try_from(value: NewInstanceDto) -> Result<Self, Self::Error> {
         Ok(Self {
             name: InstanceName::try_from(value.name)?,
-            game_version: value.game_version,
+            game_version: GameVersion::try_from(value.game_version)?,
             mod_loader: value.mod_loader.into(),
             loader_version: value.loader_version.map(std::convert::Into::into),
             icon_path: value.icon_path,
             skip_install_instance: value.skip_install_instance,
             pack_info: value.pack_info.map(TryInto::try_into).transpose()?,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn dto(game_version: &str) -> NewInstanceDto {
+        NewInstanceDto {
+            name: "Pack".into(),
+            game_version: game_version.into(),
+            mod_loader: ModLoaderDto::Vanilla,
+            loader_version: None,
+            icon_path: None,
+            skip_install_instance: None,
+            pack_info: None,
+        }
+    }
+
+    #[test]
+    fn should_refuse_a_new_instance_when_its_game_version_is_not_a_valid_id() {
+        for bad in ["", " 1.21", "1.21/..", "..", "1.21\n"] {
+            let result = NewInstance::try_from(dto(bad));
+
+            assert!(
+                matches!(result, Err(InstanceError::InvalidGameVersion { .. })),
+                "{bad:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn should_keep_the_game_version_of_a_new_instance_when_it_is_valid() {
+        let new_instance = NewInstance::try_from(dto("1.14 Pre-Release 1")).unwrap();
+
+        assert_eq!(new_instance.game_version, "1.14 Pre-Release 1");
     }
 }

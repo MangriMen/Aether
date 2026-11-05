@@ -15,7 +15,7 @@ use crate::features::{
             },
         },
     },
-    minecraft::ModLoader,
+    minecraft::{GameVersion, ModLoader},
 };
 
 /// How a Modrinth [`ContentMetadata::author_ref`] naming an organization by its id starts.
@@ -359,7 +359,7 @@ impl TryFrom<ProjectVersionResponse> for ContentVersion {
                 .into_iter()
                 .map(ContentVersionDependency::try_from)
                 .collect::<Result<_, _>>()?,
-            game_versions,
+            game_versions: GameVersion::parse_list(game_versions, "Modrinth version"),
             version_type: version_type.into(),
             loaders,
             featured,

@@ -1,20 +1,20 @@
-use crate::features::minecraft::{MinecraftDomainError, vanilla};
+use crate::features::minecraft::{GameVersion, MinecraftDomainError, vanilla};
 
 /// 2022-04-20T00:00:00Z, the day 22w16a came out: the first version that runs natively on every
 /// desktop OS the launcher supports.
 const NATIVE_SUPPORT_SINCE: i64 = 1_650_412_800;
 
 pub fn resolve_minecraft_version(
-    game_version: &str,
+    game_version: &GameVersion,
     version_manifest: &vanilla::VersionManifest,
 ) -> Result<(vanilla::Version, bool), MinecraftDomainError> {
     let (index, version) = version_manifest
         .versions
         .iter()
         .enumerate()
-        .find(|(_, v)| v.id == game_version)
+        .find(|(_, v)| v.id == game_version.as_str())
         .ok_or(MinecraftDomainError::VersionNotFound {
-            version: game_version.to_owned(),
+            version: game_version.to_string(),
         })?;
 
     let is_updated = is_minecraft_updated(index, version, version_manifest);
@@ -75,14 +75,16 @@ mod tests {
             make_version("1.20"),
             make_version("1.21"),
         ]);
-        let (version, _) = resolve_minecraft_version("1.20", &manifest).unwrap();
+        let (version, _) =
+            resolve_minecraft_version(&GameVersion::from_static("1.20"), &manifest).unwrap();
         assert_eq!(version.id, "1.20");
     }
 
     #[test]
     fn should_return_error_when_version_not_found() {
         let manifest = make_manifest(vec![make_version("1.19")]);
-        let err = resolve_minecraft_version("1.20", &manifest).unwrap_err();
+        let err =
+            resolve_minecraft_version(&GameVersion::from_static("1.20"), &manifest).unwrap_err();
         assert!(matches!(err, MinecraftDomainError::VersionNotFound { .. }));
     }
 
@@ -131,7 +133,8 @@ mod tests {
         #[case] expected_updated: bool,
     ) {
         let manifest = make_manifest(versions);
-        let (_, is_updated) = resolve_minecraft_version(requested, &manifest).unwrap();
+        let (_, is_updated) =
+            resolve_minecraft_version(&GameVersion::parse(requested).unwrap(), &manifest).unwrap();
         assert_eq!(is_updated, expected_updated);
     }
 
@@ -143,7 +146,8 @@ mod tests {
         second.sha1 = "second".into();
         let manifest = make_manifest(vec![first, second]);
 
-        let (version, _) = resolve_minecraft_version("1.20", &manifest).unwrap();
+        let (version, _) =
+            resolve_minecraft_version(&GameVersion::from_static("1.20"), &manifest).unwrap();
 
         assert_eq!(version.sha1, "first");
     }

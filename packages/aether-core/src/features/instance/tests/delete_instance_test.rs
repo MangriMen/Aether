@@ -3,6 +3,7 @@ use crate::features::instance::infra::{SqliteInstanceStorage, SqlitePackStorage}
 use crate::features::instance::{
     Instance, InstanceBuilder, InstanceId, InstanceStorage, PackStorage,
 };
+use crate::features::minecraft::GameVersion;
 use crate::features::minecraft::ModLoader;
 use sqlx::SqlitePool;
 
@@ -43,7 +44,7 @@ fn create_test_instance(id: &str) -> Instance {
     InstanceBuilder::new(
         InstanceId::try_from(id).unwrap(),
         InstanceName::parse("Test Instance").unwrap(),
-        "1.20.1".to_string(),
+        GameVersion::from_static("1.20.1"),
         ModLoader::Fabric,
     )
     .build()

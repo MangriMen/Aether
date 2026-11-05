@@ -1,4 +1,5 @@
 use crate::features::instance::InstanceName;
+use crate::features::minecraft::GameVersion;
 use std::sync::Arc;
 
 use chrono::Utc;
@@ -38,7 +39,7 @@ fn instance(id: &InstanceId) -> Instance {
     InstanceBuilder::new(
         id.clone(),
         InstanceName::parse("Old").unwrap(),
-        "1.20.1".to_string(),
+        GameVersion::from_static("1.20.1"),
         ModLoader::Fabric,
     )
     .build()

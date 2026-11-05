@@ -12,7 +12,8 @@ use crate::features::{
         app::ports::CreateInstanceUseCasePort,
     },
     minecraft::{
-        LoaderVersionPreference, LoaderVersionService, MinecraftApplicationError, ModLoader,
+        GameVersion, LoaderVersionPreference, LoaderVersionService, MinecraftApplicationError,
+        ModLoader,
     },
 };
 
@@ -243,7 +244,7 @@ impl CreateInstanceUseCase {
 /// checked to exist, or the default one when it is `None`; nothing for vanilla.
 pub(crate) async fn resolve_loader_version(
     loader_version_service: &dyn LoaderVersionService,
-    game_version: &str,
+    game_version: &GameVersion,
     mod_loader: ModLoader,
     loader_version: Option<LoaderVersionPreference>,
 ) -> Result<Option<LoaderVersionPreference>, InstanceError> {

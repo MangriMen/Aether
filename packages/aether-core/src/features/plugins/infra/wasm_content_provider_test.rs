@@ -2,6 +2,7 @@
 //! `capabilities.json` of the new format and the `resolve_*` round trip through the wasm
 //! boundary, the errors a looping or crashing plugin gives the user, a busy plugin next to the
 //! others, and what WASI may do in the read-only `/instances`.
+use crate::features::minecraft::GameVersion;
 
 use crate::features::instance::{ContentId, ContentVersionId};
 use std::{
@@ -384,7 +385,7 @@ async fn should_serve_a_platform_from_a_loaded_wasm_plugin_and_drop_it_when_unlo
         .resolve_file(
             &ContentId::try_from("238222").unwrap(),
             None,
-            "1.21.1",
+            &GameVersion::from_static("1.21.1"),
             Some("fabric"),
         )
         .await
@@ -537,7 +538,7 @@ async fn should_name_the_instruction_limit_when_a_provider_loops() {
             .resolve_file(
                 &ContentId::try_from("238222").unwrap(),
                 None,
-                "1.21.1",
+                &GameVersion::from_static("1.21.1"),
                 None,
             )
             .await,
@@ -568,7 +569,7 @@ async fn should_name_a_crash_when_a_provider_panics() {
             .resolve_file(
                 &ContentId::try_from("238222").unwrap(),
                 None,
-                "1.21.1",
+                &GameVersion::from_static("1.21.1"),
                 None,
             )
             .await,

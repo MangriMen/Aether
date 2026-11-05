@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 
 use crate::{
     features::{
-        minecraft::{LoaderVersionPreference, ModLoader},
+        minecraft::{GameVersion, LoaderVersionPreference, ModLoader},
         settings::{Hooks, MemorySettings, WindowSettings},
     },
     shared::overridable::domain::Overridable,
@@ -20,7 +20,7 @@ pub struct InstanceSnapshot {
     pub install_stage: InstanceInstallStage,
 
     // Metadata
-    pub game_version: String,
+    pub game_version: GameVersion,
     pub loader: ModLoader,
     pub loader_version: Option<LoaderVersionPreference>,
 

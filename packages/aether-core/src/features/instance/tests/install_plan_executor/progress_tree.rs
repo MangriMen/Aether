@@ -1,5 +1,6 @@
 //! The tree of bars a run reports on, with the real progress service: the plan's bar, with one
 //! under it per file downloaded and one for the game a new instance installs.
+use crate::features::minecraft::GameVersion;
 
 use crate::features::instance::InstanceName;
 
@@ -77,7 +78,7 @@ fn new_instance_plan(files: Vec<crate::features::instance::InstallFileEntry>) ->
     InstallPlan {
         target: InstallTarget::New(NewInstance {
             name: InstanceName::parse("My Pack").unwrap(),
-            game_version: "1.20.1".into(),
+            game_version: GameVersion::from_static("1.20.1"),
             mod_loader: ModLoader::Vanilla,
             loader_version: None,
             icon_path: None,

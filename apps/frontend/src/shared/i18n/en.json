@@ -62,6 +62,7 @@
       "CONTENT_FILENAME": "Invalid content filename",
       "INVALID_RELATIVE_PATH": "Invalid path {{path}}: {{reason}}",
       "INVALID_CONTENT_ID": "Invalid {{kind}}: {{value}}",
+      "INVALID_GAME_VERSION": "Invalid Minecraft version {{value}}: {{reason}}",
       "PATH_ESCAPES_INSTANCE": "Path {{path}} points outside instance {{instance_id}}",
       "FILE_TOO_LARGE": "File {{path}} is too large ({{size}} bytes, limit {{limit}})",
       "CONTENT_DOWNLOAD_ERROR": "Failed to download instance content",

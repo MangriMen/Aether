@@ -3,6 +3,7 @@
 //! A URL a plugin supplied (in its plan, or by resolving a ref) reaches only that plugin's
 //! `allowed_hosts`; a built-in provider's URL goes through the application's client. Whatever
 //! fails, the instance is left as it was.
+use crate::features::minecraft::GameVersion;
 
 use crate::features::instance::InstanceName;
 use crate::features::instance::{ContentId, ContentVersionId};
@@ -222,7 +223,7 @@ impl ContentProvider for PluginProvider {
         &self,
         _content_id: &ContentId,
         _version: Option<&ContentVersionId>,
-        _game_version: &str,
+        _game_version: &GameVersion,
         _loader: Option<&str>,
     ) -> Result<ResolvedFile, InstanceError> {
         Ok(ResolvedFile {
@@ -454,7 +455,7 @@ impl Fixture {
         let instance = InstanceBuilder::new(
             InstanceId::try_from(INSTANCE_ID).unwrap(),
             InstanceName::parse("Instance").unwrap(),
-            "1.21.1".into(),
+            GameVersion::from_static("1.21.1"),
             ModLoader::Fabric,
         )
         .build();

@@ -1,7 +1,10 @@
 use aether_core_plugin_api::v0::NewInstanceDto;
 
 use super::pack_info::InvalidPackInfo;
-use crate::features::instance::{InstanceError, InstanceName, NewInstance};
+use crate::features::{
+    instance::{InstanceError, InstanceName, NewInstance},
+    minecraft::GameVersion,
+};
 
 impl TryFrom<NewInstanceDto> for NewInstance {
     type Error = InstanceError;
@@ -9,7 +12,7 @@ impl TryFrom<NewInstanceDto> for NewInstance {
     fn try_from(value: NewInstanceDto) -> Result<Self, Self::Error> {
         Ok(Self {
             name: InstanceName::try_from(value.name)?,
-            game_version: value.game_version,
+            game_version: GameVersion::try_from(value.game_version)?,
             mod_loader: value.mod_loader.into(),
             loader_version: value.loader_version.map(std::convert::Into::into),
             icon_path: value.icon_path,

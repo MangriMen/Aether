@@ -11,6 +11,7 @@ use crate::features::instance::domain::{
     ContentVersionMetadata, InstallPlan, Instance, InstanceError, InstanceId, PackMetadata,
     PackSource, ProviderId, ResolveInstallPlanParams, ResolvedFile,
 };
+use crate::features::minecraft::GameVersion;
 
 #[async_trait]
 pub trait ContentProvider: Send + Sync {
@@ -44,7 +45,7 @@ pub trait ContentProvider: Send + Sync {
         &self,
         content_id: &ContentId,
         version: Option<&ContentVersionId>,
-        game_version: &str,
+        game_version: &GameVersion,
         loader: Option<&str>,
     ) -> Result<ResolvedFile, InstanceError> {
         let _ = (content_id, version, game_version, loader);
@@ -228,7 +229,7 @@ mod tests {
                     .resolve_file(
                         &ContentId::try_from("AANobbMI").unwrap(),
                         None,
-                        "1.21.1",
+                        &GameVersion::from_static("1.21.1"),
                         Some("fabric"),
                     )
                     .await

@@ -1,4 +1,5 @@
 //! Changing the game of an instance with a pack update.
+use crate::features::minecraft::GameVersion;
 
 use crate::features::instance::{InstallPlan, InstanceError, InstanceGame};
 
@@ -121,7 +122,7 @@ async fn should_install_no_file_when_moving_to_the_new_game_fails() {
     let mut fixture = Fixture::new().await;
     fixture.pack_info = Some(installed_from(&plugin("packwiz"), PACK_ID));
     let game = InstanceGame {
-        game_version: "1.21.fail".into(),
+        game_version: GameVersion::from_static("1.21.fail"),
         ..neoforge_1_21_4()
     };
 

@@ -1,4 +1,5 @@
 //! `ImportInstanceUseCase` finishing the instances a plugin created for a pack.
+use crate::features::minecraft::GameVersion;
 
 use crate::features::instance::InstanceName;
 
@@ -116,7 +117,7 @@ async fn import(fail: bool) -> (Result<(), InstanceError>, Arc<MemStorage>) {
     let mut instance = InstanceBuilder::new(
         InstanceId::try_from("pack").unwrap(),
         InstanceName::parse("Pack").unwrap(),
-        "1.21.1".into(),
+        GameVersion::from_static("1.21.1"),
         ModLoader::Fabric,
     )
     .build();

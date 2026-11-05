@@ -6,7 +6,7 @@ use crate::{
             Instance, InstanceError, InstanceId, InstanceInstallStage, InstanceName,
             InstanceSnapshot,
         },
-        minecraft::{LoaderVersionPreference, ModLoader},
+        minecraft::{GameVersion, LoaderVersionPreference, ModLoader},
         settings::{Hooks, MemoryMb, MemorySettings, WindowSettings, WindowSize},
     },
     shared::overridable::domain::Overridable,
@@ -187,7 +187,7 @@ impl TryFrom<Instance> for SqlInstance {
             install_stage: enum_to_column(&InstanceInstallStageDto::from(s.install_stage))
                 .map_err(|e| storage_err("install_stage", &id, &e))?,
 
-            game_version: s.game_version,
+            game_version: s.game_version.into(),
             loader: enum_to_column(&ModLoaderDto::from(s.loader))
                 .map_err(|e| storage_err("loader", &id, &e))?,
             loader_version_json: s
@@ -262,6 +262,8 @@ impl TryFrom<SqlInstance> for Instance {
             .map_err(|e| storage_err("env_vars_json", &row.id, &e))?;
 
         let name = InstanceName::from_stored_or_id(&row.name, &row.id);
+        let game_version = GameVersion::parse(&row.game_version)
+            .map_err(|e| storage_err("game_version", &row.id, &e))?;
 
         let snapshot = InstanceSnapshot {
             id: InstanceId::try_from(row.id)?,
@@ -274,7 +276,7 @@ impl TryFrom<SqlInstance> for Instance {
                 dto.into()
             },
 
-            game_version: row.game_version,
+            game_version,
             loader: {
                 let dto: ModLoaderDto =
                     serde_json::from_str(&format!("\"{}\"", row.loader.trim_matches('"')))

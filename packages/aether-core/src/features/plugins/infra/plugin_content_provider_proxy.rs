@@ -26,6 +26,7 @@ use crate::features::{
         PackMetadata, PackSource, PluginId, ProviderId, ResolveInstallPlanParams, ResolveTarget,
         ResolvedFile,
     },
+    minecraft::GameVersion,
     plugins::{
         PluginCheckCompatibilityParams, PluginContentProviderCapability, PluginError, PluginHandle,
     },
@@ -420,7 +421,7 @@ impl ContentProvider for PluginContentProviderProxy {
         &self,
         content_id: &ContentId,
         version: Option<&ContentVersionId>,
-        game_version: &str,
+        game_version: &GameVersion,
         loader: Option<&str>,
     ) -> Result<ResolvedFile, InstanceError> {
         let handler = self.handler(
@@ -430,7 +431,7 @@ impl ContentProvider for PluginContentProviderProxy {
         let params = ResolveFileParamsDto {
             content_id: content_id.to_string(),
             version: version.map(ToString::to_string),
-            game_version: game_version.to_owned(),
+            game_version: game_version.to_string(),
             loader: loader.map(ToOwned::to_owned),
         };
 

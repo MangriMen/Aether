@@ -8,7 +8,7 @@ use crate::{
             InstanceSnapshot,
             infra::fs::pack_info::{PackInfoV1, PackInfoV2},
         },
-        minecraft::{LoaderVersionPreference, ModLoader},
+        minecraft::{GameVersion, LoaderVersionPreference, ModLoader},
         settings::{
             Hooks, WindowSettings,
             infra::{HooksV2, MemorySettingsV1, WindowSettingsV1, WindowSizeV1},
@@ -180,7 +180,7 @@ impl TryFrom<InstanceV1> for Instance {
                 dto.into()
             },
 
-            game_version: v1.game_version,
+            game_version: GameVersion::try_from(v1.game_version)?,
             loader: v1.loader.into(),
             loader_version: v1.loader_version.map(Into::into),
 
@@ -300,7 +300,7 @@ impl TryFrom<InstanceV2> for Instance {
                 dto.into()
             },
 
-            game_version: v2.game_version,
+            game_version: GameVersion::try_from(v2.game_version)?,
             loader: v2.loader.into(),
             loader_version: v2.loader_version.map(Into::into),
 
@@ -346,7 +346,7 @@ impl From<&Instance> for InstanceV2 {
                     .to_owned()
             },
 
-            game_version: value.game_version.clone(),
+            game_version: value.game_version.to_string(),
             loader: value.loader.into(),
             loader_version: value.loader_version.clone().map(Into::into),
 

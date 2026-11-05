@@ -74,7 +74,7 @@ impl From<Instance> for InstanceDto {
 
             install_stage: value.install_stage.into(),
 
-            game_version: value.game_version,
+            game_version: value.game_version.into(),
             loader: value.loader.into(),
             loader_version: value.loader_version.map(Into::into),
 

@@ -1,4 +1,5 @@
 use crate::features::instance::InstanceName;
+use crate::features::minecraft::GameVersion;
 use std::sync::Arc;
 
 use async_trait::async_trait;
@@ -64,7 +65,7 @@ fn create_instance(id: &str) -> Instance {
     InstanceBuilder::new(
         InstanceId::try_from(id).unwrap(),
         InstanceName::parse("Integration Test").unwrap(),
-        "1.21".to_string(),
+        GameVersion::from_static("1.21"),
         ModLoader::Fabric,
     )
     .build()

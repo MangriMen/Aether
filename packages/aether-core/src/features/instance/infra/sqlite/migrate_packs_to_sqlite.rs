@@ -95,6 +95,7 @@ async fn set_aside(
 
 #[cfg(test)]
 mod tests {
+    use crate::features::minecraft::GameVersion;
     use std::sync::{Arc, Mutex};
 
     fn sha1_hash(c: char) -> crate::shared::hash::FileHash {
@@ -180,7 +181,7 @@ mod tests {
         let instance = InstanceBuilder::new(
             id.clone(),
             InstanceName::parse("Inst").unwrap(),
-            "1.21.1".into(),
+            GameVersion::from_static("1.21.1"),
             ModLoader::Fabric,
         )
         .build();

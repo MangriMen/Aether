@@ -452,13 +452,14 @@ async fn write_instance(
 mod tests {
     use super::*;
     use crate::features::instance::InstanceName;
+    use crate::features::minecraft::GameVersion;
     use crate::features::{instance::InstanceBuilder, minecraft::ModLoader};
 
     fn instance(loader: ModLoader) -> Instance {
         InstanceBuilder::new(
             InstanceId::try_from("a").unwrap(),
             InstanceName::parse("a").unwrap(),
-            "1.21.1".into(),
+            GameVersion::from_static("1.21.1"),
             loader,
         )
         .build()
@@ -531,5 +532,27 @@ mod tests {
         let result = storage.get(&InstanceId::try_from("a").unwrap()).await;
 
         assert_eq!(result.unwrap().name().as_str(), "a");
+    }
+
+    #[tokio::test]
+    async fn should_fail_to_read_an_instance_when_its_stored_game_version_is_invalid() {
+        let storage = SqliteInstanceStorage::in_memory().await;
+        storage.upsert(&instance(ModLoader::Fabric)).await.unwrap();
+        sqlx::query("UPDATE instances SET game_version = '../x' WHERE id = 'a'")
+            .execute(storage.pool())
+            .await
+            .unwrap();
+
+        let result = storage.get(&InstanceId::try_from("a").unwrap()).await;
+        let listed = storage.list().await.unwrap();
+
+        assert!(
+            matches!(result, Err(InstanceError::Storage(ref m)) if m.contains("game_version")),
+            "{result:?}"
+        );
+        assert!(
+            listed.is_empty(),
+            "an unreadable instance is left out of the list"
+        );
     }
 }

@@ -13,8 +13,8 @@ use crate::{
         events::{ProgressBarId, ProgressService, ProgressServiceExt},
         java::Java,
         minecraft::{
-            MinecraftDomainError, ModLoaderProcessor, get_class_paths_jar, get_lib_path, modded,
-            vanilla::VersionInfo,
+            GameVersion, MinecraftDomainError, ModLoaderProcessor, get_class_paths_jar,
+            get_lib_path, modded, vanilla::VersionInfo,
         },
         settings::LocationInfo,
     },
@@ -49,7 +49,7 @@ impl<PS: ProgressService> ForgeProcessor<PS> {
 impl<PS: ProgressService> ModLoaderProcessor for ForgeProcessor<PS> {
     async fn run(
         &self,
-        game_version: String,
+        game_version: GameVersion,
         version_jar: String,
         minecraft_dir: &Path,
         version_info: &mut VersionInfo,

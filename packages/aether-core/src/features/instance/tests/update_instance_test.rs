@@ -1,6 +1,7 @@
 //! `UpdateInstanceUseCase` updating a pack through the real executor: the version it asks for
 //! and records, the stage through a change of game, the files of a pack installed before owners
 //! were recorded, and the plugin updater for a provider without plans.
+use crate::features::minecraft::GameVersion;
 
 use crate::features::instance::InstanceName;
 use crate::features::instance::{ContentId, ContentVersionId};
@@ -135,7 +136,7 @@ fn pack_file(name: &str, path: &str) -> InstallFileEntry {
 
 fn neoforge_1_21_4() -> InstanceGame {
     InstanceGame {
-        game_version: "1.21.4".into(),
+        game_version: GameVersion::from_static("1.21.4"),
         mod_loader: ModLoader::NeoForge,
         loader_version: Some(LoaderVersionPreference::Exact("21.4.1".into())),
     }
@@ -282,7 +283,7 @@ impl ContentProvider for PackProvider {
             version_id: Some(ContentVersionId::try_from("v2").unwrap()),
             version_name: None,
             description: None,
-            game_version: "1.21.1".into(),
+            game_version: GameVersion::from_static("1.21.1"),
             mod_loader: ModLoader::Fabric,
             loader_version: None,
             file_count: None,
@@ -421,7 +422,7 @@ struct AnyLoaderVersion;
 impl LoaderVersionService for AnyLoaderVersion {
     async fn resolve(
         &self,
-        _: &str,
+        _: &GameVersion,
         _: &ModLoader,
         _: Option<&LoaderVersionPreference>,
     ) -> Result<Option<modded::LoaderVersion>, MinecraftDomainError> {
@@ -430,7 +431,7 @@ impl LoaderVersionService for AnyLoaderVersion {
 
     async fn try_get_default(
         &self,
-        _: &str,
+        _: &GameVersion,
         _: &ModLoader,
     ) -> Result<Option<LoaderVersionPreference>, MinecraftDomainError> {
         Ok(None)
@@ -539,7 +540,7 @@ impl Fixture {
         let mut instance = InstanceBuilder::new(
             InstanceId::try_from(INSTANCE_ID).unwrap(),
             InstanceName::parse("Instance").unwrap(),
-            "1.21.1".into(),
+            GameVersion::from_static("1.21.1"),
             ModLoader::Fabric,
         )
         .with_pack_info(Some(PackInfo {
@@ -709,7 +710,7 @@ async fn should_update_the_pack_through_a_plan_and_record_its_version_when_a_new
             installed_version: Some(ContentVersionId::try_from("v1").unwrap()),
             target: ResolveTarget::Existing {
                 instance_id: InstanceId::try_from(INSTANCE_ID).unwrap(),
-                game_version: "1.21.1".into(),
+                game_version: GameVersion::from_static("1.21.1"),
                 loader: Some(ModLoader::Fabric),
             },
         }]
