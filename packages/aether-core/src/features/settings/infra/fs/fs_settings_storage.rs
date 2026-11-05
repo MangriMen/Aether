@@ -60,18 +60,18 @@ impl SettingsStorage for FsSettingsStorage {
 
     async fn update_mut(
         &self,
-        f: Box<dyn FnOnce(Settings) -> (Settings, bool) + Send>,
+        f: Box<dyn for<'a> FnOnce(&'a mut Settings) -> UpdateAction<()> + Send>,
     ) -> Result<Settings, SettingsError> {
         let result: Settings = self
             .store
             .update(move |dto| {
-                let settings = Settings::from(dto.clone());
-                let (settings, changed) = f(settings);
-                if changed {
-                    *dto = SettingsV2::from(&settings);
-                    UpdateAction::Save(settings)
-                } else {
-                    UpdateAction::NoChanges(settings)
+                let mut settings = Settings::from(dto.clone());
+                match f(&mut settings) {
+                    UpdateAction::Save(()) => {
+                        *dto = SettingsV2::from(&settings);
+                        UpdateAction::Save(settings)
+                    }
+                    UpdateAction::NoChanges(()) => UpdateAction::NoChanges(settings),
                 }
             })
             .await?;

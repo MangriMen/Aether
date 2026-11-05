@@ -5,6 +5,7 @@ use crate::features::settings::{
     DefaultInstanceSettings, DefaultInstanceSettingsStorage, Hooks, MemoryMb, MemorySettings,
     SettingsError, WindowSettings, WindowSize,
 };
+use crate::shared::update_action::UpdateAction;
 
 pub struct SqliteDefaultInstanceSettingsStorage {
     pool: SqlitePool,
@@ -48,17 +49,15 @@ impl DefaultInstanceSettingsStorage for SqliteDefaultInstanceSettingsStorage {
 
     async fn update_mut(
         &self,
-        f: Box<dyn FnOnce(DefaultInstanceSettings) -> (DefaultInstanceSettings, bool) + Send>,
+        f: Box<dyn for<'a> FnOnce(&'a mut DefaultInstanceSettings) -> UpdateAction<()> + Send>,
     ) -> Result<DefaultInstanceSettings, SettingsError> {
         let mut tx = self.begin_write().await?;
         // A failed read must not fall back to the defaults: the edit would overwrite the
         // stored settings with them.
-        let settings = read_settings(&mut tx).await?;
-        let (settings, changed) = f(settings);
-        let settings = if changed {
-            write_settings(&mut tx, settings).await?
-        } else {
-            settings
+        let mut settings = read_settings(&mut tx).await?;
+        let settings = match f(&mut settings) {
+            UpdateAction::Save(()) => write_settings(&mut tx, settings).await?,
+            UpdateAction::NoChanges(()) => settings,
         };
         tx.commit().await?;
         Ok(settings)
@@ -204,11 +203,10 @@ mod tests {
                 let storage = storage.clone();
                 tokio::spawn(async move {
                     storage
-                        .update_mut(Box::new(move |mut settings| {
+                        .update_mut(Box::new(move |settings| {
                             let mut args = settings.launch_args().to_vec();
                             args.push(format!("-Darg={i}"));
-                            let changed = settings.update_launch_args(args);
-                            (settings, changed)
+                            UpdateAction::from_changed(settings.update_launch_args(args))
                         }))
                         .await
                         .unwrap();
@@ -234,9 +232,9 @@ mod tests {
         let edited = Arc::new(AtomicBool::new(false));
         let flag = edited.clone();
         let result = storage
-            .update_mut(Box::new(move |settings| {
+            .update_mut(Box::new(move |_| {
                 flag.store(true, Ordering::SeqCst);
-                (settings, true)
+                UpdateAction::Save(())
             }))
             .await;
 

@@ -6,6 +6,7 @@ use crate::features::settings::{
     DefaultInstanceSettings, DefaultInstanceSettingsStorage, SettingsError,
     app::{EditDefaultInstanceSettings, ports::EditDefaultInstanceSettingsUseCasePort},
 };
+use crate::shared::update_action::UpdateAction;
 
 pub struct EditDefaultInstanceSettingsUseCase {
     default_instance_settings_storage: Arc<dyn DefaultInstanceSettingsStorage>,
@@ -26,9 +27,8 @@ impl EditDefaultInstanceSettingsUseCasePort for EditDefaultInstanceSettingsUseCa
         edit_settings: EditDefaultInstanceSettings,
     ) -> Result<DefaultInstanceSettings, SettingsError> {
         self.default_instance_settings_storage
-            .update_mut(Box::new(move |mut settings| {
-                let changed = edit_settings.apply_to(&mut settings);
-                (settings, changed)
+            .update_mut(Box::new(move |settings| {
+                UpdateAction::from_changed(edit_settings.apply_to(settings))
             }))
             .await
     }

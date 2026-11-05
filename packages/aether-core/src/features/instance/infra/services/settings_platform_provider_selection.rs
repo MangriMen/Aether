@@ -49,7 +49,10 @@ mod tests {
     use tokio::sync::Mutex;
 
     use super::*;
-    use crate::features::settings::{Settings, SettingsError};
+    use crate::{
+        features::settings::{Settings, SettingsError},
+        shared::update_action::UpdateAction,
+    };
 
     struct FixedSettings(Mutex<Settings>);
 
@@ -65,9 +68,11 @@ mod tests {
 
         async fn update_mut(
             &self,
-            f: Box<dyn FnOnce(Settings) -> (Settings, bool) + Send>,
+            f: Box<dyn for<'a> FnOnce(&'a mut Settings) -> UpdateAction<()> + Send>,
         ) -> Result<Settings, SettingsError> {
-            Ok(f(self.get().await?).0)
+            let mut settings = self.get().await?;
+            f(&mut settings);
+            Ok(settings)
         }
     }
 

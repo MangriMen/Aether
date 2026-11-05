@@ -1,8 +1,12 @@
 use async_trait::async_trait;
 
-use crate::features::settings::{
-    CacheUsage, ClearCacheOutcome, DefaultInstanceSettings, Settings, SettingsError, StorageUsage,
-    app::{EditDefaultInstanceSettings, EditSettings},
+use crate::{
+    features::settings::{
+        CacheUsage, ClearCacheOutcome, DefaultInstanceSettings, Settings, SettingsError,
+        StorageUsage,
+        app::{EditDefaultInstanceSettings, EditSettings},
+    },
+    shared::update_action::UpdateAction,
 };
 
 // ── Storage ports ──
@@ -13,10 +17,10 @@ pub trait SettingsStorage: Send + Sync {
     async fn upsert(&self, settings: Settings) -> Result<Settings, SettingsError>;
 
     /// Atomically read-modify-write. Returns the final settings.
-    /// The closure takes ownership of `Settings` and returns (`modified_settings`, `was_changed`).
+    /// The closure edits the settings in place and says whether they have to be saved.
     async fn update_mut(
         &self,
-        f: Box<dyn FnOnce(Settings) -> (Settings, bool) + Send>,
+        f: Box<dyn for<'a> FnOnce(&'a mut Settings) -> UpdateAction<()> + Send>,
     ) -> Result<Settings, SettingsError>;
 }
 
@@ -30,10 +34,10 @@ pub trait DefaultInstanceSettingsStorage: Send + Sync {
     ) -> Result<DefaultInstanceSettings, SettingsError>;
 
     /// Atomically read-modify-write. Returns the final settings.
-    /// The closure takes ownership of `DefaultInstanceSettings` and returns (`modified`, `was_changed`).
+    /// The closure edits the settings in place and says whether they have to be saved.
     async fn update_mut(
         &self,
-        f: Box<dyn FnOnce(DefaultInstanceSettings) -> (DefaultInstanceSettings, bool) + Send>,
+        f: Box<dyn for<'a> FnOnce(&'a mut DefaultInstanceSettings) -> UpdateAction<()> + Send>,
     ) -> Result<DefaultInstanceSettings, SettingsError>;
 }
 

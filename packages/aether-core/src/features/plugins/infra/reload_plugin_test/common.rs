@@ -31,7 +31,10 @@ use crate::{
         },
         settings::{LocationInfo, Settings, SettingsError, SettingsStorage},
     },
-    shared::capability::{CapabilityRegistry, infra::MemoryCapabilityRegistry},
+    shared::{
+        capability::{CapabilityRegistry, infra::MemoryCapabilityRegistry},
+        update_action::UpdateAction,
+    },
 };
 
 pub(super) const PLUGIN_ID: &str = "packwiz";
@@ -94,12 +97,11 @@ impl SettingsStorage for MemorySettings {
 
     async fn update_mut(
         &self,
-        f: Box<dyn FnOnce(Settings) -> (Settings, bool) + Send>,
+        f: Box<dyn for<'a> FnOnce(&'a mut Settings) -> UpdateAction<()> + Send>,
     ) -> Result<Settings, SettingsError> {
         let mut settings = self.0.lock().unwrap();
-        let (updated, _) = f(settings.clone());
-        *settings = updated.clone();
-        Ok(updated)
+        f(&mut settings);
+        Ok(settings.clone())
     }
 }
 

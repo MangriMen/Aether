@@ -4,6 +4,7 @@ use sqlx::{Sqlite, SqliteConnection, SqlitePool, Transaction};
 use crate::features::settings::{
     MaxConcurrentDownloads, Settings, SettingsError, SettingsStorage, parse_platform_providers,
 };
+use crate::shared::update_action::UpdateAction;
 
 pub struct SqliteSettingsStorage {
     pool: SqlitePool,
@@ -38,15 +39,13 @@ impl SettingsStorage for SqliteSettingsStorage {
 
     async fn update_mut(
         &self,
-        f: Box<dyn FnOnce(Settings) -> (Settings, bool) + Send>,
+        f: Box<dyn for<'a> FnOnce(&'a mut Settings) -> UpdateAction<()> + Send>,
     ) -> Result<Settings, SettingsError> {
         let mut tx = self.begin_write().await?;
-        let settings = read_settings(&mut tx).await?;
-        let (settings, changed) = f(settings);
-        let settings = if changed {
-            write_settings(&mut tx, settings).await?
-        } else {
-            settings
+        let mut settings = read_settings(&mut tx).await?;
+        let settings = match f(&mut settings) {
+            UpdateAction::Save(()) => write_settings(&mut tx, settings).await?,
+            UpdateAction::NoChanges(()) => settings,
         };
         tx.commit().await?;
         Ok(settings)
@@ -166,9 +165,10 @@ mod tests {
                 let storage = storage.clone();
                 tokio::spawn(async move {
                     storage
-                        .update_mut(Box::new(move |mut settings| {
-                            let changed = settings.enable_plugin(&format!("plugin-{i}"));
-                            (settings, changed)
+                        .update_mut(Box::new(move |settings| {
+                            UpdateAction::from_changed(
+                                settings.enable_plugin(&format!("plugin-{i}")),
+                            )
                         }))
                         .await
                         .unwrap();
