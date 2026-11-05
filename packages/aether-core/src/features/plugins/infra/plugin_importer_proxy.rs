@@ -9,12 +9,27 @@ use crate::features::{
 use crate::features::plugins::infra::extism::models::PluginInstanceExt;
 use crate::features::plugins::infra::pack_instances::deploying_packs;
 use crate::features::plugins::infra::plugin_utils::to_wasi_path;
-use crate::shared::web_url::HttpUrl;
+use crate::shared::web_url::{HttpUrl, InvalidUrl};
 
-/// `http://...` or `https://...`: the only addresses an importer is given instead of a path.
+/// Whether `input` is written as an address, not a path: it starts with `http://` or `https://`
+/// (the scheme in any case). This only classifies; [`import_path`] checks an address is valid.
 /// Any other `scheme://` is left to the path normalization, as is a Windows drive (`C://`).
 fn is_url(input: &str) -> bool {
-    HttpUrl::parse(input).is_ok()
+    input.split_once("://").is_some_and(|(scheme, _)| {
+        scheme.eq_ignore_ascii_case("http") || scheme.eq_ignore_ascii_case("https")
+    })
+}
+
+/// What the plugin is given for `input`: an address as written (path normalization would turn
+/// `https://` into `https:/`), once it is a valid `http(s)` URL, otherwise the normalized path.
+/// An address that is not valid (credentials, spaces, no host) is an error, not a path.
+fn import_path(input: &str) -> Result<String, InvalidUrl> {
+    if is_url(input) {
+        HttpUrl::parse(input)?;
+        Ok(input.to_owned())
+    } else {
+        Ok(to_wasi_path(input))
+    }
 }
 
 pub struct PluginImporterProxy {
@@ -46,14 +61,10 @@ impl Importer for PluginImporterProxy {
         };
 
         // Normalize Windows paths to WASI-compatible /mnt/<letter>/... format; a URL is not a
-        // path and goes to the plugin as is (path normalization would turn `https://` into `https:/`)
+        // path and goes to the plugin as is
         let params = PluginImportInstance {
             importer_id: self.capability.id.to_string(),
-            path: if is_url(path) {
-                path.to_owned()
-            } else {
-                to_wasi_path(path)
-            },
+            path: import_path(path).map_err(|err| failed(err.to_string()))?,
         };
         let handler = self.capability.handler.clone();
         let deploying = plugin_id.to_owned();
@@ -112,11 +123,35 @@ mod tests {
         },
     };
 
+    #[rstest::rstest]
+    #[case::uppercase_scheme("HTTP://")]
+    #[case::credentials("https://user:tok@example.com/pack.toml")]
+    #[case::whitespace("https://example.com/my pack.toml")]
+    #[case::empty_host("https:///pack.toml")]
+    fn should_refuse_the_input_when_it_is_an_address_but_not_a_valid_url(#[case] input: &str) {
+        assert!(is_url(input));
+        assert!(import_path(input).is_err());
+    }
+
     #[test]
-    fn should_not_take_input_for_a_url_when_its_scheme_is_not_http() {
-        assert!(!is_url("file:///C:/packs/pack.mrpack"));
-        assert!(!is_url("ftp://example.com/pack.zip"));
-        assert!(is_url("https://example.com/pack.zip"));
+    fn should_keep_an_uppercase_scheme_address_as_written_when_it_is_valid() {
+        let input = "HTTPS://example.com/pack.toml";
+
+        assert_eq!(import_path(input).unwrap(), input);
+    }
+
+    #[rstest::rstest]
+    #[case::drive("C://packs//pack.toml")]
+    #[case::file_scheme("file:///c/pack.toml")]
+    fn should_normalize_the_input_as_a_path_when_it_is_not_an_http_address(#[case] input: &str) {
+        assert_eq!(import_path(input).unwrap(), to_wasi_path(input));
+    }
+
+    #[test]
+    fn should_pass_the_address_through_unchanged_when_it_is_a_valid_https_url() {
+        let input = "https://example.com/pack.toml";
+
+        assert_eq!(import_path(input).unwrap(), input);
     }
 
     /// Exports `import`, which calls the host function `create` once, as an importer calls
