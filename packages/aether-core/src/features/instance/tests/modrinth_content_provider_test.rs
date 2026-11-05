@@ -24,8 +24,8 @@ use crate::{
         instance::{
             ContentAuthor, ContentIdentity, ContentMetadata, ContentProvider, ContentSource,
             ContentType, ContentVersionMetadata, FileSide, InstallTarget, InstanceError,
-            InstanceGame, InstanceId, OverrideLocation, OverrideSource, PackInfo, PackSource,
-            ResolveInstallPlanParams, ResolveTarget, infra::ModrinthContentProvider,
+            InstanceGame, InstanceId, OverrideLocation, OverrideSource, PackInfo, PackMetadata,
+            PackSource, ResolveInstallPlanParams, ResolveTarget, infra::ModrinthContentProvider,
         },
         minecraft::{LoaderVersionPreference, ModLoader},
         settings::LocationInfo,
@@ -887,6 +887,59 @@ async fn should_describe_a_pack_without_downloading_it_when_it_is_on_modrinth() 
     assert_eq!(metadata.game_version, "1.21.1");
     assert_eq!(metadata.mod_loader, ModLoader::NeoForge);
     assert_eq!(fixture.http.requests_to(PACK_URL), 0);
+}
+
+/// A pack on Modrinth with one version, listed for `game_versions`.
+fn serve_pack_for(fixture: &Fixture, game_versions: &[&str]) {
+    let mrpack = mrpack();
+    fixture.http.serve_json(
+        &format!("{API}/project/pack"),
+        &project("PACKID00", "pack", "modpack"),
+    );
+    fixture.http.serve_json(
+        &format!("{API}/project/PACKID00/version"),
+        &json!([version(
+            "PACKV002",
+            "PACKID00",
+            game_versions,
+            &["neoforge"],
+            file(PACK_URL, "pack.mrpack", &mrpack),
+        )]),
+    );
+}
+
+async fn describe_pack(fixture: &Fixture) -> Result<PackMetadata, InstanceError> {
+    fixture
+        .provider
+        .resolve_pack_metadata(PackSource::Content {
+            content_id: ContentId::try_from("pack").unwrap(),
+            version: None,
+            installed_version: None,
+        })
+        .await
+}
+
+#[tokio::test]
+async fn should_take_the_first_valid_game_version_when_a_pack_lists_invalid_ones_first() {
+    let fixture = Fixture::new();
+    serve_pack_for(&fixture, &["../x", "", "1.21.4", "1.21.1"]);
+
+    let metadata = describe_pack(&fixture).await.unwrap();
+
+    assert_eq!(metadata.game_version, "1.21.4");
+}
+
+#[tokio::test]
+async fn should_fail_to_describe_a_pack_when_none_of_its_game_versions_is_valid() {
+    let fixture = Fixture::new();
+    serve_pack_for(&fixture, &["../x", "1.21;rm"]);
+
+    let result = describe_pack(&fixture).await;
+
+    assert!(
+        matches!(result, Err(InstanceError::ContentProviderError { ref reason }) if reason.contains("no valid game version")),
+        "{result:?}"
+    );
 }
 
 #[tokio::test]

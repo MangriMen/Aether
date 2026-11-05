@@ -469,14 +469,15 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
             }
         };
 
-        let game_version =
-            version
-                .game_versions
-                .first()
-                .ok_or_else(|| InstanceError::ContentProviderError {
-                    reason: format!("Modrinth version {} names no game version", version.id),
-                })?;
-        let game_version = GameVersion::parse(game_version)?;
+        let game_version = GameVersion::parse_list(version.game_versions.clone(), "Modrinth pack")
+            .into_iter()
+            .next()
+            .ok_or_else(|| InstanceError::ContentProviderError {
+                reason: format!(
+                    "Modrinth version {} names no valid game version",
+                    version.id
+                ),
+            })?;
         let mod_loader = [
             ModLoader::Fabric,
             ModLoader::Forge,

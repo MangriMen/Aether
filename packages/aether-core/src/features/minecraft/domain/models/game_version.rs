@@ -9,9 +9,11 @@ pub const GAME_VERSION_MAX_LEN: usize = 64;
 /// `1.14 Pre-Release 1`, `b1.7.3`, `rd-132211`, `3D Shareware v1.34`.
 ///
 /// Ids have no fixed grammar (old, April Fools' and pre-release ids all differ), so any text is
-/// accepted that is safe as a single folder name and inside a URL: the id names the folder of
-/// the installed version (`versions/<id>/<id>.jar`). See [`GameVersionRejection`] for what is
-/// refused.
+/// accepted that is safe as a single folder name, inside a URL and as a launch argument: the id
+/// names the folder of the installed version (`versions/<id>/<id>.jar`). Real ids use only
+/// letters, digits, `.`, `-`, `_` and spaces; other ASCII punctuation and invisible format
+/// characters are refused, other non-ASCII letters (`20w14∞`) are kept. See
+/// [`GameVersionRejection`] for what is refused.
 // No `Ord`: the text order of ids is not the order of versions (`1.10` < `1.9`).
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 #[serde(try_from = "String", into = "String")]
@@ -45,8 +47,22 @@ pub struct InvalidGameVersion {
     pub reason: GameVersionRejection,
 }
 
-/// Separators, characters Windows refuses in a file name, and ones that end or escape a URL path.
-const FORBIDDEN: [char; 11] = ['/', '\\', ':', '*', '?', '"', '<', '>', '|', '#', '%'];
+/// ASCII punctuation no real id uses: separators, characters Windows refuses in a file name,
+/// ones that end or escape a URL path, and shell or argument metacharacters.
+const FORBIDDEN_ASCII: &str = r#"/\:*?"<>|#%;&'`$,[](){}!@^=+~"#;
+
+/// Invisible format characters (zero-width, bidi overrides and isolates, BOM): they make an id
+/// look like another one in a path or a log.
+fn is_invisible_format(c: char) -> bool {
+    matches!(
+        c,
+        '\u{200B}'..='\u{200F}'
+            | '\u{202A}'..='\u{202E}'
+            | '\u{2060}'..='\u{2064}'
+            | '\u{2066}'..='\u{2069}'
+            | '\u{FEFF}'
+    )
+}
 
 fn check(value: &str) -> Result<(), GameVersionRejection> {
     if value.is_empty() {
@@ -61,7 +77,10 @@ fn check(value: &str) -> Result<(), GameVersionRejection> {
     if value.chars().any(char::is_control) {
         return Err(GameVersionRejection::ControlCharacter);
     }
-    if let Some(c) = value.chars().find(|c| FORBIDDEN.contains(c)) {
+    if let Some(c) = value
+        .chars()
+        .find(|&c| FORBIDDEN_ASCII.contains(c) || is_invisible_format(c))
+    {
         return Err(GameVersionRejection::ForbiddenCharacter(c));
     }
     if value.ends_with('.') || value.contains("..") {
@@ -91,7 +110,9 @@ impl GameVersion {
 
     /// The valid ids of a list a provider gives (the versions a file runs on), in order. An id
     /// that is not a [`GameVersion`] can be the version of no instance, so it is dropped with a
-    /// warning instead of failing the whole list; `source` names the list in the warning.
+    /// warning instead of failing the whole list; `source` names the list in the warning. A list
+    /// of only invalid ids gives an empty list: whatever it belongs to (a content version) is
+    /// kept, as running on no known version.
     pub fn parse_list<I>(ids: I, source: &str) -> Vec<Self>
     where
         I: IntoIterator,
@@ -248,6 +269,60 @@ mod tests {
             assert_eq!(err.reason, reason, "{id:?}");
             assert_eq!(err.value, id);
         }
+    }
+
+    #[test]
+    fn should_refuse_ids_when_they_hold_shell_or_argument_metacharacters() {
+        for (id, c) in [
+            ("1.21;rm", ';'),
+            ("1.21&x", '&'),
+            ("1.21'", '\''),
+            ("1.21`id`", '`'),
+            ("$HOME", '$'),
+            ("1,21", ','),
+            ("[1.21]", '['),
+            ("1.21(x)", '('),
+            ("{1}", '{'),
+            ("1.21!", '!'),
+            ("a@b", '@'),
+            ("1^2", '^'),
+            ("a=b", '='),
+            ("1+2", '+'),
+            ("~1", '~'),
+        ] {
+            let err = GameVersion::parse(id).unwrap_err();
+            assert_eq!(
+                err.reason,
+                GameVersionRejection::ForbiddenCharacter(c),
+                "{id:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn should_refuse_ids_when_they_hold_invisible_format_characters() {
+        for c in [
+            '\u{200B}', '\u{200F}', '\u{202E}', '\u{2060}', '\u{2066}', '\u{FEFF}',
+        ] {
+            let id = format!("1.2{c}1");
+            let err = GameVersion::parse(&id).unwrap_err();
+            assert_eq!(
+                err.reason,
+                GameVersionRejection::ForbiddenCharacter(c),
+                "{id:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn should_not_take_a_dotted_id_for_a_device_name_when_its_stem_is_a_number() {
+        for id in ["1.21", "1.0", "b1.7.3", "a1.0.4", "26.1"] {
+            assert!(GameVersion::parse(id).is_ok(), "{id:?}");
+        }
+        assert_eq!(
+            GameVersion::parse("aux.1").unwrap_err().reason,
+            GameVersionRejection::ReservedName
+        );
     }
 
     #[test]
