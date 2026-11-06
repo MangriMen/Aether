@@ -12,6 +12,20 @@ vi.spyOn(contentType, 'isContentType').mockImplementation((val) =>
 
 describe('Content Search Params Mapping', () => {
   describe('decodeContentSearchParams', () => {
+    it('should drop page and page size when they are out of range', () => {
+      for (const [page, pageSize] of [
+        ['0', '500'],
+        ['-1', '0'],
+        ['1.5', '7'],
+        ['abc', 'abc'],
+      ]) {
+        const result = decodeContentSearchParams({ page, pageSize });
+
+        expect(result.page).toBeUndefined();
+        expect(result.pageSize).toBeUndefined();
+      }
+    });
+
     it('should correctly decode valid search params', () => {
       const raw = {
         instance: '123',

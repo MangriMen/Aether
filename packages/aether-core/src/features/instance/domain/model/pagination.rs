@@ -1,8 +1,8 @@
 use std::fmt;
 
-/// The most results a provider is asked for in one page. Modrinth's search takes `limit` up to
-/// 100 and refuses more.
-pub const PAGE_SIZE_MAX: u32 = 100;
+/// A sanity cap on a page size, far above what any provider serves. A provider with a lower limit
+/// applies it itself, see [`PageSize::at_most`].
+pub const PAGE_SIZE_MAX: u32 = 1000;
 
 /// Which pagination value was refused.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -83,7 +83,7 @@ impl From<PageIndex> for i64 {
     }
 }
 
-/// How many results a page holds: from 1 to [`PAGE_SIZE_MAX`].
+/// How many results a page holds, from 1 to [`PAGE_SIZE_MAX`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct PageSize(u32);
 
@@ -105,6 +105,12 @@ impl PageSize {
 
     pub fn get(self) -> u32 {
         self.0
+    }
+
+    /// This size, or `max` when it is larger. For a provider that serves fewer results per page.
+    #[must_use]
+    pub fn at_most(self, max: u32) -> Self {
+        Self(self.0.min(max.max(1)))
     }
 }
 
@@ -141,6 +147,33 @@ mod tests {
     }
 
     #[test]
+    fn should_accept_the_page_when_it_is_the_largest_u32() {
+        assert_eq!(
+            PageIndex::parse(i64::from(u32::MAX)).unwrap().get(),
+            u32::MAX
+        );
+    }
+
+    #[test]
+    fn should_not_overflow_the_offset_when_the_page_and_the_size_are_the_largest() {
+        let page = PageIndex::parse(i64::from(u32::MAX)).unwrap();
+        let size = PageSize::parse(i64::from(PAGE_SIZE_MAX)).unwrap();
+
+        assert_eq!(
+            page.offset(size),
+            u64::from(u32::MAX - 1) * u64::from(PAGE_SIZE_MAX)
+        );
+        assert_eq!(PageIndex::FIRST.offset(size), 0);
+    }
+
+    #[test]
+    fn should_keep_the_size_when_it_is_below_the_provider_limit() {
+        let size = PageSize::parse(20).unwrap();
+
+        assert_eq!(size.at_most(100), size);
+    }
+
+    #[test]
     fn should_accept_the_page_when_it_is_positive() {
         assert_eq!(PageIndex::parse(1).unwrap(), PageIndex::FIRST);
         assert_eq!(PageIndex::parse(37).unwrap().get(), 37);
@@ -157,7 +190,7 @@ mod tests {
 
     #[test]
     fn should_refuse_the_page_size_when_it_is_over_the_cap() {
-        for value in [i64::from(PAGE_SIZE_MAX) + 1, i64::MAX] {
+        for value in [i64::from(PAGE_SIZE_MAX) + 1, 5000, i64::MAX] {
             let err = PageSize::parse(value).unwrap_err();
             assert_eq!(err.reason, PaginationRejection::TooLarge(PAGE_SIZE_MAX));
         }
@@ -167,6 +200,7 @@ mod tests {
     fn should_accept_the_page_size_when_it_is_within_the_cap() {
         assert_eq!(PageSize::parse(1).unwrap().get(), 1);
         assert_eq!(PageSize::parse(20).unwrap().get(), 20);
-        assert_eq!(PageSize::parse(100).unwrap().get(), PAGE_SIZE_MAX);
+        assert_eq!(PageSize::parse(100).unwrap().get(), 100);
+        assert_eq!(PageSize::parse(1000).unwrap().get(), PAGE_SIZE_MAX);
     }
 }

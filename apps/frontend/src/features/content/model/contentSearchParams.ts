@@ -12,6 +12,17 @@ import type { ContentPageSearchParams } from './contentPageSearchParams';
 import { CONTENT_ROUTES } from './contentRoutes';
 import { isContentType } from './contentType';
 
+/** The page sizes the page offers; the backend refuses any other. */
+export const CONTENT_PAGE_SIZES = [5, 10, 20, 30, 40, 50];
+
+const normalizePage = (value: number | undefined): number | undefined =>
+  value !== undefined && Number.isInteger(value) && value >= 1
+    ? value
+    : undefined;
+
+const normalizePageSize = (value: number | undefined): number | undefined =>
+  value !== undefined && CONTENT_PAGE_SIZES.includes(value) ? value : undefined;
+
 export const decodeContentSearchParams = (
   searchParams: Partial<SearchParams>,
 ): ContentPageSearchParams => {
@@ -40,8 +51,8 @@ export const decodeContentSearchParams = (
 
   return {
     instanceId: parseSearchParamToString(instance),
-    page: parseSearchParamToNumber(page),
-    pageSize: parseSearchParamToNumber(pageSize),
+    page: normalizePage(parseSearchParamToNumber(page)),
+    pageSize: normalizePageSize(parseSearchParamToNumber(pageSize)),
     query: parseSearchParamToString(query),
     providerId: provider,
     contentType,

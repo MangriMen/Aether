@@ -19,6 +19,9 @@ use crate::features::{
 };
 use crate::shared::web_url::{HttpUrl, display_url};
 
+/// The most results Modrinth serves in one search page.
+const MODRINTH_MAX_PAGE_SIZE: u32 = 100;
+
 /// How a Modrinth [`ContentMetadata::author_ref`] naming an organization by its id starts.
 const ORGANIZATION_REF: &str = "organization:";
 
@@ -101,10 +104,15 @@ impl TryFrom<ContentSearchParams> for ProjectSearchParams {
             facets.push(get_facet_vector("versions", &game_versions));
         }
 
+        // Modrinth refuses a larger `limit`; the offset follows the size actually asked for, so the
+        // pages stay adjacent.
+        let page_size = value.page_size.at_most(MODRINTH_MAX_PAGE_SIZE);
+        let offset = i64::try_from(value.page.offset(page_size)).map_err(|err| err.to_string())?;
+
         Ok(Self {
             index: SearchIndex::Relevance,
-            offset: i64::try_from(value.page.offset(value.page_size)).unwrap_or(i64::MAX),
-            limit: value.page_size.into(),
+            offset,
+            limit: page_size.into(),
             facets,
             query: value.query,
         })
@@ -393,21 +401,32 @@ mod tests {
     use super::*;
     use crate::features::instance::{PageIndex, PageSize};
 
-    #[test]
-    fn should_skip_the_previous_pages_when_computing_the_search_offset() {
-        let params = ContentSearchParams {
+    fn params(page: i64, page_size: i64) -> ContentSearchParams {
+        ContentSearchParams {
             content_type: ContentType::Mod,
             provider_id: ProviderId::from_parts("aether", "modrinth").unwrap(),
-            page: PageIndex::parse(3).unwrap(),
-            page_size: PageSize::parse(20).unwrap(),
+            page: PageIndex::parse(page).unwrap(),
+            page_size: PageSize::parse(page_size).unwrap(),
             query: None,
             game_versions: None,
             loader: None,
-        };
+        }
+    }
 
-        let search = ProjectSearchParams::try_from(params).unwrap();
+    #[test]
+    fn should_skip_the_previous_pages_when_computing_the_search_offset() {
+        let search = ProjectSearchParams::try_from(params(3, 20)).unwrap();
 
         assert_eq!(search.offset, 40);
         assert_eq!(search.limit, 20);
+    }
+
+    #[test]
+    fn should_clamp_the_limit_and_follow_it_in_the_offset_when_the_page_size_is_over_modrinths_cap()
+    {
+        let search = ProjectSearchParams::try_from(params(3, 500)).unwrap();
+
+        assert_eq!(search.limit, 100);
+        assert_eq!(search.offset, 200);
     }
 }

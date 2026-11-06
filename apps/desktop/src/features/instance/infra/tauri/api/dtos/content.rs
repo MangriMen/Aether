@@ -352,6 +352,25 @@ mod tests {
     }
 
     #[test]
+    fn should_refuse_the_search_when_the_page_or_the_page_size_is_zero() {
+        let mut dto = search(&[]);
+        dto.page = 0;
+        let result = ContentSearchParams::try_from(dto);
+        assert!(matches!(
+            result,
+            Err(InstanceError::InvalidPagination { ref field, .. }) if field == "page"
+        ));
+
+        let mut dto = search(&[]);
+        dto.page_size = 0;
+        let result = ContentSearchParams::try_from(dto);
+        assert!(matches!(
+            result,
+            Err(InstanceError::InvalidPagination { ref field, .. }) if field == "page size"
+        ));
+    }
+
+    #[test]
     fn should_refuse_the_search_when_a_game_version_is_not_a_valid_id() {
         let result = ContentSearchParams::try_from(search(&["1.21.1", "../x"]));
 
