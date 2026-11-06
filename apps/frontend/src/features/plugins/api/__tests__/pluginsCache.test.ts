@@ -97,6 +97,19 @@ describe('plugins cache', () => {
     );
   });
 
+  it('should_keep_the_list_marked_for_a_new_read_when_another_plugin_is_refreshed', async () => {
+    commands.list.mockResolvedValue([plugin('a'), plugin('b')]);
+    await queryClient.fetchQuery(pluginsQueries.list());
+    await pluginsCache.invalidate.list(queryClient);
+    commands.get.mockResolvedValue(plugin('b', true));
+
+    await pluginsCache.refresh.plugin(queryClient, 'b');
+
+    expect(queryClient.getQueryState(pluginKeys.list())!.isInvalidated).toBe(
+      true,
+    );
+  });
+
   it('should_wait_out_a_get_already_on_its_way_and_ask_again', async () => {
     commands.list.mockResolvedValue([plugin('a')]);
     await queryClient.fetchQuery(pluginsQueries.list());

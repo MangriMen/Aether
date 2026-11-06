@@ -51,7 +51,8 @@ const patchList = (
 ) => {
   const state = queryClient.getQueryState<PluginList>(pluginKeys.list());
 
-  if (!state?.data) {
+  // A list marked for a new read gets the plugin from it; writing here would clear the mark.
+  if (!state?.data || state.isInvalidated) {
     return;
   }
 
