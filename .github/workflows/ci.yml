@@ -109,9 +109,8 @@ jobs:
         run: rustup toolchain install
 
       - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+        timeout-minutes: 12
+        run: .github/scripts/install-linux-deps.sh --no-install-recommends
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2
