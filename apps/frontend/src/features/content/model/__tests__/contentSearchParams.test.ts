@@ -18,6 +18,7 @@ describe('Content Search Params Mapping', () => {
         ['-1', '0'],
         ['1.5', '7'],
         ['abc', 'abc'],
+        ['99999999999', '500'],
       ]) {
         const result = decodeContentSearchParams({ page, pageSize });
 

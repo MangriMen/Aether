@@ -15,8 +15,14 @@ import { isContentType } from './contentType';
 /** The page sizes the page offers; the backend refuses any other. */
 export const CONTENT_PAGE_SIZES = [5, 10, 20, 30, 40, 50];
 
+/** The largest page the backend takes (a `u32`). */
+const MAX_CONTENT_PAGE = 2 ** 32 - 1;
+
 const normalizePage = (value: number | undefined): number | undefined =>
-  value !== undefined && Number.isInteger(value) && value >= 1
+  value !== undefined &&
+  Number.isInteger(value) &&
+  value >= 1 &&
+  value <= MAX_CONTENT_PAGE
     ? value
     : undefined;
 
