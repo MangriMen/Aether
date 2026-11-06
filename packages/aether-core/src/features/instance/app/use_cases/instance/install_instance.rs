@@ -93,9 +93,9 @@ impl InstallInstanceUseCase {
     }
 
     /// The loader version an instance is installed with. An instance that still holds `Stable`
-    /// or `Latest` gets the version they resolve
-    /// to now, stored as exact, so a later reinstall does not move to a newer one. A loader that
-    /// cannot be resolved is left as it is: the install reports why.
+    /// or `Latest` gets the version they resolve to now, stored as exact, so a later reinstall
+    /// does not move to a newer one. A loader that cannot be resolved is left as it is: the
+    /// install reports why.
     async fn pin_loader_version(&self, instance: &mut Instance) {
         if instance.loader == ModLoader::Vanilla {
             return;
