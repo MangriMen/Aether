@@ -71,8 +71,7 @@ export const useEnsurePluginAccess = () => {
   const grantHostAccess = useGrantPluginHostAccess();
 
   const pluginName = (id: PluginId) =>
-    pluginsCache.getData.fromList(queryClient, id)?.manifest.metadata.name ??
-    id;
+    pluginsCache.getData.detail(queryClient, id)?.manifest.metadata.name ?? id;
 
   const ensureAccess = async <Access extends { type: string }>(
     id: PluginId,
