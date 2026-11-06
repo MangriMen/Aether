@@ -122,6 +122,9 @@ export type InstanceErrorDto = { code: "STORAGE"; payload: {
 	field: string,
 	value: string,
 	reason: string,
+} } | { code: "INVALID_LOADER_VERSION"; payload: {
+	value: string,
+	reason: string,
 } } | { code: "PATH_ESCAPES_INSTANCE"; payload: {
 	path: string,
 	instance_id: string,
@@ -166,7 +169,9 @@ export type JavaErrorDto = { code: "NOT_FOUND"; payload: {
 	version: number,
 } } | { code: "INVALID_PATH"; payload: {
 	path: string,
-} } | { code: "EMPTY_PATH" } | { code: "INVALID_VERSION"; payload: {
+} } | { code: "EMPTY_PATH" } | { code: "RELATIVE_PATH"; payload: {
+	path: string,
+} } | { code: "INVALID_VERSION"; payload: {
 	version: string,
 } } | { code: "FAILED_TO_GET_PROPERTIES"; payload: {
 	reason: string,

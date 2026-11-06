@@ -1,7 +1,7 @@
 use crate::features::instance::InstanceName;
 use crate::features::instance::PlatformId;
 use crate::features::instance::{ContentId, ContentVersionId};
-use crate::features::minecraft::GameVersion;
+use crate::features::minecraft::{GameVersion, LoaderVersionId};
 use crate::shared::web_url::HttpsUrl;
 use std::{
     collections::HashMap,
@@ -990,7 +990,9 @@ pub(super) fn neoforge_1_21_4() -> InstanceGame {
     InstanceGame {
         game_version: GameVersion::from_static("1.21.4"),
         mod_loader: ModLoader::NeoForge,
-        loader_version: Some(LoaderVersionPreference::Exact("21.4.1".into())),
+        loader_version: Some(LoaderVersionPreference::Exact(
+            LoaderVersionId::from_static("21.4.1"),
+        )),
     }
 }
 

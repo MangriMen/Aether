@@ -12,6 +12,9 @@ pub enum JavaErrorDto {
         path: String,
     },
     EmptyPath,
+    RelativePath {
+        path: String,
+    },
     InvalidVersion {
         version: String,
     },
@@ -60,6 +63,7 @@ impl From<&JavaDomainError> for JavaErrorDto {
         match value {
             JavaDomainError::NotFound { version } => Self::NotFound { version: *version },
             JavaDomainError::EmptyPath => Self::EmptyPath,
+            JavaDomainError::RelativePath { path } => Self::RelativePath { path: path.clone() },
             JavaDomainError::InvalidPath { path } => Self::InvalidPath {
                 path: path.to_string_lossy().to_string(),
             },

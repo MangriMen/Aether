@@ -1,6 +1,6 @@
 use std::{collections::HashSet, path::PathBuf};
 
-use aether_core::features::java::JavaFeature;
+use aether_core::features::java::{EditJava, JavaApplicationError, JavaDomainError, JavaFeature};
 use tauri::State;
 
 use crate::{
@@ -50,11 +50,15 @@ async fn edit(
 ) -> FrontendResult<JavaDto> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
+    let edit_java = EditJava::try_from(edit_java).map_err(|err| {
+        aether_core::Error::from(JavaApplicationError::from(JavaDomainError::from(err)))
+    })?;
+
     let container = container.0.clone();
 
     Ok(container
         .edit_java_use_case()
-        .execute(edit_java.into())
+        .execute(edit_java)
         .await
         .map_err(aether_core::Error::from)?
         .into())

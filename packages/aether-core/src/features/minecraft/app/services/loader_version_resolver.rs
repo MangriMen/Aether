@@ -134,7 +134,7 @@ fn find_loader_version<'a>(
     match preference {
         LoaderVersionPreference::Latest => loaders.first(),
         LoaderVersionPreference::Stable => loaders.iter().find(|x| x.stable),
-        LoaderVersionPreference::Exact(id) => loaders.iter().find(|x| x.id == *id),
+        LoaderVersionPreference::Exact(id) => loaders.iter().find(|x| x.id == id.as_str()),
     }
     .ok_or(MinecraftDomainError::LoaderNotFound {
         loader_version_preference: preference.clone(),

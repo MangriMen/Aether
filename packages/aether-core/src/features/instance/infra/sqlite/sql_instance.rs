@@ -88,12 +88,14 @@ pub enum LoaderVersionPreferenceDto {
     Exact(String),
 }
 
-impl From<LoaderVersionPreferenceDto> for LoaderVersionPreference {
-    fn from(value: LoaderVersionPreferenceDto) -> Self {
-        match value {
-            LoaderVersionPreferenceDto::Latest => Self::Latest,
-            LoaderVersionPreferenceDto::Stable => Self::Stable,
-            LoaderVersionPreferenceDto::Exact(x) => Self::Exact(x),
+impl LoaderVersionPreferenceDto {
+    /// The stored preference; an exact id that is not a valid one is dropped with a warning
+    /// (see [`LoaderVersionPreference::exact_from_stored`]).
+    fn into_stored(self, source: &str) -> Option<LoaderVersionPreference> {
+        match self {
+            Self::Latest => Some(LoaderVersionPreference::Latest),
+            Self::Stable => Some(LoaderVersionPreference::Stable),
+            Self::Exact(id) => LoaderVersionPreference::exact_from_stored(id, source),
         }
     }
 }
@@ -103,7 +105,7 @@ impl From<LoaderVersionPreference> for LoaderVersionPreferenceDto {
         match value {
             LoaderVersionPreference::Latest => Self::Latest,
             LoaderVersionPreference::Stable => Self::Stable,
-            LoaderVersionPreference::Exact(x) => Self::Exact(x),
+            LoaderVersionPreference::Exact(id) => Self::Exact(id.into()),
         }
     }
 }
@@ -287,10 +289,10 @@ impl TryFrom<SqlInstance> for Instance {
                 .loader_version_json
                 .map(|s| {
                     serde_json::from_str::<LoaderVersionPreferenceDto>(&s)
-                        .map(Into::into)
                         .map_err(|_| InstanceError::Storage("Invalid loader version".into()))
                 })
-                .transpose()?,
+                .transpose()?
+                .and_then(|dto| dto.into_stored("instances.loader_version_json")),
 
             // Java
             java_path: Overridable::new(row.java_path, row.override_java_path),

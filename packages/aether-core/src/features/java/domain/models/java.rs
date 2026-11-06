@@ -1,16 +1,18 @@
+use super::JavaPath;
+
 pub(crate) const CUSTOM_JAVA_VERSION: &str = "Custom";
 pub(crate) const UNKNOWN_JAVA_ARCHITECTURE: &str = "Unknown";
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Java {
     major_version: u32,
     version: String,
     architecture: String,
-    path: String,
+    path: JavaPath,
 }
 
 impl Java {
-    pub fn new(major_version: u32, version: String, architecture: String, path: String) -> Self {
+    pub fn new(major_version: u32, version: String, architecture: String, path: JavaPath) -> Self {
         Self {
             major_version,
             version,
@@ -28,7 +30,7 @@ impl Java {
     pub fn architecture(&self) -> &str {
         &self.architecture
     }
-    pub fn path(&self) -> &str {
+    pub fn path(&self) -> &JavaPath {
         &self.path
     }
 }

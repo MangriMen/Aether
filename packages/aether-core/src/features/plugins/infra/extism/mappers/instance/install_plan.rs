@@ -14,7 +14,7 @@ use crate::{
             InstanceError, InstanceGame, InstanceId, InvalidContentId, InvalidId,
             InvalidRelativePath, OptionalFile, PlatformId,
         },
-        minecraft::{GameVersion, InvalidGameVersion},
+        minecraft::GameVersion,
     },
     shared::{
         hash::{FileHash, InvalidFileHash},
@@ -39,13 +39,13 @@ impl TryFrom<InstallTargetDto> for InstallTarget {
 }
 
 impl TryFrom<InstanceGameDto> for InstanceGame {
-    type Error = InvalidGameVersion;
+    type Error = InstanceError;
 
     fn try_from(value: InstanceGameDto) -> Result<Self, Self::Error> {
         Ok(Self {
             game_version: GameVersion::try_from(value.game_version)?,
             mod_loader: value.mod_loader.into(),
-            loader_version: value.loader_version.map(Into::into),
+            loader_version: value.loader_version.map(TryInto::try_into).transpose()?,
         })
     }
 }
@@ -178,7 +178,7 @@ mod tests {
     fn should_map_the_game_when_the_target_is_an_existing_instance() {
         use aether_core_plugin_api::v0::{LoaderVersionPreferenceDto, ModLoaderDto};
 
-        use crate::features::minecraft::{LoaderVersionPreference, ModLoader};
+        use crate::features::minecraft::{LoaderVersionId, LoaderVersionPreference, ModLoader};
 
         let target = InstallTarget::try_from(InstallTargetDto::Existing {
             instance_id: "instance".into(),
@@ -197,7 +197,9 @@ mod tests {
                 game: Some(InstanceGame {
                     game_version: GameVersion::from_static("1.21.4"),
                     mod_loader: ModLoader::NeoForge,
-                    loader_version: Some(LoaderVersionPreference::Exact("21.4.1".into())),
+                    loader_version: Some(LoaderVersionPreference::Exact(
+                        LoaderVersionId::from_static("21.4.1")
+                    )),
                 }),
             }
         );
@@ -229,6 +231,41 @@ mod tests {
             matches!(err, InstanceError::InvalidGameVersion { ref value, .. } if value == "../../x"),
             "{err}"
         );
+    }
+
+    #[test]
+    fn should_refuse_the_target_when_its_loader_version_is_not_a_valid_id() {
+        use aether_core_plugin_api::v0::{
+            LoaderVersionPreferenceDto, ModLoaderDto, NewInstanceDto,
+        };
+
+        let bad_loader = || Some(LoaderVersionPreferenceDto::Exact("0.16 .5".into()));
+        let existing = InstallTarget::try_from(InstallTargetDto::Existing {
+            instance_id: "instance".into(),
+            game: Some(InstanceGameDto {
+                game_version: "1.21.1".into(),
+                mod_loader: ModLoaderDto::Fabric,
+                loader_version: bad_loader(),
+            }),
+        })
+        .unwrap_err();
+        let new = InstallTarget::try_from(InstallTargetDto::New(NewInstanceDto {
+            name: "Pack".into(),
+            game_version: "1.21.1".into(),
+            mod_loader: ModLoaderDto::Fabric,
+            loader_version: bad_loader(),
+            icon_path: None,
+            skip_install_instance: None,
+            pack_info: None,
+        }))
+        .unwrap_err();
+
+        for err in [existing, new] {
+            assert!(
+                matches!(err, InstanceError::InvalidLoaderVersion { ref value, .. } if value == "0.16 .5"),
+                "{err}"
+            );
+        }
     }
 
     /// A plugin's plan for `../x` would install next to the instances; it names no instance.

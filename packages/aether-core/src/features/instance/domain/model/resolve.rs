@@ -10,7 +10,7 @@ use std::path::PathBuf;
 use crate::{
     features::{
         instance::{InstanceError, InstanceId, InstanceName, NewInstance, PackInfo},
-        minecraft::{GameVersion, LoaderVersionPreference, ModLoader},
+        minecraft::{GameVersion, LoaderVersionId, LoaderVersionPreference, ModLoader},
     },
     shared::{hash::FileHash, web_url::HttpsUrl},
 };
@@ -135,7 +135,7 @@ pub struct PackMetadata {
     pub mod_loader: ModLoader,
     /// `None` — the pack does not pin one, or the provider cannot tell without reading the pack
     /// itself (a preview from the platform's API).
-    pub loader_version: Option<String>,
+    pub loader_version: Option<LoaderVersionId>,
     /// How many files installing the pack would bring, when known without resolving them
     /// (a packwiz preview reads only `pack.toml`, not its index).
     pub file_count: Option<usize>,
@@ -302,7 +302,7 @@ mod tests {
             description: None,
             game_version: GameVersion::from_static("1.21.1"),
             mod_loader: ModLoader::Fabric,
-            loader_version: Some("0.16.5".into()),
+            loader_version: Some(LoaderVersionId::from_static("0.16.5")),
             file_count: Some(2),
             icon_url: None,
         };
@@ -361,7 +361,9 @@ mod tests {
         assert_eq!(instance.mod_loader, ModLoader::Fabric);
         assert_eq!(
             instance.loader_version,
-            Some(LoaderVersionPreference::Exact("0.16.5".into()))
+            Some(LoaderVersionPreference::Exact(
+                LoaderVersionId::from_static("0.16.5")
+            ))
         );
         assert_eq!(instance.pack_info, Some(pack_info));
         assert_eq!(instance.icon_path, None);
@@ -379,7 +381,7 @@ mod tests {
             description: None,
             game_version: GameVersion::from_static("1.21.4"),
             mod_loader: ModLoader::Fabric,
-            loader_version: Some("0.16.9".into()),
+            loader_version: Some(LoaderVersionId::from_static("0.16.9")),
             file_count: None,
             icon_url: None,
         };
@@ -398,7 +400,9 @@ mod tests {
                 game: Some(InstanceGame {
                     game_version: GameVersion::from_static("1.21.4"),
                     mod_loader: ModLoader::Fabric,
-                    loader_version: Some(LoaderVersionPreference::Exact("0.16.9".into())),
+                    loader_version: Some(LoaderVersionPreference::Exact(
+                        LoaderVersionId::from_static("0.16.9")
+                    )),
                 }),
             }
         );

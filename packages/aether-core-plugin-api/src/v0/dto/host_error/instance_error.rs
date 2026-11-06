@@ -69,6 +69,10 @@ pub enum InstanceErrorDto {
         value: String,
         reason: String,
     },
+    InvalidLoaderVersion {
+        value: String,
+        reason: String,
+    },
     PathEscapesInstance {
         path: String,
         instance_id: String,

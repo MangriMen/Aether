@@ -10,6 +10,9 @@ pub enum JavaErrorDto {
         path: String,
     },
     EmptyPath,
+    RelativePath {
+        path: String,
+    },
     InvalidVersion {
         version: String,
     },

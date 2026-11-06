@@ -219,4 +219,15 @@ mod tests {
         assert_eq!(instances.len(), 1);
         assert_eq!(instances[0].id(), &kept);
     }
+
+    #[tokio::test]
+    async fn should_keep_an_instance_without_its_loader_version_when_the_stored_id_is_invalid() {
+        let (_temp_dir, storage, _kept, broken) = setup_broken("loader_version", "0.16 .5").await;
+
+        let instance = storage.get(&broken).await.unwrap();
+        let instances = storage.list().await.unwrap();
+
+        assert_eq!(instance.snapshot().loader_version, None);
+        assert_eq!(instances.len(), 2);
+    }
 }

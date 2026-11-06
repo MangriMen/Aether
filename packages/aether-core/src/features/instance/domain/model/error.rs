@@ -6,7 +6,7 @@ use super::InvalidPagination;
 use crate::features::{
     auth::AuthApplicationError,
     instance::{ContentType, PlatformId, ProviderId},
-    minecraft::{InvalidGameVersion, MinecraftApplicationError},
+    minecraft::{InvalidGameVersion, InvalidLoaderVersionId, MinecraftApplicationError},
     process::ProcessError,
     settings::SettingsError,
 };
@@ -104,6 +104,8 @@ pub enum InstanceError {
         value: String,
         reason: String,
     },
+    #[error("Invalid loader version {value:?}: {reason}")]
+    InvalidLoaderVersion { value: String, reason: String },
 
     #[error("Path \"{path}\" resolves outside instance \"{instance_id}\"")]
     PathEscapesInstance { path: String, instance_id: String },
@@ -183,6 +185,15 @@ impl From<InvalidPagination> for InstanceError {
         InstanceError::InvalidPagination {
             field: err.field.to_string(),
             value: err.value.to_string(),
+            reason: err.reason.to_string(),
+        }
+    }
+}
+
+impl From<InvalidLoaderVersionId> for InstanceError {
+    fn from(err: InvalidLoaderVersionId) -> Self {
+        InstanceError::InvalidLoaderVersion {
+            value: err.value,
             reason: err.reason.to_string(),
         }
     }
