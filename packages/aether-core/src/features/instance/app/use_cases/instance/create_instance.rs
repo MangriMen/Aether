@@ -271,19 +271,19 @@ pub(crate) async fn resolve_loader_version(
         .await
         .map_err(MinecraftApplicationError::Domain)?;
 
-    pin(preference, resolved.map(|it| it.id))
+    pin(preference, resolved.map(|it| it.id)).map(Some)
 }
 
 /// `preference` made exact: the id the manifest resolved it to, or `preference` itself when the
 /// service named none.
-pub(crate) fn pin(
+fn pin(
     preference: LoaderVersionPreference,
     resolved_id: Option<String>,
-) -> Result<Option<LoaderVersionPreference>, InstanceError> {
-    Ok(Some(match resolved_id {
+) -> Result<LoaderVersionPreference, InstanceError> {
+    Ok(match resolved_id {
         Some(id) => LoaderVersionPreference::Exact(LoaderVersionId::try_from(id)?),
         None => preference,
-    }))
+    })
 }
 
 #[async_trait]
@@ -317,9 +317,7 @@ mod tests {
         ] {
             assert_eq!(
                 pin(preference, Some("0.16.10".to_string())).unwrap(),
-                Some(LoaderVersionPreference::Exact(
-                    LoaderVersionId::from_static("0.16.10")
-                ))
+                LoaderVersionPreference::Exact(LoaderVersionId::from_static("0.16.10"))
             );
         }
     }
@@ -328,7 +326,7 @@ mod tests {
     fn should_keep_the_preference_when_nothing_was_resolved() {
         assert_eq!(
             pin(LoaderVersionPreference::Stable, None).unwrap(),
-            Some(LoaderVersionPreference::Stable)
+            LoaderVersionPreference::Stable
         );
     }
 

@@ -93,7 +93,7 @@ impl InstallInstanceUseCase {
     }
 
     /// The loader version an instance is installed with. An instance that still holds `Stable`
-    /// or `Latest` (made before versions were pinned on creation) gets the version they resolve
+    /// or `Latest` gets the version they resolve
     /// to now, stored as exact, so a later reinstall does not move to a newer one. A loader that
     /// cannot be resolved is left as it is: the install reports why.
     async fn pin_loader_version(&self, instance: &mut Instance) {
@@ -119,16 +119,28 @@ impl InstallInstanceUseCase {
                 return;
             }
         };
-        let Ok(id) = LoaderVersionId::try_from(resolved.id) else {
-            return;
+        let id = match LoaderVersionId::try_from(resolved.id) {
+            Ok(id) => id,
+            Err(err) => {
+                tracing::warn!(error = %err, "The resolved loader version is not a valid id");
+                return;
+            }
         };
         let exact = LoaderVersionPreference::Exact(id);
 
         let stored = exact.clone();
+        let game_version = instance.game_version.clone();
+        let loader = instance.loader;
         match self
             .instance_storage
             .upsert_with(instance.id(), move |it| {
-                it.loader_version = Some(stored);
+                // Only for the game it was resolved for: an edit that landed meanwhile wins.
+                if it.game_version == game_version
+                    && it.loader == loader
+                    && it.loader_version == Some(preference)
+                {
+                    it.loader_version = Some(stored);
+                }
                 Ok(())
             })
             .await
