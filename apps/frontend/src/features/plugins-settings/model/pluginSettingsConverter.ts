@@ -7,7 +7,14 @@ export const pluginSettingsToPluginSettingsValues = (
 ): PluginSettingsSchemaInput | undefined => {
   return {
     allowedHosts: [...(settings?.allowedHosts ?? [])],
-    allowedPaths: [...(settings?.allowedPaths ?? [])],
+    // The folders that were not read are listed with the others, marked with why.
+    allowedPaths: [
+      ...(settings?.allowedPaths ?? []),
+      ...(settings?.ignoredPaths ?? []).map(({ path, reason }) => ({
+        ...path,
+        ignoredReason: reason,
+      })),
+    ],
   };
 };
 
@@ -22,10 +29,18 @@ export const pluginSettingsValuesToEditPluginSettings = (
 
   if (values.allowedPaths !== undefined) {
     // A folder is read-only unless the user said otherwise.
-    dto.allowedPaths = values.allowedPaths.map((path) => ({
-      ...path,
-      readOnly: path.readOnly ?? true,
+    const paths = values.allowedPaths.map(({ ignoredReason, ...path }) => ({
+      ignored: ignoredReason !== undefined,
+      path: { ...path, readOnly: path.readOnly ?? true },
     }));
+
+    dto.allowedPaths = paths
+      .filter(({ ignored }) => !ignored)
+      .map(({ path }) => path);
+    // The ones the user left in the list stay saved; the others were removed.
+    dto.ignoredPaths = paths
+      .filter(({ ignored }) => ignored)
+      .map(({ path }) => path);
   }
 
   return dto;

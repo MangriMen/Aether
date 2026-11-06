@@ -118,7 +118,7 @@ pub trait EditPluginSettingsUseCasePort: Send + Sync {
         &self,
         plugin_id: PluginId,
         edit_settings: EditPluginSettings,
-    ) -> Result<(), PluginError>;
+    ) -> Result<PluginSettings, PluginError>;
 }
 
 #[async_trait]

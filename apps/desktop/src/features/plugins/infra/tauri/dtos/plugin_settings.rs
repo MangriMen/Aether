@@ -16,8 +16,9 @@ pub struct PluginSettingsDto {
     #[serde(default)]
     pub allowed_paths: Vec<AllowedPathDto>,
 
-    /// Saved folders that were left out because the plugin side is not a path a plugin may
-    /// have. They are gone from the file once the settings are saved.
+    /// Saved folders that were left out because they are not valid (for example the plugin side
+    /// is not a path a plugin may have). Never mounted, but kept in the file until the user
+    /// removes them: send the ones to keep as `ignoredPaths` of an edit.
     #[serde(default)]
     pub ignored_paths: Vec<IgnoredAllowedPathDto>,
 }
@@ -29,6 +30,9 @@ pub struct EditPluginSettingsDto {
     pub allowed_hosts: Option<Vec<String>>,
     #[specta(optional)]
     pub allowed_paths: Option<Vec<AllowedPathDto>>,
+    /// The ignored folders to keep; every other one is deleted. Omit to keep them all.
+    #[specta(optional)]
+    pub ignored_paths: Option<Vec<AllowedPathDto>>,
 }
 
 /// A folder of the user's given to a plugin.
@@ -113,6 +117,9 @@ impl From<EditPluginSettingsDto> for EditPluginSettings {
             allowed_hosts: value.allowed_hosts,
             allowed_paths: value
                 .allowed_paths
+                .map(|paths| paths.into_iter().map(Into::into).collect()),
+            ignored_paths: value
+                .ignored_paths
                 .map(|paths| paths.into_iter().map(Into::into).collect()),
         }
     }

@@ -626,7 +626,17 @@
     "accessConfirmAllow": "Allow",
     "accessConfirmDeny": "Don't allow",
     "hostAccessGranted": "The plugin can now connect to this host",
-    "hostAccessFailed": "Could not give the plugin access to the host"
+    "hostAccessFailed": "Could not give the plugin access to the host",
+    "ignoredPath": {
+      "host_not_absolute": "Not used by the plugin: the host path is not absolute",
+      "host_not_a_folder": "Not used by the plugin: the host path is not an existing folder",
+      "host_is_root": "Not used by the plugin: a whole drive is never given to a plugin",
+      "plugin_not_absolute": "Not used by the plugin: the plugin path must start with \"/\"",
+      "plugin_not_normalized": "Not used by the plugin: the plugin path must be plain \"/\"-separated names, without empty, \".\" or \"..\" parts",
+      "plugin_is_root": "Not used by the plugin: the plugin path cannot be \"/\" itself",
+      "plugin_reserved": "Not used by the plugin: the plugin path is taken by a folder the launcher gives every plugin",
+      "host_overlaps_core": "Not used by the plugin: the host folder is, contains or lies inside a launcher folder"
+    }
   },
   "pagination": {
     "morePages": "More pages",
