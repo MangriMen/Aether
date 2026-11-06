@@ -22,8 +22,15 @@ pub trait PluginProvider: Send + Sync {
         current_version: &str,
     ) -> Result<ProviderUpdateInfo, PluginProviderError>;
 
-    /// Download the plugin archive bytes for a specific version.
-    async fn download_plugin(&self, download_url: &str) -> Result<Vec<u8>, PluginProviderError>;
+    /// Download the plugin archive for a specific version into `dest`, returning the number of
+    /// bytes written. The archive is not held in memory: the provider writes it as it arrives and
+    /// refuses one that grows past its limit. On failure `dest` may hold a part of it; the caller
+    /// owns the file and discards it.
+    async fn download_plugin(
+        &self,
+        download_url: &str,
+        dest: &mut tokio::fs::File,
+    ) -> Result<u64, PluginProviderError>;
 
     /// Return which source type this provider handles.
     fn source_type(&self) -> PluginSourceType;

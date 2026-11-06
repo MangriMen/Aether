@@ -1,12 +1,15 @@
 use std::sync::Arc;
 
 use reqwest_middleware::ClientWithMiddleware;
+use tokio::io::{AsyncWrite, AsyncWriteExt};
+
+use crate::shared::io::domain::IoError;
 
 use super::types::{GitHubPluginPreview, GitHubReleaseInfo, PluginUpdateInfo};
 use crate::features::plugins::{PluginManifestPreview, PluginProviderError, PluginSourceType};
 
-/// Upper bound for a downloaded plugin archive. The body is buffered in memory before it is
-/// written to a temporary file, so this bounds the process's memory rather than the disk.
+/// Upper bound for a downloaded plugin archive. The body goes to disk as it arrives, so this stops
+/// an endless stream rather than limiting what a plugin may weigh.
 const MAX_ARCHIVE_BYTES: u64 = 256 * 1024 * 1024;
 
 /// Upper bound for a manifest or capabilities file. Both are small JSON documents; a release
@@ -26,34 +29,44 @@ fn is_allowed_asset_url(url: &str) -> bool {
     })
 }
 
-/// Reads the body chunk by chunk so an oversized asset is rejected before it fills memory.
-async fn read_capped(
+/// Copies the body to `dest` chunk by chunk, so an oversized asset is rejected as soon as it
+/// crosses `limit` instead of after it has been taken in whole. What was written before a failure
+/// stays in `dest`: whoever owns it throws it away.
+async fn copy_capped<W: AsyncWrite + Unpin>(
     mut response: reqwest::Response,
     url: &str,
     limit: u64,
-) -> Result<Vec<u8>, PluginProviderError> {
-    let too_large = || PluginProviderError::DownloadFailed {
+    dest: &mut W,
+) -> Result<u64, PluginProviderError> {
+    let failed = |details: String| PluginProviderError::DownloadFailed {
         url: url.to_string(),
-        details: format!("asset exceeds {limit} bytes"),
+        details,
     };
+    let too_large = || failed(format!("asset exceeds {limit} bytes"));
     if response.content_length().is_some_and(|len| len > limit) {
         return Err(too_large());
     }
-    let mut body = Vec::new();
-    while let Some(chunk) =
-        response
-            .chunk()
-            .await
-            .map_err(|e| PluginProviderError::DownloadFailed {
-                url: url.to_string(),
-                details: e.to_string(),
-            })?
-    {
-        if body.len() as u64 + chunk.len() as u64 > limit {
+    let mut written = 0u64;
+    while let Some(chunk) = response.chunk().await.map_err(|e| failed(e.to_string()))? {
+        written += chunk.len() as u64;
+        if written > limit {
             return Err(too_large());
         }
-        body.extend_from_slice(&chunk);
+        // A full disk is not a failure of the download: it is told apart from one.
+        dest.write_all(&chunk).await.map_err(IoError::from)?;
     }
+    dest.flush().await.map_err(IoError::from)?;
+    Ok(written)
+}
+
+/// Reads a body that has to fit in memory (a manifest or a capabilities file).
+async fn read_capped(
+    response: reqwest::Response,
+    url: &str,
+    limit: u64,
+) -> Result<Vec<u8>, PluginProviderError> {
+    let mut body = Vec::new();
+    copy_capped(response, url, limit, &mut body).await?;
     Ok(body)
 }
 
@@ -244,9 +257,15 @@ impl GitHubPluginFetcher {
         })
     }
 
-    /// Download a plugin archive from a URL and return the bytes.
-    pub async fn download_asset(&self, url: &str) -> Result<Vec<u8>, PluginProviderError> {
-        self.download_asset_capped(url, MAX_ARCHIVE_BYTES).await
+    /// Download a plugin archive from a URL into `dest`, returning the number of bytes written.
+    /// On failure `dest` may hold a part of the archive.
+    pub async fn download_asset<W: AsyncWrite + Unpin>(
+        &self,
+        url: &str,
+        dest: &mut W,
+    ) -> Result<u64, PluginProviderError> {
+        let response = self.asset_response(url).await?;
+        copy_capped(response, url, MAX_ARCHIVE_BYTES, dest).await
     }
 
     /// Download a file from a URL and return the bytes, refusing a body over `limit`.
@@ -255,6 +274,12 @@ impl GitHubPluginFetcher {
         url: &str,
         limit: u64,
     ) -> Result<Vec<u8>, PluginProviderError> {
+        let response = self.asset_response(url).await?;
+        read_capped(response, url, limit).await
+    }
+
+    /// Asks GitHub for an asset and checks the answer; the body is left to the caller.
+    async fn asset_response(&self, url: &str) -> Result<reqwest::Response, PluginProviderError> {
         if !is_allowed_asset_url(url) {
             return Err(PluginProviderError::DownloadFailed {
                 url: url.to_string(),
@@ -285,7 +310,7 @@ impl GitHubPluginFetcher {
             ));
         }
 
-        read_capped(response, url, limit).await
+        Ok(response)
     }
 
     /// Preview a plugin from a GitHub repo URL.
@@ -408,6 +433,85 @@ mod tests {
     async fn should_reject_a_body_over_the_limit() {
         let err = read_capped(response(b"hello!"), "u", 5).await.unwrap_err();
         assert!(matches!(err, PluginProviderError::DownloadFailed { .. }));
+    }
+
+    /// A body in `chunks` with no `Content-Length`, the way a chunked answer arrives; an `Err`
+    /// among them is a connection that dropped.
+    fn chunked(chunks: Vec<Result<&'static [u8], std::io::Error>>) -> reqwest::Response {
+        let body = reqwest::Body::wrap_stream(futures::stream::iter(chunks));
+        reqwest::Response::from(http::Response::new(body))
+    }
+
+    #[tokio::test]
+    async fn should_write_the_body_to_the_destination_when_it_is_within_the_limit() {
+        let mut dest = Vec::new();
+
+        let written = copy_capped(response(b"hello"), "u", 5, &mut dest)
+            .await
+            .unwrap();
+
+        assert_eq!((written, dest.as_slice()), (5, &b"hello"[..]));
+    }
+
+    #[tokio::test]
+    async fn should_write_nothing_when_the_declared_length_is_over_the_limit() {
+        let mut dest = Vec::new();
+
+        let err = copy_capped(response(b"hello!"), "u", 5, &mut dest)
+            .await
+            .unwrap_err();
+
+        assert!(matches!(err, PluginProviderError::DownloadFailed { .. }));
+        assert!(dest.is_empty());
+    }
+
+    #[tokio::test]
+    async fn should_stop_a_chunked_body_when_it_crosses_the_limit() {
+        let mut dest = Vec::new();
+
+        let err = copy_capped(
+            chunked(vec![Ok(b"abc"), Ok(b"def"), Ok(b"ghi")]),
+            "u",
+            5,
+            &mut dest,
+        )
+        .await
+        .unwrap_err();
+
+        assert!(matches!(err, PluginProviderError::DownloadFailed { .. }));
+        // The chunk that crossed the limit was not written.
+        assert_eq!(dest, b"abc");
+    }
+
+    #[tokio::test]
+    async fn should_fail_when_the_connection_drops_in_the_middle_of_the_body() {
+        let mut dest = Vec::new();
+
+        let err = copy_capped(
+            chunked(vec![
+                Ok(b"abc"),
+                Err(std::io::Error::other("connection reset")),
+            ]),
+            "u",
+            100,
+            &mut dest,
+        )
+        .await
+        .unwrap_err();
+
+        assert!(matches!(err, PluginProviderError::DownloadFailed { .. }));
+    }
+
+    #[tokio::test]
+    async fn should_report_a_storage_error_when_the_destination_cannot_be_written() {
+        let (mut dest, reader) = tokio::io::duplex(1);
+        drop(reader);
+
+        let err = copy_capped(response(b"hello"), "u", 100, &mut dest)
+            .await
+            .unwrap_err();
+
+        assert!(matches!(err, PluginProviderError::Storage(_)));
     }
 
     #[test]

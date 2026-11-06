@@ -30,8 +30,8 @@ pub use app::{
     PluginManifestDto, PluginMetadataDto, PluginProvider, PluginProviderFactory, PluginRegistry,
     PluginSettingsStorage, PluginSourceStorage, PluginStateReasonDto, PluginStorage,
     PluginUpdaterCapabilityDto, PluginVerificationStorage, PluginsFeature, ProviderHandlersDto,
-    ProviderRelease, RuntimeConfigDto, UpdaterCapabilityMetadataDto, record_plugin_verification,
-    write_bytes_to_temp_file,
+    ProviderRelease, RuntimeConfigDto, UpdaterCapabilityMetadataDto, download_to_temp_file,
+    record_plugin_verification,
 };
 pub(crate) use app::{
     CheckForPluginUpdatesUseCase, CheckForPluginUpdatesUseCasePort, DisablePluginUseCase,

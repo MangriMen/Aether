@@ -1,6 +1,6 @@
 use std::{
     fs,
-    io::{Cursor, Read, copy},
+    io::{Read, Seek, copy},
     path::Path,
 };
 
@@ -12,7 +12,7 @@ use crate::{
         ExtractedPlugin, PluginCapabilities, PluginContent, PluginExtractor, PluginManifest,
         PluginProviderError, infra::PluginCapabilitiesV1,
     },
-    shared::{io::domain::IoError, io::infra::read_async},
+    shared::io::domain::IoError,
 };
 
 use super::ZipPluginExtractorConstants;
@@ -27,9 +27,9 @@ impl ZipPluginExtractor {
         Self { constants }
     }
 
-    fn read_manifest(
+    fn read_manifest<R: Read + Seek>(
         &self,
-        archive: &mut zip::ZipArchive<Cursor<Vec<u8>>>,
+        archive: &mut zip::ZipArchive<R>,
     ) -> Result<PluginManifest, PluginProviderError> {
         let manifest_file = archive
             .by_name(self.constants.manifest_filename)
@@ -48,9 +48,9 @@ impl ZipPluginExtractor {
 
     /// Checks `capabilities.json`, when the plugin has one, the way loading it would: a plugin
     /// whose capabilities would be refused on load is refused before any file is copied.
-    fn check_capabilities(
+    fn check_capabilities<R: Read + Seek>(
         &self,
-        archive: &mut zip::ZipArchive<Cursor<Vec<u8>>>,
+        archive: &mut zip::ZipArchive<R>,
     ) -> Result<(), PluginProviderError> {
         let capabilities_file = match archive.by_name(self.constants.capabilities_filename) {
             Ok(file) => file,
@@ -72,9 +72,9 @@ impl ZipPluginExtractor {
 
     /// Extract every entry manually instead of using `ZipArchive::extract`, so that each path is
     /// validated with `enclosed_name` and the total unpacked size stays bounded.
-    fn extract_entries(
+    fn extract_entries<R: Read + Seek>(
         &self,
-        archive: &mut zip::ZipArchive<Cursor<Vec<u8>>>,
+        archive: &mut zip::ZipArchive<R>,
         temp_dir: &Path,
         source_path: &str,
     ) -> Result<(), PluginProviderError> {
@@ -133,33 +133,40 @@ impl PluginExtractor for ZipPluginExtractor {
     async fn extract(&self, file_path: &Path) -> Result<ExtractedPlugin, PluginProviderError> {
         let source_path = file_path.to_string_lossy().to_string();
 
-        let file =
-            read_async(file_path)
-                .await
-                .map_err(|_| PluginProviderError::ExtractionFailed {
-                    from: source_path.clone(),
-                })?;
-
         // Unpacking is plain blocking I/O and decompression, up to the archive's limits: off the
         // async workers.
         let extractor = Self {
             constants: self.constants.clone(),
         };
         let from = source_path.clone();
-        tokio::task::spawn_blocking(move || extractor.extract_blocking(file, &source_path))
-            .await
-            .map_err(|_| PluginProviderError::ExtractionFailed { from })?
+        let path = file_path.to_path_buf();
+        // The archive is read from the file as it is unpacked, never held in memory whole.
+        tokio::task::spawn_blocking(move || {
+            let file =
+                fs::File::open(&path).map_err(|_| PluginProviderError::ExtractionFailed {
+                    from: source_path.clone(),
+                })?;
+            extractor.extract_blocking(file, &source_path)
+        })
+        .await
+        .map_err(|_| PluginProviderError::ExtractionFailed { from })?
     }
 }
 
 impl ZipPluginExtractor {
     fn extract_blocking(
         &self,
-        file: Vec<u8>,
+        file: fs::File,
         source_path: &str,
     ) -> Result<ExtractedPlugin, PluginProviderError> {
-        let mut archive = zip::ZipArchive::new(Cursor::new(file))
-            .map_err(|_| PluginProviderError::InvalidExtractionFormat)?;
+        let mut archive =
+            zip::ZipArchive::new(std::io::BufReader::new(file)).map_err(|err| match err {
+                // A file that could not be read is not a file in the wrong format.
+                zip::result::ZipError::Io(_) => PluginProviderError::ExtractionFailed {
+                    from: source_path.to_string(),
+                },
+                _ => PluginProviderError::InvalidExtractionFormat,
+            })?;
 
         let manifest = self.read_manifest(&mut archive)?;
         self.check_capabilities(&mut archive)?;

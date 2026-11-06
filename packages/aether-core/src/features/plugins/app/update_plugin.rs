@@ -10,7 +10,7 @@ use crate::features::plugins::{
 
 use super::ports::UpdatePluginUseCasePort;
 use super::release_installer::ReleaseInstaller;
-use super::{PluginProviderFactory, write_bytes_to_temp_file};
+use super::{PluginProviderFactory, download_to_temp_file};
 
 /// Updates a plugin to a specific version (or latest) using the provider factory.
 /// Works with any provider type (GitHub, Modrinth, etc.).
@@ -110,8 +110,7 @@ impl UpdatePluginUseCase {
             })?;
 
         // Download zip to temp file, reuse PluginExtractor
-        let zip_bytes = provider.download_plugin(&release.download_url).await?;
-        let temp_file = write_bytes_to_temp_file(&zip_bytes)?;
+        let temp_file = download_to_temp_file(provider, &release.download_url).await?;
 
         // Unpacked before anything is removed: an archive that cannot be read, or that is of
         // another plugin, leaves the installed version in place.
