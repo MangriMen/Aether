@@ -6,6 +6,8 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 
+use crate::shared::safe_path::is_reserved_windows_name;
+
 use super::{InstanceError, InstanceName};
 
 /// An id that names a directory directly under `instances/`.
@@ -17,11 +19,6 @@ use super::{InstanceError, InstanceName};
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(try_from = "String", into = "String")]
 pub struct InstanceId(String);
-
-const WINDOWS_RESERVED_NAMES: [&str; 22] = [
-    "CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8",
-    "COM9", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9",
-];
 
 impl InstanceId {
     /// A fresh id for a new instance.
@@ -91,11 +88,7 @@ fn sanitize_name(name: &str) -> String {
     }
 
     // `NUL.txt` is the device too: Windows ignores the extension.
-    let stem = trimmed.split_once('.').map_or(trimmed, |(stem, _)| stem);
-    if WINDOWS_RESERVED_NAMES
-        .iter()
-        .any(|reserved| reserved.eq_ignore_ascii_case(stem))
-    {
+    if is_reserved_windows_name(trimmed) {
         return format!("_{trimmed}");
     }
     trimmed.to_owned()
@@ -214,6 +207,14 @@ mod tests {
         assert_eq!(
             InstanceId::from_name(&name("console")).unwrap().as_str(),
             "console"
+        );
+        assert_eq!(
+            InstanceId::from_name(&name("COM1 ")).unwrap().as_str(),
+            "_COM1"
+        );
+        assert_eq!(
+            InstanceId::from_name(&name("CONIN$")).unwrap().as_str(),
+            "_CONIN$"
         );
     }
 
