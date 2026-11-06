@@ -273,8 +273,12 @@ fn pack_metadata() -> Vec<u8> {
 }
 
 fn search_result(plugin_id: &PluginId) -> Vec<u8> {
+    search_result_of_page(plugin_id, 1)
+}
+
+fn search_result_of_page(plugin_id: &PluginId, page: u32) -> Vec<u8> {
     encode(ContentSearchResultDto {
-        page: 1,
+        page,
         page_size: 20,
         page_count: 1,
         provider_id: ProviderIdDto {
