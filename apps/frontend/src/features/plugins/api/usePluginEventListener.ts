@@ -16,9 +16,15 @@ export const usePluginEventListener = () => {
         pluginsCache.invalidate.all(queryClient);
         break;
       case 'add':
-      case 'edit':
-      case 'remove':
+        // A new plugin is for the list to say.
+        pluginsCache.invalidate.list(queryClient);
         pluginsCache.invalidate.full(queryClient, e.payload.plugin_id);
+        break;
+      case 'edit':
+        pluginsCache.invalidate.full(queryClient, e.payload.plugin_id);
+        break;
+      case 'remove':
+        pluginsCache.remove.plugin(queryClient, e.payload.plugin_id);
         break;
     }
   });

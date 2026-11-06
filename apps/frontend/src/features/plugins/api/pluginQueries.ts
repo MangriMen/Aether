@@ -154,7 +154,7 @@ export const useEditPluginSettings = () => {
     onSuccess: (_, variables) =>
       pluginsCache.invalidate.state(queryClient, variables.id),
     onError: (err, variables) => {
-      const plugin = pluginsCache.getData.fromList(queryClient, variables.id);
+      const plugin = pluginsCache.getData.detail(queryClient, variables.id);
 
       const name =
         plugin?.manifest.metadata.name ??
@@ -306,9 +306,9 @@ export const useRemovePlugin = () => {
 
   return useMutation(() => ({
     mutationFn: pluginsCommands.remove,
-    onSuccess: (_, id) => pluginsCache.invalidate.full(queryClient, id),
+    onSuccess: (_, id) => pluginsCache.remove.plugin(queryClient, id),
     onError: (err, id) => {
-      const plugin = pluginsCache.getData.fromList(queryClient, id);
+      const plugin = pluginsCache.getData.detail(queryClient, id);
 
       const name =
         plugin?.manifest.metadata.name ??
@@ -370,7 +370,7 @@ export const useUpdatePlugin = () => {
       await queryClient.fetchQuery(pluginsQueries.updates(id));
     },
     onError: (err, { id }) => {
-      const plugin = pluginsCache.getData.fromList(queryClient, id);
+      const plugin = pluginsCache.getData.detail(queryClient, id);
 
       const name =
         plugin?.manifest.metadata.name ??
