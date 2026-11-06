@@ -3,7 +3,7 @@ use crate::features::{
         ContentId, ContentItem, ContentMetadata, ContentSearchParams, ContentSearchResult,
         ContentType, ContentVersion, ContentVersionDependency, ContentVersionDependencyType,
         ContentVersionId, ContentVersionMetadata, ContentVersionStatus, ContentVersionType,
-        ProviderId, RequestedContentVersionStatus,
+        PageIndex, PageSize, ProviderId, RequestedContentVersionStatus,
         infra::content_providers::modrinth::{
             ModrinthMapperError,
             api_client::{
@@ -120,7 +120,11 @@ impl TryFrom<ContentSearchParams> for ProjectSearchParams {
 }
 
 impl ProjectSearchResponse {
-    pub(crate) fn into_content_search(self, provider_id: ProviderId) -> ContentSearchResult {
+    pub(crate) fn into_content_search(
+        self,
+        provider_id: ProviderId,
+    ) -> Result<ContentSearchResult, ModrinthMapperError> {
+        let page_size = PageSize::parse(i64::from(self.limit))?;
         let (page, page_count) = calculate_pagination(self.offset, self.limit, self.total_hits);
 
         let items = self
@@ -129,26 +133,19 @@ impl ProjectSearchResponse {
             .filter_map(|hit| hit.try_into().ok())
             .collect();
 
-        ContentSearchResult {
-            page,
-            page_size: self.limit,
+        Ok(ContentSearchResult {
+            page: PageIndex::parse(i64::from(page))?,
+            page_size,
             page_count,
             provider_id,
             items,
-        }
+        })
     }
 }
 
-fn calculate_pagination(offset: i64, limit: i64, total_hits: i64) -> (i64, i64) {
-    if limit <= 0 {
-        return (1, 0);
-    }
-
-    let page = (offset / limit) + 1;
-    #[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation)]
-    let page_count = (total_hits as f64 / limit as f64).ceil() as i64;
-
-    (page, page_count)
+/// The 1-based page `offset` falls on, and how many pages `total_hits` fill. `limit` is not 0.
+fn calculate_pagination(offset: u32, limit: u32, total_hits: u32) -> (u32, u32) {
+    (offset / limit + 1, total_hits.div_ceil(limit))
 }
 
 impl TryFrom<Hit> for ContentItem {
@@ -399,7 +396,47 @@ impl TryFrom<ProjectVersionResponse> for ContentVersion {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::features::instance::{PageIndex, PageSize};
+
+    fn response(offset: u32, limit: u32, total_hits: u32) -> ProjectSearchResponse {
+        ProjectSearchResponse {
+            hits: Vec::new(),
+            offset,
+            limit,
+            total_hits,
+        }
+    }
+
+    fn provider() -> ProviderId {
+        ProviderId::from_parts("aether", "modrinth").unwrap()
+    }
+
+    #[test]
+    fn should_count_the_page_and_the_pages_when_a_search_answers() {
+        let result = response(40, 20, 95)
+            .into_content_search(provider())
+            .unwrap();
+
+        assert_eq!(result.page, PageIndex::parse(3).unwrap());
+        assert_eq!(result.page_size, PageSize::parse(20).unwrap());
+        assert_eq!(result.page_count, 5);
+    }
+
+    #[test]
+    fn should_count_no_pages_when_a_search_finds_nothing() {
+        let result = response(0, 20, 0).into_content_search(provider()).unwrap();
+
+        assert_eq!(result.page, PageIndex::FIRST);
+        assert_eq!(result.page_count, 0);
+    }
+
+    #[test]
+    fn should_refuse_the_answer_when_its_limit_is_zero() {
+        let err = response(0, 0, 0)
+            .into_content_search(provider())
+            .unwrap_err();
+
+        assert!(matches!(err, ModrinthMapperError::InvalidPagination(_)));
+    }
 
     fn params(page: i64, page_size: i64) -> ContentSearchParams {
         ContentSearchParams {

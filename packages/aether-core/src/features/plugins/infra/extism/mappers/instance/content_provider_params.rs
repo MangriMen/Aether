@@ -7,8 +7,8 @@ impl From<ContentSearchParams> for ContentSearchParamsDto {
         Self {
             content_type: value.content_type.into(),
             provider_id: value.provider_id.into(),
-            page: value.page.into(),
-            page_size: value.page_size.into(),
+            page: value.page.get(),
+            page_size: value.page_size.get(),
             query: value.query,
             game_versions: value
                 .game_versions
@@ -21,8 +21,8 @@ impl From<ContentSearchParams> for ContentSearchParamsDto {
 impl From<ContentSearchResult> for ContentSearchResultDto {
     fn from(value: ContentSearchResult) -> Self {
         Self {
-            page: value.page,
-            page_size: value.page_size,
+            page: value.page.get(),
+            page_size: value.page_size.get(),
             page_count: value.page_count,
             provider_id: value.provider_id.into(),
             items: value.items.into_iter().map(Into::into).collect(),

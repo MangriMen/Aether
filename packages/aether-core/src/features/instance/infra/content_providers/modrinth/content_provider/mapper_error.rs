@@ -11,4 +11,7 @@ pub enum ModrinthMapperError {
 
     #[error("Invalid URL received from Modrinth: {0}")]
     InvalidUrl(#[from] crate::shared::web_url::InvalidUrl),
+
+    #[error("Invalid pagination received from Modrinth: {0}")]
+    InvalidPagination(#[from] crate::features::instance::InvalidPagination),
 }

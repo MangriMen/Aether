@@ -180,9 +180,9 @@ impl TryFrom<ContentSearchParamsDto> for ContentSearchParams {
 impl From<ContentSearchResult> for ContentSearchResultDto {
     fn from(value: ContentSearchResult) -> Self {
         Self {
-            page: value.page,
-            page_size: value.page_size,
-            page_count: value.page_count,
+            page: value.page.into(),
+            page_size: value.page_size.into(),
+            page_count: i64::from(value.page_count),
             provider_id: value.provider_id.into(),
             items: value.items.into_iter().map(Into::into).collect(),
         }

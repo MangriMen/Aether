@@ -112,9 +112,9 @@ impl ProjectVersionsRequest {
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct ProjectSearchResponse {
     pub hits: Vec<Hit>,
-    pub offset: i64,
-    pub limit: i64,
-    pub total_hits: i64,
+    pub offset: u32,
+    pub limit: u32,
+    pub total_hits: u32,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
