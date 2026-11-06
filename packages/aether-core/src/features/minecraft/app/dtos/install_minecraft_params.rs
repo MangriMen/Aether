@@ -1,6 +1,9 @@
 use std::path::PathBuf;
 
-use crate::features::minecraft::{GameVersion, LoaderVersionPreference, ModLoader};
+use crate::features::{
+    java::JavaPath,
+    minecraft::{GameVersion, LoaderVersionPreference, ModLoader},
+};
 
 #[derive(Debug)]
 pub struct InstallMinecraftParams {
@@ -8,5 +11,5 @@ pub struct InstallMinecraftParams {
     pub loader: ModLoader,
     pub loader_version: Option<LoaderVersionPreference>,
     pub install_dir: PathBuf,
-    pub java_path: Option<String>,
+    pub java_path: Option<JavaPath>,
 }

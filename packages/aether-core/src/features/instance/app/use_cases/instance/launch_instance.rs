@@ -166,11 +166,7 @@ impl LaunchInstanceUseCase {
                     game_version: instance.game_version.clone(),
                     loader: instance.loader,
                     loader_version: instance.loader_version.clone(),
-                    java_path: if instance.java_path.data.is_empty() {
-                        None
-                    } else {
-                        Some(instance.java_path.data.clone())
-                    },
+                    java_path: instance.java_path_override(),
                 })
                 .await
                 .unwrap_or(true)
@@ -222,11 +218,7 @@ impl LaunchInstanceUseCase {
                     loader: instance.loader,
                     loader_version: instance.loader_version.clone(),
                     launch_dir: instance_path,
-                    java_path: if instance.java_path.data.is_empty() {
-                        None
-                    } else {
-                        Some(instance.java_path.data.clone())
-                    },
+                    java_path: instance.java_path_override(),
                 },
                 launch_settings.clone(),
                 credentials,

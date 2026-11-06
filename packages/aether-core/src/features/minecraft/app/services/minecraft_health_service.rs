@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use daedalus::get_path_from_artifact;
 
 use crate::features::{
-    java::JavaQueryService,
+    java::{JavaPath, JavaQueryService},
     minecraft::{
         GameVersion, LoaderVersionPreference, LoaderVersionService, MinecraftApplicationError,
         MinecraftDownloader, MinecraftHealthService, ModLoader, VersionManifestService,
@@ -19,7 +19,7 @@ pub struct MinecraftHealthParams {
     pub game_version: GameVersion,
     pub loader: ModLoader,
     pub loader_version: Option<LoaderVersionPreference>,
-    pub java_path: Option<String>,
+    pub java_path: Option<JavaPath>,
 }
 
 pub struct MinecraftFileHealthService {
@@ -89,7 +89,7 @@ impl MinecraftHealthService for MinecraftFileHealthService {
 
         // --- Step 4: Check Java binary ---
         let java_ok = if let Some(java_path) = java_path.as_ref() {
-            Path::new(java_path).exists()
+            java_path.as_path().exists()
         } else {
             let compatible_version = get_compatible_java_version(&version_info);
             match self.get_java_use_case.execute(compatible_version).await {

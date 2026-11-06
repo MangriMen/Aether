@@ -1,7 +1,4 @@
-use std::{
-    path::{Path, PathBuf},
-    sync::Arc,
-};
+use std::{path::PathBuf, sync::Arc};
 
 use async_trait::async_trait;
 use tokio::process::Command;
@@ -11,7 +8,7 @@ use crate::{
         auth::Credential,
         java::{
             InstallJava, Java, JavaApplicationError, JavaInstallService, JavaInstallationService,
-            JavaQueryService,
+            JavaPath, JavaQueryService,
         },
         minecraft::{
             GameVersion, JvmArgumentsParams, LaunchSettings, LoaderVersionPreference,
@@ -34,7 +31,7 @@ pub struct GetMinecraftLaunchCommandParams {
     pub loader: ModLoader,
     pub loader_version: Option<LoaderVersionPreference>,
     pub launch_dir: PathBuf,
-    pub java_path: Option<String>,
+    pub java_path: Option<JavaPath>,
 }
 
 pub struct GetMinecraftLaunchCommandUseCase {
@@ -104,7 +101,7 @@ impl GetMinecraftLaunchCommandUseCase {
 
         let java = if let Some(java_path) = java_path.as_ref() {
             self.java_installation_service
-                .locate_java(Path::new(java_path))
+                .locate_java(java_path.as_path())
                 .await
                 .map_err(|err| {
                     MinecraftApplicationError::JavaError(JavaApplicationError::Domain(err))
