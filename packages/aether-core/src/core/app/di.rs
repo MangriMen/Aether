@@ -373,6 +373,7 @@ impl AetherContainer {
             .get_or_init(|| {
                 Arc::new(InstallInstanceUseCase::new(
                     self.storage().instance_storage.clone(),
+                    self.loader_version_resolver(),
                     self.minecraft_install_use_case(),
                     self.progress_service().clone(),
                     self.location_info().clone(),
