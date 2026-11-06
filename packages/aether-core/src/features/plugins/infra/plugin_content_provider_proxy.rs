@@ -23,8 +23,8 @@ use crate::features::{
         ContentProviderCapabilityMetadata, ContentSearchParams, ContentSearchResult,
         ContentVersion, ContentVersionId, ContentVersionMetadata, InstallFileEntry, InstallPlan,
         InstallTarget, Instance, InstanceError, InstanceId, OverrideLocation, OverrideSource,
-        PackMetadata, PackSource, PluginId, ProviderId, ResolveInstallPlanParams, ResolveTarget,
-        ResolvedFile,
+        PackMetadata, PackSource, PageIndex, PageSize, PluginId, ProviderId,
+        ResolveInstallPlanParams, ResolveTarget, ResolvedFile,
     },
     minecraft::GameVersion,
     plugins::{
@@ -362,8 +362,10 @@ impl ContentProvider for PluginContentProviderProxy {
             .call_plugin("search", &self.capability.handlers.search, dto)
             .await?;
         Ok(ContentSearchResult {
-            page: result_dto.page,
-            page_size: result_dto.page_size,
+            page: PageIndex::parse(i64::from(result_dto.page))
+                .map_err(|err| self.invalid_answer("search", err))?,
+            page_size: PageSize::parse(i64::from(result_dto.page_size))
+                .map_err(|err| self.invalid_answer("search", err))?,
             page_count: result_dto.page_count,
             provider_id: result_dto
                 .provider_id

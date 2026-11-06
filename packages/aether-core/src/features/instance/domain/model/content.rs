@@ -23,9 +23,9 @@ pub struct ContentSearchParams {
 
 #[derive(Clone, Debug)]
 pub struct ContentSearchResult {
-    pub page: i64,
-    pub page_size: i64,
-    pub page_count: i64,
+    pub page: PageIndex,
+    pub page_size: PageSize,
+    pub page_count: u32,
     pub provider_id: ProviderId,
     pub items: Vec<ContentItem>,
 }

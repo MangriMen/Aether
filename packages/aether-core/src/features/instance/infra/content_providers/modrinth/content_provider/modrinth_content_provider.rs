@@ -562,7 +562,11 @@ impl<RC: RequestClient> ContentProvider for ModrinthContentProvider<RC> {
             .await
             .map_err(|err| InstanceError::ContentDownloadError(err.clone()))?;
 
-        Ok(response.into_content_search(provider_id))
+        response.into_content_search(provider_id).map_err(|err| {
+            InstanceError::ContentProviderError {
+                reason: format!("Invalid search response: {err}"),
+            }
+        })
     }
 
     async fn resolve_file(

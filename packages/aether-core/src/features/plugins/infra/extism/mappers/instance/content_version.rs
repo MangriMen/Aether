@@ -28,7 +28,7 @@ impl From<ContentVersion> for ContentVersionDto {
             status: value.status.into(),
             requested_status: value.requested_status.map(Into::into),
             date_published: value.date_published,
-            downloads: i64::try_from(value.downloads).unwrap_or(i64::MAX),
+            downloads: value.downloads,
             web_url: value.web_url.map(String::from).unwrap_or_default(),
         }
     }
@@ -113,7 +113,7 @@ impl TryFrom<ContentVersionDto> for ContentVersion {
             status: value.status.into(),
             requested_status: value.requested_status.map(Into::into),
             date_published: value.date_published,
-            downloads: u64::try_from(value.downloads).unwrap_or_default(),
+            downloads: value.downloads,
             web_url: display_url("page of a plugin's content version", Some(value.web_url)),
         })
     }
@@ -207,7 +207,7 @@ mod tests {
         assert_eq!(version.game_versions, ["1.21.1", "1.21.4"]);
     }
 
-    fn version_dto(downloads: i64) -> ContentVersionDto {
+    fn version_dto(downloads: u64) -> ContentVersionDto {
         ContentVersionDto {
             id: "IZskON6d".into(),
             content_id: "AANobbMI".into(),
@@ -229,17 +229,10 @@ mod tests {
     }
 
     #[test]
-    fn should_count_no_downloads_when_a_plugin_reports_a_negative_count() {
-        let version = ContentVersion::try_from(version_dto(-5)).unwrap();
+    fn should_keep_the_download_count_when_converted_both_ways() {
+        let version = ContentVersion::try_from(version_dto(u64::MAX)).unwrap();
 
-        assert_eq!(version.downloads, 0);
-    }
-
-    #[test]
-    fn should_saturate_the_downloads_when_the_count_is_above_i64_max() {
-        let mut version = ContentVersion::try_from(version_dto(0)).unwrap();
-        version.downloads = u64::MAX;
-
-        assert_eq!(ContentVersionDto::from(version).downloads, i64::MAX);
+        assert_eq!(version.downloads, u64::MAX);
+        assert_eq!(ContentVersionDto::from(version).downloads, u64::MAX);
     }
 }
