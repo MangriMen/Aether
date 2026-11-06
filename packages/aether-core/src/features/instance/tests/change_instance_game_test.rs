@@ -78,9 +78,18 @@ impl LoaderVersionService for DefaultLoaderVersion {
         &self,
         _: &GameVersion,
         _: &ModLoader,
-        _: Option<&LoaderVersionPreference>,
+        preference: Option<&LoaderVersionPreference>,
     ) -> Result<Option<modded::LoaderVersion>, MinecraftDomainError> {
-        Ok(None)
+        // `Stable` and `Latest` resolve to `0.16.5`, the version the fixture instance has.
+        let id = match preference {
+            Some(LoaderVersionPreference::Exact(id)) => id.to_string(),
+            _ => "0.16.5".to_string(),
+        };
+        Ok(Some(modded::LoaderVersion {
+            url: format!("https://meta/{id}"),
+            id,
+            stable: true,
+        }))
     }
 
     async fn try_get_default(
@@ -214,6 +223,22 @@ async fn should_do_nothing_when_the_instance_already_runs_the_game() {
 
     assert!(fixture.installed().is_empty());
     assert_eq!(fixture.storage.instance().modified, before.modified);
+}
+
+#[tokio::test]
+async fn should_do_nothing_when_stable_resolves_to_the_version_the_instance_has() {
+    let fixture = Fixture::new(false);
+
+    fixture
+        .change(InstanceGame {
+            game_version: GameVersion::from_static("1.21.1"),
+            mod_loader: ModLoader::Fabric,
+            loader_version: Some(LoaderVersionPreference::Stable),
+        })
+        .await
+        .unwrap();
+
+    assert!(fixture.installed().is_empty());
 }
 
 #[tokio::test]

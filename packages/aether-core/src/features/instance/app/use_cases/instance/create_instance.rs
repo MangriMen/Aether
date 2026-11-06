@@ -12,8 +12,8 @@ use crate::features::{
         app::ports::CreateInstanceUseCasePort,
     },
     minecraft::{
-        GameVersion, LoaderVersionPreference, LoaderVersionService, MinecraftApplicationError,
-        ModLoader,
+        GameVersion, LoaderVersionId, LoaderVersionPreference, LoaderVersionService,
+        MinecraftApplicationError, ModLoader,
     },
 };
 
@@ -241,7 +241,9 @@ impl CreateInstanceUseCase {
 }
 
 /// The loader version an instance of `game_version` and `mod_loader` gets: `loader_version`
-/// checked to exist, or the default one when it is `None`; nothing for vanilla.
+/// (or the default one when it is `None`) resolved against the manifest and pinned to the
+/// concrete version it names, so that `Stable` and `Latest` do not drift on a later install;
+/// nothing for vanilla.
 pub(crate) async fn resolve_loader_version(
     loader_version_service: &dyn LoaderVersionService,
     game_version: &GameVersion,
@@ -252,20 +254,36 @@ pub(crate) async fn resolve_loader_version(
         return Ok(None);
     }
 
-    match loader_version {
-        Some(loader_version) => {
-            loader_version_service
-                .resolve(game_version, &mod_loader, Some(&loader_version))
-                .await
-                .map_err(MinecraftApplicationError::Domain)?;
-
-            Ok(Some(loader_version))
-        }
-        None => Ok(loader_version_service
+    let preference = match loader_version {
+        Some(preference) => preference,
+        None => match loader_version_service
             .try_get_default(game_version, &mod_loader)
             .await
-            .map_err(MinecraftApplicationError::Domain)?),
-    }
+            .map_err(MinecraftApplicationError::Domain)?
+        {
+            Some(preference) => preference,
+            None => return Ok(None),
+        },
+    };
+
+    let resolved = loader_version_service
+        .resolve(game_version, &mod_loader, Some(&preference))
+        .await
+        .map_err(MinecraftApplicationError::Domain)?;
+
+    pin(preference, resolved.map(|it| it.id)).map(Some)
+}
+
+/// `preference` made exact: the id the manifest resolved it to, or `preference` itself when the
+/// service named none.
+fn pin(
+    preference: LoaderVersionPreference,
+    resolved_id: Option<String>,
+) -> Result<LoaderVersionPreference, InstanceError> {
+    Ok(match resolved_id {
+        Some(id) => LoaderVersionPreference::Exact(LoaderVersionId::try_from(id)?),
+        None => preference,
+    })
 }
 
 #[async_trait]
@@ -284,5 +302,38 @@ impl CreateInstanceUseCasePort for CreateInstanceUseCase {
         parent_bar: Option<&ProgressBarId>,
     ) -> Result<InstanceId, InstanceError> {
         self.execute_for_pack(new_instance, parent_bar).await
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn should_pin_the_resolved_id_when_the_preference_is_stable_or_latest() {
+        for preference in [
+            LoaderVersionPreference::Stable,
+            LoaderVersionPreference::Latest,
+        ] {
+            assert_eq!(
+                pin(preference, Some("0.16.10".to_string())).unwrap(),
+                LoaderVersionPreference::Exact(LoaderVersionId::from_static("0.16.10"))
+            );
+        }
+    }
+
+    #[test]
+    fn should_keep_the_preference_when_nothing_was_resolved() {
+        assert_eq!(
+            pin(LoaderVersionPreference::Stable, None).unwrap(),
+            LoaderVersionPreference::Stable
+        );
+    }
+
+    #[test]
+    fn should_refuse_a_resolved_id_when_it_is_not_a_valid_loader_version() {
+        let err = pin(LoaderVersionPreference::Stable, Some("1 2".to_string())).unwrap_err();
+
+        assert!(matches!(err, InstanceError::InvalidLoaderVersion { .. }));
     }
 }

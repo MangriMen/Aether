@@ -128,7 +128,7 @@ impl LaunchInstanceUseCase {
             Err(LockRefused::Paused) => return Err(InstanceError::CachesBeingCleared),
         };
         let settings = self.default_instance_settings_storage.get().await?;
-        let instance = self.instance_storage.get(&instance_id).await?;
+        let mut instance = self.instance_storage.get(&instance_id).await?;
 
         let launch_settings = Self::resolve_launch_settings(&instance, &settings);
 
@@ -178,6 +178,8 @@ impl LaunchInstanceUseCase {
             self.instance_install_service
                 .execute(instance_id.clone(), false, None)
                 .await?;
+            // The install may have pinned the loader version.
+            instance = self.instance_storage.get(&instance_id).await?;
         }
 
         let pre_launch_command = launch_settings.hooks.pre_launch();

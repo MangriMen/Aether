@@ -8,12 +8,16 @@ use crate::features::{
         Instance, InstanceError, InstanceId, InstanceInstallService, InstanceInstallStage,
         InstanceStorage, InstanceStorageExt,
     },
-    minecraft::{InstallMinecraftParams, MinecraftInstallService},
+    minecraft::{
+        InstallMinecraftParams, LoaderVersionId, LoaderVersionPreference, LoaderVersionService,
+        MinecraftInstallService, ModLoader,
+    },
     settings::LocationInfo,
 };
 
 pub struct InstallInstanceUseCase {
     instance_storage: Arc<dyn InstanceStorage>,
+    loader_version_service: Arc<dyn LoaderVersionService>,
     install_minecraft_service: Arc<dyn MinecraftInstallService>,
     progress_service: Arc<dyn ProgressService>,
     location_info: Arc<LocationInfo>,
@@ -22,12 +26,14 @@ pub struct InstallInstanceUseCase {
 impl InstallInstanceUseCase {
     pub fn new(
         instance_storage: Arc<dyn InstanceStorage>,
+        loader_version_service: Arc<dyn LoaderVersionService>,
         install_minecraft_service: Arc<dyn MinecraftInstallService>,
         progress_service: Arc<dyn ProgressService>,
         location_info: Arc<LocationInfo>,
     ) -> Self {
         Self {
             instance_storage,
+            loader_version_service,
             install_minecraft_service,
             progress_service,
             location_info,
@@ -86,6 +92,64 @@ impl InstallInstanceUseCase {
             .await
     }
 
+    /// The loader version an instance is installed with. An instance that still holds `Stable`
+    /// or `Latest` gets the version they resolve to now, stored as exact, so a later reinstall
+    /// does not move to a newer one. A loader that cannot be resolved is left as it is: the
+    /// install reports why.
+    async fn pin_loader_version(&self, instance: &mut Instance) {
+        if instance.loader == ModLoader::Vanilla {
+            return;
+        }
+        let Some(preference) = instance.loader_version.clone() else {
+            return;
+        };
+        if matches!(preference, LoaderVersionPreference::Exact(_)) {
+            return;
+        }
+
+        let resolved = match self
+            .loader_version_service
+            .resolve(&instance.game_version, &instance.loader, Some(&preference))
+            .await
+        {
+            Ok(Some(resolved)) => resolved,
+            Ok(None) => return,
+            Err(err) => {
+                tracing::warn!(error = %err, "Could not resolve the loader version to pin");
+                return;
+            }
+        };
+        let id = match LoaderVersionId::try_from(resolved.id) {
+            Ok(id) => id,
+            Err(err) => {
+                tracing::warn!(error = %err, "The resolved loader version is not a valid id");
+                return;
+            }
+        };
+        let exact = LoaderVersionPreference::Exact(id);
+
+        let stored = exact.clone();
+        let game_version = instance.game_version.clone();
+        let loader = instance.loader;
+        match self
+            .instance_storage
+            .upsert_with(instance.id(), move |it| {
+                // Only for the game it was resolved for: an edit that landed meanwhile wins.
+                if it.game_version == game_version
+                    && it.loader == loader
+                    && it.loader_version == Some(preference)
+                {
+                    it.loader_version = Some(stored);
+                }
+                Ok(())
+            })
+            .await
+        {
+            Ok(()) => instance.loader_version = Some(exact),
+            Err(err) => tracing::warn!(error = %err, "Could not store the pinned loader version"),
+        }
+    }
+
     pub async fn execute(
         &self,
         instance_id: InstanceId,
@@ -93,7 +157,7 @@ impl InstallInstanceUseCase {
         parent_bar: Option<&ProgressBarId>,
     ) -> Result<(), InstanceError> {
         let mut previous_stage = InstanceInstallStage::NotInstalled;
-        let instance = self
+        let mut instance = self
             .instance_storage
             .update(
                 &instance_id,
@@ -105,6 +169,7 @@ impl InstallInstanceUseCase {
             )
             .await?;
         let pack_pending = previous_stage == InstanceInstallStage::PackInstalling;
+        self.pin_loader_version(&mut instance).await;
 
         let install_dir = self.location_info.instance_dir(&instance_id);
 

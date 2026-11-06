@@ -16,7 +16,9 @@ use crate::features::{
         InstanceInstallStage, InstanceStorage, PackInfo, ProviderId,
     },
     minecraft::{
-        InstallMinecraftParams, MinecraftApplicationError, MinecraftInstallService, ModLoader,
+        InstallMinecraftParams, LoaderVersionId, LoaderVersionPreference, LoaderVersionService,
+        MinecraftApplicationError, MinecraftDomainError, MinecraftInstallService, ModLoader,
+        modded,
     },
     settings::LocationInfo,
 };
@@ -93,6 +95,37 @@ impl MinecraftInstallService for StubMinecraftInstall {
 }
 
 /// Progress is best-effort in the use case (`*_safe`), so failing every call is enough.
+/// A loader service that resolves every preference to the id it holds, or `0.16.10`.
+struct NoLoaders;
+
+#[async_trait]
+impl LoaderVersionService for NoLoaders {
+    async fn resolve(
+        &self,
+        _: &GameVersion,
+        _: &ModLoader,
+        preference: Option<&LoaderVersionPreference>,
+    ) -> Result<Option<modded::LoaderVersion>, MinecraftDomainError> {
+        let id = match preference {
+            Some(LoaderVersionPreference::Exact(id)) => id.to_string(),
+            _ => "0.16.10".to_string(),
+        };
+        Ok(Some(modded::LoaderVersion {
+            url: format!("https://meta/{id}"),
+            id,
+            stable: true,
+        }))
+    }
+
+    async fn try_get_default(
+        &self,
+        _: &GameVersion,
+        _: &ModLoader,
+    ) -> Result<Option<LoaderVersionPreference>, MinecraftDomainError> {
+        Ok(None)
+    }
+}
+
 struct NoProgress;
 
 #[async_trait]
@@ -168,6 +201,7 @@ async fn run_install(
     });
     let use_case = InstallInstanceUseCase::new(
         storage.clone(),
+        Arc::new(NoLoaders),
         Arc::new(StubMinecraftInstall { fail }),
         Arc::new(NoProgress),
         location_info,
@@ -280,6 +314,7 @@ async fn should_be_installing_while_a_working_instance_is_reinstalled() {
     });
     let use_case = InstallInstanceUseCase::new(
         storage.clone(),
+        Arc::new(NoLoaders),
         probe.clone(),
         Arc::new(NoProgress),
         location_info,
@@ -436,6 +471,7 @@ async fn should_put_the_bar_of_the_game_under_the_parent_bar_when_there_is_one()
         Arc::new(MemStorage {
             instances: Mutex::new(vec![instance]),
         }),
+        Arc::new(NoLoaders),
         minecraft.clone(),
         progress.clone(),
         location_info,
@@ -517,6 +553,7 @@ async fn should_keep_an_edit_made_while_the_game_installs() {
     });
     let use_case = InstallInstanceUseCase::new(
         storage.clone(),
+        Arc::new(NoLoaders),
         Arc::new(RenameDuringInstall(storage.clone())),
         Arc::new(NoProgress),
         location_info,
@@ -527,4 +564,61 @@ async fn should_keep_an_edit_made_while_the_game_installs() {
     let stored = storage.get(&id).await.unwrap();
     assert_eq!(stored.name().as_str(), "renamed");
     assert_eq!(stored.install_stage, InstanceInstallStage::Installed);
+}
+
+async fn loader_version_after_install(
+    loader_version: LoaderVersionPreference,
+) -> Option<LoaderVersionPreference> {
+    let temp = TempDir::new().unwrap();
+    let location_info = Arc::new(LocationInfo::new(
+        temp.path().join("settings"),
+        temp.path().to_path_buf(),
+    ));
+    let instance = InstanceBuilder::new(
+        InstanceId::try_from("inst").unwrap(),
+        InstanceName::parse("inst").unwrap(),
+        GameVersion::from_static("1.20.1"),
+        ModLoader::Fabric,
+    )
+    .with_loader_version(Some(loader_version))
+    .build();
+    let id = instance.id().clone();
+    let storage = Arc::new(MemStorage {
+        instances: Mutex::new(vec![instance]),
+    });
+    let use_case = InstallInstanceUseCase::new(
+        storage.clone(),
+        Arc::new(NoLoaders),
+        Arc::new(StubMinecraftInstall { fail: false }),
+        Arc::new(NoProgress),
+        location_info,
+    );
+
+    use_case.execute(id.clone(), false, None).await.unwrap();
+    storage.get(&id).await.unwrap().loader_version
+}
+
+#[tokio::test]
+async fn should_pin_the_loader_version_when_an_instance_holds_stable_or_latest() {
+    for preference in [
+        LoaderVersionPreference::Stable,
+        LoaderVersionPreference::Latest,
+    ] {
+        assert_eq!(
+            loader_version_after_install(preference).await,
+            Some(LoaderVersionPreference::Exact(
+                LoaderVersionId::from_static("0.16.10")
+            ))
+        );
+    }
+}
+
+#[tokio::test]
+async fn should_keep_the_loader_version_when_it_is_exact() {
+    let exact = LoaderVersionPreference::Exact(LoaderVersionId::from_static("0.15.0"));
+
+    assert_eq!(
+        loader_version_after_install(exact.clone()).await,
+        Some(exact)
+    );
 }

@@ -55,9 +55,19 @@ impl ChangeInstanceGameUseCase {
             self.loader_version_service.as_ref(),
             &game.game_version,
             game.mod_loader,
-            game.loader_version,
+            game.loader_version.clone(),
         )
         .await?;
+
+        // A request for `Stable` or `Latest` is the version it resolves to: when that is the one
+        // the instance already has, nothing moves.
+        let resolved = InstanceGame {
+            loader_version: loader_version.clone(),
+            ..game.clone()
+        };
+        if resolved.is_run_by(&instance) {
+            return Ok(());
+        }
 
         info!(
             "Moving instance \"{instance_id}\" from minecraft \"{}\" ({:?} {:?}) to \"{}\" ({:?} {:?})",
