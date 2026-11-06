@@ -3,6 +3,7 @@ use chrono::{DateTime, Utc};
 use crate::{
     features::{
         instance::InstanceSnapshot,
+        java::JavaPath,
         minecraft::{GameVersion, LoaderVersionPreference, ModLoader},
         settings::{Hooks, MemorySettings, WindowSettings},
     },
@@ -92,12 +93,34 @@ impl Instance {
         false
     }
 
-    pub fn update_java_path_data(&mut self, data: String) -> bool {
+    /// `None` clears the path.
+    pub fn update_java_path_data(&mut self, path: Option<JavaPath>) -> bool {
+        let data = path.map(String::from).unwrap_or_default();
         if self.java_path.data != data {
             self.java_path.data = data;
             return true;
         }
         false
+    }
+
+    /// The Java runtime this instance is set to use instead of the one its game needs: the path
+    /// when the override is on and holds a usable path. A stored path that is not a [`JavaPath`]
+    /// (the file was edited by hand) is ignored with a warning.
+    pub fn java_path_override(&self) -> Option<JavaPath> {
+        if !self.java_path.is_active || self.java_path.data.is_empty() {
+            return None;
+        }
+        match JavaPath::parse(&self.java_path.data) {
+            Ok(path) => Some(path),
+            Err(err) => {
+                tracing::warn!(
+                    instance = %self.id,
+                    error = %err,
+                    "Ignoring the Java path of the instance"
+                );
+                None
+            }
+        }
     }
 
     pub fn update_launch_args_active(&mut self, is_active: bool) -> bool {
@@ -489,12 +512,36 @@ mod tests {
         assert!(!instance.update_java_path_active(true));
     }
 
+    fn java_path() -> JavaPath {
+        JavaPath::try_from(std::env::temp_dir().join("java").as_path()).unwrap()
+    }
+
     #[test]
     fn should_update_java_path_data_when_the_path_changes() {
         let mut instance = make_built_instance("name");
-        assert!(instance.update_java_path_data("/usr/bin/java".into()));
-        assert_eq!(instance.java_path.data, "/usr/bin/java");
-        assert!(!instance.update_java_path_data("/usr/bin/java".into()));
+        assert!(instance.update_java_path_data(Some(java_path())));
+        assert_eq!(instance.java_path.data, java_path().as_str());
+        assert!(!instance.update_java_path_data(Some(java_path())));
+        assert!(instance.update_java_path_data(None));
+        assert!(instance.java_path.data.is_empty());
+    }
+
+    #[test]
+    fn should_use_the_java_path_only_when_the_override_is_on() {
+        let mut instance = make_built_instance("name");
+        instance.update_java_path_data(Some(java_path()));
+        assert_eq!(instance.java_path_override(), None);
+
+        instance.update_java_path_active(true);
+        assert_eq!(instance.java_path_override(), Some(java_path()));
+    }
+
+    #[test]
+    fn should_ignore_the_java_path_when_it_is_stored_relative() {
+        let mut instance = make_built_instance("name");
+        instance.java_path = Overridable::new("java17".to_string(), true);
+
+        assert_eq!(instance.java_path_override(), None);
     }
 
     // ── InstanceBuilder ──

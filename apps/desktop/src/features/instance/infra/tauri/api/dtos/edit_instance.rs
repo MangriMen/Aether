@@ -1,4 +1,7 @@
-use aether_core::features::instance::{EditInstance, InstanceName};
+use aether_core::features::{
+    instance::{EditInstance, InstanceName},
+    java::{JavaApplicationError, JavaDomainError, JavaPath},
+};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
@@ -50,6 +53,16 @@ pub struct EditInstanceDto {
     pub hooks: Option<EditHooksDto>,
 }
 
+/// A path to use, or `None` to clear it when the text is empty.
+fn parse_java_path(path: String) -> Result<Option<JavaPath>, aether_core::Error> {
+    if path.is_empty() {
+        return Ok(None);
+    }
+    let path = JavaPath::try_from(path)
+        .map_err(|err| JavaApplicationError::Domain(JavaDomainError::from(err)))?;
+    Ok(Some(path))
+}
+
 impl TryFrom<EditInstanceDto> for EditInstance {
     type Error = aether_core::Error;
 
@@ -58,7 +71,7 @@ impl TryFrom<EditInstanceDto> for EditInstance {
             name: value.name.map(InstanceName::try_from).transpose()?,
 
             override_java_path: value.override_java_path,
-            java_path: value.java_path,
+            java_path: value.java_path.map(parse_java_path).transpose()?,
 
             override_launch_args: value.override_launch_args,
             launch_args: value.launch_args,
@@ -75,5 +88,29 @@ impl TryFrom<EditInstanceDto> for EditInstance {
             override_hooks: value.override_hooks,
             hooks: value.hooks.map(Into::into),
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn should_clear_the_java_path_when_the_text_is_empty() {
+        assert_eq!(parse_java_path(String::new()).unwrap(), None);
+    }
+
+    #[test]
+    fn should_refuse_a_relative_java_path() {
+        assert!(parse_java_path("java17".to_string()).is_err());
+    }
+
+    #[test]
+    fn should_accept_an_absolute_java_path() {
+        let path = std::env::temp_dir().join("java");
+
+        let parsed = parse_java_path(path.to_string_lossy().into_owned()).unwrap();
+
+        assert_eq!(parsed.unwrap().as_path(), path);
     }
 }

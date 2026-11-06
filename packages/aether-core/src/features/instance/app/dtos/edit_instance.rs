@@ -1,5 +1,6 @@
 use crate::features::{
     instance::{Instance, InstanceError, InstanceName},
+    java::JavaPath,
     settings::{EditHooks, MemorySettings, WindowSettings},
 };
 
@@ -8,7 +9,8 @@ pub struct EditInstance {
     pub name: Option<InstanceName>,
 
     pub override_java_path: Option<bool>,
-    pub java_path: Option<String>,
+    /// `Some(None)` clears the path.
+    pub java_path: Option<Option<JavaPath>>,
 
     pub override_launch_args: Option<bool>,
     pub launch_args: Option<Vec<String>>,
@@ -41,8 +43,8 @@ impl EditInstance {
         if let Some(active) = self.override_java_path {
             is_changed |= instance.update_java_path_active(active);
         }
-        if let Some(data) = self.java_path {
-            is_changed |= instance.update_java_path_data(data);
+        if let Some(path) = self.java_path {
+            is_changed |= instance.update_java_path_data(path);
         }
 
         // Launch Args

@@ -1,4 +1,4 @@
-use std::{path::Path, sync::Arc};
+use std::sync::Arc;
 
 use async_trait::async_trait;
 use tracing::debug;
@@ -96,7 +96,7 @@ impl InstallMinecraftUseCase {
 
         let java = if let Some(java_path) = java_path.as_ref() {
             self.java_installation_service
-                .locate_java(Path::new(java_path))
+                .locate_java(java_path.as_path())
                 .await
                 .map_err(|err| {
                     MinecraftApplicationError::JavaError(JavaApplicationError::Domain(err))
