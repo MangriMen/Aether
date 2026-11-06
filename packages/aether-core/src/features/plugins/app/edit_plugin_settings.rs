@@ -24,6 +24,9 @@ use super::ports::EditPluginSettingsUseCasePort;
 pub struct EditPluginSettings {
     pub allowed_hosts: Option<Vec<String>>,
     pub allowed_paths: Option<Vec<AllowedPathInput>>,
+    /// The saved folders that were not read, to keep: any other is deleted from the settings.
+    /// An entry here only keeps one that is already saved, it never adds one.
+    pub ignored_paths: Option<Vec<AllowedPathInput>>,
 }
 
 /// Saves the user's changes to a plugin's settings, running or not. Hosts take effect on the
@@ -52,7 +55,7 @@ impl EditPluginSettingsUseCase {
         &self,
         plugin_id: PluginId,
         edit_settings: EditPluginSettings,
-    ) -> Result<(), PluginError> {
+    ) -> Result<PluginSettings, PluginError> {
         let _settings_lock = self.plugin_registry.lock_settings(&plugin_id).await;
         let current = settings_to_edit(self.plugin_settings_storage.as_ref(), &plugin_id)
             .await?
@@ -62,7 +65,9 @@ impl EditPluginSettingsUseCase {
 
         self.plugin_settings_storage
             .upsert(&plugin_id, &merged)
-            .await
+            .await?;
+
+        Ok(merged)
     }
 }
 
@@ -160,6 +165,13 @@ fn apply_edit_changes(
         settings.allowed_paths = kept;
     }
 
+    if let Some(keep) = edit_settings.ignored_paths {
+        settings.ignored_paths.retain(|ignored| {
+            keep.iter()
+                .any(|kept| kept.host == ignored.path.host && kept.plugin == ignored.path.plugin)
+        });
+    }
+
     Ok(settings)
 }
 
@@ -169,7 +181,7 @@ impl EditPluginSettingsUseCasePort for EditPluginSettingsUseCase {
         &self,
         plugin_id: PluginId,
         edit_settings: EditPluginSettings,
-    ) -> Result<(), PluginError> {
+    ) -> Result<PluginSettings, PluginError> {
         self.execute(plugin_id, edit_settings).await
     }
 }
@@ -178,7 +190,7 @@ impl EditPluginSettingsUseCasePort for EditPluginSettingsUseCase {
 mod tests {
     use tempfile::TempDir;
 
-    use crate::features::plugins::AllowedPath;
+    use crate::features::plugins::{AllowedPath, IgnoredAllowedPath};
 
     use super::*;
 
@@ -335,6 +347,7 @@ mod tests {
             EditPluginSettings {
                 allowed_hosts: Some(vec!["example.com".into()]),
                 allowed_paths: Some(sent),
+                ..EditPluginSettings::default()
             },
         )
         .expect("a stale saved folder must not block the edit");
@@ -512,6 +525,52 @@ mod tests {
         let saved = storage.saved.lock().unwrap().clone().unwrap();
         assert_eq!(saved.allowed_hosts, ["example.com"]);
         assert_eq!(saved.allowed_paths, []);
+    }
+
+    fn ignored(host: &str, plugin: &str) -> IgnoredAllowedPath {
+        IgnoredAllowedPath {
+            path: AllowedPathInput {
+                host: host.into(),
+                plugin: plugin.into(),
+                read_only: true,
+            },
+            reason: AllowedPathRejection::PluginReserved,
+        }
+    }
+
+    fn edit_ignored(keep: Option<Vec<AllowedPathInput>>) -> PluginSettings {
+        apply_edit_changes(
+            &PluginId::from_static("packwiz"),
+            &[],
+            PluginSettings {
+                ignored_paths: vec![ignored("/a", "/cache"), ignored("/b", "/instances")],
+                ..PluginSettings::default()
+            },
+            EditPluginSettings {
+                ignored_paths: keep,
+                ..EditPluginSettings::default()
+            },
+        )
+        .unwrap()
+    }
+
+    #[test]
+    fn should_delete_the_ignored_folders_that_are_not_kept_when_the_edit_lists_some() {
+        let settings = edit_ignored(Some(vec![ignored("/b", "/instances").path]));
+
+        assert_eq!(settings.ignored_paths, [ignored("/b", "/instances")]);
+    }
+
+    #[test]
+    fn should_keep_every_ignored_folder_when_the_edit_does_not_list_them() {
+        assert_eq!(edit_ignored(None).ignored_paths.len(), 2);
+    }
+
+    #[test]
+    fn should_not_add_an_ignored_folder_when_the_edit_lists_one_that_is_not_saved() {
+        let settings = edit_ignored(Some(vec![ignored("/c", "/cache").path]));
+
+        assert!(settings.ignored_paths.is_empty());
     }
 
     #[tokio::test]

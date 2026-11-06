@@ -1,10 +1,16 @@
+import IconMdiAlert from '~icons/mdi/alert';
 import IconMdiArrowRightBold from '~icons/mdi/arrow-right-bold';
 import IconMdiMonitor from '~icons/mdi/monitor';
 import IconMdiPuzzle from '~icons/mdi/puzzle';
-import { splitProps, type Component, type ComponentProps } from 'solid-js';
+import {
+  Show,
+  splitProps,
+  type Component,
+  type ComponentProps,
+} from 'solid-js';
 
 import { useTranslation } from '@/shared/i18n';
-import { Badge } from '@/shared/ui-kit';
+import { Badge, CombinedTooltip } from '@/shared/ui-kit';
 import { cn } from '@/shared/utils';
 
 import type { AllowedItemProps } from '../model/allowedItem';
@@ -34,6 +40,13 @@ export const AllowedPath: Component<AllowedPathProps> = (props) => {
       ? t('pluginSettings.readWrite')
       : t('pluginSettings.readOnly');
 
+  const ignoredLabel = () => {
+    const reason = local.value?.ignoredReason;
+    return reason === undefined
+      ? undefined
+      : t(`pluginSettings.ignoredPath.${reason}`);
+  };
+
   return (
     <div
       class={cn(
@@ -46,6 +59,17 @@ export const AllowedPath: Component<AllowedPathProps> = (props) => {
       )}
       {...others}
     >
+      <Show when={ignoredLabel()}>
+        {(label) => (
+          <CombinedTooltip
+            as='span'
+            label={label()}
+            class='text-warning my-auto shrink-0'
+          >
+            <IconMdiAlert aria-label={label()} />
+          </CombinedTooltip>
+        )}
+      </Show>
       <div class='grid w-full min-w-0 grid-cols-[1fr_auto_1fr] items-start'>
         <div class='flex h-full min-w-0 flex-col'>
           <AllowedPathComponent

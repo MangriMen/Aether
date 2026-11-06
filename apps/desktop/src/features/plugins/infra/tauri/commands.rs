@@ -247,7 +247,7 @@ async fn edit_settings(
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
     container: State<'_, ContainerState>,
-) -> FrontendResult<()> {
+) -> FrontendResult<PluginSettingsDto> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
     let id = parse_id(id)?;
@@ -256,7 +256,8 @@ async fn edit_settings(
         .edit_plugin_settings_use_case()
         .execute(id, edit_settings.into())
         .await
-        .map_err(aether_core::Error::from)?)
+        .map_err(aether_core::Error::from)?
+        .into())
 }
 
 /// Gives the plugin read access to the folder of a file the user named for it, restarting the

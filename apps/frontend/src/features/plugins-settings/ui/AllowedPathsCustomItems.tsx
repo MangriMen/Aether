@@ -92,6 +92,7 @@ export const AllowedPathsCustomItems: Component<
                           hostPath: field.input?.hostPath ?? '',
                           pluginPath: field.input?.pluginPath ?? '',
                           readOnly: field.input?.readOnly ?? true,
+                          ignoredReason: field.input?.ignoredReason,
                         }}
                         error={{
                           hostPath: hostField.errors?.[0],

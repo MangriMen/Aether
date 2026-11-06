@@ -23,12 +23,13 @@ export const commands = {
 	allowedHosts?: string[],
 	allowedPaths?: AllowedPathDto[],
 	/**
-	 *  Saved folders that were left out because the plugin side is not a path a plugin may
-	 *  have. They are gone from the file once the settings are saved.
+	 *  Saved folders that were left out because they are not valid (for example the plugin side
+	 *  is not a path a plugin may have). Never mounted, but kept in the file until the user
+	 *  removes them: send the ones to keep as `ignoredPaths` of an edit.
 	 */
 	ignoredPaths?: IgnoredAllowedPathDto[],
 } | null>("plugin:plugin|get_settings", { id }),
-	editSettings: (id: string, editSettings: EditPluginSettingsDto, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:plugin|edit_settings", { id, editSettings, requestId }),
+	editSettings: (id: string, editSettings: EditPluginSettingsDto, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<PluginSettingsDto>("plugin:plugin|edit_settings", { id, editSettings, requestId }),
 	/**
 	 *  Gives the plugin read access to the folder of a file the user named for it, restarting the
 	 *  plugin if it runs. The UI asks the user first: with `dry_run` nothing changes, and the answer
@@ -134,6 +135,8 @@ export type ContentTypeDto = "modpack" | "mod" | "datapack" | "resourcepack" | "
 export type EditPluginSettingsDto = {
 	allowedHosts?: string[] | null,
 	allowedPaths?: AllowedPathDto[] | null,
+	/**  The ignored folders to keep; every other one is deleted. Omit to keep them all. */
+	ignoredPaths?: AllowedPathDto[] | null,
 };
 
 export type EventErrorDto = { code: "NOT_INITIALIZED" } | { code: "NO_LOADING_BAR"; payload: {
@@ -518,8 +521,9 @@ export type PluginSettingsDto = {
 	allowedHosts?: string[],
 	allowedPaths?: AllowedPathDto[],
 	/**
-	 *  Saved folders that were left out because the plugin side is not a path a plugin may
-	 *  have. They are gone from the file once the settings are saved.
+	 *  Saved folders that were left out because they are not valid (for example the plugin side
+	 *  is not a path a plugin may have). Never mounted, but kept in the file until the user
+	 *  removes them: send the ones to keep as `ignoredPaths` of an edit.
 	 */
 	ignoredPaths?: IgnoredAllowedPathDto[],
 };
