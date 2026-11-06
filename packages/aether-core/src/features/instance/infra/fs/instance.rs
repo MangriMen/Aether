@@ -27,12 +27,14 @@ pub enum LoaderVersionPreferenceV1 {
     Exact(String),
 }
 
-impl From<LoaderVersionPreferenceV1> for LoaderVersionPreference {
-    fn from(value: LoaderVersionPreferenceV1) -> Self {
-        match value {
-            LoaderVersionPreferenceV1::Latest => Self::Latest,
-            LoaderVersionPreferenceV1::Stable => Self::Stable,
-            LoaderVersionPreferenceV1::Exact(x) => Self::Exact(x),
+impl LoaderVersionPreferenceV1 {
+    /// The stored preference; an exact id that is not a valid one is dropped with a warning
+    /// (see [`LoaderVersionPreference::exact_from_stored`]).
+    fn into_stored(self, source: &str) -> Option<LoaderVersionPreference> {
+        match self {
+            Self::Latest => Some(LoaderVersionPreference::Latest),
+            Self::Stable => Some(LoaderVersionPreference::Stable),
+            Self::Exact(id) => LoaderVersionPreference::exact_from_stored(id, source),
         }
     }
 }
@@ -42,7 +44,7 @@ impl From<LoaderVersionPreference> for LoaderVersionPreferenceV1 {
         match value {
             LoaderVersionPreference::Latest => Self::Latest,
             LoaderVersionPreference::Stable => Self::Stable,
-            LoaderVersionPreference::Exact(x) => Self::Exact(x),
+            LoaderVersionPreference::Exact(id) => Self::Exact(id.into()),
         }
     }
 }
@@ -182,7 +184,9 @@ impl TryFrom<InstanceV1> for Instance {
 
             game_version: GameVersion::try_from(v1.game_version)?,
             loader: v1.loader.into(),
-            loader_version: v1.loader_version.map(Into::into),
+            loader_version: v1
+                .loader_version
+                .and_then(|v| v.into_stored("instance file loader_version")),
 
             java_path: Overridable::new(
                 v1.java_path.clone().unwrap_or_default(),
@@ -302,7 +306,9 @@ impl TryFrom<InstanceV2> for Instance {
 
             game_version: GameVersion::try_from(v2.game_version)?,
             loader: v2.loader.into(),
-            loader_version: v2.loader_version.map(Into::into),
+            loader_version: v2
+                .loader_version
+                .and_then(|v| v.into_stored("instance file loader_version")),
 
             java_path: v2.java_path,
 

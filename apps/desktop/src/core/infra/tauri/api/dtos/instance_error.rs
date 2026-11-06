@@ -80,6 +80,10 @@ pub enum InstanceErrorDto {
         value: String,
         reason: String,
     },
+    InvalidLoaderVersion {
+        value: String,
+        reason: String,
+    },
     PathEscapesInstance {
         path: String,
         instance_id: String,
@@ -212,6 +216,10 @@ impl From<&InstanceError> for InstanceErrorDto {
                 reason,
             } => Self::InvalidPagination {
                 field: field.clone(),
+                value: value.clone(),
+                reason: reason.clone(),
+            },
+            InstanceError::InvalidLoaderVersion { value, reason } => Self::InvalidLoaderVersion {
                 value: value.clone(),
                 reason: reason.clone(),
             },

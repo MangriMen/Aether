@@ -13,7 +13,7 @@ use crate::{
             Hashes, ModrinthEnv, ModrinthIndex, ModrinthIndexFile,
         },
     },
-    features::minecraft::{GameVersion, ModLoader},
+    features::minecraft::{GameVersion, LoaderVersionId, ModLoader},
     shared::{
         hash::{FileHash, HashAlgorithm},
         limits::{MAX_MRPACK_FILES, MAX_MRPACK_INDEX_BYTES},
@@ -285,7 +285,7 @@ pub(super) fn pack_metadata(
         description: index.summary.clone(),
         game_version: GameVersion::parse(&index.dependencies.minecraft)?,
         mod_loader,
-        loader_version,
+        loader_version: loader_version.map(LoaderVersionId::try_from).transpose()?,
         file_count: Some(index.files.len()),
         icon_url,
     })
@@ -625,6 +625,19 @@ mod tests {
 
         assert!(
             matches!(err, InstanceError::InvalidGameVersion { ref value, .. } if value == "../../escape"),
+            "{err:?}"
+        );
+    }
+
+    #[test]
+    fn should_refuse_the_pack_when_its_loader_version_is_not_a_valid_id() {
+        let mut index = index(Vec::new());
+        index.dependencies.loaders = HashMap::from([("neoforge".into(), "21.1 .77".into())]);
+
+        let err = pack_metadata(&index, None, None).unwrap_err();
+
+        assert!(
+            matches!(err, InstanceError::InvalidLoaderVersion { ref value, .. } if value == "21.1 .77"),
             "{err:?}"
         );
     }

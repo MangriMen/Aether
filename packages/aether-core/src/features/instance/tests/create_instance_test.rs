@@ -1,5 +1,5 @@
 use crate::features::instance::InstanceName;
-use crate::features::minecraft::GameVersion;
+use crate::features::minecraft::{GameVersion, LoaderVersionId};
 use std::{path::Path, sync::Arc};
 
 use async_trait::async_trait;
@@ -102,7 +102,9 @@ impl LoaderVersionService for FailingLoaderService {
     > {
         Err(
             crate::features::minecraft::MinecraftDomainError::LoaderNotFound {
-                loader_version_preference: LoaderVersionPreference::Exact("0.0.0".to_owned()),
+                loader_version_preference: LoaderVersionPreference::Exact(
+                    LoaderVersionId::from_static("0.0.0"),
+                ),
             },
         )
     }
@@ -352,7 +354,9 @@ async fn should_create_an_instance_when_given_a_loader_and_an_explicit_version()
 
     let storage = Arc::new(MemInstanceStorage::new());
     let loader_service = Arc::new(MockLoaderService {
-        try_get_default_result: Some(LoaderVersionPreference::Exact("0.16.5".to_string())),
+        try_get_default_result: Some(LoaderVersionPreference::Exact(
+            LoaderVersionId::from_static("0.16.5"),
+        )),
     });
     let install_service = Arc::new(NoOpInstallService);
     let file_service = Arc::new(MemInstanceFileService::new(instances_root));
@@ -372,7 +376,9 @@ async fn should_create_an_instance_when_given_a_loader_and_an_explicit_version()
         name: InstanceName::parse("Fabric Test").unwrap(),
         game_version: GameVersion::from_static("1.20.1"),
         mod_loader: ModLoader::Fabric,
-        loader_version: Some(LoaderVersionPreference::Exact("0.16.5".to_string())),
+        loader_version: Some(LoaderVersionPreference::Exact(
+            LoaderVersionId::from_static("0.16.5"),
+        )),
         icon_path: None,
         skip_install_instance: Some(true),
         pack_info: None,
@@ -390,7 +396,9 @@ async fn should_create_an_instance_when_given_a_loader_and_an_explicit_version()
     assert_eq!(stored.loader, ModLoader::Fabric);
     assert_eq!(
         stored.loader_version,
-        Some(LoaderVersionPreference::Exact("0.16.5".to_string()))
+        Some(LoaderVersionPreference::Exact(
+            LoaderVersionId::from_static("0.16.5")
+        ))
     );
 }
 
@@ -637,7 +645,9 @@ async fn should_not_create_a_directory_when_the_loader_cannot_be_resolved() {
         name: InstanceName::parse("Fabric Test").unwrap(),
         game_version: GameVersion::from_static("1.20.1"),
         mod_loader: ModLoader::Fabric,
-        loader_version: Some(LoaderVersionPreference::Exact("0.0.0".to_string())),
+        loader_version: Some(LoaderVersionPreference::Exact(
+            LoaderVersionId::from_static("0.0.0"),
+        )),
         icon_path: None,
         skip_install_instance: Some(true),
         pack_info: None,

@@ -1,4 +1,4 @@
-use std::{path::PathBuf, sync::Arc};
+use std::sync::Arc;
 
 use crate::features::events::{ProgressBarId, ProgressService, SharedDownload};
 use crate::features::java::{
@@ -37,7 +37,7 @@ impl JavaInstallService for InstallJavaUseCase {
             && let Ok(Some(existing_java)) = self.storage.get(version).await
             && self
                 .java_installation_service
-                .locate_java(&PathBuf::from(existing_java.path().to_owned()))
+                .locate_java(existing_java.path().as_path())
                 .await
                 .is_ok()
         {
@@ -81,7 +81,7 @@ impl InstallJavaUseCase {
 #[cfg(test)]
 mod tests {
     use std::collections::HashMap;
-    use std::path::Path;
+    use std::path::{Path, PathBuf};
     use std::sync::Mutex;
     use std::sync::atomic::{AtomicUsize, Ordering};
     use std::time::Duration;
@@ -94,7 +94,7 @@ mod tests {
         infra::InMemoryProgressBarStorage,
         test_support::{ChannelEmitter, mirrors, pack, sent},
     };
-    use crate::features::java::{JavaDomainError, infra::MemoryJavaInstallationTracker};
+    use crate::features::java::{JavaDomainError, JavaPath, infra::MemoryJavaInstallationTracker};
 
     use super::*;
 
@@ -135,7 +135,7 @@ mod tests {
                 21,
                 "21.0.1".into(),
                 "x64".into(),
-                path.display().to_string(),
+                JavaPath::try_from(path)?,
             ))
         }
 
@@ -308,7 +308,12 @@ mod tests {
         let fixture = fixture();
         fixture
             .java_storage
-            .upsert(Java::new(21, "21".into(), "x64".into(), "/jre".into()))
+            .upsert(Java::new(
+                21,
+                "21".into(),
+                "x64".into(),
+                JavaPath::try_from(std::env::temp_dir().join("jre").as_path()).unwrap(),
+            ))
             .await
             .unwrap();
         let a = fixture

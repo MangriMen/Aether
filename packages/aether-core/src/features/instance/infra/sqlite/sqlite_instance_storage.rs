@@ -555,4 +555,22 @@ mod tests {
             "an unreadable instance is left out of the list"
         );
     }
+
+    #[tokio::test]
+    async fn should_drop_only_the_loader_version_when_its_stored_id_is_invalid() {
+        let storage = SqliteInstanceStorage::in_memory().await;
+        storage.upsert(&instance(ModLoader::Fabric)).await.unwrap();
+        sqlx::query(r#"UPDATE instances SET loader_version_json = '"0.16 .5"' WHERE id = 'a'"#)
+            .execute(storage.pool())
+            .await
+            .unwrap();
+
+        let read = storage
+            .get(&InstanceId::try_from("a").unwrap())
+            .await
+            .unwrap();
+
+        assert_eq!(read.snapshot().loader, ModLoader::Fabric);
+        assert_eq!(read.snapshot().loader_version, None);
+    }
 }

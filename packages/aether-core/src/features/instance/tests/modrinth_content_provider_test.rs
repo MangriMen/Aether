@@ -1,7 +1,7 @@
 //! `ModrinthContentProvider` on the resolve contract, against a fake HTTP client serving the
 //! Modrinth API and CDN from memory: what plan a mod and a modpack become, and which requests
 //! that takes.
-use crate::features::minecraft::GameVersion;
+use crate::features::minecraft::{GameVersion, LoaderVersionId};
 
 use crate::features::instance::PlatformId;
 use crate::features::instance::{ContentId, ContentVersionId};
@@ -465,7 +465,9 @@ async fn should_plan_a_modpack_from_its_mrpack_when_the_target_is_a_new_instance
     assert_eq!(new_instance.mod_loader, ModLoader::NeoForge);
     assert_eq!(
         new_instance.loader_version,
-        Some(LoaderVersionPreference::Exact("21.4.10".into()))
+        Some(LoaderVersionPreference::Exact(
+            LoaderVersionId::from_static("21.4.10")
+        ))
     );
     assert_eq!(
         new_instance.pack_info,
@@ -752,7 +754,9 @@ async fn should_move_the_instance_to_the_game_of_the_pack_when_the_pack_is_updat
             game: Some(InstanceGame {
                 game_version: GameVersion::from_static("1.21.4"),
                 mod_loader: ModLoader::NeoForge,
-                loader_version: Some(LoaderVersionPreference::Exact("21.4.10".into())),
+                loader_version: Some(LoaderVersionPreference::Exact(
+                    LoaderVersionId::from_static("21.4.10")
+                )),
             }),
         }
     );

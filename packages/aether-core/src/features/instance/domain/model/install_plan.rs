@@ -394,6 +394,7 @@ impl fmt::Display for AnchoredPath {
 mod tests {
     use super::*;
     use crate::features::instance::InstanceName;
+    use crate::features::minecraft::LoaderVersionId;
     use crate::shared::hash::HashAlgorithm;
 
     const SHA1_ABC: &str = "a9993e364706816aba3e25717850c26c9cd0d89d";
@@ -481,7 +482,10 @@ mod tests {
             GameVersion::from_static("1.21.1"),
             ModLoader::Fabric,
         )
-        .with_loader_version(loader_version.map(|v| LoaderVersionPreference::Exact(v.into())))
+        .with_loader_version(
+            loader_version
+                .map(|v| LoaderVersionPreference::Exact(LoaderVersionId::parse(v).unwrap())),
+        )
         .build()
     }
 
@@ -493,7 +497,8 @@ mod tests {
         InstanceGame {
             game_version: GameVersion::parse(game_version).unwrap(),
             mod_loader,
-            loader_version: loader_version.map(|v| LoaderVersionPreference::Exact(v.into())),
+            loader_version: loader_version
+                .map(|v| LoaderVersionPreference::Exact(LoaderVersionId::parse(v).unwrap())),
         }
     }
 

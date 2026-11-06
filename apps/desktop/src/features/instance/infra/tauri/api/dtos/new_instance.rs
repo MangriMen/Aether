@@ -40,7 +40,7 @@ impl TryFrom<NewInstanceDto> for NewInstance {
             name: InstanceName::try_from(value.name)?,
             game_version: GameVersion::try_from(value.game_version)?,
             mod_loader: value.mod_loader.into(),
-            loader_version: value.loader_version.map(std::convert::Into::into),
+            loader_version: value.loader_version.map(TryInto::try_into).transpose()?,
             icon_path: value.icon_path,
             skip_install_instance: value.skip_install_instance,
             pack_info: value.pack_info.map(TryInto::try_into).transpose()?,
@@ -81,5 +81,21 @@ mod tests {
         let new_instance = NewInstance::try_from(dto("1.14 Pre-Release 1")).unwrap();
 
         assert_eq!(new_instance.game_version, "1.14 Pre-Release 1");
+    }
+
+    #[test]
+    fn should_refuse_a_new_instance_when_its_loader_version_is_not_a_valid_id() {
+        for bad in ["", " 0.16.5", "0.16 .5", "0.16.5\n"] {
+            let mut dto = dto("1.21.1");
+            dto.mod_loader = ModLoaderDto::Fabric;
+            dto.loader_version = Some(LoaderVersionPreferenceDto::Exact(bad.into()));
+
+            let result = NewInstance::try_from(dto);
+
+            assert!(
+                matches!(result, Err(InstanceError::InvalidLoaderVersion { .. })),
+                "{bad:?}"
+            );
+        }
     }
 }

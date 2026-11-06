@@ -11,7 +11,7 @@ use crate::{
         instance::{
             InvalidContentId, PackMetadata, ResolveInstallPlanParams, ResolveTarget, ResolvedFile,
         },
-        minecraft::{GameVersion, InvalidGameVersion},
+        minecraft::{GameVersion, InvalidGameVersion, InvalidLoaderVersionId},
     },
     shared::{
         hash::{FileHash, InvalidFileHash},
@@ -85,6 +85,9 @@ pub enum InvalidPackMetadata {
 
     #[error(transparent)]
     GameVersion(#[from] InvalidGameVersion),
+
+    #[error(transparent)]
+    LoaderVersion(#[from] InvalidLoaderVersionId),
 }
 
 impl TryFrom<PackMetadataDto> for PackMetadata {
@@ -98,7 +101,7 @@ impl TryFrom<PackMetadataDto> for PackMetadata {
             description: value.description,
             game_version: GameVersion::try_from(value.game_version)?,
             mod_loader: value.mod_loader.into(),
-            loader_version: value.loader_version,
+            loader_version: value.loader_version.map(TryInto::try_into).transpose()?,
             // Informational; a count beyond `usize` is as good as unknown.
             file_count: value
                 .file_count

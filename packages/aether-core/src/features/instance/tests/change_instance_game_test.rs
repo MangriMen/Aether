@@ -1,5 +1,5 @@
 use crate::features::instance::InstanceName;
-use crate::features::minecraft::GameVersion;
+use crate::features::minecraft::{GameVersion, LoaderVersionId};
 use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
@@ -88,7 +88,9 @@ impl LoaderVersionService for DefaultLoaderVersion {
         _: &GameVersion,
         _: &ModLoader,
     ) -> Result<Option<LoaderVersionPreference>, MinecraftDomainError> {
-        Ok(Some(LoaderVersionPreference::Exact("0.16.9".into())))
+        Ok(Some(LoaderVersionPreference::Exact(
+            LoaderVersionId::from_static("0.16.9"),
+        )))
     }
 }
 
@@ -148,7 +150,9 @@ impl Fixture {
             GameVersion::from_static("1.21.1"),
             ModLoader::Fabric,
         )
-        .with_loader_version(Some(LoaderVersionPreference::Exact("0.16.5".into())))
+        .with_loader_version(Some(LoaderVersionPreference::Exact(
+            LoaderVersionId::from_static("0.16.5"),
+        )))
         .build();
         instance.install_stage = InstanceInstallStage::Installed;
         *storage.instance.lock().unwrap() = Some(instance);
@@ -185,8 +189,9 @@ fn game(game_version: &str, mod_loader: ModLoader, loader_version: Option<&str>)
     InstanceGame {
         game_version: GameVersion::parse(game_version).unwrap(),
         mod_loader,
-        loader_version: loader_version
-            .map(|version| LoaderVersionPreference::Exact(version.into())),
+        loader_version: loader_version.map(|version| {
+            LoaderVersionPreference::Exact(LoaderVersionId::parse(version).unwrap())
+        }),
     }
 }
 
@@ -223,7 +228,9 @@ async fn should_move_the_instance_to_the_new_game_and_install_it_when_the_game_c
     let expected = (
         GameVersion::from_static("1.21.4"),
         ModLoader::NeoForge,
-        Some(LoaderVersionPreference::Exact("21.4.1".into())),
+        Some(LoaderVersionPreference::Exact(
+            LoaderVersionId::from_static("21.4.1"),
+        )),
     );
     // The new game is what gets installed, and what the instance keeps.
     assert_eq!(fixture.installed(), std::slice::from_ref(&expected));
@@ -250,7 +257,9 @@ async fn should_install_a_new_loader_version_when_the_game_stays_the_same() {
     assert_eq!(fixture.installed().len(), 1);
     assert_eq!(
         fixture.storage.instance().loader_version,
-        Some(LoaderVersionPreference::Exact("0.16.9".into()))
+        Some(LoaderVersionPreference::Exact(
+            LoaderVersionId::from_static("0.16.9")
+        ))
     );
 }
 
@@ -265,7 +274,9 @@ async fn should_take_the_default_loader_version_when_the_new_game_pins_none() {
 
     assert_eq!(
         fixture.storage.instance().loader_version,
-        Some(LoaderVersionPreference::Exact("0.16.9".into()))
+        Some(LoaderVersionPreference::Exact(
+            LoaderVersionId::from_static("0.16.9")
+        ))
     );
 }
 

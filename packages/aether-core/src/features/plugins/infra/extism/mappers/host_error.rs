@@ -214,6 +214,10 @@ fn instance_dto(value: &InstanceError) -> InstanceErrorDto {
             value: value.clone(),
             reason: reason.clone(),
         },
+        InstanceError::InvalidLoaderVersion { value, reason } => Dto::InvalidLoaderVersion {
+            value: value.clone(),
+            reason: reason.clone(),
+        },
         InstanceError::PathEscapesInstance { path, instance_id } => Dto::PathEscapesInstance {
             path: path.clone(),
             instance_id: instance_id.clone(),
@@ -286,6 +290,7 @@ impl From<&JavaDomainError> for JavaErrorDto {
                 path: path.to_string_lossy().into_owned(),
             },
             JavaDomainError::EmptyPath => Self::EmptyPath,
+            JavaDomainError::RelativePath { path } => Self::RelativePath { path: path.clone() },
             JavaDomainError::InvalidVersion { version } => Self::InvalidVersion {
                 version: version.clone(),
             },

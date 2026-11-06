@@ -11,6 +11,9 @@ pub enum JavaDomainError {
     #[error("Path can't be empty for edit operations")]
     EmptyPath,
 
+    #[error("Java path must be absolute: {path:?}")]
+    RelativePath { path: String },
+
     #[error("Invalid JRE version: {version}")]
     InvalidVersion { version: String },
 

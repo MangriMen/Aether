@@ -1,14 +1,16 @@
 use aether_core_plugin_api::v0::LoaderVersionPreferenceDto;
 
-use crate::features::minecraft::LoaderVersionPreference;
+use crate::features::minecraft::{InvalidLoaderVersionId, LoaderVersionPreference};
 
-impl From<LoaderVersionPreferenceDto> for LoaderVersionPreference {
-    fn from(value: LoaderVersionPreferenceDto) -> Self {
-        match value {
+impl TryFrom<LoaderVersionPreferenceDto> for LoaderVersionPreference {
+    type Error = InvalidLoaderVersionId;
+
+    fn try_from(value: LoaderVersionPreferenceDto) -> Result<Self, Self::Error> {
+        Ok(match value {
             LoaderVersionPreferenceDto::Latest => Self::Latest,
             LoaderVersionPreferenceDto::Stable => Self::Stable,
-            LoaderVersionPreferenceDto::Exact(version) => Self::Exact(version),
-        }
+            LoaderVersionPreferenceDto::Exact(version) => Self::Exact(version.try_into()?),
+        })
     }
 }
 
@@ -17,7 +19,7 @@ impl From<LoaderVersionPreference> for LoaderVersionPreferenceDto {
         match value {
             LoaderVersionPreference::Latest => Self::Latest,
             LoaderVersionPreference::Stable => Self::Stable,
-            LoaderVersionPreference::Exact(version) => Self::Exact(version),
+            LoaderVersionPreference::Exact(version) => Self::Exact(version.into()),
         }
     }
 }

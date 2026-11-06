@@ -34,9 +34,14 @@ pub use app::{
     TestJreUseCasePort,
 };
 pub use domain::{
+    // Domain Error
+    InvalidJavaPath,
     // Anemic Domain Models (Rule 4.4)
     Java,
-    // Domain Error
     JavaDomainError,
     JavaInstallationGuard,
+    // Value types
+    JavaPath,
+    JavaPathRejection,
+    JavaVersion,
 };

@@ -5,8 +5,7 @@ use futures::StreamExt;
 
 use crate::{
     features::java::{
-        Java, JavaDomainError, JavaInstallationService,
-        domain::extract_java_major_minor_version,
+        Java, JavaDomainError, JavaInstallationService, JavaPath, JavaVersion,
         infra::{JavaProperties, get_java_properties},
     },
     shared,
@@ -106,14 +105,13 @@ impl JavaInstallationService for FsJavaInstallationService {
 
         // Extract version and architecture information
         if let (Some(version), Some(architecture)) = (version, architecture) {
-            extract_java_major_minor_version(&version).map(|(_, major_version)| {
-                Java::new(
-                    major_version,
-                    version.clone(),
-                    architecture.clone(),
-                    java_window_bin_path.to_string_lossy().to_string(),
-                )
-            })
+            let java_version = JavaVersion::parse(&version)?;
+            Ok(Java::new(
+                java_version.major(),
+                version,
+                architecture,
+                JavaPath::try_from(java_window_bin_path.as_path())?,
+            ))
         } else {
             Err(JavaDomainError::InvalidPath {
                 path: path.to_path_buf(),
@@ -150,7 +148,7 @@ impl JavaInstallationService for FsJavaInstallationService {
             )
             .await;
 
-        all_found.sort_by(|a, b| a.path().cmp(b.path()));
+        all_found.sort_by(|a, b| a.path().as_str().cmp(b.path().as_str()));
         all_found.dedup_by(|a, b| a.path() == b.path());
 
         Ok(all_found)

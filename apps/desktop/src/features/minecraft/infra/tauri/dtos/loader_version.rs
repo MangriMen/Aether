@@ -1,4 +1,4 @@
-use aether_core::features::minecraft::LoaderVersionPreference;
+use aether_core::features::minecraft::{InvalidLoaderVersionId, LoaderVersionPreference};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
@@ -12,13 +12,15 @@ pub enum LoaderVersionPreferenceDto {
     Exact(String),
 }
 
-impl From<LoaderVersionPreferenceDto> for LoaderVersionPreference {
-    fn from(value: LoaderVersionPreferenceDto) -> Self {
-        match value {
+impl TryFrom<LoaderVersionPreferenceDto> for LoaderVersionPreference {
+    type Error = InvalidLoaderVersionId;
+
+    fn try_from(value: LoaderVersionPreferenceDto) -> Result<Self, Self::Error> {
+        Ok(match value {
             LoaderVersionPreferenceDto::Latest => Self::Latest,
             LoaderVersionPreferenceDto::Stable => Self::Stable,
-            LoaderVersionPreferenceDto::Exact(x) => Self::Exact(x),
-        }
+            LoaderVersionPreferenceDto::Exact(id) => Self::Exact(id.try_into()?),
+        })
     }
 }
 
@@ -27,7 +29,7 @@ impl From<LoaderVersionPreference> for LoaderVersionPreferenceDto {
         match value {
             LoaderVersionPreference::Latest => Self::Latest,
             LoaderVersionPreference::Stable => Self::Stable,
-            LoaderVersionPreference::Exact(x) => Self::Exact(x),
+            LoaderVersionPreference::Exact(id) => Self::Exact(id.into()),
         }
     }
 }
