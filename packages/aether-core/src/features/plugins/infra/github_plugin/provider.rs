@@ -102,8 +102,12 @@ impl PluginProvider for GithubProvider {
         })
     }
 
-    async fn download_plugin(&self, download_url: &str) -> Result<Vec<u8>, PluginProviderError> {
-        self.fetcher.download_asset(download_url).await
+    async fn download_plugin(
+        &self,
+        download_url: &str,
+        dest: &mut tokio::fs::File,
+    ) -> Result<u64, PluginProviderError> {
+        self.fetcher.download_asset(download_url, dest).await
     }
 }
 

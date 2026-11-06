@@ -69,5 +69,5 @@ pub(crate) use reload_plugin::ReloadPluginUseCase;
 pub(crate) use remove_plugin::RemovePluginUseCase;
 pub use services::{PluginLoaderRegistry, PluginRegistry};
 pub(crate) use sync_plugins::SyncPluginsUseCase;
-pub use temp_file::write_bytes_to_temp_file;
+pub use temp_file::download_to_temp_file;
 pub(crate) use update_plugin::UpdatePluginUseCase;

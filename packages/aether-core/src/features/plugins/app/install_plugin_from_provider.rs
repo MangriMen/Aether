@@ -11,7 +11,7 @@ use crate::features::plugins::{
 
 use super::ports::{InstallPluginFromProviderUseCasePort, ProviderRelease};
 use super::release_installer::ReleaseInstaller;
-use super::{PluginProviderFactory, write_bytes_to_temp_file};
+use super::{PluginProviderFactory, download_to_temp_file};
 
 /// Installs the release a user picked from a provider.
 ///
@@ -72,8 +72,7 @@ impl InstallPluginFromProviderUseCase {
             })?;
         let identifier = provider.parse_identifier(identifier)?;
 
-        let zip_bytes = provider.download_plugin(&release.download_url).await?;
-        let temp_file = write_bytes_to_temp_file(&zip_bytes)?;
+        let temp_file = download_to_temp_file(provider, &release.download_url).await?;
         let extracted = self.plugin_extractor.extract(temp_file.path()).await?;
         let plugin_id = extracted.plugin_id.clone();
 

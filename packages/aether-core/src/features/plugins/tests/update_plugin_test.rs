@@ -113,8 +113,15 @@ impl PluginProvider for OneRelease {
         unimplemented!("the tests name the release")
     }
 
-    async fn download_plugin(&self, _: &str) -> Result<Vec<u8>, PluginProviderError> {
-        Ok(self.archive.clone())
+    async fn download_plugin(
+        &self,
+        _: &str,
+        dest: &mut tokio::fs::File,
+    ) -> Result<u64, PluginProviderError> {
+        use tokio::io::AsyncWriteExt;
+
+        dest.write_all(&self.archive).await.unwrap();
+        Ok(self.archive.len() as u64)
     }
 
     fn source_type(&self) -> PluginSourceType {
