@@ -67,6 +67,30 @@ response from an older host (the flags then read `false`), but a plugin built **
 flags cannot decode a `run_command` response from a host that sends them: rebuild it against
 this version.
 
+## Ids
+
+`id` in the manifest (and every capability id and platform name) must match
+`[a-z0-9][a-z0-9_-]*`: lowercase ASCII letters, digits, `_` and `-`, not starting with `_` or
+`-`. The plugin id names the plugin's directory, and `:` and the provider separator are left out
+so that a provider id always parses back into the same plugin and capability. A manifest with
+another id does not load. `aether` is reserved for the providers built into the launcher.
+
+## Folders in the sandbox
+
+Besides the two mounts every plugin gets (`/cache`, read-write; `/instances`, read-only), a
+plugin sees the folders the user allowed for it in its settings, each under a path of its own
+in the sandbox (`/mnt/d/packs`).
+
+A mount point is `/` and one or more plain `/`-separated names: no empty, `.` or `..` part, no
+`\` or NUL. It must not be `/` itself nor overlap `/cache` or `/instances`. The host side must
+be an absolute path to an existing folder that is not a whole drive and does not overlap the
+folders the launcher keeps for itself (instances, plugins, caches, game files, settings).
+
+A folder that breaks these rules is **not mounted**. The launcher does not delete it from the
+settings file: it moves it to `ignoredPaths` with the reason, shows it in the plugin's settings
+with a warning, and the user can edit or remove it. Check what is mounted by trying to open the
+path; a plugin cannot tell an ignored folder from one that was never granted.
+
 ## Networking from a plugin
 
 A plugin has two ways to make an HTTP request. They are **not** equally safe.
