@@ -159,8 +159,14 @@ impl ZipPluginExtractor {
         file: fs::File,
         source_path: &str,
     ) -> Result<ExtractedPlugin, PluginProviderError> {
-        let mut archive = zip::ZipArchive::new(std::io::BufReader::new(file))
-            .map_err(|_| PluginProviderError::InvalidExtractionFormat)?;
+        let mut archive =
+            zip::ZipArchive::new(std::io::BufReader::new(file)).map_err(|err| match err {
+                // A file that could not be read is not a file in the wrong format.
+                zip::result::ZipError::Io(_) => PluginProviderError::ExtractionFailed {
+                    from: source_path.to_string(),
+                },
+                _ => PluginProviderError::InvalidExtractionFormat,
+            })?;
 
         let manifest = self.read_manifest(&mut archive)?;
         self.check_capabilities(&mut archive)?;
