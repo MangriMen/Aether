@@ -16,6 +16,7 @@ mod instance_snapshot;
 mod new_instance;
 mod pack;
 mod pack_info;
+mod pagination;
 mod release_channel;
 mod resolve;
 
@@ -37,6 +38,7 @@ pub use instance_snapshot::*;
 pub use new_instance::*;
 pub use pack::*;
 pub use pack_info::*;
+pub use pagination::*;
 pub use release_channel::*;
 pub use resolve::*;
 

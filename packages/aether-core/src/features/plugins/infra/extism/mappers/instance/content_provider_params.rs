@@ -7,8 +7,8 @@ impl From<ContentSearchParams> for ContentSearchParamsDto {
         Self {
             content_type: value.content_type.into(),
             provider_id: value.provider_id.into(),
-            page: value.page,
-            page_size: value.page_size,
+            page: value.page.into(),
+            page_size: value.page_size.into(),
             query: value.query,
             game_versions: value
                 .game_versions

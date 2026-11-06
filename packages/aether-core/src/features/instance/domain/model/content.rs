@@ -6,15 +6,16 @@ use crate::{
 };
 
 use super::{
-    CapabilityId, ContentId, ContentType, ContentVersionId, InstanceId, InvalidId, PluginId,
+    CapabilityId, ContentId, ContentType, ContentVersionId, InstanceId, InvalidId, PageIndex,
+    PageSize, PluginId,
 };
 
 #[derive(Clone, Debug)]
 pub struct ContentSearchParams {
     pub content_type: ContentType,
     pub provider_id: ProviderId,
-    pub page: i64,
-    pub page_size: i64,
+    pub page: PageIndex,
+    pub page_size: PageSize,
     pub query: Option<String>,
     pub game_versions: Option<Vec<GameVersion>>,
     pub loader: Option<ModLoader>,

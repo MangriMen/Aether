@@ -205,6 +205,15 @@ fn instance_dto(value: &InstanceError) -> InstanceErrorDto {
             value: value.clone(),
             reason: reason.clone(),
         },
+        InstanceError::InvalidPagination {
+            field,
+            value,
+            reason,
+        } => Dto::InvalidPagination {
+            field: field.clone(),
+            value: value.clone(),
+            reason: reason.clone(),
+        },
         InstanceError::PathEscapesInstance { path, instance_id } => Dto::PathEscapesInstance {
             path: path.clone(),
             instance_id: instance_id.clone(),
@@ -626,5 +635,29 @@ impl From<&RequestError> for HostError {
                 details: source.to_string(),
             },
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::features::instance::PageSize;
+
+    #[test]
+    fn should_map_the_pagination_fields_when_the_instance_error_is_an_invalid_pagination() {
+        let error = InstanceError::from(PageSize::parse(0).unwrap_err());
+
+        let HostError::InstanceError(InstanceErrorDto::InvalidPagination {
+            field,
+            value,
+            reason,
+        }) = HostError::from(&error)
+        else {
+            panic!("expected an invalid pagination error");
+        };
+
+        assert_eq!(field, "page size");
+        assert_eq!(value, "0");
+        assert_eq!(reason, "it must be at least 1");
     }
 }

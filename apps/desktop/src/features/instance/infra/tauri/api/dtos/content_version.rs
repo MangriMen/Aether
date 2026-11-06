@@ -81,7 +81,7 @@ pub struct ContentVersionDto {
     pub date_published: String,
     #[specta(type = String)]
     #[serde_as(as = "DisplayFromStr")]
-    pub downloads: i64,
+    pub downloads: u64,
     pub web_url: String,
 }
 

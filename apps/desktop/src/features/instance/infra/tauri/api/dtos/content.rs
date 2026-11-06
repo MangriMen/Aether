@@ -4,7 +4,7 @@ use aether_core::features::{
     instance::{
         AtomicInstallParams, BaseContentParams, ContentInstallParams, ContentItem,
         ContentSearchParams, ContentSearchResult, InstanceError, InstanceId, ModpackInstallParams,
-        ProviderId,
+        PageIndex, PageSize, ProviderId,
     },
     minecraft::GameVersion,
 };
@@ -160,8 +160,8 @@ impl TryFrom<ContentSearchParamsDto> for ContentSearchParams {
         Ok(Self {
             content_type: value.content_type.into(),
             provider_id: value.provider_id.try_into()?,
-            page: value.page,
-            page_size: value.page_size,
+            page: PageIndex::parse(value.page)?,
+            page_size: PageSize::parse(value.page_size)?,
             query: value.query,
             game_versions: value
                 .game_versions
@@ -349,6 +349,25 @@ mod tests {
             game_versions: Some(game_versions.iter().map(|v| (*v).to_owned()).collect()),
             loader: None,
         }
+    }
+
+    #[test]
+    fn should_refuse_the_search_when_the_page_or_the_page_size_is_zero() {
+        let mut dto = search(&[]);
+        dto.page = 0;
+        let result = ContentSearchParams::try_from(dto);
+        assert!(matches!(
+            result,
+            Err(InstanceError::InvalidPagination { ref field, .. }) if field == "page"
+        ));
+
+        let mut dto = search(&[]);
+        dto.page_size = 0;
+        let result = ContentSearchParams::try_from(dto);
+        assert!(matches!(
+            result,
+            Err(InstanceError::InvalidPagination { ref field, .. }) if field == "page size"
+        ));
     }
 
     #[test]

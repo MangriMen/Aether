@@ -64,6 +64,11 @@ pub enum InstanceErrorDto {
         value: String,
         reason: String,
     },
+    InvalidPagination {
+        field: String,
+        value: String,
+        reason: String,
+    },
     PathEscapesInstance {
         path: String,
         instance_id: String,

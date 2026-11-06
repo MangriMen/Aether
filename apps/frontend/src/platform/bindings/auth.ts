@@ -118,6 +118,10 @@ export type InstanceErrorDto = { code: "STORAGE"; payload: {
 } } | { code: "INVALID_GAME_VERSION"; payload: {
 	value: string,
 	reason: string,
+} } | { code: "INVALID_PAGINATION"; payload: {
+	field: string,
+	value: string,
+	reason: string,
 } } | { code: "PATH_ESCAPES_INSTANCE"; payload: {
 	path: string,
 	instance_id: string,

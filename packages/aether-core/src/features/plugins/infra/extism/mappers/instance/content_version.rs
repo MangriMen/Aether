@@ -28,7 +28,7 @@ impl From<ContentVersion> for ContentVersionDto {
             status: value.status.into(),
             requested_status: value.requested_status.map(Into::into),
             date_published: value.date_published,
-            downloads: value.downloads,
+            downloads: i64::try_from(value.downloads).unwrap_or(i64::MAX),
             web_url: value.web_url.map(String::from).unwrap_or_default(),
         }
     }
@@ -113,7 +113,7 @@ impl TryFrom<ContentVersionDto> for ContentVersion {
             status: value.status.into(),
             requested_status: value.requested_status.map(Into::into),
             date_published: value.date_published,
-            downloads: value.downloads,
+            downloads: u64::try_from(value.downloads).unwrap_or_default(),
             web_url: display_url("page of a plugin's content version", Some(value.web_url)),
         })
     }
@@ -205,5 +205,41 @@ mod tests {
         let version = ContentVersion::try_from(dto).unwrap();
 
         assert_eq!(version.game_versions, ["1.21.1", "1.21.4"]);
+    }
+
+    fn version_dto(downloads: i64) -> ContentVersionDto {
+        ContentVersionDto {
+            id: "IZskON6d".into(),
+            content_id: "AANobbMI".into(),
+            author_id: "author".into(),
+            name: "Sodium".into(),
+            version_number: "0.6.0".into(),
+            changelog: None,
+            dependencies: Vec::new(),
+            game_versions: Vec::new(),
+            version_type: ContentVersionTypeDto::Release,
+            loaders: Vec::new(),
+            featured: false,
+            status: ContentVersionStatusDto::Listed,
+            requested_status: None,
+            date_published: "2024-01-01T00:00:00Z".into(),
+            downloads,
+            web_url: String::new(),
+        }
+    }
+
+    #[test]
+    fn should_count_no_downloads_when_a_plugin_reports_a_negative_count() {
+        let version = ContentVersion::try_from(version_dto(-5)).unwrap();
+
+        assert_eq!(version.downloads, 0);
+    }
+
+    #[test]
+    fn should_saturate_the_downloads_when_the_count_is_above_i64_max() {
+        let mut version = ContentVersion::try_from(version_dto(0)).unwrap();
+        version.downloads = u64::MAX;
+
+        assert_eq!(ContentVersionDto::from(version).downloads, i64::MAX);
     }
 }

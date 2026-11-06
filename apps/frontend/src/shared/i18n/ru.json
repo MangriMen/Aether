@@ -63,6 +63,7 @@
       "INVALID_RELATIVE_PATH": "Недопустимый путь {{path}}: {{reason}}",
       "INVALID_CONTENT_ID": "Недопустимый идентификатор: {{value}}",
       "INVALID_GAME_VERSION": "Недопустимая версия Minecraft: {{value}}",
+      "INVALID_PAGINATION": "Недопустимое значение ({{field}}): {{value}}",
       "PATH_ESCAPES_INSTANCE": "Путь {{path}} выходит за пределы инстанса {{instance_id}}",
       "FILE_TOO_LARGE": "Файл {{path}} слишком большой ({{size}} байт, лимит {{limit}})",
       "CONTENT_DOWNLOAD_ERROR": "Не удалось загрузить содержимое инстанса",

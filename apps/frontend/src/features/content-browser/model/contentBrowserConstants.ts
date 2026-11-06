@@ -1,8 +1,8 @@
 import type { ContentSearchParams } from '@/features/content';
 
-import { ContentType } from '@/features/content';
+import { CONTENT_PAGE_SIZES, ContentType } from '@/features/content';
 
-export const DEFAULT_PER_PAGE_OPTIONS = [5, 10, 20, 30, 40, 50];
+export const DEFAULT_PER_PAGE_OPTIONS = CONTENT_PAGE_SIZES;
 
 export const DEFAULT_FORM_VALUES = {
   page: 1,
