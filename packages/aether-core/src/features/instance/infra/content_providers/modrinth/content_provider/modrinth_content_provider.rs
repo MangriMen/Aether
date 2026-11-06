@@ -664,12 +664,11 @@ impl<RC: RequestClient> ContentProvider for ModrinthContentProvider<RC> {
         let batches =
             fetch_batched(&content_ids, |batch| self.api.get_projects_metadata(batch)).await?;
         let mut listed = HashSet::new();
-        batches
+        Ok(batches
             .into_iter()
             .filter(|project| listed.insert(project.id.clone()))
-            .map(ContentMetadata::try_from)
-            .collect::<Result<_, _>>()
-            .map_err(|err| mapper_failure(&err))
+            .filter_map(|project| map_or_skip("project", &project.id.clone(), project))
+            .collect())
     }
 
     /// An organization's ref asked of `GET /organizations`, by the organization's name; a
@@ -723,11 +722,10 @@ impl<RC: RequestClient> ContentProvider for ModrinthContentProvider<RC> {
         let version_ids = unique(version_ids.iter().map(ToString::to_string));
         let versions =
             fetch_batched(&version_ids, |batch| self.api.get_versions_metadata(batch)).await?;
-        versions
+        Ok(versions
             .into_iter()
-            .map(ContentVersionMetadata::try_from)
-            .collect::<Result<_, _>>()
-            .map_err(|err| mapper_failure(&err))
+            .filter_map(|version| map_or_skip("version", &version.id.clone(), version))
+            .collect())
     }
 
     async fn check_compatibility(
@@ -786,16 +784,22 @@ impl<RC: RequestClient> ContentProvider for ModrinthContentProvider<RC> {
 
         Ok(versions
             .into_iter()
-            .filter_map(|v| {
-                let id = v.id.clone();
-                v.try_into()
-                    .inspect_err(|err: &ModrinthMapperError| {
-                        tracing::debug!("Skipping Modrinth version {id} that failed to map: {err}");
-                    })
-                    .ok()
-            })
+            .filter_map(|version| map_or_skip("version", &version.id.clone(), version))
             .collect())
     }
+}
+
+/// `raw` mapped, or `None` with a warning: one entry Modrinth answered with badly does not take the
+/// rest of the answer down, the same way for every list the provider reads.
+fn map_or_skip<T, U>(kind: &str, id: &str, raw: T) -> Option<U>
+where
+    U: TryFrom<T, Error = ModrinthMapperError>,
+{
+    U::try_from(raw)
+        .inspect_err(|err| {
+            tracing::warn!("Skipping Modrinth {kind} {id} that failed to map: {err}");
+        })
+        .ok()
 }
 
 fn mapper_failure(err: &ModrinthMapperError) -> InstanceError {
@@ -818,4 +822,32 @@ fn response_url(url: &str) -> Result<HttpsUrl, InstanceError> {
 
 fn no_pack_versions(project_id: &str) -> InstanceError {
     InstanceError::ContentDownloadError(format!("No versions found for modpack {project_id}"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    struct Number(u32);
+
+    impl TryFrom<&str> for Number {
+        type Error = ModrinthMapperError;
+
+        fn try_from(raw: &str) -> Result<Self, Self::Error> {
+            raw.parse()
+                .map(Self)
+                .map_err(|_| ModrinthMapperError::MissingField(raw.to_owned()))
+        }
+    }
+
+    #[test]
+    fn should_leave_out_only_the_entries_that_fail_to_map() {
+        let mapped: Vec<u32> = ["1", "oops", "3"]
+            .into_iter()
+            .filter_map(|raw| map_or_skip::<_, Number>("number", raw, raw))
+            .map(|number| number.0)
+            .collect();
+
+        assert_eq!(mapped, [1, 3]);
+    }
 }
