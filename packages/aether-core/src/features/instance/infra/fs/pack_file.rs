@@ -13,7 +13,7 @@ use crate::features::instance::{
     },
 };
 use crate::shared::{
-    hash::{FileHash, InvalidFileHash},
+    hash::{FileHash, HashAlgorithm, InvalidFileHash},
     web_url::HttpsUrl,
 };
 
@@ -89,6 +89,7 @@ impl PackFileV1 {
         let side = parse_stored_side(&value.file_name, value.side.as_deref());
         let download = value
             .download
+            .as_ref()
             .and_then(|download| parse_stored_download(&value.file_name, download));
 
         let update = value.update.map(|old_map| {
@@ -149,6 +150,7 @@ impl PackFileV2 {
         let side = parse_stored_side(&value.file_name, value.side.as_deref());
         let download = value
             .download
+            .as_ref()
             .and_then(|download| parse_stored_download(&value.file_name, download));
 
         let update = value.update.map(|old_map| {
@@ -204,7 +206,7 @@ impl From<PackFile> for PackFileV2 {
             name: value.name,
             hash: value.hash.to_string(),
             download: value.download.map(|d| PackFileDownloadV1 {
-                hash: d.hash,
+                hash: d.hash.to_string(),
                 url: d.url.into(),
             }),
             option: value.option.map(|o| PackFileOptionV1 {
@@ -232,17 +234,31 @@ impl From<PackFile> for PackFileV2 {
     }
 }
 
+/// A download hash: `<algorithm>:<hex digest>`, or a bare digest whose algorithm is told by its
+/// length (packwiz writes the digest alone, next to a `hash-format`).
+fn parse_download_hash(value: &str) -> Result<FileHash, InvalidFileHash> {
+    if value.contains(':') {
+        return value.parse();
+    }
+    let algorithm = HashAlgorithm::ALL
+        .into_iter()
+        .find(|algorithm| algorithm.hex_len() == value.len())
+        .unwrap_or(HashAlgorithm::Sha1);
+    FileHash::new(algorithm, value)
+}
+
 /// Where a pack file is stored as downloaded from, or `None` — with a warning — when the URL is
-/// not an `https` one: nothing downloads from it, so a bad one costs the URL, not the file.
+/// not an `https` one or the hash is not a hash: nothing downloads from it, so a bad one costs the
+/// whole download, not the file.
 fn parse_stored_download(
     file_name: &str,
-    download: PackFileDownloadV1,
+    download: &PackFileDownloadV1,
 ) -> Option<PackFileDownload> {
+    let hash = parse_download_hash(&download.hash)
+        .inspect_err(|err| warn!("Ignoring the download of pack file \"{file_name}\": {err}"))
+        .ok()?;
     match HttpsUrl::parse(&download.url) {
-        Ok(url) => Some(PackFileDownload {
-            hash: download.hash,
-            url,
-        }),
+        Ok(url) => Some(PackFileDownload { hash, url }),
         Err(err) => {
             warn!("Ignoring the download of pack file \"{file_name}\": {err}");
             None
@@ -339,6 +355,51 @@ mod tests {
             pack_file.download.map(|download| download.url.to_string()),
             kept.then(|| url.to_owned())
         );
+    }
+
+    #[rstest]
+    #[case::bare_sha1(&"a".repeat(40), format!("sha1:{}", "a".repeat(40)))]
+    #[case::bare_sha256(&"b".repeat(64), format!("sha256:{}", "b".repeat(64)))]
+    #[case::bare_sha512(&"c".repeat(128), format!("sha512:{}", "c".repeat(128)))]
+    #[case::prefixed(&format!("sha256:{}", "d".repeat(64)), format!("sha256:{}", "d".repeat(64)))]
+    fn should_write_the_download_hash_with_its_algorithm_when_reading_and_writing_back(
+        #[case] stored: &str,
+        #[case] written: String,
+    ) {
+        let dto: PackFileV2 = toml::from_str(&format!(
+            r#"
+            file-name = "sodium.jar"
+            hash = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
+            [download]
+            hash = "{stored}"
+            url = "https://cdn.modrinth.com/data/a/versions/b/sodium.jar"
+            "#
+        ))
+        .unwrap();
+
+        let back = PackFileV2::from(PackFile::try_from(dto).unwrap());
+
+        assert_eq!(back.download.unwrap().hash, written);
+    }
+
+    #[test]
+    fn should_drop_the_whole_download_when_its_hash_is_not_a_valid_hash() {
+        let dto: PackFileV2 = toml::from_str(
+            r#"
+            file-name = "sodium.jar"
+            hash = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
+            [download]
+            hash = "not-a-hash"
+            url = "https://cdn.modrinth.com/data/a/versions/b/sodium.jar"
+            "#,
+        )
+        .unwrap();
+
+        let pack_file = PackFile::try_from(dto).unwrap();
+
+        assert!(pack_file.download.is_none());
     }
 
     #[test]
