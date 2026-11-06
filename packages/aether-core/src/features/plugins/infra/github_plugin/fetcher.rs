@@ -3,6 +3,8 @@ use std::sync::Arc;
 use reqwest_middleware::ClientWithMiddleware;
 use tokio::io::{AsyncWrite, AsyncWriteExt};
 
+use crate::shared::io::domain::IoError;
+
 use super::types::{GitHubPluginPreview, GitHubReleaseInfo, PluginUpdateInfo};
 use crate::features::plugins::{PluginManifestPreview, PluginProviderError, PluginSourceType};
 
@@ -50,13 +52,10 @@ async fn copy_capped<W: AsyncWrite + Unpin>(
         if written > limit {
             return Err(too_large());
         }
-        dest.write_all(&chunk)
-            .await
-            .map_err(|e| failed(format!("could not write the asset: {e}")))?;
+        // A full disk is not a failure of the download: it is told apart from one.
+        dest.write_all(&chunk).await.map_err(IoError::from)?;
     }
-    dest.flush()
-        .await
-        .map_err(|e| failed(format!("could not write the asset: {e}")))?;
+    dest.flush().await.map_err(IoError::from)?;
     Ok(written)
 }
 
@@ -444,7 +443,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn should_write_a_body_within_the_limit_to_the_destination() {
+    async fn should_write_the_body_to_the_destination_when_it_is_within_the_limit() {
         let mut dest = Vec::new();
 
         let written = copy_capped(response(b"hello"), "u", 5, &mut dest)
@@ -467,7 +466,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn should_stop_a_chunked_body_that_crosses_the_limit() {
+    async fn should_stop_a_chunked_body_when_it_crosses_the_limit() {
         let mut dest = Vec::new();
 
         let err = copy_capped(
@@ -501,6 +500,18 @@ mod tests {
         .unwrap_err();
 
         assert!(matches!(err, PluginProviderError::DownloadFailed { .. }));
+    }
+
+    #[tokio::test]
+    async fn should_report_a_storage_error_when_the_destination_cannot_be_written() {
+        let (mut dest, reader) = tokio::io::duplex(1);
+        drop(reader);
+
+        let err = copy_capped(response(b"hello"), "u", 100, &mut dest)
+            .await
+            .unwrap_err();
+
+        assert!(matches!(err, PluginProviderError::Storage(_)));
     }
 
     #[test]

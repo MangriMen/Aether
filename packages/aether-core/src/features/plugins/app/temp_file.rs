@@ -92,7 +92,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn should_hand_over_the_whole_archive_in_a_file() {
+    async fn should_hand_over_the_whole_archive_in_a_file_when_the_download_succeeds() {
         let dir = tempfile::tempdir().unwrap();
         let provider = PartialProvider {
             body: b"archive",
