@@ -15,30 +15,34 @@ type PluginList = Awaited<ReturnType<typeof pluginsCommands.list>>;
 const pluginIdOf = (plugin: Plugin): PluginId => plugin.manifest.metadata.id;
 
 /**
- * Lays the answer of `list` out as `detail(id)`. A detail fetched after the list request began
- * is newer than what the list says about that plugin, so it is kept.
+ * Lays the answer of `list` out as `detail(id)` and returns the list to keep. A detail that
+ * arrived after the list request began may be newer than what the list read for that plugin, so
+ * it is kept, and the list takes it too: the two never disagree.
  */
 const seedDetails = (
   queryClient: QueryClient,
   plugins: PluginList,
   listStartedAt: number,
-) => {
-  for (const plugin of plugins) {
+): PluginList =>
+  plugins.map((plugin) => {
     const key = pluginKeys.detail(pluginIdOf(plugin));
-    const current = queryClient.getQueryState(key);
+    const current = queryClient.getQueryState<Plugin>(key);
 
     if (current?.data && current.dataUpdatedAt > listStartedAt) {
-      continue;
+      return current.data;
     }
 
     queryClient.setQueryData(key, plugin);
-  }
-};
+
+    return plugin;
+  });
 
 /**
  * Puts an answer of `get` into the list without making the list look fresher than it is: the
- * list keeps its own `dataUpdatedAt`. A list that arrived after the `get` began is newer, so it
- * wins; a plugin the list does not hold is not added (that is `list`'s to say).
+ * list keeps its own `dataUpdatedAt`. A list that arrived after the `get` began may have read
+ * the plugin before the change this `get` reports, and when it read it cannot be told: it is
+ * asked for again instead. A list still being read is settled by `seedDetails`, which keeps the
+ * newer detail. A plugin the list does not hold is not added (that is `list`'s to say).
  */
 const patchList = (
   queryClient: QueryClient,
@@ -47,7 +51,16 @@ const patchList = (
 ) => {
   const state = queryClient.getQueryState<PluginList>(pluginKeys.list());
 
-  if (!state?.data || state.dataUpdatedAt > getStartedAt) {
+  if (!state?.data) {
+    return;
+  }
+
+  if (state.dataUpdatedAt > getStartedAt) {
+    void queryClient.invalidateQueries({
+      queryKey: pluginKeys.list(),
+      exact: true,
+    });
+
     return;
   }
 
@@ -69,9 +82,7 @@ export const pluginsQueries = {
       const startedAt = Date.now();
       const plugins = await pluginsCommands.list();
 
-      seedDetails(client, plugins, startedAt);
-
-      return plugins;
+      return seedDetails(client, plugins, startedAt);
     },
     staleTime: PLUGIN_STALE_TIME,
   }),
@@ -117,8 +128,12 @@ export const pluginsCache = {
       queryClient.getQueryData<
         Awaited<ReturnType<typeof pluginsCommands.list>>
       >(pluginKeys.list()),
+    // The list holds the plugin too, so a detail the garbage collector took does not lose it.
     detail: (queryClient: QueryClient, id: PluginId) =>
-      queryClient.getQueryData<Plugin>(pluginKeys.detail(id)),
+      queryClient.getQueryData<Plugin>(pluginKeys.detail(id)) ??
+      pluginsCache.getData
+        .list(queryClient)
+        ?.find((plugin) => pluginIdOf(plugin) === id),
     settings: (queryClient: QueryClient, id: PluginId) =>
       queryClient.getQueryData<
         Awaited<ReturnType<typeof pluginsCommands.getSettings>>
@@ -170,6 +185,14 @@ export const pluginsCache = {
      * read any more (removed meanwhile) is for the list to settle.
      */
     plugin: async (queryClient: QueryClient, id: PluginId) => {
+      // A request already on its way began before this change was reported, so it may carry the
+      // state from before it: it is waited out and the plugin asked for anew.
+      if (queryClient.isFetching({ queryKey: pluginKeys.detail(id) }) > 0) {
+        await queryClient
+          .fetchQuery({ ...pluginsQueries.detail(id), staleTime: 0 })
+          .catch(() => undefined);
+      }
+
       const startedAt = Date.now();
 
       try {
