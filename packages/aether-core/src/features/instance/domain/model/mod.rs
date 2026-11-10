@@ -1,3 +1,4 @@
+mod broken_instance;
 mod capabilities;
 mod content;
 mod content_file;
@@ -20,6 +21,7 @@ mod pagination;
 mod release_channel;
 mod resolve;
 
+pub use broken_instance::*;
 pub use capabilities::*;
 pub use content::*;
 pub use content_file::*;

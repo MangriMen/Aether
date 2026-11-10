@@ -3,8 +3,8 @@ use chrono::{DateTime, Utc};
 use crate::{
     features::{
         instance::{
-            Instance, InstanceError, InstanceId, InstanceInstallStage, InstanceName,
-            InstanceSnapshot,
+            BrokenInstanceReason, Instance, InstanceError, InstanceId, InstanceInstallStage,
+            InstanceName, InstanceSnapshot,
         },
         minecraft::{GameVersion, LoaderVersionPreference, ModLoader},
         settings::{Hooks, MemoryMb, MemorySettings, WindowSettings, WindowSize},
@@ -242,6 +242,27 @@ impl TryFrom<SqlInstance> for Instance {
     type Error = InstanceError;
 
     fn try_from(row: SqlInstance) -> Result<Self, Self::Error> {
+        let id = row.id.clone();
+        row.into_instance().map_err(|reason| match reason {
+            BrokenInstanceReason::InvalidId => InstanceError::NotFound { instance_id: id },
+            reason => InstanceError::Storage(format!("Invalid instance {id}: {reason}")),
+        })
+    }
+}
+
+fn column_err(column: &str) -> BrokenInstanceReason {
+    BrokenInstanceReason::InvalidColumn {
+        column: column.to_owned(),
+    }
+}
+
+impl SqlInstance {
+    /// The instance this row stores, or why it cannot be read. Every reason is typed, so the
+    /// row can be shown as broken instead of just missing.
+    pub fn into_instance(self) -> Result<Instance, BrokenInstanceReason> {
+        let row = self;
+        let id =
+            InstanceId::try_from(row.id.clone()).map_err(|_| BrokenInstanceReason::InvalidId)?;
         let memory = MemorySettings::new(MemoryMb::from_stored_or_default(
             row.memory_maximum,
             "instances.memory_maximum",
@@ -259,22 +280,27 @@ impl TryFrom<SqlInstance> for Instance {
         };
 
         let launch_args = serde_json::from_str(&row.launch_args_json)
-            .map_err(|e| storage_err("launch_args_json", &row.id, &e))?;
-        let env_vars = serde_json::from_str(&row.env_vars_json)
-            .map_err(|e| storage_err("env_vars_json", &row.id, &e))?;
+            .map_err(|_| column_err("launch_args_json"))?;
+        let env_vars =
+            serde_json::from_str(&row.env_vars_json).map_err(|_| column_err("env_vars_json"))?;
 
         let name = InstanceName::from_stored_or_id(&row.name, &row.id);
-        let game_version = GameVersion::parse(&row.game_version)
-            .map_err(|e| storage_err("game_version", &row.id, &e))?;
+        let game_version = GameVersion::parse(&row.game_version).map_err(|_| {
+            BrokenInstanceReason::InvalidGameVersion {
+                value: row.game_version.clone(),
+            }
+        })?;
 
         let snapshot = InstanceSnapshot {
-            id: InstanceId::try_from(row.id)?,
+            id,
             name,
             icon_path: row.icon_path,
             install_stage: {
                 let dto: InstanceInstallStageDto =
                     serde_json::from_str(&format!("\"{}\"", row.install_stage.trim_matches('"')))
-                        .map_err(|_| InstanceError::Storage("Invalid stage".into()))?;
+                        .map_err(|_| BrokenInstanceReason::InvalidInstallStage {
+                        value: row.install_stage.clone(),
+                    })?;
                 dto.into()
             },
 
@@ -282,14 +308,16 @@ impl TryFrom<SqlInstance> for Instance {
             loader: {
                 let dto: ModLoaderDto =
                     serde_json::from_str(&format!("\"{}\"", row.loader.trim_matches('"')))
-                        .map_err(|_| InstanceError::Storage("Invalid mod loader".into()))?;
+                        .map_err(|_| BrokenInstanceReason::InvalidLoader {
+                            value: row.loader.clone(),
+                        })?;
                 dto.into()
             },
             loader_version: row
                 .loader_version_json
                 .map(|s| {
                     serde_json::from_str::<LoaderVersionPreferenceDto>(&s)
-                        .map_err(|_| InstanceError::Storage("Invalid loader version".into()))
+                        .map_err(|_| column_err("loader_version_json"))
                 })
                 .transpose()?
                 .and_then(|dto| dto.into_stored("instances.loader_version_json")),
