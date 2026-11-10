@@ -11,7 +11,7 @@ export type ProgressIndex = {
   roots: ProgressEvent[];
   /** Children of `id`, in the order of the list. */
   childrenOf: (id: BarId) => ProgressEvent[];
-  /** How many bars show `id`. */
+  /** How many running bars show `id`. */
   mirrorCount: (id: BarId) => number;
   /**
    * How many other bars wait on the shared downloads shown under `id`: they go on when `id` is
@@ -80,7 +80,7 @@ export const buildProgressIndex = (
     othersWaitingOn: (id) =>
       descendantsOf(id).reduce(
         (most, p) =>
-          p.mirrorOf === null
+          p.mirrorOf === null || p.status.type !== 'running'
             ? most
             : Math.max(most, mirrorCount(p.mirrorOf) - 1),
         0,
