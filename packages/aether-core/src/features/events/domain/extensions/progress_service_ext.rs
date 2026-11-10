@@ -1,6 +1,6 @@
 use async_trait::async_trait;
-use log::debug;
 use tokio_util::sync::CancellationToken;
+use tracing::debug;
 use uuid::Uuid;
 
 use crate::features::events::{

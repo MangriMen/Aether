@@ -384,3 +384,42 @@ async fn should_install_everything_when_called_off_past_the_point_of_no_return()
     assert_eq!(end.status, ProgressStatus::Done);
     assert_eq!(end.cancel, Some(CancelState::Closed));
 }
+
+#[tokio::test]
+async fn should_download_nothing_when_cancelled_while_resolving_refs() {
+    let mut fixture = Fixture::new().await;
+    let mut bars = Bars::install(&mut fixture);
+    let modrinth = MockProvider::builtin_modrinth();
+    fixture.register(&modrinth).await;
+    let packwiz = plugin("packwiz");
+    let run = fixture.execute(
+        existing(vec![
+            provider_ref("modrinth", "hang", "mods/hang.jar"),
+            direct("https://cdn.example/a.jar", "mods/a.jar"),
+        ]),
+        &packwiz,
+    );
+    tokio::pin!(run);
+    tokio::select! {
+        result = &mut run => panic!("the run cannot end by itself: {result:?}"),
+        () = modrinth.hanging.notified() => {}
+    }
+
+    bars.service
+        .cancel_progress(bars.plan_bar().await)
+        .await
+        .unwrap();
+    let err = tokio::time::timeout(Duration::from_secs(5), run)
+        .await
+        .expect("the run did not stop")
+        .unwrap_err();
+
+    assert!(matches!(err, InstanceError::Cancelled), "{err:?}");
+    assert!(fixture.downloaded_urls().is_empty());
+    assert_eq!(fixture.instance_files(INSTANCE_ID), Vec::<String>::new());
+    assert!(fixture.staging_is_clean());
+    assert_eq!(
+        plan_end(&bars.once_all_ended().await).status,
+        ProgressStatus::Cancelled
+    );
+}
