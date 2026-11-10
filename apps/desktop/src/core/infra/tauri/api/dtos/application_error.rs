@@ -77,6 +77,8 @@ mod tests {
         let value = serde_json::to_value(FrontendError::from(err)).unwrap();
 
         assert_eq!(value["payload"]["code"], "DUPLICATE_REQUEST");
+        // The frontend looks the arguments up by this key: with none, it translates without any.
+        assert!(value["payload"].get("payload").is_none());
     }
 
     #[test]
