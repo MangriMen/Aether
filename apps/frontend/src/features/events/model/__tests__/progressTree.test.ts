@@ -7,6 +7,7 @@ import {
   findFailedDescendant,
   getFinishedIds,
   getFinishedRoots,
+  isPartOfContentInstall,
   splitChildren,
 } from '../progressTree';
 
@@ -120,5 +121,57 @@ describe('finished bars', () => {
     const list = [make('a', 'b'), make('b', 'a')];
 
     expect(ids(buildProgressIndex(list).descendantsOf('a'))).toEqual(['b']);
+  });
+});
+
+describe('isPartOfContentInstall', () => {
+  const install = make('plan', null, {
+    event: {
+      type: 'pack_download',
+      instance_path: '',
+      pack_name: 'Pack',
+      icon: null,
+      pack_id: null,
+      pack_version: null,
+    },
+  });
+  const file = make('file', 'plan', {
+    event: { type: 'file_download', file_name: 'a.jar' },
+  });
+  const game = make('game', 'file', {
+    event: { type: 'minecraft_download', instance_id: 'i', instance_name: 'I' },
+  });
+  const java = make('java', null, {
+    event: { type: 'java_download', version: 21 },
+  });
+  const payloads = { plan: install, file, game, java };
+
+  it('takes in the bar of an install and every bar under it', () => {
+    expect(isPartOfContentInstall(install, payloads)).toBe(true);
+    expect(isPartOfContentInstall(file, payloads)).toBe(true);
+    expect(isPartOfContentInstall(game, payloads)).toBe(true);
+  });
+
+  it('leaves out a bar of other work and an orphan', () => {
+    expect(isPartOfContentInstall(java, payloads)).toBe(false);
+    expect(
+      isPartOfContentInstall(
+        make('orphan', 'missing', {
+          event: { type: 'java_download', version: 21 },
+        }),
+        payloads,
+      ),
+    ).toBe(false);
+  });
+
+  it('does not hang on a cycle in parent ids', () => {
+    const a = make('a', 'b', {
+      event: { type: 'file_download', file_name: 'a' },
+    });
+    const b = make('b', 'a', {
+      event: { type: 'file_download', file_name: 'b' },
+    });
+
+    expect(isPartOfContentInstall(a, { a, b })).toBe(false);
   });
 });

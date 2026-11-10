@@ -116,3 +116,27 @@ export const getFinishedIds = (index: ProgressIndex): string[] =>
     root.progressBarId,
     ...index.descendantsOf(root.progressBarId).map((p) => p.progressBarId),
   ]);
+
+/**
+ * Whether `bar` is part of a content install: the bar of the install or one under it. Its
+ * failure is reported by the install itself, translated, so the bar is not reported again.
+ */
+export const isPartOfContentInstall = (
+  bar: ProgressEvent,
+  payloads: Record<BarId, ProgressEvent>,
+): boolean => {
+  const seen = new Set<BarId>();
+  let current: ProgressEvent | undefined = bar;
+
+  while (current && !seen.has(current.progressBarId)) {
+    if (current.event.type === 'pack_download') {
+      return true;
+    }
+
+    seen.add(current.progressBarId);
+    current =
+      current.parentId === null ? undefined : payloads[current.parentId];
+  }
+
+  return false;
+};
