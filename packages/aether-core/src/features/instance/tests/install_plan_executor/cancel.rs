@@ -15,7 +15,8 @@ use crate::features::{
         test_support::ChannelEmitter,
     },
     instance::{
-        InstallFileEntry, InstallPlan, InstallTarget, InstanceError, InstanceName, NewInstance,
+        ContentId, InstallFileEntry, InstallPlan, InstallTarget, InstanceError, InstanceId,
+        InstanceName, NewInstance, ResolveTarget,
     },
     minecraft::{GameVersion, ModLoader},
 };
@@ -440,5 +441,87 @@ async fn should_download_nothing_when_cancelled_while_resolving_refs() {
     assert_eq!(
         plan_end(&bars.once_all_ended().await).status,
         ProgressStatus::Cancelled
+    );
+}
+
+#[tokio::test]
+async fn should_end_the_bar_cancelled_when_cancelled_while_the_plan_is_resolved() {
+    let mut fixture = Fixture::new().await;
+    let mut bars = Bars::install(&mut fixture);
+    let executor = fixture.executor();
+    let progress = executor
+        .begin(&ResolveTarget::New, &ContentId::try_from("pack").unwrap())
+        .await;
+    // The archive of a pack is downloaded about now: listeners see the bar and its cancel button.
+    let shown = bars.sent_so_far();
+    assert!(
+        shown.iter().any(|event| event.parent_id.is_none()
+            && event.stage == Some(ProgressStage::Preparing)
+            && event.cancel == Some(CancelState::Open)),
+        "{shown:?}"
+    );
+
+    let result = {
+        let resolving =
+            progress.unless_cancelled(std::future::pending::<Result<(), InstanceError>>());
+        tokio::pin!(resolving);
+        tokio::select! {
+            result = &mut resolving => panic!("nothing ends it: {result:?}"),
+            () = tokio::task::yield_now() => {}
+        }
+        bars.service
+            .cancel_progress(bars.plan_bar().await)
+            .await
+            .unwrap();
+        tokio::time::timeout(Duration::from_secs(5), resolving)
+            .await
+            .expect("the resolving did not stop")
+    };
+    assert!(
+        matches!(result, Err(InstanceError::Cancelled)),
+        "{result:?}"
+    );
+    progress.end(&result).await;
+    drop(progress);
+
+    assert_eq!(
+        plan_end(&bars.once_all_ended().await).status,
+        ProgressStatus::Cancelled
+    );
+}
+
+#[tokio::test]
+async fn should_end_the_bar_once_when_the_run_and_its_caller_both_end_it() {
+    let mut fixture = Fixture::new().await;
+    let mut bars = Bars::install(&mut fixture);
+    fixture.register(&MockProvider::builtin_modrinth()).await;
+    let packwiz = plugin("packwiz");
+    let executor = fixture.executor();
+    let progress = executor
+        .begin(
+            &ResolveTarget::Existing {
+                instance_id: InstanceId::try_from(INSTANCE_ID).unwrap(),
+                game_version: GameVersion::from_static("1.21.1"),
+                loader: Some(ModLoader::Fabric),
+            },
+            &ContentId::try_from("pack").unwrap(),
+        )
+        .await;
+
+    let result = executor
+        .execute_in(
+            existing(vec![direct("https://cdn.example/a.jar", "mods/a.jar")]),
+            pack_of(&packwiz),
+            &progress,
+        )
+        .await;
+    // What the caller does with whatever the run answered.
+    progress.end(&Err::<(), _>(InstanceError::Cancelled)).await;
+    drop(progress);
+
+    result.unwrap();
+    assert_eq!(
+        plan_end(&bars.once_all_ended().await).status,
+        ProgressStatus::Done
     );
 }

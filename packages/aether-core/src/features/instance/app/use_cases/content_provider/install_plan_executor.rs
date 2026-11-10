@@ -63,7 +63,7 @@ use std::{
     path::{Path, PathBuf},
     sync::{
         Arc,
-        atomic::{AtomicU64, Ordering},
+        atomic::{AtomicBool, AtomicU64, Ordering},
     },
 };
 
@@ -90,6 +90,7 @@ use crate::{
             ContentProvider, ContentVersionId, FileSide, InstallFileEntry, InstallPlan,
             InstallTarget, Instance, InstanceError, InstanceId, InstanceStorage, OverrideLocation,
             PackFile, PackStorage, PlanOrigin, PlatformProviderSelection, ProviderId,
+            ResolveTarget,
             app::{
                 DISABLED_SUFFIX,
                 ports::{
@@ -139,22 +140,40 @@ pub struct InstallPlanExecutor {
 /// bar.
 ///
 /// The user calls the run off from the bar, until [`commit`](Self::commit).
-struct PlanProgress<'a> {
-    service: &'a dyn ProgressService,
+pub struct PlanProgress {
+    service: Arc<dyn ProgressService>,
     /// `None` when the bar could not be created: the plan runs without progress.
     bar: Option<ProgressBarId>,
-    /// What the bar shows, kept to size it.
-    event_type: ProgressEventType,
     /// Fires when the user calls the run off; never without a bar.
     cancel: CancellationToken,
     /// Shared by the bars of the files.
     instance_path: String,
+    /// Set by the first [`end`](Self::end): a run ends once, whoever gets to say it first.
+    ended: AtomicBool,
 }
 
-impl PlanProgress<'_> {
+impl PlanProgress {
+    /// A run without a bar, for a test double of the executor.
+    #[cfg(test)]
+    pub(crate) fn without_bar(
+        cancel: CancellationToken,
+        service: Arc<dyn ProgressService>,
+    ) -> Self {
+        Self {
+            service,
+            bar: None,
+            cancel,
+            instance_path: String::new(),
+            ended: AtomicBool::new(false),
+        }
+    }
+
     /// Size the bar once the work is known: three steps per file to download (download, hash,
     /// install), one per override, one to finish.
-    async fn size_for(&self, to_download: usize, overrides: usize) {
+    ///
+    /// `event_type` is what the bar shows from now on: the plan names the instance, which the
+    /// bar did not know while the plan was being resolved.
+    async fn size_for(&self, event_type: ProgressEventType, to_download: usize, overrides: usize) {
         let Some(bar) = &self.bar else {
             return;
         };
@@ -162,12 +181,7 @@ impl PlanProgress<'_> {
         let total = (3 * to_download + overrides + 1) as f64;
         let sized = self
             .service
-            .edit_progress(
-                bar,
-                self.event_type.clone(),
-                total,
-                "Downloading".to_owned(),
-            )
+            .edit_progress(bar, event_type, total, "Downloading".to_owned())
             .await;
         if let Err(err) = sized {
             tracing::debug!("Failed to send progress: {err}");
@@ -190,7 +204,7 @@ impl PlanProgress<'_> {
 
     /// Run `work` unless the user calls the run off first: then it is dropped halfway, every
     /// download in it with it, and the run ends as cancelled.
-    async fn unless_cancelled<T>(
+    pub async fn unless_cancelled<T>(
         &self,
         work: impl Future<Output = Result<T, InstanceError>>,
     ) -> Result<T, InstanceError> {
@@ -215,7 +229,13 @@ impl PlanProgress<'_> {
     /// Take the last step, or mark the bar as failed or cancelled, by the run's `result`. Called
     /// once the run is over (every download stopped, every file's bar gone), so that no update
     /// writes over the failure.
-    async fn end(&self, result: &Result<InstanceId, InstanceError>) {
+    ///
+    /// Only the first call counts: the bar is started before the plan is resolved, so whoever
+    /// ends the run (the executor, or the caller that never got to it) may come second.
+    pub async fn end<T>(&self, result: &Result<T, InstanceError>) {
+        if self.ended.swap(true, Ordering::AcqRel) {
+            return;
+        }
         match (result, &self.bar) {
             (Ok(_), _) => self.step("Complete").await,
             (Err(InstanceError::Cancelled), Some(bar)) => bar.cancel().await,
@@ -226,7 +246,7 @@ impl PlanProgress<'_> {
 
     /// Start the bar of a file to download, captioned with its file name and expecting its size
     /// when that is known. The plan's bar counts the file's bytes through it.
-    async fn start_file(&self, entry: &DownloadEntry) -> FileProgress<'_, '_> {
+    async fn start_file(&self, entry: &DownloadEntry) -> FileProgress<'_> {
         let bar = match &self.bar {
             Some(parent) => {
                 self.service
@@ -267,15 +287,15 @@ impl PlanProgress<'_> {
 /// The bar of one file to download, under the plan's bar. Settled by the result of the file
 /// ([`CancellableBar::settle`]); dropped before that — cut short by another file's failure — it
 /// ends cancelled.
-struct FileProgress<'p, 's> {
-    plan: &'p PlanProgress<'s>,
+struct FileProgress<'p> {
+    plan: &'p PlanProgress,
     /// Without a bar (it could not be created) the bytes go to the plan's bar directly.
     bar: CancellableBar,
     /// The bytes the file was expected to have.
     announced: u64,
 }
 
-impl FileProgress<'_, '_> {
+impl FileProgress<'_> {
     /// Where the bytes of the file are counted: its own bar, which passes them on to the plan's.
     fn bytes_bar(&self) -> Option<&ProgressBarId> {
         self.bar.bar().or(self.plan.bar.as_ref())
@@ -677,10 +697,53 @@ impl InstallPlanExecutor {
         }
     }
 
+    /// Start the bar of a run for `content_id` in `target`, before its plan is resolved: the
+    /// archive of a modpack is downloaded then, which the user may want to call off too. The
+    /// bar is named by what is known by now; [`Self::execute_in`] names it by the plan.
+    pub async fn begin(&self, target: &ResolveTarget, content_id: &ContentId) -> PlanProgress {
+        let instance = match target {
+            ResolveTarget::Existing { instance_id, .. } => Some(instance_id),
+            ResolveTarget::New => None,
+        };
+        self.progress_of(instance, content_id.to_string(), content_id)
+            .await
+    }
+
     pub async fn execute(
         &self,
         plan: InstallPlan,
         origin: PlanOrigin,
+    ) -> Result<InstanceId, InstanceError> {
+        let progress = match &plan.target {
+            InstallTarget::Existing { instance_id, .. } => {
+                self.progress_of(Some(instance_id), String::new(), &origin.content_id)
+                    .await
+            }
+            InstallTarget::New(new_instance) => {
+                self.progress_of(None, new_instance.name.to_string(), &origin.content_id)
+                    .await
+            }
+        };
+        self.execute_in(plan, origin, &progress).await
+    }
+
+    /// Apply `plan` under `progress`, started by [`Self::begin`].
+    pub async fn execute_in(
+        &self,
+        plan: InstallPlan,
+        origin: PlanOrigin,
+        progress: &PlanProgress,
+    ) -> Result<InstanceId, InstanceError> {
+        let result = self.run(plan, origin, progress).await;
+        progress.end(&result).await;
+        result
+    }
+
+    async fn run(
+        &self,
+        plan: InstallPlan,
+        origin: PlanOrigin,
+        progress: &PlanProgress,
     ) -> Result<InstanceId, InstanceError> {
         let InstallPlan {
             target,
@@ -695,21 +758,18 @@ impl InstallPlanExecutor {
 
         let overrides = self.check_overrides(overrides, &files).await?;
 
-        // Started before the refs are resolved and the instance is hashed, so that slow part
-        // can be called off too; sized once the work is known.
-        let progress = self.start_progress(&target, &origin).await;
-        let result = async {
-            let (installed, diff) = progress
-                .unless_cancelled(self.diff_plan(files, &target, &origin, &game))
-                .await?;
-            progress
-                .size_for(diff.to_download.len(), overrides.file_count())
-                .await;
-            self.apply(target, &origin, installed, diff, overrides, &progress)
-                .await
-        }
-        .await;
-        progress.end(&result).await;
+        // The bar was started before the refs are resolved and the instance is hashed, so that
+        // slow part can be called off too; it is sized once the work is known.
+        let (installed, diff) = progress
+            .unless_cancelled(self.diff_plan(files, &target, &origin, &game))
+            .await?;
+        let event_type = self.pack_event(&target, &origin).await;
+        progress
+            .size_for(event_type, diff.to_download.len(), overrides.file_count())
+            .await;
+        let result = self
+            .apply(target, &origin, installed, diff, overrides, progress)
+            .await;
         if matches!(result, Err(InstanceError::Cancelled)) {
             tracing::info!("The user cancelled the install of {origin:?}");
         }
@@ -748,7 +808,7 @@ impl InstallPlanExecutor {
         installed: InstalledState,
         diff: InstallDiff,
         overrides: PlanOverrides,
-        progress: &PlanProgress<'_>,
+        progress: &PlanProgress,
     ) -> Result<InstanceId, InstanceError> {
         let dirs = PlanDirs::new(&self.location_info.temp_dir());
         let staging = dirs.staging.clone();
@@ -838,7 +898,7 @@ impl InstallPlanExecutor {
         to_download: Vec<PlannedFile>,
         overrides: PlanOverrides,
         staging: &Path,
-        progress: &PlanProgress<'_>,
+        progress: &PlanProgress,
     ) -> Result<(Vec<StagedFile>, Vec<StagedOverride>), InstanceError> {
         let staged = progress
             .unless_cancelled(self.download_all(to_download, staging, progress))
@@ -856,40 +916,25 @@ impl InstallPlanExecutor {
     }
 
     /// Start the bar, of one step until it is sized ([`PlanProgress::size_for`]). Its bytes are
-    /// those of the bars under it ([`PlanProgress::start_file`]).
-    async fn start_progress<'a>(
-        &'a self,
-        target: &InstallTarget,
-        origin: &PlanOrigin,
-    ) -> PlanProgress<'a> {
-        let instance_path = match target {
-            InstallTarget::Existing { instance_id, .. } => instance_id.to_string(),
-            InstallTarget::New(_) => String::new(),
-        };
-        // What the bar is captioned with: the instance the plan fills.
-        let pack_name = match target {
-            InstallTarget::Existing { instance_id, .. } => {
-                self.instance_storage.get(instance_id).await.map_or_else(
-                    |_: InstanceError| origin.content_id.to_string(),
-                    |instance| instance.name().to_string(),
-                )
-            }
-            InstallTarget::New(new_instance) => new_instance.name.to_string(),
-        };
-
-        let event_type = ProgressEventType::PackDownload {
-            instance_path: instance_path.clone(),
-            pack_name,
-            icon: None,
-            pack_id: Some(origin.content_id.to_string()),
-            pack_version: None,
+    /// those of the bars under it ([`PlanProgress::start_file`]). `name` captions it until the
+    /// plan names the instance, for a new one.
+    async fn progress_of(
+        &self,
+        instance: Option<&InstanceId>,
+        name: String,
+        content_id: &ContentId,
+    ) -> PlanProgress {
+        let event_type = self.event_of(instance, name, content_id).await;
+        let instance_path = match &event_type {
+            ProgressEventType::PackDownload { instance_path, .. } => instance_path.clone(),
+            _ => String::new(),
         };
         let (bar, cancel) = self
             .progress_service
-            .init_cancellable_progress_safe(event_type.clone(), 1.0, "Preparing".to_owned())
+            .init_cancellable_progress_safe(event_type, 1.0, "Preparing".to_owned())
             .await;
         // A new bar is not shown until its first event: set now, so its cancel button is there
-        // while the refs are resolved.
+        // while the plan and its refs are resolved.
         if let Some(bar) = &bar {
             self.progress_service
                 .set_progress_stage_safe(bar, Some(ProgressStage::Preparing))
@@ -897,11 +942,52 @@ impl InstallPlanExecutor {
         }
 
         PlanProgress {
-            service: self.progress_service.as_ref(),
+            service: self.progress_service.clone(),
             bar,
-            event_type,
             cancel,
             instance_path,
+            ended: AtomicBool::new(false),
+        }
+    }
+
+    /// What the bar of a run shows: the instance the plan fills, or `name` for a new one.
+    async fn event_of(
+        &self,
+        instance: Option<&InstanceId>,
+        name: String,
+        content_id: &ContentId,
+    ) -> ProgressEventType {
+        let (instance_path, pack_name) = match instance {
+            Some(instance_id) => (
+                instance_id.to_string(),
+                self.instance_storage.get(instance_id).await.map_or_else(
+                    |_: InstanceError| content_id.to_string(),
+                    |instance| instance.name().to_string(),
+                ),
+            ),
+            None => (String::new(), name),
+        };
+
+        ProgressEventType::PackDownload {
+            instance_path,
+            pack_name,
+            icon: None,
+            pack_id: Some(content_id.to_string()),
+            pack_version: None,
+        }
+    }
+
+    /// What the bar shows once the plan is known.
+    async fn pack_event(&self, target: &InstallTarget, origin: &PlanOrigin) -> ProgressEventType {
+        match target {
+            InstallTarget::Existing { instance_id, .. } => {
+                self.event_of(Some(instance_id), String::new(), &origin.content_id)
+                    .await
+            }
+            InstallTarget::New(new_instance) => {
+                self.event_of(None, new_instance.name.to_string(), &origin.content_id)
+                    .await
+            }
         }
     }
 
@@ -1022,7 +1108,7 @@ impl InstallPlanExecutor {
         &self,
         files: Vec<PlannedFile>,
         staging: &Path,
-        progress: &PlanProgress<'_>,
+        progress: &PlanProgress,
     ) -> Result<Vec<StagedFile>, InstanceError> {
         let mut declared: u64 = 0;
         for file in &files {
@@ -1077,7 +1163,7 @@ impl InstallPlanExecutor {
     async fn prepare_target(
         &self,
         target: InstallTarget,
-        progress: &PlanProgress<'_>,
+        progress: &PlanProgress,
     ) -> Result<(InstanceId, Option<Instance>), InstanceError> {
         let parent_bar = progress.bar.as_ref();
         match target {
@@ -1124,7 +1210,7 @@ impl InstallPlanExecutor {
         &self,
         instance_id: &InstanceId,
         staged: Vec<StagedFile>,
-        progress: &PlanProgress<'_>,
+        progress: &PlanProgress,
         undo: &mut Undo,
     ) -> Result<Vec<InstalledFile>, InstanceError> {
         let mut installed = Vec::with_capacity(staged.len());
@@ -1210,7 +1296,7 @@ impl InstallPlanExecutor {
         &self,
         instance_id: &InstanceId,
         staged: Vec<StagedOverride>,
-        progress: &PlanProgress<'_>,
+        progress: &PlanProgress,
         undo: &mut Undo,
     ) -> Result<(), InstanceError> {
         for StagedOverride {
@@ -1297,12 +1383,25 @@ fn path_key(relative_path: &str) -> String {
 
 #[async_trait]
 impl InstallPlanExecutorPort for InstallPlanExecutor {
+    async fn begin(&self, target: &ResolveTarget, content_id: &ContentId) -> PlanProgress {
+        self.begin(target, content_id).await
+    }
+
     async fn execute(
         &self,
         plan: InstallPlan,
         origin: PlanOrigin,
     ) -> Result<InstanceId, InstanceError> {
         self.execute(plan, origin).await
+    }
+
+    async fn execute_in(
+        &self,
+        plan: InstallPlan,
+        origin: PlanOrigin,
+        progress: &PlanProgress,
+    ) -> Result<InstanceId, InstanceError> {
+        self.execute_in(plan, origin, progress).await
     }
 }
 

@@ -4,6 +4,7 @@ use async_trait::async_trait;
 use dashmap::DashMap;
 
 use crate::features::events::ProgressBarId;
+use crate::features::instance::app::PlanProgress;
 use crate::features::instance::app::{
     ChangeContentState, ContentCompatibilityCheckParams, ContentCompatibilityResult,
     ContentGetParams, ContentListVersionsParams, EditInstance, EditInstanceIcon, ImportContent,
@@ -12,9 +13,11 @@ use crate::features::instance::app::{
 use crate::features::instance::domain::{
     ContentFileView, ContentItem, ContentProviderCapabilityMetadata, ContentVersion,
     ImporterCapabilityMetadata, InstallPlan, Instance, InstanceError, InstanceGame, InstanceId,
-    NewInstance, PlanOrigin,
+    NewInstance, PlanOrigin, ResolveTarget,
 };
-use crate::features::instance::{ContentInstallParams, ContentSearchParams, ContentSearchResult};
+use crate::features::instance::{
+    ContentId, ContentInstallParams, ContentSearchParams, ContentSearchResult,
+};
 use crate::features::process::MinecraftProcessMetadata;
 use crate::shared::capability::domain::CapabilityEntry;
 
@@ -171,6 +174,21 @@ pub trait InstallPlanExecutorPort: Send + Sync {
         &self,
         plan: InstallPlan,
         origin: PlanOrigin,
+    ) -> Result<InstanceId, InstanceError>;
+
+    /// Start the bar of a run for `content_id` before its plan is resolved, so that the
+    /// download of a pack's archive in the resolving shows, and may be called off. Meant for
+    /// [`Self::execute_in`]; a bar never executed is ended by [`PlanProgress::end`], or
+    /// completes when dropped.
+    async fn begin(&self, target: &ResolveTarget, content_id: &ContentId) -> PlanProgress;
+
+    /// As [`Self::execute`], under a bar started by [`Self::begin`]: ended by this call,
+    /// whichever way it goes.
+    async fn execute_in(
+        &self,
+        plan: InstallPlan,
+        origin: PlanOrigin,
+        progress: &PlanProgress,
     ) -> Result<InstanceId, InstanceError>;
 }
 
