@@ -756,3 +756,35 @@ async fn should_end_the_shared_bar_and_its_mirror_cancelled_when_the_download_is
         "the shared bar and its mirror"
     );
 }
+
+#[tokio::test]
+async fn should_fetch_only_the_missing_files_when_a_dropped_download_is_started_again() {
+    let fixture = fixture();
+    let version = version(&fixture.client, "1.20.1", ASSET_HASH);
+    fixture.client.gate(&client_url("1.20.1"));
+
+    let first = download(&fixture.service, &version, None);
+    // The library is through while the client is still on its way.
+    let library = library_path(&fixture.location_info);
+    tokio::time::timeout(Duration::from_secs(5), async {
+        while !library.exists() || fixture.client.fetches_of(&client_url("1.20.1")) == 0 {
+            tokio::task::yield_now().await;
+        }
+    })
+    .await
+    .expect("the library and the client were never asked for");
+    first.abort();
+    let _ = first.await;
+
+    fixture.client.open();
+    let (result, _) = download(&fixture.service, &version, None).await.unwrap();
+
+    result.unwrap();
+    assert_eq!(
+        fixture.client.fetches_of(LIBRARY_URL),
+        1,
+        "not fetched again"
+    );
+    assert_eq!(fixture.client.fetches_of(&client_url("1.20.1")), 2);
+    assert!(library.exists());
+}
