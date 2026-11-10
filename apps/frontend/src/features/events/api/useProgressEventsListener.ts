@@ -1,4 +1,5 @@
 import { batch, onCleanup, onMount } from 'solid-js';
+import { produce } from 'solid-js/store';
 
 import { useEventListener, eventsCommands, eventsEvents } from '@/platform/ipc';
 import { useTranslation } from '@/shared/i18n';
@@ -35,6 +36,19 @@ export const useProgressEventsListener = () => {
       endedBarIds.add(id);
     } else if (endedBarIds.has(id)) {
       logError('[EVENT] running event after the end of its bar', payload);
+      return;
+    }
+
+    // A mirror is cancelled with the call-off of the download it shows, or of its own install.
+    // The install of a waiting bar goes on and takes the download up itself, under a new mirror,
+    // so a cancelled one is no part of what the user sees.
+    if (payload.mirrorOf !== null && payload.status.type === 'cancelled') {
+      setProgressStore(
+        'payloads',
+        produce((payloads) => {
+          delete payloads[id];
+        }),
+      );
       return;
     }
 

@@ -940,3 +940,74 @@ async fn should_remove_the_instance_without_a_warning_when_its_install_is_called
 
     assert_eq!((warnings, removed), (0, true));
 }
+
+/// A removal unwinds the install of the instance and goes on to remove it, while the creation
+/// that ran the install rolls back: both take the record and the directory away.
+#[tokio::test]
+async fn should_end_cancelled_and_leave_nothing_when_the_instance_is_removed_during_its_creation() {
+    struct RemovedMeanwhile {
+        storage: Arc<MemInstanceStorage>,
+        files: Arc<MemInstanceFileService>,
+    }
+
+    #[async_trait]
+    impl InstanceInstallService for RemovedMeanwhile {
+        async fn execute(
+            &self,
+            instance_id: InstanceId,
+            _: bool,
+            _: Option<&ProgressBarId>,
+        ) -> Result<(), InstanceError> {
+            self.storage.remove(&instance_id).await?;
+            self.files.remove_instance_dir(&instance_id).await?;
+            Err(InstanceError::Cancelled)
+        }
+    }
+
+    let (_temp, location_info) = setup_temp_location();
+    let storage = Arc::new(MemInstanceStorage::new());
+    let files = Arc::new(MemInstanceFileService::new(location_info.instances_dir()));
+    let (tx, mut events) = tokio::sync::mpsc::unbounded_channel();
+    let use_case = make_use_case(
+        storage.clone(),
+        Arc::new(MockLoaderService {
+            try_get_default_result: None,
+        }),
+        Arc::new(RemovedMeanwhile {
+            storage: storage.clone(),
+            files: files.clone(),
+        }),
+        files.clone(),
+        Arc::new(NoOpWatcher),
+        Arc::new(crate::features::events::test_support::ChannelEmitter(tx)),
+    );
+
+    let result = use_case
+        .execute(
+            NewInstance {
+                name: InstanceName::parse("Install Test").unwrap(),
+                game_version: GameVersion::from_static("1.21"),
+                mod_loader: ModLoader::Vanilla,
+                loader_version: None,
+                icon_path: None,
+                skip_install_instance: None,
+                pack_info: None,
+            },
+            None,
+        )
+        .await;
+
+    assert!(
+        matches!(result, Err(InstanceError::Cancelled)),
+        "{result:?}"
+    );
+    assert!(storage.list().await.unwrap().is_empty());
+    assert_eq!(
+        std::fs::read_dir(location_info.instances_dir())
+            .unwrap()
+            .count(),
+        0,
+        "no directory is left"
+    );
+    assert!(events.try_recv().is_err(), "nothing to warn about");
+}
