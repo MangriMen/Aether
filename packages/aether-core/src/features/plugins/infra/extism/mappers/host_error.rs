@@ -597,6 +597,7 @@ impl From<&ProcessError> for HostError {
             ProcessError::KillError { id } => ProcessErrorDto::KillError { id: id.clone() },
             ProcessError::WaitError { id } => ProcessErrorDto::WaitError { id: id.clone() },
             ProcessError::Io(err) => ProcessErrorDto::Io(err.to_string()),
+            ProcessError::GameLog(err) => ProcessErrorDto::Io(err.to_string()),
         })
     }
 }

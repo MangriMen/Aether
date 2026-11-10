@@ -12,7 +12,11 @@ use crate::features::{
         EventsFeature, ListProgressBarsUseCase, ListProgressBarsUseCasePort, PluginEvent,
         ProgressBarStorage, ProgressService, SharedEventEmitter,
     },
-    game_log::infra::FsGameOutputCapture,
+    game_log::{
+        GameLogFeature, GameLogStore, ListGameLogSourcesUseCase, ListGameLogSourcesUseCasePort,
+        ReadGameLogUseCase, ReadGameLogUseCasePort,
+        infra::{FsGameLogStore, FsGameOutputCapture},
+    },
     instance::{
         ChangeContentStateUseCase, ChangeContentStateUseCasePort, ChangeInstanceGameUseCase,
         CheckContentCompatibilityUseCase, CheckContentCompatibilityUseCasePort, ContentFileService,
@@ -482,7 +486,10 @@ impl AetherContainer {
                     self.event_emitter().clone(),
                     self.storage().process_storage.clone(),
                     self.manage_process_service(),
-                    Arc::new(FsGameOutputCapture::new(self.location_info().clone())),
+                    Arc::new(FsGameOutputCapture::new(
+                        self.location_info().clone(),
+                        self.event_emitter().clone(),
+                    )),
                 ))
             })
             .clone()
@@ -923,6 +930,21 @@ impl ProcessFeature for AetherContainer {
     }
     fn manage_process_service(&self) -> Arc<dyn ManageProcessService> {
         self.manage_process_service()
+    }
+}
+
+impl GameLogFeature for AetherContainer {
+    fn list_game_log_sources_use_case(&self) -> Arc<dyn ListGameLogSourcesUseCasePort> {
+        Arc::new(ListGameLogSourcesUseCase::new(self.game_log_store()))
+    }
+    fn read_game_log_use_case(&self) -> Arc<dyn ReadGameLogUseCasePort> {
+        Arc::new(ReadGameLogUseCase::new(self.game_log_store()))
+    }
+}
+
+impl AetherContainer {
+    fn game_log_store(&self) -> Arc<dyn GameLogStore> {
+        Arc::new(FsGameLogStore::new(self.location_info().clone()))
     }
 }
 

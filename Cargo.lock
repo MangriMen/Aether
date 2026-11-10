@@ -93,6 +93,7 @@ dependencies = [
  "dunce",
  "extism",
  "extism-convert",
+ "flate2",
  "futures",
  "glob",
  "http",

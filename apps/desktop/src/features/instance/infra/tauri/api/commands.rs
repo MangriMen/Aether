@@ -1,4 +1,5 @@
 use aether_core::features::{
+    game_log::GameLogFeature,
     instance::{
         ChangeContentState, ContentCompatibilityCheckParams, ContentGetParams,
         ContentInstallParams, ContentListVersionsParams, ContentManagementPort, ContentPath,
@@ -6,7 +7,7 @@ use aether_core::features::{
         ImportContent, ImportInstance, InstanceCrudPort, InstanceError, InstanceId,
         InstanceLifecyclePort, InstanceServicesPort, NewInstance, RemoveContent,
     },
-    process::ProcessFeature,
+    process::{ProcessError, ProcessFeature},
 };
 use std::{
     collections::{HashMap, HashSet},
@@ -25,8 +26,8 @@ use crate::{
             ContentInstallParamsDto, ContentItemDto, ContentListVersionParamsDto,
             ContentProviderCapabilityMetadataDto, ContentSearchParamsDto, ContentSearchResultDto,
             ContentTypeDto, ContentVersionDto, EditInstanceDto, EditInstanceIconDto,
-            ImportInstanceDto, ImporterCapabilityMetadataDto, InstanceDto, InstanceEventDto,
-            NewInstanceDto,
+            GameLogEventDto, ImportInstanceDto, ImporterCapabilityMetadataDto, InstanceDto,
+            InstanceEventDto, LogCursorDto, LogPageDto, LogSourceDto, NewInstanceDto,
         },
         process::MinecraftProcessMetadataDto,
     },
@@ -50,7 +51,7 @@ pub fn get_specta_commands<R: tauri::Runtime>() -> tauri_specta::Commands<R> {
 
 #[must_use]
 pub fn get_specta_events() -> tauri_specta::Events {
-    tauri_specta::collect_events![InstanceEventDto]
+    tauri_specta::collect_events![InstanceEventDto, GameLogEventDto]
 }
 
 #[tauri::command]
@@ -577,4 +578,41 @@ mod tests {
             );
         }
     }
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn list_logs(
+    id: String,
+    container: State<'_, ContainerState>,
+) -> FrontendResult<Vec<LogSourceDto>> {
+    let id = InstanceId::try_from(id).map_err(aether_core::Error::from)?;
+    let container = container.0.clone();
+    let sources = container
+        .list_game_log_sources_use_case()
+        .execute(id)
+        .await
+        .map_err(ProcessError::from)
+        .map_err(aether_core::Error::from)?;
+    Ok(sources.into_iter().map(Into::into).collect())
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn read_log(
+    id: String,
+    source_id: String,
+    cursor: LogCursorDto,
+    max_bytes: u32,
+    container: State<'_, ContainerState>,
+) -> FrontendResult<LogPageDto> {
+    let id = InstanceId::try_from(id).map_err(aether_core::Error::from)?;
+    let container = container.0.clone();
+    let page = container
+        .read_game_log_use_case()
+        .execute(id, source_id, cursor.into(), max_bytes.into())
+        .await
+        .map_err(ProcessError::from)
+        .map_err(aether_core::Error::from)?;
+    Ok(page.into())
 }

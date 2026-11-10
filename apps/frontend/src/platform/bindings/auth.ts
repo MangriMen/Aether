@@ -297,6 +297,13 @@ export type ProcessErrorDto = { code: "KILL_ERROR"; payload: {
 	id: string,
 } } | { code: "IO"; payload: {
 	details: string,
+} } | { code: "INVALID_LOG_SOURCE"; payload: {
+	source_id: string,
+} } | { code: "LOG_SOURCE_NOT_FOUND"; payload: {
+	source_id: string,
+} } | { code: "LOG_TOO_LARGE"; payload: {
+	source_id: string,
+	limit: number,
 } };
 
 export type RequestErrorDto = { code: "ACQUIRE" } | { code: "REQUEST_SEND"; payload: {

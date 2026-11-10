@@ -15,6 +15,9 @@ pub enum ProcessError {
 
     #[error(transparent)]
     Io(#[from] IoError),
+
+    #[error(transparent)]
+    GameLog(#[from] crate::features::game_log::GameLogError),
 }
 
 #[derive(Debug, Clone)]

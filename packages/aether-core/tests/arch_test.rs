@@ -12,6 +12,7 @@ const ALL_FEATURES: &[&str] = &[
     "auth",
     "events",
     "file_watcher",
+    "game_log",
     "instance",
     "java",
     "minecraft",

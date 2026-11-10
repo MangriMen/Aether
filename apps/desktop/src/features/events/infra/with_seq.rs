@@ -1,6 +1,6 @@
 use crate::features::{
     events::infra::{CacheEventDto, ProgressEventDto, WarningEventDto},
-    instance::infra::InstanceEventDto,
+    instance::infra::{GameLogEventDto, InstanceEventDto},
     plugins::infra::PluginEventDto,
     process::infra::ProcessEventDto,
 };
@@ -24,6 +24,7 @@ macro_rules! impl_with_seq {
 
 impl_with_seq!(
     CacheEventDto,
+    GameLogEventDto,
     InstanceEventDto,
     PluginEventDto,
     ProcessEventDto,

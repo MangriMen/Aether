@@ -4,7 +4,7 @@ use tauri_specta::Event;
 
 use crate::features::{
     events::infra::{CacheEventDto, ProgressEventDto, WarningEventDto, WithSeq},
-    instance::infra::InstanceEventDto,
+    instance::infra::{GameLogEventDto, InstanceEventDto},
     plugins::infra::PluginEventDto,
     process::infra::ProcessEventDto,
 };
@@ -31,6 +31,7 @@ impl CoreEventExt for CoreEvent {
             CoreEvent::Plugin(e) => PluginEventDto::from(e.clone()).with_seq(seq).emit(handle),
             CoreEvent::Warning(e) => WarningEventDto::from(e.clone()).with_seq(seq).emit(handle),
             CoreEvent::Cache(e) => CacheEventDto::from(e.clone()).with_seq(seq).emit(handle),
+            CoreEvent::GameLog(e) => GameLogEventDto::from(e.clone()).with_seq(seq).emit(handle),
         }
     }
 }

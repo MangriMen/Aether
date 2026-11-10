@@ -155,7 +155,10 @@
     "process": {
       "KILL_ERROR": "Failed to terminate process",
       "WAIT_ERROR": "Error waiting for process completion",
-      "IO": "Process I/O error"
+      "IO": "Process I/O error",
+      "INVALID_LOG_SOURCE": "Unknown log",
+      "LOG_SOURCE_NOT_FOUND": "The log no longer exists",
+      "LOG_TOO_LARGE": "The log is too large to open"
     },
     "request": {
       "ACQUIRE": "Failed to initiate network request",
