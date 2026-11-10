@@ -627,6 +627,7 @@ impl<RC: RequestClient> ContentProvider for ModrinthContentProvider<RC> {
         })?;
 
         if content_type == ContentType::Modpack {
+            report(DownloadEvent::Named(project.title.clone()));
             self.resolve_pack_plan(params, &project, report).await
         } else {
             self.resolve_mod_plan(params, content_type, &project).await

@@ -160,6 +160,7 @@ impl ContentProvider for MockProvider {
         report: crate::features::instance::app::DownloadReport<'_>,
     ) -> Result<InstallPlan, InstanceError> {
         use crate::features::instance::app::DownloadEvent;
+        report(DownloadEvent::Named("Cool Pack".to_owned()));
         report(DownloadEvent::Expected(100));
         report(DownloadEvent::Received(40));
         report(DownloadEvent::Received(60));

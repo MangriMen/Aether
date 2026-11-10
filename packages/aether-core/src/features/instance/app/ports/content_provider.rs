@@ -14,8 +14,10 @@ use crate::features::instance::domain::{
 use crate::features::minecraft::GameVersion;
 
 /// What a provider says of the download it makes while it resolves a plan (a pack's archive).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DownloadEvent {
+    /// What the content is called, once the provider knows: before any download starts.
+    Named(String),
     /// The size the download is expected to have, when it starts.
     Expected(u64),
     /// Bytes more received.

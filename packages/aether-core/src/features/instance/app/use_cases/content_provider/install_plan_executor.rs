@@ -146,6 +146,8 @@ pub struct PlanProgress {
     bar: Option<ProgressBarId>,
     /// Fires when the user calls the run off; never without a bar.
     cancel: CancellationToken,
+    /// What the bar shows, to name it anew (see [`Self::resolve_plan`]).
+    event_type: ProgressEventType,
     /// Shared by the bars of the files.
     instance_path: String,
     /// Set by the first [`end`](Self::end): a run ends once, whoever gets to say it first.
@@ -163,6 +165,13 @@ impl PlanProgress {
             service,
             bar: None,
             cancel,
+            event_type: ProgressEventType::PackDownload {
+                instance_path: String::new(),
+                pack_name: String::new(),
+                icon: None,
+                pack_id: None,
+                pack_version: None,
+            },
             instance_path: String::new(),
             ended: AtomicBool::new(false),
         }
@@ -227,6 +236,7 @@ impl PlanProgress {
             };
             while let Some(event) = received.recv().await {
                 match event {
+                    DownloadEvent::Named(title) => self.name_new_instance_bar(bar, title).await,
                     DownloadEvent::Expected(bytes) => {
                         self.service.add_progress_bytes_total_safe(bar, bytes).await;
                     }
@@ -239,6 +249,39 @@ impl PlanProgress {
 
         self.unless_cancelled(async { futures::join!(resolving, reporting).0 })
             .await
+    }
+
+    /// Caption the bar of a new instance with the pack's `title` instead of its id, as soon as
+    /// the provider knows it: before the bar has bytes, which renaming starts over.
+    async fn name_new_instance_bar(&self, bar: &ProgressBarId, title: String) {
+        let ProgressEventType::PackDownload {
+            instance_path,
+            icon,
+            pack_id,
+            pack_version,
+            ..
+        } = self.event_type.clone()
+        else {
+            return;
+        };
+        // An existing instance is captioned by its own name.
+        if !instance_path.is_empty() {
+            return;
+        }
+        let event_type = ProgressEventType::PackDownload {
+            instance_path,
+            pack_name: title,
+            icon,
+            pack_id,
+            pack_version,
+        };
+        let renamed = self
+            .service
+            .edit_progress(bar, event_type, 1.0, "Preparing".to_owned())
+            .await;
+        if let Err(err) = renamed {
+            tracing::debug!("Failed to send progress: {err}");
+        }
     }
 
     /// The run goes on in a plugin that does the work itself: the bar says so, and shows
@@ -981,7 +1024,7 @@ impl InstallPlanExecutor {
         };
         let (bar, cancel) = self
             .progress_service
-            .init_cancellable_progress_safe(event_type, 1.0, "Preparing".to_owned())
+            .init_cancellable_progress_safe(event_type.clone(), 1.0, "Preparing".to_owned())
             .await;
         // A new bar is not shown until its first event: set now, so its cancel button is there
         // while the plan and its refs are resolved.
@@ -995,6 +1038,7 @@ impl InstallPlanExecutor {
             service: self.progress_service.clone(),
             bar,
             cancel,
+            event_type,
             instance_path,
             ended: AtomicBool::new(false),
         }

@@ -552,6 +552,12 @@ async fn should_count_the_bytes_of_the_bar_when_the_plan_is_resolved_with_a_down
 
     let bar = bars.storage.get(bars.plan_bar().await).await.unwrap();
     assert_eq!((bar.bytes_done, bar.bytes_total), (Some(100), Some(100)));
+    // Captioned by the pack's title, not its id, and the bytes that came after are kept.
+    assert!(
+        matches!(&bar.progress_type, ProgressEventType::PackDownload { pack_name, .. } if pack_name == "Cool Pack"),
+        "{:?}",
+        bar.progress_type
+    );
 }
 
 #[tokio::test]
