@@ -150,6 +150,8 @@ pub struct PlanProgress {
     event_type: ProgressEventType,
     /// Shared by the bars of the files.
     instance_path: String,
+    /// Whether the bar was made visible ([`Self::reveal`]).
+    revealed: AtomicBool,
     /// Set by the first [`end`](Self::end): a run ends once, whoever gets to say it first.
     ended: AtomicBool,
 }
@@ -173,6 +175,7 @@ impl PlanProgress {
                 pack_version: None,
             },
             instance_path: String::new(),
+            revealed: AtomicBool::new(true),
             ended: AtomicBool::new(false),
         }
     }
@@ -247,8 +250,25 @@ impl PlanProgress {
             }
         };
 
-        self.unless_cancelled(async { futures::join!(resolving, reporting).0 })
-            .await
+        let plan = self
+            .unless_cancelled(async { futures::join!(resolving, reporting).0 })
+            .await;
+        // A provider that never named the pack leaves it to its id.
+        self.reveal().await;
+        plan
+    }
+
+    /// Show the bar: a new bar is not shown until its first event, which this is, so its cancel
+    /// button is there while the plan and its refs are resolved.
+    async fn reveal(&self) {
+        if self.revealed.swap(true, Ordering::AcqRel) {
+            return;
+        }
+        if let Some(bar) = &self.bar {
+            self.service
+                .set_progress_stage_safe(bar, Some(ProgressStage::Preparing))
+                .await;
+        }
     }
 
     /// Caption the bar of a new instance with the pack's `title` instead of its id, as soon as
@@ -282,6 +302,7 @@ impl PlanProgress {
         if let Err(err) = renamed {
             tracing::debug!("Failed to send progress: {err}");
         }
+        self.reveal().await;
     }
 
     /// The run goes on in a plugin that does the work itself: the bar says so, and shows
@@ -827,6 +848,7 @@ impl InstallPlanExecutor {
         origin: PlanOrigin,
         progress: &PlanProgress,
     ) -> Result<InstanceId, InstanceError> {
+        progress.reveal().await;
         let result = self.run(plan, origin, progress).await;
         progress.end(&result).await;
         result
@@ -1026,22 +1048,21 @@ impl InstallPlanExecutor {
             .progress_service
             .init_cancellable_progress_safe(event_type.clone(), 1.0, "Preparing".to_owned())
             .await;
-        // A new bar is not shown until its first event: set now, so its cancel button is there
-        // while the plan and its refs are resolved.
-        if let Some(bar) = &bar {
-            self.progress_service
-                .set_progress_stage_safe(bar, Some(ProgressStage::Preparing))
-                .await;
-        }
-
-        PlanProgress {
+        let progress = PlanProgress {
             service: self.progress_service.clone(),
             bar,
             cancel,
             event_type,
             instance_path,
+            revealed: AtomicBool::new(false),
             ended: AtomicBool::new(false),
+        };
+        // An existing instance is named already. A new one is shown once the provider names the
+        // pack, so that the bar does not show the pack's id first.
+        if instance.is_some() {
+            progress.reveal().await;
         }
+        progress
     }
 
     /// What the bar of a run shows: the instance the plan fills, or `name` for a new one.

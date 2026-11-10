@@ -453,14 +453,9 @@ async fn should_end_the_bar_cancelled_when_cancelled_while_the_plan_is_resolved(
     let progress = executor
         .begin(&ResolveTarget::New, &ContentId::try_from("pack").unwrap())
         .await;
-    // The archive of a pack is downloaded about now: listeners see the bar and its cancel button.
+    // Not shown yet: it is shown by the pack's title, which is not known by now.
     let shown = bars.sent_so_far();
-    assert!(
-        shown.iter().any(|event| event.parent_id.is_none()
-            && event.stage == Some(ProgressStage::Preparing)
-            && event.cancel == Some(CancelState::Open)),
-        "{shown:?}"
-    );
+    assert!(shown.is_empty(), "{shown:?}");
 
     let result = {
         let resolving =
@@ -530,7 +525,7 @@ async fn should_end_the_bar_once_when_the_run_and_its_caller_both_end_it() {
 #[tokio::test]
 async fn should_count_the_bytes_of_the_bar_when_the_plan_is_resolved_with_a_download() {
     let mut fixture = Fixture::new().await;
-    let bars = Bars::install(&mut fixture);
+    let mut bars = Bars::install(&mut fixture);
     let provider = MockProvider::builtin_modrinth();
     let executor = fixture.executor();
     let progress = executor
@@ -549,6 +544,21 @@ async fn should_count_the_bytes_of_the_bar_when_the_plan_is_resolved_with_a_down
         )
         .await
         .unwrap();
+
+    // Listeners see the bar, and its cancel button, by the title from its first event.
+    let shown = bars.sent_so_far();
+    let first = shown.first().expect("the bar said nothing");
+    assert!(
+        matches!(&first.event, ProgressEventType::PackDownload { pack_name, .. } if pack_name == "Cool Pack"),
+        "{shown:?}"
+    );
+    assert!(
+        shown
+            .iter()
+            .any(|event| event.stage == Some(ProgressStage::Preparing)
+                && event.cancel == Some(CancelState::Open)),
+        "{shown:?}"
+    );
 
     let bar = bars.storage.get(bars.plan_bar().await).await.unwrap();
     assert_eq!((bar.bytes_done, bar.bytes_total), (Some(100), Some(100)));
