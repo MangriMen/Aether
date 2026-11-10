@@ -15,6 +15,7 @@ pub enum HostError {
     AuthError(super::AuthErrorDto),
     EventError(super::EventErrorDto),
     FileWatcherError(super::FileWatcherErrorDto),
+    GameLogError(super::GameLogErrorDto),
     InstanceError(super::InstanceErrorDto),
     JavaError(super::JavaErrorDto),
     MinecraftError(super::MinecraftErrorDto),

@@ -4,7 +4,8 @@ use tauri_specta::Event;
 
 use crate::features::{
     events::infra::{CacheEventDto, ProgressEventDto, WarningEventDto, WithSeq},
-    instance::infra::{GameLogEventDto, InstanceEventDto},
+    game_log::infra::GameLogEventDto,
+    instance::infra::InstanceEventDto,
     plugins::infra::PluginEventDto,
     process::infra::ProcessEventDto,
 };

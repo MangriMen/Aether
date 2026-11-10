@@ -2,7 +2,7 @@ import type {
   GameLogEventDto,
   LogPageDto,
   LogSourceDto,
-} from '@/platform/bindings/instance';
+} from '@/platform/bindings/game-log';
 
 export type GameLogEvent = GameLogEventDto;
 export type LogPage = LogPageDto;

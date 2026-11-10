@@ -4,7 +4,7 @@ use tauri::{Builder, Wry};
 
 use crate::core::infra::tauri::setup::protocols::{ASSET_PROTOCOL, handle_asset_request};
 use crate::features::{
-    auth, events, instance, java, minecraft, plugins, process, settings, update,
+    auth, events, game_log, instance, java, minecraft, plugins, process, settings, update,
 };
 use crate::shared::specta::get_all_features_builders;
 
@@ -75,6 +75,7 @@ fn configure_feature_plugins(builder: Builder<Wry>) -> Builder<Wry> {
         .plugin(api::init())
         .plugin(auth::init())
         .plugin(events::init())
+        .plugin(game_log::init())
         .plugin(instance::init())
         .plugin(java::init())
         .plugin(minecraft::init())

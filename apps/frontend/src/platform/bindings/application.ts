@@ -50,9 +50,20 @@ export type FileWatcherErrorDto = { code: "PATH_NOT_FOUND"; payload: {
 	details: string,
 } };
 
-export type FrontendError = { type: "appSettings"; payload: AppSettingsErrorDto } | { type: "window"; payload: WindowErrorDto } | { type: "application"; payload: ApplicationErrorDto } | { type: "auth"; payload: AuthErrorDto } | { type: "event"; payload: EventErrorDto } | { type: "fileWatcher"; payload: FileWatcherErrorDto } | { type: "instance"; payload: InstanceErrorDto } | { type: "java"; payload: JavaErrorDto } | { type: "minecraft"; payload: MinecraftErrorDto } | { type: "plugin"; payload: PluginErrorDto } | { type: "process"; payload: ProcessErrorDto } | { type: "request"; payload: RequestErrorDto } | { type: "settings"; payload: SettingsErrorDto } | 
+export type FrontendError = { type: "appSettings"; payload: AppSettingsErrorDto } | { type: "window"; payload: WindowErrorDto } | { type: "application"; payload: ApplicationErrorDto } | { type: "auth"; payload: AuthErrorDto } | { type: "event"; payload: EventErrorDto } | { type: "fileWatcher"; payload: FileWatcherErrorDto } | { type: "gameLog"; payload: GameLogErrorDto } | { type: "instance"; payload: InstanceErrorDto } | { type: "java"; payload: JavaErrorDto } | { type: "minecraft"; payload: MinecraftErrorDto } | { type: "plugin"; payload: PluginErrorDto } | { type: "process"; payload: ProcessErrorDto } | { type: "request"; payload: RequestErrorDto } | { type: "settings"; payload: SettingsErrorDto } | 
 /**  General errors that are expected and can be shown to the user. */
 { type: "generic"; payload: string };
+
+export type GameLogErrorDto = { code: "INVALID_SOURCE"; payload: {
+	source_id: string,
+} } | { code: "SOURCE_NOT_FOUND"; payload: {
+	source_id: string,
+} } | { code: "TOO_LARGE"; payload: {
+	source_id: string,
+	limit: number,
+} } | { code: "IO"; payload: {
+	details: string,
+} };
 
 export type InstanceErrorDto = { code: "STORAGE"; payload: {
 	details: string,
@@ -287,13 +298,6 @@ export type ProcessErrorDto = { code: "KILL_ERROR"; payload: {
 	id: string,
 } } | { code: "IO"; payload: {
 	details: string,
-} } | { code: "INVALID_LOG_SOURCE"; payload: {
-	source_id: string,
-} } | { code: "LOG_SOURCE_NOT_FOUND"; payload: {
-	source_id: string,
-} } | { code: "LOG_TOO_LARGE"; payload: {
-	source_id: string,
-	limit: number,
 } };
 
 export type RequestErrorDto = { code: "ACQUIRE" } | { code: "REQUEST_SEND"; payload: {

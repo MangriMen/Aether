@@ -7,6 +7,7 @@
     "application:default",
     "auth:default",
     "events:default",
+    "game-log:default",
     "instance:default",
     "java:default",
     "minecraft:default",

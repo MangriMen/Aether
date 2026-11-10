@@ -1,6 +1,7 @@
 use crate::features::{
     events::infra::{CacheEventDto, ProgressEventDto, WarningEventDto},
-    instance::infra::{GameLogEventDto, InstanceEventDto},
+    game_log::infra::GameLogEventDto,
+    instance::infra::InstanceEventDto,
     plugins::infra::PluginEventDto,
     process::infra::ProcessEventDto,
 };

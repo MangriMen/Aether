@@ -12,13 +12,13 @@ fn get_default_builder(plugin_name: &'static str) -> tauri_specta::Builder<tauri
 
 pub fn get_all_features_builders() -> Vec<(&'static str, tauri_specta::Builder<tauri::Wry>)> {
     use crate::shared::commands::{
-        APPLICATION_PLUGIN_NAME, AUTH_PLUGIN_NAME, EVENTS_PLUGIN_NAME, INSTANCE_PLUGIN_NAME,
-        JAVA_PLUGIN_NAME, MINECRAFT_PLUGIN_NAME, PLUGIN_PLUGIN_NAME, PROCESS_PLUGIN_NAME,
-        SETTINGS_PLUGIN_NAME, UPDATE_PLUGIN_NAME,
+        APPLICATION_PLUGIN_NAME, AUTH_PLUGIN_NAME, EVENTS_PLUGIN_NAME, GAME_LOG_PLUGIN_NAME,
+        INSTANCE_PLUGIN_NAME, JAVA_PLUGIN_NAME, MINECRAFT_PLUGIN_NAME, PLUGIN_PLUGIN_NAME,
+        PROCESS_PLUGIN_NAME, SETTINGS_PLUGIN_NAME, UPDATE_PLUGIN_NAME,
     };
 
     use crate::features::{
-        auth, events, instance, java, minecraft, plugins, process, settings, update,
+        auth, events, game_log, instance, java, minecraft, plugins, process, settings, update,
     };
 
     let features_data: Vec<(
@@ -36,6 +36,11 @@ pub fn get_all_features_builders() -> Vec<(&'static str, tauri_specta::Builder<t
             EVENTS_PLUGIN_NAME,
             events::get_specta_commands(),
             Some(events::get_specta_events()),
+        ),
+        (
+            GAME_LOG_PLUGIN_NAME,
+            game_log::get_specta_commands(),
+            Some(game_log::get_specta_events()),
         ),
         (
             INSTANCE_PLUGIN_NAME,

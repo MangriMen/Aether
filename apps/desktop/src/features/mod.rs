@@ -1,5 +1,6 @@
 pub mod auth;
 pub mod events;
+pub mod game_log;
 pub mod instance;
 pub mod java;
 pub mod minecraft;

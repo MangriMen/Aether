@@ -34,6 +34,12 @@ pub struct GetMinecraftLaunchCommandParams {
     pub java_path: Option<JavaPath>,
 }
 
+/// The process to start, and the values it is given that must not be kept in logs.
+pub struct MinecraftLaunchCommand {
+    pub command: Command,
+    pub secrets: Vec<String>,
+}
+
 pub struct GetMinecraftLaunchCommandUseCase {
     loader_version_resolver: Arc<dyn LoaderVersionService>,
     get_version_manifest_use_case: Arc<dyn VersionManifestService>,
@@ -44,14 +50,18 @@ pub struct GetMinecraftLaunchCommandUseCase {
     location_info: Arc<LocationInfo>,
 }
 
+/// The first Java that reads the encoding of the standard streams from public properties.
+const PUBLIC_STREAM_ENCODING_JAVA: u32 = 19;
+
 /// The launcher reads the game's piped output as UTF-8; without these the JVM writes in the
 /// console code page. Placed first, so an argument of the user's for the same property wins.
-const UTF8_OUTPUT_ARGUMENTS: [&str; 4] = [
-    "-Dstdout.encoding=UTF-8",
-    "-Dstderr.encoding=UTF-8",
-    "-Dsun.stdout.encoding=UTF-8",
-    "-Dsun.stderr.encoding=UTF-8",
-];
+fn utf8_output_arguments(java_major_version: u32) -> [&'static str; 2] {
+    if java_major_version >= PUBLIC_STREAM_ENCODING_JAVA {
+        ["-Dstdout.encoding=UTF-8", "-Dstderr.encoding=UTF-8"]
+    } else {
+        ["-Dsun.stdout.encoding=UTF-8", "-Dsun.stderr.encoding=UTF-8"]
+    }
+}
 
 impl GetMinecraftLaunchCommandUseCase {
     pub fn new(
@@ -79,7 +89,7 @@ impl GetMinecraftLaunchCommandUseCase {
         get_minecraft_launch_command_params: GetMinecraftLaunchCommandParams,
         launch_settings: LaunchSettings,
         credentials: Credential,
-    ) -> Result<Command, MinecraftApplicationError> {
+    ) -> Result<MinecraftLaunchCommand, MinecraftApplicationError> {
         let GetMinecraftLaunchCommandParams {
             game_version,
             loader,
@@ -108,30 +118,7 @@ impl GetMinecraftLaunchCommandUseCase {
             .get_version_info(&version, loader_version.as_ref(), None, None)
             .await?;
 
-        let java = if let Some(java_path) = java_path.as_ref() {
-            self.java_installation_service
-                .locate_java(java_path.as_path())
-                .await
-                .map_err(|err| {
-                    MinecraftApplicationError::JavaError(JavaApplicationError::Domain(err))
-                })
-        } else {
-            let compatible_java_version = get_compatible_java_version(&version_info);
-
-            let java = self
-                .get_java_use_case
-                .execute(compatible_java_version)
-                .await;
-
-            match java {
-                Ok(java) => Ok(java),
-                Err(_) => self
-                    .install_java_use_case
-                    .execute(InstallJava::new(compatible_java_version), None)
-                    .await
-                    .map_err(Into::into),
-            }
-        }?;
+        let java = self.resolve_java(java_path.as_ref(), &version_info).await?;
 
         // TODO: refactor
         let client_path = self
@@ -168,7 +155,10 @@ impl GetMinecraftLaunchCommandUseCase {
         if let Some(logging_argument) = get_logging_argument(&version_info, &self.location_info)? {
             jvm_arguments.insert(0, logging_argument);
         }
-        jvm_arguments.splice(0..0, UTF8_OUTPUT_ARGUMENTS.map(String::from));
+        jvm_arguments.splice(
+            0..0,
+            utf8_output_arguments(java.major_version()).map(String::from),
+        );
 
         let minecraft_arguments = get_minecraft_arguments(
             args.get(&vanilla::ArgumentType::Game)
@@ -198,7 +188,45 @@ impl GetMinecraftLaunchCommandUseCase {
 
         // options.txt override
 
-        Ok(command)
+        Ok(MinecraftLaunchCommand {
+            command,
+            secrets: vec![credentials.access_token().to_owned()],
+        })
+    }
+
+    /// The Java the game runs on: the one at the given path, else one compatible with the
+    /// version, installed when there is none yet.
+    async fn resolve_java(
+        &self,
+        java_path: Option<&JavaPath>,
+        version_info: &vanilla::VersionInfo,
+    ) -> Result<Java, MinecraftApplicationError> {
+        let java = if let Some(java_path) = java_path {
+            self.java_installation_service
+                .locate_java(java_path.as_path())
+                .await
+                .map_err(|err| {
+                    MinecraftApplicationError::JavaError(JavaApplicationError::Domain(err))
+                })
+        } else {
+            let compatible_java_version = get_compatible_java_version(version_info);
+
+            let java = self
+                .get_java_use_case
+                .execute(compatible_java_version)
+                .await;
+
+            match java {
+                Ok(java) => Ok(java),
+                Err(_) => self
+                    .install_java_use_case
+                    .execute(InstallJava::new(compatible_java_version), None)
+                    .await
+                    .map_err(Into::into),
+            }
+        }?;
+
+        Ok(java)
     }
 
     async fn ensure_natives_dir(
@@ -220,7 +248,7 @@ impl MinecraftLaunchCommandService for GetMinecraftLaunchCommandUseCase {
         params: GetMinecraftLaunchCommandParams,
         launch_settings: LaunchSettings,
         credentials: Credential,
-    ) -> Result<Command, MinecraftApplicationError> {
+    ) -> Result<MinecraftLaunchCommand, MinecraftApplicationError> {
         self.execute(params, launch_settings, credentials).await
     }
 }
@@ -279,6 +307,18 @@ mod tests {
             Some((_, None)) => EnvChange::Removed,
             Some((_, Some(v))) => EnvChange::Set(v.to_string_lossy().into_owned()),
         }
+    }
+
+    #[test]
+    fn should_use_the_property_the_java_reads_when_choosing_the_output_encoding() {
+        assert_eq!(
+            utf8_output_arguments(21),
+            ["-Dstdout.encoding=UTF-8", "-Dstderr.encoding=UTF-8"]
+        );
+        assert_eq!(
+            utf8_output_arguments(17),
+            ["-Dsun.stdout.encoding=UTF-8", "-Dsun.stderr.encoding=UTF-8"]
+        );
     }
 
     #[test]

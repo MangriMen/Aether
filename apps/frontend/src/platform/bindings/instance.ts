@@ -33,13 +33,10 @@ export const commands = {
 	getContent: (params: ContentGetParamsDto) => __TAURI_INVOKE<ContentItemDto>("plugin:instance|get_content", { params }),
 	listContentVersion: (params: ContentListVersionParamsDto) => __TAURI_INVOKE<ContentVersionDto[]>("plugin:instance|list_content_version", { params }),
 	editIcon: (editInstanceIcon: EditInstanceIconDto, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:instance|edit_icon", { editInstanceIcon, requestId }),
-	listLogs: (id: string) => __TAURI_INVOKE<LogSourceDto[]>("plugin:instance|list_logs", { id }),
-	readLog: (id: string, sourceId: string, cursor: LogCursorDto, maxBytes: number) => __TAURI_INVOKE<LogPageDto>("plugin:instance|read_log", { id, sourceId, cursor, maxBytes }),
 };
 
 /** Events */
 export const events = {
-	gameLogEventDto: makeEvent<GameLogEventDto>("plugin:instance:game-log-event-dto"),
 	instanceEventDto: makeEvent<InstanceEventDto>("plugin:instance:instance-event-dto"),
 };
 
@@ -337,23 +334,20 @@ export type FileWatcherErrorDto = { code: "PATH_NOT_FOUND"; payload: {
 	details: string,
 } };
 
-export type FrontendError = { type: "appSettings"; payload: AppSettingsErrorDto } | { type: "window"; payload: WindowErrorDto } | { type: "application"; payload: ApplicationErrorDto } | { type: "auth"; payload: AuthErrorDto } | { type: "event"; payload: EventErrorDto } | { type: "fileWatcher"; payload: FileWatcherErrorDto } | { type: "instance"; payload: InstanceErrorDto } | { type: "java"; payload: JavaErrorDto } | { type: "minecraft"; payload: MinecraftErrorDto } | { type: "plugin"; payload: PluginErrorDto } | { type: "process"; payload: ProcessErrorDto } | { type: "request"; payload: RequestErrorDto } | { type: "settings"; payload: SettingsErrorDto } | 
+export type FrontendError = { type: "appSettings"; payload: AppSettingsErrorDto } | { type: "window"; payload: WindowErrorDto } | { type: "application"; payload: ApplicationErrorDto } | { type: "auth"; payload: AuthErrorDto } | { type: "event"; payload: EventErrorDto } | { type: "fileWatcher"; payload: FileWatcherErrorDto } | { type: "gameLog"; payload: GameLogErrorDto } | { type: "instance"; payload: InstanceErrorDto } | { type: "java"; payload: JavaErrorDto } | { type: "minecraft"; payload: MinecraftErrorDto } | { type: "plugin"; payload: PluginErrorDto } | { type: "process"; payload: ProcessErrorDto } | { type: "request"; payload: RequestErrorDto } | { type: "settings"; payload: SettingsErrorDto } | 
 /**  General errors that are expected and can be shown to the user. */
 { type: "generic"; payload: string };
 
-export type GameLogEventDto = {
-	/**
-	 *  The number of the event, from one counter for all the events the backend sends: the
-	 *  frontend drops what it has seen already.
-	 */
-	seq: number,
-	instanceId: string,
-	sourceId: string,
-	start: number,
-	end: number,
-	/**  Empty when the lines were too many to send; the range has to be read then. */
-	text: string,
-};
+export type GameLogErrorDto = { code: "INVALID_SOURCE"; payload: {
+	source_id: string,
+} } | { code: "SOURCE_NOT_FOUND"; payload: {
+	source_id: string,
+} } | { code: "TOO_LARGE"; payload: {
+	source_id: string,
+	limit: number,
+} } | { code: "IO"; payload: {
+	details: string,
+} };
 
 export type HooksDto = {
 	preLaunch: string,
@@ -545,28 +539,6 @@ export type LoadConfigTypeDto = "extism";
 
 export type LoaderVersionPreferenceDto = "latest" | "stable" | string;
 
-export type LogCursorDto = { kind: "tail" } | { kind: "before"; at: number } | { kind: "after"; at: number };
-
-export type LogPageDto = {
-	text: string,
-	start: number,
-	end: number,
-	hasMoreBefore: boolean,
-	hasMoreAfter: boolean,
-	size: number,
-};
-
-export type LogSourceDto = {
-	id: string,
-	name: string,
-	kind: LogSourceKindDto,
-	size: number,
-	/**  Unix milliseconds. */
-	modified: number | null,
-};
-
-export type LogSourceKindDto = "console" | "game";
-
 export type MemorySettingsDto = {
 	maximum: number,
 };
@@ -708,13 +680,6 @@ export type ProcessErrorDto = { code: "KILL_ERROR"; payload: {
 	id: string,
 } } | { code: "IO"; payload: {
 	details: string,
-} } | { code: "INVALID_LOG_SOURCE"; payload: {
-	source_id: string,
-} } | { code: "LOG_SOURCE_NOT_FOUND"; payload: {
-	source_id: string,
-} } | { code: "LOG_TOO_LARGE"; payload: {
-	source_id: string,
-	limit: number,
 } };
 
 export type ProviderIdDto = {

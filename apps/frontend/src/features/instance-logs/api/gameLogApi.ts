@@ -3,8 +3,8 @@ import type { Accessor } from 'solid-js';
 import { useQuery } from '@tanstack/solid-query';
 
 import {
-  instanceCommands,
-  instanceEvents,
+  gameLogCommands,
+  gameLogEvents,
   useEventListener,
 } from '@/platform/ipc';
 
@@ -22,15 +22,14 @@ export const WHOLE_FILE_PAGE_BYTES = 1024 * 1024;
 export const useGameLogSources = (instanceId: Accessor<string>) =>
   useQuery(() => ({
     queryKey: GAME_LOG_QUERY_KEYS.SOURCES(instanceId()),
-    queryFn: (): Promise<LogSource[]> =>
-      instanceCommands.listLogs(instanceId()),
+    queryFn: (): Promise<LogSource[]> => gameLogCommands.listLogs(instanceId()),
     // Logs come and go with game runs, not with anything the UI could subscribe to.
     staleTime: 0,
     gcTime: 0,
   }));
 
 export const readGameLogTail = (instanceId: string, sourceId: string) =>
-  instanceCommands.readLog(instanceId, sourceId, { kind: 'tail' }, PAGE_BYTES);
+  gameLogCommands.readLog(instanceId, sourceId, { kind: 'tail' }, PAGE_BYTES);
 
 export const readGameLogBefore = (
   instanceId: string,
@@ -38,7 +37,7 @@ export const readGameLogBefore = (
   at: number,
   maxBytes: number = PAGE_BYTES,
 ) =>
-  instanceCommands.readLog(
+  gameLogCommands.readLog(
     instanceId,
     sourceId,
     { kind: 'before', at },
@@ -50,7 +49,7 @@ export const readGameLogAfter = (
   sourceId: string,
   at: number,
 ) =>
-  instanceCommands.readLog(
+  gameLogCommands.readLog(
     instanceId,
     sourceId,
     { kind: 'after', at },
@@ -61,7 +60,7 @@ export const readGameLogAfter = (
 export const useGameLogEventListener = (
   callback: (event: GameLogEvent) => void,
 ) => {
-  useEventListener(instanceEvents.gameLogEventDto, (e) => {
+  useEventListener(gameLogEvents.gameLogEventDto, (e) => {
     callback(e.payload);
   });
 };

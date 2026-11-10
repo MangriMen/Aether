@@ -2,6 +2,7 @@ pub const APPLICATION_PLUGIN_NAME: &str = "application";
 
 pub const AUTH_PLUGIN_NAME: &str = "auth";
 pub const EVENTS_PLUGIN_NAME: &str = "events";
+pub const GAME_LOG_PLUGIN_NAME: &str = "game-log";
 pub const INSTANCE_PLUGIN_NAME: &str = "instance";
 pub const JAVA_PLUGIN_NAME: &str = "java";
 pub const MINECRAFT_PLUGIN_NAME: &str = "minecraft";
@@ -40,6 +41,15 @@ macro_rules! events_commands {
     };
 }
 
+macro_rules! game_log_commands {
+    ($($tokens:tt)*) => {
+        $($tokens)* [
+            list_logs,
+            read_log,
+        ]
+    };
+}
+
 macro_rules! instance_commands {
     ($($tokens:tt)*) => {
         $($tokens)* [
@@ -68,9 +78,7 @@ macro_rules! instance_commands {
             check_compatibility,
             get_content,
             list_content_version,
-            edit_icon,
-            list_logs,
-            read_log
+            edit_icon
         ]
     };
 }
@@ -166,6 +174,7 @@ pub(crate) use application_commands;
 
 pub(crate) use auth_commands;
 pub(crate) use events_commands;
+pub(crate) use game_log_commands;
 pub(crate) use instance_commands;
 pub(crate) use java_commands;
 pub(crate) use minecraft_commands;

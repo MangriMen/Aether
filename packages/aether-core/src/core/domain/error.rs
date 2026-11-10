@@ -1,7 +1,9 @@
 use tracing_error::InstrumentError;
 
 use crate::{
-    features::{auth, events, file_watcher, instance, java, minecraft, plugins, process, settings},
+    features::{
+        auth, events, file_watcher, game_log, instance, java, minecraft, plugins, process, settings,
+    },
     shared::request_client,
 };
 
@@ -16,6 +18,9 @@ pub enum ErrorKind {
 
     #[error(transparent)]
     FileWatcherError(#[from] file_watcher::FileWatcherError),
+
+    #[error(transparent)]
+    GameLogError(#[from] game_log::GameLogError),
 
     #[error(transparent)]
     InstanceError(#[from] instance::InstanceError),
