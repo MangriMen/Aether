@@ -23,7 +23,11 @@ impl JavaInstallService for InstallJavaUseCase {
         install_java: InstallJava,
         waiting_bar: Option<&ProgressBarId>,
     ) -> Result<Java, JavaApplicationError> {
-        let InstallJava { version, force } = install_java;
+        let InstallJava {
+            version,
+            force,
+            cancellable,
+        } = install_java;
 
         // Before the lock: a download another install runs under it is mirrored too. The
         // provider starts the shared bar of the download.
@@ -46,7 +50,7 @@ impl JavaInstallService for InstallJavaUseCase {
 
         let installed_jre_path = self
             .provider
-            .install(version, &self.location_info.java_dir())
+            .install(version, &self.location_info.java_dir(), cancellable)
             .await?;
 
         let java = self
@@ -152,6 +156,8 @@ mod tests {
         progress: Arc<dyn ProgressService>,
         installs: AtomicUsize,
         release: Notify,
+        /// Whether each install was asked to be one the user can call off.
+        cancellable: Mutex<Vec<bool>>,
     }
 
     #[async_trait]
@@ -160,8 +166,10 @@ mod tests {
             &self,
             version: u32,
             install_dir: &Path,
+            cancellable: bool,
         ) -> Result<PathBuf, JavaDomainError> {
             self.installs.fetch_add(1, Ordering::SeqCst);
+            self.cancellable.lock().unwrap().push(cancellable);
             let bar = self
                 .progress
                 .init_shared_progress_safe(
@@ -203,6 +211,7 @@ mod tests {
             progress: progress.clone(),
             installs: AtomicUsize::new(0),
             release: Notify::new(),
+            cancellable: Mutex::default(),
         });
         let java_storage = Arc::new(MemStorage::default());
         let use_case = Arc::new(InstallJavaUseCase::new(
@@ -337,5 +346,36 @@ mod tests {
             .collect();
         assert_eq!(bars, [a.id]);
         assert_eq!(fixture.provider.installs.load(Ordering::SeqCst), 0);
+    }
+
+    #[tokio::test]
+    async fn should_pass_on_whether_the_user_can_call_off_the_install_when_installing() {
+        let fixture = fixture();
+        fixture.provider.release.notify_one();
+        let first = fixture
+            .use_case
+            .execute(
+                InstallJava {
+                    cancellable: true,
+                    ..InstallJava::force(21)
+                },
+                None,
+            )
+            .await;
+        first.unwrap();
+
+        let a = fixture
+            .progress
+            .init_progress(pack("a"), 1.0, String::new())
+            .await
+            .unwrap();
+        fixture.provider.release.notify_one();
+        fixture
+            .use_case
+            .execute(InstallJava::force(21), Some(&a))
+            .await
+            .unwrap();
+
+        assert_eq!(*fixture.provider.cancellable.lock().unwrap(), [true, false]);
     }
 }

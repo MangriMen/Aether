@@ -320,6 +320,7 @@ impl From<&JavaDomainError> for JavaErrorDto {
                 }
             }
             JavaDomainError::Storage(err) => Self::Storage(err.clone()),
+            JavaDomainError::Cancelled => Self::Cancelled,
         }
     }
 }

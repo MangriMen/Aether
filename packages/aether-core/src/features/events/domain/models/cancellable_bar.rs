@@ -36,6 +36,14 @@ impl CancellableBar {
         self.settled = true;
     }
 
+    /// End the bar as cancelled.
+    pub async fn cancel(mut self) {
+        if let Some(bar) = &self.bar {
+            bar.cancel().await;
+        }
+        self.settled = true;
+    }
+
     /// End the bar by `result`: done, or failed with its error.
     pub async fn settle<T, E: Display>(self, result: &Result<T, E>) {
         match result {

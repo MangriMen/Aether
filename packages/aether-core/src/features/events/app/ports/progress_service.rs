@@ -77,6 +77,21 @@ pub trait ProgressService: Send + Sync {
             .await
     }
 
+    /// Starts the shared bar of a download that the user may call off, as
+    /// [`init_cancellable_progress`](Self::init_cancellable_progress) does a bar of its own.
+    ///
+    /// Calling off is extra detail, so by default the bar is started without it and the token
+    /// never fires.
+    async fn init_cancellable_shared_progress(
+        &self,
+        download: SharedDownload,
+        total: f64,
+        message: String,
+    ) -> Result<(ProgressBarId, CancellationToken), EventError> {
+        let bar = self.init_shared_progress(download, total, message).await?;
+        Ok((bar, CancellationToken::new()))
+    }
+
     /// Notes that the bar `waiting` waits on the shared download `download`, until the guard
     /// is dropped. Meanwhile, `waiting` gets a mirror of the shared bar of `download` running
     /// now, if any, and of every one started later: a bar under it that shows what the shared

@@ -45,6 +45,7 @@ pub enum JavaErrorDto {
     StorageError {
         details: String,
     },
+    Cancelled,
 }
 
 impl From<&JavaApplicationError> for JavaErrorDto {
@@ -95,6 +96,7 @@ impl From<&JavaDomainError> for JavaErrorDto {
                     path: path.to_string_lossy().to_string(),
                 }
             }
+            JavaDomainError::Cancelled => Self::Cancelled,
             JavaDomainError::Storage(err) => Self::StorageError {
                 details: err.clone(),
             },

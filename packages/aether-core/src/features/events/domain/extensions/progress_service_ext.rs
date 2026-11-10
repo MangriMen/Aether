@@ -88,6 +88,25 @@ pub trait ProgressServiceExt: ProgressService {
             .ok()
     }
 
+    /// Without a bar (it could not be started) the token never fires.
+    async fn init_cancellable_shared_progress_safe(
+        &self,
+        download: SharedDownload,
+        total: f64,
+        message: String,
+    ) -> (Option<ProgressBarId>, CancellationToken) {
+        match self
+            .init_cancellable_shared_progress(download, total, message)
+            .await
+        {
+            Ok((bar, token)) => (Some(bar), token),
+            Err(error) => {
+                debug!("Failed to send progress: {error}");
+                (None, CancellationToken::new())
+            }
+        }
+    }
+
     async fn emit_progress_safe(&self, id: &ProgressBarId, progress: f64, message: Option<&str>) {
         if let Err(e) = self.emit_progress(id, progress, message).await {
             debug!("Failed to send progress: {e}");
