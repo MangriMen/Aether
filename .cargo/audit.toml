@@ -13,4 +13,9 @@ ignore = [
   "RUSTSEC-2026-0391",
   "RUSTSEC-2026-0398",
   "RUSTSEC-2026-0403",
+  # `libsqlite3-sys` 0.37 comes through `sqlx-sqlite` (pinned `=0.9.0`, the latest `sqlx`); the
+  # fix is in `libsqlite3-sys` >= 0.39. The bug needs a crafted database file next to a `-wal`
+  # file with another page size, and we only open our own database in the app data directory.
+  # Drop this once `sqlx` moves to `libsqlite3-sys` >= 0.39.
+  "RUSTSEC-2026-0459",
 ]
