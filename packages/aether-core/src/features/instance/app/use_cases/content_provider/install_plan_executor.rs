@@ -172,6 +172,7 @@ impl PlanProgress<'_> {
         if let Err(err) = sized {
             tracing::debug!("Failed to send progress: {err}");
         }
+        self.service.set_progress_stage_safe(bar, None).await;
     }
 
     async fn step(&self, message: &str) {
@@ -885,8 +886,15 @@ impl InstallPlanExecutor {
         };
         let (bar, cancel) = self
             .progress_service
-            .init_cancellable_progress_safe(event_type.clone(), 1.0, "Resolving".to_owned())
+            .init_cancellable_progress_safe(event_type.clone(), 1.0, "Preparing".to_owned())
             .await;
+        // A new bar is not shown until its first event: set now, so its cancel button is there
+        // while the refs are resolved.
+        if let Some(bar) = &bar {
+            self.progress_service
+                .set_progress_stage_safe(bar, Some(ProgressStage::Preparing))
+                .await;
+        }
 
         PlanProgress {
             service: self.progress_service.as_ref(),

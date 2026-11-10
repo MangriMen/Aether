@@ -320,6 +320,7 @@
       "extracting": "Распаковка",
       "finishing": "Завершение",
       "installing": "Установка",
+      "preparing": "Подготовка",
       "verifying": "Проверка"
     },
     "launcherUpdating": "Обновление лаунчера до {{version}}"

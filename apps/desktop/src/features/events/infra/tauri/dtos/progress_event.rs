@@ -46,6 +46,7 @@ pub(super) fn bytes_to_number(bytes: Option<u64>) -> Option<f64> {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Hash, PartialEq, Eq, Type)]
 #[serde(rename_all = "snake_case")]
 pub enum ProgressStageDto {
+    Preparing,
     Downloading,
     Verifying,
     Installing,
@@ -166,6 +167,7 @@ impl From<CancelState> for CancelStateDto {
 impl From<ProgressStage> for ProgressStageDto {
     fn from(value: ProgressStage) -> Self {
         match value {
+            ProgressStage::Preparing => Self::Preparing,
             ProgressStage::Downloading => Self::Downloading,
             ProgressStage::Verifying => Self::Verifying,
             ProgressStage::Installing => Self::Installing,

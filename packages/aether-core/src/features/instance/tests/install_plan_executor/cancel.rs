@@ -59,6 +59,17 @@ impl Bars {
         roots[0].id
     }
 
+    /// The events sent so far.
+    fn sent_so_far(&mut self) -> Vec<ProgressEvent> {
+        let mut sent = Vec::new();
+        while let Ok(event) = self.events.try_recv() {
+            if let Event::Progress(event) = event {
+                sent.push(event);
+            }
+        }
+        sent
+    }
+
     /// The events of every bar, by bar in the order sent, once no bar is left.
     async fn once_all_ended(&mut self) -> HashMap<Uuid, Vec<ProgressEvent>> {
         tokio::time::timeout(Duration::from_secs(5), async {
@@ -404,6 +415,14 @@ async fn should_download_nothing_when_cancelled_while_resolving_refs() {
         result = &mut run => panic!("the run cannot end by itself: {result:?}"),
         () = modrinth.hanging.notified() => {}
     }
+    // Listeners see the bar, and its cancel button, while the refs are resolved.
+    let shown = bars.sent_so_far();
+    assert!(
+        shown.iter().any(|event| event.parent_id.is_none()
+            && event.stage == Some(ProgressStage::Preparing)
+            && event.cancel == Some(CancelState::Open)),
+        "{shown:?}"
+    );
 
     bars.service
         .cancel_progress(bars.plan_bar().await)

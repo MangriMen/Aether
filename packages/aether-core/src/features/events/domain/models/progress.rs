@@ -42,6 +42,8 @@ pub enum CancelState {
 /// What a progress bar is busy with right now.
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
 pub enum ProgressStage {
+    /// Working out what to do before any of it is done: resolving, comparing.
+    Preparing,
     Downloading,
     Verifying,
     Installing,
