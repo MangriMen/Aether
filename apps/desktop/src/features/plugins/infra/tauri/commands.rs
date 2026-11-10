@@ -11,8 +11,8 @@ use crate::{
     core::ContainerState,
     features::plugins::{
         EditPluginSettingsDto, FolderAccessDto, HostAccessDto, PluginDto, PluginEventDto,
-        PluginSettingsDto, PluginSourceDto, PluginSourceTypeDto, PluginUpdateInfoDto,
-        ProviderPluginPreviewDto, SkippedPluginDirDto,
+        PluginProviderDto, PluginSettingsDto, PluginSourceDto, PluginSourceTypeDto,
+        PluginUpdateInfoDto, ProviderPluginPreviewDto, SkippedPluginDirDto,
     },
     shared::reveal_in_explorer::infra::reveal_in_explorer,
     shared::{
@@ -346,11 +346,11 @@ async fn get_api_version(container: State<'_, ContainerState>) -> FrontendResult
 #[specta::specta]
 async fn get_available_providers(
     container: State<'_, ContainerState>,
-) -> FrontendResult<Vec<PluginSourceTypeDto>> {
+) -> FrontendResult<Vec<PluginProviderDto>> {
     let container = container.0.clone();
     Ok(container
         .plugin_provider_factory()
-        .list_source_types()
+        .list_providers()
         .into_iter()
         .map(Into::into)
         .collect())

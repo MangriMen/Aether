@@ -15,6 +15,7 @@ import { useTranslation } from '@/shared/i18n';
 import { showToast } from '@/shared/ui-kit';
 
 import type { PluginId } from '../model/pluginManifest';
+import type { PluginSourceType } from '../model/pluginSource';
 
 import { pluginKeys } from './pluginKeys';
 import { pluginsCache, pluginsQueries } from './pluginsCache';
@@ -355,8 +356,12 @@ export const useCheckPluginUpdates = () => {
   }));
 };
 
-export const usePluginPreview = (url: Accessor<string>) =>
-  useQuery(() => pluginsQueries.preview(url()));
+export const usePluginProviders = () => useQuery(pluginsQueries.providers);
+
+export const usePluginPreview = (
+  provider: PluginSourceType,
+  url: Accessor<string>,
+) => useQuery(() => pluginsQueries.preview(provider, url()));
 
 export const useUpdatePlugin = () => {
   const [{ t }] = useTranslation();
@@ -394,18 +399,20 @@ export const useInstallPluginFromProvider = () => {
 
   return useMutation(() => ({
     mutationFn: ({
+      sourceType,
       identifier,
       downloadUrl,
       tagName,
       version,
     }: {
+      sourceType: PluginSourceType;
       identifier: string;
       downloadUrl: string;
       tagName: string;
       version: string;
     }) =>
       pluginsCommands.installPluginFromProvider(
-        'git_hub',
+        sourceType,
         identifier,
         downloadUrl,
         tagName,

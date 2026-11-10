@@ -70,3 +70,11 @@ pub struct ProviderUpdateInfo {
     pub has_update: bool,
     pub all_releases: Vec<ProviderReleaseInfo>,
 }
+
+/// A registered provider as the user is offered it.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PluginProviderInfo {
+    pub source_type: PluginSourceType,
+    /// The provider's own name, shown as it is.
+    pub name: String,
+}

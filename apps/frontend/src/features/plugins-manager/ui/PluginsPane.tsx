@@ -9,7 +9,7 @@ import {
 
 import type { SettingsPaneProps } from '@/shared/settings-layout';
 
-import { usePlugins } from '@/features/plugins';
+import { usePluginProviders, usePlugins } from '@/features/plugins';
 import { useTranslation } from '@/shared/i18n';
 import { SettingsPane } from '@/shared/settings-layout';
 import { LoadError } from '@/shared/ui-kit';
@@ -17,6 +17,7 @@ import { LoadError } from '@/shared/ui-kit';
 import type { PluginSourceType } from '../model/pluginProvider';
 
 import { pluginsPaneState } from '../model/pluginsPaneState';
+import { resolvePluginProvider } from '../model/resolvePluginProvider';
 import { AddPluginView } from './AddPluginView';
 import { PluginDetails } from './PluginDetails';
 import { PluginsPaneAddTitle } from './PluginsPaneAddTitle';
@@ -44,7 +45,25 @@ export const PluginsPane: Component<PluginsPaneProps> = (props) => {
   };
 
   const [pluginAddProvider, setPluginAddProvider] =
-    createSignal<PluginSourceType | null>('git_hub');
+    createSignal<PluginSourceType | null>(null);
+
+  const providers = usePluginProviders();
+
+  // The pick only counts while the backend still offers it; else the first provider is shown.
+  const addProvider = createMemo(() =>
+    resolvePluginProvider(
+      providers.data?.map((provider) => provider.source_type) ?? [],
+      pluginAddProvider(),
+    ),
+  );
+
+  const addState = createMemo(() =>
+    pluginsPaneState({
+      isError: providers.isError,
+      isLoading: providers.isLoading,
+      count: providers.data?.length,
+    }),
+  );
 
   const paneState = createMemo(() =>
     pluginsPaneState({
@@ -61,7 +80,8 @@ export const PluginsPane: Component<PluginsPaneProps> = (props) => {
           when={tab() === 'view'}
           fallback={
             <PluginsPaneAddTitle
-              provider={pluginAddProvider()}
+              providers={providers.data ?? []}
+              provider={addProvider()}
               onProviderChange={setPluginAddProvider}
               onBackClick={handleBack}
             />
@@ -75,10 +95,33 @@ export const PluginsPane: Component<PluginsPaneProps> = (props) => {
       <Show
         when={tab() === 'view'}
         fallback={
-          <AddPluginView
-            provider={pluginAddProvider()}
-            onInstalled={handleBack}
-          />
+          <Switch
+            fallback={
+              <AddPluginView
+                provider={addProvider()}
+                onInstalled={handleBack}
+              />
+            }
+          >
+            <Match when={addState() === 'error'}>
+              <LoadError
+                variant='inline'
+                message={t('common.loadFailed')}
+                retryLabel={t('common.retry')}
+                onRetry={() => void providers.refetch()}
+              />
+            </Match>
+            <Match when={addState() === 'loading'}>
+              <span class='text-sm text-muted-foreground' role='status'>
+                {t('common.loading')}
+              </span>
+            </Match>
+            <Match when={addState() === 'empty'}>
+              <span class='text-sm text-muted-foreground' role='status'>
+                {t('plugins.noProviders')}
+              </span>
+            </Match>
+          </Switch>
         }
       >
         <SkippedPluginDirsNotice />

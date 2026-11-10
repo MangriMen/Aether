@@ -128,6 +128,10 @@ impl PluginProvider for OneRelease {
         PluginSourceType::GitHub
     }
 
+    fn display_name(&self) -> String {
+        "GitHub".to_owned()
+    }
+
     fn parse_identifier(&self, raw: &str) -> Result<String, PluginProviderError> {
         Ok(raw.to_owned())
     }

@@ -50,7 +50,8 @@ pub use plugin_manifest::{
 };
 pub(crate) use plugin_path::PluginPath;
 pub use plugin_provider::{
-    PluginSourceType, ProviderPluginPreview, ProviderReleaseInfo, ProviderUpdateInfo,
+    PluginProviderInfo, PluginSourceType, ProviderPluginPreview, ProviderReleaseInfo,
+    ProviderUpdateInfo,
 };
 pub use plugin_provider_error::PluginProviderError;
 pub use plugin_settings::PluginSettings;

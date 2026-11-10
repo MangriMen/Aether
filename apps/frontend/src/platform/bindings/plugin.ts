@@ -47,7 +47,7 @@ export const commands = {
 	getPluginSource: (id: string) => __TAURI_INVOKE<{ source: "remote"; source_type: PluginSourceTypeDto; identifier: string; current_tag: string; current_version: string } | { source: "local" } | null>("plugin:plugin|get_plugin_source", { id }),
 	checkForUpdates: (id: string) => __TAURI_INVOKE<PluginUpdateInfoDto>("plugin:plugin|check_for_updates", { id }),
 	updatePlugin: (id: string, targetTag: string | null, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:plugin|update_plugin", { id, targetTag, requestId }),
-	getAvailableProviders: () => __TAURI_INVOKE<PluginSourceTypeDto[]>("plugin:plugin|get_available_providers"),
+	getAvailableProviders: () => __TAURI_INVOKE<PluginProviderDto[]>("plugin:plugin|get_available_providers"),
 	previewPluginFromProvider: (sourceType: PluginSourceTypeDto, identifier: string) => __TAURI_INVOKE<ProviderPluginPreviewDto>("plugin:plugin|preview_plugin_from_provider", { sourceType, identifier }),
 	installPluginFromProvider: (sourceType: PluginSourceTypeDto, identifier: string, downloadUrl: string, tagName: string, version: string, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<string>("plugin:plugin|install_plugin_from_provider", { sourceType, identifier, downloadUrl, tagName, version, requestId }),
 };
@@ -507,6 +507,13 @@ export type PluginMetadataDto = {
 	authors?: string[],
 	/**  License under which the plugin is distributed. */
 	license: string | null,
+};
+
+/**  A provider plugins can be installed from, with the name it gives itself. */
+export type PluginProviderDto = {
+	source_type: PluginSourceTypeDto,
+	/**  A proper name, shown as it is. */
+	name: string,
 };
 
 export type PluginSettingsDto = {
