@@ -336,6 +336,28 @@
     "noInstances": "No instances available\nIt seems you don`t have any instances at the moment",
     "title": "Home"
   },
+  "logs": {
+    "copied": "Log copied to clipboard",
+    "copy": "Copy shown lines",
+    "copyFailed": "Failed to copy the log",
+    "earlierRun": "Earlier run",
+    "empty": "There is no log yet\nLaunch the game and its output will appear here",
+    "filterNote": "Filters apply to the lines loaded so far. Scroll up to load older ones.",
+    "filterPlaceholder": "Filter lines",
+    "jumpToEnd": "Jump to the end",
+    "lastRun": "Last run",
+    "level": {
+      "debug": "Debug",
+      "error": "Error",
+      "info": "Info",
+      "warn": "Warn"
+    },
+    "live": "Live log",
+    "loadError": "Failed to load the log",
+    "noLogs": "No logs",
+    "openFile": "Show the log file in the folder",
+    "title": "Logs"
+  },
   "instance": {
     "content": "Content",
     "createError": "Failed to create instance",

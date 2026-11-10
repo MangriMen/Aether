@@ -20,7 +20,7 @@ impl Log4jNormalizer {
     }
 
     pub fn push_line(&mut self, line: &str) -> Vec<String> {
-        if self.pending.is_empty() && !line.starts_with(EVENT_OPEN) {
+        if self.pending.is_empty() && !line.trim_start().starts_with(EVENT_OPEN) {
             return vec![line.to_string()];
         }
 
@@ -218,5 +218,17 @@ mod tests {
         let out = feed_owned(&lines);
 
         assert_eq!(out.last().map(String::as_str), Some("plain"));
+    }
+
+    #[test]
+    fn should_render_an_event_when_the_game_indents_its_lines() {
+        let out = feed(&[
+            "  <log4j:Event logger=\"x\" timestamp=\"1700000000000\" level=\"INFO\" thread=\"main\">",
+            "  <log4j:Message><![CDATA[indented]]></log4j:Message>",
+            "  </log4j:Event>",
+        ]);
+
+        assert_eq!(out.len(), 1);
+        assert!(out[0].ends_with("[main/INFO]: indented"), "{}", out[0]);
     }
 }

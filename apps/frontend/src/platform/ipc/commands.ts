@@ -105,6 +105,8 @@ export const instanceCommands = {
   getContent: instanceRawCommands.getContent,
   listContentVersion: instanceRawCommands.listContentVersion,
   editIcon: withIdempotency(instanceRawCommands.editIcon),
+  listLogs: instanceRawCommands.listLogs,
+  readLog: instanceRawCommands.readLog,
 };
 
 export const javaCommands = {
