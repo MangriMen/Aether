@@ -13,7 +13,10 @@ use crate::{
         events::ProgressBarId,
         instance::{ContentInstallParams, InstallContentUseCasePort, InstanceError},
         java::{InstallJava, Java, JavaApplicationError, JavaInstallService},
-        minecraft::{InstallMinecraftParams, MinecraftApplicationError, MinecraftInstallService},
+        minecraft::{
+            GameDownloadParams, InstallMinecraftParams, MinecraftApplicationError,
+            MinecraftInstallService,
+        },
     },
     shared::housekeeping::ActivityGate,
 };
@@ -53,6 +56,15 @@ impl MinecraftInstallService for Leased<dyn MinecraftInstallService> {
         let _lease = self.gate.lease().await;
         self.inner.execute(params, loading_bar, force).await
     }
+
+    async fn download_game(
+        &self,
+        params: GameDownloadParams,
+        waiting_bar: Option<&ProgressBarId>,
+    ) -> Result<(), MinecraftApplicationError> {
+        let _lease = self.gate.lease().await;
+        self.inner.download_game(params, waiting_bar).await
+    }
 }
 
 #[async_trait]
@@ -90,6 +102,14 @@ mod tests {
             self.started.send(()).unwrap();
             let release = self.release.lock().await.take().unwrap();
             let _ = release.await;
+            Ok(())
+        }
+
+        async fn download_game(
+            &self,
+            _: GameDownloadParams,
+            _: Option<&ProgressBarId>,
+        ) -> Result<(), MinecraftApplicationError> {
             Ok(())
         }
     }

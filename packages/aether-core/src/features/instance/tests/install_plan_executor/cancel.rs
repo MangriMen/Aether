@@ -586,3 +586,96 @@ async fn should_say_a_plugin_does_the_work_and_stop_the_cancel_when_the_run_is_h
     assert_eq!(last.stage, Some(ProgressStage::ByPlugin), "{shown:?}");
     assert_eq!(last.cancel, Some(CancelState::Closed), "{shown:?}");
 }
+
+fn new_instance_with_a_game_plan() -> InstallPlan {
+    let mut plan = new_instance_plan(Vec::new());
+    let InstallTarget::New(spec) = &mut plan.target else {
+        unreachable!()
+    };
+    spec.skip_install_instance = None;
+    plan
+}
+
+#[tokio::test]
+async fn should_create_no_instance_when_cancelled_while_the_game_downloads() {
+    let mut fixture = Fixture::new().await;
+    let mut bars = Bars::install(&mut fixture);
+    fixture
+        .game_download
+        .hangs
+        .store(true, std::sync::atomic::Ordering::SeqCst);
+    let packwiz = plugin("packwiz");
+    let run = fixture.execute(new_instance_with_a_game_plan(), &packwiz);
+    tokio::pin!(run);
+    tokio::select! {
+        result = &mut run => panic!("the run cannot end by itself: {result:?}"),
+        () = fixture.game_download.started.notified() => {}
+    }
+
+    bars.service
+        .cancel_progress(bars.plan_bar().await)
+        .await
+        .unwrap();
+    let err = tokio::time::timeout(Duration::from_secs(5), run)
+        .await
+        .expect("the run did not stop")
+        .unwrap_err();
+
+    assert!(matches!(err, InstanceError::Cancelled), "{err:?}");
+    assert!(fixture.create_instance.created.lock().unwrap().is_empty());
+    assert!(fixture.remove.removed.lock().unwrap().is_empty());
+    assert!(fixture.staging_is_clean());
+    let bars = bars.once_all_ended().await;
+    assert_eq!(plan_end(&bars).status, ProgressStatus::Cancelled);
+}
+
+#[tokio::test]
+async fn should_download_the_game_once_before_the_instance_is_created_when_a_new_instance_is_installed()
+ {
+    let fixture = Fixture::new().await;
+
+    fixture
+        .execute(new_instance_with_a_game_plan(), &plugin("packwiz"))
+        .await
+        .unwrap();
+
+    assert_eq!(
+        *fixture.game_download.downloads.lock().unwrap(),
+        [GameVersion::from_static("1.20.1")]
+    );
+    assert_eq!(fixture.create_instance.created.lock().unwrap().len(), 1);
+}
+
+#[tokio::test]
+async fn should_download_no_game_when_the_instance_keeps_its_game() {
+    let fixture = Fixture::new().await;
+
+    fixture
+        .execute(
+            existing(vec![direct("https://cdn.example/a.jar", "mods/a.jar")]),
+            &plugin("packwiz"),
+        )
+        .await
+        .unwrap();
+
+    assert!(fixture.game_download.downloads.lock().unwrap().is_empty());
+}
+
+#[tokio::test]
+async fn should_download_the_new_game_when_a_pack_update_moves_the_instance() {
+    let mut fixture = Fixture::new().await;
+    fixture.pack_info = Some(installed_from(&plugin("packwiz"), PACK_ID));
+
+    fixture
+        .execute(
+            existing_on(&neoforge_1_21_4(), Vec::new()),
+            &plugin("packwiz"),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(
+        *fixture.game_download.downloads.lock().unwrap(),
+        [GameVersion::from_static("1.21.4")]
+    );
+}

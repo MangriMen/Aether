@@ -16,9 +16,9 @@ use crate::features::{
         InstanceInstallStage, InstanceStorage, PackInfo, ProviderId,
     },
     minecraft::{
-        InstallMinecraftParams, LoaderVersionId, LoaderVersionPreference, LoaderVersionService,
-        MinecraftApplicationError, MinecraftDomainError, MinecraftInstallService, ModLoader,
-        modded,
+        GameDownloadParams, InstallMinecraftParams, LoaderVersionId, LoaderVersionPreference,
+        LoaderVersionService, MinecraftApplicationError, MinecraftDomainError,
+        MinecraftInstallService, ModLoader, modded,
     },
     settings::LocationInfo,
 };
@@ -78,6 +78,14 @@ struct StubMinecraftInstall {
 
 #[async_trait]
 impl MinecraftInstallService for StubMinecraftInstall {
+    async fn download_game(
+        &self,
+        _: GameDownloadParams,
+        _: Option<&ProgressBarId>,
+    ) -> Result<(), MinecraftApplicationError> {
+        unimplemented!("installing an instance downloads nothing ahead")
+    }
+
     async fn execute(
         &self,
         _params: InstallMinecraftParams,
@@ -275,6 +283,14 @@ struct StageProbe {
 
 #[async_trait]
 impl MinecraftInstallService for StageProbe {
+    async fn download_game(
+        &self,
+        _: GameDownloadParams,
+        _: Option<&ProgressBarId>,
+    ) -> Result<(), MinecraftApplicationError> {
+        unimplemented!("installing an instance downloads nothing ahead")
+    }
+
     async fn execute(
         &self,
         _params: InstallMinecraftParams,
@@ -435,6 +451,14 @@ struct ParentOfBar(
 
 #[async_trait]
 impl MinecraftInstallService for ParentOfBar {
+    async fn download_game(
+        &self,
+        _: GameDownloadParams,
+        _: Option<&ProgressBarId>,
+    ) -> Result<(), MinecraftApplicationError> {
+        unimplemented!("installing an instance downloads nothing ahead")
+    }
+
     async fn execute(
         &self,
         _params: InstallMinecraftParams,
@@ -512,6 +536,14 @@ struct RenameDuringInstall(Arc<MemStorage>);
 
 #[async_trait]
 impl MinecraftInstallService for RenameDuringInstall {
+    async fn download_game(
+        &self,
+        _: GameDownloadParams,
+        _: Option<&ProgressBarId>,
+    ) -> Result<(), MinecraftApplicationError> {
+        unimplemented!("installing an instance downloads nothing ahead")
+    }
+
     async fn execute(
         &self,
         _params: InstallMinecraftParams,

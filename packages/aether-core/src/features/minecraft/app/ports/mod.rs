@@ -14,6 +14,8 @@ pub use metadata_storage::MetadataStorage;
 pub use minecraft_downloader::MinecraftDownloader;
 pub use minecraft_health_service::MinecraftHealthService;
 pub use minecraft_install_service::MinecraftInstallService;
+#[cfg(test)]
+pub use minecraft_install_service::RecordingGameDownload;
 pub use minecraft_launch_command_service::MinecraftLaunchCommandService;
 pub use mod_loader_processor::ModLoaderProcessor;
 pub use version_manifest_service::VersionManifestService;
