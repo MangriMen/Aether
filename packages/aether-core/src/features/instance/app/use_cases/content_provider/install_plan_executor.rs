@@ -62,7 +62,7 @@ use std::{
     collections::HashMap,
     path::{Path, PathBuf},
     sync::{
-        Arc, OnceLock,
+        Arc,
         atomic::{AtomicBool, AtomicU64, Ordering},
     },
 };
@@ -92,7 +92,7 @@ use crate::{
             OverrideLocation, PackFile, PackStorage, PlanOrigin, PlatformProviderSelection,
             ProviderId, ResolveInstallPlanParams, ResolveTarget,
             app::{
-                DISABLED_SUFFIX, DownloadEvent,
+                DISABLED_SUFFIX, DownloadEvent, RegisteredInstall,
                 ports::{
                     ChangeInstanceGameUseCasePort, ContentMetadataCache, CreateInstanceUseCasePort,
                     InstallPlanExecutorPort, RemoveInstanceUseCasePort,
@@ -148,9 +148,9 @@ pub struct PlanProgress {
     bar: Option<ProgressBarId>,
     /// Fires when the user calls the run off; never without a bar.
     cancel: CancellationToken,
-    /// Fires when the instance the run fills is removed; set once the run is known to fill an
-    /// existing one.
-    removal: OnceLock<CancellationToken>,
+    /// The run in the registry of those that work for an instance, when it fills an existing
+    /// one: its token fires when that instance is removed.
+    registration: Option<RegisteredInstall>,
     /// What the bar shows, to name it anew (see [`Self::resolve_plan`]).
     event_type: ProgressEventType,
     /// Shared by the bars of the files.
@@ -172,7 +172,7 @@ impl PlanProgress {
             service,
             bar: None,
             cancel,
-            removal: OnceLock::new(),
+            registration: None,
             event_type: ProgressEventType::PackDownload {
                 instance_path: String::new(),
                 pack_name: String::new(),
@@ -337,8 +337,8 @@ impl PlanProgress {
     /// Resolves once the user calls the run off, or the instance it fills is removed.
     async fn called_off(&self) {
         let removed = async {
-            match self.removal.get() {
-                Some(removal) => removal.cancelled().await,
+            match &self.registration {
+                Some(registered) => registered.token.cancelled().await,
                 None => std::future::pending().await,
             }
         };
@@ -351,9 +351,9 @@ impl PlanProgress {
     fn is_called_off(&self) -> bool {
         self.cancel.is_cancelled()
             || self
-                .removal
-                .get()
-                .is_some_and(CancellationToken::is_cancelled)
+                .registration
+                .as_ref()
+                .is_some_and(|registered| registered.token.is_cancelled())
     }
 
     /// Pass the point of no return, before anything in the target changes: from here on the
@@ -888,19 +888,8 @@ impl InstallPlanExecutor {
         progress: &PlanProgress,
     ) -> Result<InstanceId, InstanceError> {
         progress.reveal().await;
-        // Registered until the run has ended, so that removing the instance waits for it.
-        let registered = match &plan.target {
-            InstallTarget::Existing { instance_id, .. } => {
-                Some(self.cancellations.register(instance_id))
-            }
-            InstallTarget::New(_) => None,
-        };
-        if let Some(registered) = &registered {
-            let _ = progress.removal.set(registered.token.clone());
-        }
         let result = self.run(plan, origin, progress).await;
         progress.end(&result).await;
-        drop(registered);
         result
     }
 
@@ -1151,7 +1140,8 @@ impl InstallPlanExecutor {
             service: self.progress_service.clone(),
             bar,
             cancel,
-            removal: OnceLock::new(),
+            // Until the run is dropped, so that removing the instance waits for it.
+            registration: instance.map(|instance_id| self.cancellations.register(instance_id)),
             event_type,
             instance_path,
             revealed: AtomicBool::new(false),

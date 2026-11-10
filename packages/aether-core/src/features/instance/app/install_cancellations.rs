@@ -1,7 +1,7 @@
 use std::{
     collections::HashMap,
     sync::{
-        Mutex, MutexGuard, PoisonError,
+        Arc, Mutex, MutexGuard, PoisonError,
         atomic::{AtomicU64, Ordering},
     },
 };
@@ -19,8 +19,8 @@ struct State {
     removing: HashMap<InstanceId, usize>,
 }
 
-/// The installs of the game that are running, by instance, so that removing an instance calls
-/// off the install that would go on downloading for it.
+/// The runs that work for an instance (an install of its game, a plan filling it), by instance,
+/// so that removing an instance calls off what would go on downloading for it.
 #[derive(Default)]
 pub struct InstallCancellations {
     state: Mutex<State>,
@@ -29,10 +29,10 @@ pub struct InstallCancellations {
     left: Notify,
 }
 
-/// An install of the game of an instance, in the registry until dropped.
-#[must_use = "the install is out of the registry as soon as this is dropped"]
-pub struct RegisteredInstall<'a> {
-    registry: &'a InstallCancellations,
+/// A run for an instance, in the registry until dropped.
+#[must_use = "the run is out of the registry as soon as this is dropped"]
+pub struct RegisteredInstall {
+    registry: Arc<InstallCancellations>,
     instance_id: InstanceId,
     key: u64,
     /// Fires when the instance is removed.
@@ -52,7 +52,7 @@ impl InstallCancellations {
         self.state.lock().unwrap_or_else(PoisonError::into_inner)
     }
 
-    pub fn register(&self, instance_id: &InstanceId) -> RegisteredInstall<'_> {
+    pub fn register(self: &Arc<Self>, instance_id: &InstanceId) -> RegisteredInstall {
         let key = self.next.fetch_add(1, Ordering::Relaxed);
         let token = CancellationToken::new();
         let mut state = self.state();
@@ -66,7 +66,7 @@ impl InstallCancellations {
             .push((key, token.clone()));
         drop(state);
         RegisteredInstall {
-            registry: self,
+            registry: Arc::clone(self),
             instance_id: instance_id.clone(),
             key,
             token,
@@ -74,7 +74,7 @@ impl InstallCancellations {
     }
 
     /// Start the removal of the instance: every install for it is called off, and the ones that
-    /// begin meanwhile are too. Waits for them to unwind: they restore the stage of the
+    /// begin meanwhile are too. Waits for them to unwind: they may still be writing to the
     /// instance, which must not race its removal.
     pub async fn begin_removal(&self, instance_id: &InstanceId) -> RemovalGuard<'_> {
         {
@@ -101,7 +101,7 @@ impl InstallCancellations {
     }
 }
 
-impl Drop for RegisteredInstall<'_> {
+impl Drop for RegisteredInstall {
     fn drop(&mut self) {
         let mut state = self.registry.state();
         if let Some(installs) = state.running.get_mut(&self.instance_id) {
@@ -129,7 +129,7 @@ impl Drop for RemovalGuard<'_> {
 
 #[cfg(test)]
 mod tests {
-    use std::{sync::Arc, time::Duration};
+    use std::time::Duration;
 
     use super::*;
 
@@ -190,7 +190,7 @@ mod tests {
 
     #[tokio::test]
     async fn should_call_off_an_install_born_while_the_instance_is_being_removed() {
-        let installs = InstallCancellations::default();
+        let installs = Arc::new(InstallCancellations::default());
         let removal = installs.begin_removal(&id("mine")).await;
 
         let born = installs.register(&id("mine"));
@@ -215,7 +215,7 @@ mod tests {
 
     #[tokio::test]
     async fn should_fire_nothing_when_the_install_is_over() {
-        let installs = InstallCancellations::default();
+        let installs = Arc::new(InstallCancellations::default());
         let finished = installs.register(&id("mine"));
         let token = finished.token.clone();
         drop(finished);

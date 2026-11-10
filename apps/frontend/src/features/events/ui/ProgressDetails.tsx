@@ -61,7 +61,8 @@ const ProgressNode: Component<ProgressNodeProps> = (props) => {
   );
   // Called off, a download others wait on goes on for them.
   const keepsDownloading = createMemo(() =>
-    props.payload.status.type === 'running' && props.payload.cancel !== 'closed'
+    props.payload.status.type === 'running' &&
+    (props.payload.cancel === 'open' || props.payload.cancel === 'requested')
       ? props.index().othersWaitingOn(props.payload.progressBarId)
       : 0,
   );

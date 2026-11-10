@@ -44,7 +44,8 @@ export const buildProgressIndex = (
       }
     }
 
-    if (p.mirrorOf !== null) {
+    // A mirror that ended (its install was called off, or the download is over) waits on nothing.
+    if (p.mirrorOf !== null && p.status.type === 'running') {
       mirrors.set(p.mirrorOf, (mirrors.get(p.mirrorOf) ?? 0) + 1);
     }
   }

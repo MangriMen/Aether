@@ -68,6 +68,21 @@ describe('progress tree', () => {
     expect(tree.othersWaitingOn('shared')).toBe(0);
   });
 
+  it('does not count the bars that stopped waiting', () => {
+    const list = [
+      make('shared', null),
+      make('mine', null),
+      make('mine-mirror', 'mine', { mirrorOf: 'shared' }),
+      make('theirs', null),
+      make('their-mirror', 'theirs', {
+        mirrorOf: 'shared',
+        status: { type: 'cancelled' },
+      }),
+    ];
+
+    expect(buildProgressIndex(list).othersWaitingOn('mine')).toBe(0);
+  });
+
   it('detects a failed descendant at any depth', () => {
     expect(findFailedDescendant(index, 'root')).toBeDefined();
     expect(findFailedDescendant(index, 'b')).toBeUndefined();

@@ -42,7 +42,7 @@ impl RemoveInstanceUseCase {
         }
     }
 
-    /// Remove under a registry shared with the install of games, so that an install running for
+    /// Remove under a registry shared with the runs for instances, so that a run going on for
     /// the instance is called off.
     #[must_use]
     pub fn with_cancellations(mut self, cancellations: Arc<InstallCancellations>) -> Self {

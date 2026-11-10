@@ -533,6 +533,54 @@ async fn should_end_the_bar_cancelled_when_cancelled_while_the_plan_is_resolved(
 }
 
 #[tokio::test]
+async fn should_stop_resolving_the_plan_when_the_instance_is_removed_meanwhile() {
+    let mut fixture = Fixture::new().await;
+    let mut bars = Bars::install(&mut fixture);
+    let executor = fixture.executor();
+    let id = InstanceId::try_from(INSTANCE_ID).unwrap();
+    let progress = executor
+        .begin(
+            &ResolveTarget::Existing {
+                instance_id: id.clone(),
+                game_version: GameVersion::from_static("1.21.1"),
+                loader: Some(ModLoader::Fabric),
+            },
+            &ContentId::try_from("pack").unwrap(),
+        )
+        .await;
+
+    let removal = fixture.cancellations.begin_removal(&id);
+    tokio::pin!(removal);
+    let result = {
+        let resolving =
+            progress.unless_cancelled(std::future::pending::<Result<(), InstanceError>>());
+        tokio::pin!(resolving);
+        tokio::time::timeout(Duration::from_secs(5), async {
+            tokio::select! {
+                result = &mut resolving => result,
+                _ = &mut removal => panic!("the removal came before the run was gone"),
+            }
+        })
+        .await
+        .expect("the resolving did not stop")
+    };
+    assert!(
+        matches!(result, Err(InstanceError::Cancelled)),
+        "{result:?}"
+    );
+
+    progress.end(&result).await;
+    drop(progress);
+    let _removal = tokio::time::timeout(Duration::from_secs(5), removal)
+        .await
+        .expect("the removal waits for the run for good");
+    assert_eq!(
+        plan_end(&bars.once_all_ended().await).status,
+        ProgressStatus::Cancelled
+    );
+}
+
+#[tokio::test]
 async fn should_end_the_bar_once_when_the_run_and_its_caller_both_end_it() {
     let mut fixture = Fixture::new().await;
     let mut bars = Bars::install(&mut fixture);
