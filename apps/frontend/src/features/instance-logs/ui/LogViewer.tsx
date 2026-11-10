@@ -11,20 +11,20 @@ import {
 } from 'solid-js';
 
 import { useTranslation } from '@/shared/i18n';
-import { Button } from '@/shared/ui-kit';
+import { CombinedTooltip, IconButton } from '@/shared/ui-kit';
 import { cn } from '@/shared/utils';
 
 import type { LogLevel, LogLine } from '../model/logLines';
 
 /** Without wrapping a line is one row of this height; wrapped rows are measured. */
 const ROW_HEIGHT = 22;
-const LOAD_OLDER_THRESHOLD_PX = 400;
+const LOAD_MORE_THRESHOLD_PX = 400;
 const STICK_THRESHOLD_PX = 40;
 const MAX_ROW_CHARS = 4000;
 
 const LEVEL_CLASS: Record<LogLevel, string> = {
-  debug: 'text-muted-foreground/70',
-  info: 'text-foreground/70',
+  debug: 'text-muted-foreground/60',
+  info: 'text-muted-foreground',
   warn: 'text-warning',
   error: 'text-destructive',
 };
@@ -36,7 +36,12 @@ export type LogViewerProps = {
   tailLoaded: boolean;
   /** Long lines continue on the next row instead of running off to the right. */
   wrap: boolean;
+  /** Shown in the middle of the box while there is nothing to list. */
+  emptyText?: string;
+  /** A short note on what the viewer is doing or leaving out, over the corner of the box. */
+  statusText?: string;
   onLoadOlder: () => Promise<void>;
+  onLoadNewer: () => Promise<void>;
   onReloadTail: () => Promise<void>;
   class?: string;
 };
@@ -49,6 +54,7 @@ export const LogViewer: Component<LogViewerProps> = (props) => {
 
   const [stick, setStick] = createSignal(true);
   let loadingOlder = false;
+  let loadingNewer = false;
 
   const virtualizer = createVirtualizer({
     get count() {
@@ -58,6 +64,16 @@ export const LogViewer: Component<LogViewerProps> = (props) => {
     getScrollElement: () => scrollRef ?? null,
     estimateSize: () => ROW_HEIGHT,
   });
+
+  // Rows are keyed by their index, so a row that stays in view keeps its element when the
+  // list around it changes; keyed by the virtual items themselves they would all be rebuilt
+  // each time and flicker.
+  const rowIndexes = createMemo(() =>
+    virtualizer.getVirtualItems().map((item) => item.index),
+  );
+  const rowStart = (index: number) =>
+    virtualizer.getVirtualItems().find((item) => item.index === index)?.start ??
+    index * ROW_HEIGHT;
 
   const scrollToEnd = () => {
     if (props.lines.length > 0) {
@@ -105,13 +121,34 @@ export const LogViewer: Component<LogViewerProps> = (props) => {
     }
   };
 
-  const loadOlderIfNearStart = () => {
-    if (
-      props.hasMoreBefore &&
-      scrollRef &&
-      scrollRef.scrollTop < LOAD_OLDER_THRESHOLD_PX
-    ) {
+  const loadNewer = async () => {
+    if (loadingNewer) {
+      return;
+    }
+
+    loadingNewer = true;
+
+    try {
+      await props.onLoadNewer();
+    } finally {
+      loadingNewer = false;
+    }
+  };
+
+  const loadMoreIfNearEdge = () => {
+    if (!scrollRef) {
+      return;
+    }
+
+    if (props.hasMoreBefore && scrollRef.scrollTop < LOAD_MORE_THRESHOLD_PX) {
       void loadOlder();
+    }
+
+    const distanceToEnd =
+      scrollRef.scrollHeight - scrollRef.scrollTop - scrollRef.clientHeight;
+
+    if (!props.tailLoaded && distanceToEnd < LOAD_MORE_THRESHOLD_PX) {
+      void loadNewer();
     }
   };
 
@@ -133,7 +170,7 @@ export const LogViewer: Component<LogViewerProps> = (props) => {
           }
 
           // A filter can leave too few lines to scroll, and then no scroll event would ever ask.
-          loadOlderIfNearStart();
+          loadMoreIfNearEdge();
         });
       },
     ),
@@ -158,7 +195,7 @@ export const LogViewer: Component<LogViewerProps> = (props) => {
 
     setStick(distanceToEnd < STICK_THRESHOLD_PX);
     rememberAnchor();
-    loadOlderIfNearStart();
+    loadMoreIfNearEdge();
   };
 
   const jumpToEnd = async () => {
@@ -185,8 +222,8 @@ export const LogViewer: Component<LogViewerProps> = (props) => {
       <div
         ref={scrollRef}
         class='
-          rounded-md bg-card/card text-sm min-h-0 flex-1 overflow-auto
-           border font-mono
+          rounded-md bg-card/card text-sm min-h-0 flex-1 overflow-auto border
+          font-mono
         '
         onScroll={handleScroll}
       >
@@ -198,44 +235,63 @@ export const LogViewer: Component<LogViewerProps> = (props) => {
             'min-width': '100%',
           }}
         >
-          <For each={virtualizer.getVirtualItems()}>
-            {(row) => (
+          <For each={rowIndexes()}>
+            {(index) => (
               <div
                 ref={(node) => {
                   // The row's index attribute is set after the ref is handed over.
                   queueMicrotask(() => virtualizer.measureElement(node));
                 }}
-                data-index={row.index}
+                data-index={index}
                 class={cn(
                   'px-3 absolute left-0 w-full',
                   props.wrap
-                    ? 'whitespace-pre-wrap wrap-anywhere'
+                    ? 'wrap-anywhere whitespace-pre-wrap'
                     : 'whitespace-pre',
-                  LEVEL_CLASS[props.lines[row.index]?.level ?? 'info'],
+                  LEVEL_CLASS[props.lines[index]?.level ?? 'info'],
                 )}
                 style={{
                   'min-height': `${ROW_HEIGHT}px`,
                   height: props.wrap ? undefined : `${ROW_HEIGHT}px`,
                   'line-height': `${ROW_HEIGHT}px`,
-                  transform: `translateY(${row.start}px)`,
+                  transform: `translateY(${rowStart(index)}px)`,
                 }}
               >
-                {props.lines[row.index]?.text}
+                {props.lines[index]?.text}
               </div>
             )}
           </For>
         </div>
       </div>
-      <Show when={!stick() || !props.tailLoaded}>
-        <Button
-          class='right-4 bottom-4 absolute shadow-md'
-          size='sm'
-          variant='secondary'
-          onClick={() => void jumpToEnd()}
+      <Show when={props.lines.length === 0 && props.emptyText}>
+        <div
+          class='
+            p-4 text-muted-foreground inset-0 absolute flex items-center
+            justify-center text-center text-sm whitespace-pre-line
+          '
         >
-          <IconMdiArrowDown />
-          {t('logs.jumpToEnd')}
-        </Button>
+          {props.emptyText}
+        </div>
+      </Show>
+      <Show when={props.statusText}>
+        <div
+          class='
+            left-3 bottom-3 rounded-md bg-card/card px-2 py-1 text-muted-foreground
+            absolute border text-sm shadow-md
+          '
+        >
+          {props.statusText}
+        </div>
+      </Show>
+      <Show when={!stick() || !props.tailLoaded}>
+        <CombinedTooltip
+          label={t('logs.jumpToEnd')}
+          as={IconButton}
+          class='right-4 bottom-4 absolute shadow-md'
+          variant='secondary'
+          icon={IconMdiArrowDown}
+          onClick={() => void jumpToEnd()}
+        />
       </Show>
     </div>
   );

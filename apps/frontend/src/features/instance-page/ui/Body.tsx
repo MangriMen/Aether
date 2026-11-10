@@ -52,7 +52,7 @@ export const Body: Component<BodyProps> = (props) => {
       <TabsContent
         value={InstanceContentTabs.Logs}
         as={InstanceLogsTab}
-        class='flex-1 overflow-hidden'
+        class='min-h-0 flex-1'
         instance={local.instance}
         instancePath={local.instancePath}
       />

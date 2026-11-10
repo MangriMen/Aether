@@ -20,14 +20,19 @@ import {
   useRevealInExplorer,
   useRunningInstancesContext,
 } from '@/features/instance';
+import { dayjs } from '@/shared/format';
 import { useTranslation } from '@/shared/i18n';
 import { logError } from '@/shared/log';
 import {
-  CombinedSelect,
   CombinedTextField,
   CombinedTooltip,
   IconButton,
   LoadError,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
   showToast,
   Toggle,
   ToggleGroup,
@@ -55,6 +60,14 @@ export type InstanceLogsTabProps = {
 
 const LIVE = 'live';
 const SEARCH_DEBOUNCE_MS = 300;
+
+// A pressed level chip takes the colour its lines have in the log.
+const LEVEL_CHIP_CLASS: Record<LogLevel, string> = {
+  debug: 'data-pressed:text-muted-foreground',
+  info: '',
+  warn: 'data-pressed:bg-warning/20 data-pressed:text-warning',
+  error: 'data-pressed:bg-destructive/20 data-pressed:text-destructive',
+};
 
 export const InstanceLogsTab: Component<InstanceLogsTabProps> = (props) => {
   const [{ t }] = useTranslation();
@@ -95,10 +108,7 @@ export const InstanceLogsTab: Component<InstanceLogsTabProps> = (props) => {
       }
 
       const when = source.modified
-        ? ` (${new Date(source.modified).toLocaleString(undefined, {
-            dateStyle: 'short',
-            timeStyle: 'short',
-          })})`
+        ? ` (${dayjs(source.modified).format('L LT')})`
         : '';
 
       return {
@@ -197,12 +207,55 @@ export const InstanceLogsTab: Component<InstanceLogsTabProps> = (props) => {
     setLevels(value as LogLevel[]);
   };
 
+  const emptyText = () => {
+    if (!sourceId()) {
+      return t('logs.empty');
+    }
+
+    if (view.loading()) {
+      return undefined;
+    }
+
+    if (view.loadingOlder()) {
+      return lineFilter() ? t('logs.searching') : undefined;
+    }
+
+    if (view.lines().length === 0) {
+      return t('logs.emptyLog');
+    }
+
+    return lineFilter() ? t('logs.noMatches') : undefined;
+  };
+
+  const statusText = () => {
+    if (view.loadingOlder() && visibleLines().length > 0) {
+      return t('logs.loadingOlder');
+    }
+
+    return view.searchCut() ? t('logs.searchCut') : undefined;
+  };
+
   return (
-    <div class={cn('gap-3 p-1 flex min-h-0 flex-col', props.class)}>
-      <div class='gap-2 flex flex-wrap items-center'>
+    <div class={cn('gap-3 flex min-h-0 flex-col', props.class)}>
+      <div class='gap-2 flex items-center'>
+        <CombinedTextField
+          class='min-w-0 flex-1'
+          value={query()}
+          onChange={setQuery}
+          inputProps={{
+            class: 'pl-10',
+            placeholder: t('logs.search'),
+            type: 'text',
+          }}
+          leadingIcons={
+            <div class='px-2.5 my-px flex h-full items-center'>
+              <IconMdiMagnify />
+            </div>
+          }
+        />
         <Show when={currentOption()?.value ?? 'none'} keyed>
           {(_key) => (
-            <CombinedSelect
+            <Select
               class='w-72 shrink-0'
               multiple={false}
               options={options()}
@@ -216,111 +269,98 @@ export const InstanceLogsTab: Component<InstanceLogsTabProps> = (props) => {
               }}
               disabled={options().length === 0}
               placeholder={t('logs.noLogs')}
-            />
+              itemComponent={(itemProps) => (
+                <SelectItem item={itemProps.item}>
+                  {itemProps.item.textValue}
+                </SelectItem>
+              )}
+            >
+              <CombinedTooltip
+                as={SelectTrigger}
+                label={currentOption()?.name}
+                disableTooltip={!currentOption()}
+                class='gap-1.5'
+              >
+                <SelectValue<Option<string>> class='min-w-0 truncate'>
+                  {(state) => state.selectedOption().name}
+                </SelectValue>
+              </CombinedTooltip>
+              <SelectContent />
+            </Select>
           )}
         </Show>
-        <CombinedTextField
-          class='min-w-48 flex-1'
-          value={query()}
-          onChange={setQuery}
-          inputProps={{
-            class: 'pl-10',
-            placeholder: t('logs.filterPlaceholder'),
-            type: 'text',
-          }}
-          leadingIcons={
-            <div class='px-2.5 my-px flex h-full items-center'>
-              <IconMdiMagnify />
-            </div>
-          }
-        />
-        <CombinedTooltip
-          label={t('logs.wrapLines')}
-          as={Toggle}
-          class='
-            size-9 p-0
-            hover:bg-secondary/hover
-            data-pressed:bg-secondary/secondary
-          '
-          pressed={wrapLines()}
-          onChange={setWrapLines}
-        >
-          <IconMdiWrap />
-        </CombinedTooltip>
-        <CombinedTooltip
-          label={t('logs.copy')}
-          as={IconButton}
-          variant='secondary'
-          icon={IconMdiContentCopy}
-          onClick={() => void handleCopy()}
-          disabled={visibleLines().length === 0}
-        />
-        <CombinedTooltip
-          label={t('logs.openFile')}
-          as={IconButton}
-          variant='secondary'
-          icon={IconMdiFolder}
-          onClick={handleReveal}
-          disabled={!sourceId() || !props.instancePath}
-        />
       </div>
-      <ToggleGroup
-        multiple
-        value={levels()}
-        onChange={handleLevelsChange}
-        class='justify-start'
-      >
-        <For each={LOG_LEVELS}>
-          {(level) => (
-            <ToggleGroupItem value={level}>
-              {t(`logs.level.${level}`)}
-            </ToggleGroupItem>
-          )}
-        </For>
-      </ToggleGroup>
+      <div class='gap-2 flex flex-wrap items-center justify-between'>
+        <ToggleGroup
+          multiple
+          value={levels()}
+          onChange={handleLevelsChange}
+          class='justify-start'
+        >
+          <For each={LOG_LEVELS}>
+            {(level) => (
+              <ToggleGroupItem value={level} class={LEVEL_CHIP_CLASS[level]}>
+                {t(`logs.level.${level}`)}
+              </ToggleGroupItem>
+            )}
+          </For>
+        </ToggleGroup>
+        <div class='gap-2 flex items-center'>
+          <CombinedTooltip
+            label={t('logs.wrapLines')}
+            as={Toggle}
+            class='
+              size-9 p-0
+              hover:bg-secondary/hover
+              data-pressed:bg-secondary/secondary
+            '
+            pressed={wrapLines()}
+            onChange={setWrapLines}
+          >
+            <IconMdiWrap />
+          </CombinedTooltip>
+          <CombinedTooltip
+            label={t('logs.copy')}
+            as={IconButton}
+            variant='secondary'
+            icon={IconMdiContentCopy}
+            onClick={() => void handleCopy()}
+            disabled={visibleLines().length === 0}
+          />
+          <CombinedTooltip
+            label={t('logs.openFile')}
+            as={IconButton}
+            variant='secondary'
+            icon={IconMdiFolder}
+            onClick={handleReveal}
+            disabled={!sourceId() || !props.instancePath}
+          />
+        </div>
+      </div>
       <Show
-        when={!sources.isError}
+        when={!sources.isError && !view.error()}
         fallback={
           <LoadError
             message={t('logs.loadError')}
             retryLabel={t('common.retry')}
-            onRetry={() => void sources.refetch()}
+            onRetry={() =>
+              sources.isError ? void sources.refetch() : void view.reloadTail()
+            }
           />
         }
       >
-        <Show
-          when={sourceId()}
-          fallback={
-            <div class='text-muted-foreground p-4 text-sm whitespace-pre-line'>
-              {t('logs.empty')}
-            </div>
-          }
-        >
-          <Show
-            when={!view.error()}
-            fallback={
-              <LoadError
-                message={t('logs.loadError')}
-                retryLabel={t('common.retry')}
-                onRetry={() => void view.reloadTail()}
-              />
-            }
-          >
-            <LogViewer
-              class='flex-1'
-              lines={visibleLines()}
-              hasMoreBefore={view.hasMoreBefore()}
-              tailLoaded={view.tailLoaded()}
-              wrap={wrapLines()}
-              onLoadOlder={view.loadOlder}
-              onReloadTail={view.reloadTail}
-            />
-            <p class='h-5 px-1 text-muted-foreground text-sm'>
-              <Show when={view.loadingOlder()}>{t('logs.loadingOlder')}</Show>
-              <Show when={view.searchCut()}>{t('logs.searchCut')}</Show>
-            </p>
-          </Show>
-        </Show>
+        <LogViewer
+          class='flex-1'
+          lines={visibleLines()}
+          hasMoreBefore={view.hasMoreBefore()}
+          tailLoaded={view.tailLoaded()}
+          wrap={wrapLines()}
+          emptyText={emptyText()}
+          statusText={statusText()}
+          onLoadOlder={view.loadOlder}
+          onLoadNewer={view.loadNewer}
+          onReloadTail={view.reloadTail}
+        />
       </Show>
     </div>
   );

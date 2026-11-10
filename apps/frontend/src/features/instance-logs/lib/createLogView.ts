@@ -261,6 +261,39 @@ export const createLogView = ({
     }
   };
 
+  /** One page below the window, when it was moved up from the end of a large file. */
+  const loadNewer = () => {
+    const current = generation;
+
+    return enqueue(async () => {
+      const sourceId = currentSourceId();
+      const state = untrack(window);
+
+      if (
+        current !== generation ||
+        sourceId === undefined ||
+        state.tailLoaded
+      ) {
+        return;
+      }
+
+      const page = await readGameLogAfter(
+        currentInstanceId(),
+        sourceId,
+        windowEnd(state),
+      );
+
+      if (current !== generation) {
+        return;
+      }
+
+      setWindow((w) => ({
+        ...appendText(w, page.start, page.end, page.text, windowFilter),
+        tailLoaded: !page.hasMoreAfter,
+      }));
+    });
+  };
+
   /** Back to the end of the file after the window was moved away from it. */
   const reloadTail = () => {
     generation += 1;
@@ -297,6 +330,7 @@ export const createLogView = ({
     tailLoaded: () => window().tailLoaded,
     pushLive,
     loadOlder,
+    loadNewer,
     reloadTail,
   };
 };
