@@ -311,6 +311,7 @@
     "javaDownloading": "Загрузка Java {{version}}",
     "minecraftAssets": "Ресурсы (файлов: {{count}})",
     "minecraftDownloading": "Загрузка Minecraft {{version}}",
+    "keepsDownloading": "Продолжит качаться для других установок: {{count}}",
     "neededFor": "Нужен для установок: {{count}}",
     "nothingRunning": "Сейчас ничего не загружается",
     "nothingRunningHint": "Здесь появятся установки и загрузки.",

@@ -13,6 +13,11 @@ export type ProgressIndex = {
   childrenOf: (id: BarId) => ProgressEvent[];
   /** How many bars show `id`. */
   mirrorCount: (id: BarId) => number;
+  /**
+   * How many other bars wait on the shared downloads shown under `id`: they go on when `id` is
+   * called off.
+   */
+  othersWaitingOn: (id: BarId) => number;
   /** Every bar below `id`, parents before their children. */
   descendantsOf: (id: BarId) => ProgressEvent[];
 };
@@ -64,10 +69,21 @@ export const buildProgressIndex = (
     return result;
   };
 
+  const mirrorCount = (id: BarId) => mirrors.get(id) ?? 0;
+
   return {
     roots,
     childrenOf,
-    mirrorCount: (id) => mirrors.get(id) ?? 0,
+    mirrorCount,
+    // The bar itself is one of the mirrors of its download.
+    othersWaitingOn: (id) =>
+      descendantsOf(id).reduce(
+        (most, p) =>
+          p.mirrorOf === null
+            ? most
+            : Math.max(most, mirrorCount(p.mirrorOf) - 1),
+        0,
+      ),
     descendantsOf,
   };
 };
