@@ -8,8 +8,10 @@ use tempfile::TempDir;
 
 use crate::features::{
     events::{
-        Event, EventEmitter, EventError, ProgressBarId, ProgressBarStorage, ProgressEventType,
-        ProgressService, ProgressServiceImpl, infra::InMemoryProgressBarStorage,
+        Event, EventEmitter, EventError, ProgressBarId, ProgressBarStorage, ProgressEvent,
+        ProgressEventType, ProgressService, ProgressServiceImpl, ProgressStatus,
+        infra::InMemoryProgressBarStorage,
+        test_support::{ChannelEmitter, sent},
     },
     instance::{
         InstallInstanceUseCase, Instance, InstanceBuilder, InstanceError, InstanceId,
@@ -652,5 +654,152 @@ async fn should_keep_the_loader_version_when_it_is_exact() {
     assert_eq!(
         loader_version_after_install(exact.clone()).await,
         Some(exact)
+    );
+}
+
+/// Starts, then waits for ever: an install the user calls off.
+struct HangingInstall(tokio::sync::Notify);
+
+#[async_trait]
+impl MinecraftInstallService for HangingInstall {
+    async fn download_game(
+        &self,
+        _: GameDownloadParams,
+        _: Option<&ProgressBarId>,
+    ) -> Result<(), MinecraftApplicationError> {
+        unimplemented!("installing an instance downloads nothing ahead")
+    }
+
+    async fn execute(
+        &self,
+        _: InstallMinecraftParams,
+        _: Option<&ProgressBarId>,
+        _: bool,
+    ) -> Result<(), MinecraftApplicationError> {
+        self.0.notify_one();
+        std::future::pending().await
+    }
+}
+
+/// Calls the install of an instance in `stage` off from its bar, as the button does.
+async fn call_off_install(
+    stage: InstanceInstallStage,
+) -> (Instance, Result<(), InstanceError>, Vec<ProgressEvent>) {
+    let temp = TempDir::new().unwrap();
+    let location_info = Arc::new(LocationInfo::new(
+        temp.path().join("settings"),
+        temp.path().to_path_buf(),
+    ));
+    let mut instance = InstanceBuilder::new(
+        InstanceId::try_from("inst").unwrap(),
+        InstanceName::parse("inst").unwrap(),
+        GameVersion::from_static("1.20.1"),
+        ModLoader::Vanilla,
+    )
+    .build();
+    instance.install_stage = stage;
+    let id = instance.id().clone();
+    let storage = Arc::new(MemStorage {
+        instances: Mutex::new(vec![instance]),
+    });
+    let (tx, mut events) = tokio::sync::mpsc::unbounded_channel();
+    let bars = Arc::new(InMemoryProgressBarStorage::default());
+    let progress = Arc::new(ProgressServiceImpl::new(
+        Arc::new(ChannelEmitter(tx)),
+        bars.clone(),
+    ));
+    let minecraft = Arc::new(HangingInstall(tokio::sync::Notify::new()));
+    let use_case = InstallInstanceUseCase::new(
+        storage.clone(),
+        Arc::new(NoLoaders),
+        minecraft.clone(),
+        progress.clone(),
+        location_info,
+    );
+
+    let run = use_case.execute(id.clone(), false, None);
+    tokio::pin!(run);
+    tokio::select! {
+        result = &mut run => panic!("the install cannot end by itself: {result:?}"),
+        () = minecraft.0.notified() => {}
+    }
+    let game_bar = bars.list().await.into_iter().next().unwrap();
+    progress.cancel_progress(game_bar.id).await.unwrap();
+    let result = tokio::time::timeout(std::time::Duration::from_secs(5), run)
+        .await
+        .expect("the install did not stop");
+    for _ in 0..10 {
+        tokio::task::yield_now().await;
+    }
+    (storage.get(&id).await.unwrap(), result, sent(&mut events))
+}
+
+#[tokio::test]
+async fn should_end_cancelled_and_not_installed_when_the_first_install_is_called_off() {
+    let (instance, result, events) = call_off_install(InstanceInstallStage::NotInstalled).await;
+
+    assert!(
+        matches!(result, Err(InstanceError::Cancelled)),
+        "{result:?}"
+    );
+    assert_eq!(instance.install_stage, InstanceInstallStage::NotInstalled);
+    assert_eq!(
+        events.last().map(|event| event.status.clone()),
+        Some(ProgressStatus::Cancelled)
+    );
+}
+
+#[tokio::test]
+async fn should_stay_installed_when_the_reinstall_of_a_working_instance_is_called_off() {
+    let (instance, result, _) = call_off_install(InstanceInstallStage::Installed).await;
+
+    assert!(
+        matches!(result, Err(InstanceError::Cancelled)),
+        "{result:?}"
+    );
+    assert_eq!(instance.install_stage, InstanceInstallStage::Installed);
+}
+
+#[tokio::test]
+async fn should_end_cancelled_when_the_instance_is_removed_while_the_game_installs() {
+    let temp = TempDir::new().unwrap();
+    let instance = InstanceBuilder::new(
+        InstanceId::try_from("inst").unwrap(),
+        InstanceName::parse("inst").unwrap(),
+        GameVersion::from_static("1.20.1"),
+        ModLoader::Vanilla,
+    )
+    .build();
+    let id = instance.id().clone();
+    let minecraft = Arc::new(HangingInstall(tokio::sync::Notify::new()));
+    let removals = Arc::new(crate::features::instance::InstallCancellations::default());
+    let use_case = InstallInstanceUseCase::new(
+        Arc::new(MemStorage {
+            instances: Mutex::new(vec![instance]),
+        }),
+        Arc::new(NoLoaders),
+        minecraft.clone(),
+        Arc::new(NoProgress),
+        Arc::new(LocationInfo::new(
+            temp.path().join("settings"),
+            temp.path().to_path_buf(),
+        )),
+    )
+    .with_cancellations(removals.clone());
+
+    let run = use_case.execute(id.clone(), false, None);
+    tokio::pin!(run);
+    tokio::select! {
+        result = &mut run => panic!("the install cannot end by itself: {result:?}"),
+        () = minecraft.0.notified() => {}
+    }
+    removals.cancel(&id);
+    let result = tokio::time::timeout(std::time::Duration::from_secs(5), run)
+        .await
+        .expect("the install did not stop");
+
+    assert!(
+        matches!(result, Err(InstanceError::Cancelled)),
+        "{result:?}"
     );
 }

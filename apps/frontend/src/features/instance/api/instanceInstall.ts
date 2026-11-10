@@ -11,6 +11,10 @@ export const useInstallInstance = () => {
     mutationFn: ({ id, force }: { id: string; force?: boolean }) =>
       instanceCommands.install(id, force ?? false),
     onError: (err, { id }) => {
+      if (isCancelledError(err)) {
+        return;
+      }
+
       showError({
         title: t('instance.removeError', { id }),
         err,

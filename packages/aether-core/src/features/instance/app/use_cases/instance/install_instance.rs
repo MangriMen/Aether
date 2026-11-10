@@ -1,12 +1,13 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
+use tokio_util::sync::CancellationToken;
 
 use crate::features::{
     events::{ProgressBarId, ProgressEventType, ProgressService, ProgressServiceExt},
     instance::{
-        Instance, InstanceError, InstanceId, InstanceInstallService, InstanceInstallStage,
-        InstanceStorage, InstanceStorageExt,
+        InstallCancellations, Instance, InstanceError, InstanceId, InstanceInstallService,
+        InstanceInstallStage, InstanceStorage, InstanceStorageExt,
     },
     minecraft::{
         InstallMinecraftParams, LoaderVersionId, LoaderVersionPreference, LoaderVersionService,
@@ -21,6 +22,7 @@ pub struct InstallInstanceUseCase {
     install_minecraft_service: Arc<dyn MinecraftInstallService>,
     progress_service: Arc<dyn ProgressService>,
     location_info: Arc<LocationInfo>,
+    cancellations: Arc<InstallCancellations>,
 }
 
 impl InstallInstanceUseCase {
@@ -37,7 +39,16 @@ impl InstallInstanceUseCase {
             install_minecraft_service,
             progress_service,
             location_info,
+            cancellations: Arc::default(),
         }
+    }
+
+    /// Install under a registry shared with whoever removes instances, which calls off the
+    /// install of the instance it removes.
+    #[must_use]
+    pub fn with_cancellations(mut self, cancellations: Arc<InstallCancellations>) -> Self {
+        self.cancellations = cancellations;
+        self
     }
 
     async fn handle_success_installation(
@@ -175,18 +186,34 @@ impl InstallInstanceUseCase {
 
         // Under the bar of a pack being installed into the instance, if any. The shared
         // downloads the game waits on are mirrored under this one.
-        let loading_bar = self
-            .progress_service
-            .init_progress_under_safe(
-                parent_bar,
-                ProgressEventType::MinecraftDownload {
-                    instance_id,
-                    instance_name: instance.name().to_string(),
-                },
-                100.0,
-                "Downloading Minecraft".to_string(),
-            )
-            .await;
+        let event_type = ProgressEventType::MinecraftDownload {
+            instance_id,
+            instance_name: instance.name().to_string(),
+        };
+        // A bar of its own can be called off by the user; under a pack's bar the pack's is the
+        // one that is, and its install of the game ends in a point of no return of its own.
+        let (loading_bar, cancel) = match parent_bar {
+            Some(parent) => (
+                self.progress_service
+                    .init_child_progress_safe(
+                        parent.id,
+                        event_type,
+                        100.0,
+                        "Downloading Minecraft".to_string(),
+                    )
+                    .await,
+                CancellationToken::new(),
+            ),
+            None => {
+                self.progress_service
+                    .init_cancellable_progress_safe(
+                        event_type,
+                        100.0,
+                        "Downloading Minecraft".to_string(),
+                    )
+                    .await
+            }
+        };
 
         tracing::info!(
             "Installing instance: \"{}\" (minecraft: \"{}\", modloader: \"{:?}\" \"{:?}\")",
@@ -196,9 +223,14 @@ impl InstallInstanceUseCase {
             instance.loader_version
         );
 
-        let result = self
-            .install_minecraft_service
-            .execute(
+        // Dropped halfway on a call-off: what is downloaded stays, the files are written whole
+        // and the next install takes up where this one stopped.
+        // The button of the bar, or the removal of the instance.
+        let removal = self.cancellations.register(instance.id());
+        let result = tokio::select! {
+            () = cancel.cancelled() => None,
+            () = removal.token.cancelled() => None,
+            result = self.install_minecraft_service.execute(
                 InstallMinecraftParams {
                     game_version: instance.game_version.clone(),
                     loader: instance.loader,
@@ -208,8 +240,12 @@ impl InstallInstanceUseCase {
                 },
                 loading_bar.as_ref(),
                 force,
-            )
-            .await;
+            ) => Some(result),
+        }
+        .map_or(Err(InstanceError::Cancelled), |result| {
+            result.map_err(InstanceError::from)
+        });
+        drop(removal);
 
         match result {
             Ok(()) => {
@@ -233,11 +269,12 @@ impl InstallInstanceUseCase {
                         )
                         .await;
                 }
+                Err(InstanceError::Cancelled) => loading_bar.cancel().await,
                 Err(err) => loading_bar.fail(err.to_string()).await,
             }
         }
 
-        Ok(result?)
+        result
     }
 }
 

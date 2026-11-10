@@ -570,3 +570,33 @@ async fn should_not_fail_the_removal_when_the_icon_asset_cannot_be_deleted() {
         .await
         .unwrap();
 }
+
+#[tokio::test]
+async fn should_call_off_the_install_of_the_game_when_the_instance_is_removed() {
+    let (_temp, location_info, pool) = create_test_infrastructure().await;
+    let instance_id = Uuid::new_v4().to_string();
+    let storage = Arc::new(SqliteInstanceStorage::new(pool.clone()));
+    storage
+        .upsert(&create_instance(&instance_id))
+        .await
+        .unwrap();
+    let installs = Arc::new(crate::features::instance::InstallCancellations::default());
+    let use_case = RemoveInstanceUseCase::new(
+        storage.clone(),
+        Arc::new(NoOpWatcher),
+        Arc::new(FsInstanceFileService::new(
+            location_info,
+            crate::shared::limits::PluginSandboxLimits::default().max_instance_file_bytes,
+        )),
+        Arc::new(SqlitePackStorage::new(pool)),
+        Arc::new(InstanceLocks::new()),
+        no_op_reaper(storage),
+    )
+    .with_cancellations(installs.clone());
+    let id = InstanceId::try_from(instance_id).unwrap();
+    let install = installs.register(&id);
+
+    use_case.execute(id).await.unwrap();
+
+    assert!(install.token.is_cancelled());
+}

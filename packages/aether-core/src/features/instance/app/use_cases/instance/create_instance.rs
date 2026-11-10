@@ -200,11 +200,14 @@ impl CreateInstanceUseCase {
                 instance.name()
             );
 
-            self.event_emitter
-                .emit_safe(WarningEvent {
-                    message: format!("Error creating instance {err}"),
-                })
-                .await;
+            // Called off by the user: not something to warn about.
+            if !matches!(err, InstanceError::Cancelled) {
+                self.event_emitter
+                    .emit_safe(WarningEvent {
+                        message: format!("Error creating instance {err}"),
+                    })
+                    .await;
+            }
 
             if let Err(unwatch_err) = self
                 .instance_watcher_service
