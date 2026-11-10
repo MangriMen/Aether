@@ -13,6 +13,20 @@ use crate::features::instance::domain::{
 };
 use crate::features::minecraft::GameVersion;
 
+/// What a provider says of the download it makes while it resolves a plan (a pack's archive).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum DownloadEvent {
+    /// What the content is called, once the provider knows: before any download starts.
+    Named(String),
+    /// The size the download is expected to have, when it starts.
+    Expected(u64),
+    /// Bytes more received.
+    Received(u64),
+}
+
+/// Told of the downloads made while a plan is resolved, for the bar of the run.
+pub type DownloadReport<'a> = &'a (dyn Fn(DownloadEvent) + Send + Sync);
+
 #[async_trait]
 pub trait ContentProvider: Send + Sync {
     fn metadata(&self) -> &ContentProviderCapabilityMetadata;
@@ -55,11 +69,16 @@ pub trait ContentProvider: Send + Sync {
     /// The full plan for installing or updating content, one mod and a whole modpack alike.
     /// See [`ResolveTarget::Existing`](crate::features::instance::ResolveTarget::Existing) for
     /// when the plan may name a new game for an existing instance.
+    ///
+    /// `report` is told of what the provider downloads meanwhile (a pack's archive), so that
+    /// the run's bar shows its bytes and speed. A provider that downloads nothing, or cannot
+    /// say how far it got (a plugin), leaves it be.
     async fn resolve_install_plan(
         &self,
         params: ResolveInstallPlanParams,
+        report: DownloadReport<'_>,
     ) -> Result<InstallPlan, InstanceError> {
-        let _ = params;
+        let _ = (params, report);
         Err(self.unsupported("resolve_install_plan"))
     }
 
@@ -240,12 +259,15 @@ mod tests {
             let provider = provider.clone();
             async move {
                 provider
-                    .resolve_install_plan(ResolveInstallPlanParams {
-                        content_id: ContentId::try_from("AANobbMI").unwrap(),
-                        version: None,
-                        installed_version: None,
-                        target: ResolveTarget::New,
-                    })
+                    .resolve_install_plan(
+                        ResolveInstallPlanParams {
+                            content_id: ContentId::try_from("AANobbMI").unwrap(),
+                            version: None,
+                            installed_version: None,
+                            target: ResolveTarget::New,
+                        },
+                        &|_| {},
+                    )
                     .await
             }
         });

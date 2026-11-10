@@ -3,6 +3,7 @@
 use crate::features::minecraft::GameVersion;
 
 use crate::features::instance::InstanceName;
+use crate::features::instance::app::PlanProgress;
 use crate::features::instance::{ContentId, ContentVersionId};
 use crate::shared::web_url::HttpsUrl;
 
@@ -76,6 +77,8 @@ struct MockProvider {
     /// The files of every plan it answers with.
     files: Vec<InstallFileEntry>,
     asked: Mutex<Vec<ResolveInstallPlanParams>>,
+    /// Never answers: the download of a pack's archive, still going.
+    hangs: bool,
 }
 
 impl MockProvider {
@@ -93,6 +96,7 @@ impl MockProvider {
             answer,
             files: Vec::new(),
             asked: Mutex::default(),
+            hangs: false,
         })
     }
 
@@ -142,7 +146,11 @@ impl ContentProvider for MockProvider {
     async fn resolve_install_plan(
         &self,
         params: ResolveInstallPlanParams,
+        _: crate::features::instance::DownloadReport<'_>,
     ) -> Result<InstallPlan, InstanceError> {
+        if self.hangs {
+            std::future::pending::<()>().await;
+        }
         let Some(answer) = &self.answer else {
             return Err(self.unsupported("resolve_install_plan"));
         };
@@ -169,10 +177,33 @@ impl ContentProvider for MockProvider {
 #[derive(Default)]
 struct RecordingExecutor {
     calls: Mutex<Vec<PlanOrigin>>,
+    /// Fires when the user calls the run off from its bar.
+    cancel: tokio_util::sync::CancellationToken,
 }
 
 #[async_trait]
 impl InstallPlanExecutorPort for RecordingExecutor {
+    async fn begin(&self, _: &ResolveTarget, _: &ContentId) -> PlanProgress {
+        PlanProgress::without_bar(
+            self.cancel.clone(),
+            Arc::new(crate::features::events::ProgressServiceImpl::new(
+                Arc::new(crate::features::events::test_support::ChannelEmitter(
+                    tokio::sync::mpsc::unbounded_channel().0,
+                )),
+                Arc::new(crate::features::events::infra::InMemoryProgressBarStorage::default()),
+            )),
+        )
+    }
+
+    async fn execute_in(
+        &self,
+        plan: InstallPlan,
+        origin: PlanOrigin,
+        _: &PlanProgress,
+    ) -> Result<InstanceId, InstanceError> {
+        self.execute(plan, origin).await
+    }
+
     async fn execute(
         &self,
         plan: InstallPlan,
@@ -658,4 +689,33 @@ async fn should_fail_when_the_provider_has_no_plans() {
 fn sha1_hash(seed: &str) -> crate::shared::hash::FileHash {
     use crate::shared::hash::{FileHash, HashAlgorithm};
     FileHash::new(HashAlgorithm::Sha1, format!("{:0>40x}", seed.len())).unwrap()
+}
+
+#[tokio::test]
+async fn should_end_as_cancelled_when_the_user_cancels_while_the_plan_is_resolved() {
+    let mut provider = Arc::into_inner(MockProvider::new(Some(answer_as_asked()))).unwrap();
+    provider.hangs = true;
+    let provider = Arc::new(provider);
+    let fixture = Fixture::new(&provider).await;
+
+    let run = fixture
+        .use_case
+        .execute(ContentInstallParams::Modpack(ModpackInstallParams {
+            base: base("project-id"),
+        }));
+    tokio::pin!(run);
+    tokio::select! {
+        result = &mut run => panic!("the provider never answers: {result:?}"),
+        () = tokio::task::yield_now() => {}
+    }
+    fixture.executor.cancel.cancel();
+    let result = tokio::time::timeout(std::time::Duration::from_secs(5), run)
+        .await
+        .expect("the install did not stop");
+
+    assert!(
+        matches!(result, Err(InstanceError::Cancelled)),
+        "{result:?}"
+    );
+    assert!(fixture.executor.calls.lock().unwrap().is_empty());
 }

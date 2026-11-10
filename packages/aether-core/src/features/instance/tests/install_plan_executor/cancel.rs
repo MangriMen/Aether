@@ -15,12 +15,14 @@ use crate::features::{
         test_support::ChannelEmitter,
     },
     instance::{
-        InstallFileEntry, InstallPlan, InstallTarget, InstanceError, InstanceName, NewInstance,
+        ContentId, InstallFileEntry, InstallPlan, InstallTarget, InstanceError, InstanceId,
+        InstanceName, NewInstance, ResolveTarget,
     },
     minecraft::{GameVersion, ModLoader},
 };
 
 use super::common::*;
+use crate::features::instance::ResolveInstallPlanParams;
 
 /// The real progress service, put into `fixture`, and what it stores and sends.
 struct Bars {
@@ -441,4 +443,146 @@ async fn should_download_nothing_when_cancelled_while_resolving_refs() {
         plan_end(&bars.once_all_ended().await).status,
         ProgressStatus::Cancelled
     );
+}
+
+#[tokio::test]
+async fn should_end_the_bar_cancelled_when_cancelled_while_the_plan_is_resolved() {
+    let mut fixture = Fixture::new().await;
+    let mut bars = Bars::install(&mut fixture);
+    let executor = fixture.executor();
+    let progress = executor
+        .begin(&ResolveTarget::New, &ContentId::try_from("pack").unwrap())
+        .await;
+    // Not shown yet: it is shown by the pack's title, which is not known by now.
+    let shown = bars.sent_so_far();
+    assert!(shown.is_empty(), "{shown:?}");
+
+    let result = {
+        let resolving =
+            progress.unless_cancelled(std::future::pending::<Result<(), InstanceError>>());
+        tokio::pin!(resolving);
+        tokio::select! {
+            result = &mut resolving => panic!("nothing ends it: {result:?}"),
+            () = tokio::task::yield_now() => {}
+        }
+        bars.service
+            .cancel_progress(bars.plan_bar().await)
+            .await
+            .unwrap();
+        tokio::time::timeout(Duration::from_secs(5), resolving)
+            .await
+            .expect("the resolving did not stop")
+    };
+    assert!(
+        matches!(result, Err(InstanceError::Cancelled)),
+        "{result:?}"
+    );
+    progress.end(&result).await;
+    drop(progress);
+
+    assert_eq!(
+        plan_end(&bars.once_all_ended().await).status,
+        ProgressStatus::Cancelled
+    );
+}
+
+#[tokio::test]
+async fn should_end_the_bar_once_when_the_run_and_its_caller_both_end_it() {
+    let mut fixture = Fixture::new().await;
+    let mut bars = Bars::install(&mut fixture);
+    fixture.register(&MockProvider::builtin_modrinth()).await;
+    let packwiz = plugin("packwiz");
+    let executor = fixture.executor();
+    let progress = executor
+        .begin(
+            &ResolveTarget::Existing {
+                instance_id: InstanceId::try_from(INSTANCE_ID).unwrap(),
+                game_version: GameVersion::from_static("1.21.1"),
+                loader: Some(ModLoader::Fabric),
+            },
+            &ContentId::try_from("pack").unwrap(),
+        )
+        .await;
+
+    let result = executor
+        .execute_in(
+            existing(vec![direct("https://cdn.example/a.jar", "mods/a.jar")]),
+            pack_of(&packwiz),
+            &progress,
+        )
+        .await;
+    // What the caller does with whatever the run answered.
+    progress.end(&Err::<(), _>(InstanceError::Cancelled)).await;
+    drop(progress);
+
+    result.unwrap();
+    assert_eq!(
+        plan_end(&bars.once_all_ended().await).status,
+        ProgressStatus::Done
+    );
+}
+
+#[tokio::test]
+async fn should_count_the_bytes_of_the_bar_when_the_plan_is_resolved_with_a_download() {
+    let mut fixture = Fixture::new().await;
+    let mut bars = Bars::install(&mut fixture);
+    let provider = MockProvider::builtin_modrinth();
+    let executor = fixture.executor();
+    let progress = executor
+        .begin(&ResolveTarget::New, &ContentId::try_from("pack").unwrap())
+        .await;
+
+    progress
+        .resolve_plan(
+            provider.as_ref(),
+            ResolveInstallPlanParams {
+                content_id: ContentId::try_from("pack").unwrap(),
+                version: None,
+                installed_version: None,
+                target: ResolveTarget::New,
+            },
+        )
+        .await
+        .unwrap();
+
+    // Listeners see the bar, and its cancel button, by the title from its first event.
+    let shown = bars.sent_so_far();
+    let first = shown.first().expect("the bar said nothing");
+    assert!(
+        matches!(&first.event, ProgressEventType::PackDownload { pack_name, .. } if pack_name == "Cool Pack"),
+        "{shown:?}"
+    );
+    assert!(
+        shown
+            .iter()
+            .any(|event| event.stage == Some(ProgressStage::Preparing)
+                && event.cancel == Some(CancelState::Open)),
+        "{shown:?}"
+    );
+
+    let bar = bars.storage.get(bars.plan_bar().await).await.unwrap();
+    assert_eq!((bar.bytes_done, bar.bytes_total), (Some(100), Some(100)));
+    // Captioned by the pack's title, not its id, and the bytes that came after are kept.
+    assert!(
+        matches!(&bar.progress_type, ProgressEventType::PackDownload { pack_name, .. } if pack_name == "Cool Pack"),
+        "{:?}",
+        bar.progress_type
+    );
+}
+
+#[tokio::test]
+async fn should_say_a_plugin_does_the_work_and_stop_the_cancel_when_the_run_is_handed_over() {
+    let mut fixture = Fixture::new().await;
+    let mut bars = Bars::install(&mut fixture);
+    let executor = fixture.executor();
+    let progress = executor
+        .begin(&ResolveTarget::New, &ContentId::try_from("pack").unwrap())
+        .await;
+
+    progress.hand_over_to_plugin().await;
+
+    let shown = bars.sent_so_far();
+    let last = shown.last().expect("the bar said nothing");
+    assert_eq!(last.stage, Some(ProgressStage::ByPlugin), "{shown:?}");
+    assert_eq!(last.cancel, Some(CancelState::Closed), "{shown:?}");
 }

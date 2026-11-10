@@ -49,6 +49,8 @@ pub enum ProgressStage {
     Installing,
     Extracting,
     Finishing,
+    /// A plugin does the work itself, and reports nothing of it.
+    ByPlugin,
 }
 
 /// Where a progress bar is in its life.

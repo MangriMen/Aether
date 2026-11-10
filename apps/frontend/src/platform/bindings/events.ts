@@ -381,7 +381,7 @@ export type ProgressEventDto = {
 
 export type ProgressEventTypeDto = { type: "java_download"; version: number } | { type: "pack_file_download"; instance_path: string; pack_name: string; icon: string | null; pack_version: string } | { type: "pack_download"; instance_path: string; pack_name: string; icon: string | null; pack_id: string | null; pack_version: string | null } | { type: "minecraft_download"; instance_id: string; instance_name: string } | { type: "minecraft_version_download"; version: string } | { type: "minecraft_assets_download"; version: string; file_count: number } | { type: "file_download"; file_name: string } | { type: "instance_update"; instance_id: string; instance_name: string } | { type: "zip_extract"; instance_path: string; instance_name: string } | { type: "launcher_update"; version: string; current_version: string; phase: LauncherUpdatePhaseDto } | { type: "plugin_download"; plugin_name: string };
 
-export type ProgressStageDto = "preparing" | "downloading" | "verifying" | "installing" | "extracting" | "finishing";
+export type ProgressStageDto = "preparing" | "downloading" | "verifying" | "installing" | "extracting" | "finishing" | "by_plugin";
 
 export type ProgressStatusDto = { type: "running" } | { type: "done" } | { type: "failed"; message: string } | { type: "cancelled" };
 

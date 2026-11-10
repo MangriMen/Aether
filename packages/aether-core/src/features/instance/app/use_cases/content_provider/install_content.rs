@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use std::sync::Arc;
 
-use super::install_plan_executor::is_pack_of;
+use super::install_plan_executor::{PlanProgress, is_pack_of};
 use crate::features::instance::app::ports::{InstallContentUseCasePort, InstallPlanExecutorPort};
 use crate::features::minecraft::ModLoader;
 use crate::{
@@ -78,9 +78,18 @@ impl InstallContentUseCase {
         }
         let requested = resolve_params.target.clone();
 
-        let plan = provider.resolve_install_plan(resolve_params).await?;
-        self.execute_plan(&provider, plan, &requested, content_id)
-            .await
+        // Started before the plan is resolved: a pack's archive is downloaded then.
+        let progress = self.plan_executor.begin(&requested, &content_id).await;
+        let result = async {
+            let plan = progress
+                .resolve_plan(provider.as_ref(), resolve_params)
+                .await?;
+            self.execute_plan(&provider, plan, &requested, content_id, &progress)
+                .await
+        }
+        .await;
+        progress.end(&result).await;
+        result
     }
 
     /// The version of `content_id` from `provider_id`'s platform recorded in the instance's pack
@@ -106,6 +115,7 @@ impl InstallContentUseCase {
         plan: InstallPlan,
         requested: &ResolveTarget,
         content_id: ContentId,
+        progress: &PlanProgress,
     ) -> Result<(), InstanceError> {
         // The plugin proxy checks this for plugins; a built-in provider is not behind it, and
         // a plan for another instance than the one asked about would install into it.
@@ -149,7 +159,10 @@ impl InstallContentUseCase {
             provider_id,
             content_id,
         };
-        let instance_id = self.plan_executor.execute(plan, origin.clone()).await?;
+        let instance_id = self
+            .plan_executor
+            .execute_in(plan, origin.clone(), progress)
+            .await?;
 
         self.finish_pack_install(&instance_id, &origin).await
     }

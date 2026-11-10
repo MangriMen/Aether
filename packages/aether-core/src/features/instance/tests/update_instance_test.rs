@@ -244,6 +244,7 @@ impl ContentProvider for PackProvider {
     async fn resolve_install_plan(
         &self,
         params: ResolveInstallPlanParams,
+        _: crate::features::instance::DownloadReport<'_>,
     ) -> Result<InstallPlan, InstanceError> {
         if !self.plans {
             return Err(self.unsupported("resolve_install_plan"));

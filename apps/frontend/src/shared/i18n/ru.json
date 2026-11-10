@@ -316,6 +316,7 @@
     "perSecond": "{{size}}/с",
     "waitingFor": "Ждёт: {{name}}",
     "stage": {
+      "by_plugin": "Выполняет плагин",
       "downloading": "Загрузка",
       "extracting": "Распаковка",
       "finishing": "Завершение",

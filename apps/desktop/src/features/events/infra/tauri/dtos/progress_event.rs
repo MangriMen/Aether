@@ -52,6 +52,7 @@ pub enum ProgressStageDto {
     Installing,
     Extracting,
     Finishing,
+    ByPlugin,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Hash, PartialEq, Eq, Type)]
@@ -173,6 +174,7 @@ impl From<ProgressStage> for ProgressStageDto {
             ProgressStage::Installing => Self::Installing,
             ProgressStage::Extracting => Self::Extracting,
             ProgressStage::Finishing => Self::Finishing,
+            ProgressStage::ByPlugin => Self::ByPlugin,
         }
     }
 }

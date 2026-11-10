@@ -153,6 +153,20 @@ impl ContentProvider for MockProvider {
         })
     }
 
+    /// Downloads an archive of 100 bytes, in two parts, while it resolves an empty plan.
+    async fn resolve_install_plan(
+        &self,
+        _: crate::features::instance::ResolveInstallPlanParams,
+        report: crate::features::instance::app::DownloadReport<'_>,
+    ) -> Result<InstallPlan, InstanceError> {
+        use crate::features::instance::app::DownloadEvent;
+        report(DownloadEvent::Named("Cool Pack".to_owned()));
+        report(DownloadEvent::Expected(100));
+        report(DownloadEvent::Received(40));
+        report(DownloadEvent::Received(60));
+        Ok(existing(Vec::new()))
+    }
+
     async fn check_compatibility(
         &self,
         _: &[Instance],
@@ -789,6 +803,10 @@ impl Fixture {
         plan: InstallPlan,
         origin: PlanOrigin,
     ) -> Result<InstanceId, InstanceError> {
+        self.executor().execute(plan, origin).await
+    }
+
+    pub(super) fn executor(&self) -> InstallPlanExecutor {
         let instance = InstanceBuilder::new(
             InstanceId::try_from(INSTANCE_ID).unwrap(),
             InstanceName::parse("Instance").unwrap(),
@@ -798,7 +816,7 @@ impl Fixture {
         .with_pack_info(self.pack_info.clone())
         .build();
 
-        let executor = InstallPlanExecutor::new(
+        InstallPlanExecutor::new(
             self.registry.clone(),
             Arc::new(FixedSelection(self.selected.clone())),
             Arc::new(OneInstanceStorage {
@@ -817,9 +835,7 @@ impl Fixture {
             self.remove.clone(),
             self.metadata_cache.clone(),
             self.limits(),
-        );
-
-        executor.execute(plan, origin).await
+        )
     }
 
     pub(super) fn content_file_service(&self) -> Arc<dyn ContentFileService> {

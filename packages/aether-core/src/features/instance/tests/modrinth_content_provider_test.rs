@@ -323,7 +323,7 @@ async fn should_plan_a_mod_as_its_file_with_its_identity_when_resolving_a_mod() 
 
     let plan = fixture
         .provider
-        .resolve_install_plan(params("sodium", existing_fabric()))
+        .resolve_install_plan(params("sodium", existing_fabric()), &|_| {})
         .await
         .unwrap();
 
@@ -363,7 +363,7 @@ async fn should_fill_the_metadata_of_the_project_and_version_when_resolving_a_mo
 
     let plan = fixture
         .provider
-        .resolve_install_plan(params("sodium", existing_fabric()))
+        .resolve_install_plan(params("sodium", existing_fabric()), &|_| {})
         .await
         .unwrap();
 
@@ -421,7 +421,7 @@ async fn should_refuse_a_mod_when_its_file_name_leaves_the_content_folder() {
 
     let result = fixture
         .provider
-        .resolve_install_plan(params("sodium", existing_fabric()))
+        .resolve_install_plan(params("sodium", existing_fabric()), &|_| {})
         .await;
 
     assert!(matches!(
@@ -437,7 +437,7 @@ async fn should_refuse_a_mod_when_the_target_is_a_new_instance() {
 
     let result = fixture
         .provider
-        .resolve_install_plan(params("sodium", ResolveTarget::New))
+        .resolve_install_plan(params("sodium", ResolveTarget::New), &|_| {})
         .await;
 
     assert!(matches!(
@@ -453,7 +453,7 @@ async fn should_plan_a_modpack_from_its_mrpack_when_the_target_is_a_new_instance
 
     let plan = fixture
         .provider
-        .resolve_install_plan(params("pack", ResolveTarget::New))
+        .resolve_install_plan(params("pack", ResolveTarget::New), &|_| {})
         .await
         .unwrap();
 
@@ -520,7 +520,7 @@ async fn should_refuse_a_modpack_when_its_mrpack_is_larger_than_the_limit() {
 
     let err = fixture
         .provider
-        .resolve_install_plan(params("pack", ResolveTarget::New))
+        .resolve_install_plan(params("pack", ResolveTarget::New), &|_| {})
         .await
         .unwrap_err();
 
@@ -550,7 +550,7 @@ async fn should_clear_stale_archives_when_the_plan_points_at_a_fresh_one() {
     let plan = || {
         fixture
             .provider
-            .resolve_install_plan(params("pack", ResolveTarget::New))
+            .resolve_install_plan(params("pack", ResolveTarget::New), &|_| {})
     };
 
     let first = plan().await.unwrap();
@@ -621,7 +621,7 @@ async fn should_install_the_newest_release_of_a_pack_when_a_newer_beta_exists() 
 
     let plan = fixture
         .provider
-        .resolve_install_plan(params("pack", ResolveTarget::New))
+        .resolve_install_plan(params("pack", ResolveTarget::New), &|_| {})
         .await
         .unwrap();
 
@@ -693,10 +693,13 @@ async fn resolve_sodium(versions: Value, installed: &str) -> String {
 
     let plan = fixture
         .provider
-        .resolve_install_plan(ResolveInstallPlanParams {
-            installed_version: Some(installed.try_into().unwrap()),
-            ..params("sodium", existing_fabric())
-        })
+        .resolve_install_plan(
+            ResolveInstallPlanParams {
+                installed_version: Some(installed.try_into().unwrap()),
+                ..params("sodium", existing_fabric())
+            },
+            &|_| {},
+        )
         .await
         .unwrap();
     let [entry] = &plan.files[..] else {
@@ -737,13 +740,13 @@ async fn should_move_the_instance_to_the_game_of_the_pack_when_the_pack_is_updat
     fixture.serve_pack();
     fixture
         .provider
-        .resolve_install_plan(params("pack", ResolveTarget::New))
+        .resolve_install_plan(params("pack", ResolveTarget::New), &|_| {})
         .await
         .unwrap();
 
     let plan = fixture
         .provider
-        .resolve_install_plan(params("pack", existing_fabric()))
+        .resolve_install_plan(params("pack", existing_fabric()), &|_| {})
         .await
         .unwrap();
 

@@ -442,7 +442,7 @@ async fn should_call_the_resolve_install_plan_handler_the_file_names_when_resolv
 
     let plan = fixture
         .proxy
-        .resolve_install_plan(plan_params(existing_target()))
+        .resolve_install_plan(plan_params(existing_target()), &|_| {})
         .await
         .unwrap();
 
@@ -958,7 +958,7 @@ async fn should_report_operations_as_unsupported_when_the_provider_has_no_handle
     assert_unsupported(
         fixture
             .proxy
-            .resolve_install_plan(plan_params(ResolveTarget::New))
+            .resolve_install_plan(plan_params(ResolveTarget::New), &|_| {})
             .await
             .unwrap_err(),
         "resolve_install_plan",
@@ -1044,7 +1044,7 @@ async fn should_refuse_an_answer_when_it_has_the_wrong_shape() {
     assert_refused_with(
         fixture
             .proxy
-            .resolve_install_plan(plan_params(existing_target()))
+            .resolve_install_plan(plan_params(existing_target()), &|_| {})
             .await,
         "the plugin exchanged malformed data",
     );
@@ -1073,7 +1073,7 @@ async fn should_refuse_a_hash_when_it_is_malformed() {
     assert_invalid_answer(
         fixture
             .proxy
-            .resolve_install_plan(plan_params(existing_target()))
+            .resolve_install_plan(plan_params(existing_target()), &|_| {})
             .await,
     );
 }
@@ -1102,7 +1102,7 @@ async fn should_pass_on_the_game_when_a_plan_names_one_for_the_instance() {
 
     let plan = fixture
         .proxy
-        .resolve_install_plan(plan_params(existing_target()))
+        .resolve_install_plan(plan_params(existing_target()), &|_| {})
         .await
         .unwrap();
 
@@ -1147,7 +1147,7 @@ async fn should_refuse_a_plan_when_it_is_for_another_instance() {
         assert_invalid_answer(
             fixture
                 .proxy
-                .resolve_install_plan(plan_params(requested))
+                .resolve_install_plan(plan_params(requested), &|_| {})
                 .await,
         );
     }
@@ -1166,7 +1166,7 @@ async fn should_refuse_a_plan_when_its_instance_id_is_not_a_plain_name() {
 
     let err = fixture
         .proxy
-        .resolve_install_plan(plan_params(existing_target()))
+        .resolve_install_plan(plan_params(existing_target()), &|_| {})
         .await
         .unwrap_err();
 
@@ -1266,7 +1266,7 @@ async fn should_translate_override_paths_when_they_are_in_the_plugin_cache() {
 
     let plan = fixture
         .proxy
-        .resolve_install_plan(plan_params(existing_target()))
+        .resolve_install_plan(plan_params(existing_target()), &|_| {})
         .await
         .unwrap();
 
@@ -1324,7 +1324,7 @@ async fn should_refuse_override_paths_when_they_are_outside_the_plugin_cache() {
         assert_invalid_answer(
             fixture
                 .proxy
-                .resolve_install_plan(plan_params(existing_target()))
+                .resolve_install_plan(plan_params(existing_target()), &|_| {})
                 .await,
         );
     }
@@ -1360,7 +1360,7 @@ async fn should_translate_the_new_instance_icon_when_it_is_in_the_plugin_cache()
 
     let plan = fixture
         .proxy
-        .resolve_install_plan(plan_params(ResolveTarget::New))
+        .resolve_install_plan(plan_params(ResolveTarget::New), &|_| {})
         .await
         .unwrap();
 
@@ -1390,7 +1390,7 @@ async fn should_keep_a_new_instance_when_it_has_no_icon() {
 
     let plan = fixture
         .proxy
-        .resolve_install_plan(plan_params(ResolveTarget::New))
+        .resolve_install_plan(plan_params(ResolveTarget::New), &|_| {})
         .await
         .unwrap();
 
@@ -1428,7 +1428,7 @@ async fn should_refuse_a_new_instance_icon_when_it_is_outside_the_plugin_cache()
         assert_invalid_answer(
             fixture
                 .proxy
-                .resolve_install_plan(plan_params(ResolveTarget::New))
+                .resolve_install_plan(plan_params(ResolveTarget::New), &|_| {})
                 .await,
         );
     }
@@ -1464,7 +1464,7 @@ async fn should_refuse_an_icon_or_override_path_when_it_is_not_plain_names() {
         assert_invalid_answer(
             override_fixture
                 .proxy
-                .resolve_install_plan(plan_params(existing_target()))
+                .resolve_install_plan(plan_params(existing_target()), &|_| {})
                 .await,
         );
 
@@ -1483,7 +1483,7 @@ async fn should_refuse_an_icon_or_override_path_when_it_is_not_plain_names() {
         assert_invalid_answer(
             icon_fixture
                 .proxy
-                .resolve_install_plan(plan_params(ResolveTarget::New))
+                .resolve_install_plan(plan_params(ResolveTarget::New), &|_| {})
                 .await,
         );
     }

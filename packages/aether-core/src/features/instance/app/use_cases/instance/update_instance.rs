@@ -5,6 +5,7 @@ use std::{
 
 use async_trait::async_trait;
 
+use super::super::content_provider::PlanProgress;
 use crate::features::instance::app::ports::{InstallPlanExecutorPort, UpdateInstanceUseCasePort};
 use crate::{
     features::{
@@ -112,13 +113,44 @@ impl UpdateInstanceUseCase {
             game_version: instance.game_version.clone(),
             loader: (instance.loader != ModLoader::Vanilla).then_some(instance.loader),
         };
-        let plan = match provider
-            .resolve_install_plan(ResolveInstallPlanParams {
-                content_id: pack_info.modpack_id.clone(),
-                version: version_id.clone(),
-                installed_version: installed_version_of(pack_info),
-                target: requested.clone(),
-            })
+        // Started before the plan is resolved: the pack's archive is downloaded then.
+        let progress = self
+            .plan_executor
+            .begin(&requested, &pack_info.modpack_id)
+            .await;
+        let result = self
+            .update_by_plan(
+                instance,
+                pack_info,
+                provider.as_ref(),
+                version_id,
+                requested,
+                &progress,
+            )
+            .await;
+        progress.end(&result).await;
+        result
+    }
+
+    async fn update_by_plan(
+        &self,
+        instance: &Instance,
+        pack_info: &PackInfo,
+        provider: &dyn ContentProvider,
+        version_id: Option<ContentVersionId>,
+        requested: ResolveTarget,
+        progress: &PlanProgress,
+    ) -> Result<Updated, InstanceError> {
+        let plan = match progress
+            .resolve_plan(
+                provider,
+                ResolveInstallPlanParams {
+                    content_id: pack_info.modpack_id.clone(),
+                    version: version_id.clone(),
+                    installed_version: installed_version_of(pack_info),
+                    target: requested.clone(),
+                },
+            )
             .await
         {
             Ok(plan) => plan,
@@ -127,6 +159,7 @@ impl UpdateInstanceUseCase {
                 operation: "resolve_install_plan",
                 ..
             }) => {
+                progress.hand_over_to_plugin().await;
                 self.update_by_plugin(instance.id(), pack_info).await?;
                 return Ok(Updated::Updater);
             }
@@ -149,17 +182,18 @@ impl UpdateInstanceUseCase {
         };
         let adopted = self
             .adopt_ownerless_files(
-                provider.as_ref(),
+                provider,
                 instance.id(),
                 &requested,
                 pack_info,
                 &origin,
+                progress,
             )
             .await?;
 
         // The executor rolls a failed plan back to the records it found, the adopted ones; the
         // adoption is part of the update and goes back with it.
-        if let Err(err) = self.plan_executor.execute(plan, origin).await {
+        if let Err(err) = self.plan_executor.execute_in(plan, origin, progress).await {
             self.disown(instance.id(), adopted).await;
             return Err(err);
         }
@@ -209,6 +243,7 @@ impl UpdateInstanceUseCase {
         requested: &ResolveTarget,
         pack_info: &PackInfo,
         origin: &PlanOrigin,
+        progress: &PlanProgress,
     ) -> Result<Vec<(ContentPath, PackFile)>, InstanceError> {
         let records = self.pack_storage.get_pack_files(instance_id).await?;
         let owned = records
@@ -223,16 +258,21 @@ impl UpdateInstanceUseCase {
             return Ok(Vec::new());
         };
 
-        let installed_plan = provider
-            .resolve_install_plan(ResolveInstallPlanParams {
-                content_id: pack_info.modpack_id.clone(),
-                version: Some(installed_version.clone()),
-                installed_version: installed_version_of(pack_info),
-                target: requested.clone(),
-            })
+        let installed_plan = progress
+            .resolve_plan(
+                provider,
+                ResolveInstallPlanParams {
+                    content_id: pack_info.modpack_id.clone(),
+                    version: Some(installed_version.clone()),
+                    installed_version: installed_version_of(pack_info),
+                    target: requested.clone(),
+                },
+            )
             .await;
         let installed_plan = match installed_plan {
             Ok(plan) => plan,
+            // The user's word, not the plan's: the update goes no further.
+            Err(InstanceError::Cancelled) => return Err(InstanceError::Cancelled),
             Err(err) => {
                 tracing::warn!(
                     "Cannot tell the files of pack \"{}\" version \"{}\" in \"{instance_id}\" \
