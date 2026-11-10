@@ -75,8 +75,15 @@ export const LogViewer: Component<LogViewerProps> = (props) => {
   const rowIndexes = createMemo(() =>
     virtualizer.getVirtualItems().map((item) => item.index),
   );
+  // Where each row in view starts; the virtualizer tells when a measured height moved them.
+  const rowStarts = createMemo(
+    () =>
+      new Map(
+        virtualizer.getVirtualItems().map((item) => [item.index, item.start]),
+      ),
+  );
   const rowStart = (index: number) =>
-    virtualizer.measurementsCache[index]?.start ?? index * ROW_HEIGHT;
+    rowStarts().get(index) ?? index * ROW_HEIGHT;
 
   // Rows change height when lines start or stop wrapping.
   createEffect(
