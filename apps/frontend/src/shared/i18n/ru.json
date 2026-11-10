@@ -26,8 +26,7 @@
         "permissionDenied": "Нет доступа к файлу или папке",
         "other": "Ошибка файловой системы: {{details}}"
       },
-      "DUPLICATE_REQUEST": "Это действие уже выполняется",
-      "LAUNCH": "Не удалось запустить лаунчер: {{details}}"
+      "DUPLICATE_REQUEST": "Это действие уже выполняется"
     },
     "auth": {
       "CREDENTIALS_NOT_FOUND": "Аккаунт с ID {{id}} не найден",

@@ -1,6 +1,8 @@
 use serde::Serialize;
 use specta::Type;
 
+use crate::shared::IdempotencyManagerError;
+
 #[derive(Debug, Serialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub enum IoErrorKindDto {
@@ -29,21 +31,13 @@ pub enum ApplicationErrorDto {
         details: String,
     },
 
-    DuplicateRequest {
-        id: String,
-    },
-
-    Launch {
-        details: String,
-    },
+    DuplicateRequest,
 }
 
-impl From<&crate::shared::IdempotencyManagerError> for ApplicationErrorDto {
-    fn from(value: &crate::shared::IdempotencyManagerError) -> Self {
+impl From<&IdempotencyManagerError> for ApplicationErrorDto {
+    fn from(value: &IdempotencyManagerError) -> Self {
         match value {
-            crate::shared::IdempotencyManagerError::DuplicateRequest { id } => {
-                Self::DuplicateRequest { id: id.to_string() }
-            }
+            IdempotencyManagerError::DuplicateRequest { .. } => Self::DuplicateRequest,
         }
     }
 }
@@ -83,16 +77,17 @@ mod tests {
         let value = serde_json::to_value(FrontendError::from(err)).unwrap();
 
         assert_eq!(value["payload"]["code"], "DUPLICATE_REQUEST");
-        assert_eq!(value["payload"]["payload"]["id"], "req-1");
+        // The frontend looks the arguments up by this key: with none, it translates without any.
+        assert!(value["payload"].get("payload").is_none());
     }
 
     #[test]
-    fn should_map_launch_error_to_application_error_instead_of_internal() {
+    fn should_map_a_launch_error_to_a_generic_error_when_it_reaches_the_frontend() {
         let err = crate::Error::LaunchError("port in use".to_string());
 
         let value = serde_json::to_value(FrontendError::from(err)).unwrap();
 
-        assert_eq!(value["type"], "application");
-        assert_eq!(value["payload"]["code"], "LAUNCH");
+        assert_eq!(value["type"], "generic");
+        assert_eq!(value["payload"], "port in use");
     }
 }

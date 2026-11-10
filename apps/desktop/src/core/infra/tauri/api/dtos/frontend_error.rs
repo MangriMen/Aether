@@ -40,12 +40,6 @@ pub enum FrontendError {
 
     /// General errors that are expected and can be shown to the user.
     Generic(String),
-
-    /// Critical or unexpected errors that indicate a logic failure or
-    /// improper error mapping. These should ideally never reach the frontend
-    /// but serve as a safety net to prevent silent crashes.
-    #[allow(dead_code)]
-    Internal(String),
 }
 
 impl From<crate::Error> for FrontendError {
@@ -53,9 +47,8 @@ impl From<crate::Error> for FrontendError {
         match value {
             crate::Error::AppSettingsError(err) => Self::AppSettings(err.into()),
             crate::Error::WindowError(err) => Self::Window(err.into()),
-            crate::Error::LaunchError(details) => {
-                Self::Application(ApplicationErrorDto::Launch { details })
-            }
+            // Raised while the app starts, before any command can carry it to the UI.
+            crate::Error::LaunchError(details) => Self::Generic(details),
             crate::Error::IoError(err) => Self::Application(ApplicationErrorDto::Io {
                 kind: err.kind().into(),
                 details: err.to_string(),

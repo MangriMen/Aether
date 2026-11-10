@@ -29,11 +29,7 @@ export type AppSettingsErrorDto = { code: "CAN_NOT_SET_EFFECT"; payload: {
 export type ApplicationErrorDto = { code: "IO"; payload: {
 	kind: IoErrorKindDto,
 	details: string,
-} } | { code: "DUPLICATE_REQUEST"; payload: {
-	id: string,
-} } | { code: "LAUNCH"; payload: {
-	details: string,
-} };
+} } | { code: "DUPLICATE_REQUEST" };
 
 export type AuthErrorDto = { code: "CREDENTIALS_NOT_FOUND"; payload: {
 	id: string,
@@ -65,13 +61,7 @@ export type FileWatcherErrorDto = { code: "PATH_NOT_FOUND"; payload: {
 
 export type FrontendError = { type: "appSettings"; payload: AppSettingsErrorDto } | { type: "window"; payload: WindowErrorDto } | { type: "application"; payload: ApplicationErrorDto } | { type: "auth"; payload: AuthErrorDto } | { type: "event"; payload: EventErrorDto } | { type: "fileWatcher"; payload: FileWatcherErrorDto } | { type: "instance"; payload: InstanceErrorDto } | { type: "java"; payload: JavaErrorDto } | { type: "minecraft"; payload: MinecraftErrorDto } | { type: "plugin"; payload: PluginErrorDto } | { type: "process"; payload: ProcessErrorDto } | { type: "request"; payload: RequestErrorDto } | { type: "settings"; payload: SettingsErrorDto } | 
 /**  General errors that are expected and can be shown to the user. */
-{ type: "generic"; payload: string } | 
-/**
- *  Critical or unexpected errors that indicate a logic failure or
- *  improper error mapping. These should ideally never reach the frontend
- *  but serve as a safety net to prevent silent crashes.
- */
-{ type: "internal"; payload: string };
+{ type: "generic"; payload: string };
 
 export type InstallJavaDto = {
 	version: number,
