@@ -236,7 +236,7 @@ export const InstanceLogsTab: Component<InstanceLogsTabProps> = (props) => {
   };
 
   return (
-    <div class={cn('gap-3 pt-3 flex min-h-0 flex-col', props.class)}>
+    <div class={cn('gap-2 pt-2 flex min-h-0 flex-col', props.class)}>
       <div class='gap-2 flex items-center'>
         <CombinedTextField
           class='min-w-0 flex-1'
