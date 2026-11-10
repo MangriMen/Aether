@@ -18,7 +18,10 @@ use crate::{
             InstallFileEntry, InstallPlan, Instance, InstanceError, InstanceId, InvalidContentId,
             PackInfo, PackMetadata, PackSource, PlatformId, PluginId, ProviderId, ReleaseChannel,
             ResolveInstallPlanParams, ResolveTarget, ResolvedFile,
-            app::{ContentCompatibilityCheckParams, ContentCompatibilityResult},
+            app::{
+                ContentCompatibilityCheckParams, ContentCompatibilityResult, DownloadEvent,
+                DownloadReport,
+            },
             infra::content_providers::modrinth::{
                 ModrinthMapperError,
                 api_client::{
@@ -282,6 +285,7 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
     async fn cached_mrpack(
         &self,
         version: &ProjectVersionResponse,
+        report: DownloadReport<'_>,
     ) -> Result<PathBuf, InstanceError> {
         let file = Self::primary_file(version)?;
         if !super::mrpack_cache::is_mrpack(Path::new(&file.filename)) {
@@ -308,12 +312,16 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
                 .await
                 .map_err(|err| InstanceError::Storage(err.to_string()))?;
         }
+        if let Ok(size) = u64::try_from(file.size) {
+            report(DownloadEvent::Expected(size));
+        }
+        let on_bytes = |bytes| report(DownloadEvent::Received(bytes));
         self.download_client
             .download_to_file(
                 Request::get(url.as_str()).with_hash(hash),
                 &path,
                 self.max_mrpack_bytes,
-                None,
+                Some(&on_bytes),
             )
             .await
             .map_err(|err| InstanceError::ContentDownloadError(format!("{url}: {err}")))?;
@@ -414,6 +422,7 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
         &self,
         params: ResolveInstallPlanParams,
         project: &ProjectResponse,
+        report: DownloadReport<'_>,
     ) -> Result<InstallPlan, InstanceError> {
         let version = match &params.version {
             Some(version) => self.version_of(&project.id, version).await?,
@@ -425,7 +434,7 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
 
         let project_id = response_id::<ContentId>(&project.id)?;
         let version_id = response_id::<ContentVersionId>(&version.id)?;
-        let archive_path = self.cached_mrpack(&version).await?;
+        let archive_path = self.cached_mrpack(&version, report).await?;
         let index = mrpack::read_index_async(&archive_path).await?;
 
         let metadata = mrpack::pack_metadata(
@@ -605,6 +614,14 @@ impl<RC: RequestClient> ContentProvider for ModrinthContentProvider<RC> {
         &self,
         params: ResolveInstallPlanParams,
     ) -> Result<InstallPlan, InstanceError> {
+        self.resolve_install_plan_reporting(params, &|_| {}).await
+    }
+
+    async fn resolve_install_plan_reporting(
+        &self,
+        params: ResolveInstallPlanParams,
+        report: DownloadReport<'_>,
+    ) -> Result<InstallPlan, InstanceError> {
         let project = self
             .api
             .get_project(&params.content_id)
@@ -617,7 +634,7 @@ impl<RC: RequestClient> ContentProvider for ModrinthContentProvider<RC> {
         })?;
 
         if content_type == ContentType::Modpack {
-            self.resolve_pack_plan(params, &project).await
+            self.resolve_pack_plan(params, &project, report).await
         } else {
             self.resolve_mod_plan(params, content_type, &project).await
         }

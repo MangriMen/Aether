@@ -24,7 +24,7 @@ pub use content_metadata_cache::{
     CONTENT_METADATA_TTL, CachedContentAuthor, CachedContentMetadata, CachedContentVersionMetadata,
     CachedMetadata, ContentMetadataCache,
 };
-pub use content_provider::ContentProvider;
+pub use content_provider::{ContentProvider, DownloadEvent, DownloadReport};
 pub use importer::Importer;
 pub use instance_file_service::InstanceFileService;
 pub use instance_install_service::InstanceInstallService;

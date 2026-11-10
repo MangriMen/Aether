@@ -142,12 +142,15 @@ impl UpdateInstanceUseCase {
         progress: &PlanProgress,
     ) -> Result<Updated, InstanceError> {
         let plan = match progress
-            .unless_cancelled(provider.resolve_install_plan(ResolveInstallPlanParams {
-                content_id: pack_info.modpack_id.clone(),
-                version: version_id.clone(),
-                installed_version: installed_version_of(pack_info),
-                target: requested.clone(),
-            }))
+            .resolve_plan(
+                provider,
+                ResolveInstallPlanParams {
+                    content_id: pack_info.modpack_id.clone(),
+                    version: version_id.clone(),
+                    installed_version: installed_version_of(pack_info),
+                    target: requested.clone(),
+                },
+            )
             .await
         {
             Ok(plan) => plan,
@@ -156,7 +159,7 @@ impl UpdateInstanceUseCase {
                 operation: "resolve_install_plan",
                 ..
             }) => {
-                progress.end(&Ok::<(), InstanceError>(())).await;
+                progress.hand_over_to_plugin().await;
                 self.update_by_plugin(instance.id(), pack_info).await?;
                 return Ok(Updated::Updater);
             }
@@ -256,12 +259,15 @@ impl UpdateInstanceUseCase {
         };
 
         let installed_plan = progress
-            .unless_cancelled(provider.resolve_install_plan(ResolveInstallPlanParams {
-                content_id: pack_info.modpack_id.clone(),
-                version: Some(installed_version.clone()),
-                installed_version: installed_version_of(pack_info),
-                target: requested.clone(),
-            }))
+            .resolve_plan(
+                provider,
+                ResolveInstallPlanParams {
+                    content_id: pack_info.modpack_id.clone(),
+                    version: Some(installed_version.clone()),
+                    installed_version: installed_version_of(pack_info),
+                    target: requested.clone(),
+                },
+            )
             .await;
         let installed_plan = match installed_plan {
             Ok(plan) => plan,

@@ -90,9 +90,9 @@ use crate::{
             ContentProvider, ContentVersionId, FileSide, InstallFileEntry, InstallPlan,
             InstallTarget, Instance, InstanceError, InstanceId, InstanceStorage, OverrideLocation,
             PackFile, PackStorage, PlanOrigin, PlatformProviderSelection, ProviderId,
-            ResolveTarget,
+            ResolveInstallPlanParams, ResolveTarget,
             app::{
-                DISABLED_SUFFIX,
+                DISABLED_SUFFIX, DownloadEvent,
                 ports::{
                     ChangeInstanceGameUseCasePort, ContentMetadataCache, CreateInstanceUseCasePort,
                     InstallPlanExecutorPort, RemoveInstanceUseCasePort,
@@ -198,6 +198,58 @@ impl PlanProgress {
         if let Some(bar) = &self.bar {
             self.service
                 .emit_progress_safe(bar, steps, Some(message))
+                .await;
+        }
+    }
+
+    /// Resolve the plan of `params` with `provider`, unless the user calls the run off first.
+    /// What the provider downloads meanwhile (a pack's archive) is counted in the bar's bytes
+    /// and speed, as the files of the plan are later.
+    pub async fn resolve_plan(
+        &self,
+        provider: &dyn ContentProvider,
+        params: ResolveInstallPlanParams,
+    ) -> Result<InstallPlan, InstanceError> {
+        let (sender, mut received) = tokio::sync::mpsc::unbounded_channel::<DownloadEvent>();
+        let report = move |event| {
+            let _ = sender.send(event);
+        };
+
+        let resolving = async {
+            let plan = provider
+                .resolve_install_plan_reporting(params, &report)
+                .await;
+            // Closes the channel, which ends the reporting below.
+            drop(report);
+            plan
+        };
+        let reporting = async {
+            let Some(bar) = &self.bar else {
+                return;
+            };
+            while let Some(event) = received.recv().await {
+                match event {
+                    DownloadEvent::Expected(bytes) => {
+                        self.service.add_progress_bytes_total_safe(bar, bytes).await;
+                    }
+                    DownloadEvent::Received(bytes) => {
+                        self.service.add_progress_bytes_safe(bar, bytes).await;
+                    }
+                }
+            }
+        };
+
+        self.unless_cancelled(async { futures::join!(resolving, reporting).0 })
+            .await
+    }
+
+    /// The run goes on in a plugin that does the work itself: the bar says so, and shows
+    /// neither speed nor steps. What the plugin does cannot be called off from here.
+    pub async fn hand_over_to_plugin(&self) {
+        if let Some(bar) = &self.bar {
+            self.service.close_cancellation_safe(bar).await;
+            self.service
+                .set_progress_stage_safe(bar, Some(ProgressStage::ByPlugin))
                 .await;
         }
     }

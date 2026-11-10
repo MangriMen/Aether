@@ -13,6 +13,18 @@ use crate::features::instance::domain::{
 };
 use crate::features::minecraft::GameVersion;
 
+/// What a provider says of the download it makes while it resolves a plan (a pack's archive).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DownloadEvent {
+    /// The size the download is expected to have, when it starts.
+    Expected(u64),
+    /// Bytes more received.
+    Received(u64),
+}
+
+/// Told of the downloads made while a plan is resolved, for the bar of the run.
+pub type DownloadReport<'a> = &'a (dyn Fn(DownloadEvent) + Send + Sync);
+
 #[async_trait]
 pub trait ContentProvider: Send + Sync {
     fn metadata(&self) -> &ContentProviderCapabilityMetadata;
@@ -61,6 +73,18 @@ pub trait ContentProvider: Send + Sync {
     ) -> Result<InstallPlan, InstanceError> {
         let _ = params;
         Err(self.unsupported("resolve_install_plan"))
+    }
+
+    /// As [`Self::resolve_install_plan`], telling `report` of what the provider downloads
+    /// meanwhile, so that the run's bar shows its bytes and speed. A provider that reports
+    /// nothing (a plugin's) keeps the default, which only resolves.
+    async fn resolve_install_plan_reporting(
+        &self,
+        params: ResolveInstallPlanParams,
+        report: DownloadReport<'_>,
+    ) -> Result<InstallPlan, InstanceError> {
+        let _ = report;
+        self.resolve_install_plan(params).await
     }
 
     /// A pack's description without resolving its files: the preview before installing, and

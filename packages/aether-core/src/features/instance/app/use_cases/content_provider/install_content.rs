@@ -82,7 +82,7 @@ impl InstallContentUseCase {
         let progress = self.plan_executor.begin(&requested, &content_id).await;
         let result = async {
             let plan = progress
-                .unless_cancelled(provider.resolve_install_plan(resolve_params))
+                .resolve_plan(provider.as_ref(), resolve_params)
                 .await?;
             self.execute_plan(&provider, plan, &requested, content_id, &progress)
                 .await

@@ -316,6 +316,7 @@
     "perSecond": "{{size}}/s",
     "waitingFor": "Waiting: {{name}}",
     "stage": {
+      "by_plugin": "Done by a plugin",
       "downloading": "Downloading",
       "extracting": "Extracting",
       "finishing": "Finishing",

@@ -113,6 +113,14 @@ export const ProgressCard: Component<ProgressCardProps> = (props) => {
 
   const percentStr = createMemo(() => `${Math.round(clampedValue() * 100)}%`);
 
+  // Neither says anything then: a plugin reports no steps, and while the plan is resolved
+  // (a pack's archive downloads) the bar has none to count yet.
+  const showsPercent = createMemo(
+    () =>
+      local.payload.stage !== 'by_plugin' &&
+      local.payload.stage !== 'preparing',
+  );
+
   const bytesStr = createMemo(() =>
     formatProgressBytes(local.payload, {
       formatSize: (bytes) => formatBytes(bytes, locale()),
@@ -189,7 +197,7 @@ export const ProgressCard: Component<ProgressCardProps> = (props) => {
           <Show when={isSmall() && bytesStr()}>
             <span>{bytesStr()}</span>
           </Show>
-          {percentStr()}
+          <Show when={showsPercent()}>{percentStr()}</Show>
           <Show when={cancelState()}>
             {(state) => (
               <CombinedTooltip

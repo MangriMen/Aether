@@ -22,6 +22,7 @@ use crate::features::{
 };
 
 use super::common::*;
+use crate::features::instance::ResolveInstallPlanParams;
 
 /// The real progress service, put into `fixture`, and what it stores and sends.
 struct Bars {
@@ -524,4 +525,48 @@ async fn should_end_the_bar_once_when_the_run_and_its_caller_both_end_it() {
         plan_end(&bars.once_all_ended().await).status,
         ProgressStatus::Done
     );
+}
+
+#[tokio::test]
+async fn should_count_the_bytes_of_the_bar_when_the_plan_is_resolved_with_a_download() {
+    let mut fixture = Fixture::new().await;
+    let bars = Bars::install(&mut fixture);
+    let provider = MockProvider::builtin_modrinth();
+    let executor = fixture.executor();
+    let progress = executor
+        .begin(&ResolveTarget::New, &ContentId::try_from("pack").unwrap())
+        .await;
+
+    progress
+        .resolve_plan(
+            provider.as_ref(),
+            ResolveInstallPlanParams {
+                content_id: ContentId::try_from("pack").unwrap(),
+                version: None,
+                installed_version: None,
+                target: ResolveTarget::New,
+            },
+        )
+        .await
+        .unwrap();
+
+    let bar = bars.storage.get(bars.plan_bar().await).await.unwrap();
+    assert_eq!((bar.bytes_done, bar.bytes_total), (Some(100), Some(100)));
+}
+
+#[tokio::test]
+async fn should_say_a_plugin_does_the_work_and_stop_the_cancel_when_the_run_is_handed_over() {
+    let mut fixture = Fixture::new().await;
+    let mut bars = Bars::install(&mut fixture);
+    let executor = fixture.executor();
+    let progress = executor
+        .begin(&ResolveTarget::New, &ContentId::try_from("pack").unwrap())
+        .await;
+
+    progress.hand_over_to_plugin().await;
+
+    let shown = bars.sent_so_far();
+    let last = shown.last().expect("the bar said nothing");
+    assert_eq!(last.stage, Some(ProgressStage::ByPlugin), "{shown:?}");
+    assert_eq!(last.cancel, Some(CancelState::Closed), "{shown:?}");
 }

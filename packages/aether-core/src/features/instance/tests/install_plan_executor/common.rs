@@ -153,6 +153,19 @@ impl ContentProvider for MockProvider {
         })
     }
 
+    /// Downloads an archive of 100 bytes, in two parts, while it resolves an empty plan.
+    async fn resolve_install_plan_reporting(
+        &self,
+        _: crate::features::instance::ResolveInstallPlanParams,
+        report: crate::features::instance::app::DownloadReport<'_>,
+    ) -> Result<InstallPlan, InstanceError> {
+        use crate::features::instance::app::DownloadEvent;
+        report(DownloadEvent::Expected(100));
+        report(DownloadEvent::Received(40));
+        report(DownloadEvent::Received(60));
+        Ok(existing(Vec::new()))
+    }
+
     async fn check_compatibility(
         &self,
         _: &[Instance],
