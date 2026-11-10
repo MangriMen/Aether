@@ -29,6 +29,10 @@ impl<IS: InstanceStorage> InstanceStorage for EventEmittingInstanceStorage<IS> {
         Ok(self.instance_storage.get(id).await?)
     }
 
+    async fn stored_ids(&self) -> Result<Vec<String>, InstanceError> {
+        self.instance_storage.stored_ids().await
+    }
+
     async fn upsert(&self, instance: &Instance) -> Result<(), InstanceError> {
         self.instance_storage.upsert(instance).await?;
 

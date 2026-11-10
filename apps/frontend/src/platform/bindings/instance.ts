@@ -105,6 +105,8 @@ export type BrokenInstanceReasonDto = { code: "INVALID_ID" } | { code: "INVALID_
 	column: string,
 } } | { code: "UNREADABLE_FILE"; payload: {
 	details: string,
+} } | { code: "LEGACY_ID_MISMATCH"; payload: {
+	file_id: string,
 } } | { code: "NOT_MIGRATED" };
 
 export type CapabilityEntryDto<C> = {

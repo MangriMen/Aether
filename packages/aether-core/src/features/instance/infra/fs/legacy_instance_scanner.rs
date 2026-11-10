@@ -1,12 +1,12 @@
 use std::{collections::HashSet, sync::Arc};
 
-use tracing::warn;
+use tracing::debug;
 
 use crate::{
     features::{
         instance::{
             BrokenInstance, BrokenInstanceOrigin, BrokenInstanceReason, Instance, InstanceError,
-            InstanceId, infra::fs::instance::InstanceV2,
+            InstanceId, folder_key, infra::fs::instance::InstanceV2,
         },
         settings::LocationInfo,
     },
@@ -31,7 +31,7 @@ impl LegacyInstanceScanner {
     /// `stored_ids`: the ids of every record in the database. Compared without regard to case,
     /// as the file system does, so `Foo` and `foo` are one folder.
     pub async fn scan(&self, stored_ids: &[String]) -> Vec<BrokenInstance> {
-        let stored: HashSet<String> = stored_ids.iter().map(|id| id.to_lowercase()).collect();
+        let stored: HashSet<String> = stored_ids.iter().map(|id| folder_key(id)).collect();
 
         let Ok(mut entries) = tokio::fs::read_dir(self.location_info.instances_dir()).await else {
             return Vec::new();
@@ -47,7 +47,7 @@ impl LegacyInstanceScanner {
             else {
                 continue;
             };
-            if stored.contains(&id.as_str().to_lowercase()) {
+            if stored.contains(&folder_key(id.as_str())) {
                 continue;
             }
             let file = self.location_info.instance_metadata_file(&id);
@@ -56,10 +56,15 @@ impl LegacyInstanceScanner {
             }
 
             let reason = match Self::read(&file).await {
+                Ok(file_instance) if file_instance.id() != &id => {
+                    BrokenInstanceReason::LegacyIdMismatch {
+                        file_id: file_instance.id().to_string(),
+                    }
+                }
                 Ok(_) => BrokenInstanceReason::NotMigrated,
                 Err(reason) => reason,
             };
-            warn!("Instance {id} has a legacy file the launcher does not use: {reason}");
+            debug!("Instance {id} has a legacy file the launcher does not use: {reason}");
             found.push(BrokenInstance {
                 dir: Some(self.location_info.instance_dir(&id)),
                 id: id.to_string(),

@@ -33,6 +33,11 @@ pub enum BrokenInstanceReason {
     #[error("unreadable instance file: {details}")]
     UnreadableFile { details: String },
 
+    /// A legacy instance file in a folder of another name: whose instance it is, is not clear,
+    /// and the launcher does not take it in.
+    #[error("the file belongs to the instance \"{file_id}\"")]
+    LegacyIdMismatch { file_id: String },
+
     /// A legacy instance file that reads fine but was not moved into the database.
     #[error("not moved into the database")]
     NotMigrated,
@@ -56,4 +61,10 @@ pub struct BrokenInstance {
 pub struct BrokenRecord {
     pub id: String,
     pub reason: BrokenInstanceReason,
+}
+
+/// How the file system sees an id: Windows takes no notice of case, nor of dots and spaces at
+/// the end of a name, so `Foo.` is the folder `foo`.
+pub fn folder_key(id: &str) -> String {
+    id.trim_end_matches(['.', ' ']).to_lowercase()
 }

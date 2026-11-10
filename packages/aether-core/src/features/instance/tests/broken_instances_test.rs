@@ -1,15 +1,19 @@
-use std::{path::Path, sync::Arc};
+use std::sync::Arc;
 
 use async_trait::async_trait;
 use tempfile::TempDir;
 
 use crate::features::{
+    events::test_support::ChannelEmitter,
     instance::{
         BrokenInstanceOrigin, BrokenInstanceReason, Instance, InstanceBuilder, InstanceError,
         InstanceId, InstanceName, InstanceStorage, ListBrokenInstancesUseCase,
         ListBrokenInstancesUseCasePort, RemoveBrokenInstanceUseCase,
         RemoveBrokenInstanceUseCasePort, RemoveInstanceUseCasePort,
-        infra::{FsInstanceStorage, LegacyInstanceScanner, SqliteInstanceStorage},
+        infra::{
+            EventEmittingInstanceStorage, FsInstanceStorage, LegacyInstanceScanner,
+            SqliteInstanceStorage,
+        },
     },
     minecraft::{GameVersion, ModLoader},
     settings::LocationInfo,
@@ -221,6 +225,7 @@ fn remover(setup: &Setup) -> (RemoveBrokenInstanceUseCase, Arc<RecordingRemove>)
     let recording = Arc::new(RecordingRemove::default());
     (
         RemoveBrokenInstanceUseCase::new(
+            setup.sqlite.clone(),
             setup.list.clone() as Arc<dyn ListBrokenInstancesUseCasePort>,
             setup.sqlite.clone(),
             recording.clone(),
@@ -270,6 +275,9 @@ async fn should_delete_only_the_record_when_the_id_names_no_folder() {
         .execute(setup.sqlite.pool())
         .await
         .unwrap();
+    // What the id would point at, were it taken for a path.
+    let outside = setup.location_info.instances_dir().join("../x");
+    std::fs::create_dir_all(&outside).unwrap();
     let (remove, recording) = remover(&setup);
 
     remove.execute("../x".to_owned()).await.unwrap();
@@ -279,16 +287,79 @@ async fn should_delete_only_the_record_when_the_id_names_no_folder() {
         "no folder was involved"
     );
     assert!(setup.list.execute().await.unwrap().is_empty());
-    assert!(
-        Path::new(&setup.location_info.instances_dir())
-            .read_dir()
-            .is_err()
-            || setup
-                .location_info
-                .instances_dir()
-                .read_dir()
-                .unwrap()
-                .next()
-                .is_none()
+    assert!(outside.exists(), "no file was touched");
+}
+
+#[tokio::test]
+async fn should_list_the_broken_row_once_when_the_ids_come_through_the_event_wrapper() {
+    let setup = setup().await;
+    broken_row(&setup, "one").await;
+    // As the app has it: the storage the use cases get is the wrapper, not the SQLite one.
+    let (tx, _events) = tokio::sync::mpsc::unbounded_channel();
+    let wrapped: Arc<dyn InstanceStorage> = Arc::new(EventEmittingInstanceStorage::new(
+        Arc::new(ChannelEmitter(tx)),
+        SqliteInstanceStorage::new(setup.sqlite.pool().clone()),
+    ));
+    // The file of the unreadable record is kept, as the migration does.
+    write_readable_legacy(&setup, "one").await;
+    let list = ListBrokenInstancesUseCase::new(
+        wrapped.clone(),
+        setup.sqlite.clone(),
+        Arc::new(LegacyInstanceScanner::new(setup.location_info.clone())),
+        setup.location_info.clone(),
     );
+
+    let found = list.execute().await.unwrap();
+
+    assert_eq!(found.len(), 1, "{found:?}");
+    assert_eq!(wrapped.stored_ids().await.unwrap(), ["one"]);
+}
+
+#[tokio::test]
+async fn should_delete_only_the_record_when_another_record_names_the_same_folder() {
+    let setup = setup().await;
+    // On Windows `Foo` and `foo` are one folder.
+    setup.sqlite.upsert(&instance("Foo")).await.unwrap();
+    broken_row(&setup, "foo").await;
+    let folder = setup
+        .location_info
+        .instance_dir(&InstanceId::try_from("Foo").unwrap());
+    std::fs::create_dir_all(&folder).unwrap();
+    let (remove, recording) = remover(&setup);
+
+    remove.execute("foo".to_owned()).await.unwrap();
+
+    assert!(
+        recording.0.lock().unwrap().is_empty(),
+        "the folder is not removed"
+    );
+    assert!(folder.exists());
+    assert!(
+        setup
+            .sqlite
+            .get(&InstanceId::try_from("Foo").unwrap())
+            .await
+            .is_ok()
+    );
+    assert!(setup.list.execute().await.unwrap().is_empty());
+}
+
+#[tokio::test]
+async fn should_list_a_legacy_file_as_belonging_to_another_instance_when_its_folder_has_another_name()
+ {
+    let setup = setup().await;
+    write_readable_legacy(&setup, "old").await;
+    let copy = legacy_file(&setup, "copy");
+    std::fs::create_dir_all(copy.parent().unwrap()).unwrap();
+    std::fs::copy(legacy_file(&setup, "old"), copy).unwrap();
+
+    let found = listed(&setup).await;
+
+    assert!(found.contains(&(
+        "copy".to_owned(),
+        BrokenInstanceOrigin::LegacyFile,
+        BrokenInstanceReason::LegacyIdMismatch {
+            file_id: "old".to_owned()
+        }
+    )));
 }

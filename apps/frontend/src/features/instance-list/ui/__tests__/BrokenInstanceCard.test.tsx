@@ -70,7 +70,7 @@ afterEach(() => {
 });
 
 describe('BrokenInstanceCard', () => {
-  it('should_show_the_id_and_why_the_instance_cannot_be_read', () => {
+  it('should_show_the_id_and_why_when_the_instance_cannot_be_read', () => {
     const container = mount(make());
 
     expect(container.textContent).toContain('old');

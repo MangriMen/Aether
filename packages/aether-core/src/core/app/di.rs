@@ -697,6 +697,7 @@ impl InstanceCrudPort for AetherContainer {
     }
     fn remove_broken_instance_use_case(&self) -> Arc<dyn RemoveBrokenInstanceUseCasePort> {
         Arc::new(RemoveBrokenInstanceUseCase::new(
+            self.storage().instance_storage.clone(),
             self.list_broken_instances_use_case(),
             self.storage().broken_instances.clone(),
             self.remove_instance_use_case(),

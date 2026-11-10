@@ -230,4 +230,25 @@ mod tests {
 
         assert_eq!(fs.list().await.unwrap().len(), 1, "a copy to recover from");
     }
+
+    #[tokio::test]
+    async fn should_not_take_in_a_file_when_its_folder_has_another_name_than_its_instance() {
+        let (temp, fs) = legacy_storage(&["old"]).await;
+        let location = LocationInfo::new(temp.path().join("settings"), temp.path().to_path_buf());
+        let from = location.instance_metadata_file(&InstanceId::try_from("old").unwrap());
+        let copy = location.instance_metadata_file(&InstanceId::try_from("copy").unwrap());
+        std::fs::create_dir_all(copy.parent().unwrap()).unwrap();
+        std::fs::copy(&from, &copy).unwrap();
+        // The original is gone: the user removed that instance.
+        std::fs::remove_file(&from).unwrap();
+        let sqlite = SqliteInstanceStorage::in_memory().await;
+
+        migrate_instances_to_sqlite(&fs, &sqlite).await.unwrap();
+
+        assert!(
+            sqlite.list().await.unwrap().is_empty(),
+            "nothing comes back"
+        );
+        assert!(copy.exists(), "the file is left where it is");
+    }
 }

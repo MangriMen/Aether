@@ -21,6 +21,7 @@ pub enum BrokenInstanceReasonDto {
     InvalidInstallStage { value: String },
     InvalidColumn { column: String },
     UnreadableFile { details: String },
+    LegacyIdMismatch { file_id: String },
     NotMigrated,
 }
 
@@ -63,6 +64,9 @@ impl From<BrokenInstanceReason> for BrokenInstanceReasonDto {
             }
             BrokenInstanceReason::InvalidColumn { column } => Self::InvalidColumn { column },
             BrokenInstanceReason::UnreadableFile { details } => Self::UnreadableFile { details },
+            BrokenInstanceReason::LegacyIdMismatch { file_id } => {
+                Self::LegacyIdMismatch { file_id }
+            }
             BrokenInstanceReason::NotMigrated => Self::NotMigrated,
         }
     }
@@ -75,7 +79,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn should_serialize_the_reason_by_code_with_its_payload() {
+    fn should_serialize_the_reason_by_code_with_its_payload_when_it_has_one() {
         let dto = BrokenInstanceDto::from(BrokenInstance {
             id: "a".to_owned(),
             dir: Some(PathBuf::from("instances/a")),

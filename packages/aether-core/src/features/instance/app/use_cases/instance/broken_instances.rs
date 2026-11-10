@@ -6,7 +6,9 @@ use crate::features::instance::app::ports::{
     BrokenInstanceSource, InstanceStorage, LegacyInstanceSource, ListBrokenInstancesUseCasePort,
     RemoveBrokenInstanceUseCasePort, RemoveInstanceUseCasePort,
 };
-use crate::features::instance::{BrokenInstance, BrokenInstanceOrigin, InstanceError, InstanceId};
+use crate::features::instance::{
+    BrokenInstance, BrokenInstanceOrigin, InstanceError, InstanceId, folder_key,
+};
 use crate::features::settings::LocationInfo;
 
 /// The instances that are stored but cannot be read, so that the user can see them (and why)
@@ -68,6 +70,7 @@ impl ListBrokenInstancesUseCasePort for ListBrokenInstancesUseCase {
 /// Only an instance that is broken now: a stale list must not remove one that has been repaired
 /// since.
 pub struct RemoveBrokenInstanceUseCase {
+    storage: Arc<dyn InstanceStorage>,
     broken: Arc<dyn ListBrokenInstancesUseCasePort>,
     records: Arc<dyn BrokenInstanceSource>,
     remove_instance: Arc<dyn RemoveInstanceUseCasePort>,
@@ -75,11 +78,13 @@ pub struct RemoveBrokenInstanceUseCase {
 
 impl RemoveBrokenInstanceUseCase {
     pub fn new(
+        storage: Arc<dyn InstanceStorage>,
         broken: Arc<dyn ListBrokenInstancesUseCasePort>,
         records: Arc<dyn BrokenInstanceSource>,
         remove_instance: Arc<dyn RemoveInstanceUseCasePort>,
     ) -> Self {
         Self {
+            storage,
             broken,
             records,
             remove_instance,
@@ -100,11 +105,25 @@ impl RemoveBrokenInstanceUseCasePort for RemoveBrokenInstanceUseCase {
                 instance_id: id.clone(),
             })?;
 
+        let stored = self.storage.stored_ids().await?;
         match InstanceId::try_from(target.id) {
+            // Another record that names the same folder owns it as much: only this record goes.
+            Ok(instance_id) if shares_its_folder(&instance_id, &stored) => {
+                self.records.remove_record(&id).await
+            }
             // The usual removal: the lock, the file watch, the folder, the pack data, the record.
             Ok(instance_id) => self.remove_instance.execute(instance_id).await,
             // No folder can be named by such an id: only its record goes, by the text it has.
             Err(_) => self.records.remove_record(&id).await,
         }
     }
+}
+
+/// Whether a record other than `instance_id` itself names the same folder.
+fn shares_its_folder(instance_id: &InstanceId, stored: &[String]) -> bool {
+    let key = folder_key(instance_id.as_str());
+    stored
+        .iter()
+        .filter(|other| other.as_str() != instance_id.as_str())
+        .any(|other| folder_key(other) == key)
 }

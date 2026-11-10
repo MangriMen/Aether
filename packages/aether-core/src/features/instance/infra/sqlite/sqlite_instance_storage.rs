@@ -81,7 +81,6 @@ impl SqliteInstanceStorage {
     }
 }
 
-#[allow(clippy::too_many_lines)]
 /// What one pass over the `instances` table found.
 #[derive(Default)]
 struct Scan {
@@ -92,13 +91,21 @@ struct Scan {
 /// The timestamps are read as text and parsed per row: one that does not parse makes its
 /// own row broken, where a typed column would fail the read of the whole table.
 fn parse_timestamp(value: &str, column: &str) -> Result<DateTime<Utc>, BrokenInstanceReason> {
+    // The forms the typed decode of `get` takes too, as far as a hand-edited value gets.
     DateTime::parse_from_rfc3339(value)
         .map(|parsed| parsed.with_timezone(&Utc))
         .or_else(|_| {
-            NaiveDateTime::parse_from_str(value, "%Y-%m-%d %H:%M:%S%.f")
-                .map(|naive| naive.and_utc())
+            [
+                "%Y-%m-%d %H:%M:%S%.f",
+                "%Y-%m-%dT%H:%M:%S%.f",
+                "%Y-%m-%d %H:%M",
+            ]
+            .iter()
+            .find_map(|format| NaiveDateTime::parse_from_str(value, format).ok())
+            .map(|naive| naive.and_utc())
+            .ok_or(())
         })
-        .map_err(|_| BrokenInstanceReason::InvalidColumn {
+        .map_err(|()| BrokenInstanceReason::InvalidColumn {
             column: column.to_owned(),
         })
 }
@@ -120,6 +127,7 @@ fn parse_timestamps(
 }
 
 impl SqliteInstanceStorage {
+    #[allow(clippy::too_many_lines)]
     async fn scan(&self) -> Result<Scan, InstanceError> {
         let rows = sqlx::query!(
             r#"

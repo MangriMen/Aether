@@ -373,7 +373,6 @@
       "removeRecord": "The launcher cannot read this instance, and its id names no folder. Only its record in the launcher database is deleted; no files are touched.",
       "removeError": "Failed to delete the damaged instance {{id}}",
       "openFolder": "Open folder",
-      "recheck": "Check again",
       "reasons": {
         "INVALID_ID": "Its id is not a valid folder name",
         "INVALID_GAME_VERSION": "Unknown game version \"{{value}}\"",
@@ -381,7 +380,8 @@
         "INVALID_INSTALL_STAGE": "Unknown install stage \"{{value}}\"",
         "INVALID_COLUMN": "The stored value \"{{column}}\" cannot be read",
         "UNREADABLE_FILE": "Its file cannot be read: {{details}}",
-        "NOT_MIGRATED": "Not moved into the launcher database yet: it is moved the next time the launcher starts"
+        "LEGACY_ID_MISMATCH": "Its file belongs to the instance \"{{file_id}}\"",
+        "NOT_MIGRATED": "The launcher does not use its old file: the instance was not moved into the launcher database"
       }
     },
     "icon": "Instance icon",
