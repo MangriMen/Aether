@@ -719,6 +719,7 @@ pub(super) struct Fixture {
     pub(super) downloader: Arc<RecordingDownloader>,
     pub(super) create_instance: Arc<RecordingCreateInstance>,
     pub(super) change_game: Arc<RecordingChangeGame>,
+    pub(super) game_download: Arc<crate::features::minecraft::test_support::RecordingGameDownload>,
     pub(super) pack_storage: Arc<SqlitePackStorage>,
     pub(super) selected: Option<ProviderId>,
     /// The pack the existing instance was installed from.
@@ -764,6 +765,7 @@ impl Fixture {
             registry: Arc::default(),
             downloader: Arc::default(),
             change_game: Arc::default(),
+            game_download: Arc::default(),
             pack_storage: Arc::new(SqlitePackStorage::in_memory().await),
             selected: None,
             pack_info: None,
@@ -825,6 +827,7 @@ impl Fixture {
             }),
             self.create_instance.clone(),
             self.change_game.clone(),
+            self.game_download.clone(),
             self.downloader.clone(),
             self.content_file_service(),
             self.pack_storage.clone(),

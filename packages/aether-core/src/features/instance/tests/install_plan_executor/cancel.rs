@@ -586,3 +586,45 @@ async fn should_say_a_plugin_does_the_work_and_stop_the_cancel_when_the_run_is_h
     assert_eq!(last.stage, Some(ProgressStage::ByPlugin), "{shown:?}");
     assert_eq!(last.cancel, Some(CancelState::Closed), "{shown:?}");
 }
+
+pub(super) fn new_instance_with_a_game_plan() -> InstallPlan {
+    let mut plan = new_instance_plan(Vec::new());
+    let InstallTarget::New(spec) = &mut plan.target else {
+        unreachable!()
+    };
+    spec.skip_install_instance = None;
+    plan
+}
+
+#[tokio::test]
+async fn should_create_no_instance_when_cancelled_while_the_game_downloads() {
+    let mut fixture = Fixture::new().await;
+    let mut bars = Bars::install(&mut fixture);
+    fixture
+        .game_download
+        .hangs
+        .store(true, std::sync::atomic::Ordering::SeqCst);
+    let packwiz = plugin("packwiz");
+    let run = fixture.execute(new_instance_with_a_game_plan(), &packwiz);
+    tokio::pin!(run);
+    tokio::select! {
+        result = &mut run => panic!("the run cannot end by itself: {result:?}"),
+        () = fixture.game_download.started.notified() => {}
+    }
+
+    bars.service
+        .cancel_progress(bars.plan_bar().await)
+        .await
+        .unwrap();
+    let err = tokio::time::timeout(Duration::from_secs(5), run)
+        .await
+        .expect("the run did not stop")
+        .unwrap_err();
+
+    assert!(matches!(err, InstanceError::Cancelled), "{err:?}");
+    assert!(fixture.create_instance.created.lock().unwrap().is_empty());
+    assert!(fixture.remove.removed.lock().unwrap().is_empty());
+    assert!(fixture.staging_is_clean());
+    let bars = bars.once_all_ended().await;
+    assert_eq!(plan_end(&bars).status, ProgressStatus::Cancelled);
+}

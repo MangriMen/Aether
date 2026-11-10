@@ -810,6 +810,7 @@ impl ContentProviderPort for AetherContainer {
                 self.loader_version_resolver(),
                 self.instance_install_service(),
             )),
+            self.minecraft_install_use_case(),
             Arc::new(ProviderContentDownloader::new(
                 self.params.request_client.clone(),
                 self.plugins().registry.clone(),

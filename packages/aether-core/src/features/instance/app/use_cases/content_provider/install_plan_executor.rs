@@ -99,7 +99,7 @@ use crate::{
                 },
             },
         },
-        minecraft::{GameVersion, ModLoader},
+        minecraft::{GameDownloadParams, GameVersion, MinecraftInstallService, ModLoader},
         settings::LocationInfo,
     },
     shared::{
@@ -124,6 +124,7 @@ pub struct InstallPlanExecutor {
     instance_storage: Arc<dyn InstanceStorage>,
     create_instance: Arc<dyn CreateInstanceUseCasePort>,
     change_instance_game: Arc<dyn ChangeInstanceGameUseCasePort>,
+    minecraft_install: Arc<dyn MinecraftInstallService>,
     content_downloader: Arc<dyn ContentDownloader>,
     content_file_service: Arc<dyn ContentFileService>,
     pack_storage: Arc<dyn PackStorage>,
@@ -785,6 +786,7 @@ impl InstallPlanExecutor {
         instance_storage: Arc<dyn InstanceStorage>,
         create_instance: Arc<dyn CreateInstanceUseCasePort>,
         change_instance_game: Arc<dyn ChangeInstanceGameUseCasePort>,
+        minecraft_install: Arc<dyn MinecraftInstallService>,
         content_downloader: Arc<dyn ContentDownloader>,
         content_file_service: Arc<dyn ContentFileService>,
         pack_storage: Arc<dyn PackStorage>,
@@ -800,6 +802,7 @@ impl InstallPlanExecutor {
             instance_storage,
             create_instance,
             change_instance_game,
+            minecraft_install,
             content_downloader,
             content_file_service,
             pack_storage,
@@ -935,9 +938,11 @@ impl InstallPlanExecutor {
         };
         let mut keep_backups = false;
 
+        let game = self.game_to_download(&target).await;
+
         let result = async {
             let (staged, staged_overrides) = self
-                .stage(diff.to_download, overrides, &staging, progress)
+                .stage(diff.to_download, overrides, game, &staging, progress)
                 .await?;
             let created = matches!(target, InstallTarget::New(_));
             let (instance_id, game_before) = self.prepare_target(target, progress).await?;
@@ -1006,18 +1011,65 @@ impl InstallPlanExecutor {
         result
     }
 
-    /// Download the files and stage the overrides into `staging`, then pass the point of no
-    /// return ([`PlanProgress::commit`]): nothing in the target has changed until then.
+    /// The game the target is about to run, when it is not installed yet: a new instance's, or
+    /// the one an existing instance moves to.
+    async fn game_to_download(&self, target: &InstallTarget) -> Option<GameDownloadParams> {
+        match target {
+            InstallTarget::New(spec) if spec.skip_install_instance != Some(true) => {
+                Some(GameDownloadParams {
+                    game_version: spec.game_version.clone(),
+                    loader: spec.mod_loader,
+                    loader_version: spec.loader_version.clone(),
+                    java_path: None,
+                })
+            }
+            InstallTarget::Existing {
+                instance_id,
+                game: Some(game),
+            } => {
+                let instance = self.instance_storage.get(instance_id).await.ok()?;
+                if game.is_run_by(&instance) {
+                    return None;
+                }
+                Some(GameDownloadParams {
+                    game_version: game.game_version.clone(),
+                    loader: game.mod_loader,
+                    loader_version: game.loader_version.clone(),
+                    java_path: instance.java_path_override(),
+                })
+            }
+            _ => None,
+        }
+    }
+
+    /// Download the files (and the game the target is about to run, which is shared, so it
+    /// is kept when the run is called off) and stage the overrides into `staging`, then pass the
+    /// point of no return ([`PlanProgress::commit`]): nothing in the target has changed until
+    /// then.
     async fn stage(
         &self,
         to_download: Vec<PlannedFile>,
         overrides: PlanOverrides,
+        game: Option<GameDownloadParams>,
         staging: &Path,
         progress: &PlanProgress,
     ) -> Result<(Vec<StagedFile>, Vec<StagedOverride>), InstanceError> {
         let staged = progress
             .unless_cancelled(self.download_all(to_download, staging, progress))
             .await?;
+        if let Some(game) = game {
+            // Under the plan's bar, so that the user can call off the largest download of an
+            // install while nothing is changed yet; the install of the game then finds it all
+            // in place.
+            progress
+                .unless_cancelled(async {
+                    self.minecraft_install
+                        .download_game(game, progress.bar.as_ref())
+                        .await
+                        .map_err(InstanceError::from)
+                })
+                .await?;
+        }
         // Not cut short: the archive is read on a blocking thread, which would go on writing
         // into staging after the run is gone. A call-off waits for it to finish.
         let staged_overrides = plan_overrides::stage_overrides(
