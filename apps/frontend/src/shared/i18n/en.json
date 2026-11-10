@@ -366,6 +366,24 @@
     "searchInstance": "Search instance",
     "unableToGetCompatibilityStatistics": "Unable to get compatibility statistics",
     "changeIcon": "Change icon",
+    "broken": {
+      "title": "Damaged instance",
+      "removeTitle": "Delete the damaged instance {{id}}?",
+      "removeFolder": "The launcher cannot read this instance. Its folder will be deleted from the disk with everything in it, worlds included. You will not be able to recover it.",
+      "removeRecord": "The launcher cannot read this instance, and its id names no folder. Only its record in the launcher database is deleted; no files are touched.",
+      "removeError": "Failed to delete the damaged instance {{id}}",
+      "openFolder": "Open folder",
+      "recheck": "Check again",
+      "reasons": {
+        "INVALID_ID": "Its id is not a valid folder name",
+        "INVALID_GAME_VERSION": "Unknown game version \"{{value}}\"",
+        "INVALID_LOADER": "Unknown mod loader \"{{value}}\"",
+        "INVALID_INSTALL_STAGE": "Unknown install stage \"{{value}}\"",
+        "INVALID_COLUMN": "The stored value \"{{column}}\" cannot be read",
+        "UNREADABLE_FILE": "Its file cannot be read: {{details}}",
+        "NOT_MIGRATED": "Not moved into the launcher database yet: it is moved the next time the launcher starts"
+      }
+    },
     "icon": "Instance icon",
     "selectIcon": "Select icon",
     "removeIcon": "Remove icon"

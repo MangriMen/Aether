@@ -5,6 +5,7 @@ export * from './api/instanceQueryKeys';
 export * from './api/revealInExplorer';
 export * from './api/useInstanceEventsListener';
 export * from './lib/useInstanceActions';
+export * from './model/brokenInstance';
 export * from './model/capabilities';
 export * from './model/dto';
 export * from './model/instance';

@@ -2,11 +2,12 @@ import type { Component, ComponentProps } from 'solid-js';
 
 import { For, Match, Show, splitProps, Switch } from 'solid-js';
 
-import { useInstances } from '@/features/instance';
+import { useBrokenInstances, useInstances } from '@/features/instance';
 import { useTranslation } from '@/shared/i18n';
 import { LoadError, SkeletonList, useArrowNavigation } from '@/shared/ui-kit';
 import { cn, createDelayedFlag } from '@/shared/utils';
 
+import { BrokenInstanceCard } from './BrokenInstanceCard';
 import { InstanceControlledCard } from './InstanceControlledCard';
 
 export type InstancesPanelProps = ComponentProps<'div'>;
@@ -17,11 +18,16 @@ export const InstancesPanel: Component<InstancesPanelProps> = (props) => {
   const [{ t }] = useTranslation();
 
   const instances = useInstances();
+  const brokenInstances = useBrokenInstances();
 
   const { setRef, onKeyDown } = useArrowNavigation();
 
   // A cached or quick load would only flash the skeletons.
   const showSkeleton = createDelayedFlag(() => instances.isLoading);
+
+  // The broken ones are shown whichever way the list of the readable ones went, so an
+  // instance that cannot be read is not missing just because another one failed to load.
+  const hasBroken = () => (brokenInstances.data?.length ?? 0) > 0;
 
   return (
     <div
@@ -45,7 +51,7 @@ export const InstancesPanel: Component<InstancesPanelProps> = (props) => {
             onRetry={() => void instances.refetch()}
           />
         </Match>
-        <Match when={instances.data?.length === 0}>
+        <Match when={instances.data?.length === 0 && !hasBroken()}>
           <p class='text-muted-foreground m-auto text-center whitespace-pre-line'>
             {t('home.noInstances')}
           </p>
@@ -56,6 +62,9 @@ export const InstancesPanel: Component<InstancesPanelProps> = (props) => {
           </For>
         </Match>
       </Switch>
+      <For each={brokenInstances.data}>
+        {(instance) => <BrokenInstanceCard instance={instance} />}
+      </For>
     </div>
   );
 };
