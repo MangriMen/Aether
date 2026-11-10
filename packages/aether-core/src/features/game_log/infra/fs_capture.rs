@@ -1,0 +1,310 @@
+use std::{
+    path::{Path, PathBuf},
+    sync::Arc,
+    time::Duration,
+};
+
+use tokio::{
+    fs::{self, File},
+    io::AsyncWriteExt,
+    sync::{mpsc, oneshot},
+    time::MissedTickBehavior,
+};
+
+use super::line_reader::pump;
+use crate::features::{
+    events::{EventEmitterExt, GameLogEvent, SharedEventEmitter},
+    game_log::{
+        app::{CaptureGameOutputParams, CaptureHandle, GameOutputCaptureService},
+        domain::{CONSOLE_PREFIX, LogSourceKind, LogSourceRef, Redactor},
+    },
+    instance::InstanceId,
+    settings::LocationInfo,
+};
+
+/// Console logs of earlier runs kept next to the one being written.
+const KEPT_RUNS: usize = 5;
+const MAX_FILE_BYTES: u64 = 64 * 1024 * 1024;
+const FILE_SUFFIX: &str = ".log";
+const MAX_BATCH_MESSAGES: usize = 512;
+/// New lines reach the UI in batches this far apart, not one event per line.
+const EMIT_INTERVAL: Duration = Duration::from_millis(100);
+const EMIT_NOW_BYTES: usize = 64 * 1024;
+/// A batch above this is announced by its range only; the UI reads it.
+const MAX_EVENT_TEXT_BYTES: usize = 256 * 1024;
+
+pub struct FsGameOutputCapture {
+    location_info: Arc<LocationInfo>,
+    event_emitter: SharedEventEmitter,
+}
+
+impl FsGameOutputCapture {
+    pub fn new(location_info: Arc<LocationInfo>, event_emitter: SharedEventEmitter) -> Self {
+        Self {
+            location_info,
+            event_emitter,
+        }
+    }
+}
+
+impl GameOutputCaptureService for FsGameOutputCapture {
+    fn start(&self, params: CaptureGameOutputParams) -> CaptureHandle {
+        let (done_tx, done_rx) = oneshot::channel();
+        let dir = self.location_info.game_logs_dir(&params.instance_id);
+        let emitter = self.event_emitter.clone();
+
+        tokio::spawn(async move {
+            capture(&dir, params, emitter).await;
+            let _ = done_tx.send(());
+        });
+
+        CaptureHandle::new(done_rx)
+    }
+}
+
+async fn capture(dir: &Path, params: CaptureGameOutputParams, emitter: SharedEventEmitter) {
+    let redactor = Arc::new(Redactor::new(params.secrets));
+    let (tx, mut rx) = mpsc::channel::<Vec<String>>(1024);
+
+    if let Some(stdout) = params.stdout {
+        tokio::spawn(pump(stdout, redactor.clone(), tx.clone()));
+    }
+    if let Some(stderr) = params.stderr {
+        tokio::spawn(pump(stderr, redactor, tx.clone()));
+    }
+    drop(tx);
+
+    let mut sink = LogSink::open(dir, params.instance_id, emitter).await;
+    let mut tick = tokio::time::interval(EMIT_INTERVAL);
+    tick.set_missed_tick_behavior(MissedTickBehavior::Delay);
+
+    loop {
+        tokio::select! {
+            message = rx.recv() => {
+                let Some(first) = message else { break };
+                let mut text = join_lines(&first);
+                for _ in 0..MAX_BATCH_MESSAGES {
+                    match rx.try_recv() {
+                        Ok(more) => text.push_str(&join_lines(&more)),
+                        Err(_) => break,
+                    }
+                }
+                sink.write(&text).await;
+            }
+            _ = tick.tick() => sink.publish().await,
+        }
+    }
+    sink.publish().await;
+}
+
+fn join_lines(lines: &[String]) -> String {
+    let mut text = String::new();
+    for line in lines {
+        text.push_str(line);
+        text.push('\n');
+    }
+    text
+}
+
+/// A log file that goes away on the first failure while the capture keeps draining. Text is
+/// written to the file before it is announced, so a reader that gets an event can read the range.
+struct LogSink {
+    file: Option<File>,
+    source_id: String,
+    instance_id: InstanceId,
+    emitter: SharedEventEmitter,
+    written: u64,
+    unpublished: String,
+    unpublished_start: u64,
+}
+
+impl LogSink {
+    async fn open(dir: &Path, instance_id: InstanceId, emitter: SharedEventEmitter) -> Self {
+        let (file, source_id) = match open_run_file(dir).await {
+            Ok((file, name)) => {
+                let id = LogSourceRef::new(LogSourceKind::Console, name)
+                    .map(|source| source.id())
+                    .unwrap_or_default();
+                (Some(file), id)
+            }
+            Err(err) => {
+                tracing::warn!(
+                    "cannot create the game console log in {}: {err}",
+                    dir.display()
+                );
+                (None, String::new())
+            }
+        };
+        Self {
+            file,
+            source_id,
+            instance_id,
+            emitter,
+            written: 0,
+            unpublished: String::new(),
+            unpublished_start: 0,
+        }
+    }
+
+    async fn write(&mut self, text: &str) {
+        let Some(file) = self.file.as_mut() else {
+            return;
+        };
+
+        if self.written + text.len() as u64 > MAX_FILE_BYTES {
+            let _ = file
+                .write_all(b"[console log size limit reached, the rest is not recorded]\n")
+                .await;
+            // A file dropped with a write still queued may lose it.
+            let _ = file.flush().await;
+            self.file = None;
+            return;
+        }
+
+        match file.write_all(text.as_bytes()).await {
+            Ok(()) => {
+                if self.unpublished.is_empty() {
+                    self.unpublished_start = self.written;
+                }
+                self.written += text.len() as u64;
+                self.unpublished.push_str(text);
+            }
+            Err(err) => {
+                tracing::warn!("cannot write the game console log: {err}");
+                self.file = None;
+            }
+        }
+
+        if self.unpublished.len() >= EMIT_NOW_BYTES {
+            self.publish().await;
+        }
+    }
+
+    async fn publish(&mut self) {
+        if self.unpublished.is_empty() {
+            return;
+        }
+        if let Some(file) = self.file.as_mut() {
+            let _ = file.flush().await;
+        }
+
+        let text = std::mem::take(&mut self.unpublished);
+        let text: Arc<str> = if text.len() > MAX_EVENT_TEXT_BYTES {
+            Arc::from("")
+        } else {
+            Arc::from(text)
+        };
+        self.emitter
+            .emit_safe(GameLogEvent {
+                instance_id: self.instance_id.clone(),
+                source_id: self.source_id.clone(),
+                start: self.unpublished_start,
+                end: self.written,
+                text,
+            })
+            .await;
+    }
+}
+
+async fn open_run_file(dir: &Path) -> std::io::Result<(File, String)> {
+    fs::create_dir_all(dir).await?;
+    prune_old_runs(dir).await;
+
+    let name = format!(
+        "{CONSOLE_PREFIX}{}{FILE_SUFFIX}",
+        chrono::Local::now().format("%Y%m%d-%H%M%S-%3f")
+    );
+    let file = File::create(dir.join(&name)).await?;
+    Ok((file, name))
+}
+
+/// Leaves room for the file about to be created. Failures are ignored: a log that cannot be
+/// pruned must not stop the game from starting.
+async fn prune_old_runs(dir: &Path) {
+    let Ok(mut entries) = fs::read_dir(dir).await else {
+        return;
+    };
+
+    let mut runs: Vec<PathBuf> = Vec::new();
+    while let Ok(Some(entry)) = entries.next_entry().await {
+        let name = entry.file_name();
+        let name = name.to_string_lossy();
+        if name.starts_with(CONSOLE_PREFIX) && name.ends_with(FILE_SUFFIX) {
+            runs.push(entry.path());
+        }
+    }
+
+    runs.sort();
+    let excess = runs.len().saturating_sub(KEPT_RUNS - 1);
+    for path in runs.into_iter().take(excess) {
+        let _ = fs::remove_file(path).await;
+    }
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::features::events::{Event, test_support::ChannelEmitter};
+
+    #[tokio::test]
+    async fn should_prune_the_oldest_runs_when_more_than_the_kept_count_exist() {
+        let dir = tempfile::tempdir().unwrap();
+        for i in 0..7 {
+            let name = format!("{CONSOLE_PREFIX}2026010{i}-000000-000{FILE_SUFFIX}");
+            std::fs::write(dir.path().join(name), "x").unwrap();
+        }
+        std::fs::write(dir.path().join("keep.txt"), "x").unwrap();
+
+        prune_old_runs(dir.path()).await;
+
+        let mut names: Vec<String> = std::fs::read_dir(dir.path())
+            .unwrap()
+            .map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
+            .collect();
+        names.sort();
+        assert_eq!(names.len(), KEPT_RUNS - 1 + 1);
+        assert!(names.contains(&"keep.txt".to_string()));
+        assert!(!names.iter().any(|n| n.contains("20260100")));
+    }
+
+    #[tokio::test]
+    async fn should_write_normalised_redacted_output_and_announce_the_range_when_published() {
+        let dir = tempfile::tempdir().unwrap();
+        let token = "t".repeat(24);
+        let input = format!(
+            "<log4j:Event logger=\"x\" timestamp=\"1700000000000\" level=\"INFO\" thread=\"main\">\n<log4j:Message><![CDATA[token {token}]]></log4j:Message>\n</log4j:Event>\nplain\n"
+        );
+        let (events_tx, mut events) = mpsc::unbounded_channel();
+        let emitter: SharedEventEmitter = Arc::new(ChannelEmitter(events_tx));
+        let id = InstanceId::try_from("inst".to_string()).unwrap();
+
+        let (tx, mut rx) = mpsc::channel::<Vec<String>>(8);
+        pump(
+            input.as_bytes(),
+            Arc::new(Redactor::new([token.clone()])),
+            tx,
+        )
+        .await;
+        let mut sink = LogSink::open(dir.path(), id, emitter).await;
+        while let Some(lines) = rx.recv().await {
+            sink.write(&join_lines(&lines)).await;
+        }
+        sink.publish().await;
+
+        let file = std::fs::read_dir(dir.path())
+            .unwrap()
+            .next()
+            .unwrap()
+            .unwrap();
+        let text = std::fs::read_to_string(file.path()).unwrap();
+        assert!(text.contains("[main/INFO]: token ***"), "{text}");
+        assert!(text.ends_with("plain\n"));
+        assert!(!text.contains(&token));
+
+        let Event::GameLog(event) = events.recv().await.unwrap() else {
+            panic!("expected a game log event");
+        };
+        assert_eq!((event.start, event.end), (0, text.len() as u64));
+        assert_eq!(&*event.text, text);
+        assert!(event.source_id.starts_with("console:console-"));
+    }
+}

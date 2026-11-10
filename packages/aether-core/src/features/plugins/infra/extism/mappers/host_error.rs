@@ -5,7 +5,7 @@
 //! variant per cause instead of reading it out of text.
 
 use aether_core_plugin_api::v0::{
-    AuthErrorDto, EventErrorDto, FileWatcherErrorDto, HostError, InstanceErrorDto,
+    AuthErrorDto, EventErrorDto, FileWatcherErrorDto, GameLogErrorDto, HostError, InstanceErrorDto,
     InstanceFieldDto, InstanceValidationErrorReasonDto, JavaErrorDto, LoadConfigTypeDto,
     ManifestErrorDto, MinecraftErrorDto, PluginCallErrorDto, PluginErrorDto, PluginSourceTypeDto,
     ProcessErrorDto, RequestErrorDto, SettingsErrorDto,
@@ -17,6 +17,7 @@ use crate::{
         auth::{AuthApplicationError, AuthDomainError},
         events::EventError,
         file_watcher::FileWatcherError,
+        game_log::GameLogError,
         instance::{InstanceError, InstanceField, InstanceValidationErrorReason},
         java::{JavaApplicationError, JavaDomainError},
         minecraft::{MinecraftApplicationError, MinecraftDomainError},
@@ -36,6 +37,7 @@ impl From<&ErrorKind> for HostError {
             ErrorKind::AuthError(err) => err.into(),
             ErrorKind::EventError(err) => err.into(),
             ErrorKind::FileWatcherError(err) => err.into(),
+            ErrorKind::GameLogError(err) => err.into(),
             ErrorKind::InstanceError(err) => err.into(),
             ErrorKind::JavaError(err) => err.into(),
             ErrorKind::MinecraftError(err) => err.into(),
@@ -586,6 +588,26 @@ impl From<&ManifestError> for ManifestErrorDto {
                 }
             }
         }
+    }
+}
+
+// --- game log ---
+
+impl From<&GameLogError> for HostError {
+    fn from(value: &GameLogError) -> Self {
+        Self::GameLogError(match value {
+            GameLogError::InvalidSource { source_id } => GameLogErrorDto::InvalidSource {
+                source_id: source_id.clone(),
+            },
+            GameLogError::SourceNotFound { source_id } => GameLogErrorDto::SourceNotFound {
+                source_id: source_id.clone(),
+            },
+            GameLogError::TooLarge { source_id, limit } => GameLogErrorDto::TooLarge {
+                source_id: source_id.clone(),
+                limit: *limit,
+            },
+            GameLogError::Io(err) => GameLogErrorDto::Io(err.to_string()),
+        })
     }
 }
 

@@ -1,5 +1,5 @@
 use crate::features::events::{
-    CacheEvent, InstanceEvent, PluginEvent, ProcessEvent, ProgressEvent, WarningEvent,
+    CacheEvent, GameLogEvent, InstanceEvent, PluginEvent, ProcessEvent, ProgressEvent, WarningEvent,
 };
 
 // Progress events are throttled and short-lived, so their size is not worth a box on every match.
@@ -12,6 +12,7 @@ pub enum Event {
     Plugin(PluginEvent),
     Warning(WarningEvent),
     Cache(CacheEvent),
+    GameLog(GameLogEvent),
 }
 
 impl From<CacheEvent> for Event {
@@ -111,6 +112,23 @@ impl TryFrom<Event> for ProgressEvent {
     fn try_from(value: Event) -> Result<Self, Self::Error> {
         match value {
             Event::Progress(p) => Ok(p),
+            _ => Err(()),
+        }
+    }
+}
+
+impl From<GameLogEvent> for Event {
+    fn from(value: GameLogEvent) -> Self {
+        Self::GameLog(value)
+    }
+}
+
+impl TryFrom<Event> for GameLogEvent {
+    type Error = ();
+
+    fn try_from(value: Event) -> Result<Self, Self::Error> {
+        match value {
+            Event::GameLog(p) => Ok(p),
             _ => Err(()),
         }
     }

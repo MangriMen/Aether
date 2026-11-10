@@ -46,6 +46,7 @@ pub use app::MinecraftFileHealthService;
 pub use app::MinecraftHealthParams;
 pub use app::MinecraftHealthService;
 pub use app::MinecraftInstallService;
+pub use app::MinecraftLaunchCommand;
 pub use app::MinecraftLaunchCommandService;
 pub use app::ModLoaderProcessor;
 pub use app::VersionManifestService;

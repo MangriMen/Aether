@@ -5,6 +5,10 @@ import {
   events as eventsRawEvents,
 } from '@/platform/bindings/events';
 import {
+  commands as gameLogRawCommands,
+  events as gameLogRawEvents,
+} from '@/platform/bindings/game-log';
+import {
   commands as instanceRawCommands,
   events as instanceRawEvents,
 } from '@/platform/bindings/instance';
@@ -107,6 +111,11 @@ export const instanceCommands = {
   editIcon: withIdempotency(instanceRawCommands.editIcon),
 };
 
+export const gameLogCommands = {
+  listLogs: gameLogRawCommands.listLogs,
+  readLog: gameLogRawCommands.readLog,
+};
+
 export const javaCommands = {
   list: javaRawCommands.list,
   edit: withIdempotency(javaRawCommands.edit),
@@ -140,5 +149,6 @@ export const applicationCommands = {
 // Re-export events from bindings
 export const pluginsEvents = pluginsRawEvents;
 export const instanceEvents = instanceRawEvents;
+export const gameLogEvents = gameLogRawEvents;
 export const processEvents = processRawEvents;
 export const eventsEvents = eventsRawEvents;

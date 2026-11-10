@@ -3,6 +3,7 @@ import { splitProps, type Component } from 'solid-js';
 import type { Instance } from '@/features/instance';
 import type { TabsProps } from '@/shared/ui-kit';
 
+import { InstanceLogsTab } from '@/features/instance-logs';
 import { useTranslation } from '@/shared/i18n';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui-kit';
 import { cn } from '@/shared/utils';
@@ -26,7 +27,10 @@ export const Body: Component<BodyProps> = (props) => {
 
   return (
     <Tabs
-      class={cn('p-0.5 flex flex-col overflow-hidden', local.class)}
+      class={cn(
+        'p-0.5 flex min-h-0 flex-1 flex-col overflow-hidden',
+        local.class,
+      )}
       defaultValue={InstanceContentTabs.Content}
       {...others}
     >
@@ -34,11 +38,21 @@ export const Body: Component<BodyProps> = (props) => {
         <TabsTrigger value={InstanceContentTabs.Content}>
           {t('instance.content')}
         </TabsTrigger>
+        <TabsTrigger value={InstanceContentTabs.Logs}>
+          {t('logs.title')}
+        </TabsTrigger>
       </TabsList>
       <TabsContent
         value={InstanceContentTabs.Content}
         as={ContentTab}
         class='flex-1 overflow-y-auto'
+        instance={local.instance}
+        instancePath={local.instancePath}
+      />
+      <TabsContent
+        value={InstanceContentTabs.Logs}
+        as={InstanceLogsTab}
+        class='min-h-0 flex-1'
         instance={local.instance}
         instancePath={local.instancePath}
       />

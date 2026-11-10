@@ -3,8 +3,8 @@ use specta::Type;
 
 use crate::core::{
     AppSettingsErrorDto, ApplicationErrorDto, AuthErrorDto, EventErrorDto, FileWatcherErrorDto,
-    InstanceErrorDto, JavaErrorDto, MinecraftErrorDto, PluginErrorDto, ProcessErrorDto,
-    RequestErrorDto, SettingsErrorDto, WindowErrorDto,
+    GameLogErrorDto, InstanceErrorDto, JavaErrorDto, MinecraftErrorDto, PluginErrorDto,
+    ProcessErrorDto, RequestErrorDto, SettingsErrorDto, WindowErrorDto,
 };
 
 pub type FrontendResult<T, E = FrontendError> = Result<T, E>;
@@ -23,6 +23,8 @@ pub enum FrontendError {
     Event(EventErrorDto),
 
     FileWatcher(FileWatcherErrorDto),
+
+    GameLog(GameLogErrorDto),
 
     Instance(InstanceErrorDto),
 
@@ -71,6 +73,7 @@ impl From<&aether_core::ErrorKind> for FrontendError {
             aether_core::ErrorKind::AuthError(err) => Self::Auth(err.into()),
             aether_core::ErrorKind::EventError(err) => Self::Event(err.into()),
             aether_core::ErrorKind::FileWatcherError(err) => Self::FileWatcher(err.into()),
+            aether_core::ErrorKind::GameLogError(err) => Self::GameLog(err.into()),
             aether_core::ErrorKind::InstanceError(err) => Self::Instance(err.into()),
             aether_core::ErrorKind::JavaError(err) => Self::Java(err.into()),
             aether_core::ErrorKind::MinecraftError(err) => Self::Minecraft(err.into()),

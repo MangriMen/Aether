@@ -4,11 +4,11 @@
 mod commands;
 
 use commands::{
-    APPLICATION_PLUGIN_NAME, AUTH_PLUGIN_NAME, EVENTS_PLUGIN_NAME, INSTANCE_PLUGIN_NAME,
-    JAVA_PLUGIN_NAME, MINECRAFT_PLUGIN_NAME, PLUGIN_PLUGIN_NAME, PROCESS_PLUGIN_NAME,
-    SETTINGS_PLUGIN_NAME, UPDATE_PLUGIN_NAME, application_commands, auth_commands, events_commands,
-    instance_commands, java_commands, minecraft_commands, plugin_commands, process_commands,
-    settings_commands, update_commands,
+    APPLICATION_PLUGIN_NAME, AUTH_PLUGIN_NAME, EVENTS_PLUGIN_NAME, GAME_LOG_PLUGIN_NAME,
+    INSTANCE_PLUGIN_NAME, JAVA_PLUGIN_NAME, MINECRAFT_PLUGIN_NAME, PLUGIN_PLUGIN_NAME,
+    PROCESS_PLUGIN_NAME, SETTINGS_PLUGIN_NAME, UPDATE_PLUGIN_NAME, application_commands,
+    auth_commands, events_commands, game_log_commands, instance_commands, java_commands,
+    minecraft_commands, plugin_commands, process_commands, settings_commands, update_commands,
 };
 
 macro_rules! to_tokens {
@@ -47,6 +47,7 @@ fn main() {
         application,
         auth,
         events,
+        game_log,
         instance,
         java,
         minecraft,

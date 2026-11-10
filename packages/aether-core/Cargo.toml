@@ -55,6 +55,7 @@ process-wrap = { version = "10.0.1", default-features = false, features = [
 sys-info = "0.9.1"
 sysinfo = "0.40.1"
 tempfile = "3.27.0"
+flate2 = "1.1.10"
 zip = "9.0.2"
 
 # Plugins & Extism

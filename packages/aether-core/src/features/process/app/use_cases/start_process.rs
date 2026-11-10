@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{process::Stdio, sync::Arc};
 
 use async_trait::async_trait;
 use tokio::process::Command;
@@ -6,6 +6,7 @@ use tokio::process::Command;
 use crate::{
     features::{
         events::{EventEmitterExt, ProcessEvent, ProcessEventType, SharedEventEmitter},
+        game_log::{CaptureGameOutputParams, GameOutputCaptureService},
         instance::InstanceId,
         process::{
             ManageProcessService, MinecraftProcessMetadata, ProcessError, ProcessStartService,
@@ -21,6 +22,7 @@ pub struct StartProcessUseCase {
     event_emitter: SharedEventEmitter,
     process_storage: Arc<dyn ProcessStorage>,
     manage_process_service: Arc<dyn ManageProcessService>,
+    game_output_capture: Arc<dyn GameOutputCaptureService>,
 }
 
 impl StartProcessUseCase {
@@ -28,11 +30,13 @@ impl StartProcessUseCase {
         event_emitter: SharedEventEmitter,
         process_storage: Arc<dyn ProcessStorage>,
         manage_process_service: Arc<dyn ManageProcessService>,
+        game_output_capture: Arc<dyn GameOutputCaptureService>,
     ) -> Self {
         Self {
             event_emitter,
             process_storage,
             manage_process_service,
+            game_output_capture,
         }
     }
 
@@ -41,9 +45,23 @@ impl StartProcessUseCase {
         instance_id: InstanceId,
         mut command: Command,
         post_exit_command: String,
+        secrets: Vec<String>,
     ) -> Result<MinecraftProcessMetadata, ProcessError> {
-        let process = command.spawn().map_err(IoError::from)?;
+        command
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped());
+
+        let mut process = command.spawn().map_err(IoError::from)?;
         let metadata = MinecraftProcessMetadata::new(instance_id.clone());
+
+        let capture = self.game_output_capture.start(CaptureGameOutputParams {
+            instance_id: instance_id.clone(),
+            process_id: metadata.uuid(),
+            stdout: process.stdout.take(),
+            stderr: process.stderr.take(),
+            secrets,
+        });
 
         self.process_storage
             .insert(metadata.clone(), process)
@@ -59,6 +77,7 @@ impl StartProcessUseCase {
                     process_id: process_uuid_clone,
                     instance_id: instance_id_clone,
                     post_exit_command,
+                    capture,
                 })
                 .await;
         });
@@ -85,7 +104,9 @@ impl ProcessStartService for StartProcessUseCase {
         instance_id: InstanceId,
         command: Command,
         post_exit_command: String,
+        secrets: Vec<String>,
     ) -> Result<MinecraftProcessMetadata, ProcessError> {
-        self.execute(instance_id, command, post_exit_command).await
+        self.execute(instance_id, command, post_exit_command, secrets)
+            .await
     }
 }

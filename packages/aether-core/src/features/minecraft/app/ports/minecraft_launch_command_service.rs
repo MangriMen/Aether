@@ -1,9 +1,11 @@
 use async_trait::async_trait;
-use tokio::process::Command;
 
 use crate::features::{
     auth::Credential,
-    minecraft::{GetMinecraftLaunchCommandParams, LaunchSettings, MinecraftApplicationError},
+    minecraft::{
+        GetMinecraftLaunchCommandParams, LaunchSettings, MinecraftApplicationError,
+        MinecraftLaunchCommand,
+    },
 };
 
 #[async_trait]
@@ -13,5 +15,5 @@ pub trait MinecraftLaunchCommandService: Send + Sync {
         params: GetMinecraftLaunchCommandParams,
         launch_settings: LaunchSettings,
         credentials: Credential,
-    ) -> Result<Command, MinecraftApplicationError>;
+    ) -> Result<MinecraftLaunchCommand, MinecraftApplicationError>;
 }

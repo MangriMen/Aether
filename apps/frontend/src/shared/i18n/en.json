@@ -48,6 +48,12 @@
       "WATCH_NOT_FOUND": "Watch handle not found",
       "NOTIFY_ERROR": "Failed to send file system notification"
     },
+    "gameLog": {
+      "INVALID_SOURCE": "Unknown log",
+      "SOURCE_NOT_FOUND": "The log no longer exists",
+      "TOO_LARGE": "The log is too large to open",
+      "IO": "Log file I/O error"
+    },
     "instance": {
       "CONTENT_PROVIDER_NOT_FOUND": "Content provider not found",
       "CAPABILITY_OPERATION_ERROR": "Failed to execute component function",
@@ -332,6 +338,33 @@
     "instances": "Instances",
     "noInstances": "No instances available\nIt seems you don`t have any instances at the moment",
     "title": "Home"
+  },
+  "logs": {
+    "copied": "Log copied to clipboard",
+    "copy": "Copy shown lines",
+    "copyFailed": "Failed to copy the log",
+    "earlierRun": "Earlier run",
+    "empty": "There is no log yet\nLaunch the game and its output will appear here",
+    "jumpToEnd": "Jump to the latest lines",
+    "lastRun": "Last run",
+    "level": {
+      "debug": "Debug",
+      "info": "Info",
+      "warn": "Warnings",
+      "error": "Errors"
+    },
+    "live": "Live log",
+    "loadError": "Failed to load the log",
+    "loadingOlder": "Loading older lines…",
+    "noLogs": "No logs",
+    "openFile": "Show the log file in the folder",
+    "searchCut": "Too many matches: showing the latest ones. Narrow the filter.",
+    "title": "Logs",
+    "wrapLines": "Wrap long lines",
+    "search": "Search",
+    "emptyLog": "The log is empty",
+    "noMatches": "Nothing found for these filters",
+    "searching": "Searching…"
   },
   "instance": {
     "content": "Content",

@@ -19,8 +19,8 @@ pub(crate) use infra::get_main_window_state_flags;
 pub(crate) use infra::get_specta_commands;
 pub(crate) use infra::{
     AppSettingsErrorDto, ApplicationErrorDto, AuthErrorDto, EventErrorDto, FileWatcherErrorDto,
-    InstanceErrorDto, JavaErrorDto, MinecraftErrorDto, PluginErrorDto, ProcessErrorDto,
-    RequestErrorDto, SettingsErrorDto, WindowErrorDto,
+    GameLogErrorDto, InstanceErrorDto, JavaErrorDto, MinecraftErrorDto, PluginErrorDto,
+    ProcessErrorDto, RequestErrorDto, SettingsErrorDto, WindowErrorDto,
 };
 pub(crate) use infra::{
     AppSettingsStorageState, ContainerState, EventEmitterState, LocationInfoState,

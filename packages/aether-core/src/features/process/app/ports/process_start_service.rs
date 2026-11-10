@@ -11,5 +11,6 @@ pub trait ProcessStartService: Send + Sync {
         instance_id: InstanceId,
         command: Command,
         post_exit_command: String,
+        secrets: Vec<String>,
     ) -> Result<MinecraftProcessMetadata, ProcessError>;
 }

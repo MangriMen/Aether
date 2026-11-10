@@ -14,11 +14,11 @@ pub use app::services::ProgressServiceImpl;
 
 // Domain models — explicitly re-exported for cross-feature use
 pub use domain::{
-    CacheEvent, CancelState, CancellableBar, Event, EventEmitterExt, EventError, InstanceEvent,
-    InstanceEventType, OptionalProgressBarExt, PluginEvent, ProcessEvent, ProcessEventType,
-    ProgressBar, ProgressBarId, ProgressBarStorageError, ProgressEvent, ProgressEventType,
-    ProgressServiceExt, ProgressStage, ProgressStatus, SharedDownload, SharedProgressWait,
-    WarningEvent,
+    CacheEvent, CancelState, CancellableBar, Event, EventEmitterExt, EventError, GameLogEvent,
+    InstanceEvent, InstanceEventType, OptionalProgressBarExt, PluginEvent, ProcessEvent,
+    ProcessEventType, ProgressBar, ProgressBarId, ProgressBarStorageError, ProgressEvent,
+    ProgressEventType, ProgressServiceExt, ProgressStage, ProgressStatus, SharedDownload,
+    SharedProgressWait, WarningEvent,
 };
 
 #[cfg(test)]

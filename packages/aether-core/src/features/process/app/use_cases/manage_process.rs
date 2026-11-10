@@ -1,10 +1,11 @@
-use std::{process::ExitStatus, sync::Arc};
+use std::{process::ExitStatus, sync::Arc, time::Duration};
 
 use uuid::Uuid;
 
 use crate::{
     features::{
         events::{EventEmitterExt, ProcessEvent, ProcessEventType, SharedEventEmitter},
+        game_log::CaptureHandle,
         instance::InstanceId,
         process::{ManageProcessService, ProcessError, ProcessStorage, TrackProcessService},
         settings::LocationInfo,
@@ -23,7 +24,11 @@ pub struct ManageProcessParams {
     pub process_id: Uuid,
     pub instance_id: InstanceId,
     pub post_exit_command: String,
+    pub capture: CaptureHandle,
 }
+
+/// How long the last output may lag behind the exit before `Finished` is sent anyway.
+const CAPTURE_DRAIN_TIMEOUT: Duration = Duration::from_secs(2);
 
 pub struct ManageProcessUseCase {
     event_emitter: SharedEventEmitter,
@@ -39,6 +44,7 @@ impl ManageProcessService for ManageProcessUseCase {
             process_id,
             instance_id,
             post_exit_command,
+            capture,
         } = params;
 
         let mc_exit_status = self
@@ -48,6 +54,8 @@ impl ManageProcessService for ManageProcessUseCase {
                 instance_id: instance_id.clone(),
             })
             .await;
+
+        capture.wait(CAPTURE_DRAIN_TIMEOUT).await;
 
         let killed = self.process_storage.was_killed(process_id).await;
         self.process_storage.remove(process_id).await?;
