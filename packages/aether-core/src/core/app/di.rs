@@ -12,6 +12,7 @@ use crate::features::{
         EventsFeature, ListProgressBarsUseCase, ListProgressBarsUseCasePort, PluginEvent,
         ProgressBarStorage, ProgressService, SharedEventEmitter,
     },
+    game_log::infra::FsGameOutputCapture,
     instance::{
         ChangeContentStateUseCase, ChangeContentStateUseCasePort, ChangeInstanceGameUseCase,
         CheckContentCompatibilityUseCase, CheckContentCompatibilityUseCasePort, ContentFileService,
@@ -481,6 +482,7 @@ impl AetherContainer {
                     self.event_emitter().clone(),
                     self.storage().process_storage.clone(),
                     self.manage_process_service(),
+                    Arc::new(FsGameOutputCapture::new(self.location_info().clone())),
                 ))
             })
             .clone()

@@ -44,6 +44,15 @@ pub struct GetMinecraftLaunchCommandUseCase {
     location_info: Arc<LocationInfo>,
 }
 
+/// The launcher reads the game's piped output as UTF-8; without these the JVM writes in the
+/// console code page. Placed first, so an argument of the user's for the same property wins.
+const UTF8_OUTPUT_ARGUMENTS: [&str; 4] = [
+    "-Dstdout.encoding=UTF-8",
+    "-Dstderr.encoding=UTF-8",
+    "-Dsun.stdout.encoding=UTF-8",
+    "-Dsun.stderr.encoding=UTF-8",
+];
+
 impl GetMinecraftLaunchCommandUseCase {
     pub fn new(
         loader_version_resolver: Arc<dyn LoaderVersionService>,
@@ -159,6 +168,7 @@ impl GetMinecraftLaunchCommandUseCase {
         if let Some(logging_argument) = get_logging_argument(&version_info, &self.location_info)? {
             jvm_arguments.insert(0, logging_argument);
         }
+        jvm_arguments.splice(0..0, UTF8_OUTPUT_ARGUMENTS.map(String::from));
 
         let minecraft_arguments = get_minecraft_arguments(
             args.get(&vanilla::ArgumentType::Game)

@@ -238,6 +238,18 @@ impl LocationInfo {
         self.instance_dir(id).join("crash-reports")
     }
 
+    /// The game's own logs (`latest.log`, rotated `*.log.gz`).
+    #[inline]
+    pub fn logs_dir(&self, id: &InstanceId) -> PathBuf {
+        self.instance_dir(id).join("logs")
+    }
+
+    /// Per-run captures of the game's console output, kept outside the game's own `logs`.
+    #[inline]
+    pub fn game_logs_dir(&self, id: &InstanceId) -> PathBuf {
+        self.instance_metadata_dir(id).join("logs")
+    }
+
     #[inline]
     pub fn wasm_cache_config(&self) -> PathBuf {
         self.cache_dir().join("wasm.toml")

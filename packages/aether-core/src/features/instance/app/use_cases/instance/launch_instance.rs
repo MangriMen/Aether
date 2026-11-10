@@ -210,6 +210,8 @@ impl LaunchInstanceUseCase {
         )
         .await;
 
+        let secrets = vec![credentials.access_token().to_owned()];
+
         let command = self
             .minecraft_launch_command_service
             .execute(
@@ -238,6 +240,7 @@ impl LaunchInstanceUseCase {
                 instance_id,
                 command,
                 launch_settings.hooks.post_exit().to_owned(),
+                secrets,
             )
             .await;
 
