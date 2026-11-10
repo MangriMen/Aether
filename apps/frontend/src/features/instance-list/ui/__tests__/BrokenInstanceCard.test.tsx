@@ -163,6 +163,17 @@ describe('BrokenInstanceCard', () => {
     expect(mocks.removeBroken).toHaveBeenCalledWith('old');
   });
 
+  it('should_return_the_focus_to_the_card_when_the_confirmation_is_cancelled', async () => {
+    const container = mount(make());
+    openDetails(container);
+    buttonByText('Remove')?.click();
+
+    buttonByText('Cancel')?.click();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    expect(document.activeElement).toBe(card(container));
+  });
+
   it('should_offer_the_folder_and_the_removal_when_the_menu_is_opened', async () => {
     const container = mount(make());
 

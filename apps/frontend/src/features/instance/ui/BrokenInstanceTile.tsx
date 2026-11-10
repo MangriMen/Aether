@@ -49,10 +49,7 @@ export const BrokenInstanceTile = <T extends ValidComponent = 'button'>(
       {...others}
     >
       <div class='flex items-center justify-center'>
-        <InstanceIcon
-          class='size-28 opacity-50 grayscale'
-          alt={t('instance.broken.title')}
-        />
+        <InstanceIcon class='size-28 opacity-50 grayscale' alt='' />
       </div>
       <div class='flex flex-col select-none'>
         <div class='truncate'>{local.instance.id}</div>

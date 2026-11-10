@@ -45,6 +45,12 @@ export const BrokenInstanceCard: Component<BrokenInstanceCardProps> = (
     }
   };
 
+  // Neither dialog has a trigger, so the focus would fall to the page and the arrow keys would stop.
+  const returnFocusToCard = (event: Event) => {
+    event.preventDefault();
+    wrapper?.querySelector('button')?.focus();
+  };
+
   const askToRemove = () => {
     setShowDetails(false);
     setShowRemoveModal(true);
@@ -79,11 +85,7 @@ export const BrokenInstanceCard: Component<BrokenInstanceCardProps> = (
         onOpenChange={setShowDetails}
         onOpenFolder={handleOpenFolder}
         onRemove={askToRemove}
-        // Without a trigger the focus would fall to the page, and the arrow keys would stop.
-        onCloseAutoFocus={(event) => {
-          event.preventDefault();
-          wrapper?.querySelector('button')?.focus();
-        }}
+        onCloseAutoFocus={returnFocusToCard}
       />
 
       <CombinedDialog
@@ -100,6 +102,7 @@ export const BrokenInstanceCard: Component<BrokenInstanceCardProps> = (
         buttonOkText={t('common.remove')}
         onOk={handleRemove}
         onCancel={() => setShowRemoveModal(false)}
+        onCloseAutoFocus={returnFocusToCard}
       />
     </>
   );
