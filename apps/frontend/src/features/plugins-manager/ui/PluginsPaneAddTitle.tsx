@@ -17,12 +17,11 @@ type ProviderOption = {
   label: string;
 };
 
-const PROVIDER_OPTIONS: ProviderOption[] = [
-  { value: 'git_hub', label: 'GitHub' },
-];
-
 export type PluginsPaneAddTitleProps = ComponentProps<'div'> & {
-  provider?: PluginSourceType | null;
+  /** What the backend can install from. */
+  providers: readonly PluginSourceType[];
+  /** The one shown as chosen; none while the list is not there. */
+  provider: PluginSourceType | null;
   onProviderChange: (provider: PluginSourceType) => void;
   onBackClick: () => void;
 };
@@ -31,6 +30,7 @@ export const PluginsPaneAddTitle: Component<PluginsPaneAddTitleProps> = (
   props,
 ) => {
   const [local, others] = splitProps(props, [
+    'providers',
     'provider',
     'onProviderChange',
     'onBackClick',
@@ -39,6 +39,17 @@ export const PluginsPaneAddTitle: Component<PluginsPaneAddTitleProps> = (
 
   const [{ t }] = useTranslation();
 
+  const options = createMemo<ProviderOption[]>(() =>
+    local.providers.map((value) => ({
+      value,
+      label: t(`plugins.providers.${value}`) ?? value,
+    })),
+  );
+
+  const currentOption = createMemo(
+    () => options().find((o) => o.value === local.provider) ?? null,
+  );
+
   const handleChangeProvider = (option: ProviderOption | null) => {
     if (option === null) {
       return;
@@ -46,12 +57,6 @@ export const PluginsPaneAddTitle: Component<PluginsPaneAddTitleProps> = (
 
     local.onProviderChange(option.value);
   };
-
-  const currentOption = createMemo(
-    () =>
-      PROVIDER_OPTIONS.find((o) => o.value === local.provider) ??
-      PROVIDER_OPTIONS[0],
-  );
 
   return (
     <div
@@ -71,10 +76,12 @@ export const PluginsPaneAddTitle: Component<PluginsPaneAddTitleProps> = (
       </div>
       <div class='gap-2 flex'>
         <CombinedSelect
+          aria-label={t('plugins.providers.label')}
           optionValue='value'
           optionTextValue='label'
           value={currentOption()}
-          options={PROVIDER_OPTIONS}
+          options={options()}
+          disabled={options().length === 0}
           onChange={handleChangeProvider}
         />
       </div>

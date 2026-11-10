@@ -1,8 +1,5 @@
-import type {
-  PluginSourceTypeDto,
-  ProviderPluginPreviewDto,
-} from '@/platform/bindings/plugin';
+import type { ProviderPluginPreviewDto } from '@/platform/bindings/plugin';
 
-export type PluginSourceType = PluginSourceTypeDto;
+export type { PluginSourceType } from '@/features/plugins';
 
 export type ProviderPluginPreview = ProviderPluginPreviewDto;

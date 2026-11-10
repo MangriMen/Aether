@@ -6,6 +6,7 @@ import type { Plugin } from '../../model/plugin';
 const commands = vi.hoisted(() => ({
   list: vi.fn(),
   get: vi.fn(),
+  previewPluginFromProvider: vi.fn(),
 }));
 
 vi.mock('@/platform/ipc', () => ({
@@ -178,5 +179,43 @@ describe('plugins cache', () => {
     expect(queryClient.getQueryState(pluginKeys.list())!.isInvalidated).toBe(
       true,
     );
+  });
+});
+
+describe('plugin preview query', () => {
+  let queryClient: QueryClient;
+
+  beforeEach(() => {
+    vi.resetAllMocks();
+    queryClient = new QueryClient();
+  });
+
+  it('should_ask_the_given_provider_when_a_preview_is_fetched', async () => {
+    commands.previewPluginFromProvider.mockResolvedValue({ id: 'p' });
+
+    await queryClient.fetchQuery(
+      pluginsQueries.preview('git_hub', 'owner/repo'),
+    );
+
+    expect(commands.previewPluginFromProvider).toHaveBeenCalledWith(
+      'git_hub',
+      'owner/repo',
+    );
+  });
+
+  it('should_keep_the_preview_of_each_provider_apart_when_the_url_is_the_same', async () => {
+    commands.previewPluginFromProvider
+      .mockResolvedValueOnce({ id: 'from-github' })
+      .mockResolvedValueOnce({ id: 'from-local' });
+
+    await queryClient.fetchQuery(pluginsQueries.preview('git_hub', 'x'));
+    await queryClient.fetchQuery(pluginsQueries.preview('local', 'x'));
+
+    expect(
+      queryClient.getQueryData(pluginsQueries.preview('git_hub', 'x').queryKey),
+    ).toEqual({ id: 'from-github' });
+    expect(
+      queryClient.getQueryData(pluginsQueries.preview('local', 'x').queryKey),
+    ).toEqual({ id: 'from-local' });
   });
 });

@@ -437,6 +437,13 @@
     "custom": "Custom",
     "fromPlugin": "From plugin",
     "noPlugins": "No plugins found",
+    "noProviders": "There is nothing to install plugins from",
+    "unsupportedProvider": "Installing from this source is not supported yet",
+    "providers": {
+      "label": "Source",
+      "git_hub": "GitHub",
+      "local": "Local file"
+    },
     "openPluginsFolder": "Open plugins folder",
     "skippedDirs": {
       "title": "These folders in the plugins folder are not loaded:",

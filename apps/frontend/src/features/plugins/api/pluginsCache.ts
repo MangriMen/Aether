@@ -4,6 +4,7 @@ import { pluginsCommands } from '@/platform/ipc';
 
 import type { Plugin } from '../model/plugin';
 import type { PluginId } from '../model/pluginManifest';
+import type { PluginSourceType } from '../model/pluginSource';
 
 import { invalidateImporters } from './importerQueries';
 import { pluginKeys } from './pluginKeys';
@@ -116,9 +117,15 @@ export const pluginsQueries = {
     queryFn: () => pluginsCommands.checkForUpdates(id),
     enabled: !!id,
   }),
-  preview: (url: string) => ({
-    queryKey: pluginKeys.preview(url),
-    queryFn: () => pluginsCommands.previewPluginFromProvider('git_hub', url),
+  // Registered once at startup and never changed while the app runs.
+  providers: () => ({
+    queryKey: pluginKeys.providers(),
+    queryFn: pluginsCommands.getAvailableProviders,
+    staleTime: Infinity,
+  }),
+  preview: (provider: PluginSourceType, url: string) => ({
+    queryKey: pluginKeys.preview(provider, url),
+    queryFn: () => pluginsCommands.previewPluginFromProvider(provider, url),
     enabled: url.length > 0,
   }),
 } as const;

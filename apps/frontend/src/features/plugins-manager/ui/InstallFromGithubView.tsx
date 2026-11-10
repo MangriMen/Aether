@@ -27,6 +27,9 @@ export type InstallFromGithubViewProps = {
 
 const DEBOUNCE_MS = 500;
 
+/** This view is the one for GitHub, so it names its provider itself. */
+const PROVIDER = 'git_hub' as const;
+
 export const InstallFromGithubView: Component<InstallFromGithubViewProps> = (
   props,
 ) => {
@@ -50,7 +53,7 @@ export const InstallFromGithubView: Component<InstallFromGithubViewProps> = (
     setDebouncedUrl('');
   };
 
-  const previewQuery = usePluginPreview(debouncedUrl);
+  const previewQuery = usePluginPreview(PROVIDER, debouncedUrl);
   const installMutation = useInstallPluginFromProvider();
 
   const previewData = createMemo<ProviderPluginPreview | null | undefined>(
@@ -118,6 +121,7 @@ export const InstallFromGithubView: Component<InstallFromGithubViewProps> = (
 
     try {
       await installMutation.mutateAsync({
+        sourceType: PROVIDER,
         identifier: debouncedUrl(),
         downloadUrl: release.download_url,
         tagName: release.tag_name,
