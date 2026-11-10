@@ -13,15 +13,8 @@ import {
 } from '@/shared/ui-kit';
 import { cn } from '@/shared/utils';
 
+import { LEVEL_CHIP_CLASS } from '../model/constants';
 import { LOG_LEVELS, type LogLevel } from '../model/logLines';
-
-// A pressed level chip takes the colour its lines have in the log.
-const LEVEL_CHIP_CLASS: Record<LogLevel, string> = {
-  debug: '',
-  info: 'data-pressed:bg-info/20 data-pressed:text-info',
-  warn: 'data-pressed:bg-warning/25 data-pressed:text-warning',
-  error: 'data-pressed:bg-destructive/40 data-pressed:text-foreground',
-};
 
 export type LogToolbarProps = {
   levels: LogLevel[];

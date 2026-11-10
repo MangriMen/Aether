@@ -1,17 +1,12 @@
 import type { LogPage } from './gameLog';
 import type { LineFilter, LogLevel, LogLine } from './logLines';
 
+import {
+  FULL_LOAD_BYTES,
+  MAX_CHUNK_LINES,
+  MAX_WINDOW_LINES,
+} from './constants';
 import { parseLogText } from './logLines';
-
-/** Most lines kept in memory; the far end of the window is let go past this. */
-export const MAX_WINDOW_LINES = 20_000;
-/**
- * A log up to this size is read whole, so that filters and search see all of it; a larger one is
- * read in a window that follows the reader. Rows are drawn by a virtual list either way.
- */
-export const FULL_LOAD_BYTES = 32 * 1024 * 1024;
-/** A chunk that grows with live lines is closed at this size, so whole chunks can be dropped. */
-const MAX_CHUNK_LINES = 2_000;
 
 /** Lines of one byte range of the log file. */
 type LogChunk = {

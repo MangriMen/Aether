@@ -4,8 +4,7 @@ import { createEffect, createSignal, on } from 'solid-js';
 
 import type { LogLine } from '../model/logLines';
 
-const LOAD_MORE_THRESHOLD_PX = 400;
-const STICK_THRESHOLD_PX = 40;
+import { LOAD_MORE_THRESHOLD_PX, STICK_THRESHOLD_PX } from '../model/constants';
 
 export type LogScrollProps = {
   scrollElement: () => HTMLDivElement | undefined;

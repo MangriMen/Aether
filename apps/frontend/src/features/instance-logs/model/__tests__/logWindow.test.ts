@@ -2,10 +2,9 @@ import { describe, expect, it } from 'vitest';
 
 import type { LogPage } from '../gameLog';
 
+import { FULL_LOAD_BYTES, MAX_WINDOW_LINES } from '../constants';
 import {
   EMPTY_WINDOW,
-  FULL_LOAD_BYTES,
-  MAX_WINDOW_LINES,
   appendText,
   decideLive,
   holdsWholeFile,

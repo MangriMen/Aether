@@ -7,9 +7,7 @@ import { dayjs } from '@/shared/format';
 import { useTranslation } from '@/shared/i18n';
 
 import { useGameLogSources } from '../api/gameLogApi';
-
-/** The option standing for the newest run's console log, whichever file that is. */
-const LIVE = 'live';
+import { LIVE_SOURCE as LIVE } from '../model/constants';
 
 /** The logs of an instance as the options of one select, and which of them is shown. */
 export const createLogSources = (instanceId: () => string) => {

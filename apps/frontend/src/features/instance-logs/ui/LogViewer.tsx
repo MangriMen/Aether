@@ -13,20 +13,11 @@ import { useTranslation } from '@/shared/i18n';
 import { CombinedTooltip, IconButton } from '@/shared/ui-kit';
 import { cn } from '@/shared/utils';
 
-import type { LogLevel, LogLine } from '../model/logLines';
+import type { LogLine } from '../model/logLines';
 
 import { createLogScroll } from '../lib/createLogScroll';
-
-/** Without wrapping a line is one row of this height; wrapped rows are measured. */
-const ROW_HEIGHT = 22;
-const MAX_ROW_CHARS = 4000;
-
-const LEVEL_CLASS: Record<LogLevel, string> = {
-  debug: 'text-muted-foreground/60',
-  info: 'text-muted-foreground',
-  warn: 'text-warning',
-  error: 'text-destructive',
-};
+import { MAX_ROW_CHARS, ROW_HEIGHT, ROW_OVERSCAN } from '../model/constants';
+import { LogRow } from './LogRow';
 
 export type LogViewerProps = {
   lines: readonly LogLine[];
@@ -53,7 +44,7 @@ export const LogViewer: Component<LogViewerProps> = (props) => {
     get count() {
       return props.lines.length;
     },
-    overscan: 30,
+    overscan: ROW_OVERSCAN,
     getScrollElement: () => scrollRef ?? null,
     estimateSize: () => ROW_HEIGHT,
   });
@@ -103,6 +94,18 @@ export const LogViewer: Component<LogViewerProps> = (props) => {
         ),
   );
 
+  // Without wrapping the list is as wide as its widest line, so that it scrolls sideways.
+  const contentStyle = createMemo(() => ({
+    height: `${virtualizer.getTotalSize()}px`,
+    width: props.wrap ? '100%' : `calc(${widestLine()}ch + 1.5rem)`,
+    'min-width': '100%',
+  }));
+
+  // The row's index attribute is set after the ref is handed over.
+  const measureRow = (element: HTMLDivElement) => {
+    queueMicrotask(() => virtualizer.measureElement(element));
+  };
+
   return (
     <div class={cn('relative flex min-h-0 flex-col', props.class)}>
       <div
@@ -113,38 +116,16 @@ export const LogViewer: Component<LogViewerProps> = (props) => {
         '
         onScroll={handleScroll}
       >
-        <div
-          class='relative'
-          style={{
-            height: `${virtualizer.getTotalSize()}px`,
-            width: props.wrap ? '100%' : `calc(${widestLine()}ch + 1.5rem)`,
-            'min-width': '100%',
-          }}
-        >
+        <div class='relative' style={contentStyle()}>
           <For each={rowIndexes()}>
             {(index) => (
-              <div
-                ref={(node) => {
-                  // The row's index attribute is set after the ref is handed over.
-                  queueMicrotask(() => virtualizer.measureElement(node));
-                }}
-                data-index={index}
-                class={cn(
-                  'px-3 absolute left-0 w-full',
-                  props.wrap
-                    ? 'wrap-anywhere whitespace-pre-wrap'
-                    : 'whitespace-pre',
-                  LEVEL_CLASS[props.lines[index]?.level ?? 'info'],
-                )}
-                style={{
-                  'min-height': `${ROW_HEIGHT}px`,
-                  height: props.wrap ? undefined : `${ROW_HEIGHT}px`,
-                  'line-height': `${ROW_HEIGHT}px`,
-                  transform: `translateY(${rowStart(index)}px)`,
-                }}
-              >
-                {props.lines[index]?.text}
-              </div>
+              <LogRow
+                index={index}
+                line={props.lines[index]}
+                start={rowStart(index)}
+                wrap={props.wrap}
+                onElement={measureRow}
+              />
             )}
           </For>
         </div>

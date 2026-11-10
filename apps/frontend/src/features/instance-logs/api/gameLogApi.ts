@@ -10,14 +10,11 @@ import {
 
 import type { GameLogEvent, LogSource } from '../model/gameLog';
 
+import { PAGE_BYTES } from '../model/constants';
+
 const GAME_LOG_QUERY_KEYS = {
   SOURCES: (instanceId: string) => ['instance', 'logs', instanceId, 'sources'],
 };
-
-/** A page of the log is read in pieces this big, so a huge log never travels at once. */
-const PAGE_BYTES = 256 * 1024;
-/** A log read whole comes in bigger pieces, to be done in fewer round trips. */
-export const WHOLE_FILE_PAGE_BYTES = 1024 * 1024;
 
 export const useGameLogSources = (instanceId: Accessor<string>) =>
   useQuery(() => ({

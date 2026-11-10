@@ -1,15 +1,11 @@
 use std::{
-    io::SeekFrom,
     path::{Path, PathBuf},
     sync::Arc,
     time::UNIX_EPOCH,
 };
 
 use async_trait::async_trait;
-use tokio::{
-    fs::{self, File},
-    io::{AsyncReadExt, AsyncSeekExt},
-};
+use tokio::fs;
 
 use crate::{
     features::{
@@ -23,8 +19,8 @@ use crate::{
     shared::io::domain::IoError,
 };
 
-/// A packed log that unpacks to more than this is refused, so a crafted file cannot fill the disk.
-const MAX_UNPACKED_BYTES: u64 = 256 * 1024 * 1024;
+use super::{gz_cache, page::read_page};
+
 const LATEST_LOG: &str = "latest.log";
 
 pub struct FsGameLogStore {
@@ -84,27 +80,7 @@ impl FsGameLogStore {
             .temp_dir()
             .join("game-logs")
             .join(instance_id.as_str());
-        let name = format!(
-            "{}-{}-{}.log",
-            source.name(),
-            meta.len(),
-            modified_millis(meta).unwrap_or(0)
-        );
-        let target = cache_dir.join(name);
-        if fs::try_exists(&target).await.unwrap_or(false) {
-            return Ok(target);
-        }
-
-        fs::create_dir_all(&cache_dir)
-            .await
-            .map_err(|err| IoError::with_path(err, &cache_dir))?;
-        remove_stale_unpacked(&cache_dir, source.name(), &target).await;
-        let source_id = source.id();
-        let target_for_task = target.clone();
-        tokio::task::spawn_blocking(move || unpack(&path, &target_for_task, &source_id))
-            .await
-            .map_err(|err| IoError::from(std::io::Error::other(err)))??;
-        Ok(target)
+        gz_cache::unpacked_path(cache_dir, source, path, meta).await
     }
 }
 
@@ -182,117 +158,9 @@ async fn list_dir(dir: &Path, kind: LogSourceKind) -> Result<Vec<LogSource>, Gam
     Ok(sources)
 }
 
-fn modified_millis(meta: &std::fs::Metadata) -> Option<i64> {
+pub(super) fn modified_millis(meta: &std::fs::Metadata) -> Option<i64> {
     let since_epoch = meta.modified().ok()?.duration_since(UNIX_EPOCH).ok()?;
     i64::try_from(since_epoch.as_millis()).ok()
-}
-
-/// Drops the unpacked copies of earlier versions of the same log, so the cache keeps one per log.
-async fn remove_stale_unpacked(cache_dir: &Path, name: &str, keep: &Path) {
-    let prefix = format!("{name}-");
-    let Ok(mut entries) = fs::read_dir(cache_dir).await else {
-        return;
-    };
-
-    while let Ok(Some(entry)) = entries.next_entry().await {
-        let file_name = entry.file_name().to_string_lossy().into_owned();
-        // A `.part` file is another read's unpack in progress, which that read renames itself.
-        let is_old_copy = file_name.starts_with(&prefix)
-            && Path::new(&file_name)
-                .extension()
-                .is_none_or(|ext| ext != "part")
-            && entry.path() != keep;
-        if is_old_copy {
-            let _ = fs::remove_file(entry.path()).await;
-        }
-    }
-}
-
-fn unpack(path: &Path, target: &Path, source_id: &str) -> Result<(), GameLogError> {
-    use std::io::Read;
-
-    // Unique, so two reads of the same log unpack side by side instead of over each other.
-    let part = target.with_extension(format!("{}.part", uuid::Uuid::new_v4()));
-    let result = (|| -> std::io::Result<u64> {
-        let input = std::fs::File::open(path)?;
-        let mut decoder = flate2::read::GzDecoder::new(input).take(MAX_UNPACKED_BYTES + 1);
-        let mut output = std::fs::File::create(&part)?;
-        std::io::copy(&mut decoder, &mut output)
-    })();
-
-    let finish = |part: &Path| {
-        let _ = std::fs::remove_file(part);
-    };
-    match result {
-        Ok(written) if written > MAX_UNPACKED_BYTES => {
-            finish(&part);
-            Err(GameLogError::TooLarge {
-                source_id: source_id.to_string(),
-                limit: MAX_UNPACKED_BYTES,
-            })
-        }
-        Ok(_) => std::fs::rename(&part, target).map_err(|err| {
-            finish(&part);
-            IoError::with_path(err, target).into()
-        }),
-        Err(err) => {
-            finish(&part);
-            Err(IoError::with_path(err, path).into())
-        }
-    }
-}
-
-async fn read_page(
-    path: &Path,
-    cursor: LogCursor,
-    max_bytes: u64,
-) -> Result<LogPage, GameLogError> {
-    let io = |err| IoError::with_path(err, path);
-    let mut file = File::open(path).await.map_err(io)?;
-    let size = file.metadata().await.map_err(io)?.len();
-
-    let (start, end) = match cursor {
-        LogCursor::Tail => (size.saturating_sub(max_bytes), size),
-        LogCursor::Before(at) => {
-            let end = at.min(size);
-            (end.saturating_sub(max_bytes), end)
-        }
-        LogCursor::After(at) => {
-            let start = at.min(size);
-            (start, start.saturating_add(max_bytes).min(size))
-        }
-    };
-
-    let mut buf = vec![0u8; usize::try_from(end - start).unwrap_or(0)];
-    file.seek(SeekFrom::Start(start)).await.map_err(io)?;
-    file.read_exact(&mut buf).await.map_err(io)?;
-
-    // Positions sit on line starts, so only an edge cut by the page size can split a line: drop
-    // the cut part (it belongs to the next page) unless that would leave nothing.
-    let (mut lo, mut hi) = (0, buf.len());
-    let after = matches!(cursor, LogCursor::After(_));
-    if after && end < size {
-        hi = buf
-            .iter()
-            .rposition(|&b| b == b'\n')
-            .map_or(hi, |pos| pos + 1);
-    }
-    if !after && start > 0 {
-        lo = buf
-            .iter()
-            .position(|&b| b == b'\n')
-            .filter(|pos| pos + 1 < buf.len())
-            .map_or(0, |pos| pos + 1);
-    }
-
-    Ok(LogPage {
-        text: String::from_utf8_lossy(&buf[lo..hi]).into_owned(),
-        start: start + lo as u64,
-        end: start + hi as u64,
-        has_more_before: start + lo as u64 > 0,
-        has_more_after: start + (hi as u64) < size,
-        size,
-    })
 }
 
 #[cfg(test)]
@@ -300,95 +168,6 @@ mod tests {
     use std::io::Write;
 
     use super::*;
-
-    fn file_with(content: &[u8]) -> (tempfile::TempDir, PathBuf) {
-        let dir = tempfile::tempdir().unwrap();
-        let path = dir.path().join("latest.log");
-        std::fs::write(&path, content).unwrap();
-        (dir, path)
-    }
-
-    fn numbered(lines: usize) -> Vec<u8> {
-        (0..lines)
-            .flat_map(|i| format!("line {i:04}\n").into_bytes())
-            .collect()
-    }
-
-    #[tokio::test]
-    async fn should_return_whole_lines_ending_at_the_end_when_reading_the_tail() {
-        let (_dir, path) = file_with(&numbered(1000));
-
-        let page = read_page(&path, LogCursor::Tail, 1000).await.unwrap();
-
-        assert!(page.text.starts_with("line "));
-        assert!(page.text.ends_with("line 0999\n"));
-        assert_eq!(page.end, 10_000);
-        assert_eq!(page.size, 10_000);
-        assert!(page.has_more_before);
-        assert!(!page.has_more_after);
-        assert_eq!(page.text.len() as u64, page.end - page.start);
-    }
-
-    #[tokio::test]
-    async fn should_continue_without_gaps_when_paging_forward_to_the_end() {
-        let content = numbered(1000);
-        let (_dir, path) = file_with(&content);
-
-        let mut text = String::new();
-        let mut at = 0;
-        loop {
-            let page = read_page(&path, LogCursor::After(at), 1000).await.unwrap();
-            assert_eq!(page.start, at);
-            text.push_str(&page.text);
-            at = page.end;
-            if !page.has_more_after {
-                break;
-            }
-        }
-
-        assert_eq!(text.as_bytes(), content.as_slice());
-    }
-
-    #[tokio::test]
-    async fn should_continue_without_gaps_when_paging_backward_to_the_start() {
-        let content = numbered(1000);
-        let (_dir, path) = file_with(&content);
-
-        let mut pages = Vec::new();
-        let mut page = read_page(&path, LogCursor::Tail, 1000).await.unwrap();
-        loop {
-            pages.push(page.text.clone());
-            if !page.has_more_before {
-                break;
-            }
-            page = read_page(&path, LogCursor::Before(page.start), 1000)
-                .await
-                .unwrap();
-        }
-
-        pages.reverse();
-        assert_eq!(pages.concat().as_bytes(), content.as_slice());
-    }
-
-    #[tokio::test]
-    async fn should_read_nothing_new_when_the_cursor_is_at_the_end() {
-        let (_dir, path) = file_with(&numbered(3));
-
-        let page = read_page(&path, LogCursor::After(30), 1000).await.unwrap();
-
-        assert_eq!(page.text, "");
-        assert!(!page.has_more_after);
-    }
-
-    #[tokio::test]
-    async fn should_keep_a_line_longer_than_the_page_when_it_has_no_newline() {
-        let (_dir, path) = file_with(&vec![b'a'; 5000]);
-
-        let page = read_page(&path, LogCursor::Tail, 1000).await.unwrap();
-
-        assert_eq!(page.text.len(), 1000);
-        assert!(page.has_more_before);
-    }
 
     #[tokio::test]
     async fn should_unpack_a_gz_once_when_it_is_listed_and_read() {
@@ -448,24 +227,5 @@ mod tests {
             ids,
             ["console:console-20260101-000000-000.log", "game:latest.log"]
         );
-    }
-
-    #[tokio::test]
-    async fn should_keep_one_unpacked_copy_when_the_log_changes() {
-        let cache = tempfile::tempdir().unwrap();
-        let old = cache.path().join("a.log.gz-10-1.log");
-        let other = cache.path().join("b.log.gz-10-1.log");
-        let current = cache.path().join("a.log.gz-20-2.log");
-        let unpacking = cache.path().join("a.log.gz-20-2.1234.part");
-        for path in [&old, &other, &current, &unpacking] {
-            std::fs::write(path, "x").unwrap();
-        }
-
-        remove_stale_unpacked(cache.path(), "a.log.gz", &current).await;
-
-        assert!(!old.exists());
-        assert!(other.exists());
-        assert!(current.exists());
-        assert!(unpacking.exists());
     }
 }

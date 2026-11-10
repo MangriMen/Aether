@@ -2,13 +2,12 @@ import { createEffect, createMemo, createSignal, on } from 'solid-js';
 
 import { debounce } from '@/shared/utils';
 
+import { SEARCH_DEBOUNCE_MS } from '../model/constants';
 import {
   createLineFilter,
   type LineFilter,
   type LogLevel,
 } from '../model/logLines';
-
-const SEARCH_DEBOUNCE_MS = 300;
 
 /**
  * The chosen levels and search text, and the filter they make. `lineFilter` follows every

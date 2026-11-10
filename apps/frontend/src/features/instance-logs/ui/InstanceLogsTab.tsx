@@ -1,4 +1,3 @@
-import IconMdiMagnify from '~icons/mdi/magnify';
 import { createMemo, Show, type Component } from 'solid-js';
 
 import type { Instance } from '@/features/instance';
@@ -6,7 +5,7 @@ import type { Instance } from '@/features/instance';
 import { useRevealInExplorer } from '@/features/instance';
 import { useTranslation } from '@/shared/i18n';
 import { logError } from '@/shared/log';
-import { CombinedTextField, LoadError, showToast } from '@/shared/ui-kit';
+import { LoadError, showToast } from '@/shared/ui-kit';
 import { cn } from '@/shared/utils';
 
 import { useGameLogEventListener } from '../api/gameLogApi';
@@ -16,6 +15,7 @@ import { createLogView } from '../lib/createLogView';
 import { filterLogLines } from '../model/logLines';
 import { logFilePath } from '../model/logPath';
 import { setWrapLines, wrapLines } from '../model/logViewPrefs';
+import { LogSearchField } from './LogSearchField';
 import { LogSourceSelect } from './LogSourceSelect';
 import { LogToolbar } from './LogToolbar';
 import { LogViewer } from './LogViewer';
@@ -87,6 +87,14 @@ export const InstanceLogsTab: Component<InstanceLogsTabProps> = (props) => {
     }
   };
 
+  const handleRetry = () => {
+    if (sources.isError) {
+      void sources.refetch();
+    } else {
+      void view.reloadTail();
+    }
+  };
+
   const emptyText = () => {
     if (!sourceId()) {
       return t('logs.empty');
@@ -118,20 +126,10 @@ export const InstanceLogsTab: Component<InstanceLogsTabProps> = (props) => {
   return (
     <div class={cn('gap-2 pt-2 flex min-h-0 flex-col', props.class)}>
       <div class='gap-2 flex items-center'>
-        <CombinedTextField
+        <LogSearchField
           class='min-w-0 flex-1'
           value={query()}
           onChange={setQuery}
-          inputProps={{
-            class: 'pl-10',
-            placeholder: t('logs.search'),
-            type: 'text',
-          }}
-          leadingIcons={
-            <div class='px-2.5 my-px flex h-full items-center'>
-              <IconMdiMagnify />
-            </div>
-          }
         />
         <LogSourceSelect
           class='w-72 shrink-0'
@@ -157,9 +155,7 @@ export const InstanceLogsTab: Component<InstanceLogsTabProps> = (props) => {
           <LoadError
             message={t('logs.loadError')}
             retryLabel={t('common.retry')}
-            onRetry={() =>
-              sources.isError ? void sources.refetch() : void view.reloadTail()
-            }
+            onRetry={handleRetry}
           />
         }
       >

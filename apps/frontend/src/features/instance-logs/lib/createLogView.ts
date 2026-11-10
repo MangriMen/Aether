@@ -7,31 +7,22 @@ import {
   type Accessor,
 } from 'solid-js';
 
-import { logError } from '@/shared/log';
-
 import type { GameLogEvent } from '../model/gameLog';
 import type { LineFilter } from '../model/logLines';
 
-import {
-  readGameLogAfter,
-  readGameLogBefore,
-  readGameLogTail,
-  WHOLE_FILE_PAGE_BYTES,
-} from '../api/gameLogApi';
+import { readGameLogTail } from '../api/gameLogApi';
+import { FULL_LOAD_BYTES } from '../model/constants';
 import {
   EMPTY_WINDOW,
   appendText,
   decideLive,
-  FULL_LOAD_BYTES,
   holdsWholeFile,
-  windowLineCount,
-  prependPage,
-  windowEnd,
   windowFromTail,
   windowLines,
-  windowStart,
   type LogWindow,
 } from '../model/logWindow';
+import { createLogPager } from './createLogPager';
+import { createLogTasks } from './createLogTasks';
 
 export type LogViewProps = {
   instanceId: Accessor<string>;
@@ -68,16 +59,16 @@ export const createLogView = ({
   let windowFilter: LineFilter | undefined;
   const [error, setError] = createSignal<unknown>();
 
-  let generation = 0;
-  let chain: Promise<void> = Promise.resolve();
-
-  const enqueue = (task: () => Promise<void>) => {
-    chain = chain.then(task).catch((err: unknown) => {
-      logError('[LOGS] failed to update the log view', err);
-    });
-
-    return chain;
-  };
+  const tasks = createLogTasks();
+  const pager = createLogPager({
+    instanceId: currentInstanceId,
+    sourceId: currentSourceId,
+    window,
+    setWindow,
+    windowFilter: () => windowFilter,
+    tasks,
+    setLoadingOlder,
+  });
 
   const loadTail = async (current: number) => {
     const instanceId = currentInstanceId();
@@ -93,7 +84,7 @@ export const createLogView = ({
     try {
       const page = await readGameLogTail(instanceId, sourceId);
 
-      if (current !== generation) {
+      if (current !== tasks.current()) {
         return;
       }
 
@@ -102,13 +93,13 @@ export const createLogView = ({
       setSearching(windowFilter !== undefined);
       setWindow(windowFromTail(page, windowFilter));
       setLoaded(true);
-      void enqueue(() => loadRestOfFile(current));
+      void tasks.enqueue(() => pager.loadRestOfFile(current));
     } catch (err) {
-      if (current === generation) {
+      if (current === tasks.current()) {
         setError(err);
       }
     } finally {
-      if (current === generation) {
+      if (current === tasks.current()) {
         setLoading(false);
       }
     }
@@ -116,47 +107,22 @@ export const createLogView = ({
 
   createEffect(
     on([instanceId, sourceId], () => {
-      generation += 1;
-      const current = generation;
+      const current = tasks.next();
 
       setWindow(EMPTY_WINDOW);
       setLoaded(false);
       setError(undefined);
 
       if (currentSourceId() !== undefined) {
-        void enqueue(() => loadTail(current));
+        void tasks.enqueue(() => loadTail(current));
       }
     }),
   );
 
-  const readUntilEnd = async (current: number, sourceId: string) => {
-    for (;;) {
-      const page = await readGameLogAfter(
-        currentInstanceId(),
-        sourceId,
-        windowEnd(window()),
-      );
-
-      if (current !== generation) {
-        return;
-      }
-
-      if (page.end > windowEnd(window())) {
-        setWindow((w) =>
-          appendText(w, page.start, page.end, page.text, windowFilter),
-        );
-      }
-
-      if (!page.hasMoreAfter || page.end === page.start) {
-        return;
-      }
-    }
-  };
-
   const applyLive = async (current: number, event: GameLogEvent) => {
     const sourceId = currentSourceId();
 
-    if (current !== generation || !loaded() || sourceId === undefined) {
+    if (current !== tasks.current() || !loaded() || sourceId === undefined) {
       return;
     }
 
@@ -173,7 +139,7 @@ export const createLogView = ({
         appendText(state, event.start, event.end, event.text, windowFilter),
       );
     } else if (action === 'read') {
-      await readUntilEnd(current, sourceId);
+      await pager.readUntilEnd(current, sourceId);
     }
   };
 
@@ -186,120 +152,16 @@ export const createLogView = ({
       return;
     }
 
-    const current = generation;
+    const current = tasks.current();
 
-    void enqueue(() => untrack(() => applyLive(current, event)));
-  };
-
-  /** One page above the window; false when there is nothing above it or the view moved on. */
-  const readOlderPage = async (current: number, maxBytes?: number) => {
-    const sourceId = currentSourceId();
-    const state = untrack(window);
-
-    if (
-      current !== generation ||
-      sourceId === undefined ||
-      !state.hasMoreBefore
-    ) {
-      return false;
-    }
-
-    const page = await readGameLogBefore(
-      currentInstanceId(),
-      sourceId,
-      windowStart(state),
-      maxBytes,
-    );
-
-    if (current !== generation) {
-      return false;
-    }
-
-    setWindow((w) => prependPage(w, page, windowFilter));
-
-    return true;
-  };
-
-  const loadOlder = () => {
-    const current = generation;
-
-    // A searched log is read through by itself, from the end.
-    if (windowFilter !== undefined) {
-      return Promise.resolve();
-    }
-
-    return enqueue(async () => {
-      setLoadingOlder(true);
-
-      try {
-        await readOlderPage(current);
-      } finally {
-        setLoadingOlder(false);
-      }
-    });
-  };
-
-  // A log held whole is read to its start; one that is searched, until its matches fill the window.
-  const wantsRestOfFile = (state: LogWindow) =>
-    holdsWholeFile(state) ||
-    (windowFilter !== undefined && windowLineCount(state) < state.maxLines);
-
-  /** A log small enough to hold whole is read to its start right after its end, in the background. */
-  const loadRestOfFile = async (current: number) => {
-    setLoadingOlder(true);
-
-    try {
-      while (
-        current === generation &&
-        wantsRestOfFile(untrack(window)) &&
-        (await readOlderPage(current, WHOLE_FILE_PAGE_BYTES))
-      ) {
-        // Each page is added above the reader's place; the next one is asked for at once.
-      }
-    } finally {
-      setLoadingOlder(false);
-    }
-  };
-
-  /** One page below the window, when it was moved up from the end of a large file. */
-  const loadNewer = () => {
-    const current = generation;
-
-    return enqueue(async () => {
-      const sourceId = currentSourceId();
-      const state = untrack(window);
-
-      if (
-        current !== generation ||
-        sourceId === undefined ||
-        state.tailLoaded
-      ) {
-        return;
-      }
-
-      const page = await readGameLogAfter(
-        currentInstanceId(),
-        sourceId,
-        windowEnd(state),
-      );
-
-      if (current !== generation) {
-        return;
-      }
-
-      setWindow((w) => ({
-        ...appendText(w, page.start, page.end, page.text, windowFilter),
-        tailLoaded: !page.hasMoreAfter,
-      }));
-    });
+    void tasks.enqueue(() => untrack(() => applyLive(current, event)));
   };
 
   /** Back to the end of the file after the window was moved away from it. */
   const reloadTail = () => {
-    generation += 1;
-    const current = generation;
+    const current = tasks.next();
 
-    return enqueue(() => loadTail(current));
+    return tasks.enqueue(() => loadTail(current));
   };
 
   // The filter changed under a log that is read in a window: what it keeps is another set of lines.
@@ -327,8 +189,8 @@ export const createLogView = ({
     hasMoreBefore: () => window().hasMoreBefore,
     tailLoaded: () => window().tailLoaded,
     pushLive,
-    loadOlder,
-    loadNewer,
+    loadOlder: pager.loadOlder,
+    loadNewer: pager.loadNewer,
     reloadTail,
   };
 };
