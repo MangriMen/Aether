@@ -93,6 +93,7 @@ pub struct LogPageDto {
     pub end: u32,
     pub has_more_before: bool,
     pub has_more_after: bool,
+    pub size: u32,
 }
 
 impl From<LogPage> for LogPageDto {
@@ -103,6 +104,7 @@ impl From<LogPage> for LogPageDto {
             end: clamp(value.end),
             has_more_before: value.has_more_before,
             has_more_after: value.has_more_after,
+            size: clamp(value.size),
         }
     }
 }

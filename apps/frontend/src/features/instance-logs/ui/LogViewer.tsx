@@ -16,15 +16,15 @@ import { cn } from '@/shared/utils';
 
 import type { LogLevel, LogLine } from '../model/logLines';
 
-/** Rows have one fixed height (a line never wraps), so scroll positions are plain arithmetic. */
-const ROW_HEIGHT = 20;
+/** Without wrapping a line is one row of this height; wrapped rows are measured. */
+const ROW_HEIGHT = 22;
 const LOAD_OLDER_THRESHOLD_PX = 400;
 const STICK_THRESHOLD_PX = 40;
 const MAX_ROW_CHARS = 4000;
 
 const LEVEL_CLASS: Record<LogLevel, string> = {
-  debug: 'text-muted-foreground',
-  info: '',
+  debug: 'text-muted-foreground/70',
+  info: 'text-foreground/70',
   warn: 'text-warning',
   error: 'text-destructive',
 };
@@ -34,6 +34,8 @@ export type LogViewerProps = {
   hasMoreBefore: boolean;
   /** The window ends where the file ends, so lines that arrive can be shown after it. */
   tailLoaded: boolean;
+  /** Long lines continue on the next row instead of running off to the right. */
+  wrap: boolean;
   onLoadOlder: () => Promise<void>;
   onReloadTail: () => Promise<void>;
   class?: string;
@@ -63,18 +65,30 @@ export const LogViewer: Component<LogViewerProps> = (props) => {
     }
   };
 
-  // The first row in view. Lines that come in or go out above it move it, and the view is
-  // moved back by as much, so that what the reader looks at stays put.
+  // The first row in view and how far into it the view starts. Lines that come in or go out
+  // above it move it, and the view is moved back by as much, so what is read stays put.
   let anchor: LogLine | undefined;
-  let anchorIndex = 0;
+  let anchorShift = 0;
 
   const rememberAnchor = () => {
     if (!scrollRef) {
       return;
     }
 
-    anchorIndex = Math.floor(scrollRef.scrollTop / ROW_HEIGHT);
-    anchor = props.lines[anchorIndex];
+    const item = virtualizer.getVirtualItemForOffset(scrollRef.scrollTop);
+
+    anchor = item ? props.lines[item.index] : undefined;
+    anchorShift = item ? scrollRef.scrollTop - item.start : 0;
+  };
+
+  const restoreAnchor = (index: number) => {
+    const start = virtualizer.measurementsCache[index]?.start;
+
+    if (scrollRef && start !== undefined) {
+      scrollRef.scrollTop = start + anchorShift;
+    }
+
+    rememberAnchor();
   };
 
   const loadOlder = async () => {
@@ -114,15 +128,23 @@ export const LogViewer: Component<LogViewerProps> = (props) => {
         const index = !following && anchor ? lines.indexOf(anchor) : -1;
 
         requestAnimationFrame(() => {
-          if (scrollRef && index >= 0 && index !== anchorIndex) {
-            scrollRef.scrollTop += (index - anchorIndex) * ROW_HEIGHT;
-            rememberAnchor();
+          if (index >= 0) {
+            restoreAnchor(index);
           }
 
           // A filter can leave too few lines to scroll, and then no scroll event would ever ask.
           loadOlderIfNearStart();
         });
       },
+    ),
+  );
+
+  // Rows change height when lines start or stop wrapping.
+  createEffect(
+    on(
+      () => props.wrap,
+      () => virtualizer.measure(),
+      { defer: true },
     ),
   );
 
@@ -150,10 +172,12 @@ export const LogViewer: Component<LogViewerProps> = (props) => {
   };
 
   const widestLine = createMemo(() =>
-    Math.min(
-      props.lines.reduce((max, line) => Math.max(max, line.text.length), 0),
-      MAX_ROW_CHARS,
-    ),
+    props.wrap
+      ? 0
+      : Math.min(
+          props.lines.reduce((max, line) => Math.max(max, line.text.length), 0),
+          MAX_ROW_CHARS,
+        ),
   );
 
   return (
@@ -161,8 +185,8 @@ export const LogViewer: Component<LogViewerProps> = (props) => {
       <div
         ref={scrollRef}
         class='
-          rounded-md bg-card/card text-xs min-h-0 flex-1 overflow-auto border
-          font-mono
+          rounded-md bg-card/card text-sm min-h-0 flex-1 overflow-auto
+           border font-mono
         '
         onScroll={handleScroll}
       >
@@ -170,19 +194,28 @@ export const LogViewer: Component<LogViewerProps> = (props) => {
           class='relative'
           style={{
             height: `${virtualizer.getTotalSize()}px`,
-            width: `calc(${widestLine()}ch + 1.5rem)`,
+            width: props.wrap ? '100%' : `calc(${widestLine()}ch + 1.5rem)`,
             'min-width': '100%',
           }}
         >
           <For each={virtualizer.getVirtualItems()}>
             {(row) => (
               <div
+                ref={(node) => {
+                  // The row's index attribute is set after the ref is handed over.
+                  queueMicrotask(() => virtualizer.measureElement(node));
+                }}
+                data-index={row.index}
                 class={cn(
-                  'px-3 absolute left-0 w-full whitespace-pre',
+                  'px-3 absolute left-0 w-full',
+                  props.wrap
+                    ? 'whitespace-pre-wrap wrap-anywhere'
+                    : 'whitespace-pre',
                   LEVEL_CLASS[props.lines[row.index]?.level ?? 'info'],
                 )}
                 style={{
-                  height: `${ROW_HEIGHT}px`,
+                  'min-height': `${ROW_HEIGHT}px`,
+                  height: props.wrap ? undefined : `${ROW_HEIGHT}px`,
                   'line-height': `${ROW_HEIGHT}px`,
                   transform: `translateY(${row.start}px)`,
                 }}

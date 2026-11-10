@@ -1,10 +1,15 @@
 import type { LogPage } from './gameLog';
-import type { LogLevel, LogLine } from './logLines';
+import type { LineFilter, LogLevel, LogLine } from './logLines';
 
 import { parseLogText } from './logLines';
 
 /** Most lines kept in memory; the far end of the window is let go past this. */
 export const MAX_WINDOW_LINES = 20_000;
+/**
+ * A log up to this size is read whole, so that filters and search see all of it; a larger one is
+ * read in a window that follows the reader. Rows are drawn by a virtual list either way.
+ */
+export const FULL_LOAD_BYTES = 32 * 1024 * 1024;
 /** A chunk that grows with live lines is closed at this size, so whole chunks can be dropped. */
 const MAX_CHUNK_LINES = 2_000;
 
@@ -21,12 +26,18 @@ export type LogWindow = {
   hasMoreBefore: boolean;
   /** The last chunk reaches the end of the file as far as is known, so live lines can follow it. */
   tailLoaded: boolean;
+  /** Most lines kept; the whole file is kept when it is small enough to read at once. */
+  maxLines: number;
+  /** The level of the last line read, which a continuation line at the next read belongs to. */
+  tailLevel: LogLevel;
 };
 
 export const EMPTY_WINDOW: LogWindow = {
   chunks: [],
   hasMoreBefore: false,
   tailLoaded: false,
+  maxLines: MAX_WINDOW_LINES,
+  tailLevel: 'info',
 };
 
 export const windowStart = (window: LogWindow): number =>
@@ -38,22 +49,29 @@ export const windowEnd = (window: LogWindow): number =>
 export const windowLines = (window: LogWindow): LogLine[] =>
   window.chunks.flatMap((chunk) => chunk.lines);
 
-const lineCount = (window: LogWindow): number =>
+export const windowLineCount = (window: LogWindow): number =>
   window.chunks.reduce((sum, chunk) => sum + chunk.lines.length, 0);
 
-const lastLevel = (window: LogWindow): LogLevel | undefined => {
-  const lastChunk = window.chunks[window.chunks.length - 1];
+export const windowFromTail = (page: LogPage, keep?: LineFilter): LogWindow => {
+  const read = parseLogText(page.text);
 
-  return lastChunk?.lines[lastChunk.lines.length - 1]?.level;
+  return {
+    chunks: [
+      {
+        start: page.start,
+        end: page.end,
+        lines: keep ? read.filter(keep) : read,
+      },
+    ],
+    hasMoreBefore: page.hasMoreBefore,
+    tailLoaded: !page.hasMoreAfter,
+    maxLines:
+      page.size <= FULL_LOAD_BYTES
+        ? Number.POSITIVE_INFINITY
+        : MAX_WINDOW_LINES,
+    tailLevel: read[read.length - 1]?.level ?? 'info',
+  };
 };
-
-export const windowFromTail = (page: LogPage): LogWindow => ({
-  chunks: [
-    { start: page.start, end: page.end, lines: parseLogText(page.text) },
-  ],
-  hasMoreBefore: page.hasMoreBefore,
-  tailLoaded: !page.hasMoreAfter,
-});
 
 /** Adds the lines that follow the window; the window then drops its oldest chunks if too long. */
 export const appendText = (
@@ -61,8 +79,10 @@ export const appendText = (
   start: number,
   end: number,
   text: string,
+  keep?: LineFilter,
 ): LogWindow => {
-  const lines = parseLogText(text, lastLevel(window));
+  const read = parseLogText(text, window.tailLevel);
+  const lines = keep ? read.filter(keep) : read;
   const last = window.chunks[window.chunks.length - 1];
 
   let chunks: LogChunk[];
@@ -76,30 +96,41 @@ export const appendText = (
     chunks = [...window.chunks, { start, end, lines }];
   }
 
-  return dropFromTop({ ...window, chunks });
+  return dropFromTop({
+    ...window,
+    chunks,
+    tailLevel: read[read.length - 1]?.level ?? window.tailLevel,
+  });
 };
 
 /** Adds the lines that precede the window; the window then drops its newest chunks if too long. */
-export const prependPage = (window: LogWindow, page: LogPage): LogWindow => {
+export const prependPage = (
+  window: LogWindow,
+  page: LogPage,
+  keep?: LineFilter,
+): LogWindow => {
+  const read = parseLogText(page.text);
   const chunk: LogChunk = {
     start: page.start,
     end: page.end,
-    lines: parseLogText(page.text),
+    lines: keep ? read.filter(keep) : read,
   };
 
   return dropFromBottom({
     chunks: [chunk, ...window.chunks],
     hasMoreBefore: page.hasMoreBefore,
     tailLoaded: window.tailLoaded,
+    maxLines: window.maxLines,
+    tailLevel: window.tailLevel,
   });
 };
 
 const dropFromTop = (window: LogWindow): LogWindow => {
   let { chunks } = window;
   let hasMoreBefore = window.hasMoreBefore;
-  let count = lineCount(window);
+  let count = windowLineCount(window);
 
-  while (count > MAX_WINDOW_LINES && chunks.length > 1) {
+  while (count > window.maxLines && chunks.length > 1) {
     count -= chunks[0]?.lines.length ?? 0;
     chunks = chunks.slice(1);
     hasMoreBefore = true;
@@ -111,9 +142,9 @@ const dropFromTop = (window: LogWindow): LogWindow => {
 const dropFromBottom = (window: LogWindow): LogWindow => {
   let { chunks } = window;
   let tailLoaded = window.tailLoaded;
-  let count = lineCount(window);
+  let count = windowLineCount(window);
 
-  while (count > MAX_WINDOW_LINES && chunks.length > 1) {
+  while (count > window.maxLines && chunks.length > 1) {
     count -= chunks[chunks.length - 1]?.lines.length ?? 0;
     chunks = chunks.slice(0, -1);
     tailLoaded = false;
@@ -141,3 +172,7 @@ export const decideLive = (
 
   return event.start === end && event.text !== '' ? 'append' : 'read';
 };
+
+/** Every line of the file is (or will be) kept, so a filter over the window is a filter over the file. */
+export const holdsWholeFile = (window: LogWindow): boolean =>
+  window.maxLines === Number.POSITIVE_INFINITY;

@@ -553,6 +553,7 @@ export type LogPageDto = {
 	end: number,
 	hasMoreBefore: boolean,
 	hasMoreAfter: boolean,
+	size: number,
 };
 
 export type LogSourceDto = {

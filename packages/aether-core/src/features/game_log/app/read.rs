@@ -118,6 +118,7 @@ mod tests {
                 end: 0,
                 has_more_before: false,
                 has_more_after: false,
+                size: 0,
             })
         }
     }

@@ -286,6 +286,7 @@ async fn read_page(
         end: start + hi as u64,
         has_more_before: start + lo as u64 > 0,
         has_more_after: start + (hi as u64) < size,
+        size,
     })
 }
 
@@ -317,6 +318,7 @@ mod tests {
         assert!(page.text.starts_with("line "));
         assert!(page.text.ends_with("line 0999\n"));
         assert_eq!(page.end, 10_000);
+        assert_eq!(page.size, 10_000);
         assert!(page.has_more_before);
         assert!(!page.has_more_after);
         assert_eq!(page.text.len() as u64, page.end - page.start);

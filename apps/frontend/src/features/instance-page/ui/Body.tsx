@@ -27,7 +27,10 @@ export const Body: Component<BodyProps> = (props) => {
 
   return (
     <Tabs
-      class={cn('p-0.5 flex flex-col overflow-hidden', local.class)}
+      class={cn(
+        'p-0.5 flex min-h-0 flex-1 flex-col overflow-hidden',
+        local.class,
+      )}
       defaultValue={InstanceContentTabs.Content}
       {...others}
     >

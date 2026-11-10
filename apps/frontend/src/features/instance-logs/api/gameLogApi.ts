@@ -16,6 +16,8 @@ const GAME_LOG_QUERY_KEYS = {
 
 /** A page of the log is read in pieces this big, so a huge log never travels at once. */
 const PAGE_BYTES = 256 * 1024;
+/** A log read whole comes in bigger pieces, to be done in fewer round trips. */
+export const WHOLE_FILE_PAGE_BYTES = 1024 * 1024;
 
 export const useGameLogSources = (instanceId: Accessor<string>) =>
   useQuery(() => ({
@@ -34,12 +36,13 @@ export const readGameLogBefore = (
   instanceId: string,
   sourceId: string,
   at: number,
+  maxBytes: number = PAGE_BYTES,
 ) =>
   instanceCommands.readLog(
     instanceId,
     sourceId,
     { kind: 'before', at },
-    PAGE_BYTES,
+    maxBytes,
   );
 
 export const readGameLogAfter = (

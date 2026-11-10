@@ -126,6 +126,8 @@ pub struct LogPage {
     pub end: u64,
     pub has_more_before: bool,
     pub has_more_after: bool,
+    /// Bytes in the whole file when it was read.
+    pub size: u64,
 }
 
 #[cfg(test)]

@@ -1,6 +1,8 @@
+import { debounce } from '@solid-primitives/scheduled';
 import IconMdiContentCopy from '~icons/mdi/content-copy';
 import IconMdiFolder from '~icons/mdi/folder';
 import IconMdiMagnify from '~icons/mdi/magnify';
+import IconMdiWrap from '~icons/mdi/wrap';
 import {
   createEffect,
   createMemo,
@@ -27,6 +29,7 @@ import {
   IconButton,
   LoadError,
   showToast,
+  Toggle,
   ToggleGroup,
   ToggleGroupItem,
 } from '@/shared/ui-kit';
@@ -34,7 +37,14 @@ import { cn } from '@/shared/utils';
 
 import { useGameLogEventListener, useGameLogSources } from '../api/gameLogApi';
 import { createLogView } from '../lib/createLogView';
-import { LOG_LEVELS, filterLogLines, type LogLevel } from '../model/logLines';
+import {
+  LOG_LEVELS,
+  createLineFilter,
+  filterLogLines,
+  type LineFilter,
+  type LogLevel,
+} from '../model/logLines';
+import { setWrapLines, wrapLines } from '../model/logViewPrefs';
 import { LogViewer } from './LogViewer';
 
 export type InstanceLogsTabProps = {
@@ -44,6 +54,7 @@ export type InstanceLogsTabProps = {
 };
 
 const LIVE = 'live';
+const SEARCH_DEBOUNCE_MS = 300;
 
 export const InstanceLogsTab: Component<InstanceLogsTabProps> = (props) => {
   const [{ t }] = useTranslation();
@@ -84,7 +95,10 @@ export const InstanceLogsTab: Component<InstanceLogsTabProps> = (props) => {
       }
 
       const when = source.modified
-        ? ` (${new Date(source.modified).toLocaleString()})`
+        ? ` (${new Date(source.modified).toLocaleString(undefined, {
+            dateStyle: 'short',
+            timeStyle: 'short',
+          })})`
         : '';
 
       return {
@@ -109,7 +123,24 @@ export const InstanceLogsTab: Component<InstanceLogsTabProps> = (props) => {
     return value === LIVE ? newestConsole()?.id : value;
   });
 
-  const view = createLogView({ instanceId, sourceId });
+  const lineFilter = createMemo(() =>
+    createLineFilter(new Set(levels()), query()),
+  );
+
+  // Typing must not start a new search of a large log at every key.
+  const [searchFilter, setSearchFilter] = createSignal(lineFilter());
+  const updateSearchFilter = debounce((filter: LineFilter | undefined) => {
+    setSearchFilter(() => filter);
+  }, SEARCH_DEBOUNCE_MS);
+  createEffect(
+    on(lineFilter, (filter) => updateSearchFilter(filter), { defer: true }),
+  );
+
+  const view = createLogView({
+    instanceId,
+    sourceId,
+    lineFilter: searchFilter,
+  });
 
   useGameLogEventListener((event) => {
     if (event.instanceId !== instanceId()) {
@@ -127,7 +158,7 @@ export const InstanceLogsTab: Component<InstanceLogsTabProps> = (props) => {
   });
 
   const visibleLines = createMemo(() =>
-    filterLogLines(view.lines(), new Set(levels()), query()),
+    filterLogLines(view.lines(), lineFilter()),
   );
 
   const reveal = useRevealInExplorer();
@@ -167,39 +198,29 @@ export const InstanceLogsTab: Component<InstanceLogsTabProps> = (props) => {
   };
 
   return (
-    <div class={cn('gap-2 flex min-h-0 flex-col', props.class)}>
+    <div class={cn('gap-3 p-1 flex min-h-0 flex-col', props.class)}>
       <div class='gap-2 flex flex-wrap items-center'>
-        <CombinedSelect
-          class='w-72 min-w-48'
-          multiple={false}
-          options={options()}
-          optionValue='value'
-          optionTextValue='name'
-          value={currentOption()}
-          onChange={(option: Option<string> | null) => {
-            if (option) {
-              setSelected(option.value);
-            }
-          }}
-          disabled={options().length === 0}
-          placeholder={t('logs.noLogs')}
-        />
-        <ToggleGroup
-          multiple
-          value={levels()}
-          onChange={handleLevelsChange}
-          class='justify-start'
-        >
-          <For each={LOG_LEVELS}>
-            {(level) => (
-              <ToggleGroupItem value={level}>
-                {t(`logs.level.${level}`)}
-              </ToggleGroupItem>
-            )}
-          </For>
-        </ToggleGroup>
+        <Show when={currentOption()?.value ?? 'none'} keyed>
+          {(_key) => (
+            <CombinedSelect
+              class='w-72 shrink-0'
+              multiple={false}
+              options={options()}
+              optionValue='value'
+              optionTextValue='name'
+              value={currentOption()}
+              onChange={(option: Option<string> | null) => {
+                if (option) {
+                  setSelected(option.value);
+                }
+              }}
+              disabled={options().length === 0}
+              placeholder={t('logs.noLogs')}
+            />
+          )}
+        </Show>
         <CombinedTextField
-          class='min-w-40 flex-1'
+          class='min-w-48 flex-1'
           value={query()}
           onChange={setQuery}
           inputProps={{
@@ -213,6 +234,19 @@ export const InstanceLogsTab: Component<InstanceLogsTabProps> = (props) => {
             </div>
           }
         />
+        <CombinedTooltip
+          label={t('logs.wrapLines')}
+          as={Toggle}
+          class='
+            size-9 p-0
+            hover:bg-secondary/hover
+            data-pressed:bg-secondary/secondary
+          '
+          pressed={wrapLines()}
+          onChange={setWrapLines}
+        >
+          <IconMdiWrap />
+        </CombinedTooltip>
         <CombinedTooltip
           label={t('logs.copy')}
           as={IconButton}
@@ -230,6 +264,20 @@ export const InstanceLogsTab: Component<InstanceLogsTabProps> = (props) => {
           disabled={!sourceId() || !props.instancePath}
         />
       </div>
+      <ToggleGroup
+        multiple
+        value={levels()}
+        onChange={handleLevelsChange}
+        class='justify-start'
+      >
+        <For each={LOG_LEVELS}>
+          {(level) => (
+            <ToggleGroupItem value={level}>
+              {t(`logs.level.${level}`)}
+            </ToggleGroupItem>
+          )}
+        </For>
+      </ToggleGroup>
       <Show
         when={!sources.isError}
         fallback={
@@ -263,10 +311,14 @@ export const InstanceLogsTab: Component<InstanceLogsTabProps> = (props) => {
               lines={visibleLines()}
               hasMoreBefore={view.hasMoreBefore()}
               tailLoaded={view.tailLoaded()}
+              wrap={wrapLines()}
               onLoadOlder={view.loadOlder}
               onReloadTail={view.reloadTail}
             />
-            <p class='text-muted-foreground text-xs'>{t('logs.filterNote')}</p>
+            <p class='h-5 px-1 text-muted-foreground text-sm'>
+              <Show when={view.loadingOlder()}>{t('logs.loadingOlder')}</Show>
+              <Show when={view.searchCut()}>{t('logs.searchCut')}</Show>
+            </p>
           </Show>
         </Show>
       </Show>

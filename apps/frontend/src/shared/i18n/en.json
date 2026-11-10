@@ -342,7 +342,6 @@
     "copyFailed": "Failed to copy the log",
     "earlierRun": "Earlier run",
     "empty": "There is no log yet\nLaunch the game and its output will appear here",
-    "filterNote": "Filters apply to the lines loaded so far. Scroll up to load older ones.",
     "filterPlaceholder": "Filter lines",
     "jumpToEnd": "Jump to the end",
     "lastRun": "Last run",
@@ -354,9 +353,12 @@
     },
     "live": "Live log",
     "loadError": "Failed to load the log",
+    "loadingOlder": "Loading older lines…",
     "noLogs": "No logs",
     "openFile": "Show the log file in the folder",
-    "title": "Logs"
+    "searchCut": "Too many matches: showing the latest ones. Narrow the filter.",
+    "title": "Logs",
+    "wrapLines": "Wrap long lines"
   },
   "instance": {
     "content": "Content",
