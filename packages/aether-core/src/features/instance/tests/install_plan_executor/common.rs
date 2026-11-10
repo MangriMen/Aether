@@ -54,11 +54,12 @@ pub(super) const SHA1_ABC: &str = "a9993e364706816aba3e25717850c26c9cd0d89d";
 pub(super) type ResolveCall = (String, Option<String>, String, Option<String>);
 
 /// A provider of one platform whose `resolve_file` answers from a fixed URL per content id and
-/// records how it was asked.
+/// records how it was asked. The content id `hang` signals `hanging` and never resolves.
 pub(super) struct MockProvider {
     pub(super) id: ProviderId,
     pub(super) metadata: ContentProviderCapabilityMetadata,
     pub(super) calls: Mutex<Vec<ResolveCall>>,
+    pub(super) hanging: tokio::sync::Notify,
 }
 
 impl MockProvider {
@@ -75,6 +76,7 @@ impl MockProvider {
                 platform: platform.map(|p| PlatformId::try_from(p).unwrap()),
             },
             calls: Mutex::default(),
+            hanging: tokio::sync::Notify::new(),
         })
     }
 
@@ -130,6 +132,10 @@ impl ContentProvider for MockProvider {
 
         if content_id.as_str() == "unsupported" {
             return Err(self.unsupported("resolve_file"));
+        }
+        if content_id.as_str() == "hang" {
+            self.hanging.notify_one();
+            std::future::pending::<()>().await;
         }
 
         Ok(ResolvedFile {
@@ -493,14 +499,19 @@ impl ProgressService for RecordingProgress {
         }
         Ok(())
     }
+    /// Only the plan's bar is edited, to size it once its work is known.
     async fn edit_progress(
         &self,
-        _progress_bar_id: &ProgressBarId,
+        progress_bar_id: &ProgressBarId,
         _event_type: ProgressEventType,
-        _total: f64,
+        total: f64,
         _message: String,
     ) -> Result<(), EventError> {
-        Err(EventError::NotInitialized)
+        if *self.bar_id.lock().unwrap() != Some(progress_bar_id.id) {
+            return Err(EventError::NotInitialized);
+        }
+        self.bar.lock().unwrap().as_mut().unwrap().0 = total;
+        Ok(())
     }
     async fn add_progress_bytes(
         &self,

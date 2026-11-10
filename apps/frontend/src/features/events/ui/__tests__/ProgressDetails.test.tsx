@@ -24,6 +24,7 @@ const make = (
   bytesDone: null,
   bytesTotal: null,
   speed: null,
+  cancel: null,
   ...extra,
 });
 

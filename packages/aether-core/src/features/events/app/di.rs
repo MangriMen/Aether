@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::features::events::app::ports::ListProgressBarsUseCasePort;
+use crate::features::events::app::ports::{CancelProgressUseCasePort, ListProgressBarsUseCasePort};
 use crate::features::events::{Event, EventEmitter, ProgressService};
 
 /// Extension trait providing access to all events feature use cases and services.
@@ -9,6 +9,7 @@ use crate::features::events::{Event, EventEmitter, ProgressService};
 /// events-specific functionality in a centralized manner.
 pub trait EventsFeature {
     fn list_progress_bars_use_case(&self) -> Arc<dyn ListProgressBarsUseCasePort>;
+    fn cancel_progress_use_case(&self) -> Arc<dyn CancelProgressUseCasePort>;
     fn event_emitter(&self) -> Arc<dyn EventEmitter<Event>>;
     fn progress_service(&self) -> Arc<dyn ProgressService>;
 }

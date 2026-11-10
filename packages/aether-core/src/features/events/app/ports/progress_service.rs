@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use tokio_util::sync::CancellationToken;
 use uuid::Uuid;
 
 use crate::features::events::{
@@ -15,6 +16,37 @@ pub trait ProgressService: Send + Sync {
         total: f64,
         message: String,
     ) -> Result<ProgressBarId, EventError>;
+
+    /// Starts a bar whose work the user may call off ([`cancel_progress`](Self::cancel_progress)):
+    /// the token fires when they do, until the work passes its point of no return
+    /// ([`close_cancellation`](Self::close_cancellation)). The token goes with the bar.
+    ///
+    /// Calling off is extra detail, so by default the bar is started without it and the token
+    /// never fires.
+    async fn init_cancellable_progress(
+        &self,
+        event_type: ProgressEventType,
+        total: f64,
+        message: String,
+    ) -> Result<(ProgressBarId, CancellationToken), EventError> {
+        let bar = self.init_progress(event_type, total, message).await?;
+        Ok((bar, CancellationToken::new()))
+    }
+
+    /// Calls off the work of the bar `progress_bar_id`: fires its token and tells listeners.
+    /// Nothing for a bar that is gone (its work ended meanwhile), that cannot be called off, or
+    /// whose work is past its point of no return or called off already.
+    async fn cancel_progress(&self, _progress_bar_id: Uuid) -> Result<(), EventError> {
+        Ok(())
+    }
+
+    /// Marks the point of no return of the bar's work: from now on
+    /// [`cancel_progress`](Self::cancel_progress) does not fire its token, so a token not fired
+    /// by the time this returns never is. Listeners are told the work can no longer be called
+    /// off.
+    async fn close_cancellation(&self, _progress_bar_id: &ProgressBarId) -> Result<(), EventError> {
+        Ok(())
+    }
 
     /// Starts a bar as a part of the bar `parent_id`: its events name the parent, the parent
     /// counts its bytes as its own, and it ends with the parent at the latest.

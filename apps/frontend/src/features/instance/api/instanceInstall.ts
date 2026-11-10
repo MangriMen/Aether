@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/solid-query';
 
-import { showError } from '@/features/errors';
+import { isCancelledError, showError } from '@/features/errors';
 import { instanceCommands } from '@/platform/ipc';
 import { useTranslation } from '@/shared/i18n';
 
@@ -26,6 +26,10 @@ export const useUpdateInstance = () => {
   return useMutation(() => ({
     mutationFn: (id: string) => instanceCommands.update(id),
     onError: (err, id) => {
+      if (isCancelledError(err)) {
+        return;
+      }
+
       showError({
         title: t('instance.updateError', { id }),
         err,

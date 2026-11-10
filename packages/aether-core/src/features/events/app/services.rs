@@ -3,6 +3,7 @@ use std::time::{Duration, Instant};
 
 use async_trait::async_trait;
 use tokio::sync::MutexGuard;
+use tokio_util::sync::CancellationToken;
 use uuid::Uuid;
 
 use crate::features::events::{
@@ -10,7 +11,7 @@ use crate::features::events::{
     ProgressEvent, ProgressEventType, ProgressStage, ProgressStatus, SharedDownload,
     SharedEventEmitter, SharedProgressWait,
     app::ports::ProgressService,
-    domain::{EventSequencer, Shown, TransferWindow},
+    domain::{BarCancel, EventSequencer, Shown, TransferWindow},
 };
 
 /// The least time between an event of a bar and one sent for its bytes alone: four a second
@@ -130,7 +131,7 @@ impl<PS: ProgressBarStorage + 'static> ProgressServiceImpl<PS> {
     }
 
     /// Register a bar, under `parent_id` when there is one. A shared bar gets a mirror under
-    /// every bar waiting on its `event_type`.
+    /// every bar waiting on its `event_type`; a bar with `cancel` may be called off through it.
     async fn start(
         &self,
         parent_id: Option<Uuid>,
@@ -138,6 +139,7 @@ impl<PS: ProgressBarStorage + 'static> ProgressServiceImpl<PS> {
         total: f64,
         message: String,
         shared: bool,
+        cancel: Option<CancellationToken>,
     ) -> Result<ProgressBarId, EventError> {
         let guard = self.sequencer.begin_change().await;
 
@@ -150,6 +152,7 @@ impl<PS: ProgressBarStorage + 'static> ProgressServiceImpl<PS> {
         let id = Uuid::new_v4();
         let mut bar = ProgressBar::new(id, event_type, total, message, parent_id);
         bar.shared = shared;
+        bar.cancel = cancel.map(BarCancel::new);
         let waiting = shared.then(|| self.waiting_on(&bar.progress_type));
         self.progress_storage.insert(id, bar).await?;
         if shared {
@@ -279,6 +282,48 @@ impl<PS: ProgressBarStorage + 'static> ProgressServiceImpl<PS> {
         Ok(event)
     }
 
+    /// Change how the bar `id` may be called off with `change`, and tell listeners when it shows
+    /// something new. Nothing for a bar that is gone or cannot be called off.
+    ///
+    /// The change itself waits for no one: it is atomic on the bar alone, so a call-off takes
+    /// effect at once even when the queue of events to send is long (hundreds of files
+    /// downloading), and so does the point of no return. Only the telling waits its turn.
+    async fn change_cancel(
+        &self,
+        id: Uuid,
+        change: fn(&mut BarCancel) -> bool,
+    ) -> Result<(), EventError> {
+        let changed = self
+            .change(id, |bar| bar.cancel.as_mut().is_some_and(change))
+            .await;
+        match changed {
+            Ok(true) => {}
+            Ok(false) | Err(ProgressBarStorageError::NotFound { .. }) => return Ok(()),
+            Err(err) => return Err(err.into()),
+        }
+
+        let guard = self.sequencer.begin_change().await;
+        let now = self.clock.now();
+        // What the bar shows by now, which may be more than this change made.
+        let due = self
+            .change(id, |bar| {
+                mark_sent(bar, now);
+                Due::of(bar, None)
+            })
+            .await;
+        let due = match due {
+            Ok(due) => Some(due),
+            Err(ProgressBarStorageError::NotFound { .. }) => None,
+            Err(err) => return Err(err.into()),
+        };
+
+        let mut events = Vec::new();
+        if let Some(due) = due {
+            self.collect(due, &mut events).await;
+        }
+        self.emit_after(guard, events).await
+    }
+
     /// [`emit_progress`](ProgressService::emit_progress), under the update lock: the events to
     /// send go to `events`.
     async fn advance(
@@ -370,7 +415,31 @@ impl<PS: ProgressBarStorage + 'static> ProgressService for ProgressServiceImpl<P
         total: f64,
         message: String,
     ) -> Result<ProgressBarId, EventError> {
-        self.start(None, event_type, total, message, false).await
+        self.start(None, event_type, total, message, false, None)
+            .await
+    }
+
+    async fn init_cancellable_progress(
+        &self,
+        event_type: ProgressEventType,
+        total: f64,
+        message: String,
+    ) -> Result<(ProgressBarId, CancellationToken), EventError> {
+        let token = CancellationToken::new();
+        let bar = self
+            .start(None, event_type, total, message, false, Some(token.clone()))
+            .await?;
+        Ok((bar, token))
+    }
+
+    async fn cancel_progress(&self, progress_bar_id: Uuid) -> Result<(), EventError> {
+        self.change_cancel(progress_bar_id, BarCancel::request)
+            .await
+    }
+
+    async fn close_cancellation(&self, progress_bar_id: &ProgressBarId) -> Result<(), EventError> {
+        self.change_cancel(progress_bar_id.id, BarCancel::close)
+            .await
     }
 
     async fn init_child_progress(
@@ -380,7 +449,7 @@ impl<PS: ProgressBarStorage + 'static> ProgressService for ProgressServiceImpl<P
         total: f64,
         message: String,
     ) -> Result<ProgressBarId, EventError> {
-        self.start(Some(parent_id), event_type, total, message, false)
+        self.start(Some(parent_id), event_type, total, message, false, None)
             .await
     }
 
@@ -390,7 +459,7 @@ impl<PS: ProgressBarStorage + 'static> ProgressService for ProgressServiceImpl<P
         total: f64,
         message: String,
     ) -> Result<ProgressBarId, EventError> {
-        self.start(None, download.event_type(), total, message, true)
+        self.start(None, download.event_type(), total, message, true, None)
             .await
     }
 
@@ -590,7 +659,7 @@ mod tests {
     use tokio::sync::mpsc;
 
     use crate::features::events::{
-        Event, EventEmitter, ListProgressBarsUseCase, ListProgressBarsUseCasePort,
+        CancelState, Event, EventEmitter, ListProgressBarsUseCase, ListProgressBarsUseCasePort,
         infra::InMemoryProgressBarStorage,
         test_support::{ChannelEmitter, mirrors_now as mirrors, pack, sent},
     };
@@ -1926,5 +1995,138 @@ mod tests {
                 updates as u64 - counted
             );
         }
+    }
+
+    #[tokio::test]
+    async fn should_fire_the_token_and_show_it_when_a_cancellable_bar_is_cancelled() {
+        let (service, storage, mut rx) = service();
+        let (id, token) = service
+            .init_cancellable_progress(pack("Pack"), 1.0, "Downloading".to_string())
+            .await
+            .unwrap();
+        assert_eq!(
+            bar(&storage, &id).await.cancel_state(),
+            Some(CancelState::Open)
+        );
+
+        service.cancel_progress(id.id).await.unwrap();
+
+        assert!(token.is_cancelled());
+        let event = next_progress(&mut rx).await;
+        assert_eq!(event.progress_bar_id, id.id);
+        assert_eq!(event.cancel, Some(CancelState::Requested));
+        assert_eq!(event.status, ProgressStatus::Running);
+        assert_eq!(
+            bar(&storage, &id).await.cancel_state(),
+            Some(CancelState::Requested)
+        );
+    }
+
+    #[tokio::test]
+    async fn should_fire_the_token_at_once_when_the_queue_of_changes_is_busy() {
+        let (service, _storage, _rx) = service();
+        let (id, token) = service
+            .init_cancellable_progress(pack("Pack"), 1.0, "Downloading".to_string())
+            .await
+            .unwrap();
+        // Another change in the middle of being sent, as with hundreds of files downloading.
+        let busy = service.sequencer.begin_change().await;
+
+        let told = tokio::time::timeout(
+            std::time::Duration::from_millis(50),
+            service.cancel_progress(id.id),
+        )
+        .await;
+
+        assert!(told.is_err(), "telling listeners waits for its turn");
+        assert!(token.is_cancelled(), "the call-off does not");
+        drop(busy);
+    }
+
+    #[tokio::test]
+    async fn should_not_fire_the_token_when_cancelled_after_the_cancellation_closed() {
+        let (service, storage, mut rx) = service();
+        let (id, token) = service
+            .init_cancellable_progress(pack("Pack"), 1.0, "Downloading".to_string())
+            .await
+            .unwrap();
+
+        service.close_cancellation(&id).await.unwrap();
+        service.cancel_progress(id.id).await.unwrap();
+
+        assert!(!token.is_cancelled());
+        let closed = next_progress(&mut rx).await;
+        assert_eq!(closed.cancel, Some(CancelState::Closed));
+        assert!(
+            rx.try_recv().is_err(),
+            "the ignored call-off told listeners"
+        );
+        assert_eq!(
+            bar(&storage, &id).await.cancel_state(),
+            Some(CancelState::Closed)
+        );
+    }
+
+    #[tokio::test]
+    async fn should_keep_showing_the_call_off_when_the_cancellation_closes_after_it() {
+        let (service, storage, mut rx) = service();
+        let (id, token) = service
+            .init_cancellable_progress(pack("Pack"), 1.0, "Downloading".to_string())
+            .await
+            .unwrap();
+
+        service.cancel_progress(id.id).await.unwrap();
+        service.close_cancellation(&id).await.unwrap();
+
+        assert!(token.is_cancelled());
+        assert_eq!(
+            next_progress(&mut rx).await.cancel,
+            Some(CancelState::Requested)
+        );
+        assert!(
+            rx.try_recv().is_err(),
+            "closing told listeners of nothing new"
+        );
+        assert_eq!(
+            bar(&storage, &id).await.cancel_state(),
+            Some(CancelState::Requested)
+        );
+    }
+
+    #[tokio::test]
+    async fn should_tell_listeners_once_when_a_bar_is_cancelled_twice() {
+        let (service, _storage, mut rx) = service();
+        let (id, token) = service
+            .init_cancellable_progress(pack("Pack"), 1.0, "Downloading".to_string())
+            .await
+            .unwrap();
+
+        service.cancel_progress(id.id).await.unwrap();
+        service.cancel_progress(id.id).await.unwrap();
+
+        assert!(token.is_cancelled());
+        assert_eq!(
+            next_progress(&mut rx).await.cancel,
+            Some(CancelState::Requested)
+        );
+        assert!(rx.try_recv().is_err(), "the second call-off told listeners");
+    }
+
+    #[tokio::test]
+    async fn should_do_nothing_when_cancelling_a_bar_that_is_gone_or_cannot_be_cancelled() {
+        let (service, storage, mut rx) = service();
+        let plain = service
+            .init_progress(java(), 1.0, "Downloading".to_string())
+            .await
+            .unwrap();
+
+        service.cancel_progress(Uuid::new_v4()).await.unwrap();
+        service.cancel_progress(plain.id).await.unwrap();
+
+        assert_eq!(bar(&storage, &plain).await.cancel_state(), None);
+        assert!(
+            rx.try_recv().is_err(),
+            "a call-off of nothing told listeners"
+        );
     }
 }

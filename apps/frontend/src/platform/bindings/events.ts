@@ -6,6 +6,11 @@ import * as __TAURI_EVENT from "@tauri-apps/api/event";
 /** Commands */
 export const commands = {
 	listProgressBars: () => __TAURI_INVOKE<ProgressBarDto[]>("plugin:events|list_progress_bars"),
+	/**
+	 *  Call off the work of a bar, as the user asked. Nothing happens for a bar that is gone or
+	 *  past the point where its work could stop: the frontend learns of it from the bar's events.
+	 */
+	cancelProgress: (progressBarId: string) => __TAURI_INVOKE<null>("plugin:events|cancel_progress", { progressBarId }),
 };
 
 /** Events */
@@ -53,6 +58,14 @@ export type CacheEventDto = {
 } & CacheEventKindDto;
 
 export type CacheEventKindDto = { type: "changed" } | { type: "busyChanged"; busy: boolean };
+
+export type CancelStateDto = 
+/**  Calling it off now stops it. */
+"open" | 
+/**  Called off; the work is stopping. */
+"requested" | 
+/**  Past the point where it could stop: it runs to its end. */
+"closed";
 
 export type ContentTypeDto = "modpack" | "mod" | "datapack" | "resourcepack" | "shaderpack";
 
@@ -105,7 +118,7 @@ export type InstanceErrorDto = { code: "STORAGE"; payload: {
 	reason: string,
 } } | { code: "PLUGIN_NOT_RUNNING"; payload: {
 	plugin_id: string,
-} } | { code: "CACHES_BEING_CLEARED" } | { code: "PACK_INFO_NOT_FOUND" } | { code: "UPDATER_NOT_FOUND"; payload: {
+} } | { code: "CACHES_BEING_CLEARED" } | { code: "CANCELLED" } | { code: "PACK_INFO_NOT_FOUND" } | { code: "UPDATER_NOT_FOUND"; payload: {
 	modpack_id: string,
 } } | { code: "UPDATE_FAILED"; payload: {
 	modpack_id: string,
@@ -331,6 +344,8 @@ export type ProgressBarDto = {
 	bytesTotal: number | null,
 	/**  Bytes per second. */
 	speed: number | null,
+	/**  As in `ProgressEventDto`. */
+	cancel: CancelStateDto | null,
 };
 
 export type ProgressEventDto = {
@@ -357,11 +372,16 @@ export type ProgressEventDto = {
 	bytesTotal: number | null,
 	/**  Bytes per second. */
 	speed: number | null,
+	/**
+	 *  Whether the user may call the bar's work off (`cancel_progress`); absent for work that
+	 *  cannot be.
+	 */
+	cancel: CancelStateDto | null,
 };
 
 export type ProgressEventTypeDto = { type: "java_download"; version: number } | { type: "pack_file_download"; instance_path: string; pack_name: string; icon: string | null; pack_version: string } | { type: "pack_download"; instance_path: string; pack_name: string; icon: string | null; pack_id: string | null; pack_version: string | null } | { type: "minecraft_download"; instance_id: string; instance_name: string } | { type: "minecraft_version_download"; version: string } | { type: "minecraft_assets_download"; version: string; file_count: number } | { type: "file_download"; file_name: string } | { type: "instance_update"; instance_id: string; instance_name: string } | { type: "zip_extract"; instance_path: string; instance_name: string } | { type: "launcher_update"; version: string; current_version: string; phase: LauncherUpdatePhaseDto } | { type: "plugin_download"; plugin_name: string };
 
-export type ProgressStageDto = "downloading" | "verifying" | "installing" | "extracting" | "finishing";
+export type ProgressStageDto = "preparing" | "downloading" | "verifying" | "installing" | "extracting" | "finishing";
 
 export type ProgressStatusDto = { type: "running" } | { type: "done" } | { type: "failed"; message: string } | { type: "cancelled" };
 

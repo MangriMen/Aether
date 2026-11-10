@@ -1,5 +1,6 @@
 use async_trait::async_trait;
-use log::debug;
+use tokio_util::sync::CancellationToken;
+use tracing::debug;
 use uuid::Uuid;
 
 use crate::features::events::{
@@ -18,6 +19,31 @@ pub trait ProgressServiceExt: ProgressService {
             .await
             .map_err(|error| debug!("Failed to send progress: {error}"))
             .ok()
+    }
+
+    /// Without a bar (it could not be started) the token never fires.
+    async fn init_cancellable_progress_safe(
+        &self,
+        event_type: ProgressEventType,
+        total: f64,
+        message: String,
+    ) -> (Option<ProgressBarId>, CancellationToken) {
+        match self
+            .init_cancellable_progress(event_type, total, message)
+            .await
+        {
+            Ok((bar, token)) => (Some(bar), token),
+            Err(error) => {
+                debug!("Failed to send progress: {error}");
+                (None, CancellationToken::new())
+            }
+        }
+    }
+
+    async fn close_cancellation_safe(&self, id: &ProgressBarId) {
+        if let Err(e) = self.close_cancellation(id).await {
+            debug!("Failed to send progress: {e}");
+        }
     }
 
     async fn init_child_progress_safe(

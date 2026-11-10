@@ -12,6 +12,7 @@ import {
   useContent,
   useContentVersions,
 } from '@/features/content';
+import { isCancelledError } from '@/features/errors';
 import { useInstallInstance, useUpdateInstance } from '@/features/instance';
 import { useTranslation } from '@/shared/i18n';
 import { logError } from '@/shared/log';
@@ -32,7 +33,12 @@ export const InstallationTab: Component<InstallationTabProps> = (props) => {
   const { mutateAsync: updateInstance } = useUpdateInstance();
 
   const handleUpdate = async () => {
-    await updateInstance(local.instance.id).catch(logError);
+    await updateInstance(local.instance.id).catch((error: unknown) => {
+      // Called off by the user: nothing failed.
+      if (!isCancelledError(error)) {
+        logError(error);
+      }
+    });
   };
 
   const handleRepair = async () => {

@@ -8,9 +8,9 @@ use crate::features::{
         LogoutUseCasePort, SetActiveAccountUseCase, SetActiveAccountUseCasePort,
     },
     events::{
-        Event, EventEmitter, EventEmitterExt, EventsFeature, ListProgressBarsUseCase,
-        ListProgressBarsUseCasePort, PluginEvent, ProgressBarStorage, ProgressService,
-        SharedEventEmitter,
+        CancelProgressUseCase, CancelProgressUseCasePort, Event, EventEmitter, EventEmitterExt,
+        EventsFeature, ListProgressBarsUseCase, ListProgressBarsUseCasePort, PluginEvent,
+        ProgressBarStorage, ProgressService, SharedEventEmitter,
     },
     instance::{
         ChangeContentStateUseCase, ChangeContentStateUseCasePort, ChangeInstanceGameUseCase,
@@ -1054,6 +1054,9 @@ impl EventsFeature for AetherContainer {
         Arc::new(ListProgressBarsUseCase::new(
             self.progress_bar_storage().clone(),
         ))
+    }
+    fn cancel_progress_use_case(&self) -> Arc<dyn CancelProgressUseCasePort> {
+        Arc::new(CancelProgressUseCase::new(self.progress_service().clone()))
     }
     fn event_emitter(&self) -> Arc<dyn EventEmitter<Event>> {
         self.event_emitter().clone()

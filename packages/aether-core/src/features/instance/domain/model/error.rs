@@ -68,6 +68,11 @@ pub enum InstanceError {
     #[error("The caches are being cleared; try again in a moment")]
     CachesBeingCleared,
 
+    /// The user called the install off before it changed anything: the instance is as it was,
+    /// and a new one was never created. Not a failure to report.
+    #[error("The install was cancelled")]
+    Cancelled,
+
     // Update errors
     #[error("Not found pack info in instance")]
     PackInfoNotFound,

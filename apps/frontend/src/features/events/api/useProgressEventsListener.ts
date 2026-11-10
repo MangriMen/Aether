@@ -8,6 +8,7 @@ import { showToast } from '@/shared/ui-kit';
 import type { ProgressEvent } from '../model/progressEvent';
 
 import { useProgressStore } from '../model/progressStore';
+import { isPartOfContentInstall } from '../model/progressTree';
 
 const FLUSH_DELAY_MS = 16;
 
@@ -94,6 +95,7 @@ export const useProgressEventsListener = () => {
           bytesDone: bar.bytesDone,
           bytesTotal: bar.bytesTotal,
           speed: bar.speed,
+          cancel: bar.cancel,
         });
       }
     } catch (error) {
@@ -110,11 +112,13 @@ export const useProgressEventsListener = () => {
     liveBarIds?.add(e.payload.progressBarId);
     enqueueEvent(e.payload);
 
-    // A mirror fails with the shared download it shows, which reports it once.
+    // A mirror fails with the shared download it shows, which reports it once; a content
+    // install reports its own failure.
     if (
       e.payload.status.type === 'failed' &&
       e.payload.mirrorOf === null &&
-      !notifiedFailures.has(e.payload.progressBarId)
+      !notifiedFailures.has(e.payload.progressBarId) &&
+      !isPartOfContentInstall(e.payload, progressStore.payloads)
     ) {
       notifiedFailures.add(e.payload.progressBarId);
       showToast({

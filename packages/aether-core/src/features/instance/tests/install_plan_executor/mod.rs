@@ -5,6 +5,7 @@
 //! The network policies themselves — a plugin's URL refused outside its `allowed_hosts`, a hash
 //! mismatch — are exercised with the real downloader in `plugins::tests::install_plan_download_test`.
 
+mod cancel;
 mod change_game;
 mod common;
 mod diff;

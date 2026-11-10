@@ -16,6 +16,7 @@ const base: ProgressEvent = {
   bytesDone: 40 * 1024 * 1024,
   bytesTotal: 100 * 1024 * 1024,
   speed: 3 * 1024 * 1024,
+  cancel: null,
 };
 
 const unknownSize: ProgressEvent = {
@@ -32,6 +33,16 @@ const failed: ProgressEvent = {
 };
 
 const cancelled: ProgressEvent = { ...base, status: { type: 'cancelled' } };
+
+const cancellable: ProgressEvent = { ...base, cancel: 'open' };
+
+const cancelling: ProgressEvent = { ...base, cancel: 'requested' };
+
+const pastCancel: ProgressEvent = {
+  ...base,
+  stage: 'installing',
+  cancel: 'closed',
+};
 
 const mirror: ProgressEvent = { ...base, mirrorOf: 'shared-bar' };
 
@@ -65,6 +76,12 @@ export const UnknownSize: Story = { args: { payload: unknownSize } };
 export const Failed: Story = { args: { payload: failed } };
 
 export const Cancelled: Story = { args: { payload: cancelled } };
+
+export const Cancellable: Story = { args: { payload: cancellable } };
+
+export const Cancelling: Story = { args: { payload: cancelling } };
+
+export const PastCancel: Story = { args: { payload: pastCancel } };
 
 export const Mirror: Story = { args: { payload: mirror } };
 
