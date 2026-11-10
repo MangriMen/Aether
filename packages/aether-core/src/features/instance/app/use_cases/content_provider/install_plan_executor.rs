@@ -62,7 +62,7 @@ use std::{
     collections::HashMap,
     path::{Path, PathBuf},
     sync::{
-        Arc,
+        Arc, OnceLock,
         atomic::{AtomicBool, AtomicU64, Ordering},
     },
 };
@@ -87,10 +87,10 @@ use crate::{
         },
         instance::{
             ContentDownloader, ContentFileService, ContentFileUpdateInfo, ContentId, ContentPath,
-            ContentProvider, ContentVersionId, FileSide, InstallFileEntry, InstallPlan,
-            InstallTarget, Instance, InstanceError, InstanceId, InstanceStorage, OverrideLocation,
-            PackFile, PackStorage, PlanOrigin, PlatformProviderSelection, ProviderId,
-            ResolveInstallPlanParams, ResolveTarget,
+            ContentProvider, ContentVersionId, FileSide, InstallCancellations, InstallFileEntry,
+            InstallPlan, InstallTarget, Instance, InstanceError, InstanceId, InstanceStorage,
+            OverrideLocation, PackFile, PackStorage, PlanOrigin, PlatformProviderSelection,
+            ProviderId, ResolveInstallPlanParams, ResolveTarget,
             app::{
                 DISABLED_SUFFIX, DownloadEvent,
                 ports::{
@@ -133,6 +133,7 @@ pub struct InstallPlanExecutor {
     remove_instance: Arc<dyn RemoveInstanceUseCasePort>,
     metadata_cache: Arc<dyn ContentMetadataCache>,
     limits: ContentInstallLimits,
+    cancellations: Arc<InstallCancellations>,
 }
 
 /// The progress bar of one run, counted in steps, with a bar under it for each file downloaded.
@@ -147,6 +148,9 @@ pub struct PlanProgress {
     bar: Option<ProgressBarId>,
     /// Fires when the user calls the run off; never without a bar.
     cancel: CancellationToken,
+    /// Fires when the instance the run fills is removed; set once the run is known to fill an
+    /// existing one.
+    removal: OnceLock<CancellationToken>,
     /// What the bar shows, to name it anew (see [`Self::resolve_plan`]).
     event_type: ProgressEventType,
     /// Shared by the bars of the files.
@@ -168,6 +172,7 @@ impl PlanProgress {
             service,
             bar: None,
             cancel,
+            removal: OnceLock::new(),
             event_type: ProgressEventType::PackDownload {
                 instance_path: String::new(),
                 pack_name: String::new(),
@@ -323,10 +328,32 @@ impl PlanProgress {
         &self,
         work: impl Future<Output = Result<T, InstanceError>>,
     ) -> Result<T, InstanceError> {
-        self.cancel
-            .run_until_cancelled(work)
-            .await
-            .unwrap_or(Err(InstanceError::Cancelled))
+        tokio::select! {
+            () = self.called_off() => Err(InstanceError::Cancelled),
+            result = work => result,
+        }
+    }
+
+    /// Resolves once the user calls the run off, or the instance it fills is removed.
+    async fn called_off(&self) {
+        let removed = async {
+            match self.removal.get() {
+                Some(removal) => removal.cancelled().await,
+                None => std::future::pending().await,
+            }
+        };
+        tokio::select! {
+            () = self.cancel.cancelled() => {}
+            () = removed => {}
+        }
+    }
+
+    fn is_called_off(&self) -> bool {
+        self.cancel.is_cancelled()
+            || self
+                .removal
+                .get()
+                .is_some_and(CancellationToken::is_cancelled)
     }
 
     /// Pass the point of no return, before anything in the target changes: from here on the
@@ -335,7 +362,7 @@ impl PlanProgress {
         if let Some(bar) = &self.bar {
             self.service.close_cancellation_safe(bar).await;
         }
-        if self.cancel.is_cancelled() {
+        if self.is_called_off() {
             return Err(InstanceError::Cancelled);
         }
         Ok(())
@@ -811,7 +838,16 @@ impl InstallPlanExecutor {
             remove_instance,
             metadata_cache,
             limits,
+            cancellations: Arc::default(),
         }
+    }
+
+    /// Run under a registry shared with whoever removes instances: removing the instance a run
+    /// fills calls the run off, as long as it has not started on the instance.
+    #[must_use]
+    pub fn with_cancellations(mut self, cancellations: Arc<InstallCancellations>) -> Self {
+        self.cancellations = cancellations;
+        self
     }
 
     /// Start the bar of a run for `content_id` in `target`, before its plan is resolved: the
@@ -852,8 +888,19 @@ impl InstallPlanExecutor {
         progress: &PlanProgress,
     ) -> Result<InstanceId, InstanceError> {
         progress.reveal().await;
+        // Registered until the run has ended, so that removing the instance waits for it.
+        let registered = match &plan.target {
+            InstallTarget::Existing { instance_id, .. } => {
+                Some(self.cancellations.register(instance_id))
+            }
+            InstallTarget::New(_) => None,
+        };
+        if let Some(registered) = &registered {
+            let _ = progress.removal.set(registered.token.clone());
+        }
         let result = self.run(plan, origin, progress).await;
         progress.end(&result).await;
+        drop(registered);
         result
     }
 
@@ -1104,6 +1151,7 @@ impl InstallPlanExecutor {
             service: self.progress_service.clone(),
             bar,
             cancel,
+            removal: OnceLock::new(),
             event_type,
             instance_path,
             revealed: AtomicBool::new(false),

@@ -808,36 +808,39 @@ impl ContentProviderPort for AetherContainer {
         Arc::new(Leased::new(inner, self.activity_gate.clone()))
     }
     fn install_plan_executor(&self) -> Arc<dyn InstallPlanExecutorPort> {
-        Arc::new(InstallPlanExecutor::new(
-            self.content_provider_registry().clone(),
-            Arc::new(SettingsPlatformProviderSelection::new(
-                self.storage().settings_storage.clone(),
-            )),
-            self.storage().instance_storage.clone(),
-            self.create_instance_use_case(),
-            Arc::new(ChangeInstanceGameUseCase::new(
+        Arc::new(
+            InstallPlanExecutor::new(
+                self.content_provider_registry().clone(),
+                Arc::new(SettingsPlatformProviderSelection::new(
+                    self.storage().settings_storage.clone(),
+                )),
                 self.storage().instance_storage.clone(),
-                self.loader_version_resolver(),
-                self.instance_install_service(),
-            )),
-            self.minecraft_install_use_case(),
-            Arc::new(ProviderContentDownloader::new(
-                self.params.request_client.clone(),
-                self.plugins().registry.clone(),
-                self.plugins().settings_storage.clone(),
-                self.fetch_semaphore(),
+                self.create_instance_use_case(),
+                Arc::new(ChangeInstanceGameUseCase::new(
+                    self.storage().instance_storage.clone(),
+                    self.loader_version_resolver(),
+                    self.instance_install_service(),
+                )),
+                self.minecraft_install_use_case(),
+                Arc::new(ProviderContentDownloader::new(
+                    self.params.request_client.clone(),
+                    self.plugins().registry.clone(),
+                    self.plugins().settings_storage.clone(),
+                    self.fetch_semaphore(),
+                    self.progress_service(),
+                    self.content_limits(),
+                    self.sandbox_limits(),
+                )),
+                self.storage().content_file_service.clone(),
+                self.storage().pack_storage.clone(),
+                self.location_info(),
                 self.progress_service(),
+                self.remove_instance_use_case(),
+                self.storage().content_metadata_cache.clone(),
                 self.content_limits(),
-                self.sandbox_limits(),
-            )),
-            self.storage().content_file_service.clone(),
-            self.storage().pack_storage.clone(),
-            self.location_info(),
-            self.progress_service(),
-            self.remove_instance_use_case(),
-            self.storage().content_metadata_cache.clone(),
-            self.content_limits(),
-        ))
+            )
+            .with_cancellations(self.install_cancellations.clone()),
+        )
     }
     fn check_content_compatibility_use_case(
         &self,

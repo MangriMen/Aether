@@ -349,6 +349,52 @@ async fn should_leave_the_instance_as_it_was_when_an_update_is_cancelled_while_d
 }
 
 #[tokio::test]
+async fn should_stop_an_update_and_leave_the_instance_when_the_instance_is_removed_while_downloading()
+ {
+    let mut fixture = Fixture::new().await;
+    let mut bars = Bars::install(&mut fixture);
+    let packwiz = plugin("packwiz");
+    fixture
+        .put_installed("mods/a.jar", "old", Some(pack_of(&packwiz)))
+        .await;
+    let run = fixture.execute(
+        existing(vec![direct("https://cdn.example/hang.jar", "mods/a.jar")]),
+        &packwiz,
+    );
+    tokio::pin!(run);
+    tokio::select! {
+        result = &mut run => panic!("the run cannot end by itself: {result:?}"),
+        () = fixture.downloader.hanging.notified() => {}
+    }
+
+    let id = InstanceId::try_from(INSTANCE_ID).unwrap();
+    let removal = fixture.cancellations.begin_removal(&id);
+    tokio::pin!(removal);
+    let err = tokio::time::timeout(Duration::from_secs(5), async {
+        tokio::select! {
+            result = &mut run => result.unwrap_err(),
+            _ = &mut removal => panic!("the removal came before the run was gone"),
+        }
+    })
+    .await
+    .expect("the run did not stop");
+    let _removal = tokio::time::timeout(Duration::from_secs(5), removal)
+        .await
+        .expect("the removal waits for the run for good");
+
+    assert!(matches!(err, InstanceError::Cancelled), "{err:?}");
+    assert_eq!(
+        fixture.instance_file(INSTANCE_ID, "mods/a.jar").as_deref(),
+        Some("old")
+    );
+    assert!(fixture.staging_is_clean());
+    assert_eq!(
+        plan_end(&bars.once_all_ended().await).status,
+        ProgressStatus::Cancelled
+    );
+}
+
+#[tokio::test]
 async fn should_create_no_instance_when_called_off_right_before_the_point_of_no_return() {
     let mut fixture = Fixture::new().await;
     let mut bars = Bars::install(&mut fixture);
