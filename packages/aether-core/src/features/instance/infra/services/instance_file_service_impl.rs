@@ -153,11 +153,16 @@ impl InstanceFileService for FsInstanceFileService {
             .map_err(|err| InstanceError::Storage(err.to_string()))?;
         let trash = trash_root.join(uuid::Uuid::new_v4().simple().to_string());
 
-        retry(MOVE_ATTEMPTS, MOVE_RETRY_DELAY, is_held_open, || {
+        let moved = retry(MOVE_ATTEMPTS, MOVE_RETRY_DELAY, is_held_open, || {
             rename(&instance_dir, &trash)
         })
-        .await
-        .map_err(|err| InstanceError::Storage(err.to_string()))?;
+        .await;
+        match moved {
+            Ok(()) => {}
+            // Another removal (the rollback of a creation, say) moved it first: it is gone.
+            Err(_) if !instance_dir.exists() => return Ok(()),
+            Err(err) => return Err(InstanceError::Storage(err.to_string())),
+        }
 
         if let Err(err) = remove_dir_all(&trash).await {
             warn!("Removed instance {instance_id} but could not delete {trash:?}: {err}");

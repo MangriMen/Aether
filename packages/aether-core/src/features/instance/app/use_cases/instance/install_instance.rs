@@ -167,6 +167,9 @@ impl InstallInstanceUseCase {
         force: bool,
         parent_bar: Option<&ProgressBarId>,
     ) -> Result<(), InstanceError> {
+        // From the start: a removal that comes while the loader version is still resolved
+        // calls this install off too.
+        let removal = self.cancellations.register(&instance_id);
         let mut previous_stage = InstanceInstallStage::NotInstalled;
         let mut instance = self
             .instance_storage
@@ -223,31 +226,30 @@ impl InstallInstanceUseCase {
             instance.loader_version
         );
 
+        let params = InstallMinecraftParams {
+            game_version: instance.game_version.clone(),
+            loader: instance.loader,
+            loader_version: instance.loader_version.clone(),
+            install_dir,
+            java_path: instance.java_path_override(),
+        };
         // Dropped halfway on a call-off: what is downloaded stays, the files are written whole
-        // and the next install takes up where this one stopped.
-        // The button of the bar, or the removal of the instance.
-        let removal = self.cancellations.register(instance.id());
+        // and the next install takes up where this one stopped. Called off by the button of the
+        // bar, or by the removal of the instance.
         let result = tokio::select! {
-            () = cancel.cancelled() => None,
-            () = removal.token.cancelled() => None,
-            result = self.install_minecraft_service.execute(
-                InstallMinecraftParams {
-                    game_version: instance.game_version.clone(),
-                    loader: instance.loader,
-                    loader_version: instance.loader_version.clone(),
-                    install_dir,
-                    java_path: instance.java_path_override(),
-                },
-                loading_bar.as_ref(),
-                force,
-            ) => Some(result),
-        }
-        .map_or(Err(InstanceError::Cancelled), |result| {
-            result.map_err(InstanceError::from)
-        });
-        drop(removal);
+            () = cancel.cancelled() => Err(InstanceError::Cancelled),
+            () = removal.token.cancelled() => Err(InstanceError::Cancelled),
+            result = self.install_minecraft_service.execute(params, loading_bar.as_ref(), force) => {
+                result.map_err(InstanceError::from)
+            }
+        };
 
-        match result {
+        if let Some(bar) = loading_bar.as_ref().filter(|_| result.is_ok()) {
+            // Done: too late to call it off.
+            self.progress_service.close_cancellation_safe(bar).await;
+        }
+
+        let settled = match result {
             Ok(()) => {
                 self.handle_success_installation(&instance, pack_pending)
                     .await
@@ -256,7 +258,14 @@ impl InstallInstanceUseCase {
                 self.handle_failed_installation(instance.id(), previous_stage)
                     .await
             }
-        }?;
+        };
+        // Called off by the removal of the instance, its stage is gone with it.
+        if let Err(err) = settled
+            && !matches!(result, Err(InstanceError::Cancelled))
+        {
+            return Err(err);
+        }
+        drop(removal);
 
         if let Some(loading_bar) = loading_bar {
             match &result {

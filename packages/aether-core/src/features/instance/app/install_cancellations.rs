@@ -6,6 +6,7 @@ use std::{
     },
 };
 
+use tokio::sync::Notify;
 use tokio_util::sync::CancellationToken;
 
 use crate::features::instance::InstanceId;
@@ -16,6 +17,8 @@ use crate::features::instance::InstanceId;
 pub struct InstallCancellations {
     running: Mutex<HashMap<InstanceId, Vec<(u64, CancellationToken)>>>,
     next: AtomicU64,
+    /// Told when an install leaves the registry.
+    left: Notify,
 }
 
 /// An install of the game of an instance, in the registry until dropped.
@@ -46,6 +49,29 @@ impl InstallCancellations {
         }
     }
 
+    /// Call off every install running for the instance, and wait for them to unwind: they
+    /// restore the stage of the instance, which must not race its removal.
+    pub async fn cancel_and_wait(&self, instance_id: &InstanceId) {
+        self.cancel(instance_id);
+        loop {
+            // Asked for before the check, so that a leave in between is not missed.
+            let left = self.left.notified();
+            tokio::pin!(left);
+            left.as_mut().enable();
+            if !self.is_running(instance_id) {
+                return;
+            }
+            left.await;
+        }
+    }
+
+    fn is_running(&self, instance_id: &InstanceId) -> bool {
+        self.running
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .contains_key(instance_id)
+    }
+
     /// Call off every install running for the instance.
     pub fn cancel(&self, instance_id: &InstanceId) {
         let running = self
@@ -71,6 +97,8 @@ impl Drop for RegisteredInstall<'_> {
                 running.remove(&self.instance_id);
             }
         }
+        drop(running);
+        self.registry.left.notify_waiters();
     }
 }
 
@@ -115,6 +143,27 @@ mod tests {
         installs.cancel(&id("mine"));
 
         assert!(second.token.is_cancelled());
+    }
+
+    #[tokio::test]
+    async fn should_wait_for_the_install_to_leave_when_cancelling_and_waiting() {
+        let installs = std::sync::Arc::new(InstallCancellations::default());
+        let id = id("mine");
+        let install = installs.register(&id);
+        let waiting = {
+            let (installs, id) = (installs.clone(), id.clone());
+            tokio::spawn(async move { installs.cancel_and_wait(&id).await })
+        };
+        install.token.cancelled().await;
+        tokio::task::yield_now().await;
+        assert!(!waiting.is_finished(), "the install is still unwinding");
+
+        drop(install);
+
+        tokio::time::timeout(std::time::Duration::from_secs(5), waiting)
+            .await
+            .expect("did not stop waiting")
+            .unwrap();
     }
 
     #[test]
