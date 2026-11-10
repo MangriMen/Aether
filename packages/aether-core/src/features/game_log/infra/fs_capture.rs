@@ -155,6 +155,8 @@ impl LogSink {
             let _ = file
                 .write_all(b"[console log size limit reached, the rest is not recorded]\n")
                 .await;
+            // A file dropped with a write still queued may lose it.
+            let _ = file.flush().await;
             self.file = None;
             return;
         }

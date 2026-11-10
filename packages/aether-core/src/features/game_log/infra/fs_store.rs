@@ -195,8 +195,13 @@ async fn remove_stale_unpacked(cache_dir: &Path, name: &str, keep: &Path) {
     };
 
     while let Ok(Some(entry)) = entries.next_entry().await {
-        let is_old_copy =
-            entry.file_name().to_string_lossy().starts_with(&prefix) && entry.path() != keep;
+        let file_name = entry.file_name().to_string_lossy().into_owned();
+        // A `.part` file is another read's unpack in progress, which that read renames itself.
+        let is_old_copy = file_name.starts_with(&prefix)
+            && Path::new(&file_name)
+                .extension()
+                .is_none_or(|ext| ext != "part")
+            && entry.path() != keep;
         if is_old_copy {
             let _ = fs::remove_file(entry.path()).await;
         }
@@ -451,7 +456,8 @@ mod tests {
         let old = cache.path().join("a.log.gz-10-1.log");
         let other = cache.path().join("b.log.gz-10-1.log");
         let current = cache.path().join("a.log.gz-20-2.log");
-        for path in [&old, &other, &current] {
+        let unpacking = cache.path().join("a.log.gz-20-2.1234.part");
+        for path in [&old, &other, &current, &unpacking] {
             std::fs::write(path, "x").unwrap();
         }
 
@@ -460,5 +466,6 @@ mod tests {
         assert!(!old.exists());
         assert!(other.exists());
         assert!(current.exists());
+        assert!(unpacking.exists());
     }
 }
