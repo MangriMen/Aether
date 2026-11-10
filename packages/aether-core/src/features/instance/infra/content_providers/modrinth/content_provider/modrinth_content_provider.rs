@@ -613,13 +613,6 @@ impl<RC: RequestClient> ContentProvider for ModrinthContentProvider<RC> {
     async fn resolve_install_plan(
         &self,
         params: ResolveInstallPlanParams,
-    ) -> Result<InstallPlan, InstanceError> {
-        self.resolve_install_plan_reporting(params, &|_| {}).await
-    }
-
-    async fn resolve_install_plan_reporting(
-        &self,
-        params: ResolveInstallPlanParams,
         report: DownloadReport<'_>,
     ) -> Result<InstallPlan, InstanceError> {
         let project = self

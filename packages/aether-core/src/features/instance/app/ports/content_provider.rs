@@ -67,24 +67,17 @@ pub trait ContentProvider: Send + Sync {
     /// The full plan for installing or updating content, one mod and a whole modpack alike.
     /// See [`ResolveTarget::Existing`](crate::features::instance::ResolveTarget::Existing) for
     /// when the plan may name a new game for an existing instance.
+    ///
+    /// `report` is told of what the provider downloads meanwhile (a pack's archive), so that
+    /// the run's bar shows its bytes and speed. A provider that downloads nothing, or cannot
+    /// say how far it got (a plugin), leaves it be.
     async fn resolve_install_plan(
-        &self,
-        params: ResolveInstallPlanParams,
-    ) -> Result<InstallPlan, InstanceError> {
-        let _ = params;
-        Err(self.unsupported("resolve_install_plan"))
-    }
-
-    /// As [`Self::resolve_install_plan`], telling `report` of what the provider downloads
-    /// meanwhile, so that the run's bar shows its bytes and speed. A provider that reports
-    /// nothing (a plugin's) keeps the default, which only resolves.
-    async fn resolve_install_plan_reporting(
         &self,
         params: ResolveInstallPlanParams,
         report: DownloadReport<'_>,
     ) -> Result<InstallPlan, InstanceError> {
-        let _ = report;
-        self.resolve_install_plan(params).await
+        let _ = (params, report);
+        Err(self.unsupported("resolve_install_plan"))
     }
 
     /// A pack's description without resolving its files: the preview before installing, and
@@ -264,12 +257,15 @@ mod tests {
             let provider = provider.clone();
             async move {
                 provider
-                    .resolve_install_plan(ResolveInstallPlanParams {
-                        content_id: ContentId::try_from("AANobbMI").unwrap(),
-                        version: None,
-                        installed_version: None,
-                        target: ResolveTarget::New,
-                    })
+                    .resolve_install_plan(
+                        ResolveInstallPlanParams {
+                            content_id: ContentId::try_from("AANobbMI").unwrap(),
+                            version: None,
+                            installed_version: None,
+                            target: ResolveTarget::New,
+                        },
+                        &|_| {},
+                    )
                     .await
             }
         });

@@ -435,6 +435,7 @@ impl ContentProvider for PluginContentProviderProxy {
     async fn resolve_install_plan(
         &self,
         params: ResolveInstallPlanParams,
+        _: crate::features::instance::DownloadReport<'_>,
     ) -> Result<InstallPlan, InstanceError> {
         let handler = self.handler(
             self.capability.handlers.resolve_install_plan.as_ref(),

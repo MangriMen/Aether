@@ -154,7 +154,7 @@ impl ContentProvider for MockProvider {
     }
 
     /// Downloads an archive of 100 bytes, in two parts, while it resolves an empty plan.
-    async fn resolve_install_plan_reporting(
+    async fn resolve_install_plan(
         &self,
         _: crate::features::instance::ResolveInstallPlanParams,
         report: crate::features::instance::app::DownloadReport<'_>,

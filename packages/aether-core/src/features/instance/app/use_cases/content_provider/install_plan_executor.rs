@@ -216,9 +216,7 @@ impl PlanProgress {
         };
 
         let resolving = async {
-            let plan = provider
-                .resolve_install_plan_reporting(params, &report)
-                .await;
+            let plan = provider.resolve_install_plan(params, &report).await;
             // Closes the channel, which ends the reporting below.
             drop(report);
             plan

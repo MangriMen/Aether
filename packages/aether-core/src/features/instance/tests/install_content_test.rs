@@ -146,6 +146,7 @@ impl ContentProvider for MockProvider {
     async fn resolve_install_plan(
         &self,
         params: ResolveInstallPlanParams,
+        _: crate::features::instance::DownloadReport<'_>,
     ) -> Result<InstallPlan, InstanceError> {
         if self.hangs {
             std::future::pending::<()>().await;
