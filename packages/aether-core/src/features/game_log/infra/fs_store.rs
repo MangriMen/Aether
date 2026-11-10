@@ -98,6 +98,7 @@ impl FsGameLogStore {
         fs::create_dir_all(&cache_dir)
             .await
             .map_err(|err| IoError::with_path(err, &cache_dir))?;
+        remove_stale_unpacked(&cache_dir, source.name(), &target).await;
         let source_id = source.id();
         let target_for_task = target.clone();
         tokio::task::spawn_blocking(move || unpack(&path, &target_for_task, &source_id))
@@ -186,10 +187,27 @@ fn modified_millis(meta: &std::fs::Metadata) -> Option<i64> {
     i64::try_from(since_epoch.as_millis()).ok()
 }
 
+/// Drops the unpacked copies of earlier versions of the same log, so the cache keeps one per log.
+async fn remove_stale_unpacked(cache_dir: &Path, name: &str, keep: &Path) {
+    let prefix = format!("{name}-");
+    let Ok(mut entries) = fs::read_dir(cache_dir).await else {
+        return;
+    };
+
+    while let Ok(Some(entry)) = entries.next_entry().await {
+        let is_old_copy =
+            entry.file_name().to_string_lossy().starts_with(&prefix) && entry.path() != keep;
+        if is_old_copy {
+            let _ = fs::remove_file(entry.path()).await;
+        }
+    }
+}
+
 fn unpack(path: &Path, target: &Path, source_id: &str) -> Result<(), GameLogError> {
     use std::io::Read;
 
-    let part = target.with_extension("part");
+    // Unique, so two reads of the same log unpack side by side instead of over each other.
+    let part = target.with_extension(format!("{}.part", uuid::Uuid::new_v4()));
     let result = (|| -> std::io::Result<u64> {
         let input = std::fs::File::open(path)?;
         let mut decoder = flate2::read::GzDecoder::new(input).take(MAX_UNPACKED_BYTES + 1);
@@ -423,5 +441,22 @@ mod tests {
             ids,
             ["console:console-20260101-000000-000.log", "game:latest.log"]
         );
+    }
+
+    #[tokio::test]
+    async fn should_keep_one_unpacked_copy_when_the_log_changes() {
+        let cache = tempfile::tempdir().unwrap();
+        let old = cache.path().join("a.log.gz-10-1.log");
+        let other = cache.path().join("b.log.gz-10-1.log");
+        let current = cache.path().join("a.log.gz-20-2.log");
+        for path in [&old, &other, &current] {
+            std::fs::write(path, "x").unwrap();
+        }
+
+        remove_stale_unpacked(cache.path(), "a.log.gz", &current).await;
+
+        assert!(!old.exists());
+        assert!(other.exists());
+        assert!(current.exists());
     }
 }

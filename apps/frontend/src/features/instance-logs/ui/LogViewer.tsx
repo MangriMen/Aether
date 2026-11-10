@@ -63,44 +63,68 @@ export const LogViewer: Component<LogViewerProps> = (props) => {
     }
   };
 
-  createEffect(
-    on(
-      () => props.lines.length,
-      () => {
-        if (stick() && props.tailLoaded) {
-          queueMicrotask(scrollToEnd);
-        }
-      },
-    ),
-  );
+  // The first row in view. Lines that come in or go out above it move it, and the view is
+  // moved back by as much, so that what the reader looks at stays put.
+  let anchor: LogLine | undefined;
+  let anchorIndex = 0;
+
+  const rememberAnchor = () => {
+    if (!scrollRef) {
+      return;
+    }
+
+    anchorIndex = Math.floor(scrollRef.scrollTop / ROW_HEIGHT);
+    anchor = props.lines[anchorIndex];
+  };
 
   const loadOlder = async () => {
-    if (loadingOlder || !scrollRef) {
+    if (loadingOlder) {
       return;
     }
 
     loadingOlder = true;
 
     try {
-      const firstIndex = Math.floor(scrollRef.scrollTop / ROW_HEIGHT);
-      const anchor = props.lines[firstIndex];
-
       await props.onLoadOlder();
-
-      // The older lines went in above the anchor: move down by as many rows as they took.
-      const moved = anchor ? props.lines.indexOf(anchor) - firstIndex : 0;
-
-      if (moved > 0) {
-        requestAnimationFrame(() => {
-          if (scrollRef) {
-            scrollRef.scrollTop += moved * ROW_HEIGHT;
-          }
-        });
-      }
     } finally {
       loadingOlder = false;
     }
   };
+
+  const loadOlderIfNearStart = () => {
+    if (
+      props.hasMoreBefore &&
+      scrollRef &&
+      scrollRef.scrollTop < LOAD_OLDER_THRESHOLD_PX
+    ) {
+      void loadOlder();
+    }
+  };
+
+  createEffect(
+    on(
+      () => props.lines,
+      (lines) => {
+        const following = stick() && props.tailLoaded;
+
+        if (following) {
+          queueMicrotask(scrollToEnd);
+        }
+
+        const index = !following && anchor ? lines.indexOf(anchor) : -1;
+
+        requestAnimationFrame(() => {
+          if (scrollRef && index >= 0 && index !== anchorIndex) {
+            scrollRef.scrollTop += (index - anchorIndex) * ROW_HEIGHT;
+            rememberAnchor();
+          }
+
+          // A filter can leave too few lines to scroll, and then no scroll event would ever ask.
+          loadOlderIfNearStart();
+        });
+      },
+    ),
+  );
 
   const handleScroll = () => {
     if (!scrollRef) {
@@ -111,10 +135,8 @@ export const LogViewer: Component<LogViewerProps> = (props) => {
       scrollRef.scrollHeight - scrollRef.scrollTop - scrollRef.clientHeight;
 
     setStick(distanceToEnd < STICK_THRESHOLD_PX);
-
-    if (props.hasMoreBefore && scrollRef.scrollTop < LOAD_OLDER_THRESHOLD_PX) {
-      void loadOlder();
-    }
+    rememberAnchor();
+    loadOlderIfNearStart();
   };
 
   const jumpToEnd = async () => {

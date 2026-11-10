@@ -40,3 +40,35 @@ impl CaptureHandle {
 pub trait GameOutputCaptureService: Send + Sync {
     fn start(&self, params: CaptureGameOutputParams) -> CaptureHandle;
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn should_stop_waiting_when_the_capture_does_not_finish_in_time() {
+        let (_keep_open, done) = oneshot::channel();
+
+        let waited = tokio::time::timeout(
+            Duration::from_secs(5),
+            CaptureHandle::new(done).wait(Duration::from_millis(20)),
+        )
+        .await;
+
+        assert!(waited.is_ok());
+    }
+
+    #[tokio::test]
+    async fn should_return_at_once_when_the_capture_has_finished() {
+        let (tx, done) = oneshot::channel();
+        tx.send(()).unwrap();
+
+        let waited = tokio::time::timeout(
+            Duration::from_secs(5),
+            CaptureHandle::new(done).wait(Duration::from_secs(60)),
+        )
+        .await;
+
+        assert!(waited.is_ok());
+    }
+}
