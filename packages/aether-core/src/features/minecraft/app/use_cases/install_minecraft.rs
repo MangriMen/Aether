@@ -23,7 +23,7 @@ use crate::features::{
 const GAME_FILES_SPAN: f64 = 94.0;
 const GAME_FILES_SPAN_WITH_PROCESSORS: f64 = 64.0;
 
-/// A plan may leave the loader version out: it is the default one then, as for a new instance.
+/// The default loader version when none is pinned, as for a new instance.
 async fn preference_or_default(
     service: &dyn LoaderVersionService,
     game_version: &GameVersion,
@@ -102,13 +102,6 @@ impl InstallMinecraftUseCase {
         let (version, minecraft_updated) =
             resolve_minecraft_version(&game_version, &version_manifest)?;
 
-        let loader_version = preference_or_default(
-            self.loader_version_resolver.as_ref(),
-            &game_version,
-            &loader,
-            loader_version,
-        )
-        .await?;
         let loader_version = self
             .loader_version_resolver
             .resolve(&game_version, &loader, loader_version.as_ref())
@@ -251,6 +244,18 @@ impl MinecraftInstallService for InstallMinecraftUseCase {
         params: GameDownloadParams,
         waiting_bar: Option<&ProgressBarId>,
     ) -> Result<(), MinecraftApplicationError> {
+        // Unlike an installed instance, a plan may leave the loader version out.
+        let loader_version = preference_or_default(
+            self.loader_version_resolver.as_ref(),
+            &params.game_version,
+            &params.loader,
+            params.loader_version,
+        )
+        .await?;
+        let params = GameDownloadParams {
+            loader_version,
+            ..params
+        };
         self.download_game_files(params, waiting_bar, None, false)
             .await
             .map(|_| ())
