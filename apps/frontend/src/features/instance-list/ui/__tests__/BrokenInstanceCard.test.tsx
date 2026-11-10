@@ -49,6 +49,16 @@ const buttonByText = (text: string) =>
     b.textContent.includes(text),
   );
 
+const card = (container: HTMLElement) =>
+  container.querySelector<HTMLButtonElement>('button');
+
+const openDetails = (container: HTMLElement) => card(container)?.click();
+
+const openMenu = (container: HTMLElement) =>
+  card(container)?.dispatchEvent(
+    new MouseEvent('contextmenu', { bubbles: true, cancelable: true }),
+  );
+
 beforeEach(() => {
   vi.stubGlobal(
     'ResizeObserver',
@@ -70,15 +80,33 @@ afterEach(() => {
 });
 
 describe('BrokenInstanceCard', () => {
-  it('should_show_the_id_and_why_when_the_instance_cannot_be_read', () => {
+  it('should_show_the_id_and_that_it_is_damaged_when_the_card_is_drawn', () => {
     const container = mount(make());
 
     expect(container.textContent).toContain('old');
-    expect(container.textContent).toContain('Unknown game version "../x"');
+    expect(container.textContent).toContain('Damaged');
   });
 
-  it('should_open_its_folder_when_the_button_is_pressed', () => {
-    mount(make());
+  it('should_be_one_stop_for_the_arrow_keys_when_the_card_is_drawn', () => {
+    const container = mount(make());
+
+    const stops = container.querySelectorAll('button:not([class*="absolute"])');
+
+    expect(stops).toHaveLength(1);
+  });
+
+  it('should_show_the_reason_and_the_folder_in_full_when_the_card_is_clicked', () => {
+    const container = mount(make());
+
+    openDetails(container);
+
+    expect(document.body.textContent).toContain('Unknown game version "../x"');
+    expect(document.body.textContent).toContain('/instances/old');
+  });
+
+  it('should_open_its_folder_when_the_button_of_the_details_is_pressed', () => {
+    const container = mount(make());
+    openDetails(container);
 
     buttonByText('Open folder')?.click();
 
@@ -88,13 +116,19 @@ describe('BrokenInstanceCard', () => {
   });
 
   it('should_offer_no_folder_when_the_id_names_none', () => {
-    mount(make({ dir: null, reason: { code: 'INVALID_ID' } }));
+    const container = mount(
+      make({ dir: null, reason: { code: 'INVALID_ID' } }),
+    );
+
+    openDetails(container);
 
     expect(buttonByText('Open folder')).toBeUndefined();
+    expect(document.body.textContent).toContain('its id names no folder');
   });
 
-  it('should_ask_before_deleting_and_say_the_folder_goes_when_it_has_one', () => {
-    mount(make());
+  it('should_ask_before_deleting_and_say_the_folder_goes_when_remove_is_chosen_in_the_details', () => {
+    const container = mount(make());
+    openDetails(container);
 
     buttonByText('Remove')?.click();
 
@@ -105,7 +139,10 @@ describe('BrokenInstanceCard', () => {
   });
 
   it('should_say_only_the_record_goes_when_the_id_names_no_folder', () => {
-    mount(make({ dir: null, reason: { code: 'INVALID_ID' } }));
+    const container = mount(
+      make({ dir: null, reason: { code: 'INVALID_ID' } }),
+    );
+    openDetails(container);
 
     buttonByText('Remove')?.click();
 
@@ -113,9 +150,10 @@ describe('BrokenInstanceCard', () => {
   });
 
   it('should_delete_by_the_id_when_the_deletion_is_confirmed', async () => {
-    mount(make());
-
+    const container = mount(make());
+    openDetails(container);
     buttonByText('Remove')?.click();
+
     const confirm = [...document.querySelectorAll('button')]
       .filter((b) => b.textContent.includes('Remove'))
       .at(-1);
@@ -123,5 +161,33 @@ describe('BrokenInstanceCard', () => {
     await Promise.resolve();
 
     expect(mocks.removeBroken).toHaveBeenCalledWith('old');
+  });
+
+  it('should_offer_the_folder_and_the_removal_when_the_menu_is_opened', async () => {
+    const container = mount(make());
+
+    openMenu(container);
+    await Promise.resolve();
+
+    const items = [...document.querySelectorAll('[role=menuitem]')].map(
+      (item) => item.textContent.trim(),
+    );
+    expect(items).toEqual(['Open folder', 'Remove']);
+  });
+
+  it('should_ask_before_deleting_when_remove_is_chosen_in_the_menu', async () => {
+    const container = mount(make());
+    openMenu(container);
+    await Promise.resolve();
+
+    [...document.querySelectorAll<HTMLElement>('[role=menuitem]')]
+      .find((item) => item.textContent.includes('Remove'))
+      ?.click();
+    await Promise.resolve();
+
+    expect(mocks.removeBroken).not.toHaveBeenCalled();
+    expect(document.body.textContent).toContain(
+      'folder will be deleted from the disk',
+    );
   });
 });

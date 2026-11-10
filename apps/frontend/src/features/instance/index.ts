@@ -11,6 +11,7 @@ export * from './model/dto';
 export * from './model/instance';
 export * from './model/instanceRoutes';
 export * from './model/runningInstancesContext';
+export * from './ui/BrokenInstanceTile';
 export * from './ui/InstanceActionButton';
 export * from './ui/InstanceCard';
 export * from './ui/InstanceContextMenu';

@@ -372,7 +372,6 @@
       "removeFolder": "The launcher cannot read this instance. Its folder will be deleted from the disk with everything in it, worlds included. You will not be able to recover it.",
       "removeRecord": "The launcher cannot read this instance, and its id names no folder. Only its record in the launcher database is deleted; no files are touched.",
       "removeError": "Failed to delete the damaged instance {{id}}",
-      "openFolder": "Open folder",
       "reasons": {
         "INVALID_ID": "Its id is not a valid folder name",
         "INVALID_GAME_VERSION": "Unknown game version \"{{value}}\"",
@@ -382,7 +381,13 @@
         "UNREADABLE_FILE": "Its file cannot be read: {{details}}",
         "LEGACY_ID_MISMATCH": "Its file belongs to the instance \"{{file_id}}\"",
         "NOT_MIGRATED": "The launcher does not use its old file: the instance was not moved into the launcher database"
-      }
+      },
+      "label": "Damaged",
+      "description": "The launcher cannot read this instance, so it cannot be launched or edited. You can look at its folder or delete it.",
+      "id": "Id",
+      "reason": "Reason",
+      "folder": "Folder",
+      "noFolder": "None: its id names no folder"
     },
     "icon": "Instance icon",
     "selectIcon": "Select icon",

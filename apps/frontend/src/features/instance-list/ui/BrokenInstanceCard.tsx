@@ -1,36 +1,38 @@
 import type { Component } from 'solid-js';
 
-import { createSignal, Show } from 'solid-js';
+import { createSignal } from 'solid-js';
 
 import {
-  getBrokenReasonText,
+  BrokenInstanceTile,
   useRemoveBrokenInstance,
   useRevealInExplorer,
   type BrokenInstance,
 } from '@/features/instance';
 import { useTranslation } from '@/shared/i18n';
 import { logError } from '@/shared/log';
-import {
-  Button,
-  CombinedDialog,
-  CombinedTooltip,
-  Image,
-} from '@/shared/ui-kit';
+import { CombinedDialog, ContextMenuTrigger } from '@/shared/ui-kit';
+
+import { BrokenInstanceContextMenu } from './BrokenInstanceContextMenu';
+import { BrokenInstanceDetailsDialog } from './BrokenInstanceDetailsDialog';
 
 export type BrokenInstanceCardProps = {
   instance: BrokenInstance;
 };
 
 /**
- * An instance the launcher stores but cannot read: shown with why, so it does not just
- * disappear. It cannot be launched or edited; the user can look at its folder or delete it.
+ * An instance the launcher stores but cannot read, in the list with the others so it does not
+ * just disappear. It cannot be launched or edited: the click shows what is known of it, and the
+ * user can look at its folder or delete it, here or from the menu.
  */
 export const BrokenInstanceCard: Component<BrokenInstanceCardProps> = (
   props,
 ) => {
   const [{ t }] = useTranslation();
 
+  const [showDetails, setShowDetails] = createSignal(false);
   const [showRemoveModal, setShowRemoveModal] = createSignal(false);
+
+  let wrapper: HTMLDivElement | undefined;
 
   const { mutateAsync: removeBroken } = useRemoveBrokenInstance();
   const { mutateAsync: revealInExplorer } = useRevealInExplorer();
@@ -43,6 +45,11 @@ export const BrokenInstanceCard: Component<BrokenInstanceCardProps> = (
     }
   };
 
+  const askToRemove = () => {
+    setShowDetails(false);
+    setShowRemoveModal(true);
+  };
+
   const handleRemove = () =>
     removeBroken(props.instance.id)
       .then(() => setShowRemoveModal(false))
@@ -50,49 +57,34 @@ export const BrokenInstanceCard: Component<BrokenInstanceCardProps> = (
 
   return (
     <>
-      <div class='group p-0.5 relative'>
-        <div
-          class='
-            max-w-33 min-w-33 gap-2 rounded-md bg-card/card p-2 drop-shadow-md
-            relative flex h-max flex-col overflow-hidden border
-            border-destructive/50
-          '
+      <div class='group p-0.5 relative' ref={(element) => (wrapper = element)}>
+        <BrokenInstanceContextMenu
+          onOpenFolder={handleOpenFolder}
+          onRemove={askToRemove}
+          disableOpenFolder={props.instance.dir === null}
         >
-          <Image
-            class='size-28 opacity-50 grayscale'
-            alt={t('instance.broken.title')}
+          <ContextMenuTrigger
+            as={BrokenInstanceTile}
+            data-context-menu-safe='true'
+            aria-haspopup='dialog'
+            onClick={() => setShowDetails(true)}
+            instance={props.instance}
           />
-          <div class='flex flex-col'>
-            <CombinedTooltip
-              label={props.instance.id}
-              as='div'
-              class='w-full truncate'
-            >
-              {props.instance.id}
-            </CombinedTooltip>
-            <div class='text-sm text-destructive'>
-              {t('instance.broken.title')}
-            </div>
-            <div class='text-xs text-muted-foreground wrap-break-word'>
-              {getBrokenReasonText(props.instance.reason, t)}
-            </div>
-          </div>
-          <div class='gap-1 flex flex-col'>
-            <Show when={props.instance.dir !== null}>
-              <Button size='sm' variant='outline' onClick={handleOpenFolder}>
-                {t('instance.broken.openFolder')}
-              </Button>
-            </Show>
-            <Button
-              size='sm'
-              variant='destructive'
-              onClick={() => setShowRemoveModal(true)}
-            >
-              {t('common.remove')}
-            </Button>
-          </div>
-        </div>
+        </BrokenInstanceContextMenu>
       </div>
+
+      <BrokenInstanceDetailsDialog
+        instance={props.instance}
+        open={showDetails()}
+        onOpenChange={setShowDetails}
+        onOpenFolder={handleOpenFolder}
+        onRemove={askToRemove}
+        // Without a trigger the focus would fall to the page, and the arrow keys would stop.
+        onCloseAutoFocus={(event) => {
+          event.preventDefault();
+          wrapper?.querySelector('button')?.focus();
+        }}
+      />
 
       <CombinedDialog
         variant='destructive'
