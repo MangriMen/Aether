@@ -9,9 +9,10 @@ pub use domain::{
     AllowedHostRejection, AllowedPath, AllowedPathInput, AllowedPathRejection, ApiConfig,
     IgnoredAllowedPath, LoadConfig, LoadConfigType, PathMapping, PluginCapabilities,
     PluginContentProviderCapability, PluginError, PluginImporterCapability, PluginManifest,
-    PluginManifestPreview, PluginMetadata, PluginProviderError, PluginSettings, PluginSource,
-    PluginSourceType, PluginUpdaterCapability, ProviderHandlers, ProviderPluginPreview,
-    ProviderUpdateInfo, RuntimeConfig, SkippedPluginDir, SkippedPluginDirReason,
+    PluginManifestPreview, PluginMetadata, PluginProviderError, PluginProviderInfo, PluginSettings,
+    PluginSource, PluginSourceType, PluginUpdaterCapability, ProviderHandlers,
+    ProviderPluginPreview, ProviderUpdateInfo, RuntimeConfig, SkippedPluginDir,
+    SkippedPluginDirReason,
 };
 pub(crate) use domain::{
     AsCapabilityMetadata, Compatibility, CoreMount, ExtractedPlugin, FolderMounts, GrantableHost,

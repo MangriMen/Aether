@@ -440,9 +440,7 @@
     "noProviders": "Нет источников, откуда можно установить плагины",
     "unsupportedProvider": "Установка из этого источника пока не поддерживается",
     "providers": {
-      "label": "Источник",
-      "git_hub": "GitHub",
-      "local": "Локальный файл"
+      "label": "Источник"
     },
     "openPluginsFolder": "Открыть папку плагинов",
     "skippedDirs": {

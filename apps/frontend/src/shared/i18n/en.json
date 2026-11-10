@@ -440,9 +440,7 @@
     "noProviders": "There is nothing to install plugins from",
     "unsupportedProvider": "Installing from this source is not supported yet",
     "providers": {
-      "label": "Source",
-      "git_hub": "GitHub",
-      "local": "Local file"
+      "label": "Source"
     },
     "openPluginsFolder": "Open plugins folder",
     "skippedDirs": {

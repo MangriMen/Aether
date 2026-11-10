@@ -95,3 +95,20 @@ impl From<aether_core::features::plugins::ProviderUpdateInfo> for PluginUpdateIn
         }
     }
 }
+
+/// A provider plugins can be installed from, with the name it gives itself.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Type)]
+pub struct PluginProviderDto {
+    pub source_type: PluginSourceTypeDto,
+    /// A proper name, shown as it is.
+    pub name: String,
+}
+
+impl From<aether_core::features::plugins::PluginProviderInfo> for PluginProviderDto {
+    fn from(value: aether_core::features::plugins::PluginProviderInfo) -> Self {
+        Self {
+            source_type: value.source_type.into(),
+            name: value.name,
+        }
+    }
+}

@@ -95,6 +95,10 @@ impl PluginProvider for Download {
         PluginSourceType::GitHub
     }
 
+    fn display_name(&self) -> String {
+        "Stub source".to_owned()
+    }
+
     fn parse_identifier(&self, raw: &str) -> Result<String, PluginProviderError> {
         Ok(raw.to_owned())
     }
@@ -398,4 +402,19 @@ async fn should_replace_the_files_and_keep_the_settings_when_the_plugin_is_insta
         ["extra.example.com"]
     );
     assert_eq!(fixture.plugins_dir_entries(), [PLUGIN_ID]);
+}
+
+#[test]
+fn should_list_each_provider_with_the_name_it_gives_itself() {
+    let factory = PluginProviderFactory::new(vec![Box::new(Download {
+        archive: Vec::new(),
+    })]);
+
+    assert_eq!(
+        factory.list_providers(),
+        [crate::features::plugins::PluginProviderInfo {
+            source_type: PluginSourceType::GitHub,
+            name: "Stub source".to_owned(),
+        }]
+    );
 }

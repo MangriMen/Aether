@@ -1,5 +1,6 @@
 use crate::features::plugins::domain::{
-    PluginProviderError, PluginSourceType, ProviderPluginPreview, ProviderUpdateInfo,
+    PluginProviderError, PluginProviderInfo, PluginSourceType, ProviderPluginPreview,
+    ProviderUpdateInfo,
 };
 
 /// Common interface for all plugin providers (GitHub, custom server, Modrinth, etc.).
@@ -35,6 +36,10 @@ pub trait PluginProvider: Send + Sync {
     /// Return which source type this provider handles.
     fn source_type(&self) -> PluginSourceType;
 
+    /// The name the user sees for this provider. It is the provider's own, a proper name that
+    /// is shown as it is and not translated.
+    fn display_name(&self) -> String;
+
     /// Parse a user-facing identifier (e.g., GitHub URL) into a normalized form.
     fn parse_identifier(&self, raw: &str) -> Result<String, PluginProviderError>;
 }
@@ -51,9 +56,15 @@ impl PluginProviderFactory {
         Self { providers }
     }
 
-    /// Get all registered provider source types.
-    pub fn list_source_types(&self) -> Vec<PluginSourceType> {
-        self.providers.iter().map(|p| p.source_type()).collect()
+    /// Get all registered providers, with the name each gives itself.
+    pub fn list_providers(&self) -> Vec<PluginProviderInfo> {
+        self.providers
+            .iter()
+            .map(|p| PluginProviderInfo {
+                source_type: p.source_type(),
+                name: p.display_name(),
+            })
+            .collect()
     }
 
     /// Get a provider for the given source type.

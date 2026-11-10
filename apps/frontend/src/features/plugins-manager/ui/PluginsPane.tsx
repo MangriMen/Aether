@@ -51,7 +51,10 @@ export const PluginsPane: Component<PluginsPaneProps> = (props) => {
 
   // The pick only counts while the backend still offers it; else the first provider is shown.
   const addProvider = createMemo(() =>
-    resolvePluginProvider(providers.data ?? [], pluginAddProvider()),
+    resolvePluginProvider(
+      providers.data?.map((provider) => provider.source_type) ?? [],
+      pluginAddProvider(),
+    ),
   );
 
   const addState = createMemo(() =>

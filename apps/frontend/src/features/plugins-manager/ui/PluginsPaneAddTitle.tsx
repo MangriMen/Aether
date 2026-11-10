@@ -10,7 +10,7 @@ import { useTranslation } from '@/shared/i18n';
 import { CombinedSelect, CombinedTooltip, IconButton } from '@/shared/ui-kit';
 import { cn } from '@/shared/utils';
 
-import type { PluginSourceType } from '../model/pluginProvider';
+import type { PluginProvider, PluginSourceType } from '../model/pluginProvider';
 
 type ProviderOption = {
   value: PluginSourceType;
@@ -19,7 +19,7 @@ type ProviderOption = {
 
 export type PluginsPaneAddTitleProps = ComponentProps<'div'> & {
   /** What the backend can install from. */
-  providers: readonly PluginSourceType[];
+  providers: readonly PluginProvider[];
   /** The one shown as chosen; none while the list is not there. */
   provider: PluginSourceType | null;
   onProviderChange: (provider: PluginSourceType) => void;
@@ -40,9 +40,10 @@ export const PluginsPaneAddTitle: Component<PluginsPaneAddTitleProps> = (
   const [{ t }] = useTranslation();
 
   const options = createMemo<ProviderOption[]>(() =>
-    local.providers.map((value) => ({
-      value,
-      label: t(`plugins.providers.${value}`) ?? value,
+    local.providers.map((provider) => ({
+      value: provider.source_type,
+      // The provider's own name: a proper name, not translated.
+      label: provider.name,
     })),
   );
 
