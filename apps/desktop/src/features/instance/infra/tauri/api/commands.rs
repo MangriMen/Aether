@@ -552,34 +552,6 @@ fn parse_content_paths(content_paths: &[String]) -> Result<Vec<ContentPath>, aet
         .map_err(|err| aether_core::Error::from(InstanceError::from(err)))
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn should_parse_content_paths_when_all_are_plain_relative_paths() {
-        let parsed = parse_content_paths(&["mods/a.jar".into(), r"config\b.toml".into()]).unwrap();
-
-        assert_eq!(parsed[0].as_str(), "mods/a.jar");
-        assert_eq!(parsed[1].as_str(), "config/b.toml");
-    }
-
-    #[test]
-    fn should_refuse_the_whole_list_when_one_content_path_escapes_the_instance() {
-        for hostile in [
-            "../x",
-            "mods/../../x",
-            "/etc/passwd",
-            ".metadata/instance.json",
-        ] {
-            assert!(
-                parse_content_paths(&["mods/a.jar".into(), hostile.into()]).is_err(),
-                "`{hostile}` must be refused"
-            );
-        }
-    }
-}
-
 #[tauri::command]
 #[specta::specta]
 async fn list_logs(
@@ -615,4 +587,32 @@ async fn read_log(
         .map_err(ProcessError::from)
         .map_err(aether_core::Error::from)?;
     Ok(page.into())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn should_parse_content_paths_when_all_are_plain_relative_paths() {
+        let parsed = parse_content_paths(&["mods/a.jar".into(), r"config\b.toml".into()]).unwrap();
+
+        assert_eq!(parsed[0].as_str(), "mods/a.jar");
+        assert_eq!(parsed[1].as_str(), "config/b.toml");
+    }
+
+    #[test]
+    fn should_refuse_the_whole_list_when_one_content_path_escapes_the_instance() {
+        for hostile in [
+            "../x",
+            "mods/../../x",
+            "/etc/passwd",
+            ".metadata/instance.json",
+        ] {
+            assert!(
+                parse_content_paths(&["mods/a.jar".into(), hostile.into()]).is_err(),
+                "`{hostile}` must be refused"
+            );
+        }
+    }
 }

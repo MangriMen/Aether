@@ -319,12 +319,10 @@ export const createLogView = ({
 
   return {
     lines,
-    loaded,
     loading,
     loadingOlder,
     /** A search that stopped at the limit: more lines match than are shown. */
     searchCut: () => searching() && window().hasMoreBefore && !loadingOlder(),
-    holdsWholeFile: () => holdsWholeFile(window()),
     error,
     hasMoreBefore: () => window().hasMoreBefore,
     tailLoaded: () => window().tailLoaded,

@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 /// Secrets shorter than this are not redacted: the offline account's token is the literal
 /// `null`, and replacing that word would damage every line.
 const MIN_SECRET_LEN: usize = 20;
@@ -19,10 +21,13 @@ impl Redactor {
         }
     }
 
-    pub fn apply(&self, line: &str) -> String {
+    pub fn apply<'a>(&self, line: &'a str) -> Cow<'a, str> {
         self.secrets
             .iter()
-            .fold(line.to_string(), |acc, secret| acc.replace(secret, MASK))
+            .filter(|secret| line.contains(secret.as_str()))
+            .fold(Cow::Borrowed(line), |acc, secret| {
+                Cow::Owned(acc.replace(secret.as_str(), MASK))
+            })
     }
 }
 

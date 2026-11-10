@@ -3,7 +3,6 @@ import IconMdiArrowDown from '~icons/mdi/arrow-down';
 import {
   createEffect,
   createMemo,
-  createSignal,
   For,
   on,
   Show,
@@ -16,10 +15,10 @@ import { cn } from '@/shared/utils';
 
 import type { LogLevel, LogLine } from '../model/logLines';
 
+import { createLogScroll } from '../lib/createLogScroll';
+
 /** Without wrapping a line is one row of this height; wrapped rows are measured. */
 const ROW_HEIGHT = 22;
-const LOAD_MORE_THRESHOLD_PX = 400;
-const STICK_THRESHOLD_PX = 40;
 const MAX_ROW_CHARS = 4000;
 
 const LEVEL_CLASS: Record<LogLevel, string> = {
@@ -50,10 +49,6 @@ export const LogViewer: Component<LogViewerProps> = (props) => {
   // oxlint-disable-next-line no-unassigned-vars
   let scrollRef: HTMLDivElement | undefined;
 
-  const [stick, setStick] = createSignal(true);
-  let loadingOlder = false;
-  let loadingNewer = false;
-
   const virtualizer = createVirtualizer({
     get count() {
       return props.lines.length;
@@ -63,6 +58,17 @@ export const LogViewer: Component<LogViewerProps> = (props) => {
     estimateSize: () => ROW_HEIGHT,
   });
 
+  const { stick, handleScroll, jumpToEnd } = createLogScroll({
+    scrollElement: () => scrollRef,
+    virtualizer,
+    lines: () => props.lines,
+    hasMoreBefore: () => props.hasMoreBefore,
+    tailLoaded: () => props.tailLoaded,
+    onLoadOlder: () => props.onLoadOlder(),
+    onLoadNewer: () => props.onLoadNewer(),
+    onReloadTail: () => props.onReloadTail(),
+  });
+
   // Rows are keyed by their index, so a row that stays in view keeps its element when the
   // list around it changes; keyed by the virtual items themselves they would all be rebuilt
   // each time and flicker.
@@ -70,109 +76,7 @@ export const LogViewer: Component<LogViewerProps> = (props) => {
     virtualizer.getVirtualItems().map((item) => item.index),
   );
   const rowStart = (index: number) =>
-    virtualizer.getVirtualItems().find((item) => item.index === index)?.start ??
-    index * ROW_HEIGHT;
-
-  const scrollToEnd = () => {
-    if (props.lines.length > 0) {
-      virtualizer.scrollToIndex(props.lines.length - 1, { align: 'end' });
-    }
-  };
-
-  // The first row in view and how far into it the view starts. Lines that come in or go out
-  // above it move it, and the view is moved back by as much, so what is read stays put.
-  let anchor: LogLine | undefined;
-  let anchorShift = 0;
-
-  const rememberAnchor = () => {
-    if (!scrollRef) {
-      return;
-    }
-
-    const item = virtualizer.getVirtualItemForOffset(scrollRef.scrollTop);
-
-    anchor = item ? props.lines[item.index] : undefined;
-    anchorShift = item ? scrollRef.scrollTop - item.start : 0;
-  };
-
-  const restoreAnchor = (index: number) => {
-    const start = virtualizer.measurementsCache[index]?.start;
-
-    if (scrollRef && start !== undefined) {
-      scrollRef.scrollTop = start + anchorShift;
-    }
-
-    rememberAnchor();
-  };
-
-  const loadOlder = async () => {
-    if (loadingOlder) {
-      return;
-    }
-
-    loadingOlder = true;
-
-    try {
-      await props.onLoadOlder();
-    } finally {
-      loadingOlder = false;
-    }
-  };
-
-  const loadNewer = async () => {
-    if (loadingNewer) {
-      return;
-    }
-
-    loadingNewer = true;
-
-    try {
-      await props.onLoadNewer();
-    } finally {
-      loadingNewer = false;
-    }
-  };
-
-  const loadMoreIfNearEdge = () => {
-    if (!scrollRef) {
-      return;
-    }
-
-    if (props.hasMoreBefore && scrollRef.scrollTop < LOAD_MORE_THRESHOLD_PX) {
-      void loadOlder();
-    }
-
-    const distanceToEnd =
-      scrollRef.scrollHeight - scrollRef.scrollTop - scrollRef.clientHeight;
-
-    if (!props.tailLoaded && distanceToEnd < LOAD_MORE_THRESHOLD_PX) {
-      void loadNewer();
-    }
-  };
-
-  createEffect(
-    on(
-      () => props.lines,
-      (lines) => {
-        const following = stick() && props.tailLoaded;
-
-        if (following) {
-          queueMicrotask(scrollToEnd);
-        }
-
-        const index = !following && anchor ? lines.indexOf(anchor) : -1;
-
-        requestAnimationFrame(() => {
-          if (index >= 0) {
-            restoreAnchor(index);
-          }
-
-          // A filter can leave too few lines to scroll, and then no scroll event would ever ask.
-          loadMoreIfNearEdge();
-        });
-      },
-    ),
-  );
+    virtualizer.measurementsCache[index]?.start ?? index * ROW_HEIGHT;
 
   // Rows change height when lines start or stop wrapping.
   createEffect(
@@ -182,29 +86,6 @@ export const LogViewer: Component<LogViewerProps> = (props) => {
       { defer: true },
     ),
   );
-
-  const handleScroll = () => {
-    if (!scrollRef) {
-      return;
-    }
-
-    const distanceToEnd =
-      scrollRef.scrollHeight - scrollRef.scrollTop - scrollRef.clientHeight;
-
-    setStick(distanceToEnd < STICK_THRESHOLD_PX);
-    rememberAnchor();
-    loadMoreIfNearEdge();
-  };
-
-  const jumpToEnd = async () => {
-    setStick(true);
-
-    if (!props.tailLoaded) {
-      await props.onReloadTail();
-    }
-
-    scrollToEnd();
-  };
 
   const widestLine = createMemo(() =>
     props.wrap

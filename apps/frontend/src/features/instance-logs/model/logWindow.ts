@@ -117,11 +117,9 @@ export const prependPage = (
   };
 
   return dropFromBottom({
+    ...window,
     chunks: [chunk, ...window.chunks],
     hasMoreBefore: page.hasMoreBefore,
-    tailLoaded: window.tailLoaded,
-    maxLines: window.maxLines,
-    tailLevel: window.tailLevel,
   });
 };
 

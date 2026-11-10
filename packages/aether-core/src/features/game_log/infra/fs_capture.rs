@@ -262,7 +262,10 @@ async fn send(tx: &mpsc::Sender<Vec<String>>, redactor: &Redactor, lines: Vec<St
     if lines.is_empty() {
         return true;
     }
-    let lines = lines.iter().map(|line| redactor.apply(line)).collect();
+    let lines = lines
+        .iter()
+        .map(|line| redactor.apply(line).into_owned())
+        .collect();
     tx.send(lines).await.is_ok()
 }
 
