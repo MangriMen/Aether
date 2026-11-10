@@ -57,6 +57,7 @@
       "CANCELLED": "Installation cancelled",
       "PRELAUNCH_COMMAND_ERROR": "Pre-launch command error",
       "VALIDATION_ERROR": "Instance validation failed",
+      "NOT_BROKEN": "The instance is not broken (any more), so it was left as it is",
       "UNMANAGED_INSTANCE": "Action unavailable for unmanaged instance",
       "CONTENT_DUPLICATION": "Duplicate content detected",
       "CONTENT_FILENAME": "Invalid content filename",

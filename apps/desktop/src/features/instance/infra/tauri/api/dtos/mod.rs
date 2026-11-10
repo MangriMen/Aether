@@ -1,3 +1,4 @@
+pub(crate) mod broken_instance;
 pub(crate) mod capabilities;
 pub(crate) mod capability_entry;
 pub(crate) mod content;
@@ -16,6 +17,7 @@ pub(crate) mod instance_event;
 pub(crate) mod new_instance;
 pub(crate) mod pack_info;
 
+pub(crate) use broken_instance::*;
 pub(crate) use capabilities::*;
 pub(crate) use capability_entry::*;
 pub(crate) use content::*;

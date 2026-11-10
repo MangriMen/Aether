@@ -63,7 +63,7 @@ impl LegacyInstanceScanner {
             found.push(BrokenInstance {
                 dir: Some(self.location_info.instance_dir(&id)),
                 id: id.to_string(),
-                source: BrokenInstanceOrigin::LegacyFile,
+                origin: BrokenInstanceOrigin::LegacyFile,
                 reason,
             });
         }
@@ -87,5 +87,12 @@ impl LegacyInstanceScanner {
                 details: other.to_string(),
             },
         })
+    }
+}
+
+#[async_trait::async_trait]
+impl crate::features::instance::LegacyInstanceSource for LegacyInstanceScanner {
+    async fn list_unmigrated(&self, stored_ids: &[String]) -> Vec<BrokenInstance> {
+        self.scan(stored_ids).await
     }
 }

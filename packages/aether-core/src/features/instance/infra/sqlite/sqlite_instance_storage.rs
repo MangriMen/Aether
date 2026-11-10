@@ -513,6 +513,15 @@ impl BrokenInstanceSource for SqliteInstanceStorage {
             .map(|(id, reason)| BrokenRecord { id, reason })
             .collect())
     }
+
+    async fn remove_record(&self, id: &str) -> Result<(), InstanceError> {
+        sqlx::query("DELETE FROM instances WHERE id = ?")
+            .bind(id)
+            .execute(&self.pool)
+            .await
+            .map(|_| ())
+            .map_err(|e| InstanceError::Storage(e.to_string()))
+    }
 }
 
 #[cfg(test)]

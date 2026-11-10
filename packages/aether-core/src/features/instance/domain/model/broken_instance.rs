@@ -46,7 +46,7 @@ pub struct BrokenInstance {
     pub id: String,
     /// The folder of the instance; only for an id that names one.
     pub dir: Option<PathBuf>,
-    pub source: BrokenInstanceOrigin,
+    pub origin: BrokenInstanceOrigin,
     pub reason: BrokenInstanceReason,
 }
 

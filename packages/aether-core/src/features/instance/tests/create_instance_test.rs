@@ -1011,3 +1011,76 @@ async fn should_end_cancelled_and_leave_nothing_when_the_instance_is_removed_dur
     );
     assert!(events.try_recv().is_err(), "nothing to warn about");
 }
+
+/// A storage that also holds a record it cannot read, which `list` leaves out.
+struct HoldsUnreadable {
+    inner: Arc<MemInstanceStorage>,
+    unreadable: &'static str,
+}
+
+#[async_trait]
+impl InstanceStorage for HoldsUnreadable {
+    async fn list(&self) -> Result<Vec<Instance>, InstanceError> {
+        self.inner.list().await
+    }
+    async fn get(&self, id: &InstanceId) -> Result<Instance, InstanceError> {
+        self.inner.get(id).await
+    }
+    async fn upsert(&self, instance: &Instance) -> Result<(), InstanceError> {
+        self.inner.upsert(instance).await
+    }
+    async fn remove(&self, id: &InstanceId) -> Result<(), InstanceError> {
+        self.inner.remove(id).await
+    }
+    async fn update(
+        &self,
+        id: &InstanceId,
+        change: crate::features::instance::InstanceChange<'_>,
+    ) -> Result<Instance, InstanceError> {
+        self.inner.update(id, change).await
+    }
+    async fn stored_ids(&self) -> Result<Vec<String>, InstanceError> {
+        let mut ids = self.inner.stored_ids().await?;
+        ids.push(self.unreadable.to_owned());
+        Ok(ids)
+    }
+}
+
+#[tokio::test]
+async fn should_pick_another_id_when_an_unreadable_record_holds_the_id_of_the_name() {
+    let (_temp, location_info) = setup_temp_location();
+    let inner = Arc::new(MemInstanceStorage::new());
+    let storage = Arc::new(HoldsUnreadable {
+        inner: inner.clone(),
+        unreadable: "Install Test",
+    });
+    let use_case = make_use_case(
+        storage,
+        Arc::new(MockLoaderService {
+            try_get_default_result: None,
+        }),
+        Arc::new(NoOpInstallService),
+        Arc::new(MemInstanceFileService::new(location_info.instances_dir())),
+        Arc::new(NoOpWatcher),
+        Arc::new(NoOpEmitter),
+    );
+
+    let id = use_case
+        .execute(
+            NewInstance {
+                name: InstanceName::parse("Install Test").unwrap(),
+                game_version: GameVersion::from_static("1.21"),
+                mod_loader: ModLoader::Vanilla,
+                loader_version: None,
+                icon_path: None,
+                skip_install_instance: Some(true),
+                pack_info: None,
+            },
+            None,
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(id.as_str(), "Install Test-1");
+    assert_eq!(inner.list().await.unwrap().len(), 1);
+}

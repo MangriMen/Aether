@@ -2,14 +2,20 @@ use crate::features::instance::{
     Instance, InstanceStorage,
     infra::{FsInstanceStorage, SqliteInstanceStorage},
 };
+use std::collections::HashSet;
+
 use tracing::{info, warn};
 
-/// Copies the legacy `instance.json` files into SQLite, and only into an empty table.
+/// Copies the legacy `instance.json` files into SQLite, whichever instances the table holds.
 ///
 /// A copied file is set aside (`instance.json.migrated`), so the migration runs once per instance
-/// and a table the user emptied is not refilled from it. The instances go in one transaction, so a
-/// failure of the write itself stores none. One instance that cannot be stored is skipped (its
-/// file stays) rather than keeping the launcher from starting.
+/// and an instance the user removed is not brought back from it. The instances go in one
+/// transaction, so a failure of the write itself stores none. One instance that cannot be stored
+/// is skipped (its file stays, and it is shown as broken) rather than keeping the launcher from
+/// starting.
+///
+/// An instance the table already holds is not copied over. Its file is set aside only when the
+/// stored copy can be read: a record that cannot is left a file to be recovered from.
 pub async fn migrate_instances_to_sqlite(
     fs_storage: &FsInstanceStorage,
     sqlite_storage: &SqliteInstanceStorage,
@@ -19,35 +25,49 @@ pub async fn migrate_instances_to_sqlite(
         _ => return Ok(()),
     };
 
-    let existing_sqlite = sqlite_storage.list().await?;
-    if !existing_sqlite.is_empty() {
-        // Files left by a build that kept them: SQLite holds those instances already.
-        let held: Vec<_> = old_instances
-            .iter()
-            .filter(|old| existing_sqlite.iter().any(|kept| kept.id() == old.id()))
-            .collect();
-        mark_migrated(fs_storage, held).await;
+    let readable: HashSet<_> = sqlite_storage
+        .list()
+        .await?
+        .iter()
+        .map(|kept| kept.id().clone())
+        .collect();
+    let stored: HashSet<String> = sqlite_storage
+        .stored_ids()
+        .await?
+        .into_iter()
+        .map(|id| id.to_lowercase())
+        .collect();
+
+    // Files left by a build that kept them: SQLite holds those instances already.
+    let held: Vec<_> = old_instances
+        .iter()
+        .filter(|old| readable.contains(old.id()))
+        .collect();
+    mark_migrated(fs_storage, held).await;
+
+    let to_copy: Vec<Instance> = old_instances
+        .into_iter()
+        .filter(|old| !stored.contains(&old.id().as_str().to_lowercase()))
+        .collect();
+    if to_copy.is_empty() {
         return Ok(());
     }
 
     info!(
         "Legacy instances found (count: {}). Starting migration to SQLite...",
-        old_instances.len()
+        to_copy.len()
     );
 
-    let failed = sqlite_storage
-        .upsert_many(&old_instances)
-        .await
-        .map_err(|e| {
-            warn!("Failed to migrate instances: {}", e);
-            e
-        })?;
+    let failed = sqlite_storage.upsert_many(&to_copy).await.map_err(|e| {
+        warn!("Failed to migrate instances: {}", e);
+        e
+    })?;
 
     // An instance that could not be stored keeps its file, so it can be recovered by hand.
     for (instance, e) in &failed {
         warn!("Skipped instance {}: {}", instance.id(), e);
     }
-    let saved = old_instances
+    let saved = to_copy
         .iter()
         .filter(|old| !failed.iter().any(|(bad, _)| bad.id() == old.id()))
         .collect();
@@ -146,5 +166,68 @@ mod tests {
         let left: Vec<_> = fs.list().await.unwrap();
         assert_eq!(left.len(), 1);
         assert_eq!(left[0].id().as_str(), "c");
+    }
+
+    fn instance(id: &str) -> Instance {
+        InstanceBuilder::new(
+            InstanceId::try_from(id).unwrap(),
+            InstanceName::parse(id).unwrap(),
+            GameVersion::from_static("1.21.1"),
+            ModLoader::Fabric,
+        )
+        .build()
+    }
+
+    #[tokio::test]
+    async fn should_copy_a_legacy_instance_when_the_table_already_holds_others() {
+        let (_temp, fs) = legacy_storage(&["old"]).await;
+        let sqlite = SqliteInstanceStorage::in_memory().await;
+        sqlite.upsert(&instance("new")).await.unwrap();
+
+        migrate_instances_to_sqlite(&fs, &sqlite).await.unwrap();
+
+        let mut ids: Vec<_> = sqlite
+            .list()
+            .await
+            .unwrap()
+            .iter()
+            .map(|kept| kept.id().to_string())
+            .collect();
+        ids.sort();
+        assert_eq!(ids, ["new", "old"]);
+        assert!(fs.list().await.unwrap().is_empty(), "its file is set aside");
+    }
+
+    #[tokio::test]
+    async fn should_set_the_file_aside_and_keep_the_record_when_the_table_holds_the_instance() {
+        let (_temp, fs) = legacy_storage(&["a"]).await;
+        let sqlite = SqliteInstanceStorage::in_memory().await;
+        let mut stored = instance("a");
+        stored.rename(InstanceName::parse("renamed").unwrap());
+        sqlite.upsert(&stored).await.unwrap();
+
+        migrate_instances_to_sqlite(&fs, &sqlite).await.unwrap();
+
+        let kept = sqlite
+            .get(&InstanceId::try_from("a").unwrap())
+            .await
+            .unwrap();
+        assert_eq!(kept.name().as_str(), "renamed", "not overwritten");
+        assert!(fs.list().await.unwrap().is_empty());
+    }
+
+    #[tokio::test]
+    async fn should_keep_the_file_when_the_stored_record_of_the_instance_cannot_be_read() {
+        let (_temp, fs) = legacy_storage(&["a"]).await;
+        let sqlite = SqliteInstanceStorage::in_memory().await;
+        sqlite.upsert(&instance("a")).await.unwrap();
+        sqlx::query("UPDATE instances SET game_version = '../x' WHERE id = 'a'")
+            .execute(sqlite.pool())
+            .await
+            .unwrap();
+
+        migrate_instances_to_sqlite(&fs, &sqlite).await.unwrap();
+
+        assert_eq!(fs.list().await.unwrap().len(), 1, "a copy to recover from");
     }
 }

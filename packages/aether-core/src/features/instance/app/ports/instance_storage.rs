@@ -1,6 +1,8 @@
 use async_trait::async_trait;
 
-use crate::features::instance::domain::{BrokenRecord, Instance, InstanceError, InstanceId};
+use crate::features::instance::domain::{
+    BrokenInstance, BrokenRecord, Instance, InstanceError, InstanceId,
+};
 
 /// A change made to an instance in place by [`InstanceStorage::update`]; returns whether it
 /// changed anything.
@@ -40,4 +42,14 @@ pub trait InstanceStorage: Send + Sync {
 #[async_trait]
 pub trait BrokenInstanceSource: Send + Sync {
     async fn list_broken(&self) -> Result<Vec<BrokenRecord>, InstanceError>;
+
+    /// Deletes the record with this id, whatever the text of the id. Nothing on disk.
+    async fn remove_record(&self, id: &str) -> Result<(), InstanceError>;
+}
+
+/// The legacy folders that hold an instance file the launcher does not use.
+#[async_trait]
+pub trait LegacyInstanceSource: Send + Sync {
+    /// `stored_ids`: the ids of all the records in the database, whose folders are left out.
+    async fn list_unmigrated(&self, stored_ids: &[String]) -> Vec<BrokenInstance>;
 }

@@ -20,12 +20,13 @@ use crate::{
     core::ContainerState,
     features::{
         instance::infra::{
-            CapabilityEntryDto, ContentCompatibilityCheckParamsDto, ContentCompatibilityResultDto,
-            ContentFileDto, ContentGetParamsDto, ContentInstallParamsDto, ContentItemDto,
-            ContentListVersionParamsDto, ContentProviderCapabilityMetadataDto,
-            ContentSearchParamsDto, ContentSearchResultDto, ContentTypeDto, ContentVersionDto,
-            EditInstanceDto, EditInstanceIconDto, ImportInstanceDto, ImporterCapabilityMetadataDto,
-            InstanceDto, InstanceEventDto, NewInstanceDto,
+            BrokenInstanceDto, CapabilityEntryDto, ContentCompatibilityCheckParamsDto,
+            ContentCompatibilityResultDto, ContentFileDto, ContentGetParamsDto,
+            ContentInstallParamsDto, ContentItemDto, ContentListVersionParamsDto,
+            ContentProviderCapabilityMetadataDto, ContentSearchParamsDto, ContentSearchResultDto,
+            ContentTypeDto, ContentVersionDto, EditInstanceDto, EditInstanceIconDto,
+            ImportInstanceDto, ImporterCapabilityMetadataDto, InstanceDto, InstanceEventDto,
+            NewInstanceDto,
         },
         process::MinecraftProcessMetadataDto,
     },
@@ -120,6 +121,42 @@ async fn list(container: State<'_, ContainerState>) -> FrontendResult<Vec<Instan
         .into_iter()
         .map(std::convert::Into::into)
         .collect())
+}
+
+/// The instances that are stored but cannot be read, with why.
+#[tauri::command]
+#[specta::specta]
+async fn list_broken(
+    container: State<'_, ContainerState>,
+) -> FrontendResult<Vec<BrokenInstanceDto>> {
+    let container = container.0.clone();
+    Ok(container
+        .list_broken_instances_use_case()
+        .execute()
+        .await
+        .map_err(aether_core::Error::from)?
+        .into_iter()
+        .map(Into::into)
+        .collect())
+}
+
+/// Removes a broken instance by the id `list_broken` gave. Not an instance that is readable.
+#[tauri::command]
+#[specta::specta]
+async fn remove_broken(
+    id: String,
+    request_id: RequestId,
+    idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
+) -> FrontendResult<()> {
+    let _guard = idempotency.lock_cmd(request_id)?;
+
+    let container = container.0.clone();
+    Ok(container
+        .remove_broken_instance_use_case()
+        .execute(id)
+        .await
+        .map_err(aether_core::Error::from)?)
 }
 
 #[tauri::command]

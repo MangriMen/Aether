@@ -83,6 +83,8 @@ export type InstanceErrorDto = { code: "STORAGE"; payload: {
 	modpack_id: string,
 } } | { code: "UPDATE_FAILED"; payload: {
 	modpack_id: string,
+} } | { code: "NOT_BROKEN"; payload: {
+	instance_id: string,
 } } | { code: "UNMANAGED_INSTANCE"; payload: {
 	instance_id: string,
 } } | { code: "CONTENT_DUPLICATION"; payload: {

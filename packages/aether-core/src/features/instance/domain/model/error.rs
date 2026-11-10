@@ -83,6 +83,10 @@ pub enum InstanceError {
     #[error("Failed to update instance with modpack {modpack_id}")]
     UpdateFailed { modpack_id: String },
 
+    /// A removal of a broken instance for one that is not (any more): it may have been repaired.
+    #[error("Instance \"{instance_id}\" is not broken")]
+    NotBroken { instance_id: String },
+
     #[error("Unmanaged instance")]
     UnmanagedInstance { instance_id: String },
 

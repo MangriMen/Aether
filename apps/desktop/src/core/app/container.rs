@@ -13,8 +13,8 @@ use aether_core::features::file_watcher::infra::NotifyFileWatcher;
 use aether_core::features::instance::infra::{
     CONTENT_METADATA_NAMESPACES, EventEmittingInstanceStorage, FsContentFileService,
     FsContentIconCache, FsInstanceFileService, InstanceEventHandler, InstanceWatcherServiceImpl,
-    ModrinthContentProvider, MrpackCacheCleaner, SqliteInstanceStorage, SqlitePackStorage,
-    UniversalContentMetadataCache, mrpack_dir,
+    LegacyInstanceScanner, ModrinthContentProvider, MrpackCacheCleaner, SqliteInstanceStorage,
+    SqlitePackStorage, UniversalContentMetadataCache, mrpack_dir,
 };
 use aether_core::features::instance::{
     ContentIconHousekeeping, ContentProvider, GetInstanceUseCase, Importer, PluginId, Updater,
@@ -442,6 +442,8 @@ pub async fn build_container(
             default_instance_settings_storage,
             process_storage,
             instance_storage: instance_storage.clone(),
+            broken_instances: Arc::new(SqliteInstanceStorage::new(pool.clone())),
+            legacy_instances: Arc::new(LegacyInstanceScanner::new(location_info.clone())),
             pack_storage,
             content_file_service,
             content_metadata_cache,

@@ -1,3 +1,4 @@
+mod broken_instances;
 mod change_instance_game;
 mod create_instance;
 mod edit_instance;
@@ -13,6 +14,7 @@ mod remove_instance;
 mod reset_stuck_install_stages;
 mod update_instance;
 
+pub use broken_instances::*;
 pub use change_instance_game::*;
 pub use create_instance::*;
 pub use edit_instance::*;
