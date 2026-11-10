@@ -47,6 +47,7 @@ pub enum InstanceErrorDto {
         plugin_id: String,
     },
     CachesBeingCleared,
+    Cancelled,
     PackInfoNotFound,
     UpdaterNotFound {
         modpack_id: String,
@@ -188,6 +189,7 @@ impl From<&InstanceError> for InstanceErrorDto {
                 plugin_id: plugin_id.clone(),
             },
             InstanceError::CachesBeingCleared => Self::CachesBeingCleared,
+            InstanceError::Cancelled => Self::Cancelled,
             InstanceError::PackInfoNotFound => Self::PackInfoNotFound,
             InstanceError::UpdaterNotFound { modpack_id } => Self::UpdaterNotFound {
                 modpack_id: modpack_id.clone(),

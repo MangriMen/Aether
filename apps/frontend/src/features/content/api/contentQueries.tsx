@@ -13,7 +13,11 @@ import type {
 } from '@/platform/bindings/instance';
 import type { PartialBy } from '@/shared/utils';
 
-import { showError, isLauncherError } from '@/features/errors';
+import {
+  isCancelledError,
+  isLauncherError,
+  showError,
+} from '@/features/errors';
 import { invalidateInstanceContent } from '@/features/instance';
 import {
   SettingsTab,
@@ -169,19 +173,22 @@ export const useInstallContent = () => {
       });
     },
     onError: (err) => {
-      showError({
-        title: t('content.failedToInstall'),
-        err,
-        t,
-        action: isProviderNotChosen(err) ? (
-          <Button
-            size='sm'
-            onClick={() => settingsParams.open(SettingsTab.ContentProviders)}
-          >
-            {t('settings.contentProviders.choose')}
-          </Button>
-        ) : undefined,
-      });
+      // Called off by the user: nothing failed.
+      if (!isCancelledError(err)) {
+        showError({
+          title: t('content.failedToInstall'),
+          err,
+          t,
+          action: isProviderNotChosen(err) ? (
+            <Button
+              size='sm'
+              onClick={() => settingsParams.open(SettingsTab.ContentProviders)}
+            >
+              {t('settings.contentProviders.choose')}
+            </Button>
+          ) : undefined,
+        });
+      }
     },
   }));
 };

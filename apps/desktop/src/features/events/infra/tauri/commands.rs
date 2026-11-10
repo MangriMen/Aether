@@ -1,5 +1,6 @@
 use aether_core::features::events::EventsFeature;
 use tauri::State;
+use uuid::Uuid;
 
 use crate::{
     FrontendResult,
@@ -39,4 +40,21 @@ pub async fn list_progress_bars(
         .into_iter()
         .map(Into::into)
         .collect())
+}
+
+/// Call off the work of a bar, as the user asked. Nothing happens for a bar that is gone or
+/// past the point where its work could stop: the frontend learns of it from the bar's events.
+#[tauri::command]
+#[specta::specta]
+pub async fn cancel_progress(
+    progress_bar_id: Uuid,
+    container: State<'_, ContainerState>,
+) -> FrontendResult<()> {
+    let container = container.0.clone();
+
+    Ok(container
+        .cancel_progress_use_case()
+        .execute(progress_bar_id)
+        .await
+        .map_err(aether_core::Error::from)?)
 }

@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use aether_core::features::events::{
-    ProgressEvent, ProgressEventType, ProgressStage, ProgressStatus,
+    CancelState, ProgressEvent, ProgressEventType, ProgressStage, ProgressStatus,
 };
 use serde::{Deserialize, Serialize};
 use specta::Type;
@@ -32,6 +32,9 @@ pub struct ProgressEventDto {
     pub bytes_total: Option<f64>,
     /// Bytes per second.
     pub speed: Option<f64>,
+    /// Whether the user may call the bar's work off (`cancel_progress`); absent for work that
+    /// cannot be.
+    pub cancel: Option<CancelStateDto>,
 }
 
 /// The bytes as a number the frontend reads: see [`ProgressEventDto::bytes_done`].
@@ -48,6 +51,17 @@ pub enum ProgressStageDto {
     Installing,
     Extracting,
     Finishing,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Hash, PartialEq, Eq, Type)]
+#[serde(rename_all = "snake_case")]
+pub enum CancelStateDto {
+    /// Calling it off now stops it.
+    Open,
+    /// Called off; the work is stopping.
+    Requested,
+    /// Past the point where it could stop: it runs to its end.
+    Closed,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq, Type)]
@@ -134,6 +148,17 @@ impl From<ProgressEvent> for ProgressEventDto {
             bytes_done: bytes_to_number(value.bytes_done),
             bytes_total: bytes_to_number(value.bytes_total),
             speed: value.speed,
+            cancel: value.cancel.map(Into::into),
+        }
+    }
+}
+
+impl From<CancelState> for CancelStateDto {
+    fn from(value: CancelState) -> Self {
+        match value {
+            CancelState::Open => Self::Open,
+            CancelState::Requested => Self::Requested,
+            CancelState::Closed => Self::Closed,
         }
     }
 }
@@ -256,6 +281,7 @@ impl From<UpdateProgress> for ProgressEventDto {
             bytes_done: None,
             bytes_total: None,
             speed: None,
+            cancel: None,
         }
     }
 }

@@ -167,6 +167,7 @@ mod tests {
             bytes_done: None,
             bytes_total: None,
             speed: None,
+            cancel: None,
         }
     }
 

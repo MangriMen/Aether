@@ -26,6 +26,7 @@ const make = (
   bytesDone: 5 * MB,
   bytesTotal: 10 * MB,
   speed: MB,
+  cancel: null,
   ...extra,
 });
 

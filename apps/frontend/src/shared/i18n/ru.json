@@ -55,6 +55,7 @@
       "INSTANCE_STILL_INSTALLING": "Инстанс еще устанавливается",
       "INSTANCE_ALREADY_RUNNING": "Инстанс уже запущен",
       "CACHES_BEING_CLEARED": "Идёт очистка кеша, повторите через мгновение",
+      "CANCELLED": "Установка отменена",
       "PRELAUNCH_COMMAND_ERROR": "Ошибка команды перед запуском",
       "VALIDATION_ERROR": "Ошибка проверки файлов инстанса",
       "UNMANAGED_INSTANCE": "Действие недоступно для неуправляемого инстанса",
@@ -293,7 +294,10 @@
     "title": "Создать оффлайн аккаунт"
   },
   "events": {
+    "cancel": "Отменить",
     "cancelled": "Отменено",
+    "cancelling": "Отмена…",
+    "cannotCancel": "Завершается, отменить уже нельзя",
     "completed": "Завершено",
     "clearFinished": "Очистить завершённые",
     "completedChildren": "Завершено: {{count}}",

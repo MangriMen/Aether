@@ -35,6 +35,7 @@ macro_rules! events_commands {
     ($($tokens:tt)*) => {
         $($tokens)* [
             list_progress_bars,
+            cancel_progress,
         ]
     };
 }

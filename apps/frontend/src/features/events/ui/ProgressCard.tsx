@@ -1,14 +1,21 @@
 import type { Component, ComponentProps } from 'solid-js';
 
+import IconClose from '~icons/mdi/close';
 import { createMemo, Show, splitProps } from 'solid-js';
 
 import { formatBytes } from '@/shared/format';
 import { useTranslation } from '@/shared/i18n';
-import { CombinedTooltip, Progress, useIsOverflow } from '@/shared/ui-kit';
+import {
+  CombinedTooltip,
+  IconButton,
+  Progress,
+  useIsOverflow,
+} from '@/shared/ui-kit';
 import { cn } from '@/shared/utils';
 
 import type { ProgressEvent } from '../model/progressEvent';
 
+import { cancelProgress } from '../api/cancelProgress';
 import { formatProgressBytes } from '../model/progressBytes';
 
 export type ProgressCardProps = ComponentProps<'div'> & {
@@ -84,6 +91,10 @@ export const ProgressCard: Component<ProgressCardProps> = (props) => {
       return t('events.cancelled');
     }
 
+    if (local.payload.cancel === 'requested') {
+      return t('events.cancelling');
+    }
+
     if (event.type === 'launcher_update') {
       return t(`update.events.phase.${event.phase}`);
     }
@@ -114,6 +125,22 @@ export const ProgressCard: Component<ProgressCardProps> = (props) => {
   );
 
   const isSmall = () => local.size === 'sm';
+
+  // Shown while the work runs; it stays, disabled, once the work can no longer stop.
+  const cancelState = createMemo(() =>
+    local.payload.status.type === 'running' ? local.payload.cancel : null,
+  );
+
+  const cancelLabel = createMemo(() => {
+    switch (cancelState()) {
+      case 'requested':
+        return t('events.cancelling');
+      case 'closed':
+        return t('events.cannotCancel');
+      default:
+        return t('events.cancel');
+    }
+  });
 
   // A compact bar that is over drops its track and fades, so it stays in its place as a line.
   const isSettled = createMemo(
@@ -163,6 +190,21 @@ export const ProgressCard: Component<ProgressCardProps> = (props) => {
             <span>{bytesStr()}</span>
           </Show>
           {percentStr()}
+          <Show when={cancelState()}>
+            {(state) => (
+              <CombinedTooltip
+                label={cancelLabel() ?? ''}
+                aria-label={cancelLabel() ?? ''}
+                as={IconButton}
+                variant='ghost'
+                size='sm'
+                icon={IconClose}
+                loading={state() === 'requested'}
+                disabled={state() !== 'open'}
+                onClick={() => cancelProgress(local.payload.progressBarId)}
+              />
+            )}
+          </Show>
         </span>
       </div>
 

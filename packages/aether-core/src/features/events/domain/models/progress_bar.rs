@@ -3,13 +3,14 @@ use std::sync::Arc;
 use std::time::Instant;
 
 use log::error;
+use tokio_util::sync::CancellationToken;
 use uuid::Uuid;
 
 use crate::features::events::ProgressBarStorage;
 
 use super::event_sequencer::EventSequencer;
 use super::transfer_window::TransferWindow;
-use super::{ProgressEvent, ProgressEventType, ProgressStage, ProgressStatus};
+use super::{CancelState, ProgressEvent, ProgressEventType, ProgressStage, ProgressStatus};
 
 #[derive(Debug, Clone)]
 pub struct ProgressBar {
@@ -46,6 +47,54 @@ pub struct ProgressBar {
     pub(crate) transfer: TransferWindow,
     /// When the bar last sent an event; events for bytes alone are spaced out from it.
     pub(crate) last_sent_at: Option<Instant>,
+    /// How the user calls the bar's work off, when it can be.
+    pub(crate) cancel: Option<BarCancel>,
+}
+
+/// The bar's side of calling its work off: the token the work watches, and whether the work is
+/// past the point where it could stop. Changed only inside the storage's atomic update of the
+/// bar, so a call-off and the point of no return are never both taken.
+#[derive(Debug, Clone)]
+pub(crate) struct BarCancel {
+    token: CancellationToken,
+    closed: bool,
+}
+
+impl BarCancel {
+    pub(crate) fn new(token: CancellationToken) -> Self {
+        Self {
+            token,
+            closed: false,
+        }
+    }
+
+    pub(crate) fn state(&self) -> CancelState {
+        if self.token.is_cancelled() {
+            CancelState::Requested
+        } else if self.closed {
+            CancelState::Closed
+        } else {
+            CancelState::Open
+        }
+    }
+
+    /// Fire the token, unless the work is past the point of no return or called off already.
+    /// Whether this call fired it.
+    pub(crate) fn request(&mut self) -> bool {
+        if self.closed || self.token.is_cancelled() {
+            return false;
+        }
+        self.token.cancel();
+        true
+    }
+
+    /// Pass the point of no return: the token is not fired from now on. Whether the bar
+    /// shows anything new for it (a call-off that came first stays shown).
+    pub(crate) fn close(&mut self) -> bool {
+        let was = self.state();
+        self.closed = true;
+        self.state() != was
+    }
 }
 
 impl ProgressBar {
@@ -76,7 +125,13 @@ impl ProgressBar {
             speed: None,
             transfer: TransferWindow::default(),
             last_sent_at: None,
+            cancel: None,
         }
+    }
+
+    /// Whether the user may call the bar's work off; `None` for work that cannot be.
+    pub fn cancel_state(&self) -> Option<CancelState> {
+        self.cancel.as_ref().map(BarCancel::state)
     }
 
     /// A mirror of the shared bar `shared` under the bar `parent_id`, showing what it shows.
@@ -152,6 +207,7 @@ impl ProgressBar {
             bytes_done: self.bytes_done,
             bytes_total: self.bytes_total,
             speed: self.speed,
+            cancel: self.cancel_state(),
         }
     }
 

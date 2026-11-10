@@ -126,6 +126,7 @@ export const processCommands = {
 
 export const eventsCommands = {
   listProgressBars: eventsRawCommands.listProgressBars,
+  cancelProgress: eventsRawCommands.cancelProgress,
 };
 
 export const applicationCommands = {

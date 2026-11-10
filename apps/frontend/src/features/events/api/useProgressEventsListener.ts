@@ -94,6 +94,7 @@ export const useProgressEventsListener = () => {
           bytesDone: bar.bytesDone,
           bytesTotal: bar.bytesTotal,
           speed: bar.speed,
+          cancel: bar.cancel,
         });
       }
     } catch (error) {

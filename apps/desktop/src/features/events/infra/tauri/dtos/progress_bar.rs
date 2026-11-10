@@ -4,7 +4,9 @@ use specta::Type;
 use uuid::Uuid;
 
 use super::progress_event::bytes_to_number;
-use crate::features::events::infra::{ProgressEventTypeDto, ProgressStageDto, ProgressStatusDto};
+use crate::features::events::infra::{
+    CancelStateDto, ProgressEventTypeDto, ProgressStageDto, ProgressStatusDto,
+};
 
 #[derive(Debug, Clone, Serialize, Type)]
 #[serde(rename_all = "camelCase")]
@@ -24,10 +26,13 @@ pub struct ProgressBarDto {
     pub bytes_total: Option<f64>,
     /// Bytes per second.
     pub speed: Option<f64>,
+    /// As in `ProgressEventDto`.
+    pub cancel: Option<CancelStateDto>,
 }
 
 impl From<ProgressBar> for ProgressBarDto {
     fn from(value: ProgressBar) -> Self {
+        let cancel = value.cancel_state().map(Into::into);
         Self {
             id: value.id,
             message: value.message,
@@ -41,6 +46,7 @@ impl From<ProgressBar> for ProgressBarDto {
             bytes_done: bytes_to_number(value.bytes_done),
             bytes_total: bytes_to_number(value.bytes_total),
             speed: value.speed,
+            cancel,
         }
     }
 }

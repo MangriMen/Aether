@@ -23,6 +23,20 @@ pub struct ProgressEvent {
     pub bytes_total: Option<u64>,
     /// Transfer speed in bytes per second.
     pub speed: Option<f64>,
+    /// Whether the user may call the bar's work off; `None` for work that cannot be.
+    pub cancel: Option<CancelState>,
+}
+
+/// Where calling off the work of a bar stands
+/// ([`ProgressService::cancel_progress`](crate::features::events::ProgressService::cancel_progress)).
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
+pub enum CancelState {
+    /// Calling it off now stops it.
+    Open,
+    /// Called off; the work is stopping.
+    Requested,
+    /// Past the point where it could stop: it runs to its end.
+    Closed,
 }
 
 /// What a progress bar is busy with right now.

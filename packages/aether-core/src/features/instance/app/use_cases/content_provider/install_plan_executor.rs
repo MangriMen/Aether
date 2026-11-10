@@ -23,6 +23,9 @@
 //!   halfway ([`PlanDirs`]); what a crash leaves is removed on the next start
 //!   ([`remove_plan_leftovers`]). Backups holding files are kept either way: they may be the
 //!   only copy of a file the run moved aside.
+//! * The user may call a run off ([`PlanProgress::unless_cancelled`]) only until it starts on the
+//!   target ([`PlanProgress::commit`]): until then nothing is changed, so calling off needs no
+//!   rollback. From there on it runs to its end, failing or not.
 //! * Dropped files are removed only once the new ones are in and recorded, and a record goes
 //!   only with its file: a run killed before it could roll back leaves at worst a stale file
 //!   still recorded as the origin's, which the next run of the plan removes.
@@ -66,6 +69,7 @@ use std::{
 
 use async_trait::async_trait;
 use futures::{StreamExt, TryStreamExt, future::try_join_all};
+use tokio_util::sync::CancellationToken;
 
 mod checks;
 mod installed_state;
@@ -133,10 +137,14 @@ pub struct InstallPlanExecutor {
 /// The install of the game of a new instance (or of a new game) goes under it too, with mirrors
 /// of the shared downloads it waits on (its Java, its game version). Dropping it completes the
 /// bar.
+///
+/// The user calls the run off from the bar, until [`commit`](Self::commit).
 struct PlanProgress<'a> {
     service: &'a dyn ProgressService,
     /// `None` when the bar could not be created: the plan runs without progress.
     bar: Option<ProgressBarId>,
+    /// Fires when the user calls the run off; never without a bar.
+    cancel: CancellationToken,
     /// Shared by the bars of the files.
     instance_path: String,
 }
@@ -155,12 +163,37 @@ impl PlanProgress<'_> {
         }
     }
 
-    /// Take the last step, or mark the bar as failed, by the run's `result`. Called once the run
-    /// is over (every download stopped, every file's bar gone), so that no update writes over
-    /// the failure.
+    /// Run `work` unless the user calls the run off first: then it is dropped halfway, every
+    /// download in it with it, and the run ends as cancelled.
+    async fn unless_cancelled<T>(
+        &self,
+        work: impl Future<Output = Result<T, InstanceError>>,
+    ) -> Result<T, InstanceError> {
+        self.cancel
+            .run_until_cancelled(work)
+            .await
+            .unwrap_or(Err(InstanceError::Cancelled))
+    }
+
+    /// Pass the point of no return, before anything in the target changes: from here on the
+    /// run is not called off. A call that came first ends it as cancelled.
+    async fn commit(&self) -> Result<(), InstanceError> {
+        if let Some(bar) = &self.bar {
+            self.service.close_cancellation_safe(bar).await;
+        }
+        if self.cancel.is_cancelled() {
+            return Err(InstanceError::Cancelled);
+        }
+        Ok(())
+    }
+
+    /// Take the last step, or mark the bar as failed or cancelled, by the run's `result`. Called
+    /// once the run is over (every download stopped, every file's bar gone), so that no update
+    /// writes over the failure.
     async fn end(&self, result: &Result<InstanceId, InstanceError>) {
         match (result, &self.bar) {
             (Ok(_), _) => self.step("Complete").await,
+            (Err(InstanceError::Cancelled), Some(bar)) => bar.cancel().await,
             (Err(err), Some(bar)) => bar.fail(err.to_string()).await,
             (Err(_), None) => {}
         }
@@ -663,15 +696,9 @@ impl InstallPlanExecutor {
         let mut keep_backups = false;
 
         let result = async {
-            let staged = self
-                .download_all(diff.to_download, &staging, &progress)
+            let (staged, staged_overrides) = self
+                .stage(diff.to_download, overrides, &staging, &progress)
                 .await?;
-            let staged_overrides = plan_overrides::stage_overrides(
-                overrides.sources,
-                &staging.join("overrides"),
-                self.limits.max_override_bytes,
-            )
-            .await?;
             let created = matches!(target, InstallTarget::New(_));
             let (instance_id, game_before) = self.prepare_target(target, &progress).await?;
             undo.game_before = game_before;
@@ -722,6 +749,9 @@ impl InstallPlanExecutor {
         }
         .await;
         progress.end(&result).await;
+        if matches!(result, Err(InstanceError::Cancelled)) {
+            tracing::info!("The user cancelled the install of {origin:?}");
+        }
 
         // Removed here, retried, rather than by the guard.
         dirs.disarm();
@@ -738,6 +768,30 @@ impl InstallPlanExecutor {
         }
 
         result
+    }
+
+    /// Download the files and stage the overrides into `staging`, then pass the point of no
+    /// return ([`PlanProgress::commit`]): nothing in the target has changed until then.
+    async fn stage(
+        &self,
+        to_download: Vec<PlannedFile>,
+        overrides: PlanOverrides,
+        staging: &Path,
+        progress: &PlanProgress<'_>,
+    ) -> Result<(Vec<StagedFile>, Vec<StagedOverride>), InstanceError> {
+        let staged = progress
+            .unless_cancelled(self.download_all(to_download, staging, progress))
+            .await?;
+        // Not cut short: the archive is read on a blocking thread, which would go on writing
+        // into staging after the run is gone. A call-off waits for it to finish.
+        let staged_overrides = plan_overrides::stage_overrides(
+            overrides.sources,
+            &staging.join("overrides"),
+            self.limits.max_override_bytes,
+        )
+        .await?;
+        progress.commit().await?;
+        Ok((staged, staged_overrides))
     }
 
     /// Start the bar: three steps per file to download (download, hash, install), one per
@@ -768,9 +822,9 @@ impl InstallPlanExecutor {
             InstallTarget::New(new_instance) => new_instance.name.to_string(),
         };
 
-        let bar = self
+        let (bar, cancel) = self
             .progress_service
-            .init_progress_safe(
+            .init_cancellable_progress_safe(
                 ProgressEventType::PackDownload {
                     instance_path: instance_path.clone(),
                     pack_name,
@@ -786,6 +840,7 @@ impl InstallPlanExecutor {
         PlanProgress {
             service: self.progress_service.as_ref(),
             bar,
+            cancel,
             instance_path,
         }
     }

@@ -55,6 +55,7 @@
       "INSTANCE_STILL_INSTALLING": "Instance is still installing",
       "INSTANCE_ALREADY_RUNNING": "Instance is already running",
       "CACHES_BEING_CLEARED": "Caches are being cleared, try again in a moment",
+      "CANCELLED": "Installation cancelled",
       "PRELAUNCH_COMMAND_ERROR": "Pre-launch command error",
       "VALIDATION_ERROR": "Instance validation failed",
       "UNMANAGED_INSTANCE": "Action unavailable for unmanaged instance",
@@ -293,7 +294,10 @@
     "title": "Create offline account"
   },
   "events": {
+    "cancel": "Cancel",
     "cancelled": "Cancelled",
+    "cancelling": "Cancelling…",
+    "cannotCancel": "Finishing, can no longer be cancelled",
     "completed": "Completed",
     "clearFinished": "Clear finished",
     "completedChildren": "Completed: {{count}}",
