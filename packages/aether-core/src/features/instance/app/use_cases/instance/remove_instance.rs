@@ -56,7 +56,7 @@ impl RemoveInstanceUseCasePort for RemoveInstanceUseCase {
     async fn execute(&self, instance_id: InstanceId) -> Result<(), InstanceError> {
         // Before the lock, which a launch holds through its install. Waited for: the install
         // restores the stage of the instance as it stops, which must come before the removal.
-        self.cancellations.cancel_and_wait(&instance_id).await;
+        let _removal = self.cancellations.begin_removal(&instance_id).await;
         let _lock = self.instance_locks.lock(&instance_id).await;
 
         let previous_icon = match self.storage.get(&instance_id).await {

@@ -161,6 +161,35 @@ impl InstallInstanceUseCase {
         }
     }
 
+    /// Write the stage the install ended in. What the install ended in comes first; a stage that
+    /// could not be written is logged.
+    async fn settle_stage(
+        &self,
+        instance: &Instance,
+        result: Result<(), InstanceError>,
+        pack_pending: bool,
+        previous_stage: InstanceInstallStage,
+    ) -> Result<(), InstanceError> {
+        let settled = match result {
+            Ok(()) => {
+                self.handle_success_installation(instance, pack_pending)
+                    .await
+            }
+            Err(_) => {
+                self.handle_failed_installation(instance.id(), previous_stage)
+                    .await
+            }
+        };
+        match (result, settled) {
+            (Ok(()), Err(err)) => Err(err),
+            (result, Err(err)) => {
+                tracing::warn!(error = %err, "Could not settle the install stage of \"{}\"", instance.id());
+                result
+            }
+            (result, Ok(())) => result,
+        }
+    }
+
     pub async fn execute(
         &self,
         instance_id: InstanceId,
@@ -249,22 +278,9 @@ impl InstallInstanceUseCase {
             self.progress_service.close_cancellation_safe(bar).await;
         }
 
-        let settled = match result {
-            Ok(()) => {
-                self.handle_success_installation(&instance, pack_pending)
-                    .await
-            }
-            Err(_) => {
-                self.handle_failed_installation(instance.id(), previous_stage)
-                    .await
-            }
-        };
-        // Called off by the removal of the instance, its stage is gone with it.
-        if let Err(err) = settled
-            && !matches!(result, Err(InstanceError::Cancelled))
-        {
-            return Err(err);
-        }
+        let result = self
+            .settle_stage(&instance, result, pack_pending, previous_stage)
+            .await;
         drop(removal);
 
         if let Some(loading_bar) = loading_bar {

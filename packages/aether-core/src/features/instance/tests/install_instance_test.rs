@@ -798,10 +798,17 @@ async fn should_end_cancelled_when_the_instance_is_removed_while_the_game_instal
         result = &mut run => panic!("the install cannot end by itself: {result:?}"),
         () = minecraft.0.notified() => {}
     }
-    removals.cancel(&id);
+    // The removal waits for the install to leave, which it does once it is called off.
+    let removal = {
+        let (removals, id) = (removals.clone(), id.clone());
+        tokio::spawn(async move {
+            let _removal = removals.begin_removal(&id).await;
+        })
+    };
     let result = tokio::time::timeout(std::time::Duration::from_secs(5), run)
         .await
         .expect("the install did not stop");
+    removal.await.unwrap();
 
     assert!(
         matches!(result, Err(InstanceError::Cancelled)),
@@ -860,10 +867,17 @@ async fn should_end_cancelled_when_the_instance_is_gone_by_the_time_the_install_
         () = minecraft.0.notified() => {}
     }
     storage.remove(&id).await.unwrap();
-    removals.cancel(&id);
+    // The removal waits for the install to leave, which it does once it is called off.
+    let removal = {
+        let (removals, id) = (removals.clone(), id.clone());
+        tokio::spawn(async move {
+            let _removal = removals.begin_removal(&id).await;
+        })
+    };
     let result = tokio::time::timeout(std::time::Duration::from_secs(5), run)
         .await
         .expect("the install did not stop");
+    removal.await.unwrap();
 
     assert!(
         matches!(result, Err(InstanceError::Cancelled)),

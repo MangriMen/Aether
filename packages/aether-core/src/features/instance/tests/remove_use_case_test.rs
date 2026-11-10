@@ -590,17 +590,22 @@ async fn should_call_off_the_install_of_the_game_when_the_instance_is_removed() 
         )),
         Arc::new(SqlitePackStorage::new(pool)),
         Arc::new(InstanceLocks::new()),
-        no_op_reaper(storage),
+        no_op_reaper(storage.clone()),
     )
     .with_cancellations(installs.clone());
     let id = InstanceId::try_from(instance_id).unwrap();
     let install = installs.register(&id);
+    let id_again = id.clone();
     let removal = tokio::spawn(async move { use_case.execute(id).await });
 
     // The install unwinds once it is called off, and only then is the instance removed.
     tokio::time::timeout(std::time::Duration::from_secs(5), install.token.cancelled())
         .await
         .expect("the install was not called off");
+    // The instance stays until the install has unwound (a removal would be through by now).
+    tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+    assert!(!removal.is_finished());
+    assert!(storage.get(&id_again).await.is_ok());
     drop(install);
 
     removal.await.unwrap().unwrap();
@@ -629,7 +634,7 @@ async fn should_call_off_the_install_before_waiting_for_the_lock_of_the_instance
             )),
             Arc::new(SqlitePackStorage::new(pool)),
             locks.clone(),
-            no_op_reaper(storage),
+            no_op_reaper(storage.clone()),
         )
         .with_cancellations(installs.clone()),
     );
@@ -644,6 +649,10 @@ async fn should_call_off_the_install_before_waiting_for_the_lock_of_the_instance
     tokio::time::timeout(std::time::Duration::from_secs(5), install.token.cancelled())
         .await
         .expect("the install was not called off while the lock was held");
+    // Not removed while the install unwinds.
+    tokio::task::yield_now().await;
+    assert!(!removal.is_finished());
+    assert!(storage.get(&id).await.is_ok());
     drop(install);
     drop(held);
 
