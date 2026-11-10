@@ -67,18 +67,28 @@ pub async fn migrate<R: tauri::Runtime>(
 }
 
 fn get_settings_path<R: tauri::Runtime>(app_handle: &AppHandle<R>) -> std::path::PathBuf {
+    launcher_dir(app_handle).join("aether_settings.json")
+}
+
+pub fn create_location_info<R: tauri::Runtime>(app_handle: &AppHandle<R>) -> LocationInfo {
+    let launcher_dir = launcher_dir(app_handle);
+
+    LocationInfo::new(launcher_dir.clone(), launcher_dir)
+}
+
+/// The directory all of the launcher's data lives in.
+///
+/// A debug build takes `AETHER_DATA_DIR` over the default, to run against data of its own
+/// (tests, trying a change) without touching the user's. A release build ignores it: it is no
+/// way to point the launcher somewhere else.
+fn launcher_dir<R: tauri::Runtime>(app_handle: &AppHandle<R>) -> std::path::PathBuf {
+    #[cfg(debug_assertions)]
+    if let Some(dir) = std::env::var_os("AETHER_DATA_DIR").filter(|dir| !dir.is_empty()) {
+        return dir.into();
+    }
+
     app_handle
         .path()
         .app_config_dir()
         .expect("Failed to resolve app config directory")
-        .join("aether_settings.json")
-}
-
-pub fn create_location_info<R: tauri::Runtime>(app_handle: &AppHandle<R>) -> LocationInfo {
-    let launcher_dir = app_handle
-        .path()
-        .app_config_dir()
-        .expect("Failed to resolve app config directory");
-
-    LocationInfo::new(launcher_dir.clone(), launcher_dir.clone())
 }
