@@ -6,7 +6,8 @@ use tracing::warn;
 use crate::features::instance::app::ports::RemoveInstanceUseCasePort;
 use crate::features::instance::app::{IconAssetReaper, InstanceFileService};
 use crate::features::instance::{
-    InstanceError, InstanceId, InstanceLocks, InstanceStorage, InstanceWatcherService, PackStorage,
+    InstallCancellations, InstanceError, InstanceId, InstanceLocks, InstanceStorage,
+    InstanceWatcherService, PackStorage,
 };
 
 /// Removes an instance under its lock ([`InstanceLocks`]): after a plan or an update running in
@@ -18,6 +19,7 @@ pub struct RemoveInstanceUseCase {
     pack_storage: Arc<dyn PackStorage>,
     instance_locks: Arc<InstanceLocks>,
     icon_reaper: IconAssetReaper,
+    cancellations: Arc<InstallCancellations>,
 }
 
 impl RemoveInstanceUseCase {
@@ -36,13 +38,25 @@ impl RemoveInstanceUseCase {
             pack_storage,
             instance_locks,
             icon_reaper,
+            cancellations: Arc::default(),
         }
+    }
+
+    /// Remove under a registry shared with the install of games, so that an install running for
+    /// the instance is called off.
+    #[must_use]
+    pub fn with_cancellations(mut self, cancellations: Arc<InstallCancellations>) -> Self {
+        self.cancellations = cancellations;
+        self
     }
 }
 
 #[async_trait]
 impl RemoveInstanceUseCasePort for RemoveInstanceUseCase {
     async fn execute(&self, instance_id: InstanceId) -> Result<(), InstanceError> {
+        // Before the lock, which a launch holds through its install. Waited for: the install
+        // restores the stage of the instance as it stops, which must come before the removal.
+        let _removal = self.cancellations.begin_removal(&instance_id).await;
         let _lock = self.instance_locks.lock(&instance_id).await;
 
         let previous_icon = match self.storage.get(&instance_id).await {

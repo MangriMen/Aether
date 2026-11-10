@@ -570,3 +570,91 @@ async fn should_not_fail_the_removal_when_the_icon_asset_cannot_be_deleted() {
         .await
         .unwrap();
 }
+
+#[tokio::test]
+async fn should_call_off_the_install_of_the_game_when_the_instance_is_removed() {
+    let (_temp, location_info, pool) = create_test_infrastructure().await;
+    let instance_id = Uuid::new_v4().to_string();
+    let storage = Arc::new(SqliteInstanceStorage::new(pool.clone()));
+    storage
+        .upsert(&create_instance(&instance_id))
+        .await
+        .unwrap();
+    let installs = Arc::new(crate::features::instance::InstallCancellations::default());
+    let use_case = RemoveInstanceUseCase::new(
+        storage.clone(),
+        Arc::new(NoOpWatcher),
+        Arc::new(FsInstanceFileService::new(
+            location_info,
+            crate::shared::limits::PluginSandboxLimits::default().max_instance_file_bytes,
+        )),
+        Arc::new(SqlitePackStorage::new(pool)),
+        Arc::new(InstanceLocks::new()),
+        no_op_reaper(storage.clone()),
+    )
+    .with_cancellations(installs.clone());
+    let id = InstanceId::try_from(instance_id).unwrap();
+    let install = installs.register(&id);
+    let id_again = id.clone();
+    let removal = tokio::spawn(async move { use_case.execute(id).await });
+
+    // The install unwinds once it is called off, and only then is the instance removed.
+    tokio::time::timeout(std::time::Duration::from_secs(5), install.token.cancelled())
+        .await
+        .expect("the install was not called off");
+    // The instance stays until the install has unwound (a removal would be through by now).
+    tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+    assert!(!removal.is_finished());
+    assert!(storage.get(&id_again).await.is_ok());
+    drop(install);
+
+    removal.await.unwrap().unwrap();
+}
+
+/// A launch holds the lock of the instance through its install, so the install is called off
+/// before the removal waits for the lock.
+#[tokio::test]
+async fn should_call_off_the_install_before_waiting_for_the_lock_of_the_instance() {
+    let (_temp, location_info, pool) = create_test_infrastructure().await;
+    let instance_id = Uuid::new_v4().to_string();
+    let storage = Arc::new(SqliteInstanceStorage::new(pool.clone()));
+    storage
+        .upsert(&create_instance(&instance_id))
+        .await
+        .unwrap();
+    let installs = Arc::new(crate::features::instance::InstallCancellations::default());
+    let locks = Arc::new(InstanceLocks::new());
+    let use_case = Arc::new(
+        RemoveInstanceUseCase::new(
+            storage.clone(),
+            Arc::new(NoOpWatcher),
+            Arc::new(FsInstanceFileService::new(
+                location_info,
+                crate::shared::limits::PluginSandboxLimits::default().max_instance_file_bytes,
+            )),
+            Arc::new(SqlitePackStorage::new(pool)),
+            locks.clone(),
+            no_op_reaper(storage.clone()),
+        )
+        .with_cancellations(installs.clone()),
+    );
+    let id = InstanceId::try_from(instance_id).unwrap();
+    let held = locks.lock(&id).await;
+    let install = installs.register(&id);
+
+    let removal = {
+        let (use_case, id) = (use_case.clone(), id.clone());
+        tokio::spawn(async move { use_case.execute(id).await })
+    };
+    tokio::time::timeout(std::time::Duration::from_secs(5), install.token.cancelled())
+        .await
+        .expect("the install was not called off while the lock was held");
+    // Not removed while the install unwinds.
+    tokio::task::yield_now().await;
+    assert!(!removal.is_finished());
+    assert!(storage.get(&id).await.is_ok());
+    drop(install);
+    drop(held);
+
+    removal.await.unwrap().unwrap();
+}

@@ -3,7 +3,11 @@ import { createMemo, type Accessor } from 'solid-js';
 
 import type { EditInstanceDto } from '@/platform/bindings/instance';
 
-import { isLauncherError, showError } from '@/features/errors';
+import {
+  isCancelledError,
+  isLauncherError,
+  showError,
+} from '@/features/errors';
 import { instanceCommands } from '@/platform/ipc';
 import { useTranslation } from '@/shared/i18n';
 
@@ -19,6 +23,10 @@ export const useCreateInstance = () => {
   return useMutation(() => ({
     mutationFn: instanceCommands.create,
     onError: (err) => {
+      if (isCancelledError(err)) {
+        return;
+      }
+
       showError({
         title: t('instance.createError'),
         err,

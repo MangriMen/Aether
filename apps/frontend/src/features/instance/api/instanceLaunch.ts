@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/solid-query';
 
-import { showError } from '@/features/errors';
+import { isCancelledError, showError } from '@/features/errors';
 import { instanceCommands } from '@/platform/ipc';
 import { useTranslation } from '@/shared/i18n';
 
@@ -10,6 +10,10 @@ export const useLaunchInstance = () => {
   return useMutation(() => ({
     mutationFn: (id: string) => instanceCommands.launch(id),
     onError: (err, id) => {
+      if (isCancelledError(err)) {
+        return;
+      }
+
       showError({
         title: t('instance.launchError', { id }),
         err,

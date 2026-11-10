@@ -870,3 +870,73 @@ async fn should_release_the_imported_icon_when_the_instance_directory_cannot_be_
     assert!(result.is_err());
     assert_eq!(*assets.removed.lock().unwrap(), ["asset-icon.png"]);
 }
+
+/// What creating an instance whose install ends in `error` sends as warnings, and whether the
+/// instance is left behind.
+async fn warnings_when_the_install_ends_in(error: InstanceError) -> (usize, bool) {
+    struct Ends(std::sync::Mutex<Option<InstanceError>>);
+
+    #[async_trait]
+    impl InstanceInstallService for Ends {
+        async fn execute(
+            &self,
+            _: InstanceId,
+            _: bool,
+            _: Option<&ProgressBarId>,
+        ) -> Result<(), InstanceError> {
+            Err(self.0.lock().unwrap().take().unwrap())
+        }
+    }
+
+    let (_temp, location_info) = setup_temp_location();
+    let storage = Arc::new(MemInstanceStorage::new());
+    let (tx, mut events) = tokio::sync::mpsc::unbounded_channel();
+    let use_case = make_use_case(
+        storage.clone(),
+        Arc::new(MockLoaderService {
+            try_get_default_result: None,
+        }),
+        Arc::new(Ends(std::sync::Mutex::new(Some(error)))),
+        Arc::new(MemInstanceFileService::new(location_info.instances_dir())),
+        Arc::new(NoOpWatcher),
+        Arc::new(crate::features::events::test_support::ChannelEmitter(tx)),
+    );
+
+    let _ = use_case
+        .execute(
+            NewInstance {
+                name: InstanceName::parse("Install Test").unwrap(),
+                game_version: GameVersion::from_static("1.21"),
+                mod_loader: ModLoader::Vanilla,
+                loader_version: None,
+                icon_path: None,
+                skip_install_instance: None,
+                pack_info: None,
+            },
+            None,
+        )
+        .await;
+
+    let mut warnings = 0;
+    while let Ok(event) = events.try_recv() {
+        if matches!(event, Event::Warning(_)) {
+            warnings += 1;
+        }
+    }
+    (warnings, storage.list().await.unwrap().is_empty())
+}
+
+#[tokio::test]
+async fn should_warn_and_remove_the_instance_when_its_install_fails() {
+    let (warnings, removed) =
+        warnings_when_the_install_ends_in(InstanceError::Storage("boom".to_owned())).await;
+
+    assert_eq!((warnings, removed), (1, true));
+}
+
+#[tokio::test]
+async fn should_remove_the_instance_without_a_warning_when_its_install_is_called_off() {
+    let (warnings, removed) = warnings_when_the_install_ends_in(InstanceError::Cancelled).await;
+
+    assert_eq!((warnings, removed), (0, true));
+}

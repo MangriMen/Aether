@@ -20,10 +20,11 @@ use crate::features::{
         EditInstanceIconUseCasePort, EditInstanceUseCase, EditInstanceUseCasePort,
         GetContentUseCase, GetContentUseCasePort, GetInstanceUseCase, GetInstanceUseCasePort,
         IconAssetReaper, ImportContentUseCase, ImportContentUseCasePort, ImportInstanceUseCase,
-        ImportInstanceUseCasePort, Importer, InstallContentUseCase, InstallContentUseCasePort,
-        InstallInstanceUseCase, InstallPlanExecutor, InstallPlanExecutorPort, InstanceFileService,
-        InstanceInstallService, InstanceLaunchService, InstanceLocks, InstanceStorage,
-        InstanceWatcherService, LaunchInstanceUseCase, LaunchInstanceWithActiveAccountUseCase,
+        ImportInstanceUseCasePort, Importer, InstallCancellations, InstallContentUseCase,
+        InstallContentUseCasePort, InstallInstanceUseCase, InstallPlanExecutor,
+        InstallPlanExecutorPort, InstanceFileService, InstanceInstallService,
+        InstanceLaunchService, InstanceLocks, InstanceStorage, InstanceWatcherService,
+        LaunchInstanceUseCase, LaunchInstanceWithActiveAccountUseCase,
         LaunchInstanceWithActiveAccountUseCasePort, ListContentUseCase, ListContentUseCasePort,
         ListContentVersionsUseCase, ListContentVersionsUseCasePort, ListImportersUseCase,
         ListImportersUseCasePort, ListInstancesUseCase, ListInstancesUseCasePort,
@@ -210,6 +211,8 @@ pub struct AetherContainer {
     params: AetherContainerParams,
     /// Shared by everything that changes an instance's content or launches it.
     instance_locks: Arc<InstanceLocks>,
+    /// Shared by the install of games and the removal of instances.
+    install_cancellations: Arc<InstallCancellations>,
     /// Held busy by installs and instance locks, paused while the caches are emptied.
     activity_gate: Arc<ActivityGate>,
     /// One for the process: it keeps which refreshes run and what providers could not tell.
@@ -250,6 +253,7 @@ impl AetherContainer {
             cache: UseCaseCache::new(),
             params,
             instance_locks,
+            install_cancellations: Arc::default(),
             activity_gate,
             content_metadata,
             cache_storage,
@@ -371,13 +375,16 @@ impl AetherContainer {
         self.cache
             .install_instance_uc
             .get_or_init(|| {
-                Arc::new(InstallInstanceUseCase::new(
-                    self.storage().instance_storage.clone(),
-                    self.loader_version_resolver(),
-                    self.minecraft_install_use_case(),
-                    self.progress_service().clone(),
-                    self.location_info().clone(),
-                ))
+                Arc::new(
+                    InstallInstanceUseCase::new(
+                        self.storage().instance_storage.clone(),
+                        self.loader_version_resolver(),
+                        self.minecraft_install_use_case(),
+                        self.progress_service().clone(),
+                        self.location_info().clone(),
+                    )
+                    .with_cancellations(self.install_cancellations.clone()),
+                )
             })
             .clone()
     }
@@ -699,14 +706,17 @@ impl InstanceCrudPort for AetherContainer {
         self.cache
             .remove_instance_uc
             .get_or_init(|| {
-                Arc::new(RemoveInstanceUseCase::new(
-                    self.storage().instance_storage.clone(),
-                    self.instance_watcher_service().clone(),
-                    self.storage().instance_file_service.clone(),
-                    self.storage().pack_storage.clone(),
-                    self.instance_locks.clone(),
-                    self.icon_asset_reaper(),
-                ))
+                Arc::new(
+                    RemoveInstanceUseCase::new(
+                        self.storage().instance_storage.clone(),
+                        self.instance_watcher_service().clone(),
+                        self.storage().instance_file_service.clone(),
+                        self.storage().pack_storage.clone(),
+                        self.instance_locks.clone(),
+                        self.icon_asset_reaper(),
+                    )
+                    .with_cancellations(self.install_cancellations.clone()),
+                )
             })
             .clone()
     }
