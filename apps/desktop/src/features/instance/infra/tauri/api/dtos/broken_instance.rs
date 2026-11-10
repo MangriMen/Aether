@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use aether_core::features::instance::{BrokenInstance, BrokenInstanceOrigin, BrokenInstanceReason};
 use serde::Serialize;
 use specta::Type;
@@ -41,7 +43,13 @@ impl From<BrokenInstance> for BrokenInstanceDto {
     fn from(value: BrokenInstance) -> Self {
         Self {
             id: value.id,
-            dir: value.dir.map(|dir| dir.to_string_lossy().into_owned()),
+            // As the system writes it: the parts of a path may have been joined with either slash.
+            dir: value.dir.map(|dir| {
+                dir.components()
+                    .collect::<PathBuf>()
+                    .to_string_lossy()
+                    .into_owned()
+            }),
             origin: match value.origin {
                 BrokenInstanceOrigin::Database => BrokenInstanceOriginDto::Database,
                 BrokenInstanceOrigin::LegacyFile => BrokenInstanceOriginDto::LegacyFile,
@@ -74,8 +82,6 @@ impl From<BrokenInstanceReason> for BrokenInstanceReasonDto {
 
 #[cfg(test)]
 mod tests {
-    use std::path::PathBuf;
-
     use super::*;
 
     #[test]
@@ -109,5 +115,19 @@ mod tests {
 
         assert!(value["dir"].is_null());
         assert_eq!(value["reason"], serde_json::json!({ "code": "INVALID_ID" }));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn should_write_the_folder_with_the_slashes_of_the_system_when_its_parts_were_joined_with_others()
+     {
+        let dto = BrokenInstanceDto::from(BrokenInstance {
+            id: "a".to_owned(),
+            dir: Some(PathBuf::from(r"C:/data\instances").join("a")),
+            origin: BrokenInstanceOrigin::Database,
+            reason: BrokenInstanceReason::InvalidId,
+        });
+
+        assert_eq!(dto.dir.as_deref(), Some(r"C:\data\instances\a"));
     }
 }

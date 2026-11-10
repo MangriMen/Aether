@@ -1,7 +1,7 @@
 import type { PolymorphicProps } from '@kobalte/core';
 import type { ValidComponent } from 'solid-js';
 
-import IconMdiAlertCircleOutline from '~icons/mdi/alert-circle-outline';
+import IconMdiAlertCircle from '~icons/mdi/alert-circle';
 import { mergeProps, splitProps } from 'solid-js';
 
 import { useTranslation } from '@/shared/i18n';
@@ -60,10 +60,8 @@ export const BrokenInstanceTile = <T extends ValidComponent = 'button'>(
           {t('instance.broken.label')}
         </div>
       </div>
-      <IconMdiAlertCircleOutline
-        class='
-          top-2 right-2 size-5 rounded-full bg-card text-destructive absolute
-        '
+      <IconMdiAlertCircle
+        class='top-2 right-2 size-5 text-destructive absolute drop-shadow-md'
         aria-hidden='true'
       />
     </CombinedTooltip>
