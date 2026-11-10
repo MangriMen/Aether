@@ -38,8 +38,6 @@ export type LogViewerProps = {
   wrap: boolean;
   /** Shown in the middle of the box while there is nothing to list. */
   emptyText?: string;
-  /** A short note on what the viewer is doing or leaving out, over the corner of the box. */
-  statusText?: string;
   onLoadOlder: () => Promise<void>;
   onLoadNewer: () => Promise<void>;
   onReloadTail: () => Promise<void>;
@@ -271,16 +269,6 @@ export const LogViewer: Component<LogViewerProps> = (props) => {
           '
         >
           {props.emptyText}
-        </div>
-      </Show>
-      <Show when={props.statusText}>
-        <div
-          class='
-            left-3 bottom-3 rounded-md bg-card/card px-2 py-1 text-muted-foreground
-            absolute border text-sm shadow-md
-          '
-        >
-          {props.statusText}
         </div>
       </Show>
       <Show when={!stick() || !props.tailLoaded}>

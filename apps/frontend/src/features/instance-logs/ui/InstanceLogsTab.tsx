@@ -63,10 +63,10 @@ const SEARCH_DEBOUNCE_MS = 300;
 
 // A pressed level chip takes the colour its lines have in the log.
 const LEVEL_CHIP_CLASS: Record<LogLevel, string> = {
-  debug: 'data-pressed:text-muted-foreground',
-  info: '',
-  warn: 'data-pressed:bg-warning/20 data-pressed:text-warning',
-  error: 'data-pressed:bg-destructive/20 data-pressed:text-destructive',
+  debug: '',
+  info: 'data-pressed:bg-info/20 data-pressed:text-info',
+  warn: 'data-pressed:bg-warning/25 data-pressed:text-warning',
+  error: 'data-pressed:bg-destructive/40 data-pressed:text-foreground',
 };
 
 export const InstanceLogsTab: Component<InstanceLogsTabProps> = (props) => {
@@ -88,7 +88,7 @@ export const InstanceLogsTab: Component<InstanceLogsTabProps> = (props) => {
   );
 
   const [selected, setSelected] = createSignal<string>(LIVE);
-  const [levels, setLevels] = createSignal<LogLevel[]>([...LOG_LEVELS]);
+  const [levels, setLevels] = createSignal<LogLevel[]>([]);
   const [query, setQuery] = createSignal('');
 
   const newestConsole = createMemo(() =>
@@ -236,7 +236,7 @@ export const InstanceLogsTab: Component<InstanceLogsTabProps> = (props) => {
   };
 
   return (
-    <div class={cn('gap-3 flex min-h-0 flex-col', props.class)}>
+    <div class={cn('gap-3 pt-2 flex min-h-0 flex-col', props.class)}>
       <div class='gap-2 flex items-center'>
         <CombinedTextField
           class='min-w-0 flex-1'
@@ -299,12 +299,18 @@ export const InstanceLogsTab: Component<InstanceLogsTabProps> = (props) => {
         >
           <For each={LOG_LEVELS}>
             {(level) => (
-              <ToggleGroupItem value={level} class={LEVEL_CHIP_CLASS[level]}>
+              <ToggleGroupItem
+                value={level}
+                class={cn('border', LEVEL_CHIP_CLASS[level])}
+              >
                 {t(`logs.level.${level}`)}
               </ToggleGroupItem>
             )}
           </For>
         </ToggleGroup>
+        <span class='min-w-0 flex-1 truncate px-2 text-center text-muted-foreground text-sm'>
+          {statusText()}
+        </span>
         <div class='gap-2 flex items-center'>
           <CombinedTooltip
             label={t('logs.wrapLines')}
@@ -356,7 +362,6 @@ export const InstanceLogsTab: Component<InstanceLogsTabProps> = (props) => {
           tailLoaded={view.tailLoaded()}
           wrap={wrapLines()}
           emptyText={emptyText()}
-          statusText={statusText()}
           onLoadOlder={view.loadOlder}
           onLoadNewer={view.loadNewer}
           onReloadTail={view.reloadTail}

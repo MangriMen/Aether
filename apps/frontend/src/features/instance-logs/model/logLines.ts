@@ -61,19 +61,22 @@ export const parseLogText = (
 
 export type LineFilter = (line: LogLine) => boolean;
 
-/** The filter for the chosen levels and text; none when it would let every line through. */
+/**
+ * The filter for the chosen levels and text; none when it would let every line through. No
+ * level chosen means every level, so the filters start off and each one narrows the log.
+ */
 export const createLineFilter = (
   levels: ReadonlySet<LogLevel>,
   query: string,
 ): LineFilter | undefined => {
   const needle = query.trim().toLowerCase();
 
-  if (levels.size === LOG_LEVELS.length && needle === '') {
+  if (levels.size === 0 && needle === '') {
     return undefined;
   }
 
   return (line) =>
-    levels.has(line.level) &&
+    (levels.size === 0 || levels.has(line.level)) &&
     (needle === '' || line.text.toLowerCase().includes(needle));
 };
 

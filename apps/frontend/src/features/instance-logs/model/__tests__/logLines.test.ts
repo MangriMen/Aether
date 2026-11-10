@@ -1,11 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  LOG_LEVELS,
-  createLineFilter,
-  filterLogLines,
-  parseLogText,
-} from '../logLines';
+import { createLineFilter, filterLogLines, parseLogText } from '../logLines';
 
 describe('parseLogText', () => {
   it('should_read_the_level_when_a_line_has_one', () => {
@@ -60,9 +55,7 @@ describe('filterLogLines', () => {
   );
 
   it('should_return_every_line_when_nothing_is_filtered', () => {
-    expect(
-      filterLogLines(lines, createLineFilter(new Set(LOG_LEVELS), '')),
-    ).toBe(lines);
+    expect(filterLogLines(lines, createLineFilter(new Set(), ''))).toBe(lines);
   });
 
   it('should_keep_only_the_chosen_levels', () => {
@@ -75,10 +68,7 @@ describe('filterLogLines', () => {
   });
 
   it('should_match_the_text_without_regard_to_case', () => {
-    const result = filterLogLines(
-      lines,
-      createLineFilter(new Set(LOG_LEVELS), 'HELLO'),
-    );
+    const result = filterLogLines(lines, createLineFilter(new Set(), 'HELLO'));
 
     expect(result).toHaveLength(2);
   });
