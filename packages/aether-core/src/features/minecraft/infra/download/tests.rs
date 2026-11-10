@@ -722,3 +722,37 @@ async fn should_make_a_second_install_wait_for_a_shared_library_being_written() 
         .collect();
     assert_eq!(left, ["lib-1.0.jar"], "no temporary file is left");
 }
+
+#[tokio::test]
+async fn should_end_the_shared_bar_and_its_mirror_cancelled_when_the_download_is_dropped() {
+    let mut fixture = fixture();
+    let version = version(&fixture.client, "1.20.1", ASSET_HASH);
+    fixture.client.gate(&client_url("1.20.1"));
+    let waiting = fixture
+        .progress
+        .init_progress(pack("a"), 1.0, String::new())
+        .await
+        .unwrap();
+
+    let download = download(&fixture.service, &version, Some(waiting));
+    let [(_, shared)] = mirrors(&fixture.storage, 1).await[..] else {
+        panic!("one mirror expected");
+    };
+    download.abort();
+    let _ = download.await;
+    until_no_bars(&fixture.storage).await;
+
+    let ended: Vec<_> = sent(&mut fixture.events)
+        .into_iter()
+        .filter(|event| {
+            (event.progress_bar_id == shared || event.mirror_of == Some(shared))
+                && event.status != ProgressStatus::Running
+        })
+        .map(|event| event.status)
+        .collect();
+    assert_eq!(
+        ended,
+        [ProgressStatus::Cancelled, ProgressStatus::Cancelled],
+        "the shared bar and its mirror"
+    );
+}

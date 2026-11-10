@@ -8,8 +8,6 @@ mod use_cases;
 pub use di::MinecraftFeature;
 pub use dtos::*;
 pub use error::*;
-#[cfg(test)]
-pub use ports::RecordingGameDownload;
 pub use ports::{
     GetLoaderVersionManifestUseCasePort, LoaderVersionService, MetadataStorage,
     MinecraftDownloader, MinecraftHealthService, MinecraftInstallService,

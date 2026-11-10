@@ -594,7 +594,7 @@ impl Fixture {
                 Arc::new(AnyLoaderVersion),
                 install.clone(),
             )),
-            Arc::new(crate::features::minecraft::RecordingGameDownload::default()),
+            Arc::new(crate::features::minecraft::test_support::RecordingGameDownload::default()),
             Arc::new(UrlDownloader),
             Arc::new(FsContentFileService::new(location_info.clone())),
             pack_storage.clone(),

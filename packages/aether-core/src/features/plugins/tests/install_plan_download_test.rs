@@ -467,7 +467,7 @@ impl Fixture {
             Arc::new(OneInstanceStorage(instance)),
             Arc::new(NoCreateInstance),
             Arc::new(NoChangeInstanceGame),
-            Arc::new(crate::features::minecraft::RecordingGameDownload::default()),
+            Arc::new(crate::features::minecraft::test_support::RecordingGameDownload::default()),
             Arc::new(downloader),
             Arc::new(FsContentFileService::new(self.location_info.clone())),
             Arc::new(SqlitePackStorage::in_memory().await),

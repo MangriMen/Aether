@@ -7,8 +7,7 @@ use tracing::info;
 use crate::{
     features::{
         events::{
-            OptionalProgressBarExt, ProgressBarId, ProgressService, ProgressServiceExt,
-            SharedDownload,
+            CancellableBar, ProgressBarId, ProgressService, ProgressServiceExt, SharedDownload,
         },
         minecraft::{MinecraftDomainError, MinecraftDownloader, modded, vanilla, version_jar_name},
     },
@@ -132,17 +131,19 @@ impl<RC: RequestClient, PS: ProgressService, C: Cache, FS: FileStore>
             + assets.iter().map(PendingAsset::size).sum::<u64>()
             + log_config.map_or(0, |file| u64::from(file.size));
         #[allow(clippy::cast_precision_loss)] // a progress total
-        let bar = self
-            .progress_service
-            .init_shared_progress_safe(
-                SharedDownload::MinecraftVersion {
-                    version: version_info.id.clone(),
-                },
-                size.max(1) as f64,
-                "Downloading Minecraft".to_owned(),
-            )
-            .await;
-        let progress = VersionProgress::new(self.progress_service.as_ref(), bar.as_ref());
+        // Called off (the future dropped) it ends cancelled, not done.
+        let bar = CancellableBar::new(
+            self.progress_service
+                .init_shared_progress_safe(
+                    SharedDownload::MinecraftVersion {
+                        version: version_info.id.clone(),
+                    },
+                    size.max(1) as f64,
+                    "Downloading Minecraft".to_owned(),
+                )
+                .await,
+        );
+        let progress = VersionProgress::new(self.progress_service.as_ref(), bar.bar());
 
         let result = tokio::try_join! {
             async {
@@ -163,7 +164,7 @@ impl<RC: RequestClient, PS: ProgressService, C: Cache, FS: FileStore>
             }
         };
 
-        bar.fail_on_err(&result).await;
+        bar.settle(&result).await;
         result?;
 
         info!("Minecraft {} downloaded", version_info.id);

@@ -9,6 +9,7 @@ mod cancel;
 mod change_game;
 mod common;
 mod diff;
+mod game_download;
 mod install;
 mod metadata_cache;
 mod one_version;

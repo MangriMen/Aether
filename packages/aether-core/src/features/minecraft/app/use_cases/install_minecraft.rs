@@ -10,10 +10,10 @@ use crate::features::{
         JavaQueryService,
     },
     minecraft::{
-        GameDownloadParams, InstallMinecraftParams, LoaderVersionService,
-        MinecraftApplicationError, MinecraftDownloader, MinecraftInstallService, ModLoader,
-        ModLoaderProcessor, VersionManifestService, get_compatible_java_version,
-        resolve_minecraft_version, version_jar_name,
+        GameDownloadParams, GameVersion, InstallMinecraftParams, LoaderVersionPreference,
+        LoaderVersionService, MinecraftApplicationError, MinecraftDownloader,
+        MinecraftInstallService, ModLoader, ModLoaderProcessor, VersionManifestService,
+        get_compatible_java_version, resolve_minecraft_version, version_jar_name,
     },
 };
 
@@ -22,6 +22,22 @@ use crate::features::{
 /// (30, when it has any) and finishing (1).
 const GAME_FILES_SPAN: f64 = 94.0;
 const GAME_FILES_SPAN_WITH_PROCESSORS: f64 = 64.0;
+
+/// A plan may leave the loader version out: it is the default one then, as for a new instance.
+async fn preference_or_default(
+    service: &dyn LoaderVersionService,
+    game_version: &GameVersion,
+    loader: &ModLoader,
+    preference: Option<LoaderVersionPreference>,
+) -> Result<Option<LoaderVersionPreference>, MinecraftApplicationError> {
+    if preference.is_some() || *loader == ModLoader::Vanilla {
+        return Ok(preference);
+    }
+    service
+        .try_get_default(game_version, loader)
+        .await
+        .map_err(MinecraftApplicationError::Domain)
+}
 
 struct GameFiles {
     version_info: crate::features::minecraft::vanilla::VersionInfo,
@@ -86,6 +102,13 @@ impl InstallMinecraftUseCase {
         let (version, minecraft_updated) =
             resolve_minecraft_version(&game_version, &version_manifest)?;
 
+        let loader_version = preference_or_default(
+            self.loader_version_resolver.as_ref(),
+            &game_version,
+            &loader,
+            loader_version,
+        )
+        .await?;
         let loader_version = self
             .loader_version_resolver
             .resolve(&game_version, &loader, loader_version.as_ref())
@@ -231,5 +254,70 @@ impl MinecraftInstallService for InstallMinecraftUseCase {
         self.download_game_files(params, waiting_bar, None, false)
             .await
             .map(|_| ())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::features::minecraft::{LoaderVersionId, MinecraftDomainError, modded};
+
+    struct Defaults;
+
+    #[async_trait]
+    impl LoaderVersionService for Defaults {
+        async fn resolve(
+            &self,
+            _: &GameVersion,
+            _: &ModLoader,
+            _: Option<&LoaderVersionPreference>,
+        ) -> Result<Option<modded::LoaderVersion>, MinecraftDomainError> {
+            unimplemented!("only the default is asked for")
+        }
+
+        async fn try_get_default(
+            &self,
+            _: &GameVersion,
+            _: &ModLoader,
+        ) -> Result<Option<LoaderVersionPreference>, MinecraftDomainError> {
+            Ok(Some(LoaderVersionPreference::Stable))
+        }
+    }
+
+    async fn preference_of(
+        loader: ModLoader,
+        pinned: Option<LoaderVersionPreference>,
+    ) -> Option<LoaderVersionPreference> {
+        preference_or_default(
+            &Defaults,
+            &GameVersion::from_static("1.21.1"),
+            &loader,
+            pinned,
+        )
+        .await
+        .unwrap()
+    }
+
+    #[tokio::test]
+    async fn should_take_the_default_loader_version_when_a_modded_plan_pins_none() {
+        assert_eq!(
+            preference_of(ModLoader::Fabric, None).await,
+            Some(LoaderVersionPreference::Stable)
+        );
+    }
+
+    #[tokio::test]
+    async fn should_keep_the_pinned_loader_version_when_the_plan_pins_one() {
+        let pinned = LoaderVersionPreference::Exact(LoaderVersionId::from_static("0.16.0"));
+
+        assert_eq!(
+            preference_of(ModLoader::Fabric, Some(pinned.clone())).await,
+            Some(pinned)
+        );
+    }
+
+    #[tokio::test]
+    async fn should_pick_no_loader_version_when_the_game_is_vanilla() {
+        assert_eq!(preference_of(ModLoader::Vanilla, None).await, None);
     }
 }

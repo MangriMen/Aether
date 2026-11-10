@@ -719,7 +719,7 @@ pub(super) struct Fixture {
     pub(super) downloader: Arc<RecordingDownloader>,
     pub(super) create_instance: Arc<RecordingCreateInstance>,
     pub(super) change_game: Arc<RecordingChangeGame>,
-    pub(super) game_download: Arc<crate::features::minecraft::RecordingGameDownload>,
+    pub(super) game_download: Arc<crate::features::minecraft::test_support::RecordingGameDownload>,
     pub(super) pack_storage: Arc<SqlitePackStorage>,
     pub(super) selected: Option<ProviderId>,
     /// The pack the existing instance was installed from.

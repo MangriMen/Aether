@@ -2,6 +2,8 @@ pub(crate) mod acl;
 mod app;
 mod domain;
 pub mod infra;
+#[cfg(test)]
+pub(crate) mod test_support;
 
 // Re-export domain types explicitly (domain is private, but pub use works from private modules)
 pub use acl::models::modded;
@@ -46,8 +48,6 @@ pub use app::MinecraftHealthService;
 pub use app::MinecraftInstallService;
 pub use app::MinecraftLaunchCommandService;
 pub use app::ModLoaderProcessor;
-#[cfg(test)]
-pub use app::RecordingGameDownload;
 pub use app::VersionManifestService;
 pub use app::get_class_paths;
 pub use app::get_class_paths_jar;

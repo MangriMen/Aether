@@ -11,8 +11,7 @@ use serde::Deserialize;
 use crate::{
     features::{
         events::{
-            OptionalProgressBarExt, ProgressBarId, ProgressService, ProgressServiceExt,
-            SharedDownload,
+            CancellableBar, ProgressBarId, ProgressService, ProgressServiceExt, SharedDownload,
         },
         java::{JavaDomainError, JreProvider},
     },
@@ -242,19 +241,21 @@ impl<PS: ProgressService, RC: RequestClient> AzulJreProvider<PS, RC> {
 impl<PS: ProgressService, RC: RequestClient> JreProvider for AzulJreProvider<PS, RC> {
     async fn install(&self, version: u32, install_dir: &Path) -> Result<PathBuf, JavaDomainError> {
         // Shared: every install needing this Java waits on this one download.
-        let progress_bar_id = self
-            .progress_service
-            .init_shared_progress_safe(
-                SharedDownload::Java { version },
-                100.0,
-                "Downloading java version".to_string(),
-            )
-            .await;
+        // Called off (the future dropped) it ends cancelled, not done.
+        let bar = CancellableBar::new(
+            self.progress_service
+                .init_shared_progress_safe(
+                    SharedDownload::Java { version },
+                    100.0,
+                    "Downloading java version".to_string(),
+                )
+                .await,
+        );
 
         let result = self
-            .download_and_unpack(version, install_dir, progress_bar_id.as_ref())
+            .download_and_unpack(version, install_dir, bar.bar())
             .await;
-        progress_bar_id.fail_on_err(&result).await;
+        bar.settle(&result).await;
         result
     }
 }
