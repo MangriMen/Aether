@@ -284,24 +284,35 @@ impl<PS: ProgressBarStorage + 'static> ProgressServiceImpl<PS> {
 
     /// Change how the bar `id` may be called off with `change`, and tell listeners when it shows
     /// something new. Nothing for a bar that is gone or cannot be called off.
+    ///
+    /// The change itself waits for no one: it is atomic on the bar alone, so a call-off takes
+    /// effect at once even when the queue of events to send is long (hundreds of files
+    /// downloading), and so does the point of no return. Only the telling waits its turn.
     async fn change_cancel(
         &self,
         id: Uuid,
         change: fn(&mut BarCancel) -> bool,
     ) -> Result<(), EventError> {
+        let changed = self
+            .change(id, |bar| bar.cancel.as_mut().is_some_and(change))
+            .await;
+        match changed {
+            Ok(true) => {}
+            Ok(false) | Err(ProgressBarStorageError::NotFound { .. }) => return Ok(()),
+            Err(err) => return Err(err.into()),
+        }
+
         let guard = self.sequencer.begin_change().await;
         let now = self.clock.now();
-        let changed = self
+        // What the bar shows by now, which may be more than this change made.
+        let due = self
             .change(id, |bar| {
-                let shown = bar.cancel.as_mut().is_some_and(change);
-                shown.then(|| {
-                    mark_sent(bar, now);
-                    Due::of(bar, None)
-                })
+                mark_sent(bar, now);
+                Due::of(bar, None)
             })
             .await;
-        let due = match changed {
-            Ok(due) => due,
+        let due = match due {
+            Ok(due) => Some(due),
             Err(ProgressBarStorageError::NotFound { .. }) => None,
             Err(err) => return Err(err.into()),
         };
@@ -2009,6 +2020,27 @@ mod tests {
             bar(&storage, &id).await.cancel_state(),
             Some(CancelState::Requested)
         );
+    }
+
+    #[tokio::test]
+    async fn should_fire_the_token_at_once_when_the_queue_of_changes_is_busy() {
+        let (service, _storage, _rx) = service();
+        let (id, token) = service
+            .init_cancellable_progress(pack("Pack"), 1.0, "Downloading".to_string())
+            .await
+            .unwrap();
+        // Another change in the middle of being sent, as with hundreds of files downloading.
+        let busy = service.sequencer.begin_change().await;
+
+        let told = tokio::time::timeout(
+            std::time::Duration::from_millis(50),
+            service.cancel_progress(id.id),
+        )
+        .await;
+
+        assert!(told.is_err(), "telling listeners waits for its turn");
+        assert!(token.is_cancelled(), "the call-off does not");
+        drop(busy);
     }
 
     #[tokio::test]
