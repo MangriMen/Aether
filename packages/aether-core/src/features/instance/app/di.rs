@@ -6,16 +6,19 @@ use crate::features::instance::app::ports::{
     GetContentUseCasePort, GetInstanceUseCasePort, ImportContentUseCasePort,
     ImportInstanceUseCasePort, InstallContentUseCasePort, InstallPlanExecutorPort,
     InstanceFileService, InstanceInstallService, InstanceLaunchService, InstanceWatcherService,
-    LaunchInstanceWithActiveAccountUseCasePort, ListContentUseCasePort,
-    ListContentVersionsUseCasePort, ListImportersUseCasePort, ListInstancesUseCasePort,
-    ListProvidersUseCasePort, RemoveContentUseCasePort, RemoveInstanceUseCasePort,
-    SearchContentUseCasePort, UpdateInstanceUseCasePort,
+    LaunchInstanceWithActiveAccountUseCasePort, ListBrokenInstancesUseCasePort,
+    ListContentUseCasePort, ListContentVersionsUseCasePort, ListImportersUseCasePort,
+    ListInstancesUseCasePort, ListProvidersUseCasePort, RemoveBrokenInstanceUseCasePort,
+    RemoveContentUseCasePort, RemoveInstanceUseCasePort, SearchContentUseCasePort,
+    UpdateInstanceUseCasePort,
 };
 
 pub trait InstanceCrudPort {
     fn create_instance_use_case(&self) -> Arc<dyn CreateInstanceUseCasePort>;
     fn get_instance_use_case(&self) -> Arc<dyn GetInstanceUseCasePort>;
     fn list_instances_use_case(&self) -> Arc<dyn ListInstancesUseCasePort>;
+    fn list_broken_instances_use_case(&self) -> Arc<dyn ListBrokenInstancesUseCasePort>;
+    fn remove_broken_instance_use_case(&self) -> Arc<dyn RemoveBrokenInstanceUseCasePort>;
     fn edit_instance_use_case(&self) -> Arc<dyn EditInstanceUseCasePort>;
     fn edit_instance_icon_use_case(&self) -> Arc<dyn EditInstanceIconUseCasePort>;
     fn remove_instance_use_case(&self) -> Arc<dyn RemoveInstanceUseCasePort>;

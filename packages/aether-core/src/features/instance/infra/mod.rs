@@ -14,7 +14,7 @@ mod universal_content_metadata_cache;
 
 pub use content_providers::{ModrinthContentProvider, MrpackCacheCleaner, mrpack_dir};
 pub use event_emitting_instance_storage::EventEmittingInstanceStorage;
-pub use fs::{FsInstanceStorage, FsPackStorage};
+pub use fs::{FsInstanceStorage, FsPackStorage, LegacyInstanceScanner};
 pub use fs_content_icon_cache::{CONTENT_ICONS_FOLDER, FsContentIconCache};
 pub use instance_event_handler::InstanceEventHandler;
 pub use services::{

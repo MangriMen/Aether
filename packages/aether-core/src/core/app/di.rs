@@ -25,13 +25,14 @@ use crate::features::{
         InstallPlanExecutorPort, InstanceFileService, InstanceInstallService,
         InstanceLaunchService, InstanceLocks, InstanceStorage, InstanceWatcherService,
         LaunchInstanceUseCase, LaunchInstanceWithActiveAccountUseCase,
-        LaunchInstanceWithActiveAccountUseCasePort, ListContentUseCase, ListContentUseCasePort,
+        LaunchInstanceWithActiveAccountUseCasePort, ListBrokenInstancesUseCase,
+        ListBrokenInstancesUseCasePort, ListContentUseCase, ListContentUseCasePort,
         ListContentVersionsUseCase, ListContentVersionsUseCasePort, ListImportersUseCase,
         ListImportersUseCasePort, ListInstancesUseCase, ListInstancesUseCasePort,
-        ListProvidersUseCase, ListProvidersUseCasePort, PackStorage, RemoveContentUseCase,
-        RemoveContentUseCasePort, RemoveInstanceUseCase, RemoveInstanceUseCasePort,
-        SearchContentUseCase, SearchContentUseCasePort, UpdateInstanceUseCase,
-        UpdateInstanceUseCasePort, Updater,
+        ListProvidersUseCase, ListProvidersUseCasePort, PackStorage, RemoveBrokenInstanceUseCase,
+        RemoveBrokenInstanceUseCasePort, RemoveContentUseCase, RemoveContentUseCasePort,
+        RemoveInstanceUseCase, RemoveInstanceUseCasePort, SearchContentUseCase,
+        SearchContentUseCasePort, UpdateInstanceUseCase, UpdateInstanceUseCasePort, Updater,
     },
     java::{
         DiscoverJavaUseCase, DiscoverJavaUseCasePort, EditJavaUseCase, EditJavaUseCasePort,
@@ -145,6 +146,10 @@ pub struct StorageParams {
         Arc<dyn crate::features::settings::DefaultInstanceSettingsStorage>,
     pub process_storage: Arc<dyn ProcessStorage>,
     pub instance_storage: Arc<dyn InstanceStorage>,
+    /// The records of `instance_storage` that cannot be read.
+    pub broken_instances: Arc<dyn crate::features::instance::BrokenInstanceSource>,
+    /// The legacy folders that hold an instance file the launcher does not use.
+    pub legacy_instances: Arc<dyn crate::features::instance::LegacyInstanceSource>,
     pub pack_storage: Arc<dyn PackStorage>,
     pub content_file_service: Arc<dyn ContentFileService>,
     /// The project metadata of installed content, shown in an instance's content list.
@@ -680,6 +685,23 @@ impl InstanceCrudPort for AetherContainer {
                 ))
             })
             .clone()
+    }
+    // Not cached: nothing in them to keep.
+    fn list_broken_instances_use_case(&self) -> Arc<dyn ListBrokenInstancesUseCasePort> {
+        Arc::new(ListBrokenInstancesUseCase::new(
+            self.storage().instance_storage.clone(),
+            self.storage().broken_instances.clone(),
+            self.storage().legacy_instances.clone(),
+            self.location_info(),
+        ))
+    }
+    fn remove_broken_instance_use_case(&self) -> Arc<dyn RemoveBrokenInstanceUseCasePort> {
+        Arc::new(RemoveBrokenInstanceUseCase::new(
+            self.storage().instance_storage.clone(),
+            self.list_broken_instances_use_case(),
+            self.storage().broken_instances.clone(),
+            self.remove_instance_use_case(),
+        ))
     }
     fn edit_instance_use_case(&self) -> Arc<dyn EditInstanceUseCasePort> {
         self.cache

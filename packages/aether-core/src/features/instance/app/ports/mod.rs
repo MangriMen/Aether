@@ -29,7 +29,9 @@ pub use importer::Importer;
 pub use instance_file_service::InstanceFileService;
 pub use instance_install_service::InstanceInstallService;
 pub use instance_launch_service::InstanceLaunchService;
-pub use instance_storage::{InstanceChange, InstanceStorage};
+pub use instance_storage::{
+    BrokenInstanceSource, InstanceChange, InstanceStorage, LegacyInstanceSource,
+};
 pub use instance_watcher_service::InstanceWatcherService;
 pub use pack_storage::PackStorage;
 pub use platform_provider_selection::PlatformProviderSelection;

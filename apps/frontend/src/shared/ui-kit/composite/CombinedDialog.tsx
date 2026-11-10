@@ -25,6 +25,7 @@ export type CombinedDialogProps = DialogRootProps &
     buttonOkVariant?: ButtonProps['variant'];
     onOk?: ComponentProps<'button'>['onClick'];
     onCancel?: ComponentProps<'button'>['onClick'];
+    onCloseAutoFocus?: DialogContentProps['onCloseAutoFocus'];
   };
 
 export const CombinedDialog: Component<CombinedDialogProps> = (props) => {
@@ -52,11 +53,15 @@ export const CombinedDialog: Component<CombinedDialogProps> = (props) => {
     'buttonCancelText',
     'onOk',
     'onCancel',
+    'onCloseAutoFocus',
   ]);
 
   return (
     <Dialog {...others}>
-      <DialogContent variant={local.variant}>
+      <DialogContent
+        variant={local.variant}
+        onCloseAutoFocus={local.onCloseAutoFocus}
+      >
         <Show when={local.header}>
           <DialogHeader class='text-lg'>{local.header}</DialogHeader>
         </Show>

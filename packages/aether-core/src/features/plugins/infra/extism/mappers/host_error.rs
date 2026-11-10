@@ -174,6 +174,7 @@ fn instance_dto(value: &InstanceError) -> InstanceErrorDto {
         // No kind of its own, so as not to break decoding in plugins built without it.
         InstanceError::PluginNotRunning { .. }
         | InstanceError::CachesBeingCleared
+        | InstanceError::NotBroken { .. }
         | InstanceError::Cancelled => Dto::ContentProviderError {
             reason: value.to_string(),
         },

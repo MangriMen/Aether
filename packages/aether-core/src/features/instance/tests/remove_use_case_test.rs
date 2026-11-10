@@ -658,3 +658,49 @@ async fn should_call_off_the_install_before_waiting_for_the_lock_of_the_instance
 
     removal.await.unwrap().unwrap();
 }
+
+/// A broken legacy folder is removed through the real removal: it goes, and what is beside it
+/// stays.
+#[tokio::test]
+async fn should_remove_only_the_folder_of_a_broken_legacy_instance_when_it_is_deleted() {
+    use crate::features::instance::{
+        ListBrokenInstancesUseCase, RemoveBrokenInstanceUseCase, RemoveBrokenInstanceUseCasePort,
+        infra::LegacyInstanceScanner,
+    };
+
+    let (_temp, location_info, pool) = create_test_infrastructure().await;
+    let storage = Arc::new(SqliteInstanceStorage::new(pool.clone()));
+    let id_of = |id: &str| InstanceId::try_from(id).unwrap();
+    let broken = location_info.instance_metadata_file(&id_of("old"));
+    std::fs::create_dir_all(broken.parent().unwrap()).unwrap();
+    std::fs::write(&broken, "{ not json").unwrap();
+    let neighbour = location_info.instance_dir(&id_of("keep"));
+    std::fs::create_dir_all(&neighbour).unwrap();
+    std::fs::write(neighbour.join("world.dat"), "worlds").unwrap();
+    let remove_instance = Arc::new(RemoveInstanceUseCase::new(
+        storage.clone(),
+        Arc::new(NoOpWatcher),
+        Arc::new(FsInstanceFileService::new(
+            location_info.clone(),
+            crate::shared::limits::PluginSandboxLimits::default().max_instance_file_bytes,
+        )),
+        Arc::new(SqlitePackStorage::new(pool)),
+        Arc::new(InstanceLocks::new()),
+        no_op_reaper(storage.clone()),
+    ));
+    let list = Arc::new(ListBrokenInstancesUseCase::new(
+        storage.clone(),
+        storage.clone(),
+        Arc::new(LegacyInstanceScanner::new(location_info.clone())),
+        location_info.clone(),
+    ));
+    let remove = RemoveBrokenInstanceUseCase::new(storage.clone(), list, storage, remove_instance);
+
+    remove.execute("old".to_owned()).await.unwrap();
+
+    assert!(!location_info.instance_dir(&id_of("old")).exists());
+    assert_eq!(
+        std::fs::read(neighbour.join("world.dat")).unwrap(),
+        b"worlds"
+    );
+}

@@ -125,6 +125,31 @@ impl CreateInstanceUseCase {
         .await
     }
 
+    /// `base_id`, or the first `base_id-N` that no stored record has, those that cannot be read
+    /// included. The folders are told apart by the file service.
+    async fn id_without_a_record(&self, base_id: InstanceId) -> Result<InstanceId, InstanceError> {
+        let taken: std::collections::HashSet<String> = self
+            .instance_storage
+            .stored_ids()
+            .await?
+            .into_iter()
+            .map(|id| id.to_lowercase())
+            .collect();
+        let is_free = |id: &InstanceId| !taken.contains(&id.as_str().to_lowercase());
+
+        if is_free(&base_id) {
+            return Ok(base_id);
+        }
+        let mut counter = 1u32;
+        loop {
+            let candidate = InstanceId::try_from(format!("{base_id}-{counter}"))?;
+            if is_free(&candidate) {
+                return Ok(candidate);
+            }
+            counter += 1;
+        }
+    }
+
     /// `initial_stage` — `PackInstalling` keeps the instance unlaunchable through the install of
     /// its game, which preserves that stage.
     async fn create(
@@ -146,6 +171,9 @@ impl CreateInstanceUseCase {
         // Parsed before the loader and before anything exists on disk: a name that cannot be an
         // id must fail while there is still nothing to roll back.
         let base_id = InstanceId::from_name(&name)?;
+        // A record that cannot be read has an id and may have lost its folder: a new instance
+        // under that id would be written over it and take its pack data.
+        let base_id = self.id_without_a_record(base_id).await?;
 
         // Before anything is created on disk: a bad loader must not leave a directory behind.
         let loader_version = resolve_loader_version(

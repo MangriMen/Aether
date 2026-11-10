@@ -83,6 +83,8 @@ export const instanceCommands = {
   import: withIdempotency(instanceRawCommands.import),
   listImporters: instanceRawCommands.listImporters,
   list: instanceRawCommands.list,
+  listBroken: instanceRawCommands.listBroken,
+  removeBroken: withIdempotency(instanceRawCommands.removeBroken),
   get: instanceRawCommands.get,
   getDir: instanceRawCommands.getDir,
   install: withIdempotency(instanceRawCommands.install),

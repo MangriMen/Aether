@@ -9,8 +9,12 @@ export const commands = {
 	import: (importInstance: ImportInstanceDto, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:instance|import", { importInstance, requestId }),
 	listImporters: () => __TAURI_INVOKE<CapabilityEntryDto<ImporterCapabilityMetadataDto>[]>("plugin:instance|list_importers"),
 	list: () => __TAURI_INVOKE<InstanceDto[]>("plugin:instance|list"),
+	/**  The instances that are stored but cannot be read, with why. */
+	listBroken: () => __TAURI_INVOKE<BrokenInstanceDto[]>("plugin:instance|list_broken"),
 	get: (id: string) => __TAURI_INVOKE<InstanceDto>("plugin:instance|get", { id }),
 	getDir: (id: string) => __TAURI_INVOKE<string>("plugin:instance|get_dir", { id }),
+	/**  Removes a broken instance by the id `list_broken` gave. Not an instance that is readable. */
+	removeBroken: (id: string, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:instance|remove_broken", { id, requestId }),
 	install: (id: string, force: boolean, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:instance|install", { id, force, requestId }),
 	update: (id: string, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:instance|update", { id, requestId }),
 	edit: (id: string, editInstance: EditInstanceDto, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<InstanceDto>("plugin:instance|edit", { id, editInstance, requestId }),
@@ -73,6 +77,37 @@ export type BaseContentParamsDto = {
 	contentVersion?: string | null,
 	providerId: ProviderIdDto,
 };
+
+/**  An instance the launcher stores but cannot read. */
+export type BrokenInstanceDto = {
+	/**  The id as stored; not necessarily one that names a folder. */
+	id: string,
+	/**  Its folder, for an id that names one. */
+	dir: string | null,
+	origin: BrokenInstanceOriginDto,
+	reason: BrokenInstanceReasonDto,
+};
+
+export type BrokenInstanceOriginDto = 
+/**  A record of the database that cannot be read. */
+"database" | 
+/**  A folder with a legacy instance file that is not in the database. */
+"legacy_file";
+
+/**  Why an instance cannot be read; the code picks the translation. */
+export type BrokenInstanceReasonDto = { code: "INVALID_ID" } | { code: "INVALID_GAME_VERSION"; payload: {
+	value: string,
+} } | { code: "INVALID_LOADER"; payload: {
+	value: string,
+} } | { code: "INVALID_INSTALL_STAGE"; payload: {
+	value: string,
+} } | { code: "INVALID_COLUMN"; payload: {
+	column: string,
+} } | { code: "UNREADABLE_FILE"; payload: {
+	details: string,
+} } | { code: "LEGACY_ID_MISMATCH"; payload: {
+	file_id: string,
+} } | { code: "NOT_MIGRATED" };
 
 export type CapabilityEntryDto<C> = {
 	pluginId: string,
@@ -373,6 +408,8 @@ export type InstanceErrorDto = { code: "STORAGE"; payload: {
 	modpack_id: string,
 } } | { code: "UPDATE_FAILED"; payload: {
 	modpack_id: string,
+} } | { code: "NOT_BROKEN"; payload: {
+	instance_id: string,
 } } | { code: "UNMANAGED_INSTANCE"; payload: {
 	instance_id: string,
 } } | { code: "CONTENT_DUPLICATION"; payload: {

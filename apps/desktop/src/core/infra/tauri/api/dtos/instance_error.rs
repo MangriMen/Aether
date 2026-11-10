@@ -55,6 +55,9 @@ pub enum InstanceErrorDto {
     UpdateFailed {
         modpack_id: String,
     },
+    NotBroken {
+        instance_id: String,
+    },
     UnmanagedInstance {
         instance_id: String,
     },
@@ -196,6 +199,9 @@ impl From<&InstanceError> for InstanceErrorDto {
             },
             InstanceError::UpdateFailed { modpack_id } => Self::UpdateFailed {
                 modpack_id: modpack_id.clone(),
+            },
+            InstanceError::NotBroken { instance_id } => Self::NotBroken {
+                instance_id: instance_id.clone(),
             },
             InstanceError::UnmanagedInstance { instance_id } => Self::UnmanagedInstance {
                 instance_id: instance_id.clone(),

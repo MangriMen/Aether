@@ -7,6 +7,7 @@ import { Match, mergeProps, splitProps, Switch } from 'solid-js';
 import { cn } from '@/shared/utils';
 
 import { type Instance } from '../model/instance';
+import { INSTANCE_CARD_CLASS } from '../model/instanceCardClass';
 import { InstanceIcon } from './InstanceIcon';
 import { InstanceTitle } from './InstanceTitle';
 
@@ -32,21 +33,7 @@ export const InstanceCard = <T extends ValidComponent = 'button'>(
   ]);
 
   return (
-    <Polymorphic
-      class={cn(
-        local.class,
-        `
-          max-w-33 min-w-33 gap-2 rounded-md bg-card/card p-2 drop-shadow-md
-          hover:bg-card/hover
-          focus-visible:ring-ring
-          active:animate-bump-out active:bg-card/active
-          relative flex h-max flex-col overflow-hidden border
-          text-left outline-none
-          focus-visible:ring-2 focus-visible:ring-offset-0
-        `,
-      )}
-      {...others}
-    >
+    <Polymorphic class={cn(local.class, INSTANCE_CARD_CLASS)} {...others}>
       <div class='flex items-center justify-center'>
         <InstanceIcon
           class='size-28'

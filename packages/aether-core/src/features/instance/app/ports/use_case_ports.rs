@@ -11,9 +11,9 @@ use crate::features::instance::app::{
     ImportInstance, RemoveContent,
 };
 use crate::features::instance::domain::{
-    ContentFileView, ContentItem, ContentProviderCapabilityMetadata, ContentVersion,
-    ImporterCapabilityMetadata, InstallPlan, Instance, InstanceError, InstanceGame, InstanceId,
-    NewInstance, PlanOrigin, ResolveTarget,
+    BrokenInstance, ContentFileView, ContentItem, ContentProviderCapabilityMetadata,
+    ContentVersion, ImporterCapabilityMetadata, InstallPlan, Instance, InstanceError, InstanceGame,
+    InstanceId, NewInstance, PlanOrigin, ResolveTarget,
 };
 use crate::features::instance::{
     ContentId, ContentInstallParams, ContentSearchParams, ContentSearchResult,
@@ -63,6 +63,17 @@ pub trait GetInstanceUseCasePort: Send + Sync {
 #[async_trait]
 pub trait ListInstancesUseCasePort: Send + Sync {
     async fn execute(&self) -> Result<Vec<Instance>, InstanceError>;
+}
+
+#[async_trait]
+pub trait ListBrokenInstancesUseCasePort: Send + Sync {
+    async fn execute(&self) -> Result<Vec<BrokenInstance>, InstanceError>;
+}
+
+/// Removes the instance with the id of a broken one, as the list of them gave it.
+#[async_trait]
+pub trait RemoveBrokenInstanceUseCasePort: Send + Sync {
+    async fn execute(&self, id: String) -> Result<(), InstanceError>;
 }
 
 #[async_trait]

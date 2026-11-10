@@ -1,7 +1,9 @@
 use crate::features::instance::{
-    Instance, InstanceChange, InstanceError, InstanceId, InstanceStorage,
+    BrokenInstanceReason, BrokenInstanceSource, BrokenRecord, Instance, InstanceChange,
+    InstanceError, InstanceId, InstanceStorage,
 };
 use async_trait::async_trait;
+use chrono::{DateTime, NaiveDateTime, Utc};
 use sqlx::{Acquire, Sqlite, SqliteConnection, SqlitePool, Transaction};
 use tracing::warn;
 
@@ -79,10 +81,54 @@ impl SqliteInstanceStorage {
     }
 }
 
-#[allow(clippy::too_many_lines)]
-#[async_trait]
-impl InstanceStorage for SqliteInstanceStorage {
-    async fn list(&self) -> Result<Vec<Instance>, InstanceError> {
+/// What one pass over the `instances` table found.
+#[derive(Default)]
+struct Scan {
+    healthy: Vec<Instance>,
+    broken: Vec<(String, BrokenInstanceReason)>,
+}
+
+/// The timestamps are read as text and parsed per row: one that does not parse makes its
+/// own row broken, where a typed column would fail the read of the whole table.
+fn parse_timestamp(value: &str, column: &str) -> Result<DateTime<Utc>, BrokenInstanceReason> {
+    // The forms the typed decode of `get` takes too, as far as a hand-edited value gets.
+    DateTime::parse_from_rfc3339(value)
+        .map(|parsed| parsed.with_timezone(&Utc))
+        .or_else(|_| {
+            [
+                "%Y-%m-%d %H:%M:%S%.f",
+                "%Y-%m-%dT%H:%M:%S%.f",
+                "%Y-%m-%d %H:%M",
+            ]
+            .iter()
+            .find_map(|format| NaiveDateTime::parse_from_str(value, format).ok())
+            .map(|naive| naive.and_utc())
+            .ok_or(())
+        })
+        .map_err(|()| BrokenInstanceReason::InvalidColumn {
+            column: column.to_owned(),
+        })
+}
+
+type Timestamps = (DateTime<Utc>, DateTime<Utc>, Option<DateTime<Utc>>);
+
+fn parse_timestamps(
+    created: &str,
+    modified: &str,
+    last_played: Option<&str>,
+) -> Result<Timestamps, BrokenInstanceReason> {
+    Ok((
+        parse_timestamp(created, "created_at")?,
+        parse_timestamp(modified, "modified_at")?,
+        last_played
+            .map(|value| parse_timestamp(value, "last_played_at"))
+            .transpose()?,
+    ))
+}
+
+impl SqliteInstanceStorage {
+    #[allow(clippy::too_many_lines)]
+    async fn scan(&self) -> Result<Scan, InstanceError> {
         let rows = sqlx::query!(
             r#"
             SELECT 
@@ -93,9 +139,9 @@ impl InstanceStorage for SqliteInstanceStorage {
                 i.override_env_vars, i.env_vars_json,
                 i.override_memory, i.memory_maximum, 
                 i.override_window_settings, i.force_fullscreen, i.window_width, i.window_height, 
-                i.created_at as "created_at: chrono::DateTime<chrono::Utc>", 
-                i.modified_at as "modified_at: chrono::DateTime<chrono::Utc>", 
-                i.last_played_at as "last_played_at?: chrono::DateTime<chrono::Utc>", 
+                i.created_at as "created_at: String", 
+                i.modified_at as "modified_at: String", 
+                i.last_played_at as "last_played_at?: String", 
                 i.time_played, i.recent_time_played, 
                 i.override_hooks, i.hook_pre_launch, i.hook_wrapper, i.hook_post_exit,
                 p.provider_id as "pack_provider_id?", 
@@ -110,77 +156,93 @@ impl InstanceStorage for SqliteInstanceStorage {
         .await
         .map_err(|e| InstanceError::Storage(e.to_string()))?;
 
-        Ok(rows
-            .into_iter()
-            .filter_map(|row| {
-                let sql_instance = SqlInstance {
-                    id: row.id,
-
-                    name: row.name,
-
-                    icon_path: row.icon_path,
-
-                    install_stage: row.install_stage,
-
-                    game_version: row.game_version,
-                    loader: row.loader,
-                    loader_version_json: row.loader_version_json,
-
-                    override_java_path: row.override_java_path,
-                    java_path: row.java_path,
-
-                    override_launch_args: row.override_launch_args,
-                    launch_args_json: row.launch_args_json,
-
-                    override_env_vars: row.override_env_vars,
-                    env_vars_json: row.env_vars_json,
-
-                    override_memory: row.override_memory,
-                    memory_maximum: row.memory_maximum,
-
-                    override_window_settings: row.override_window_settings,
-                    force_fullscreen: row.force_fullscreen,
-                    window_width: row.window_width,
-                    window_height: row.window_height,
-
-                    created_at: row.created_at,
-                    modified_at: row.modified_at,
-                    last_played_at: row.last_played_at,
-
-                    time_played: row.time_played,
-                    recent_time_played: row.recent_time_played,
-
-                    override_hooks: row.override_hooks,
-                    hook_pre_launch: row.hook_pre_launch,
-                    hook_wrapper: row.hook_wrapper,
-                    hook_post_exit: row.hook_post_exit,
-                };
-
-                let row_id = sql_instance.id.clone();
-                let mut instance = match Instance::try_from(sql_instance) {
-                    Ok(instance) => instance,
-                    Err(err) => {
-                        warn!("Failed to read instance {:?}: {:?}", row_id, err);
-                        return None;
-                    }
-                };
-
-                if let (Some(pid), Some(mid), Some(vid)) = (
-                    row.pack_provider_id,
-                    row.pack_modpack_id,
-                    row.pack_version_id,
-                ) {
-                    instance.pack_info = SqlPackInfo {
-                        provider_id: pid,
-                        modpack_id: mid,
-                        version_id: vid,
-                    }
-                    .into_pack_info();
+        let mut scan = Scan::default();
+        for row in rows {
+            let row_id = row.id.clone();
+            let timestamps = parse_timestamps(
+                &row.created_at,
+                &row.modified_at,
+                row.last_played_at.as_deref(),
+            );
+            let (created_at, modified_at, last_played_at) = match timestamps {
+                Ok(parsed) => parsed,
+                Err(reason) => {
+                    warn!("Failed to read instance {row_id:?}: {reason}");
+                    scan.broken.push((row_id, reason));
+                    continue;
                 }
+            };
 
-                Some(instance)
-            })
-            .collect())
+            let sql_instance = SqlInstance {
+                id: row.id,
+                name: row.name,
+                icon_path: row.icon_path,
+                install_stage: row.install_stage,
+                game_version: row.game_version,
+                loader: row.loader,
+                loader_version_json: row.loader_version_json,
+                override_java_path: row.override_java_path,
+                java_path: row.java_path,
+                override_launch_args: row.override_launch_args,
+                launch_args_json: row.launch_args_json,
+                override_env_vars: row.override_env_vars,
+                env_vars_json: row.env_vars_json,
+                override_memory: row.override_memory,
+                memory_maximum: row.memory_maximum,
+                override_window_settings: row.override_window_settings,
+                force_fullscreen: row.force_fullscreen,
+                window_width: row.window_width,
+                window_height: row.window_height,
+                created_at,
+                modified_at,
+                last_played_at,
+                time_played: row.time_played,
+                recent_time_played: row.recent_time_played,
+                override_hooks: row.override_hooks,
+                hook_pre_launch: row.hook_pre_launch,
+                hook_wrapper: row.hook_wrapper,
+                hook_post_exit: row.hook_post_exit,
+            };
+
+            let mut instance = match sql_instance.into_instance() {
+                Ok(instance) => instance,
+                Err(reason) => {
+                    warn!("Failed to read instance {row_id:?}: {reason}");
+                    scan.broken.push((row_id, reason));
+                    continue;
+                }
+            };
+
+            if let (Some(pid), Some(mid), Some(vid)) = (
+                row.pack_provider_id,
+                row.pack_modpack_id,
+                row.pack_version_id,
+            ) {
+                instance.pack_info = SqlPackInfo {
+                    provider_id: pid,
+                    modpack_id: mid,
+                    version_id: vid,
+                }
+                .into_pack_info();
+            }
+
+            scan.healthy.push(instance);
+        }
+        Ok(scan)
+    }
+}
+
+#[async_trait]
+impl InstanceStorage for SqliteInstanceStorage {
+    async fn list(&self) -> Result<Vec<Instance>, InstanceError> {
+        Ok(self.scan().await?.healthy)
+    }
+
+    async fn stored_ids(&self) -> Result<Vec<String>, InstanceError> {
+        sqlx::query_scalar!("SELECT id FROM instances")
+            .fetch_all(&self.pool)
+            .await
+            .map_err(|e| InstanceError::Storage(e.to_string()))
     }
 
     async fn get(&self, id: &InstanceId) -> Result<Instance, InstanceError> {
@@ -448,6 +510,28 @@ async fn write_instance(
     Ok(())
 }
 
+#[async_trait]
+impl BrokenInstanceSource for SqliteInstanceStorage {
+    async fn list_broken(&self) -> Result<Vec<BrokenRecord>, InstanceError> {
+        Ok(self
+            .scan()
+            .await?
+            .broken
+            .into_iter()
+            .map(|(id, reason)| BrokenRecord { id, reason })
+            .collect())
+    }
+
+    async fn remove_record(&self, id: &str) -> Result<(), InstanceError> {
+        sqlx::query("DELETE FROM instances WHERE id = ?")
+            .bind(id)
+            .execute(&self.pool)
+            .await
+            .map(|_| ())
+            .map_err(|e| InstanceError::Storage(e.to_string()))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -532,6 +616,85 @@ mod tests {
         let result = storage.get(&InstanceId::try_from("a").unwrap()).await;
 
         assert_eq!(result.unwrap().name().as_str(), "a");
+    }
+
+    /// A row that cannot be read is told apart from the rest, with the reason, and the rest
+    /// still lists: the broken one is not just missing.
+    async fn broken(storage: &SqliteInstanceStorage) -> Vec<(String, BrokenInstanceReason)> {
+        storage
+            .list_broken()
+            .await
+            .unwrap()
+            .into_iter()
+            .map(|record| (record.id, record.reason))
+            .collect()
+    }
+
+    #[tokio::test]
+    async fn should_report_the_row_as_broken_when_its_game_version_is_invalid() {
+        let storage = SqliteInstanceStorage::in_memory().await;
+        storage.upsert(&instance(ModLoader::Fabric)).await.unwrap();
+        sqlx::query("UPDATE instances SET game_version = '../x' WHERE id = 'a'")
+            .execute(storage.pool())
+            .await
+            .unwrap();
+
+        assert_eq!(
+            broken(&storage).await,
+            [(
+                "a".to_owned(),
+                BrokenInstanceReason::InvalidGameVersion {
+                    value: "../x".to_owned()
+                }
+            )]
+        );
+    }
+
+    #[tokio::test]
+    async fn should_keep_listing_the_rest_when_a_timestamp_cannot_be_read() {
+        let storage = SqliteInstanceStorage::in_memory().await;
+        storage.upsert(&instance(ModLoader::Fabric)).await.unwrap();
+        let other = InstanceBuilder::new(
+            InstanceId::try_from("b").unwrap(),
+            InstanceName::parse("b").unwrap(),
+            GameVersion::from_static("1.21.1"),
+            ModLoader::Vanilla,
+        )
+        .build();
+        storage.upsert(&other).await.unwrap();
+        sqlx::query("UPDATE instances SET created_at = 'garbage' WHERE id = 'a'")
+            .execute(storage.pool())
+            .await
+            .unwrap();
+
+        let listed = storage.list().await.unwrap();
+
+        assert_eq!(listed.len(), 1, "the other instance still lists");
+        assert_eq!(
+            broken(&storage).await,
+            [(
+                "a".to_owned(),
+                BrokenInstanceReason::InvalidColumn {
+                    column: "created_at".to_owned()
+                }
+            )]
+        );
+    }
+
+    #[tokio::test]
+    async fn should_report_the_row_as_broken_when_its_id_is_not_a_directory_name() {
+        let storage = SqliteInstanceStorage::in_memory().await;
+        storage.upsert(&instance(ModLoader::Fabric)).await.unwrap();
+        sqlx::query("UPDATE instances SET id = '../x'")
+            .execute(storage.pool())
+            .await
+            .unwrap();
+
+        assert_eq!(
+            broken(&storage).await,
+            [("../x".to_owned(), BrokenInstanceReason::InvalidId)]
+        );
+        assert_eq!(storage.stored_ids().await.unwrap(), ["../x"]);
     }
 
     #[tokio::test]

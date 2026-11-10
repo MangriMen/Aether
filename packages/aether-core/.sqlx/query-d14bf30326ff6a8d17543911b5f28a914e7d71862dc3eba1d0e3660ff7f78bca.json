@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "\n            SELECT \n                i.id, i.name, i.icon_path, i.install_stage, i.game_version, i.loader, \n                i.loader_version_json, \n                i.override_java_path, i.java_path,\n                i.override_launch_args, i.launch_args_json,\n                i.override_env_vars, i.env_vars_json,\n                i.override_memory, i.memory_maximum, \n                i.override_window_settings, i.force_fullscreen, i.window_width, i.window_height, \n                i.created_at as \"created_at: chrono::DateTime<chrono::Utc>\", \n                i.modified_at as \"modified_at: chrono::DateTime<chrono::Utc>\", \n                i.last_played_at as \"last_played_at?: chrono::DateTime<chrono::Utc>\", \n                i.time_played, i.recent_time_played, \n                i.override_hooks, i.hook_pre_launch, i.hook_wrapper, i.hook_post_exit,\n                p.provider_id as \"pack_provider_id?\", \n                p.modpack_id as \"pack_modpack_id?\", \n                p.version_id as \"pack_version_id?\"\n            FROM instances i\n            LEFT JOIN instance_pack_info p ON i.id = p.instance_id\n            ORDER BY i.modified_at DESC\n            ",
+  "query": "\n            SELECT \n                i.id, i.name, i.icon_path, i.install_stage, i.game_version, i.loader, \n                i.loader_version_json, \n                i.override_java_path, i.java_path,\n                i.override_launch_args, i.launch_args_json,\n                i.override_env_vars, i.env_vars_json,\n                i.override_memory, i.memory_maximum, \n                i.override_window_settings, i.force_fullscreen, i.window_width, i.window_height, \n                i.created_at as \"created_at: String\", \n                i.modified_at as \"modified_at: String\", \n                i.last_played_at as \"last_played_at?: String\", \n                i.time_played, i.recent_time_played, \n                i.override_hooks, i.hook_pre_launch, i.hook_wrapper, i.hook_post_exit,\n                p.provider_id as \"pack_provider_id?\", \n                p.modpack_id as \"pack_modpack_id?\", \n                p.version_id as \"pack_version_id?\"\n            FROM instances i\n            LEFT JOIN instance_pack_info p ON i.id = p.instance_id\n            ORDER BY i.modified_at DESC\n            ",
   "describe": {
     "columns": [
       {
@@ -213,7 +213,7 @@
         }
       },
       {
-        "name": "created_at: chrono::DateTime<chrono::Utc>",
+        "name": "created_at: String",
         "ordinal": 19,
         "type_info": "Datetime",
         "origin": {
@@ -224,7 +224,7 @@
         }
       },
       {
-        "name": "modified_at: chrono::DateTime<chrono::Utc>",
+        "name": "modified_at: String",
         "ordinal": 20,
         "type_info": "Datetime",
         "origin": {
@@ -235,7 +235,7 @@
         }
       },
       {
-        "name": "last_played_at?: chrono::DateTime<chrono::Utc>",
+        "name": "last_played_at?: String",
         "ordinal": 21,
         "type_info": "Datetime",
         "origin": {
@@ -382,5 +382,5 @@
       true
     ]
   },
-  "hash": "c22ac6c6bf92d777852ad60785ca322aaf516e9ccc56b067dc9b8e032789a5ef"
+  "hash": "d14bf30326ff6a8d17543911b5f28a914e7d71862dc3eba1d0e3660ff7f78bca"
 }

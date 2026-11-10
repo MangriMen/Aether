@@ -1,3 +1,4 @@
+mod broken_instances_test;
 mod change_content_state_test;
 mod change_instance_game_test;
 mod create_instance_test;

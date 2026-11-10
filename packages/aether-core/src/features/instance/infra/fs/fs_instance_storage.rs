@@ -92,6 +92,15 @@ impl InstanceStorage for FsInstanceStorage {
                 .instance_metadata_file_with_instance_dir(&entry.path());
 
             match self.load_instance_internal(&instance_json_path).await {
+                // The id is the folder: a file that names another instance is a copy of it, and
+                // taking it in would bring back (or overwrite) that one.
+                Ok(instance) if instance.id().as_str() != entry.file_name() => {
+                    warn!(
+                        "Skipped the file of instance {} found in folder {:?}",
+                        instance.id(),
+                        entry.file_name()
+                    );
+                }
                 Ok(instance) => instances.push(instance),
                 Err(err) => {
                     warn!(

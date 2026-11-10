@@ -60,6 +60,37 @@ export const useInstances = () => {
   }));
 };
 
+export const useBrokenInstances = () => {
+  return useQuery(() => ({
+    queryKey: INSTANCE_QUERY_KEYS.BROKEN(),
+    queryFn: instanceCommands.listBroken,
+    // A repair or a delete made outside the launcher sends no event.
+    refetchOnWindowFocus: true,
+  }));
+};
+
+export const useRemoveBrokenInstance = () => {
+  const [{ t }] = useTranslation();
+  const queryClient = useQueryClient();
+
+  return useMutation(() => ({
+    mutationFn: (id: string) => instanceCommands.removeBroken(id),
+    // A record with no folder to name sends no event, so the lists are refreshed here.
+    onSettled: () => {
+      void queryClient.invalidateQueries({
+        queryKey: INSTANCE_QUERY_KEYS.LIST(),
+      });
+    },
+    onError: (err, id) => {
+      showError({
+        title: t('instance.broken.removeError', { id }),
+        err,
+        t,
+      });
+    },
+  }));
+};
+
 export const useInstance = (id: Accessor<string | undefined>) => {
   const instances = useInstances();
 
