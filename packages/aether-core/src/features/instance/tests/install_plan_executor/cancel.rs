@@ -15,8 +15,8 @@ use crate::features::{
         test_support::ChannelEmitter,
     },
     instance::{
-        ContentId, InstallFileEntry, InstallPlan, InstallTarget, InstanceError, InstanceId,
-        InstanceName, NewInstance, ResolveTarget,
+        ContentId, InstallCancellations, InstallFileEntry, InstallPlan, InstallTarget,
+        InstanceError, InstanceId, InstanceName, NewInstance, ResolveTarget,
     },
     minecraft::{GameVersion, ModLoader},
 };
@@ -101,6 +101,10 @@ impl Bars {
 struct CallOffAtClose {
     inner: Arc<dyn ProgressService>,
     before: bool,
+    /// Instead of the button, the removal of this instance starts at the first step the run takes
+    /// after the point of no return.
+    removal_after: Option<(Arc<InstallCancellations>, InstanceId)>,
+    closed: std::sync::atomic::AtomicBool,
 }
 
 #[async_trait]
@@ -129,6 +133,9 @@ impl ProgressService for CallOffAtClose {
     async fn close_cancellation(&self, progress_bar_id: &ProgressBarId) -> Result<(), EventError> {
         if self.before {
             self.inner.cancel_progress(progress_bar_id.id).await?;
+            self.inner.close_cancellation(progress_bar_id).await
+        } else if self.removal_after.is_some() {
+            self.closed.store(true, std::sync::atomic::Ordering::SeqCst);
             self.inner.close_cancellation(progress_bar_id).await
         } else {
             self.inner.close_cancellation(progress_bar_id).await?;
@@ -180,6 +187,15 @@ impl ProgressService for CallOffAtClose {
         increment_frac: f64,
         message: Option<&str>,
     ) -> Result<(), EventError> {
+        if let Some((cancellations, instance_id)) = &self.removal_after
+            && self.closed.load(std::sync::atomic::Ordering::SeqCst)
+        {
+            // One poll starts the removal, which fires the token of the run; the removal itself
+            // is not waited for.
+            let removal = cancellations.begin_removal(instance_id);
+            tokio::pin!(removal);
+            assert!(futures::poll!(removal).is_pending());
+        }
         self.inner
             .emit_progress(progress_bar_id, increment_frac, message)
             .await
@@ -227,6 +243,19 @@ impl Bars {
         fixture.progress_service = Some(Arc::new(CallOffAtClose {
             inner: self.service.clone(),
             before,
+            removal_after: None,
+            closed: false.into(),
+        }));
+    }
+
+    /// Put the service into `fixture` behind the removal of `instance_id` starting right after
+    /// the point of no return of the run, at its next step.
+    fn remove_after_close(&self, fixture: &mut Fixture, instance_id: &InstanceId) {
+        fixture.progress_service = Some(Arc::new(CallOffAtClose {
+            inner: self.service.clone(),
+            before: false,
+            removal_after: Some((fixture.cancellations.clone(), instance_id.clone())),
+            closed: false.into(),
         }));
     }
 }
@@ -349,6 +378,52 @@ async fn should_leave_the_instance_as_it_was_when_an_update_is_cancelled_while_d
 }
 
 #[tokio::test]
+async fn should_stop_an_update_and_leave_the_instance_when_the_instance_is_removed_while_downloading()
+ {
+    let mut fixture = Fixture::new().await;
+    let mut bars = Bars::install(&mut fixture);
+    let packwiz = plugin("packwiz");
+    fixture
+        .put_installed("mods/a.jar", "old", Some(pack_of(&packwiz)))
+        .await;
+    let run = fixture.execute(
+        existing(vec![direct("https://cdn.example/hang.jar", "mods/a.jar")]),
+        &packwiz,
+    );
+    tokio::pin!(run);
+    tokio::select! {
+        result = &mut run => panic!("the run cannot end by itself: {result:?}"),
+        () = fixture.downloader.hanging.notified() => {}
+    }
+
+    let id = InstanceId::try_from(INSTANCE_ID).unwrap();
+    let removal = fixture.cancellations.begin_removal(&id);
+    tokio::pin!(removal);
+    let err = tokio::time::timeout(Duration::from_secs(5), async {
+        tokio::select! {
+            result = &mut run => result.unwrap_err(),
+            _ = &mut removal => panic!("the removal came before the run was gone"),
+        }
+    })
+    .await
+    .expect("the run did not stop");
+    let _removal = tokio::time::timeout(Duration::from_secs(5), removal)
+        .await
+        .expect("the removal waits for the run for good");
+
+    assert!(matches!(err, InstanceError::Cancelled), "{err:?}");
+    assert_eq!(
+        fixture.instance_file(INSTANCE_ID, "mods/a.jar").as_deref(),
+        Some("old")
+    );
+    assert!(fixture.staging_is_clean());
+    assert_eq!(
+        plan_end(&bars.once_all_ended().await).status,
+        ProgressStatus::Cancelled
+    );
+}
+
+#[tokio::test]
 async fn should_create_no_instance_when_called_off_right_before_the_point_of_no_return() {
     let mut fixture = Fixture::new().await;
     let mut bars = Bars::install(&mut fixture);
@@ -396,6 +471,28 @@ async fn should_install_everything_when_called_off_past_the_point_of_no_return()
     let end = plan_end(&bars);
     assert_eq!(end.status, ProgressStatus::Done);
     assert_eq!(end.cancel, Some(CancelState::Closed));
+}
+
+#[tokio::test]
+async fn should_install_everything_when_the_instance_is_removed_past_the_point_of_no_return() {
+    let mut fixture = Fixture::new().await;
+    let mut bars = Bars::install(&mut fixture);
+    let id = InstanceId::try_from(INSTANCE_ID).unwrap();
+    bars.remove_after_close(&mut fixture, &id);
+    let packwiz = plugin("packwiz");
+
+    fixture
+        .execute(
+            existing(vec![direct("https://cdn.example/a.jar", "mods/a.jar")]),
+            &packwiz,
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(fixture.instance_files(INSTANCE_ID), ["mods/a.jar"]);
+    assert!(fixture.staging_is_clean());
+    let bars = bars.once_all_ended().await;
+    assert_eq!(plan_end(&bars).status, ProgressStatus::Done);
 }
 
 #[tokio::test]
@@ -480,6 +577,54 @@ async fn should_end_the_bar_cancelled_when_cancelled_while_the_plan_is_resolved(
     progress.end(&result).await;
     drop(progress);
 
+    assert_eq!(
+        plan_end(&bars.once_all_ended().await).status,
+        ProgressStatus::Cancelled
+    );
+}
+
+#[tokio::test]
+async fn should_stop_resolving_the_plan_when_the_instance_is_removed_meanwhile() {
+    let mut fixture = Fixture::new().await;
+    let mut bars = Bars::install(&mut fixture);
+    let executor = fixture.executor();
+    let id = InstanceId::try_from(INSTANCE_ID).unwrap();
+    let progress = executor
+        .begin(
+            &ResolveTarget::Existing {
+                instance_id: id.clone(),
+                game_version: GameVersion::from_static("1.21.1"),
+                loader: Some(ModLoader::Fabric),
+            },
+            &ContentId::try_from("pack").unwrap(),
+        )
+        .await;
+
+    let removal = fixture.cancellations.begin_removal(&id);
+    tokio::pin!(removal);
+    let result = {
+        let resolving =
+            progress.unless_cancelled(std::future::pending::<Result<(), InstanceError>>());
+        tokio::pin!(resolving);
+        tokio::time::timeout(Duration::from_secs(5), async {
+            tokio::select! {
+                result = &mut resolving => result,
+                _ = &mut removal => panic!("the removal came before the run was gone"),
+            }
+        })
+        .await
+        .expect("the resolving did not stop")
+    };
+    assert!(
+        matches!(result, Err(InstanceError::Cancelled)),
+        "{result:?}"
+    );
+
+    progress.end(&result).await;
+    drop(progress);
+    let _removal = tokio::time::timeout(Duration::from_secs(5), removal)
+        .await
+        .expect("the removal waits for the run for good");
     assert_eq!(
         plan_end(&bars.once_all_ended().await).status,
         ProgressStatus::Cancelled

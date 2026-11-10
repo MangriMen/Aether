@@ -311,6 +311,7 @@
     "javaDownloading": "Downloading Java {{version}}",
     "minecraftAssets": "Assets ({{count}} files)",
     "minecraftDownloading": "Downloading Minecraft {{version}}",
+    "keepsDownloading": "Will keep downloading for other installs: {{count}}",
     "neededFor": "Needed by installs: {{count}}",
     "nothingRunning": "No downloads right now",
     "nothingRunningHint": "Installs and downloads will show up here.",

@@ -52,6 +52,37 @@ describe('progress tree', () => {
     expect(index.mirrorCount('b')).toBe(0);
   });
 
+  it('counts the other bars waiting on what a bar shows', () => {
+    const list = [
+      make('shared', null),
+      make('mine', null),
+      make('mine-mirror', 'mine', { mirrorOf: 'shared' }),
+      make('theirs', null),
+      make('their-mirror', 'theirs', { mirrorOf: 'shared' }),
+      make('alone', null),
+    ];
+    const tree = buildProgressIndex(list);
+
+    expect(tree.othersWaitingOn('mine')).toBe(1);
+    expect(tree.othersWaitingOn('alone')).toBe(0);
+    expect(tree.othersWaitingOn('shared')).toBe(0);
+  });
+
+  it('does not count the bars that stopped waiting', () => {
+    const list = [
+      make('shared', null),
+      make('mine', null),
+      make('mine-mirror', 'mine', { mirrorOf: 'shared' }),
+      make('theirs', null),
+      make('their-mirror', 'theirs', {
+        mirrorOf: 'shared',
+        status: { type: 'cancelled' },
+      }),
+    ];
+
+    expect(buildProgressIndex(list).othersWaitingOn('mine')).toBe(0);
+  });
+
   it('detects a failed descendant at any depth', () => {
     expect(findFailedDescendant(index, 'root')).toBeDefined();
     expect(findFailedDescendant(index, 'b')).toBeUndefined();

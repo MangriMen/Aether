@@ -59,6 +59,13 @@ const ProgressNode: Component<ProgressNodeProps> = (props) => {
   const mirrors = createMemo(() =>
     props.index().mirrorCount(props.payload.progressBarId),
   );
+  // Called off, a download others wait on goes on for them.
+  const keepsDownloading = createMemo(() =>
+    props.payload.status.type === 'running' &&
+    (props.payload.cancel === 'open' || props.payload.cancel === 'requested')
+      ? props.index().othersWaitingOn(props.payload.progressBarId)
+      : 0,
+  );
   const failedMessage = createMemo(() => {
     const status = findFailedDescendant(
       props.index(),
@@ -73,6 +80,11 @@ const ProgressNode: Component<ProgressNodeProps> = (props) => {
       <Show when={mirrors() > 0}>
         <span class='text-sm text-muted-foreground'>
           {t('events.neededFor', { count: mirrors() })}
+        </span>
+      </Show>
+      <Show when={keepsDownloading() > 0}>
+        <span class='text-sm text-muted-foreground'>
+          {t('events.keepsDownloading', { count: keepsDownloading() })}
         </span>
       </Show>
     </div>

@@ -737,6 +737,8 @@ pub(super) struct Fixture {
     pub(super) upserted: Arc<Mutex<Vec<Instance>>>,
     /// Putting a file back from a backup fails.
     pub(super) fail_restore: bool,
+    /// Told of the runs, for the removal of an instance to call off.
+    pub(super) cancellations: Arc<crate::features::instance::InstallCancellations>,
 }
 
 impl Fixture {
@@ -777,6 +779,7 @@ impl Fixture {
             plan_limits: None,
             upserted: Arc::default(),
             fail_restore: false,
+            cancellations: Arc::default(),
         }
     }
 
@@ -839,6 +842,7 @@ impl Fixture {
             self.metadata_cache.clone(),
             self.limits(),
         )
+        .with_cancellations(self.cancellations.clone())
     }
 
     pub(super) fn content_file_service(&self) -> Arc<dyn ContentFileService> {
