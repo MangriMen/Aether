@@ -101,7 +101,8 @@
       "FAILED_TO_INSTALL": "Java installation failed",
       "REMOVE_OLD_INSTALLATION_ERROR": "Failed to remove old Java version",
       "DOWNLOAD_FAILED": "Failed to download Java",
-      "STORAGE_ERROR": "Java storage failure"
+      "STORAGE_ERROR": "Java storage failure",
+      "CANCELLED": "Java installation cancelled"
     },
     "minecraft": {
       "VERSION_NOT_FOUND": "Minecraft version not found",

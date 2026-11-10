@@ -463,6 +463,26 @@ impl<PS: ProgressBarStorage + 'static> ProgressService for ProgressServiceImpl<P
             .await
     }
 
+    async fn init_cancellable_shared_progress(
+        &self,
+        download: SharedDownload,
+        total: f64,
+        message: String,
+    ) -> Result<(ProgressBarId, CancellationToken), EventError> {
+        let token = CancellationToken::new();
+        let bar = self
+            .start(
+                None,
+                download.event_type(),
+                total,
+                message,
+                true,
+                Some(token.clone()),
+            )
+            .await?;
+        Ok((bar, token))
+    }
+
     async fn wait_on_shared(
         &self,
         waiting: Option<&ProgressBarId>,

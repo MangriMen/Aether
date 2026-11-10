@@ -13,6 +13,8 @@ impl From<InstallJavaDto> for InstallJava {
         Self {
             version: value.version,
             force: value.force,
+            // Started by the user, from the settings.
+            cancellable: true,
         }
     }
 }

@@ -1,5 +1,6 @@
 import { type Accessor } from 'solid-js';
 
+import { isCancelledError } from '@/features/errors';
 import { closeDialog, showDialog } from '@/shared/dialogs';
 import { logError } from '@/shared/log';
 
@@ -97,6 +98,11 @@ export const useJavaVersionActions = (
     try {
       await installJava.mutateAsync({ version: majorVersion, force: true });
     } catch (error) {
+      // Called off by the user: nothing failed.
+      if (isCancelledError(error)) {
+        return;
+      }
+
       logError('Failed to install Java:', error);
     }
   };

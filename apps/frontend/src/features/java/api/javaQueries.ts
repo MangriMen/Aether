@@ -1,6 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/solid-query';
 
-import { showError, isLauncherError } from '@/features/errors';
+import {
+  showError,
+  isCancelledError,
+  isLauncherError,
+} from '@/features/errors';
 import { javaCommands } from '@/platform/ipc';
 import { useTranslation } from '@/shared/i18n';
 import { logDebug } from '@/shared/log';
@@ -23,6 +27,10 @@ export const useInstallJava = () => {
     mutationFn: javaCommands.install,
     onSuccess: () => javaCache.invalidate.list(queryClient),
     onError: (err) => {
+      if (isCancelledError(err)) {
+        return;
+      }
+
       showError({
         title: t('java.installError'),
         err,

@@ -7,6 +7,7 @@ use std::{
 use async_trait::async_trait;
 use bytes::Bytes;
 use serde::Deserialize;
+use tokio_util::sync::CancellationToken;
 
 use crate::{
     features::{
@@ -132,6 +133,7 @@ impl<PS: ProgressService, RC: RequestClient> AzulJreProvider<PS, RC> {
         package: &Package,
         version: u32,
         progress_bar_id: Option<&ProgressBarId>,
+        cancel: &CancellationToken,
     ) -> Result<PathBuf, JavaDomainError> {
         use zip::ZipArchive;
 
@@ -157,11 +159,30 @@ impl<PS: ProgressService, RC: RequestClient> AzulJreProvider<PS, RC> {
         archive
             .extract(staging.path())
             .map_err(|_| get_failed_to_install(version))?;
+        self.pass_point_of_no_return(progress_bar_id, cancel)
+            .await?;
         Self::replace_installed(staging.path(), path, version).await?;
         self.emit_progress(progress_bar_id, 10.0, "Done extracting java")
             .await;
 
         Ok(Self::resolve_java_executable_path(path, package, version))
+    }
+
+    /// Replacing the installed JRE entry by entry cannot stop halfway: it would leave neither the
+    /// old JRE nor the new one. A call-off that came before this closes the bar is the last one
+    /// that is taken (the staging goes with the early return).
+    async fn pass_point_of_no_return(
+        &self,
+        progress_bar_id: Option<&ProgressBarId>,
+        cancel: &CancellationToken,
+    ) -> Result<(), JavaDomainError> {
+        if let Some(bar) = progress_bar_id {
+            self.progress_service.close_cancellation_safe(bar).await;
+        }
+        if cancel.is_cancelled() {
+            return Err(JavaDomainError::Cancelled);
+        }
+        Ok(())
     }
 
     /// Move what `staging` holds into `path`, each entry in place of the one of its name.
@@ -230,32 +251,60 @@ impl<PS: ProgressService, RC: RequestClient> AzulJreProvider<PS, RC> {
         version: u32,
         install_dir: &Path,
         progress_bar_id: Option<&ProgressBarId>,
+        cancel: &CancellationToken,
     ) -> Result<PathBuf, JavaDomainError> {
-        let (package, file) = self.download_jre(version, progress_bar_id).await?;
-        self.unpack_jre(install_dir, file, &package, version, progress_bar_id)
-            .await
+        // Dropped halfway on a call-off: nothing is written to the install before the unpacking.
+        // One that comes as the download ends is decided at the point of no return.
+        let (package, file) = tokio::select! {
+            biased;
+            downloaded = self.download_jre(version, progress_bar_id) => downloaded?,
+            () = cancel.cancelled() => return Err(JavaDomainError::Cancelled),
+        };
+        self.unpack_jre(
+            install_dir,
+            file,
+            &package,
+            version,
+            progress_bar_id,
+            cancel,
+        )
+        .await
     }
 }
 
 #[async_trait]
 impl<PS: ProgressService, RC: RequestClient> JreProvider for AzulJreProvider<PS, RC> {
-    async fn install(&self, version: u32, install_dir: &Path) -> Result<PathBuf, JavaDomainError> {
+    async fn install(
+        &self,
+        version: u32,
+        install_dir: &Path,
+        cancellable: bool,
+    ) -> Result<PathBuf, JavaDomainError> {
         // Shared: every install needing this Java waits on this one download.
         // Called off (the future dropped) it ends cancelled, not done.
-        let bar = CancellableBar::new(
+        let download = SharedDownload::Java { version };
+        let message = "Downloading java version".to_string();
+        let (bar, cancel) = if cancellable {
             self.progress_service
-                .init_shared_progress_safe(
-                    SharedDownload::Java { version },
-                    100.0,
-                    "Downloading java version".to_string(),
-                )
-                .await,
-        );
+                .init_cancellable_shared_progress_safe(download, 100.0, message)
+                .await
+        } else {
+            (
+                self.progress_service
+                    .init_shared_progress_safe(download, 100.0, message)
+                    .await,
+                CancellationToken::new(),
+            )
+        };
+        let bar = CancellableBar::new(bar);
 
         let result = self
-            .download_and_unpack(version, install_dir, bar.bar())
+            .download_and_unpack(version, install_dir, bar.bar(), &cancel)
             .await;
-        bar.settle(&result).await;
+        match &result {
+            Err(JavaDomainError::Cancelled) => bar.cancel().await,
+            _ => bar.settle(&result).await,
+        }
         result
     }
 }
@@ -286,14 +335,24 @@ fn get_failed_to_install(version: u32) -> JavaDomainError {
 
 #[cfg(test)]
 mod tests {
-    use std::{collections::HashMap, io::Write, sync::Mutex};
+    use std::{
+        collections::HashMap,
+        io::Write,
+        sync::{
+            Mutex,
+            atomic::{AtomicBool, Ordering},
+        },
+        time::Duration,
+    };
 
-    use tokio::sync::mpsc;
+    use tokio::sync::{Notify, mpsc};
 
     use super::*;
     use crate::{
         features::events::{
-            ProgressServiceImpl, infra::InMemoryProgressBarStorage, test_support::ChannelEmitter,
+            CancelState, ProgressBar, ProgressBarStorage, ProgressServiceImpl, ProgressStatus,
+            infra::InMemoryProgressBarStorage,
+            test_support::{ChannelEmitter, sent},
         },
         shared::{
             hash::{HashAlgorithm, infra::hash_hex_async},
@@ -308,11 +367,20 @@ mod tests {
 
     /// Serves fixed bodies by URL, and refuses a body that is not the one a request expects.
     #[derive(Default)]
-    struct FakeClient(Mutex<HashMap<String, Bytes>>);
+    struct FakeClient {
+        bodies: Mutex<HashMap<String, Bytes>>,
+        /// Holds the archive back until `proceed`, telling `at_archive` it was asked for.
+        hold_archive: AtomicBool,
+        at_archive: Notify,
+        proceed: Notify,
+    }
 
     impl FakeClient {
         fn serve(&self, url: &str, body: impl Into<Bytes>) {
-            self.0.lock().unwrap().insert(url.to_owned(), body.into());
+            self.bodies
+                .lock()
+                .unwrap()
+                .insert(url.to_owned(), body.into());
         }
     }
 
@@ -327,16 +395,20 @@ mod tests {
             request: Request,
             _: Option<(&ProgressBarId, f64)>,
         ) -> Result<Bytes, RequestError> {
-            let body =
-                self.0
-                    .lock()
-                    .unwrap()
-                    .get(&request.url)
-                    .cloned()
-                    .ok_or(RequestError::Status {
-                        status: 404,
-                        url: request.url.clone(),
-                    })?;
+            if request.url == ARCHIVE_URL && self.hold_archive.load(Ordering::SeqCst) {
+                self.at_archive.notify_one();
+                self.proceed.notified().await;
+            }
+            let body = self
+                .bodies
+                .lock()
+                .unwrap()
+                .get(&request.url)
+                .cloned()
+                .ok_or(RequestError::Status {
+                    status: 404,
+                    url: request.url.clone(),
+                })?;
             if let Some(expected) = &request.hash {
                 let actual = hash_hex_async(expected.algorithm(), body.clone())
                     .await
@@ -374,26 +446,35 @@ mod tests {
     type Provider = AzulJreProvider<ProgressServiceImpl<InMemoryProgressBarStorage>, FakeClient>;
 
     struct Fixture {
-        provider: Provider,
+        provider: Arc<Provider>,
         client: Arc<FakeClient>,
+        progress: Arc<ProgressServiceImpl<InMemoryProgressBarStorage>>,
+        bars: Arc<InMemoryProgressBarStorage>,
         install_dir: PathBuf,
-        _events: mpsc::UnboundedReceiver<crate::features::events::Event>,
+        events: mpsc::UnboundedReceiver<crate::features::events::Event>,
         _temp: tempfile::TempDir,
     }
 
     fn fixture() -> Fixture {
         let temp = tempfile::TempDir::new().unwrap();
         let (tx, events) = mpsc::unbounded_channel();
+        let bars = Arc::new(InMemoryProgressBarStorage::default());
         let progress = Arc::new(ProgressServiceImpl::new(
             Arc::new(ChannelEmitter(tx)),
-            Arc::new(InMemoryProgressBarStorage::default()),
+            bars.clone(),
         ));
         let client = Arc::new(FakeClient::default());
         Fixture {
-            provider: AzulJreProvider::new(progress, client.clone(), client.clone()),
+            provider: Arc::new(AzulJreProvider::new(
+                progress.clone(),
+                client.clone(),
+                client.clone(),
+            )),
             client,
+            progress,
+            bars,
             install_dir: temp.path().join("java"),
-            _events: events,
+            events,
             _temp: temp,
         }
     }
@@ -453,7 +534,7 @@ mod tests {
 
         let result = fixture
             .provider
-            .install(VERSION, &fixture.install_dir)
+            .install(VERSION, &fixture.install_dir, false)
             .await;
 
         assert!(
@@ -470,7 +551,7 @@ mod tests {
 
         fixture
             .provider
-            .install(VERSION, &fixture.install_dir)
+            .install(VERSION, &fixture.install_dir, false)
             .await
             .unwrap();
 
@@ -494,7 +575,7 @@ mod tests {
 
         fixture
             .provider
-            .install(VERSION, &fixture.install_dir)
+            .install(VERSION, &fixture.install_dir, false)
             .await
             .unwrap();
 
@@ -521,7 +602,7 @@ mod tests {
 
         let result = fixture
             .provider
-            .install(VERSION, &fixture.install_dir)
+            .install(VERSION, &fixture.install_dir, false)
             .await;
 
         assert!(
@@ -547,7 +628,7 @@ mod tests {
 
         let result = fixture
             .provider
-            .install(VERSION, &fixture.install_dir)
+            .install(VERSION, &fixture.install_dir, false)
             .await;
 
         assert!(
@@ -555,5 +636,193 @@ mod tests {
             "{result:?}"
         );
         assert!(!installed_java(&fixture.install_dir).exists());
+    }
+
+    /// The bar of the Java download, once it is there.
+    async fn java_bar(fixture: &Fixture) -> ProgressBar {
+        tokio::time::timeout(Duration::from_secs(5), async {
+            loop {
+                if let Some(bar) = fixture.bars.list().await.into_iter().next() {
+                    return bar;
+                }
+                tokio::task::yield_now().await;
+            }
+        })
+        .await
+        .expect("the bar never came")
+    }
+
+    struct InstallTask(tokio::task::JoinHandle<Result<PathBuf, JavaDomainError>>);
+
+    impl InstallTask {
+        async fn finished(self) -> Result<PathBuf, JavaDomainError> {
+            tokio::time::timeout(Duration::from_secs(5), self.0)
+                .await
+                .expect("the install did not stop")
+                .unwrap()
+        }
+    }
+
+    /// Starts an install over an old JRE that waits for the archive, until `proceed`.
+    async fn install_held(fixture: &Fixture, cancellable: bool) -> InstallTask {
+        std::fs::create_dir_all(installed_java(&fixture.install_dir).parent().unwrap()).unwrap();
+        std::fs::write(installed_java(&fixture.install_dir), b"old jre").unwrap();
+        serve_archive(&fixture.client, jre_zip(b"new jre")).await;
+        fixture.client.hold_archive.store(true, Ordering::SeqCst);
+        let install = InstallTask(tokio::spawn({
+            let provider = Arc::clone(&fixture.provider);
+            let install_dir = fixture.install_dir.clone();
+            async move { provider.install(VERSION, &install_dir, cancellable).await }
+        }));
+        fixture.client.at_archive.notified().await;
+        install
+    }
+
+    #[tokio::test]
+    async fn should_keep_the_installed_jre_and_end_the_bar_cancelled_when_called_off_while_downloading()
+     {
+        let mut fixture = fixture();
+        let install = install_held(&fixture, true).await;
+        let bar = java_bar(&fixture).await;
+        assert_eq!(bar.cancel_state(), Some(CancelState::Open));
+
+        fixture.progress.cancel_progress(bar.id).await.unwrap();
+        let result = install.finished().await;
+
+        assert!(
+            matches!(result, Err(JavaDomainError::Cancelled)),
+            "{result:?}"
+        );
+        assert_eq!(
+            std::fs::read(installed_java(&fixture.install_dir)).unwrap(),
+            b"old jre"
+        );
+        let last = sent(&mut fixture.events)
+            .into_iter()
+            .rfind(|event| event.progress_bar_id == bar.id)
+            .unwrap();
+        assert_eq!(last.status, ProgressStatus::Cancelled);
+    }
+
+    #[tokio::test]
+    async fn should_refuse_to_replace_the_jre_when_called_off_before_the_point_of_no_return() {
+        let fixture = fixture();
+        let (bar, cancel) = fixture
+            .progress
+            .init_cancellable_shared_progress_safe(
+                SharedDownload::Java { version: VERSION },
+                100.0,
+                String::new(),
+            )
+            .await;
+        let bar = bar.unwrap();
+        fixture.progress.cancel_progress(bar.id).await.unwrap();
+
+        let passed = fixture
+            .provider
+            .pass_point_of_no_return(Some(&bar), &cancel)
+            .await;
+
+        assert!(
+            matches!(passed, Err(JavaDomainError::Cancelled)),
+            "{passed:?}"
+        );
+    }
+
+    #[tokio::test]
+    async fn should_keep_the_installed_jre_and_leave_no_staging_when_called_off_while_unpacking() {
+        let fixture = fixture();
+        std::fs::create_dir_all(installed_java(&fixture.install_dir).parent().unwrap()).unwrap();
+        std::fs::write(installed_java(&fixture.install_dir), b"old jre").unwrap();
+        let package = Package {
+            download_url: ARCHIVE_URL.to_owned(),
+            name: format!("{PACKAGE_DIR}.zip").into(),
+            sha256_hash: String::new(),
+        };
+        let cancel = CancellationToken::new();
+        cancel.cancel();
+
+        let result = fixture
+            .provider
+            .unpack_jre(
+                &fixture.install_dir,
+                Bytes::from(jre_zip(b"new jre")),
+                &package,
+                VERSION,
+                None,
+                &cancel,
+            )
+            .await;
+
+        assert!(
+            matches!(result, Err(JavaDomainError::Cancelled)),
+            "{result:?}"
+        );
+        assert_eq!(
+            std::fs::read(installed_java(&fixture.install_dir)).unwrap(),
+            b"old jre"
+        );
+        let left: Vec<_> = std::fs::read_dir(&fixture.install_dir)
+            .unwrap()
+            .map(|entry| entry.unwrap().file_name())
+            .collect();
+        assert_eq!(left, [PACKAGE_DIR], "no staging directory is left");
+    }
+
+    #[tokio::test]
+    async fn should_close_the_call_off_and_go_on_when_nobody_called_it_off() {
+        let fixture = fixture();
+        let (bar, cancel) = fixture
+            .progress
+            .init_cancellable_shared_progress_safe(
+                SharedDownload::Java { version: VERSION },
+                100.0,
+                String::new(),
+            )
+            .await;
+        let bar = bar.unwrap();
+
+        fixture
+            .provider
+            .pass_point_of_no_return(Some(&bar), &cancel)
+            .await
+            .unwrap();
+        fixture.progress.cancel_progress(bar.id).await.unwrap();
+
+        assert!(!cancel.is_cancelled(), "a call-off after it is refused");
+        let state = fixture.bars.get(bar.id).await.unwrap().cancel_state();
+        assert_eq!(state, Some(CancelState::Closed));
+    }
+
+    #[tokio::test]
+    async fn should_replace_the_jre_and_close_the_call_off_when_nobody_calls_it_off() {
+        let mut fixture = fixture();
+        let install = install_held(&fixture, true).await;
+        let bar = java_bar(&fixture).await;
+        fixture.client.proceed.notify_one();
+        install.finished().await.unwrap();
+
+        let states: Vec<_> = sent(&mut fixture.events)
+            .into_iter()
+            .filter(|event| event.progress_bar_id == bar.id)
+            .filter_map(|event| event.cancel)
+            .collect();
+        assert_eq!(states.last(), Some(&CancelState::Closed), "{states:?}");
+        assert_eq!(
+            std::fs::read(installed_java(&fixture.install_dir)).unwrap(),
+            b"new jre"
+        );
+    }
+
+    #[tokio::test]
+    async fn should_offer_no_call_off_when_the_install_is_a_part_of_another() {
+        let fixture = fixture();
+        let install = install_held(&fixture, false).await;
+
+        let bar = java_bar(&fixture).await;
+        assert_eq!(bar.cancel_state(), None);
+
+        fixture.client.proceed.notify_one();
+        install.finished().await.unwrap();
     }
 }

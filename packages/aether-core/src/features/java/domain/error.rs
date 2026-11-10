@@ -17,6 +17,9 @@ pub enum JavaDomainError {
     #[error("Invalid JRE version: {version}")]
     InvalidVersion { version: String },
 
+    #[error("The installation of the JRE was called off")]
+    Cancelled,
+
     #[error("Failed to get java properties: {reason}")]
     FailedToGetProperties { reason: String },
 

@@ -212,7 +212,7 @@ export type JavaErrorDto = { code: "NOT_FOUND"; payload: {
 	details: string,
 } } | { code: "STORAGE_ERROR"; payload: {
 	details: string,
-} };
+} } | { code: "CANCELLED" };
 
 export type LauncherUpdatePhaseDto = "started" | "progress" | "finished" | "error";
 

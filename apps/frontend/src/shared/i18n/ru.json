@@ -101,7 +101,8 @@
       "FAILED_TO_INSTALL": "Ошибка установки Java",
       "REMOVE_OLD_INSTALLATION_ERROR": "Не удалось удалить старую версию Java",
       "DOWNLOAD_FAILED": "Не удалось загрузить Java",
-      "STORAGE_ERROR": "Ошибка хранилища Java"
+      "STORAGE_ERROR": "Ошибка хранилища Java",
+      "CANCELLED": "Установка Java отменена"
     },
     "minecraft": {
       "VERSION_NOT_FOUND": "Версия Minecraft не найдена",

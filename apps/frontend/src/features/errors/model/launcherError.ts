@@ -16,7 +16,7 @@ export function isLauncherError(error: unknown): error is FrontendError {
 /** The user called the install off: nothing failed, so nothing to report. */
 export const isCancelledError = (error: unknown): boolean =>
   isLauncherError(error) &&
-  error.type === 'instance' &&
+  (error.type === 'instance' || error.type === 'java') &&
   error.payload.code === 'CANCELLED';
 
 type LauncherErrorWithoutGenericErrors = Exclude<

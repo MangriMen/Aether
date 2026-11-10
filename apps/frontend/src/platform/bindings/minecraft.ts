@@ -182,7 +182,7 @@ export type JavaErrorDto = { code: "NOT_FOUND"; payload: {
 	details: string,
 } } | { code: "STORAGE_ERROR"; payload: {
 	details: string,
-} };
+} } | { code: "CANCELLED" };
 
 /**  The latest snapshot and release of the game */
 export type LatestVersionDto = {

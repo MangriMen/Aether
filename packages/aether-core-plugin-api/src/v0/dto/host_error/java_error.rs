@@ -38,4 +38,5 @@ pub enum JavaErrorDto {
         path: String,
     },
     Storage(String),
+    Cancelled,
 }
