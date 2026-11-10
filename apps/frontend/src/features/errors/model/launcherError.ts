@@ -21,7 +21,7 @@ export const isCancelledError = (error: unknown): boolean =>
 
 type LauncherErrorWithoutGenericErrors = Exclude<
   LauncherError,
-  { type: 'generic' | 'internal' }
+  { type: 'generic' }
 >;
 
 // The I/O message is picked by its kind in `getTranslatedError`, so it has no single key.
@@ -73,7 +73,7 @@ export const getTranslatedError = (
   error: LauncherError,
   t: TFunction,
 ): string => {
-  if (error.type === 'internal' || error.type === 'generic') {
+  if (error.type === 'generic') {
     return error.payload;
   }
 
