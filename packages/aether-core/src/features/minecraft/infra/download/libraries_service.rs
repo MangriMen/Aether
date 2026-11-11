@@ -128,6 +128,7 @@ impl<RC: RequestClient> LibrariesService<RC> {
 
         let mut pending = Vec::new();
         for ((library, path_part), jar) in candidates.into_iter().zip(missing) {
+            let jar = jar && !library.is_natives_only();
             let native = Self::native_download(library, java_arch);
             if !jar && native.is_none() {
                 continue;
