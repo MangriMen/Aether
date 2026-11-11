@@ -1,4 +1,4 @@
-import { A, useParams } from '@solidjs/router';
+import { A } from '@solidjs/router';
 import IconMdiChevronRight from '~icons/mdi/chevron-right';
 import IconMdiOpenInNew from '~icons/mdi/open-in-new';
 import {
@@ -11,61 +11,50 @@ import {
 } from 'solid-js';
 import { Dynamic } from 'solid-js/web';
 
+import type { ContentItem } from '@/features/content';
+
 import {
-  createContentPageHref,
-  useContent,
+  createContentVersionsHref,
   useContentContext,
   useContentVersion,
 } from '@/features/content';
 import { isUnsupportedOperationError } from '@/features/errors';
 import { useTranslation } from '@/shared/i18n';
 import { MarkdownRenderer } from '@/shared/markdown';
-import {
-  Button,
-  CombinedTooltip,
-  IconButton,
-  Separator,
-  Skeleton,
-} from '@/shared/ui-kit';
+import { Button, CombinedTooltip, IconButton, Skeleton } from '@/shared/ui-kit';
 import { cn } from '@/shared/utils';
 
 import { useContentVersionInstall } from '../lib/useContentVersionInstall';
-import { ContentItemPageInfo } from './ContentItemPageInfo';
 import { ContentVersionDetails } from './ContentVersionDetails';
 import { ContentVersionTypeBadge } from './ContentVersionTypeBadge';
 
-export type ContentVersionPageProps = ComponentProps<'div'>;
+export type ContentVersionViewProps = ComponentProps<'div'> & {
+  versionId: string;
+  item: ContentItem | undefined;
+};
 
-/** One version of a content item: what the provider says of it, and the way to install it. */
-export const ContentVersionPage: Component<ContentVersionPageProps> = (
+/** One version of a content item, shown inside its page under the Versions tab. */
+export const ContentVersionView: Component<ContentVersionViewProps> = (
   props,
 ) => {
-  const [local, others] = splitProps(props, ['class']);
+  const [local, others] = splitProps(props, ['class', 'versionId', 'item']);
 
   const [{ t }] = useTranslation();
   const [context] = useContentContext();
-  const params = useParams();
-
-  const item = useContent(() =>
-    params.contentId && context.providerId
-      ? { contentId: params.contentId, providerId: context.providerId }
-      : undefined,
-  );
-
   const version = useContentVersion(() =>
-    params.versionId && context.providerId
-      ? { versionId: params.versionId, providerId: context.providerId }
+    context.providerId
+      ? { versionId: local.versionId, providerId: context.providerId }
       : undefined,
   );
 
   const { install, icon, isCurrentVersionInstalled, isSwap, isInstalling } =
     useContentVersionInstall(
       () => version.data,
-      () => item.data?.contentType,
+      () => local.item?.contentType,
     );
 
-  const projectHref = () =>
-    createContentPageHref(params.contentId ?? '', {
+  const versionsHref = () =>
+    createContentVersionsHref(local.item?.id ?? '', {
       instanceId: context.instanceId,
       providerId: context.providerId,
     });
@@ -79,24 +68,14 @@ export const ContentVersionPage: Component<ContentVersionPageProps> = (
   };
 
   return (
-    <div
-      class={cn('gap-4 p-0.5 flex grow flex-col overflow-auto', local.class)}
-      {...others}
-    >
-      <ContentItemPageInfo
-        item={item.data}
-        isLoading={item.isFetching}
-        hideActions
-      />
-      <Separator />
-
+    <div class={cn('gap-4 p-0.5 flex flex-col', local.class)} {...others}>
       <nav class='gap-1 text-muted-foreground flex items-center'>
-        <A href={projectHref()} class='hover:text-foreground hover:underline'>
+        <A href={versionsHref()} class='hover:text-foreground hover:underline'>
           {t('content.item.versions')}
         </A>
         <IconMdiChevronRight />
         <span class='min-w-0 truncate text-foreground'>
-          {version.data?.versionNumber ?? params.versionId}
+          {version.data?.versionNumber ?? local.versionId}
         </span>
       </nav>
 
@@ -136,7 +115,7 @@ export const ContentVersionPage: Component<ContentVersionPageProps> = (
                   <Button
                     onClick={install}
                     loading={isInstalling()}
-                    disabled={isCurrentVersionInstalled() || !item.data}
+                    disabled={isCurrentVersionInstalled() || !local.item}
                   >
                     <Dynamic component={icon()} />
                     {installLabel()}

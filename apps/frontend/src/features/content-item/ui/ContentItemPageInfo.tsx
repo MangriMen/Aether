@@ -2,7 +2,7 @@ import type { Component, ComponentProps } from 'solid-js';
 
 import MdiDownloadIcon from '~icons/mdi/download';
 import MdiOpenInNewIcon from '~icons/mdi/open-in-new';
-import { createMemo, Show, splitProps } from 'solid-js';
+import { createMemo, splitProps } from 'solid-js';
 
 import type { ContentItem } from '@/features/content';
 
@@ -22,8 +22,6 @@ export type ContentItemPageInfoProps = {
   item: ContentItem | undefined;
   contentPageHref?: string;
   isLoading?: boolean;
-  /** Without the buttons of the project, for a page that has buttons of its own. */
-  hideActions?: boolean;
 };
 
 export const ContentItemPageInfo: Component<
@@ -33,7 +31,6 @@ export const ContentItemPageInfo: Component<
     'item',
     'contentPageHref',
     'isLoading',
-    'hideActions',
     'class',
   ]);
 
@@ -71,37 +68,35 @@ export const ContentItemPageInfo: Component<
               </DelayedShow>
             </span>
           </div>
-          <Show when={!local.hideActions}>
-            <div class='gap-2 flex'>
-              <CombinedTooltip
-                label={t('content.alreadyInstalled')}
-                disableTooltip={!isInstalled()}
-                as={Button}
-                loading={itemIsLoading() || isInstalling()}
-                disabled={isInstalled()}
-                onClick={requestInstall}
-              >
-                <MdiDownloadIcon />
-                {t('common.install')}
-              </CombinedTooltip>
+          <div class='gap-2 flex'>
+            <CombinedTooltip
+              label={t('content.alreadyInstalled')}
+              disableTooltip={!isInstalled()}
+              as={Button}
+              loading={itemIsLoading() || isInstalling()}
+              disabled={isInstalled()}
+              onClick={requestInstall}
+            >
+              <MdiDownloadIcon />
+              {t('common.install')}
+            </CombinedTooltip>
 
-              <CombinedTooltip
-                label={t('content.openInBrowser')}
-                as='div'
-                class='size-min'
-              >
-                <IconButton
-                  variant='secondary'
-                  as='a'
-                  href={props.item?.url}
-                  target='_blank'
-                  rel='noreferrer'
-                  icon={MdiOpenInNewIcon}
-                  loading={itemIsLoading()}
-                />
-              </CombinedTooltip>
-            </div>
-          </Show>
+            <CombinedTooltip
+              label={t('content.openInBrowser')}
+              as='div'
+              class='size-min'
+            >
+              <IconButton
+                variant='secondary'
+                as='a'
+                href={props.item?.url}
+                target='_blank'
+                rel='noreferrer'
+                icon={MdiOpenInNewIcon}
+                loading={itemIsLoading()}
+              />
+            </CombinedTooltip>
+          </div>
         </div>
       </div>
     </div>

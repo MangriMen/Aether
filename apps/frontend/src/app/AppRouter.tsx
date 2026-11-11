@@ -3,7 +3,7 @@ import { type Component } from 'solid-js';
 
 import { HomePage } from '@/app/pages/home';
 import { ContentBrowserWrapper } from '@/features/content-browser';
-import { ContentItemPage, ContentVersionPage } from '@/features/content-item';
+import { ContentItemPage } from '@/features/content-item';
 import { ContentPageLayout } from '@/features/content-page';
 import { InstanceSettingsDialog } from '@/features/instance-edit';
 import { InstancePage } from '@/features/instance-page';
@@ -31,11 +31,10 @@ export const AppRouter: Component = () => {
         <Route
           path={ROUTE_PATTERNS.CONTENT_ITEM_REL}
           component={ContentItemPage}
-        />
-        <Route
-          path={ROUTE_PATTERNS.CONTENT_VERSION_REL}
-          component={ContentVersionPage}
-        />
+        >
+          <Route path='/' />
+          <Route path={ROUTE_PATTERNS.CONTENT_ITEM_VERSIONS_REL} />
+        </Route>
       </Route>
 
       <Route path={ROUTE_PATTERNS.INSTANCE} component={InstancePage}>

@@ -211,7 +211,7 @@ describe('getContentFileVersionHref', () => {
         makeFile({ updateProviderId: provider, update, version: 'v1' }),
         'inst',
       ),
-    ).toBe(`/content/abc/version/v1${query}`);
+    ).toBe(`/content/abc/versions/v1${query}`);
     expect(
       getContentFileVersionHref(
         makeFile({
@@ -226,7 +226,7 @@ describe('getContentFileVersionHref', () => {
         }),
         'inst',
       ),
-    ).toBe(`/content/abc/version/v2${query}`);
+    ).toBe(`/content/abc/versions/v2${query}`);
   });
 
   it('has no link without a provider or content id', () => {

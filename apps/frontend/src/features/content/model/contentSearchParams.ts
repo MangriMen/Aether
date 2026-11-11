@@ -101,6 +101,12 @@ const withContentQuery = (baseUrl: string, params: ContentHrefParams) => {
   return queryString ? `${baseUrl}?${queryString}` : baseUrl;
 };
 
+export const createContentVersionsHref = (
+  contentId: string,
+  params: ContentHrefParams,
+): string =>
+  withContentQuery(CONTENT_ROUTES.CONTENT_ITEM_VERSIONS(contentId), params);
+
 export const createContentVersionHref = (
   contentId: string,
   versionId: string,

@@ -1,2 +1,2 @@
 export * from './ui/ContentItemPage';
-export * from './ui/ContentVersionPage';
+export * from './ui/ContentVersionView';
