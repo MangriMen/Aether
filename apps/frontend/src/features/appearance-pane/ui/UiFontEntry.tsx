@@ -223,7 +223,11 @@ export const UiFontEntry: Component<UiFontEntryProps> = (props) => {
           class='max-h-72'
           onInteractOutside={commitDraft}
           itemComponent={(itemProps) => (
-            <ComboboxItem item={itemProps.item} style={itemProps.style}>
+            <ComboboxItem
+              class='whitespace-nowrap'
+              item={itemProps.item}
+              style={itemProps.style}
+            >
               {itemProps.item.rawValue.label}
             </ComboboxItem>
           )}
