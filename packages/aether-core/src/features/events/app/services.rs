@@ -967,6 +967,9 @@ mod tests {
         storage.get(id.id).await.unwrap().clone()
     }
 
+    /// Lets the tasks the test spawned run. Only sound on a `current_thread` runtime and for
+    /// work that is in memory, which a few turns of the scheduler finish; when a test must know
+    /// that something is blocked, it waits for a signal from the blocked side instead.
     async fn settle() {
         for _ in 0..10 {
             tokio::task::yield_now().await;
@@ -1456,12 +1459,14 @@ mod tests {
     /// Sends every event into a channel, each once a permit of `gate` is there for it.
     struct GatedEmitter {
         gate: Arc<tokio::sync::Semaphore>,
+        entered: Arc<tokio::sync::Notify>,
         tx: mpsc::UnboundedSender<Event>,
     }
 
     #[async_trait]
     impl EventEmitter<Event> for GatedEmitter {
         async fn emit(&self, event: Event) -> Result<(), EventError> {
+            self.entered.notify_one();
             self.gate.acquire().await.unwrap().forget();
             let _ = self.tx.send(event);
             Ok(())
@@ -1474,11 +1479,13 @@ mod tests {
     async fn a_slow_listener_holds_up_no_change_and_the_events_of_a_bar_keep_their_order() {
         let (tx, mut rx) = mpsc::unbounded_channel();
         let gate = Arc::new(tokio::sync::Semaphore::new(0));
+        let entered = Arc::new(tokio::sync::Notify::new());
         let storage = Arc::new(InMemoryProgressBarStorage::default());
         let clock = Arc::new(ManualClock(std::sync::Mutex::new(Instant::now())));
         let service = Arc::new(ProgressServiceImpl::with_clock(
             Arc::new(GatedEmitter {
                 gate: gate.clone(),
+                entered: entered.clone(),
                 tx,
             }),
             storage.clone(),
@@ -1497,7 +1504,9 @@ mod tests {
 
         // The first bytes go out at once: their event waits on the listener.
         let first = report(100);
-        settle().await;
+        tokio::time::timeout(Duration::from_secs(1), entered.notified())
+            .await
+            .expect("the first event reached the listener");
         assert!(!first.is_finished());
 
         // Bytes too soon for an event of their own are counted meanwhile.
@@ -1523,12 +1532,31 @@ mod tests {
         assert_eq!(bytes, [Some(100), Some(300)]);
     }
 
+    /// What a [`HoldingEmitter`] waits for, and a way to tell it is waiting.
+    struct Hold {
+        permits: tokio::sync::Semaphore,
+        entered: tokio::sync::Notify,
+    }
+
+    impl Hold {
+        fn add_permits(&self, count: usize) {
+            self.permits.add_permits(count);
+        }
+
+        /// Resolves once the held event has reached the wait.
+        async fn held(&self) {
+            tokio::time::timeout(Duration::from_secs(1), self.entered.notified())
+                .await
+                .expect("the held event reached the listener");
+        }
+    }
+
     /// Sends every event into a channel at once, but the `held`-th one (from 0) only once
     /// `release` has a permit for it.
     struct HoldingEmitter {
         held: usize,
         emitted: std::sync::atomic::AtomicUsize,
-        release: Arc<tokio::sync::Semaphore>,
+        release: Arc<Hold>,
         tx: mpsc::UnboundedSender<Event>,
     }
 
@@ -1539,7 +1567,8 @@ mod tests {
                 .emitted
                 .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
             if index == self.held {
-                self.release.acquire().await.unwrap().forget();
+                self.release.entered.notify_one();
+                self.release.permits.acquire().await.unwrap().forget();
             }
             let _ = self.tx.send(event);
             Ok(())
@@ -1553,10 +1582,13 @@ mod tests {
         Arc<ProgressServiceImpl<InMemoryProgressBarStorage>>,
         Arc<InMemoryProgressBarStorage>,
         mpsc::UnboundedReceiver<Event>,
-        Arc<tokio::sync::Semaphore>,
+        Arc<Hold>,
     ) {
         let (tx, rx) = mpsc::unbounded_channel();
-        let release = Arc::new(tokio::sync::Semaphore::new(0));
+        let release = Arc::new(Hold {
+            permits: tokio::sync::Semaphore::new(0),
+            entered: tokio::sync::Notify::new(),
+        });
         let storage = Arc::new(InMemoryProgressBarStorage::default());
         let service = Arc::new(ProgressServiceImpl::new(
             Arc::new(HoldingEmitter {
@@ -1606,7 +1638,7 @@ mod tests {
             let service = service.clone();
             tokio::spawn(async move { service.emit_progress(&other, 1.0, None).await.unwrap() })
         };
-        settle().await;
+        release.held().await;
         assert!(
             !holding.is_finished(),
             "the first event waits on the listener"
@@ -1675,7 +1707,7 @@ mod tests {
             let service = service.clone();
             tokio::spawn(async move { service.emit_progress(&other, 1.0, None).await.unwrap() })
         };
-        settle().await;
+        release.held().await;
         assert!(!holding.is_finished());
 
         let reporting = {
@@ -1731,7 +1763,7 @@ mod tests {
             let service = service.clone();
             tokio::spawn(async move { service.emit_progress(&other, 1.0, None).await.unwrap() })
         };
-        settle().await;
+        release.held().await;
         assert!(!holding.is_finished());
         let reporting = {
             let service = service.clone();
@@ -1790,7 +1822,7 @@ mod tests {
                 clone
             })
         };
-        settle().await;
+        release.held().await;
         assert!(!holding.is_finished());
         let waiting = {
             let (service, pack_bar) = (service.clone(), pack_bar.clone());
