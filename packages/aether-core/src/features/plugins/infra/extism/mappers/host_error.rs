@@ -178,6 +178,9 @@ fn instance_dto(value: &InstanceError) -> InstanceErrorDto {
         | InstanceError::CachesBeingCleared
         | InstanceError::IconTooLarge { .. }
         | InstanceError::IconNotSupported
+        | InstanceError::PrelaunchCommandInvalid { .. }
+        | InstanceError::PrelaunchCommandSpawnFailed { .. }
+        | InstanceError::PrelaunchCommandTimeout { .. }
         | InstanceError::NotBroken { .. }
         | InstanceError::Cancelled => Dto::ContentProviderError {
             reason: value.to_string(),

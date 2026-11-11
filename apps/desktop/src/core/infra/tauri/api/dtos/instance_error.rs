@@ -31,6 +31,16 @@ pub enum InstanceErrorDto {
     PrelaunchCommandError {
         code: i32,
     },
+    PrelaunchCommandInvalid {
+        reason: String,
+    },
+    PrelaunchCommandSpawnFailed {
+        reason: String,
+    },
+    PrelaunchCommandTimeout {
+        // Formatted before it crosses the boundary: no `u64` in bindings.
+        seconds: String,
+    },
     ValidationError {
         field: InstanceFieldDto,
         reason: InstanceValidationErrorReasonDto,
@@ -177,6 +187,17 @@ impl From<&InstanceError> for InstanceErrorDto {
             InstanceError::PrelaunchCommandError { code } => {
                 Self::PrelaunchCommandError { code: *code }
             }
+            InstanceError::PrelaunchCommandInvalid { reason } => Self::PrelaunchCommandInvalid {
+                reason: reason.clone(),
+            },
+            InstanceError::PrelaunchCommandSpawnFailed { reason } => {
+                Self::PrelaunchCommandSpawnFailed {
+                    reason: reason.clone(),
+                }
+            }
+            InstanceError::PrelaunchCommandTimeout { seconds } => Self::PrelaunchCommandTimeout {
+                seconds: seconds.to_string(),
+            },
             InstanceError::ValidationError { field, reason } => Self::ValidationError {
                 field: (*field).into(),
                 reason: reason.clone().into(),

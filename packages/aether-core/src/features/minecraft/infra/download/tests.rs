@@ -460,6 +460,39 @@ async fn should_leave_no_library_when_its_digest_does_not_match() {
     assert!(!library_path(&fixture.location_info).exists());
 }
 
+const LIBRARY_FALLBACK_URL: &str =
+    "https://libraries.minecraft.net/com/example/lib/1.0/lib-1.0.jar";
+
+#[tokio::test]
+async fn should_not_try_the_fallback_when_the_artifact_digest_does_not_match() {
+    let fixture = fixture();
+    let version = version_from(&fixture.client, "1.20.1", ASSET_HASH, |json| {
+        json["libraries"][0]["downloads"]["artifact"]["sha1"] = WRONG_SHA1.into();
+    });
+    fixture.client.serve(LIBRARY_FALLBACK_URL, "library");
+
+    let (result, _) = download(&fixture.service, &version, None).await.unwrap();
+
+    assert!(result.is_err(), "{result:?}");
+    assert!(!library_path(&fixture.location_info).exists());
+    assert_eq!(fixture.client.fetches_of(LIBRARY_FALLBACK_URL), 0);
+}
+
+#[tokio::test]
+async fn should_use_the_fallback_when_the_artifact_has_no_url() {
+    let fixture = fixture();
+    let version = version_from(&fixture.client, "1.20.1", ASSET_HASH, |json| {
+        json["libraries"][0]["downloads"]["artifact"]["url"] = "".into();
+    });
+    fixture.client.serve(LIBRARY_FALLBACK_URL, "library");
+
+    let (result, _) = download(&fixture.service, &version, None).await.unwrap();
+
+    assert!(result.is_ok(), "{result:?}");
+    assert!(library_path(&fixture.location_info).exists());
+    assert_eq!(fixture.client.fetches_of(LIBRARY_FALLBACK_URL), 1);
+}
+
 #[tokio::test]
 async fn should_leave_no_asset_when_its_digest_does_not_match() {
     let fixture = fixture();

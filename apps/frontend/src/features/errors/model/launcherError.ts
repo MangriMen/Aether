@@ -1,6 +1,8 @@
 import type { FrontendError } from '@/platform/bindings/application';
 import type { TFunction } from '@/shared/i18n';
 
+import { dayjs, formatDuration } from '@/shared/format';
+
 export type LauncherError = FrontendError;
 
 export function isLauncherError(error: unknown): error is FrontendError {
@@ -92,5 +94,24 @@ export const getTranslatedError = (
 
   const { key, args } = getLauncherErrorTranslationData(error);
 
-  return t(`errors.${key}`, args) ?? key;
+  return t(`errors.${key}`, withFormattedArgs(key, args)) ?? key;
+};
+
+/** Values the core sends as raw numbers, turned into text in the language of the interface. */
+const withFormattedArgs = (
+  key: string,
+  args: unknown,
+): Parameters<TFunction>[1] => {
+  if (
+    key === 'instance.PRELAUNCH_COMMAND_TIMEOUT' &&
+    args !== null &&
+    typeof args === 'object' &&
+    'seconds' in args
+  ) {
+    return {
+      duration: formatDuration(Number(args.seconds), dayjs.locale()),
+    };
+  }
+
+  return args as Parameters<TFunction>[1];
 };

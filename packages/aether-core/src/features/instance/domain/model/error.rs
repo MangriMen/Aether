@@ -49,6 +49,15 @@ pub enum InstanceError {
     #[error("Prelaunch command error with code: {code}")]
     PrelaunchCommandError { code: i32 },
 
+    #[error("The pre-launch command is invalid: {reason}")]
+    PrelaunchCommandInvalid { reason: String },
+
+    #[error("The pre-launch command could not be started: {reason}")]
+    PrelaunchCommandSpawnFailed { reason: String },
+
+    #[error("The pre-launch command did not finish in {seconds} seconds")]
+    PrelaunchCommandTimeout { seconds: u64 },
+
     #[error("Instance validation error: \"{field:?}\" is invalid because \"{reason:?}\"")]
     ValidationError {
         field: InstanceField,
