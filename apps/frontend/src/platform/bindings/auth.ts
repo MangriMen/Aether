@@ -94,7 +94,7 @@ export type InstanceErrorDto = { code: "STORAGE"; payload: {
 } } | { code: "PRELAUNCH_COMMAND_SPAWN_FAILED"; payload: {
 	reason: string,
 } } | { code: "PRELAUNCH_COMMAND_TIMEOUT"; payload: {
-	seconds: string,
+	minutes: string,
 } } | { code: "VALIDATION_ERROR"; payload: {
 	field: InstanceFieldDto,
 	reason: InstanceValidationErrorReasonDto,

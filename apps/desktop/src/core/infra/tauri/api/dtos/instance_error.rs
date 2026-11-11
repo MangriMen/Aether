@@ -38,8 +38,8 @@ pub enum InstanceErrorDto {
         reason: String,
     },
     PrelaunchCommandTimeout {
-        // Formatted before it crosses the boundary: no `u64` in bindings.
-        seconds: String,
+        // Whole minutes, rounded up, formatted before it crosses the boundary: no `u64` in bindings.
+        minutes: String,
     },
     ValidationError {
         field: InstanceFieldDto,
@@ -196,7 +196,7 @@ impl From<&InstanceError> for InstanceErrorDto {
                 }
             }
             InstanceError::PrelaunchCommandTimeout { seconds } => Self::PrelaunchCommandTimeout {
-                seconds: seconds.to_string(),
+                minutes: seconds.div_ceil(60).to_string(),
             },
             InstanceError::ValidationError { field, reason } => Self::ValidationError {
                 field: (*field).into(),
