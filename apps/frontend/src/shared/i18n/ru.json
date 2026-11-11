@@ -66,7 +66,7 @@
       "PRELAUNCH_COMMAND_ERROR": "Команда перед запуском завершилась с кодом {{code}}",
       "PRELAUNCH_COMMAND_INVALID": "Неверная команда перед запуском: {{reason}}",
       "PRELAUNCH_COMMAND_SPAWN_FAILED": "Не удалось запустить команду перед запуском: {{reason}}",
-      "PRELAUNCH_COMMAND_TIMEOUT": "Команда перед запуском не завершилась за {{minutes}} мин и была остановлена",
+      "PRELAUNCH_COMMAND_TIMEOUT": "Команда перед запуском не завершилась за {{duration}} и была остановлена",
       "VALIDATION_ERROR": "Ошибка проверки файлов инстанса",
       "NOT_BROKEN": "Инстанс не повреждён (или уже починен), поэтому его не тронули",
       "UNMANAGED_INSTANCE": "Действие недоступно для неуправляемого инстанса",
