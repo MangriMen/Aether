@@ -517,7 +517,6 @@ fn project_metadata(content_id: &str, icon_url: Option<&str>) -> ContentMetadata
         content_id: content_id.into(),
         slug: format!("slug-{content_id}"),
         name: "Just Enough Items".into(),
-        description: None,
         author: Some("mezz".into()),
         author_ref: None,
         icon_url: icon_url.map(Into::into),

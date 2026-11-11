@@ -164,7 +164,6 @@ mod tests {
             content_id: content_id.try_into().unwrap(),
             slug: content_id.into(),
             name: content_id.into(),
-            description: None,
             author: None,
             author_ref: None,
             icon_url: icon_url.map(|url| HttpsUrl::parse(url).unwrap()),

@@ -1,4 +1,4 @@
-//! What an instance's content list shows a file by — its project's name, description, author,
+//! What an instance's content list shows a file by — its project's name, author,
 //! icon, and its version's number — taken from [`ContentMetadataCache`] and [`ContentIconCache`],
 //! and refreshed from the providers and the icons' servers behind the list's back.
 
@@ -965,7 +965,6 @@ mod tests {
             content_id: content_id.try_into().unwrap(),
             slug: slug.into(),
             name: slug.into(),
-            description: None,
             author: None,
             author_ref: None,
             icon_url: None,

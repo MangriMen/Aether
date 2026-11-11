@@ -29,7 +29,6 @@ const makeMetadata = (
   contentId: 'id',
   slug: 'slug',
   name: 'Project',
-  description: null,
   author: null,
   iconUrl: null,
   iconPath: null,

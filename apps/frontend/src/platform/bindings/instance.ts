@@ -210,7 +210,6 @@ export type ContentMetadataDto = {
 	contentId: string,
 	slug: string,
 	name: string,
-	description: string | null,
 	author: string | null,
 	iconUrl: string | null,
 	/**
