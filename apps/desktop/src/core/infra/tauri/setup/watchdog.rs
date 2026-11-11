@@ -58,9 +58,10 @@ pub async fn run_window_is_visible_watch_dog<R: tauri::Runtime>(window: WebviewW
 }
 
 #[cfg(target_os = "windows")]
-const WEBVIEW_HINT: &str = "Make sure the Microsoft Edge WebView2 runtime is installed and that                             antivirus software is not blocking it.";
+const WEBVIEW_HINT: &str = "Make sure the Microsoft Edge WebView2 runtime is installed and that antivirus software is not blocking it.";
 #[cfg(target_os = "linux")]
-const WEBVIEW_HINT: &str = "Make sure WebKitGTK is installed and that a graphical session is                             available.";
+const WEBVIEW_HINT: &str =
+    "Make sure WebKitGTK is installed and that a graphical session is available.";
 #[cfg(not(any(target_os = "windows", target_os = "linux")))]
 const WEBVIEW_HINT: &str = "Make sure the system web view is installed and working.";
 
@@ -88,6 +89,11 @@ mod tests {
             message,
             "Aether's window did not appear within 30 seconds. Check the web view."
         );
+    }
+
+    #[test]
+    fn should_not_break_the_webview_hint_with_extra_spaces() {
+        assert!(!WEBVIEW_HINT.contains("  "));
     }
 
     #[test]
