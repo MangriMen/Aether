@@ -1,8 +1,5 @@
 use super::JavaPath;
 
-pub(crate) const CUSTOM_JAVA_VERSION: &str = "Custom";
-pub(crate) const UNKNOWN_JAVA_ARCHITECTURE: &str = "Unknown";
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Java {
     major_version: u32,

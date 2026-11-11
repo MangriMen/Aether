@@ -20,6 +20,8 @@ impl FsJavaInstallationService {
     fn get_java_window_bin_path(path: PathBuf) -> Result<PathBuf, JavaDomainError> {
         match path.file_name() {
             Some(file_name) if file_name == JAVA_WINDOW_BIN => Ok(path),
+            // The console launcher names the same runtime as the windowed one next to it.
+            Some(file_name) if file_name == JAVA_BIN => Ok(path.with_file_name(JAVA_WINDOW_BIN)),
             Some(_) => Ok(path.join(JAVA_WINDOW_BIN)),
             None => Err(JavaDomainError::InvalidPath { path }),
         }

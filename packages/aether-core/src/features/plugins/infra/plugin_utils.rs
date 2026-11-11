@@ -261,10 +261,13 @@ fn canonicalize_or_deny(id: &PluginId, path: &Path) -> Result<PathBuf, PluginErr
 }
 
 /// The directories a plugin may start a program from: the canonical `bin` directories of the
-/// Java runtimes the core knows about. The directory rather than the file, because `get_java`
-/// hands out `javaw` and a caller asking for `java` next to it wants the same runtime.
+/// Java launchers the core knows about. The directory rather than the exact file, because
+/// `get_java` hands out `javaw` and a caller asking for `java` next to it wants the same runtime;
+/// what may be started there is narrowed to the launcher names by [`is_java_launcher`].
 ///
-/// A path that no longer resolves is dropped: a stale row must not widen the allowlist.
+/// Only a registered *file* named like a launcher counts. A directory, or a binary that is not
+/// a Java launcher (`/usr/bin/bash`, `C:\Windows\System32\cmd.exe`), registers nothing, so a
+/// mistaken row cannot widen the allowlist. A path that no longer resolves is dropped too.
 pub(crate) fn java_bin_dirs<I, S>(registered_java_paths: I) -> Vec<PathBuf>
 where
     I: IntoIterator<Item = S>,
@@ -273,18 +276,27 @@ where
     let mut dirs: Vec<PathBuf> = registered_java_paths
         .into_iter()
         .filter_map(|path| crate::shared::io::infra::canonicalize(path.as_ref()).ok())
-        .map(|path| {
-            if path.is_dir() {
-                path
-            } else {
-                path.parent().map_or(path.clone(), Path::to_path_buf)
-            }
-        })
+        .filter(|path| path.is_file() && is_java_launcher(path))
+        .filter_map(|path| path.parent().map(Path::to_path_buf))
         .collect();
 
     dirs.sort();
     dirs.dedup();
     dirs
+}
+
+/// Whether the file name is one of the launchers the core hands out: `java` or `javaw`
+/// (with `.exe` on Windows, case-insensitive there).
+fn is_java_launcher(path: &Path) -> bool {
+    let Some(name) = path.file_name().and_then(|name| name.to_str()) else {
+        return false;
+    };
+
+    if cfg!(windows) {
+        name.eq_ignore_ascii_case("java.exe") || name.eq_ignore_ascii_case("javaw.exe")
+    } else {
+        matches!(name, "java" | "javaw")
+    }
 }
 
 /// How `run_command` reads a value the plugin wrote: `#<mount path>` resolves through
@@ -337,7 +349,7 @@ fn is_share_or_device(path: &Path) -> bool {
 }
 
 /// Resolve `program` to an executable a plugin is allowed to start: one in a directory of
-/// [`java_bin_dirs`], judged by its canonical directory, never by its file name.
+/// [`java_bin_dirs`] and named like a Java launcher, both judged on the canonical path.
 ///
 /// A narrowing (no shell, no arbitrary native binary), not a containment boundary: the plugin
 /// chooses the arguments, so `<allowed java> -jar #/cache/…` runs whatever it put there.
@@ -355,9 +367,10 @@ fn resolve_allowed_program(
     let canonical_program = canonicalize_or_deny(id, &resolved)?;
 
     // Fails closed: with no Java registered there is no allowed program at all.
-    let is_allowed = canonical_program
-        .parent()
-        .is_some_and(|parent| allowed_program_dirs.iter().any(|dir| dir == parent));
+    let is_allowed = is_java_launcher(&canonical_program)
+        && canonical_program
+            .parent()
+            .is_some_and(|parent| allowed_program_dirs.iter().any(|dir| dir == parent));
 
     if !is_allowed {
         return Err(access_violation(id, &canonical_program));
@@ -901,15 +914,60 @@ mod tests {
     }
 
     #[test]
-    fn should_normalise_to_the_same_entry_when_a_bin_directory_and_a_binary_are_registered() {
+    fn should_not_widen_the_allowlist_when_a_directory_is_registered_as_java() {
         let layout = layout();
         let bin_dir = layout.java_bin.parent().expect("bin dir");
 
         assert_eq!(
-            java_bin_dirs([layout.java_bin.as_path()]),
             java_bin_dirs([bin_dir]),
-            "`java_versions` stores either form; both mean the same runtime"
+            Vec::<PathBuf>::new(),
+            "a directory is not a Java; accepting it would allow everything inside"
         );
+
+        let neighbour = bin_dir.join(if cfg!(windows) { "tool.exe" } else { "tool" });
+        std::fs::write(&neighbour, b"").expect("neighbour binary");
+        let command = packwiz_command(&neighbour.to_string_lossy());
+        assert!(matches!(
+            plugin_command_to_host(
+                &plugin_id(),
+                &command,
+                &layout.location_info,
+                &java_bin_dirs([bin_dir])
+            ),
+            Err(PluginError::AccessViolation { .. })
+        ));
+    }
+
+    #[test]
+    fn should_not_register_a_binary_that_is_not_a_java_launcher() {
+        let layout = layout();
+        let other = layout
+            .java_bin
+            .with_file_name(if cfg!(windows) { "cmd.exe" } else { "bash" });
+        std::fs::write(&other, b"").expect("other binary");
+
+        assert_eq!(java_bin_dirs([other.as_path()]), Vec::<PathBuf>::new());
+    }
+
+    #[test]
+    fn should_reject_a_neighbouring_binary_when_it_sits_next_to_a_registered_java() {
+        let layout = layout();
+        let neighbour =
+            layout
+                .java_bin
+                .with_file_name(if cfg!(windows) { "curl.exe" } else { "curl" });
+        std::fs::write(&neighbour, b"").expect("neighbour binary");
+
+        let command = packwiz_command(&neighbour.to_string_lossy());
+        assert!(matches!(
+            plugin_command_to_host(
+                &plugin_id(),
+                &command,
+                &layout.location_info,
+                &layout.allowed()
+            ),
+            Err(PluginError::AccessViolation { .. })
+        ));
     }
 
     #[test]
