@@ -569,7 +569,7 @@ mod tests {
     }
 
     /// As [`serve`], but the length is not announced: the body is sent in chunks, one per piece,
-    /// and the end of the last chunk is the end of the response.
+    /// and a last empty chunk ends the response.
     async fn serve_chunked(pieces: &[&[u8]]) -> SocketAddr {
         let head = "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\nConnection: close\r\n\r\n";
         let mut payload = Vec::new();
@@ -877,7 +877,10 @@ mod tests {
 
     #[tokio::test]
     async fn should_refuse_the_body_when_the_announced_length_is_over_the_limit() {
-        let addr = serve("200 OK", &[1_u8; 2_000]).await;
+        // The head announces more than the limit and almost no body follows, so only the check
+        // of the announced length can refuse it.
+        let head = "HTTP/1.1 200 OK\r\nContent-Length: 2000\r\nConnection: close\r\n\r\n";
+        let addr = serve_raw(head.to_owned(), vec![1_u8; 10]).await;
         let dir = tempfile::tempdir().unwrap();
         let destination = dir.path().join("file");
 
