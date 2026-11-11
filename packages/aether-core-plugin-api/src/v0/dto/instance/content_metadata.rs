@@ -47,8 +47,6 @@ pub struct ContentMetadataDto {
     /// asked id.
     pub slug: String,
     pub name: String,
-    #[serde(default)]
-    pub description: Option<String>,
     /// Absent when the provider cannot tell it without extra requests: the rest is shown alone.
     #[serde(default)]
     pub author: Option<String>,

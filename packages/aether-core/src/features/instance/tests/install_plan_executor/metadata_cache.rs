@@ -19,7 +19,6 @@ fn described(platform: &str, content_id: &str, version: &str) -> InstallFileEntr
             content_id: content_id.try_into().unwrap(),
             slug: "sodium".into(),
             name: "Sodium".into(),
-            description: None,
             author: None,
             author_ref: None,
             icon_url: None,

@@ -237,7 +237,6 @@ impl From<&ProjectResponse> for ProjectMetadataResponse {
             id: value.id.clone(),
             slug: value.slug.clone(),
             title: value.title.clone(),
-            description: Some(value.description.clone()),
             icon_url: value.icon_url.clone(),
             team: Some(value.team.clone()),
             organization: value
@@ -260,7 +259,6 @@ impl TryFrom<ProjectMetadataResponse> for ContentMetadata {
             content_id: ContentId::try_from(value.id)?,
             slug: value.slug,
             name: value.title,
-            description: value.description.filter(|text| !text.is_empty()),
             author: None,
             icon_url: display_url("icon of a Modrinth project", value.icon_url),
         })

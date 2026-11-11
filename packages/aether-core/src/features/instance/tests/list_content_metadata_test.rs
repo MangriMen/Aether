@@ -59,7 +59,6 @@ fn metadata(content_id: &str, name: &str) -> ContentMetadata {
         content_id: content_id.try_into().unwrap(),
         slug: name.to_lowercase(),
         name: name.into(),
-        description: None,
         author: None,
         author_ref: None,
         icon_url: None,

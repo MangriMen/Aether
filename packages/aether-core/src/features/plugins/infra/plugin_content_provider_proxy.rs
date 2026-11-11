@@ -646,7 +646,6 @@ fn content_metadata_from_dto(dto: ContentMetadataDto) -> Option<ContentMetadata>
         content_id: dto.content_id.try_into().ok()?,
         slug: dto.slug,
         name: dto.name,
-        description: dto.description,
         author: dto.author,
         author_ref: dto.author_ref.filter(|author_ref| {
             !author_ref.trim().is_empty() && author_ref.len() <= MAX_AUTHOR_REF_LEN

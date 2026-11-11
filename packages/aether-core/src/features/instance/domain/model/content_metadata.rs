@@ -11,7 +11,6 @@ pub struct ContentMetadata {
     pub content_id: ContentId,
     pub slug: String,
     pub name: String,
-    pub description: Option<String>,
     pub author: Option<String>,
     /// What the provider can name [`Self::author`] by later, when it leaves the author out: its
     /// own token for whoever authors the project (a team, an organization), asked of

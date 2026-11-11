@@ -112,7 +112,6 @@ struct ContentMetadataRecord {
     content_id: String,
     slug: String,
     name: String,
-    description: Option<String>,
     author: Option<String>,
     /// Absent from the rows cached before authors were looked up apart.
     #[serde(default)]
@@ -126,7 +125,6 @@ impl From<&ContentMetadata> for ContentMetadataRecord {
             content_id: value.content_id.to_string(),
             slug: value.slug.clone(),
             name: value.name.clone(),
-            description: value.description.clone(),
             author: value.author.clone(),
             author_ref: value.author_ref.clone(),
             icon_url: value.icon_url.as_ref().map(ToString::to_string),
@@ -142,7 +140,6 @@ impl TryFrom<ContentMetadataRecord> for ContentMetadata {
             content_id: value.content_id.try_into()?,
             slug: value.slug,
             name: value.name,
-            description: value.description,
             author: value.author,
             author_ref: value.author_ref,
             // Only shown: a bad icon costs the icon, not the record. Read on every list, so not
@@ -375,7 +372,6 @@ mod tests {
             content_id: content_id.try_into().unwrap(),
             slug: name.to_lowercase(),
             name: name.into(),
-            description: Some("desc".into()),
             author: None,
             author_ref: Some(format!("team:{content_id}")),
             icon_url: Some(
@@ -634,6 +630,30 @@ mod tests {
         assert_eq!(item.name, "Sodium");
         assert_eq!(item.author.as_deref(), Some("jellysquid3"));
         assert_eq!(item.author_ref, None);
+    }
+
+    #[tokio::test]
+    async fn should_still_load_a_project_when_it_was_cached_with_a_description() {
+        let cache = create_cache().await;
+        let modrinth = provider("modrinth");
+        let old_row = serde_json::json!({
+            "content_id": "AANobbMI", "slug": "sodium", "name": "Sodium",
+            "description": "Fast renderer", "author": "jellysquid3", "icon_url": null
+        });
+        cache
+            .put_records(
+                NAMESPACE,
+                &modrinth,
+                vec![(&ContentId::try_from("AANobbMI").unwrap(), old_row)],
+                SystemTime::now(),
+            )
+            .await;
+
+        let found = cache.get_many(&modrinth, &ids(&["AANobbMI"])).await;
+
+        let item = &found[&ContentId::try_from("AANobbMI").unwrap()].metadata;
+        assert_eq!(item.name, "Sodium");
+        assert_eq!(item.author.as_deref(), Some("jellysquid3"));
     }
 
     #[rstest::rstest]

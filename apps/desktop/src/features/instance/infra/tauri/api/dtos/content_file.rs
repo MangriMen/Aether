@@ -50,7 +50,6 @@ pub struct ContentMetadataDto {
     pub content_id: String,
     pub slug: String,
     pub name: String,
-    pub description: Option<String>,
     pub author: Option<String>,
     pub icon_url: Option<String>,
     /// The icon as cached on disk, as a URL of the app's asset protocol, as the instance's
@@ -166,7 +165,6 @@ impl From<ContentMetadata> for ContentMetadataDto {
             content_id: value.content_id.into(),
             slug: value.slug,
             name: value.name,
-            description: value.description,
             author: value.author,
             icon_url: value.icon_url.map(String::from),
             icon_path: None,
@@ -215,7 +213,6 @@ mod tests {
             content_id: ContentId::try_from("AANobbMI").unwrap(),
             slug: "sodium".into(),
             name: "Sodium".into(),
-            description: None,
             author: None,
             author_ref: None,
             icon_url: Some(
