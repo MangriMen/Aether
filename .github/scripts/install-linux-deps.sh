@@ -18,18 +18,18 @@ azure='azure\.archive\.ubuntu\.com'
 # `timeout` runs apt directly (not through sudo): a signal sent to sudo does not stop apt, and the limit did not hold
 apt_get() { sudo timeout -k 10 180 apt-get "${apt_opts[@]}" "$@"; }
 
-# same scheme and host as apt uses; a missing curl counts as "does not answer"
+# scheme and host as in the runner mirror list (azure over http, archive over https); a missing curl counts as "does not answer"
 probe() { curl -fsS -o /dev/null --max-time 5 "$1" 2>/dev/null; }
 
-# keep the file as it is when azure is not in it or is its only entry
+# keep the file as it is when azure is not in it or is its only real entry (blank and comment lines do not count)
 drop_azure() {
-  if [ -f "$mirrors" ] && grep -q "$azure" "$mirrors" && grep -qv "$azure" "$mirrors"; then
+  if [ -f "$mirrors" ] && grep -q "$azure" "$mirrors" && grep -Eqv "$azure|^[[:space:]]*(#|$)" "$mirrors"; then
     echo "dropping azure.archive.ubuntu.com from $mirrors"
     sudo sed -i "/$azure/d" "$mirrors"
   fi
 }
 
-codename=$(. /etc/os-release && echo "$VERSION_CODENAME")
+codename=$(. /etc/os-release && echo "${VERSION_CODENAME:-jammy}") || codename=jammy
 if ! probe "http://azure.archive.ubuntu.com/ubuntu/dists/$codename/InRelease"; then
   if probe "https://archive.ubuntu.com/ubuntu/dists/$codename/InRelease"; then
     echo "azure.archive.ubuntu.com does not answer, archive.ubuntu.com does"
