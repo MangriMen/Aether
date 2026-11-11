@@ -3,6 +3,7 @@ import type { ColorMode } from '@kobalte/core';
 import { createContext, useContext } from 'solid-js';
 
 import type { Theme, ThemeConfig } from './theme';
+import type { UiFont } from './uiFont';
 
 export type ThemeContextValue = {
   theme: Theme;
@@ -14,6 +15,8 @@ export type ThemeContextValue = {
   transparency: number;
   disableAnimations: boolean;
   prefersReducedMotion: boolean;
+  uiFont: UiFont;
+  customFontFamily: string;
 };
 
 export type ThemeContextActions = {
@@ -23,6 +26,8 @@ export type ThemeContextActions = {
   setTransparencyEnabled: (isEnabled: boolean) => void;
   setTransparency: (transparency: number) => void;
   setDisableAnimations: (disableAnimations: boolean) => void;
+  setUiFont: (uiFont: UiFont) => void;
+  setCustomFontFamily: (customFontFamily: string) => void;
 };
 
 export type ThemeContextType = [ThemeContextValue, ThemeContextActions];

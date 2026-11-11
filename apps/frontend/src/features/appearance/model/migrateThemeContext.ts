@@ -1,6 +1,7 @@
 import type { ThemeContextValue } from './themeContext';
 
 import { DEFAULT_THEME_CONTEXT_VALUE } from './themeConstants';
+import { isUiFont } from './uiFont';
 
 export const migrateThemeContext = (value: unknown): ThemeContextValue => {
   const defaults = DEFAULT_THEME_CONTEXT_VALUE;
@@ -30,5 +31,7 @@ export const migrateThemeContext = (value: unknown): ThemeContextValue => {
     transparency: pick('transparency'),
     disableAnimations: pick('disableAnimations'),
     prefersReducedMotion: pick('prefersReducedMotion'),
+    uiFont: isUiFont(stored.uiFont) ? stored.uiFont : defaults.uiFont,
+    customFontFamily: pick('customFontFamily'),
   };
 };
