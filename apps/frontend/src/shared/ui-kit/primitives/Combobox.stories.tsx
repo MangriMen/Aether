@@ -46,3 +46,8 @@ export const Default: Story = {
     </Combobox>
   ),
 };
+
+export const Disabled: Story = {
+  args: { disabled: true },
+  render: Default.render,
+};

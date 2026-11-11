@@ -43,8 +43,8 @@ const ComboboxControl = <Option, T extends ValidComponent = 'div'>(
           focus-within:ring-ring
           data-disabled:cursor-not-allowed data-disabled:opacity-50
           data-invalid:border-destructive
+          not-data-disabled:hover:bg-card/hover
           flex w-full items-center border focus-within:ring-2
-          enabled:hover:bg-card/hover
         `,
         local.class,
       )}
@@ -127,6 +127,9 @@ const ComboboxContent = <T extends ValidComponent = 'div'>(
       <ComboboxPrimitive.Content
         // As in `SelectContent`: the focus traps of an enclosing dialog ignore the list.
         data-kb-top-layer=''
+        // A press on the list must not take the focus off the input: leaving the field is what
+        // applies a typed name, and choosing an option must not do that first.
+        onMouseDown={(e: MouseEvent) => e.preventDefault()}
         class={cn(
           `
             min-w-32 animate-content-hide rounded-md bg-popover/hard

@@ -87,6 +87,9 @@ export const UiFontEntry: Component<UiFontEntryProps> = (props) => {
 
   const [isOpen, setIsOpen] = createSignal(false);
 
+  // Whether the highlighted option was picked with the arrow keys since the last typing.
+  let isArrowPicking = false;
+
   const handleChange = (option: FontOption | null) => {
     if (!option) {
       return;
@@ -98,6 +101,7 @@ export const UiFontEntry: Component<UiFontEntryProps> = (props) => {
 
     setUiFont(option.value);
     setDraft('');
+    isArrowPicking = false;
   };
 
   // A name typed in is applied by Enter (when no listed option is picked instead) and by
@@ -141,35 +145,44 @@ export const UiFontEntry: Component<UiFontEntryProps> = (props) => {
             onKeyDown={(
               e: KeyboardEvent & { currentTarget: HTMLInputElement },
             ) => {
+              const input = e.currentTarget;
+
+              if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                isArrowPicking = true;
+              }
+
               if (e.key === 'Escape') {
                 setDraft('');
               }
 
-              if (e.key !== 'Enter') {
-                return;
-              }
+              // The option picked with the arrow keys, else the typed name: not the option the
+              // list focused by itself (the applied one, on opening). The combobox picks that one
+              // first, so this goes after it.
+              if (e.key === 'Enter') {
+                const activeId = input.getAttribute('aria-activedescendant');
+                const activeLabel = activeId
+                  ? document.getElementById(activeId)?.textContent?.trim()
+                  : undefined;
+                const target =
+                  isArrowPicking && activeLabel
+                    ? options().find((option) => option.label === activeLabel)
+                    : draftOption();
 
-              // An option picked with the arrow keys is the combobox's to choose; the one
-              // that is the typed name itself (or none) is chosen here.
-              const activeId = e.currentTarget.getAttribute(
-                'aria-activedescendant',
-              );
-              const active = activeId
-                ? document.getElementById(activeId)
-                : null;
+                queueMicrotask(() => {
+                  if (target) {
+                    handleChange(target);
+                  }
 
-              if (
-                !active ||
-                active.textContent?.trim() === draftOption()?.label
-              ) {
-                commitDraft();
+                  setIsOpen(false);
+                });
               }
             }}
             // Not the combobox's own onInputChange: it also reports the label it puts back
             // into the field when the focus leaves, which is not what was typed.
-            onInput={(e: InputEvent & { currentTarget: HTMLInputElement }) =>
-              setDraft(e.currentTarget.value)
-            }
+            onInput={(e: InputEvent & { currentTarget: HTMLInputElement }) => {
+              isArrowPicking = false;
+              setDraft(e.currentTarget.value);
+            }}
             onBlur={commitDraft}
             placeholder={t('settings.uiFontCustomPlaceholder')}
           />
