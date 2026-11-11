@@ -2,8 +2,10 @@ import {
   splitProps,
   type Component,
   For,
+  createComputed,
   createEffect,
   createMemo,
+  on,
   createSignal,
 } from 'solid-js';
 import { Dynamic } from 'solid-js/web';
@@ -54,6 +56,18 @@ export const PluginDetailsBody: Component<PluginDetailsBodyProps> = (props) => {
     PluginDetailsTabs.Capabilities,
   );
   const [hasChosenTab, setHasChosenTab] = createSignal(false);
+
+  // The body is reused when another plugin is selected: its choice starts over.
+  createComputed(
+    on(
+      () => local.plugin.manifest.metadata.id,
+      () => {
+        setHasChosenTab(false);
+        setSelectedTab(PluginDetailsTabs.Capabilities);
+      },
+      { defer: true },
+    ),
+  );
 
   createEffect(() => {
     if (readme.data && !hasChosenTab()) {
