@@ -144,6 +144,7 @@ export const UiFontEntry: Component<UiFontEntryProps> = (props) => {
     >
       <Combobox<FontOption>
         class='w-52'
+        virtualized
         triggerMode='focus'
         // Opened without typing, the list shows every choice, not only the one named in the field.
         defaultFilter={(option, inputValue) =>
@@ -217,7 +218,16 @@ export const UiFontEntry: Component<UiFontEntryProps> = (props) => {
           <ComboboxTrigger />
         </ComboboxControl>
         {/* A click outside the open list is leaving the field */}
-        <ComboboxContent onInteractOutside={commitDraft} />
+        <ComboboxContent<FontOption>
+          virtualized
+          class='max-h-72'
+          onInteractOutside={commitDraft}
+          itemComponent={(itemProps) => (
+            <ComboboxItem item={itemProps.item} style={itemProps.style}>
+              {itemProps.item.rawValue.label}
+            </ComboboxItem>
+          )}
+        />
       </Combobox>
     </SettingsEntry>
   );
