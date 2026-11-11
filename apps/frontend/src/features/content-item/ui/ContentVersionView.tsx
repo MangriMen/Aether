@@ -74,9 +74,20 @@ export const ContentVersionView: Component<ContentVersionViewProps> = (
           {t('content.item.versions')}
         </A>
         <IconMdiChevronRight />
-        <span class='min-w-0 truncate text-foreground'>
-          {version.data?.versionNumber ?? local.versionId}
-        </span>
+        <Show
+          when={version.data}
+          fallback={
+            <Show when={!version.isError}>
+              <Skeleton width={96} height={16} />
+            </Show>
+          }
+        >
+          {(data) => (
+            <span class='min-w-0 truncate text-foreground'>
+              {data().versionNumber}
+            </span>
+          )}
+        </Show>
       </nav>
 
       <Switch>
