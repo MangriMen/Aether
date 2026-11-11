@@ -35,7 +35,7 @@ pub struct VersionDto {
     pub sha1: String,
     /// Whether the version supports the latest player safety features
     pub compliance_level: u32,
-    // TODO: bring back skip when implemented in specta
+    // TODO: bring back skip once specta can export it: rc.25 refuses it outside `PhasesFormat`.
     // #[serde(skip_serializing_if = "Option::is_none")]
     #[specta(optional)]
     /// (Modrinth Provided) The SHA1 hash of the original unmodified Minecraft versions JSON
