@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::v0::{ContentCompatibilityCheckParamsDto, InstanceDto};
+use crate::v0::{ContentCompatibilityCheckParamsDto, InstanceSummaryDto};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -11,6 +11,6 @@ pub struct PluginImportInstanceDto {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PluginCheckCompatibilityParamsDto {
-    pub instances: Vec<InstanceDto>,
+    pub instances: Vec<InstanceSummaryDto>,
     pub check_params: ContentCompatibilityCheckParamsDto,
 }
