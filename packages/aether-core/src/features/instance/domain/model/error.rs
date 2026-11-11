@@ -10,11 +10,18 @@ use crate::features::{
     process::ProcessError,
     settings::SettingsError,
 };
+use crate::shared::cache::AssetError;
 
 #[derive(Debug, thiserror::Error)]
 pub enum InstanceError {
     #[error("Storage error: {0}")]
     Storage(String),
+
+    #[error("The icon is larger than {limit_bytes} bytes")]
+    IconTooLarge { limit_bytes: u64 },
+
+    #[error("The icon is not a supported image: PNG, JPEG, GIF, WebP or SVG")]
+    IconNotSupported,
 
     #[error("Instance with id \"{instance_id}\" not found")]
     NotFound { instance_id: String },
@@ -315,3 +322,34 @@ pub enum InstanceValidationErrorReason {
 //         write!(f, "{}", self.as_str())
 //     }
 // }
+
+impl From<AssetError> for InstanceError {
+    fn from(value: AssetError) -> Self {
+        match value {
+            AssetError::TooLarge { limit } => Self::IconTooLarge { limit_bytes: limit },
+            AssetError::NotAnImage => Self::IconNotSupported,
+            other => Self::Storage(other.to_string()),
+        }
+    }
+}
+
+#[cfg(test)]
+mod icon_error_tests {
+    use super::*;
+
+    #[test]
+    fn should_tell_an_icon_the_launcher_refuses_from_a_failure_of_the_store() {
+        assert!(matches!(
+            InstanceError::from(AssetError::TooLarge { limit: 7 }),
+            InstanceError::IconTooLarge { limit_bytes: 7 }
+        ));
+        assert!(matches!(
+            InstanceError::from(AssetError::NotAnImage),
+            InstanceError::IconNotSupported
+        ));
+        assert!(matches!(
+            InstanceError::from(AssetError::ReadSource("x".into())),
+            InstanceError::Storage(_)
+        ));
+    }
+}

@@ -47,6 +47,11 @@ pub enum InstanceErrorDto {
         plugin_id: String,
     },
     CachesBeingCleared,
+    IconTooLarge {
+        // As for `FileTooLarge`, formatted before it crosses the boundary: no `u64` in bindings.
+        limit: String,
+    },
+    IconNotSupported,
     Cancelled,
     PackInfoNotFound,
     UpdaterNotFound {
@@ -192,6 +197,10 @@ impl From<&InstanceError> for InstanceErrorDto {
                 plugin_id: plugin_id.clone(),
             },
             InstanceError::CachesBeingCleared => Self::CachesBeingCleared,
+            InstanceError::IconTooLarge { limit_bytes } => Self::IconTooLarge {
+                limit: limit_bytes.to_string(),
+            },
+            InstanceError::IconNotSupported => Self::IconNotSupported,
             InstanceError::Cancelled => Self::Cancelled,
             InstanceError::PackInfoNotFound => Self::PackInfoNotFound,
             InstanceError::UpdaterNotFound { modpack_id } => Self::UpdaterNotFound {

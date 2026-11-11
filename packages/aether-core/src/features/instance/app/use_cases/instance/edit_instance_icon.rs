@@ -51,7 +51,7 @@ impl EditInstanceIconUseCase {
                     self.icon_reaper
                         .import_file(&guard, icon_path.as_ref())
                         .await
-                        .map_err(|err| InstanceError::Storage(err.to_string()))?,
+                        .map_err(InstanceError::from)?,
                 )),
                 Some(None) => Some(None),
                 None => None,
