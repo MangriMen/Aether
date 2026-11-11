@@ -32,4 +32,13 @@ describe('migrateThemeContext', () => {
     );
     expect(result.theme).toBe(DEFAULT_THEME_CONTEXT_VALUE.theme);
   });
+
+  it('keeps a known interface font and drops an unknown one', () => {
+    expect(
+      migrateThemeContext({ uiFont: 'inter', customFontFamily: 'Fira Sans' }),
+    ).toMatchObject({ uiFont: 'inter', customFontFamily: 'Fira Sans' });
+    expect(migrateThemeContext({ uiFont: 'comic' }).uiFont).toBe(
+      DEFAULT_THEME_CONTEXT_VALUE.uiFont,
+    );
+  });
 });

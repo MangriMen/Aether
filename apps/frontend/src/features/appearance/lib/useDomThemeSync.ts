@@ -2,11 +2,14 @@ import { createEffect, type Accessor } from 'solid-js';
 
 import type { ThemeContextValue } from '../model/themeContext';
 
+import { FONT_SANS_PROPERTY } from '../model/themeConstants';
 import {
   setAnimationDisabledToDocument,
+  setFontSansToDocument,
   setThemeToDocument,
   setTransparencyToDocument,
 } from '../model/themeDom';
+import { resolveFontSans } from '../model/uiFont';
 
 export const useThemeContextDomSync = (
   state: ThemeContextValue,
@@ -24,6 +27,13 @@ export const useThemeContextDomSync = (
     } else {
       setTransparencyToDocument(transparencyProperty(), 1);
     }
+  });
+
+  createEffect(() => {
+    setFontSansToDocument(
+      FONT_SANS_PROPERTY,
+      resolveFontSans(state.uiFont, state.customFontFamily),
+    );
   });
 
   createEffect(() => {

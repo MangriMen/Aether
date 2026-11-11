@@ -13,6 +13,7 @@ import type {
   ThemeContextType,
   ThemeContextValue,
 } from '../model/themeContext';
+import type { UiFont } from '../model/uiFont';
 
 import { migrateThemeContext } from '../model/migrateThemeContext';
 import { isSystemTheme, THEME_TO_COLOR_MODE } from '../model/theme';
@@ -41,6 +42,8 @@ export const createThemeContext = (
     setTransparency,
     setDisableAnimations,
     setPrefersReducedMotion,
+    setUiFont,
+    setCustomFontFamily,
   } = createContext(themeStateKey);
 
   useThemeContextDomSync(
@@ -139,6 +142,8 @@ export const createThemeContext = (
     setTransparencyEnabled,
     setTransparency,
     setDisableAnimations,
+    setUiFont,
+    setCustomFontFamily,
   };
 
   return [state, actions];
@@ -146,13 +151,13 @@ export const createThemeContext = (
 
 const createContext = (themeStateKey: Accessor<string>) => {
   const [state, setState] = makePersisted(
-    createStore<ThemeContextValue>(DEFAULT_THEME_CONTEXT_VALUE),
+    // A copy: loading the stored entry reconciles the store in place and would strip the keys it lacks from the defaults
+    createStore<ThemeContextValue>({ ...DEFAULT_THEME_CONTEXT_VALUE }),
     { name: themeStateKey() },
   );
 
-  onMount(() => {
-    setState(migrateThemeContext(state));
-  });
+  // Before anything reads the state: an entry stored by an older version lacks the new keys.
+  setState(migrateThemeContext(state));
 
   const setRawTheme = (theme: ThemeConfig) => {
     setState('rawTheme', theme);
@@ -187,6 +192,14 @@ const createContext = (themeStateKey: Accessor<string>) => {
     setState('prefersReducedMotion', prefersReducedMotion);
   };
 
+  const setUiFont = (uiFont: UiFont) => {
+    setState('uiFont', uiFont);
+  };
+
+  const setCustomFontFamily = (customFontFamily: string) => {
+    setState('customFontFamily', customFontFamily);
+  };
+
   return {
     state,
     setRawTheme,
@@ -197,5 +210,7 @@ const createContext = (themeStateKey: Accessor<string>) => {
     setTransparency,
     setDisableAnimations,
     setPrefersReducedMotion,
+    setUiFont,
+    setCustomFontFamily,
   };
 };

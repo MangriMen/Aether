@@ -24,6 +24,7 @@ export * from './primitives/Badge';
 export * from './primitives/Button';
 export * from './primitives/Checkbox';
 export * from './primitives/Collapsible';
+export * from './primitives/Combobox';
 export * from './primitives/ContextMenu';
 export * from './primitives/DataTable';
 export * from './primitives/Dialog';

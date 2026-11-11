@@ -4,5 +4,6 @@ export * from './model/setFallbackAttributes';
 export * from './model/theme';
 export * from './model/themeConstants';
 export * from './model/themeContext';
+export * from './model/uiFont';
 export * from './ui/ColorModeProvider';
 export * from './ui/ThemeProvider';

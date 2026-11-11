@@ -2,15 +2,10 @@
 @plugin "@tailwindcss/typography";
 @plugin "tailwindcss-animate";
 
-@theme {
-  /* TODO: check inter font */
-  /* --font-sans:
-    'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
-    'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
-  --font-mono:
-    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
-    'Courier New', monospace; */
+/* Fetched by the webview only while the Inter font is chosen in the settings */
+@import '@fontsource-variable/inter/wght.css';
 
+@theme {
   /* Colors from ui.presets.cjs */
   --color-border: oklch(var(--border) / var(--opacity-border-base));
   --color-border-dynamic: oklch(var(--border));
