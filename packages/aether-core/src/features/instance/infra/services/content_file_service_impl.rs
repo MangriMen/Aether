@@ -75,12 +75,13 @@ impl ContentFileService for FsContentFileService {
         };
 
         for content_path in content_paths {
-            let mut file_path = resolve_content(instance_id, &instance_dir, content_path)?;
-
-            if !file_path.exists() {
-                // TODO rework disable logic to make it more transparent
-                file_path = resolve_disabled(instance_id, &instance_dir, content_path)?;
-            }
+            let enabled_path = resolve_content(instance_id, &instance_dir, content_path)?;
+            // A disabled file is removed the same as an enabled one.
+            let file_path = if enabled_path.exists() {
+                enabled_path
+            } else {
+                resolve_disabled(instance_id, &instance_dir, content_path)?
+            };
 
             match remove_file(&file_path).await {
                 Ok(()) => {}
