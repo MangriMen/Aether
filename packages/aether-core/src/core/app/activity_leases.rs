@@ -179,7 +179,9 @@ mod tests {
         let pause = gate.try_pause().unwrap();
 
         let task = tokio::spawn(async move { install(leased).await });
-        tokio::time::sleep(Duration::from_millis(30)).await;
+        tokio::time::timeout(Duration::from_secs(1), gate.wait_for_waiting_lease())
+            .await
+            .unwrap();
         assert!(started.try_recv().is_err());
 
         drop(pause);
