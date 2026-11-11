@@ -4,7 +4,7 @@ import { createMemo, Match, Show, Switch } from 'solid-js';
 import type { ContentFile } from '@/features/content';
 
 import {
-  getContentFileProjectHref,
+  getContentFileVersionHref,
   getContentFileVersionNumber,
   getContentFileVersionState,
 } from '@/features/content';
@@ -19,7 +19,7 @@ export const ContentVersionCell = (props: ContentVersionCellProps) => {
   const [{ t }] = useTranslation();
   const params = useParams();
 
-  const href = () => getContentFileProjectHref(props.file, params.id);
+  const href = () => getContentFileVersionHref(props.file, params.id);
 
   const state = createMemo(() => getContentFileVersionState(props.file));
   const versionNumber = () => getContentFileVersionNumber(props.file);

@@ -1,9 +1,5 @@
-import IconMdiCheck from '~icons/mdi/check';
-import IconMdiDownload from '~icons/mdi/download';
 import IconMdiOpenInNew from '~icons/mdi/open-in-new';
-import IconMdiSwapVertical from '~icons/mdi/swap-vertical';
 import {
-  createMemo,
   Show,
   splitProps,
   type Component,
@@ -12,9 +8,10 @@ import {
 
 import type { ContentType, ContentVersion } from '@/features/content';
 
-import { useContentContext } from '@/features/content';
 import { IconButton } from '@/shared/ui-kit';
 import { cn } from '@/shared/utils';
+
+import { useContentVersionInstall } from '../lib/useContentVersionInstall';
 
 export type ContentVersionActionsProps = ComponentProps<'div'> & {
   version: ContentVersion;
@@ -30,51 +27,11 @@ export const ContentVersionActions: Component<ContentVersionActionsProps> = (
     'class',
   ]);
 
-  const [
-    context,
-    { installContent, createInstalledVersion, createIsInstalling },
-  ] = useContentContext();
-
-  const handleInstall = () => {
-    if (!local.contentType) {
-      return;
-    }
-
-    installContent(
-      {
-        id: local.version.contentId,
-        contentType: local.contentType,
-      },
-      undefined,
-      local.version.id,
+  const { install, icon, isCurrentVersionInstalled, isInstalling } =
+    useContentVersionInstall(
+      () => local.version,
+      () => local.contentType,
     );
-  };
-
-  const installedVersionMemo = createMemo(() =>
-    createInstalledVersion(
-      () => local.version.contentId,
-      () => context.instanceId,
-    ),
-  );
-
-  const installedVersion = () => installedVersionMemo()();
-
-  const isCurrentVersionInstalled = createMemo(
-    () => installedVersion() === local.version.id,
-  );
-
-  const installIcon = createMemo(() => {
-    if (isCurrentVersionInstalled()) {
-      return IconMdiCheck;
-    }
-
-    return installedVersion() ? IconMdiSwapVertical : IconMdiDownload;
-  });
-
-  const isInstallingMemo = createMemo(() =>
-    createIsInstalling(() => local.version.contentId),
-  );
-  const isInstalling = () => isInstallingMemo()();
 
   return (
     <div class={cn('gap-1 flex', local.class)} {...others}>
@@ -84,8 +41,8 @@ export const ContentVersionActions: Component<ContentVersionActionsProps> = (
           enabled:group-hover:hover:bg-primary/solid-hover
           bg-transparent
         '
-        icon={installIcon()}
-        onClick={handleInstall}
+        icon={icon()}
+        onClick={install}
         loading={isInstalling()}
         disabled={isCurrentVersionInstalled()}
       />

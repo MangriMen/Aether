@@ -31,7 +31,10 @@ export const AppRouter: Component = () => {
         <Route
           path={ROUTE_PATTERNS.CONTENT_ITEM_REL}
           component={ContentItemPage}
-        />
+        >
+          <Route path='/' />
+          <Route path={ROUTE_PATTERNS.CONTENT_ITEM_VERSIONS_REL} />
+        </Route>
       </Route>
 
       <Route path={ROUTE_PATTERNS.INSTANCE} component={InstancePage}>

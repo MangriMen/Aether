@@ -1,11 +1,12 @@
 use aether_core_plugin_api::v0::{
     ContentVersionDependencyDto, ContentVersionDependencyTypeDto, ContentVersionDto,
-    ContentVersionStatusDto, ContentVersionTypeDto, ModLoaderDto, RequestedContentVersionStatusDto,
+    ContentVersionFileDto, ContentVersionStatusDto, ContentVersionTypeDto, ModLoaderDto,
+    RequestedContentVersionStatusDto,
 };
 
 use crate::features::instance::{
-    ContentVersion, ContentVersionDependency, ContentVersionDependencyType, ContentVersionStatus,
-    ContentVersionType, InvalidContentId, RequestedContentVersionStatus,
+    ContentVersion, ContentVersionDependency, ContentVersionDependencyType, ContentVersionFile,
+    ContentVersionStatus, ContentVersionType, InvalidContentId, RequestedContentVersionStatus,
 };
 use crate::features::minecraft::{GameVersion, ModLoader};
 
@@ -29,7 +30,28 @@ impl From<ContentVersion> for ContentVersionDto {
             requested_status: value.requested_status.map(Into::into),
             date_published: value.date_published,
             downloads: value.downloads,
+            files: value.files.into_iter().map(Into::into).collect(),
             web_url: value.web_url.map(String::from).unwrap_or_default(),
+        }
+    }
+}
+
+impl From<ContentVersionFile> for ContentVersionFileDto {
+    fn from(value: ContentVersionFile) -> Self {
+        Self {
+            file_name: value.file_name,
+            size: value.size,
+            primary: value.primary,
+        }
+    }
+}
+
+impl From<ContentVersionFileDto> for ContentVersionFile {
+    fn from(value: ContentVersionFileDto) -> Self {
+        Self {
+            file_name: value.file_name,
+            size: value.size,
+            primary: value.primary,
         }
     }
 }
@@ -114,6 +136,7 @@ impl TryFrom<ContentVersionDto> for ContentVersion {
             requested_status: value.requested_status.map(Into::into),
             date_published: value.date_published,
             downloads: value.downloads,
+            files: value.files.into_iter().map(Into::into).collect(),
             web_url: display_url("page of a plugin's content version", Some(value.web_url)),
         })
     }
@@ -199,6 +222,7 @@ mod tests {
             requested_status: None,
             date_published: "2024-01-01T00:00:00Z".into(),
             downloads: 0,
+            files: Vec::new(),
             web_url: String::new(),
         };
 
@@ -224,6 +248,7 @@ mod tests {
             requested_status: None,
             date_published: "2024-01-01T00:00:00Z".into(),
             downloads,
+            files: Vec::new(),
             web_url: String::new(),
         }
     }

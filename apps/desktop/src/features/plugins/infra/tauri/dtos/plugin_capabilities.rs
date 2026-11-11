@@ -89,6 +89,9 @@ pub struct ProviderHandlersDto {
 
     /// Optional function naming the authors of projects apart from their metadata.
     pub get_authors: Option<String>,
+
+    /// Optional function giving one version whole, for the page of the version.
+    pub get_version: Option<String>,
 }
 
 impl From<PluginCapabilities> for PluginCapabilitiesDto {
@@ -141,6 +144,7 @@ impl From<ProviderHandlers> for ProviderHandlersDto {
             get_contents_metadata: m.get_contents_metadata,
             get_versions_metadata: m.get_versions_metadata,
             get_authors: m.get_authors,
+            get_version: m.get_version,
         }
     }
 }

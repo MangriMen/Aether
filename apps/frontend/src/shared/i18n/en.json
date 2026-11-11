@@ -721,7 +721,27 @@
     "platforms": "Platforms",
     "published": "Published",
     "downloads": "Downloads",
-    "name": "Name"
+    "name": "Name",
+    "changelog": "Changelog",
+    "noChangelog": "This version has no changelog",
+    "details": "Details",
+    "channels": {
+      "release": "Release",
+      "beta": "Beta",
+      "alpha": "Alpha"
+    },
+    "files": "Files",
+    "primaryFile": "Primary",
+    "dependencies": "Dependencies",
+    "dependencyTypes": {
+      "required": "Required",
+      "optional": "Optional",
+      "incompatible": "Incompatible",
+      "embedded": "Embedded"
+    },
+    "switchToVersion": "Switch to this version",
+    "unsupported": "This provider does not offer a page for a version",
+    "loadFailed": "Failed to load the version"
   },
   "navigation": {
     "goBack": "Go back",

@@ -721,7 +721,27 @@
     "gameVersion": "Версия игры",
     "platforms": "Платформы",
     "published": "Опубликовано",
-    "name": "Имя"
+    "name": "Имя",
+    "changelog": "Список изменений",
+    "noChangelog": "У этой версии нет списка изменений",
+    "details": "Сведения",
+    "channels": {
+      "release": "Релиз",
+      "beta": "Бета",
+      "alpha": "Альфа"
+    },
+    "files": "Файлы",
+    "primaryFile": "Основной",
+    "dependencies": "Зависимости",
+    "dependencyTypes": {
+      "required": "Обязательная",
+      "optional": "Необязательная",
+      "incompatible": "Несовместима",
+      "embedded": "Встроена"
+    },
+    "switchToVersion": "Перейти на эту версию",
+    "unsupported": "Этот источник не показывает страницу версии",
+    "loadFailed": "Не удалось загрузить версию"
   },
   "navigation": {
     "goBack": "Назад",

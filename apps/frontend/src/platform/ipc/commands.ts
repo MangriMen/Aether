@@ -110,6 +110,7 @@ export const instanceCommands = {
   checkCompatibility: instanceRawCommands.checkCompatibility,
   getContent: instanceRawCommands.getContent,
   listContentVersion: instanceRawCommands.listContentVersion,
+  getContentVersion: instanceRawCommands.getContentVersion,
   editIcon: withIdempotency(instanceRawCommands.editIcon),
 };
 

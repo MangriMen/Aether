@@ -1,5 +1,10 @@
+import { A } from '@solidjs/router';
 import { createMemo } from 'solid-js';
 
+import {
+  createContentVersionHref,
+  useContentContext,
+} from '@/features/content';
 import { dayjs, formatRelativeTime, formatTime } from '@/shared/format';
 import { useTranslation } from '@/shared/i18n';
 import { CombinedTooltip } from '@/shared/ui-kit';
@@ -32,9 +37,22 @@ export const createContentVersionsColumns = () =>
           () => props.row.original.versionNumber,
         );
 
+        const [context] = useContentContext();
+        const href = () =>
+          createContentVersionHref(
+            props.row.original.contentId,
+            props.row.original.id,
+            {
+              instanceId: context.instanceId,
+              providerId: context.providerId,
+            },
+          );
+
         return (
           <div class='flex flex-col'>
-            <span class='text-base font-medium'>{versionNumber()}</span>
+            <A href={href()} class='text-base font-medium hover:underline'>
+              {versionNumber()}
+            </A>
             <span class='text-muted-foreground'>{props.cell.getValue()}</span>
           </div>
         );

@@ -1,8 +1,14 @@
-import { useParams } from '@solidjs/router';
+import { useMatch, useNavigate, useParams } from '@solidjs/router';
 import { For, splitProps, type Component, type ComponentProps } from 'solid-js';
 import { Dynamic } from 'solid-js/web';
 
-import { useContent, useContentContext } from '@/features/content';
+import {
+  CONTENT_ROUTES,
+  createContentPageHref,
+  createContentVersionsHref,
+  useContent,
+  useContentContext,
+} from '@/features/content';
 import { useTranslation } from '@/shared/i18n';
 import {
   Separator,
@@ -13,7 +19,10 @@ import {
 } from '@/shared/ui-kit';
 import { cn } from '@/shared/utils';
 
-import { CONTENT_ITEM_PAGE_TABS_DEFINITION } from '../model/contentItemPageTabs';
+import {
+  CONTENT_ITEM_PAGE_TABS_DEFINITION,
+  ContentItemPageTab,
+} from '../model/contentItemPageTabs';
 import { ContentItemPageInfo } from './ContentItemPageInfo';
 
 export type ContentItemPageProps = ComponentProps<'div'>;
@@ -26,6 +35,36 @@ export const ContentItemPage: Component<ContentItemPageProps> = (props) => {
   const [context] = useContentContext();
 
   const params = useParams();
+  const navigate = useNavigate();
+
+  const versionsMatch = useMatch(
+    () => `${CONTENT_ROUTES.CONTENT_ITEM_VERSIONS(params.contentId ?? '')}/*`,
+  );
+
+  // The address picks the tab, so a link can land on a version and Back works.
+  const activeTab = (): ContentItemPageTab =>
+    versionsMatch()
+      ? ContentItemPageTab.Versions
+      : ContentItemPageTab.Description;
+
+  const handleTabChange = (value: string) => {
+    if (value === activeTab()) {
+      return;
+    }
+
+    const hrefParams = {
+      instanceId: context.instanceId,
+      providerId: context.providerId,
+    };
+    const contentId = params.contentId ?? '';
+
+    navigate(
+      value === ContentItemPageTab.Versions
+        ? createContentVersionsHref(contentId, hrefParams)
+        : createContentPageHref(contentId, hrefParams),
+      { replace: true },
+    );
+  };
 
   const item = useContent(() =>
     params.contentId && context.providerId
@@ -46,7 +85,8 @@ export const ContentItemPage: Component<ContentItemPageProps> = (props) => {
 
       <Tabs
         class='p-0.5 flex flex-col overflow-hidden'
-        defaultValue={CONTENT_ITEM_PAGE_TABS_DEFINITION[0].value}
+        value={activeTab()}
+        onChange={handleTabChange}
       >
         <TabsList class='p-0 self-start'>
           <For each={CONTENT_ITEM_PAGE_TABS_DEFINITION}>

@@ -19,6 +19,12 @@ export const isCancelledError = (error: unknown): boolean =>
   (error.type === 'instance' || error.type === 'java') &&
   error.payload.code === 'CANCELLED';
 
+/** The provider does not do what was asked of it (an optional operation it lacks). */
+export const isUnsupportedOperationError = (error: unknown): boolean =>
+  isLauncherError(error) &&
+  error.type === 'instance' &&
+  error.payload.code === 'UNSUPPORTED_OPERATION';
+
 type LauncherErrorWithoutGenericErrors = Exclude<
   LauncherError,
   { type: 'generic' }

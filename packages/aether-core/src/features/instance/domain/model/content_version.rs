@@ -46,6 +46,16 @@ pub enum RequestedContentVersionStatus {
     Unlisted,
 }
 
+/// One file of a version, as the page of the version lists it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ContentVersionFile {
+    pub file_name: String,
+    /// In bytes.
+    pub size: u64,
+    /// The file the provider names as the main one of the version.
+    pub primary: bool,
+}
+
 #[derive(Debug, Clone)]
 pub struct ContentVersion {
     pub id: ContentVersionId,
@@ -63,6 +73,7 @@ pub struct ContentVersion {
     pub requested_status: Option<RequestedContentVersionStatus>,
     pub date_published: String,
     pub downloads: u64,
+    pub files: Vec<ContentVersionFile>,
     /// The version's page, to link to.
     pub web_url: Option<HttpUrl>,
 }

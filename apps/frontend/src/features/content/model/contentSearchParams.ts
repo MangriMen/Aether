@@ -85,24 +85,39 @@ export const encodeContentSearchParams = (
   };
 };
 
+type ContentHrefParams = {
+  instanceId: string | undefined;
+  providerId: { pluginId: string; capabilityId: string } | undefined;
+};
+
+const withContentQuery = (baseUrl: string, params: ContentHrefParams) => {
+  const queryString = searchParamsToQueryString(
+    encodeContentSearchParams({
+      instanceId: params.instanceId,
+      providerId: params.providerId,
+    }),
+  );
+
+  return queryString ? `${baseUrl}?${queryString}` : baseUrl;
+};
+
+export const createContentVersionsHref = (
+  contentId: string,
+  params: ContentHrefParams,
+): string =>
+  withContentQuery(CONTENT_ROUTES.CONTENT_ITEM_VERSIONS(contentId), params);
+
+export const createContentVersionHref = (
+  contentId: string,
+  versionId: string,
+  params: ContentHrefParams,
+): string =>
+  withContentQuery(
+    CONTENT_ROUTES.CONTENT_VERSION(contentId, versionId),
+    params,
+  );
+
 export const createContentPageHref = (
   contentId: string,
-  params: {
-    instanceId: string | undefined;
-    providerId: { pluginId: string; capabilityId: string } | undefined;
-  },
-): string => {
-  const encodedFilters = encodeContentSearchParams({
-    instanceId: params.instanceId,
-    providerId: params.providerId,
-  });
-  const queryString = searchParamsToQueryString(encodedFilters);
-
-  const baseUrl = CONTENT_ROUTES.CONTENT_ITEM(contentId);
-
-  if (!queryString) {
-    return baseUrl;
-  }
-
-  return `${baseUrl}?${queryString}`;
-};
+  params: ContentHrefParams,
+): string => withContentQuery(CONTENT_ROUTES.CONTENT_ITEM(contentId), params);

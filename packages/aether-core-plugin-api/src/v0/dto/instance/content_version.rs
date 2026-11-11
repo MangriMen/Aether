@@ -47,6 +47,17 @@ pub enum RequestedContentVersionStatusDto {
     Unlisted,
 }
 
+/// One file of a version.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ContentVersionFileDto {
+    pub file_name: String,
+    /// In bytes.
+    pub size: u64,
+    /// The main file of the version.
+    pub primary: bool,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ContentVersionDto {
@@ -68,4 +79,8 @@ pub struct ContentVersionDto {
     /// The version's page, an `http` or `https` URL; empty when it has none. Any other value is
     /// dropped by the host.
     pub web_url: String,
+    /// The files of the version. Last, so that a plugin built before it existed, which the
+    /// positional msgpack encoding of the wire leaves without it, decodes with an empty list.
+    #[serde(default)]
+    pub files: Vec<ContentVersionFileDto>,
 }

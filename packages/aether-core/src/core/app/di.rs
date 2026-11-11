@@ -23,8 +23,9 @@ use crate::features::{
         ContentIconCache, ContentMetadataCache, ContentMetadataService, ContentProvider,
         CreateInstanceUseCase, CreateInstanceUseCasePort, EditInstanceIconUseCase,
         EditInstanceIconUseCasePort, EditInstanceUseCase, EditInstanceUseCasePort,
-        GetContentUseCase, GetContentUseCasePort, GetInstanceUseCase, GetInstanceUseCasePort,
-        IconAssetReaper, ImportContentUseCase, ImportContentUseCasePort, ImportInstanceUseCase,
+        GetContentUseCase, GetContentUseCasePort, GetContentVersionUseCase,
+        GetContentVersionUseCasePort, GetInstanceUseCase, GetInstanceUseCasePort, IconAssetReaper,
+        ImportContentUseCase, ImportContentUseCasePort, ImportInstanceUseCase,
         ImportInstanceUseCasePort, Importer, InstallCancellations, InstallContentUseCase,
         InstallContentUseCasePort, InstallInstanceUseCase, InstallPlanExecutor,
         InstallPlanExecutorPort, InstanceFileService, InstanceInstallService,
@@ -880,6 +881,11 @@ impl ContentProviderPort for AetherContainer {
         Arc::new(CheckContentCompatibilityUseCase::new(
             self.content_provider_registry().clone(),
             self.storage().instance_storage.clone(),
+        ))
+    }
+    fn get_content_version_use_case(&self) -> Arc<dyn GetContentVersionUseCasePort> {
+        Arc::new(GetContentVersionUseCase::new(
+            self.content_provider_registry().clone(),
         ))
     }
     fn list_content_versions_use_case(&self) -> Arc<dyn ListContentVersionsUseCasePort> {

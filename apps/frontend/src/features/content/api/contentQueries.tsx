@@ -31,6 +31,7 @@ import { Button, showToast } from '@/shared/ui-kit';
 import type { ContentCompatibilityCheckParams } from '../model/compatibility';
 import type {
   ContentGetParams,
+  ContentGetVersionParams,
   ContentListVersionParams,
 } from '../model/contentItem';
 
@@ -265,6 +266,23 @@ export const useContent = (params: Accessor<ContentGetParams | undefined>) => {
         : CONTENT_QUERY_KEYS.GET_EMPTY(),
       queryFn: () => instanceCommands.getContent(params_!),
       enabled: Boolean(params_),
+    };
+  });
+};
+
+export const useContentVersion = (
+  params: Accessor<ContentGetVersionParams | undefined>,
+) => {
+  return useQuery(() => {
+    const params_ = params();
+
+    return {
+      queryKey: params_
+        ? CONTENT_QUERY_KEYS.GET_VERSION(params_)
+        : CONTENT_QUERY_KEYS.GET_VERSION_EMPTY(),
+      queryFn: () => instanceCommands.getContentVersion(params_!),
+      enabled: Boolean(params_),
+      select: contentVersionDtoToContentVersion,
     };
   });
 };

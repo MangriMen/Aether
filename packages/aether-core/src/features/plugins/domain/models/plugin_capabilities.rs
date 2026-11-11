@@ -71,6 +71,7 @@ pub struct ProviderHandlers {
     pub get_contents_metadata: Option<String>,
     pub get_versions_metadata: Option<String>,
     pub get_authors: Option<String>,
+    pub get_version: Option<String>,
 }
 
 impl Deref for PluginImporterCapability {
@@ -164,6 +165,7 @@ mod tests {
                 get_contents_metadata: None,
                 get_versions_metadata: None,
                 get_authors: None,
+                get_version: None,
             },
         }
     }
