@@ -85,15 +85,25 @@ impl JavaInstallationService for FsJavaInstallationService {
                 path: path.to_path_buf(),
             })?;
 
-        let java_window_bin_path = Self::get_java_window_bin_path(canonical_path)?;
+        let mut java_window_bin_path = Self::get_java_window_bin_path(canonical_path)?;
 
+        // A runtime without the windowed launcher (a minimal JRE) is still a runtime: keep its
+        // console launcher as the path rather than refusing it.
         if !tokio::fs::try_exists(&java_window_bin_path)
             .await
             .unwrap_or(false)
         {
-            return Err(JavaDomainError::InvalidPath {
-                path: path.to_path_buf(),
-            });
+            let console_bin_path = java_window_bin_path.with_file_name(JAVA_BIN);
+            if tokio::fs::try_exists(&console_bin_path)
+                .await
+                .unwrap_or(false)
+            {
+                java_window_bin_path = console_bin_path;
+            } else {
+                return Err(JavaDomainError::InvalidPath {
+                    path: path.to_path_buf(),
+                });
+            }
         }
 
         // Create the path for the Java binary (replacing JAVA_WINDOW_BIN with JAVA_BIN)
