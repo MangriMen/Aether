@@ -1,12 +1,12 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
 
 use async_trait::async_trait;
 
+use crate::features::events::test_support::NoOpEmitter;
 use crate::features::instance::PluginId;
+use crate::features::plugins::test_support::SlowPluginSettings;
 use crate::features::{
-    events::{Event, EventEmitter, EventError},
     plugins::{
         ApiConfig, EnablePluginUseCase, ForceEnablePluginUseCase, GrantPluginHostAccessUseCase,
         LoadConfig, LoadConfigType, ManifestError, PLUGIN_API_VERSION, PathMapping, Plugin,
@@ -19,16 +19,6 @@ use crate::features::{
 use crate::shared::update_action::UpdateAction;
 
 // ─── Inline mocks ──────────────────────────────────────────────
-
-struct NoOpEmitter;
-
-#[async_trait]
-impl EventEmitter<Event> for NoOpEmitter {
-    async fn emit(&self, _event: Event) -> Result<(), EventError> {
-        Ok(())
-    }
-    fn listen(&self, _handler: Box<dyn Fn(Event) + Send + Sync + 'static>) {}
-}
 
 #[derive(Default)]
 struct MockPluginSettingsStorage {
@@ -527,33 +517,6 @@ async fn should_refuse_force_enable_when_the_plugin_is_already_loaded() {
 
 // ─── Settings changed at the same time ─────────────────────────
 
-/// Hands out what it holds, then takes its time before returning it: two changes that were not
-/// made one after the other both read the settings before either saves.
-#[derive(Default)]
-struct SlowPluginSettingsStorage {
-    inner: MockPluginSettingsStorage,
-    /// Notified when a read has started, so a test can start its second change in the middle of it.
-    read_started: tokio::sync::Notify,
-}
-
-#[async_trait]
-impl PluginSettingsStorage for SlowPluginSettingsStorage {
-    async fn get(&self, plugin_id: &PluginId) -> Result<Option<PluginSettings>, PluginError> {
-        self.read_started.notify_one();
-        let settings = self.inner.get(plugin_id).await;
-        tokio::time::sleep(Duration::from_millis(50)).await;
-        settings
-    }
-
-    async fn upsert(
-        &self,
-        plugin_id: &PluginId,
-        settings: &PluginSettings,
-    ) -> Result<(), PluginError> {
-        self.inner.upsert(plugin_id, settings).await
-    }
-}
-
 /// The grant starts while the force-enable is loading the plugin, so that without the settings
 /// lock it reads the settings before the force-enable flag is saved and saves after it.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -562,7 +525,7 @@ async fn should_keep_a_host_granted_when_it_is_granted_during_a_force_enable() {
         vec![],
         semver::VersionReq::parse("=99999.0.0").unwrap(),
     ));
-    let settings = Arc::new(SlowPluginSettingsStorage::default());
+    let settings = Arc::new(SlowPluginSettings::<MockPluginSettingsStorage>::default());
     let force_enable = ForceEnablePluginUseCase::new(
         harness.plugin_registry.clone(),
         harness.plugin_loader_registry.clone(),

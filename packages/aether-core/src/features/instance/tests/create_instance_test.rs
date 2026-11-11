@@ -1,3 +1,4 @@
+use crate::features::events::test_support::NoOpEmitter;
 use crate::features::instance::InstanceName;
 use crate::features::minecraft::{GameVersion, LoaderVersionId};
 use std::{path::Path, sync::Arc};
@@ -6,7 +7,7 @@ use async_trait::async_trait;
 use tempfile::TempDir;
 
 use crate::features::{
-    events::{Event, EventEmitter, EventError, ProgressBarId, SharedEventEmitter},
+    events::{Event, ProgressBarId, SharedEventEmitter},
     instance::IconAssetReaper,
     instance::{
         CreateInstanceUseCase, Instance, InstanceError, InstanceFileService, InstanceId,
@@ -32,16 +33,6 @@ impl InstanceWatcherService for NoOpWatcher {
     async fn unwatch_instance(&self, _instance_id: &InstanceId) -> Result<(), InstanceError> {
         Ok(())
     }
-}
-
-struct NoOpEmitter;
-
-#[async_trait]
-impl EventEmitter<Event> for NoOpEmitter {
-    async fn emit(&self, _event: Event) -> Result<(), EventError> {
-        Ok(())
-    }
-    fn listen(&self, _handler: Box<dyn Fn(Event) + Send + Sync + 'static>) {}
 }
 
 struct NoOpInstallService;

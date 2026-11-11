@@ -13,9 +13,10 @@ use extism::{Function, Manifest, PluginBuilder, UserData, Wasm};
 use tokio::sync::Notify;
 
 use super::super::{PluginInfrastructureListener, extism::models::ExtismPluginInstance};
+use crate::features::events::test_support::NoOpEmitter;
 use crate::{
     features::{
-        events::{Event, EventEmitter, EventError, PluginEvent},
+        events::PluginEvent,
         instance::{
             CapabilityId, CapabilityMetadata, ContentProvider, Importer,
             ImporterCapabilityMetadata, PluginId, Updater,
@@ -53,16 +54,6 @@ pub(super) const PLUGIN: &str = r#"(module
         (i32.const 0))
     (func (export "import") (result i32)
         (i32.const 0)))"#;
-
-pub(super) struct NoOpEmitter;
-
-#[async_trait]
-impl EventEmitter<Event> for NoOpEmitter {
-    async fn emit(&self, _event: Event) -> Result<(), EventError> {
-        Ok(())
-    }
-    fn listen(&self, _handler: Box<dyn Fn(Event) + Send + Sync + 'static>) {}
-}
 
 pub(super) struct NoPluginSettings;
 
@@ -544,27 +535,5 @@ impl Harness {
         .unwrap();
         assert_eq!(listed[0].restart_needed, dto.restart_needed);
         dto.restart_needed
-    }
-}
-
-/// Hands out what it holds, then takes its time before returning it: two changes that were not
-/// made one after the other both read the settings before either saves.
-#[derive(Default)]
-pub(super) struct SlowPluginSettings(pub(super) MemoryPluginSettings);
-
-#[async_trait]
-impl PluginSettingsStorage for SlowPluginSettings {
-    async fn get(&self, plugin_id: &PluginId) -> Result<Option<PluginSettings>, PluginError> {
-        let settings = self.0.get(plugin_id).await;
-        tokio::time::sleep(Duration::from_millis(50)).await;
-        settings
-    }
-
-    async fn upsert(
-        &self,
-        plugin_id: &PluginId,
-        settings: &PluginSettings,
-    ) -> Result<(), PluginError> {
-        self.0.upsert(plugin_id, settings).await
     }
 }

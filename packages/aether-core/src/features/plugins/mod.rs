@@ -5,6 +5,9 @@ pub mod infra;
 #[cfg(test)]
 mod tests;
 
+#[cfg(test)]
+pub(crate) mod test_support;
+
 pub use domain::{
     AllowedHostRejection, AllowedPath, AllowedPathInput, AllowedPathRejection, ApiConfig,
     IgnoredAllowedPath, LoadConfig, LoadConfigType, PathMapping, PluginCapabilities,

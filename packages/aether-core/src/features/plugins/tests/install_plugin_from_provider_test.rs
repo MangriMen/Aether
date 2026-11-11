@@ -10,9 +10,9 @@ use async_trait::async_trait;
 use tempfile::TempDir;
 use zip::{ZipWriter, write::SimpleFileOptions};
 
+use crate::features::events::test_support::NoOpEmitter;
 use crate::features::instance::PluginId;
 use crate::features::{
-    events::{Event, EventEmitter, EventError},
     plugins::{
         InstallPluginFromProviderUseCase, PluginError, PluginProvider, PluginProviderError,
         PluginProviderFactory, PluginRegistry, PluginSettings, PluginSettingsStorage, PluginSource,
@@ -102,16 +102,6 @@ impl PluginProvider for Download {
     fn parse_identifier(&self, raw: &str) -> Result<String, PluginProviderError> {
         Ok(raw.to_owned())
     }
-}
-
-struct NoOpEmitter;
-
-#[async_trait]
-impl EventEmitter<Event> for NoOpEmitter {
-    async fn emit(&self, _event: Event) -> Result<(), EventError> {
-        Ok(())
-    }
-    fn listen(&self, _handler: Box<dyn Fn(Event) + Send + Sync + 'static>) {}
 }
 
 #[derive(Default)]

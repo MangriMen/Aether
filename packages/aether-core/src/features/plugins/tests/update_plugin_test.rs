@@ -5,7 +5,6 @@ use std::{
         Arc,
         atomic::{AtomicBool, AtomicUsize, Ordering},
     },
-    time::Duration,
 };
 
 use async_trait::async_trait;
@@ -13,9 +12,10 @@ use rstest::rstest;
 use tempfile::TempDir;
 use zip::{ZipWriter, write::SimpleFileOptions};
 
+use crate::features::events::test_support::NoOpEmitter;
 use crate::features::instance::PluginId;
+use crate::features::plugins::test_support::SlowPluginSettings;
 use crate::features::{
-    events::{Event, EventEmitter, EventError},
     plugins::{
         AllowedPath, ExtractedPlugin, GrantPluginFolderAccessUseCase, Plugin, PluginError,
         PluginProvider, PluginProviderError, PluginProviderFactory, PluginRegistry, PluginSettings,
@@ -137,16 +137,6 @@ impl PluginProvider for OneRelease {
     }
 }
 
-struct NoOpEmitter;
-
-#[async_trait]
-impl EventEmitter<Event> for NoOpEmitter {
-    async fn emit(&self, _event: Event) -> Result<(), EventError> {
-        Ok(())
-    }
-    fn listen(&self, _handler: Box<dyn Fn(Event) + Send + Sync + 'static>) {}
-}
-
 /// The plugin is not running in these tests, so nothing restarts it.
 struct NoRestart;
 
@@ -169,27 +159,6 @@ impl PluginSyncService for CountingSync {
             return Err(disk_full());
         }
         Ok(())
-    }
-}
-
-/// Hands out what it holds, then takes its time before returning it: two changes that were not
-/// made one after the other both read the settings before either saves.
-struct SlowPluginSettings(Arc<FsPluginSettingsStorage>);
-
-#[async_trait]
-impl PluginSettingsStorage for SlowPluginSettings {
-    async fn get(&self, plugin_id: &PluginId) -> Result<Option<PluginSettings>, PluginError> {
-        let settings = self.0.get(plugin_id).await;
-        tokio::time::sleep(Duration::from_millis(50)).await;
-        settings
-    }
-
-    async fn upsert(
-        &self,
-        plugin_id: &PluginId,
-        settings: &PluginSettings,
-    ) -> Result<(), PluginError> {
-        self.0.upsert(plugin_id, settings).await
     }
 }
 
@@ -648,7 +617,7 @@ async fn should_refuse_the_update_when_the_archive_has_another_plugin_id() {
 async fn should_keep_a_folder_granted_when_it_is_granted_during_an_update() {
     let fixture = Fixture::installed().await;
     let slow: Arc<dyn PluginSettingsStorage> =
-        Arc::new(SlowPluginSettings(fixture.settings.clone()));
+        Arc::new(SlowPluginSettings::new(fixture.settings.clone()));
     let pack = TempDir::new().unwrap();
     let pack_file = pack.path().join("pack.toml");
     std::fs::write(&pack_file, b"").unwrap();

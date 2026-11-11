@@ -190,6 +190,7 @@ impl EditPluginSettingsUseCasePort for EditPluginSettingsUseCase {
 mod tests {
     use tempfile::TempDir;
 
+    use crate::features::events::test_support::NoOpEmitter;
     use crate::features::plugins::{AllowedPath, IgnoredAllowedPath};
 
     use super::*;
@@ -477,24 +478,6 @@ mod tests {
         ) -> Result<(), PluginError> {
             *self.saved.lock().unwrap() = Some(settings.clone());
             Ok(())
-        }
-    }
-
-    struct NoOpEmitter;
-
-    #[async_trait]
-    impl crate::features::events::EventEmitter<crate::features::events::Event> for NoOpEmitter {
-        async fn emit(
-            &self,
-            _event: crate::features::events::Event,
-        ) -> Result<(), crate::features::events::EventError> {
-            Ok(())
-        }
-
-        fn listen(
-            &self,
-            _handler: Box<dyn Fn(crate::features::events::Event) + Send + Sync + 'static>,
-        ) {
         }
     }
 
