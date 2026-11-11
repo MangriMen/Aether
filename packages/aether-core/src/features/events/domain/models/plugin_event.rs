@@ -2,8 +2,8 @@ use crate::shared::capability::PluginId;
 
 #[derive(Debug, Clone)]
 pub enum PluginEvent {
-    Add { plugin_id: PluginId },
+    /// A plugin's settings or files changed.
     Edit { plugin_id: PluginId },
-    Remove { plugin_id: PluginId },
+    /// The set of plugins changed; the listener reads it again.
     Sync,
 }

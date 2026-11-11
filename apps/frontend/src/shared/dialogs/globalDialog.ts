@@ -25,6 +25,7 @@ let globalDialogStore:
 
 const getOrCreateDialogStore = () => {
   if (!globalDialogStore) {
+    // The store is a module singleton kept whole as a tuple, not read here.
     // eslint-disable-next-line solid/reactivity
     globalDialogStore = createStore<GlobalDialogType>(
       { dialogs: {}, activeTimeouts: {} },

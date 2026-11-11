@@ -17,6 +17,7 @@ let progressIndex: Accessor<ProgressIndex> | undefined;
 
 const getOrCreateProgressStore = () => {
   if (!progressStore) {
+    // The store is a module singleton kept whole as a tuple, not read here.
     // eslint-disable-next-line solid/reactivity
     progressStore = createStore<ProgressStore>(
       {

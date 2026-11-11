@@ -15,9 +15,7 @@ pub struct PluginEventDto {
 #[derive(Debug, Serialize, Deserialize, Clone, Type)]
 #[serde(rename_all = "camelCase", tag = "type")]
 pub enum PluginEventKindDto {
-    Add { plugin_id: String },
     Edit { plugin_id: String },
-    Remove { plugin_id: String },
     Sync,
 }
 
@@ -26,13 +24,7 @@ impl From<PluginEvent> for PluginEventDto {
         Self {
             seq: 0,
             kind: match value {
-                PluginEvent::Add { plugin_id } => PluginEventKindDto::Add {
-                    plugin_id: plugin_id.into(),
-                },
                 PluginEvent::Edit { plugin_id } => PluginEventKindDto::Edit {
-                    plugin_id: plugin_id.into(),
-                },
-                PluginEvent::Remove { plugin_id } => PluginEventKindDto::Remove {
                     plugin_id: plugin_id.into(),
                 },
                 PluginEvent::Sync => PluginEventKindDto::Sync,
@@ -52,14 +44,14 @@ mod tests {
     fn the_number_sits_beside_the_kind_of_the_event() {
         let dto = PluginEventDto {
             seq: 3,
-            ..PluginEventDto::from(PluginEvent::Add {
+            ..PluginEventDto::from(PluginEvent::Edit {
                 plugin_id: PluginId::from_static("a"),
             })
         };
 
         assert_eq!(
             serde_json::to_value(dto).unwrap(),
-            json!({ "seq": 3, "type": "add", "plugin_id": "a" })
+            json!({ "seq": 3, "type": "edit", "plugin_id": "a" })
         );
     }
 }

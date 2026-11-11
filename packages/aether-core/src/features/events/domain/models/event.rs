@@ -151,7 +151,7 @@ mod tests {
     }
 
     fn make_plugin_event() -> PluginEvent {
-        PluginEvent::Add {
+        PluginEvent::Edit {
             plugin_id: crate::shared::capability::PluginId::from_static("test-plugin"),
         }
     }
@@ -208,7 +208,7 @@ mod tests {
         let original = make_plugin_event();
         let event: Event = original.clone().into();
         let recovered: PluginEvent = event.try_into().unwrap();
-        assert!(matches!(recovered, PluginEvent::Add { .. }));
+        assert!(matches!(recovered, PluginEvent::Edit { .. }));
     }
 
     #[test]

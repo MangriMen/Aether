@@ -476,7 +476,7 @@ export type PluginEventDto = {
 	seq: number,
 } & PluginEventKindDto;
 
-export type PluginEventKindDto = { type: "add"; plugin_id: string } | { type: "edit"; plugin_id: string } | { type: "remove"; plugin_id: string } | { type: "sync" };
+export type PluginEventKindDto = { type: "edit"; plugin_id: string } | { type: "sync" };
 
 export type PluginImporterCapabilityDto = {
 	/**  Plugin function name to handle this capability call. */
