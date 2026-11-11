@@ -71,6 +71,7 @@ export const settingsCommands = {
   get: settingsRawCommands.get,
   edit: withIdempotency(settingsRawCommands.edit),
   getMaxRam: settingsRawCommands.getMaxRam,
+  listSystemFonts: settingsRawCommands.listSystemFonts,
   clearCache: withIdempotency(settingsRawCommands.clearCache),
   getCacheUsage: settingsRawCommands.getCacheUsage,
   isCacheBusy: settingsRawCommands.isCacheBusy,

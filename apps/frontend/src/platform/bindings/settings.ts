@@ -15,6 +15,8 @@ export const commands = {
 	editDefaultInstanceSettings: (editSettings: EditDefaultInstanceSettingsDto, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<DefaultInstanceSettingsDto>("plugin:settings|edit_default_instance_settings", { editSettings, requestId }),
 	getAppSettings: () => __TAURI_INVOKE<AppSettingsDto>("plugin:settings|get_app_settings"),
 	editAppSettings: (editAppSettings: EditAppSettingsDto, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<AppSettingsDto>("plugin:settings|edit_app_settings", { editAppSettings, requestId }),
+	/**  The names of the font families installed on the system, for the interface font to choose from. */
+	listSystemFonts: () => __TAURI_INVOKE<string[]>("plugin:settings|list_system_fonts"),
 };
 
 /* Types */
