@@ -13,6 +13,7 @@ import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
+  DialogTitle,
 } from '../primitives/Dialog';
 import { useUiKitLabels } from '../primitives/UiKitLabels';
 
@@ -63,7 +64,9 @@ export const CombinedDialog: Component<CombinedDialogProps> = (props) => {
         onCloseAutoFocus={local.onCloseAutoFocus}
       >
         <Show when={local.header}>
-          <DialogHeader class='text-lg'>{local.header}</DialogHeader>
+          <DialogHeader class='text-lg'>
+            <DialogTitle class='text-lg'>{local.header}</DialogTitle>
+          </DialogHeader>
         </Show>
         <Show when={local.description}>
           <DialogDescription class='text-base'>
