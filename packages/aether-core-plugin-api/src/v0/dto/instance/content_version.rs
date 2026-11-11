@@ -76,10 +76,11 @@ pub struct ContentVersionDto {
     pub requested_status: Option<RequestedContentVersionStatusDto>,
     pub date_published: String,
     pub downloads: u64,
-    /// The files of the version; a plugin that does not say leaves the list empty.
-    #[serde(default)]
-    pub files: Vec<ContentVersionFileDto>,
     /// The version's page, an `http` or `https` URL; empty when it has none. Any other value is
     /// dropped by the host.
     pub web_url: String,
+    /// The files of the version. Last, so that a plugin built before it existed, which the
+    /// positional msgpack encoding of the wire leaves without it, decodes with an empty list.
+    #[serde(default)]
+    pub files: Vec<ContentVersionFileDto>,
 }

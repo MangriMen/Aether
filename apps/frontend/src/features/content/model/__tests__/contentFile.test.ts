@@ -188,7 +188,7 @@ describe('getContentIdFromUpdateInfo', () => {
 });
 
 describe('getContentFileVersionHref', () => {
-  it('links to the version with provider and instance', () => {
+  it('links to the project with provider and instance when the version id is unknown', () => {
     const file = makeFile({
       updateProviderId: provider,
       update: [
