@@ -14,20 +14,72 @@ pub fn exit_with_error(message: &str) -> ! {
 /// Tells the user about a problem the launcher survives. Blocks until the dialog is closed.
 pub fn show_warning(message: &str) {
     tracing::warn!("{message}");
+    show_dialog(rfd::MessageLevel::Warning, message);
+}
+
+fn show_error(message: &str) {
+    error!("{message}");
+    show_dialog(rfd::MessageLevel::Error, message);
+}
+
+fn show_dialog(level: rfd::MessageLevel, message: &str) {
+    #[cfg(target_os = "linux")]
+    if show_on_gtk_main_thread(level, message) {
+        return;
+    }
+
     rfd::MessageDialog::new()
-        .set_level(rfd::MessageLevel::Warning)
+        .set_level(level)
         .set_title("Aether")
         .set_description(message)
         .show();
 }
 
-fn show_error(message: &str) {
-    error!("{message}");
-    rfd::MessageDialog::new()
-        .set_level(rfd::MessageLevel::Error)
-        .set_title("Aether")
-        .set_description(message)
-        .show();
+/// `setup` runs on the GTK main thread inside the event loop, which owns the default main
+/// context. The blocking rfd dialog queues its work on that context and waits for it, so called
+/// from here it never appears and the process hangs. Running the dialog's own loop on this
+/// thread is the only way to show it.
+#[cfg(target_os = "linux")]
+fn show_on_gtk_main_thread(level: rfd::MessageLevel, message: &str) -> bool {
+    use gtk::prelude::*;
+
+    if !gtk::is_initialized_main_thread() {
+        return false;
+    }
+
+    let message_type = match level {
+        rfd::MessageLevel::Error => gtk::MessageType::Error,
+        rfd::MessageLevel::Warning => gtk::MessageType::Warning,
+        rfd::MessageLevel::Info => gtk::MessageType::Info,
+    };
+
+    let dialog = gtk::MessageDialog::new(
+        None::<&gtk::Window>,
+        gtk::DialogFlags::MODAL,
+        message_type,
+        gtk::ButtonsType::Ok,
+        "Aether",
+    );
+    dialog.set_title("Aether");
+    dialog.set_secondary_text(Some(message));
+    dialog.run();
+    dialog.close();
+
+    true
+}
+
+/// Without a display GTK cannot initialize in rfd's thread, and the blocking dialog would wait
+/// for it forever, so a panic would hang instead of ending the process.
+fn can_show_dialog() -> bool {
+    #[cfg(target_os = "linux")]
+    if !gtk::is_initialized_main_thread()
+        && std::env::var_os("DISPLAY").is_none()
+        && std::env::var_os("WAYLAND_DISPLAY").is_none()
+    {
+        return false;
+    }
+
+    true
 }
 
 /// Logs every panic and, in release, shows it before the process aborts
@@ -39,7 +91,7 @@ pub fn install_panic_hook() {
         let message = describe_panic(info);
         error!("{message}");
 
-        if cfg!(not(debug_assertions)) {
+        if cfg!(not(debug_assertions)) && can_show_dialog() {
             show_error(&message);
         }
 
