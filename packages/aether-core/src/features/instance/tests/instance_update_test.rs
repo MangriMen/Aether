@@ -100,7 +100,7 @@ async fn should_keep_both_changes_when_edit_and_launch_update_run_concurrently()
 
 /// The update reads the row, then is held in its change closure while the remove runs; only the
 /// write lock taken before the read keeps the remove behind it, so the update cannot write the
-/// row back after it was deleted.
+/// row back after it was deleted, nor fail for having read a row that changed meanwhile.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn should_not_resurrect_the_row_when_remove_runs_under_a_concurrent_update() {
     let (_dir, pool) = pool().await;
@@ -112,7 +112,7 @@ async fn should_not_resurrect_the_row_when_remove_runs_under_a_concurrent_update
     let updater = storage.clone();
     let update_id = id.clone();
     let update = tokio::spawn(async move {
-        let _ = updater
+        updater
             .update(
                 &update_id,
                 Box::new(move |instance| {
@@ -123,14 +123,16 @@ async fn should_not_resurrect_the_row_when_remove_runs_under_a_concurrent_update
                     Ok(true)
                 }),
             )
-            .await;
+            .await
     });
     was_read.recv().await.unwrap();
     storage.remove(&id).await.unwrap();
-    update.await.unwrap();
+    // The remove waited, so the update was applied (not refused as stale) and then deleted.
+    update.await.unwrap().expect("the update is applied");
 
     assert!(storage.get(&id).await.is_err());
 }
+
 #[tokio::test]
 async fn should_not_write_when_update_reports_no_change() {
     let (_dir, pool) = pool().await;
