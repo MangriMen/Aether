@@ -193,9 +193,14 @@ impl SyncPluginsUseCase {
 #[async_trait::async_trait]
 impl PluginSyncService for SyncPluginsUseCase {
     async fn execute(&self) -> Result<(), PluginError> {
-        let found_plugins = self.plugin_storage.list().await?;
-        self.sync_plugins(found_plugins).await?;
+        let result = async {
+            let found_plugins = self.plugin_storage.list().await?;
+            self.sync_plugins(found_plugins).await
+        }
+        .await;
+        // Also after a failure: the registry may have changed before it, and the frontend has
+        // to read it again either way.
         self.event_emitter.emit_safe(PluginEvent::Sync).await;
-        Ok(())
+        result
     }
 }

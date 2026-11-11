@@ -7,12 +7,16 @@ use std::{
 
 use async_trait::async_trait;
 
-use crate::features::events::test_support::NoOpEmitter;
+use crate::features::events::{
+    Event, PluginEvent,
+    test_support::{ChannelEmitter, NoOpEmitter},
+};
 use crate::features::instance::PluginId;
 use crate::features::plugins::{
     ExtractedPlugin, Plugin, PluginError, PluginState, PluginStorage, PluginSyncService,
     SyncPluginsUseCase,
 };
+use crate::shared::io::domain::IoError;
 
 use super::common::*;
 
@@ -116,4 +120,58 @@ async fn should_forget_the_plugin_as_enabled_when_its_files_are_gone() {
 
     assert!(harness.plugins.get(&plugin_id()).is_err());
     assert!(!harness.is_enabled());
+}
+
+/// A disk that cannot be listed.
+struct UnreadableDisk;
+
+#[async_trait]
+impl PluginStorage for UnreadableDisk {
+    async fn add(&self, _: ExtractedPlugin) -> Result<(), PluginError> {
+        unimplemented!("the sync only lists")
+    }
+    async fn list(&self) -> Result<HashMap<PluginId, Plugin>, PluginError> {
+        Err(PluginError::Storage(IoError::DeserializationError(
+            "unreadable".into(),
+        )))
+    }
+    async fn get(&self, _: &PluginId) -> Result<Plugin, PluginError> {
+        unimplemented!("the sync only lists")
+    }
+    async fn remove(&self, _: &PluginId) -> Result<(), PluginError> {
+        unimplemented!("the sync only lists")
+    }
+    async fn replace(&self, _: ExtractedPlugin) -> Result<(), PluginError> {
+        unimplemented!("the sync only lists")
+    }
+    async fn restore_replaced(&self, _: &PluginId) -> Result<(), PluginError> {
+        unimplemented!("the sync only lists")
+    }
+    async fn discard_replaced(&self, _: &PluginId) -> Result<(), PluginError> {
+        unimplemented!("the sync only lists")
+    }
+    async fn wasm_sha256(&self, _: &PluginId) -> Result<String, PluginError> {
+        unimplemented!("the sync only lists")
+    }
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn should_announce_the_sync_even_when_it_failed() {
+    let harness = Harness::enabled().await;
+    let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
+    let sync = SyncPluginsUseCase::new(
+        Arc::new(UnreadableDisk),
+        Arc::clone(&harness.plugins),
+        Arc::new(harness.disable()),
+        Arc::new(harness.enable()),
+        harness.settings.clone(),
+        Arc::new(ChannelEmitter(tx)),
+    );
+
+    assert!(sync.execute().await.is_err());
+
+    assert!(matches!(
+        rx.try_recv(),
+        Ok(Event::Plugin(PluginEvent::Sync))
+    ));
 }
