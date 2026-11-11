@@ -18,6 +18,10 @@ pub const MAX_ASSET_BYTES: u64 = 4 * 1024 * 1024;
 async fn read_limited(source: &Path, limit: u64) -> Result<Vec<u8>, AssetError> {
     let source = source.to_owned();
     tokio::task::spawn_blocking(move || {
+        // Looked at before it is opened: opening a pipe with no writer would block for good.
+        if !std::fs::metadata(&source)?.is_file() {
+            return Ok(Err(AssetError::NotAnImage));
+        }
         let file = std::fs::File::open(&source)?;
         if file.metadata()?.len() > limit {
             return Ok(Err(AssetError::TooLarge { limit }));
@@ -134,6 +138,17 @@ mod tests {
     #[tokio::test]
     async fn should_refuse_a_file_that_is_not_an_image() {
         let result = import(b"<html><script>", "icon.png").await;
+
+        assert!(matches!(result, Err(AssetError::NotAnImage)));
+    }
+
+    #[tokio::test]
+    async fn should_refuse_a_directory() {
+        let dir = tempfile::tempdir().unwrap();
+
+        let result = FsAssetsStorage::new(Arc::new(RecordingStore::default()))
+            .import_file(dir.path())
+            .await;
 
         assert!(matches!(result, Err(AssetError::NotAnImage)));
     }
