@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{path::Path, sync::Arc, time::Duration};
 
 use async_trait::async_trait;
 
@@ -17,8 +17,12 @@ use crate::{
         process::{MinecraftProcessMetadata, ProcessStartService, ProcessStorage},
         settings::{DefaultInstanceSettings, DefaultInstanceSettingsStorage, LocationInfo},
     },
-    shared::{io::domain::IoError, serializable_command::domain::SerializableCommand},
+    shared::serializable_command::domain::SerializableCommand,
 };
+
+/// How long a pre-launch hook may run. The instance stays locked meanwhile, and a hook that
+/// never ends would keep the game from starting for good.
+const PRELAUNCH_HOOK_TIMEOUT: Duration = Duration::from_mins(10);
 
 pub struct LaunchInstanceUseCase {
     plugin_registry: Arc<PluginRegistry>,
@@ -182,24 +186,7 @@ impl LaunchInstanceUseCase {
 
         let instance_path = self.location_info.instance_dir(instance.id());
 
-        if let Ok(cmd) = SerializableCommand::from_string(pre_launch_command, Some(&instance_path))
-        {
-            let result = cmd
-                .to_tokio_command()
-                .spawn()
-                .map_err(|e| {
-                    InstanceError::Storage(IoError::with_path(e, &instance_path).to_string())
-                })?
-                .wait()
-                .await
-                .map_err(|err| InstanceError::Storage(err.to_string()))?;
-
-            if !result.success() {
-                return Err(InstanceError::PrelaunchCommandError {
-                    code: result.code().unwrap_or(-1),
-                });
-            }
-        }
+        run_pre_launch_hook(pre_launch_command, &instance_path, PRELAUNCH_HOOK_TIMEOUT).await?;
 
         self.notify_plugin_event(
             &instance,
@@ -263,5 +250,122 @@ impl InstanceLaunchService for LaunchInstanceUseCase {
         credentials: Credential,
     ) -> Result<MinecraftProcessMetadata, InstanceError> {
         self.execute(instance_id, credentials).await
+    }
+}
+
+/// Runs the pre-launch hook `command` in `dir` and waits for it for `timeout`. An empty hook is
+/// no hook. A hook still running at the deadline is killed: the game does not start under it.
+async fn run_pre_launch_hook(
+    command: &str,
+    dir: &Path,
+    timeout: Duration,
+) -> Result<(), InstanceError> {
+    if command.trim().is_empty() {
+        return Ok(());
+    }
+    let command = SerializableCommand::from_string(command, Some(dir))
+        .map_err(|reason| InstanceError::PrelaunchCommandInvalid { reason })?;
+    run_hook_command(&command, timeout).await
+}
+
+async fn run_hook_command(
+    command: &SerializableCommand,
+    timeout: Duration,
+) -> Result<(), InstanceError> {
+    let mut child = command
+        .to_tokio_command()
+        .kill_on_drop(true)
+        .spawn()
+        .map_err(|err| InstanceError::PrelaunchCommandSpawnFailed {
+            reason: format!("{}: {err}", command.program),
+        })?;
+
+    let Ok(status) = tokio::time::timeout(timeout, child.wait()).await else {
+        if let Err(err) = child.kill().await {
+            tracing::warn!("Failed to kill the timed out pre-launch hook: {err}");
+        }
+        return Err(InstanceError::PrelaunchCommandTimeout {
+            seconds: timeout.as_secs(),
+        });
+    };
+    let status = status.map_err(|err| InstanceError::Storage(err.to_string()))?;
+
+    if status.success() {
+        Ok(())
+    } else {
+        Err(InstanceError::PrelaunchCommandError {
+            code: status.code().unwrap_or(-1),
+        })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Not a test: the process the hook tests start (this very binary), which never ends.
+    #[test]
+    #[ignore = "started by the pre-launch hook tests as a process that hangs"]
+    fn hang_as_a_hook() {
+        std::thread::sleep(Duration::from_secs(600));
+    }
+
+    fn hanging_hook() -> SerializableCommand {
+        let module = module_path!().trim_start_matches("aether_core::");
+        SerializableCommand {
+            program: std::env::current_exe()
+                .unwrap()
+                .to_string_lossy()
+                .into_owned(),
+            args: vec![
+                "--ignored".to_owned(),
+                "--exact".to_owned(),
+                format!("{module}::hang_as_a_hook"),
+            ],
+            current_dir: None,
+            env: None,
+        }
+    }
+
+    #[tokio::test]
+    async fn should_skip_the_hook_when_it_is_empty_or_blank() {
+        for command in [
+            "", "   ", "	
+",
+        ] {
+            let result = run_pre_launch_hook(command, Path::new("."), Duration::from_secs(1)).await;
+            assert!(result.is_ok(), "{command:?}: {result:?}");
+        }
+    }
+
+    #[tokio::test]
+    async fn should_fail_when_the_hook_cannot_be_started() {
+        let result = run_pre_launch_hook(
+            "aether-no-such-program-0f3a",
+            Path::new("."),
+            Duration::from_secs(1),
+        )
+        .await;
+
+        assert!(
+            matches!(
+                result,
+                Err(InstanceError::PrelaunchCommandSpawnFailed { .. })
+            ),
+            "{result:?}"
+        );
+    }
+
+    #[tokio::test]
+    async fn should_time_out_when_the_hook_does_not_end() {
+        let started = std::time::Instant::now();
+
+        let result = run_hook_command(&hanging_hook(), Duration::from_millis(500)).await;
+
+        assert!(
+            matches!(result, Err(InstanceError::PrelaunchCommandTimeout { .. })),
+            "{result:?}"
+        );
+        assert!(started.elapsed() < Duration::from_secs(30));
     }
 }

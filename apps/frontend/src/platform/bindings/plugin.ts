@@ -208,6 +208,12 @@ export type InstanceErrorDto = { code: "STORAGE"; payload: {
 	process_id: string,
 } } | { code: "PRELAUNCH_COMMAND_ERROR"; payload: {
 	code: number,
+} } | { code: "PRELAUNCH_COMMAND_INVALID"; payload: {
+	reason: string,
+} } | { code: "PRELAUNCH_COMMAND_SPAWN_FAILED"; payload: {
+	reason: string,
+} } | { code: "PRELAUNCH_COMMAND_TIMEOUT"; payload: {
+	seconds: string,
 } } | { code: "VALIDATION_ERROR"; payload: {
 	field: InstanceFieldDto,
 	reason: InstanceValidationErrorReasonDto,
