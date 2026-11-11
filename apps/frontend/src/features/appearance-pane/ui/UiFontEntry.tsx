@@ -125,6 +125,12 @@ export const UiFontEntry: Component<UiFontEntryProps> = (props) => {
     >
       <Combobox<FontOption>
         class='w-52'
+        triggerMode='focus'
+        // Opened without typing, the list shows every choice, not only the one named in the field.
+        defaultFilter={(option, inputValue) =>
+          draft() === '' ||
+          option.label.toLowerCase().includes(inputValue.toLowerCase())
+        }
         options={options()}
         optionValue='value'
         optionTextValue='label'
@@ -183,6 +189,9 @@ export const UiFontEntry: Component<UiFontEntryProps> = (props) => {
               isArrowPicking = false;
               setDraft(e.currentTarget.value);
             }}
+            onFocus={(e: FocusEvent & { currentTarget: HTMLInputElement }) =>
+              e.currentTarget.select()
+            }
             onBlur={commitDraft}
             placeholder={t('settings.uiFontCustomPlaceholder')}
           />
