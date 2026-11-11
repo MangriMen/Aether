@@ -2,8 +2,8 @@ use crate::features::{
     instance::{
         ContentId, ContentItem, ContentMetadata, ContentSearchParams, ContentSearchResult,
         ContentType, ContentVersion, ContentVersionDependency, ContentVersionDependencyType,
-        ContentVersionId, ContentVersionMetadata, ContentVersionStatus, ContentVersionType,
-        PageIndex, PageSize, ProviderId, RequestedContentVersionStatus,
+        ContentVersionFile, ContentVersionId, ContentVersionMetadata, ContentVersionStatus,
+        ContentVersionType, PageIndex, PageSize, ProviderId, RequestedContentVersionStatus,
         infra::content_providers::modrinth::{
             ModrinthMapperError,
             api_client::{
@@ -351,6 +351,7 @@ impl TryFrom<ProjectVersionResponse> for ContentVersion {
             requested_status,
             loaders,
             dependencies,
+            files,
             ..
         } = value;
 
@@ -386,6 +387,14 @@ impl TryFrom<ProjectVersionResponse> for ContentVersion {
             requested_status: requested_status.map(Into::into),
             date_published,
             downloads: u64::try_from(downloads).unwrap_or_default(),
+            files: files
+                .into_iter()
+                .map(|file| ContentVersionFile {
+                    file_name: file.filename,
+                    size: u64::try_from(file.size).unwrap_or_default(),
+                    primary: file.primary,
+                })
+                .collect(),
             web_url,
         })
     }

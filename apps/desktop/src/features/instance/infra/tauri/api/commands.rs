@@ -1,10 +1,11 @@
 use aether_core::features::{
     instance::{
         ChangeContentState, ContentCompatibilityCheckParams, ContentGetParams,
-        ContentInstallParams, ContentListVersionsParams, ContentManagementPort, ContentPath,
-        ContentProviderPort, ContentSearchParams, ContentStateAction, EditInstanceIcon,
-        ImportContent, ImportInstance, InstanceCrudPort, InstanceError, InstanceId,
-        InstanceLifecyclePort, InstanceServicesPort, NewInstance, RemoveContent,
+        ContentGetVersionParams, ContentInstallParams, ContentListVersionsParams,
+        ContentManagementPort, ContentPath, ContentProviderPort, ContentSearchParams,
+        ContentStateAction, EditInstanceIcon, ImportContent, ImportInstance, InstanceCrudPort,
+        InstanceError, InstanceId, InstanceLifecyclePort, InstanceServicesPort, NewInstance,
+        RemoveContent,
     },
     process::ProcessFeature,
 };
@@ -22,11 +23,11 @@ use crate::{
         instance::infra::{
             BrokenInstanceDto, CapabilityEntryDto, ContentCompatibilityCheckParamsDto,
             ContentCompatibilityResultDto, ContentFileDto, ContentGetParamsDto,
-            ContentInstallParamsDto, ContentItemDto, ContentListVersionParamsDto,
-            ContentProviderCapabilityMetadataDto, ContentSearchParamsDto, ContentSearchResultDto,
-            ContentTypeDto, ContentVersionDto, EditInstanceDto, EditInstanceIconDto,
-            ImportInstanceDto, ImporterCapabilityMetadataDto, InstanceDto, InstanceEventDto,
-            NewInstanceDto,
+            ContentGetVersionParamsDto, ContentInstallParamsDto, ContentItemDto,
+            ContentListVersionParamsDto, ContentProviderCapabilityMetadataDto,
+            ContentSearchParamsDto, ContentSearchResultDto, ContentTypeDto, ContentVersionDto,
+            EditInstanceDto, EditInstanceIconDto, ImportInstanceDto, ImporterCapabilityMetadataDto,
+            InstanceDto, InstanceEventDto, NewInstanceDto,
         },
         process::MinecraftProcessMetadataDto,
     },
@@ -517,6 +518,21 @@ async fn list_content_version(
         .into_iter()
         .map(Into::into)
         .collect())
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn get_content_version(
+    params: ContentGetVersionParamsDto,
+    container: State<'_, ContainerState>,
+) -> FrontendResult<ContentVersionDto> {
+    let container = container.0.clone();
+    Ok(container
+        .get_content_version_use_case()
+        .execute(ContentGetVersionParams::try_from(params).map_err(aether_core::Error::from)?)
+        .await
+        .map_err(aether_core::Error::from)?
+        .into())
 }
 
 #[tauri::command]

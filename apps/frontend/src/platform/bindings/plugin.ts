@@ -602,6 +602,8 @@ export type ProviderHandlersDto = {
 	getVersionsMetadata: string | null,
 	/**  Optional function naming the authors of projects apart from their metadata. */
 	getAuthors: string | null,
+	/**  Optional function giving one version whole, for the page of the version. */
+	getVersion: string | null,
 };
 
 /**  Generic provider-agnostic plugin preview for the frontend. */

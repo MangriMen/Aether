@@ -194,6 +194,13 @@
             "null"
           ]
         },
+        "getVersion": {
+          "description": "Optional function giving one version whole, by its id, for the page of the version. Takes\nthe version id, returns a `ContentVersionDto` with its changelog. Without it the provider\nhas no page for a version.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "getVersionsMetadata": {
           "description": "Optional function giving the version number of installed files. Takes\n`GetVersionsMetadataParamsDto`, returns a list of `ContentVersionMetadataDto`. Without it the files are shown\nwithout a version.",
           "type": [

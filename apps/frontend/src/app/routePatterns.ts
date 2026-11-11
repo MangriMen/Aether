@@ -7,6 +7,7 @@ export const ROUTE_PATTERNS = {
   HOME: APP_ROUTES.HOME,
   CONTENT: CONTENT_ROUTES.CONTENT,
   CONTENT_ITEM_REL: '/:contentId',
+  CONTENT_VERSION_REL: '/:contentId/version/:versionId',
   INSTANCE: '/instances/:id',
   INSTANCE_SETTINGS_REL: 'settings', // Relative path
   INSTANCE_DIALOG: '/instance-settings/:id',

@@ -3,14 +3,14 @@ use std::sync::Arc;
 use crate::features::instance::app::ports::{
     ChangeContentStateUseCasePort, CheckContentCompatibilityUseCasePort, ContentFileService,
     CreateInstanceUseCasePort, EditInstanceIconUseCasePort, EditInstanceUseCasePort,
-    GetContentUseCasePort, GetInstanceUseCasePort, ImportContentUseCasePort,
-    ImportInstanceUseCasePort, InstallContentUseCasePort, InstallPlanExecutorPort,
-    InstanceFileService, InstanceInstallService, InstanceLaunchService, InstanceWatcherService,
-    LaunchInstanceWithActiveAccountUseCasePort, ListBrokenInstancesUseCasePort,
-    ListContentUseCasePort, ListContentVersionsUseCasePort, ListImportersUseCasePort,
-    ListInstancesUseCasePort, ListProvidersUseCasePort, RemoveBrokenInstanceUseCasePort,
-    RemoveContentUseCasePort, RemoveInstanceUseCasePort, SearchContentUseCasePort,
-    UpdateInstanceUseCasePort,
+    GetContentUseCasePort, GetContentVersionUseCasePort, GetInstanceUseCasePort,
+    ImportContentUseCasePort, ImportInstanceUseCasePort, InstallContentUseCasePort,
+    InstallPlanExecutorPort, InstanceFileService, InstanceInstallService, InstanceLaunchService,
+    InstanceWatcherService, LaunchInstanceWithActiveAccountUseCasePort,
+    ListBrokenInstancesUseCasePort, ListContentUseCasePort, ListContentVersionsUseCasePort,
+    ListImportersUseCasePort, ListInstancesUseCasePort, ListProvidersUseCasePort,
+    RemoveBrokenInstanceUseCasePort, RemoveContentUseCasePort, RemoveInstanceUseCasePort,
+    SearchContentUseCasePort, UpdateInstanceUseCasePort,
 };
 
 pub trait InstanceCrudPort {
@@ -47,6 +47,7 @@ pub trait ContentProviderPort {
     fn install_plan_executor(&self) -> Arc<dyn InstallPlanExecutorPort>;
     fn check_content_compatibility_use_case(&self)
     -> Arc<dyn CheckContentCompatibilityUseCasePort>;
+    fn get_content_version_use_case(&self) -> Arc<dyn GetContentVersionUseCasePort>;
     fn list_content_versions_use_case(&self) -> Arc<dyn ListContentVersionsUseCasePort>;
     fn list_providers_use_case(&self) -> Arc<dyn ListProvidersUseCasePort>;
 }

@@ -71,10 +71,10 @@ export const getContentFileVersionSortValue = (
 ): string => getContentFileVersionNumber(contentFile) ?? contentFile.fileName;
 
 /**
- * Link to the project page of the file. The page has no way to preselect the
- * versions tab, so this opens the project itself.
+ * Link to the page of the version the file was installed as, or to the project
+ * page when the version's id is not known. Both keep the instance and provider.
  */
-export const getContentFileProjectHref = (
+export const getContentFileVersionHref = (
   contentFile: ContentFile,
   instanceId?: string,
 ): string | undefined => {
@@ -98,6 +98,11 @@ export const getContentFileProjectHref = (
     capability: providerId.capabilityId,
   });
 
-  const base = CONTENT_ROUTES.CONTENT_ITEM(contentId);
+  const versionId =
+    contentFile.versionMetadata?.versionId ?? contentFile.version;
+
+  const base = versionId
+    ? CONTENT_ROUTES.CONTENT_VERSION(contentId, versionId)
+    : CONTENT_ROUTES.CONTENT_ITEM(contentId);
   return query ? `${base}?${query}` : base;
 };

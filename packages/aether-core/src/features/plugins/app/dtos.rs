@@ -125,6 +125,7 @@ pub struct ProviderHandlersDto {
     pub get_contents_metadata: Option<String>,
     pub get_versions_metadata: Option<String>,
     pub get_authors: Option<String>,
+    pub get_version: Option<String>,
 }
 
 // ── PluginDto ──
@@ -282,6 +283,7 @@ impl From<ProviderHandlers> for ProviderHandlersDto {
             get_contents_metadata: v.get_contents_metadata,
             get_versions_metadata: v.get_versions_metadata,
             get_authors: v.get_authors,
+            get_version: v.get_version,
         }
     }
 }

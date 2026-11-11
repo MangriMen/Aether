@@ -78,6 +78,7 @@ macro_rules! instance_commands {
             check_compatibility,
             get_content,
             list_content_version,
+            get_content_version,
             edit_icon
         ]
     };

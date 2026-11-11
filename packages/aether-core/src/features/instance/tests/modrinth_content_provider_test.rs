@@ -24,9 +24,10 @@ use crate::{
         events::ProgressBarId,
         instance::{
             ContentAuthor, ContentIdentity, ContentMetadata, ContentProvider, ContentSource,
-            ContentType, ContentVersionMetadata, FileSide, InstallTarget, InstanceError,
-            InstanceGame, InstanceId, OverrideLocation, OverrideSource, PackInfo, PackMetadata,
-            PackSource, ResolveInstallPlanParams, ResolveTarget, infra::ModrinthContentProvider,
+            ContentType, ContentVersionFile, ContentVersionMetadata, FileSide, InstallTarget,
+            InstanceError, InstanceGame, InstanceId, OverrideLocation, OverrideSource, PackInfo,
+            PackMetadata, PackSource, ResolveInstallPlanParams, ResolveTarget,
+            infra::ModrinthContentProvider,
         },
         minecraft::{LoaderVersionPreference, ModLoader},
         settings::LocationInfo,
@@ -1418,4 +1419,52 @@ async fn should_fail_when_a_batch_of_versions_cannot_be_fetched() {
         result,
         Err(InstanceError::ContentDownloadError(_))
     ));
+}
+
+#[tokio::test]
+async fn should_give_the_whole_version_with_its_changelog_and_files_when_asked_for_one() {
+    let fixture = Fixture::new();
+    let mut body = version(
+        "IZskON6d",
+        "AANobbMI",
+        &["1.21.1"],
+        &["fabric"],
+        file(SODIUM_URL, "sodium.jar", b"jar"),
+    );
+    body["changelog"] = json!("Fixed a crash.");
+    body["dependencies"] = json!([
+        { "project_id": "P7dR8mSH", "version_id": null, "file_name": null, "dependency_type": "required" }
+    ]);
+    fixture
+        .http
+        .serve_json(&format!("{API}/version/IZskON6d"), &body);
+
+    let version = fixture
+        .provider
+        .get_version(&ContentVersionId::try_from("IZskON6d").unwrap())
+        .await
+        .unwrap();
+
+    assert_eq!(version.changelog.as_deref(), Some("Fixed a crash."));
+    assert_eq!(version.dependencies.len(), 1);
+    assert_eq!(
+        version.files,
+        [ContentVersionFile {
+            file_name: "sodium.jar".into(),
+            size: 3,
+            primary: true,
+        }]
+    );
+}
+
+#[tokio::test]
+async fn should_fail_to_give_a_version_when_modrinth_does_not_know_it() {
+    let fixture = Fixture::new();
+
+    let result = fixture
+        .provider
+        .get_version(&ContentVersionId::try_from("unknown0").unwrap())
+        .await;
+
+    assert!(result.is_err());
 }

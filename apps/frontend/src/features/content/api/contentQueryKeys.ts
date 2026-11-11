@@ -6,6 +6,7 @@ import { INSTANCE_QUERY_KEYS } from '@/features/instance';
 import type { ContentCompatibilityCheckParams } from '../model/compatibility';
 import type {
   ContentGetParams,
+  ContentGetVersionParams,
   ContentListVersionParams,
   ProviderId,
 } from '../model/contentItem';
@@ -50,6 +51,12 @@ export const CONTENT_QUERY_KEYS = {
     'list_version',
     params.contentId,
   ],
+  GET_VERSION: (params: ContentGetVersionParams) => [
+    ...CONTENT_QUERY_KEYS.BY_PROVIDER(params.providerId),
+    'get_version',
+    params.versionId,
+  ],
+  GET_VERSION_EMPTY: () => [...CONTENT_QUERY_KEYS.SELF, 'get_version', 'empty'],
   LIST_CONTENT_VERSION_EMPTY: () => [
     ...CONTENT_QUERY_KEYS.SELF,
     'list_version',

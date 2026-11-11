@@ -32,6 +32,7 @@ export const commands = {
 	checkCompatibility: (instanceIds: string[], checkParams: ContentCompatibilityCheckParamsDto) => __TAURI_INVOKE<{ [key in string]: ContentCompatibilityResultDto }>("plugin:instance|check_compatibility", { instanceIds, checkParams }),
 	getContent: (params: ContentGetParamsDto) => __TAURI_INVOKE<ContentItemDto>("plugin:instance|get_content", { params }),
 	listContentVersion: (params: ContentListVersionParamsDto) => __TAURI_INVOKE<ContentVersionDto[]>("plugin:instance|list_content_version", { params }),
+	getContentVersion: (params: ContentGetVersionParamsDto) => __TAURI_INVOKE<ContentVersionDto>("plugin:instance|get_content_version", { params }),
 	editIcon: (editInstanceIcon: EditInstanceIconDto, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:instance|edit_icon", { editInstanceIcon, requestId }),
 };
 
@@ -185,6 +186,11 @@ export type ContentGetParamsDto = {
 	providerId: ProviderIdDto,
 };
 
+export type ContentGetVersionParamsDto = {
+	versionId: string,
+	providerId: ProviderIdDto,
+};
+
 export type ContentInstallParamsDto = { type: "atomic"; data: AtomicInstallParamsDto } | { type: "modpack"; data: ModpackInstallParamsDto };
 
 export type ContentItemDto = {
@@ -272,7 +278,14 @@ export type ContentVersionDto = {
 	requestedStatus: RequestedContentVersionStatusDto | null,
 	datePublished: string,
 	downloads: string,
+	files: ContentVersionFileDto[],
 	webUrl: string,
+};
+
+export type ContentVersionFileDto = {
+	fileName: string,
+	size: string,
+	primary: boolean,
 };
 
 /**  What a provider says about the version of an installed file. */

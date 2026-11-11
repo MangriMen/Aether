@@ -783,6 +783,20 @@ impl<RC: RequestClient> ContentProvider for ModrinthContentProvider<RC> {
             })
     }
 
+    async fn get_version(
+        &self,
+        version_id: &ContentVersionId,
+    ) -> Result<ContentVersion, InstanceError> {
+        self.api
+            .get_project_version(version_id.as_str())
+            .await
+            .map_err(|err| InstanceError::ContentDownloadError(err.clone()))?
+            .try_into()
+            .map_err(|err: ModrinthMapperError| {
+                InstanceError::ContentDownloadError(err.to_string())
+            })
+    }
+
     async fn list_versions(
         &self,
         content_id: ContentId,

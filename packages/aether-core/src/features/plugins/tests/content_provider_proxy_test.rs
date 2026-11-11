@@ -11,7 +11,8 @@ use std::sync::{Arc, Mutex};
 
 use aether_core_plugin_api::v0::{
     ContentAuthorDto, ContentCompatibilityResultDto, ContentMetadataDto, ContentSourceDto,
-    ContentTypeDto, ContentVersionMetadataDto, FileHashDto, FileSideDto, GetAuthorsParamsDto,
+    ContentTypeDto, ContentVersionDto, ContentVersionFileDto, ContentVersionMetadataDto,
+    ContentVersionStatusDto, ContentVersionTypeDto, FileHashDto, FileSideDto, GetAuthorsParamsDto,
     GetContentsMetadataParamsDto, GetVersionsMetadataParamsDto, InstallFileEntryDto,
     InstallPlanDto, InstallTargetDto, InstanceGameDto, ModLoaderDto, NewInstanceDto,
     OverrideLocationDto, OverrideSourceDto, PackMetadataDto, PackSourceDto, ResolveFileParamsDto,
@@ -70,7 +71,8 @@ const RESOLVE_ONLY_CAPABILITIES: &str = r#"{
             "resolvePackMetadata": "cf_resolve_pack_metadata",
             "getContentsMetadata": "cf_get_contents_metadata",
             "getVersionsMetadata": "cf_get_versions_metadata",
-            "getAuthors": "cf_get_authors"
+            "getAuthors": "cf_get_authors",
+            "getVersion": "cf_get_version"
         }
     }]
 }"#;
@@ -531,6 +533,50 @@ fn author(author_ref: &str, name: &str) -> ContentAuthorDto {
 }
 
 #[tokio::test]
+async fn should_call_the_version_handler_the_file_names_when_asked_for_a_version() {
+    let fixture = Fixture::new(
+        RESOLVE_ONLY_CAPABILITIES,
+        vec![(
+            "cf_get_version",
+            encode(ContentVersionDto {
+                id: "IZskON6d".into(),
+                content_id: "AANobbMI".into(),
+                author_id: "author".into(),
+                name: "Sodium".into(),
+                version_number: "0.6.0".into(),
+                changelog: Some("Fixed a crash.".into()),
+                dependencies: Vec::new(),
+                game_versions: vec!["1.21.1".into()],
+                version_type: ContentVersionTypeDto::Release,
+                loaders: Vec::new(),
+                featured: false,
+                status: ContentVersionStatusDto::Listed,
+                requested_status: None,
+                date_published: "2024-01-01T00:00:00Z".into(),
+                downloads: 0,
+                files: vec![ContentVersionFileDto {
+                    file_name: "sodium.jar".into(),
+                    size: 3,
+                    primary: true,
+                }],
+                web_url: String::new(),
+            }),
+        )],
+    );
+
+    let version = fixture
+        .proxy
+        .get_version(&ContentVersionId::try_from("IZskON6d").unwrap())
+        .await
+        .unwrap();
+
+    assert_eq!(fixture.called(), ["cf_get_version"]);
+    assert_eq!(version.changelog.as_deref(), Some("Fixed a crash."));
+    assert_eq!(version.files.len(), 1);
+    assert_eq!(version.files[0].file_name, "sodium.jar");
+}
+
+#[tokio::test]
 async fn should_call_the_authors_handler_the_file_names_when_naming_authors() {
     let fixture = Fixture::new(
         RESOLVE_ONLY_CAPABILITIES,
@@ -988,6 +1034,14 @@ async fn should_report_optional_operations_as_unsupported_when_the_provider_has_
             .await
             .unwrap_err(),
         "list_versions",
+    );
+    assert_unsupported(
+        fixture
+            .proxy
+            .get_version(&ContentVersionId::try_from("IZskON6d").unwrap())
+            .await
+            .unwrap_err(),
+        "get_version",
     );
     assert!(fixture.called().is_empty());
 }

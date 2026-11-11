@@ -7,8 +7,8 @@ use crate::features::events::ProgressBarId;
 use crate::features::instance::app::PlanProgress;
 use crate::features::instance::app::{
     ChangeContentState, ContentCompatibilityCheckParams, ContentCompatibilityResult,
-    ContentGetParams, ContentListVersionsParams, EditInstance, EditInstanceIcon, ImportContent,
-    ImportInstance, RemoveContent,
+    ContentGetParams, ContentGetVersionParams, ContentListVersionsParams, EditInstance,
+    EditInstanceIcon, ImportContent, ImportInstance, RemoveContent,
 };
 use crate::features::instance::domain::{
     BrokenInstance, ContentFileView, ContentItem, ContentProviderCapabilityMetadata,
@@ -210,6 +210,14 @@ pub trait CheckContentCompatibilityUseCasePort: Send + Sync {
         instance_ids: HashSet<InstanceId>,
         check_params: ContentCompatibilityCheckParams,
     ) -> Result<HashMap<InstanceId, ContentCompatibilityResult>, InstanceError>;
+}
+
+#[async_trait]
+pub trait GetContentVersionUseCasePort: Send + Sync {
+    async fn execute(
+        &self,
+        get_params: ContentGetVersionParams,
+    ) -> Result<ContentVersion, InstanceError>;
 }
 
 #[async_trait]

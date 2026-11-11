@@ -175,6 +175,7 @@ impl From<aether_core::features::plugins::ProviderHandlersDto> for ProviderHandl
             get_contents_metadata: dto.get_contents_metadata,
             get_versions_metadata: dto.get_versions_metadata,
             get_authors: dto.get_authors,
+            get_version: dto.get_version,
         }
     }
 }

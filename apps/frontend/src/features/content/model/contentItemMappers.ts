@@ -32,4 +32,8 @@ export const contentVersionDtoToContentVersion = (
 ): ContentVersion => ({
   ...dto,
   downloads: Number.parseInt(dto.downloads),
+  files: dto.files.map((file) => ({
+    ...file,
+    size: Number.parseInt(file.size),
+  })),
 });

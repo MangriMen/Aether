@@ -47,6 +47,16 @@ pub trait ContentProvider: Send + Sync {
         content_id: ContentId,
     ) -> Result<Vec<ContentVersion>, InstanceError>;
 
+    /// One version by its id, whole: its changelog too, which the list leaves out. Without it
+    /// the provider has no page for a version.
+    async fn get_version(
+        &self,
+        version_id: &ContentVersionId,
+    ) -> Result<ContentVersion, InstanceError> {
+        let _ = version_id;
+        Err(self.unsupported("get_version"))
+    }
+
     /// Which file a [`ContentSource::ProviderRef`] of this provider's platform stands for.
     ///
     /// `version: None` asks for the newest file that runs on `game_version` with `loader`
@@ -323,6 +333,22 @@ mod tests {
             metadata.await.unwrap().unwrap_err(),
             "get_versions_metadata",
         );
+    }
+
+    #[tokio::test]
+    async fn should_report_a_version_as_unsupported_when_the_provider_lacks_it() {
+        let provider: Arc<dyn ContentProvider> = Arc::new(BareProvider::new());
+
+        let version = tokio::spawn({
+            let provider = provider.clone();
+            async move {
+                provider
+                    .get_version(&ContentVersionId::try_from("v1").unwrap())
+                    .await
+            }
+        });
+
+        assert_unsupported(version.await.unwrap().unwrap_err(), "get_version");
     }
 
     #[tokio::test]

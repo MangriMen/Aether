@@ -105,4 +105,8 @@ pub struct ProviderHandlersDto {
     /// `ContentMetadataDto`. Takes `GetAuthorsParamsDto`, returns a list of `ContentAuthorDto`.
     /// Without it a project is shown by its `author` alone.
     pub get_authors: Option<String>,
+    /// Optional function giving one version whole, by its id, for the page of the version. Takes
+    /// the version id, returns a `ContentVersionDto` with its changelog. Without it the provider
+    /// has no page for a version.
+    pub get_version: Option<String>,
 }

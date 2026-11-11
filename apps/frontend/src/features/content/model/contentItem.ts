@@ -1,6 +1,7 @@
 import type {
   AtomicInstallParamsDto,
   ContentGetParamsDto,
+  ContentGetVersionParamsDto,
   ContentInstallParamsDto,
   ContentItemDto,
   ContentListVersionParamsDto,
@@ -9,6 +10,7 @@ import type {
   ContentVersionDependencyDto,
   ContentVersionDependencyTypeDto,
   ContentVersionDto,
+  ContentVersionFileDto,
   ContentVersionTypeDto,
   ModpackInstallParamsDto,
   ProviderIdDto,
@@ -64,10 +66,20 @@ export type ContentVersionDependency = ContentVersionDependencyDto;
 /** @public Dto alias, kept while unused (ARCHITECTURE.md, Checks). */
 export type ContentVersionType = ContentVersionTypeDto;
 
-export interface ContentVersion extends Omit<ContentVersionDto, 'downloads'> {
+interface ContentVersionFile extends Omit<ContentVersionFileDto, 'size'> {
+  size: number;
+}
+
+export interface ContentVersion extends Omit<
+  ContentVersionDto,
+  'downloads' | 'files'
+> {
   downloads: number;
+  files: ContentVersionFile[];
 }
 
 export type ContentGetParams = ContentGetParamsDto;
 
 export type ContentListVersionParams = ContentListVersionParamsDto;
+
+export type ContentGetVersionParams = ContentGetVersionParamsDto;

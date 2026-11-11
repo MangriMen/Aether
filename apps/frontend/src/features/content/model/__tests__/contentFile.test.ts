@@ -7,7 +7,7 @@ import {
   getContentFileAuthor,
   getContentFileDisplayTitle,
   getContentFileIconSrc,
-  getContentFileProjectHref,
+  getContentFileVersionHref,
   getContentFileTitle,
   isContentFileAuthorPending,
   getContentFileVersionSortValue,
@@ -187,23 +187,52 @@ describe('getContentIdFromUpdateInfo', () => {
   });
 });
 
-describe('getContentFileProjectHref', () => {
-  it('links to the project with provider and instance', () => {
+describe('getContentFileVersionHref', () => {
+  it('links to the version with provider and instance', () => {
     const file = makeFile({
       updateProviderId: provider,
       update: [
         { providerId: provider, info: { contentId: 'abc', version: 'v' } },
       ],
     });
-    expect(getContentFileProjectHref(file, 'inst')).toBe(
+    expect(getContentFileVersionHref(file, 'inst')).toBe(
       '/content/abc?instance=inst&plugin=modrinth&capability=content',
     );
   });
 
-  it('has no link without a provider or content id', () => {
-    expect(getContentFileProjectHref(makeFile({}))).toBeUndefined();
+  it('links to the version when its id is known', () => {
+    const update = [
+      { providerId: provider, info: { contentId: 'abc', version: 'v' } },
+    ];
+    const query = '?instance=inst&plugin=modrinth&capability=content';
+
     expect(
-      getContentFileProjectHref(makeFile({ updateProviderId: provider })),
+      getContentFileVersionHref(
+        makeFile({ updateProviderId: provider, update, version: 'v1' }),
+        'inst',
+      ),
+    ).toBe(`/content/abc/version/v1${query}`);
+    expect(
+      getContentFileVersionHref(
+        makeFile({
+          updateProviderId: provider,
+          update,
+          version: 'v1',
+          versionMetadata: {
+            versionId: 'v2',
+            versionNumber: '1.0',
+            name: null,
+          },
+        }),
+        'inst',
+      ),
+    ).toBe(`/content/abc/version/v2${query}`);
+  });
+
+  it('has no link without a provider or content id', () => {
+    expect(getContentFileVersionHref(makeFile({}))).toBeUndefined();
+    expect(
+      getContentFileVersionHref(makeFile({ updateProviderId: provider })),
     ).toBeUndefined();
   });
 });

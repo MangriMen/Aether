@@ -408,6 +408,17 @@ impl ContentProvider for PluginContentProviderProxy {
             .map_err(|err| self.invalid_answer("list_versions", err))
     }
 
+    async fn get_version(
+        &self,
+        version_id: &ContentVersionId,
+    ) -> Result<ContentVersion, InstanceError> {
+        let handler = self.handler(self.capability.handlers.get_version.as_ref(), "get_version")?;
+        let result_dto: ContentVersionDto = self
+            .call_plugin("get_version", handler, version_id.as_str().to_owned())
+            .await?;
+        ContentVersion::try_from(result_dto).map_err(|err| self.invalid_answer("get_version", err))
+    }
+
     async fn resolve_file(
         &self,
         content_id: &ContentId,

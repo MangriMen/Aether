@@ -1,7 +1,7 @@
 use aether_core::features::instance::{
-    ContentListVersionsParams, ContentVersion, ContentVersionDependency,
-    ContentVersionDependencyType, ContentVersionStatus, ContentVersionType, InstanceError,
-    RequestedContentVersionStatus,
+    ContentGetVersionParams, ContentListVersionsParams, ContentVersion, ContentVersionDependency,
+    ContentVersionDependencyType, ContentVersionFile, ContentVersionStatus, ContentVersionType,
+    InstanceError, RequestedContentVersionStatus,
 };
 use serde::{Deserialize, Serialize};
 use serde_with::{DisplayFromStr, serde_as};
@@ -64,6 +64,24 @@ pub enum RequestedContentVersionStatusDto {
 #[serde_as]
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
+pub struct ContentVersionFileDto {
+    pub file_name: String,
+    #[specta(type = String)]
+    #[serde_as(as = "DisplayFromStr")]
+    pub size: u64,
+    pub primary: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct ContentGetVersionParamsDto {
+    pub version_id: String,
+    pub provider_id: ProviderIdDto,
+}
+
+#[serde_as]
+#[derive(Debug, Clone, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
 pub struct ContentVersionDto {
     pub id: String,
     pub content_id: String,
@@ -82,7 +100,29 @@ pub struct ContentVersionDto {
     #[specta(type = String)]
     #[serde_as(as = "DisplayFromStr")]
     pub downloads: u64,
+    pub files: Vec<ContentVersionFileDto>,
     pub web_url: String,
+}
+
+impl TryFrom<ContentGetVersionParamsDto> for ContentGetVersionParams {
+    type Error = InstanceError;
+
+    fn try_from(value: ContentGetVersionParamsDto) -> Result<Self, Self::Error> {
+        Ok(Self {
+            version_id: value.version_id.try_into()?,
+            provider_id: value.provider_id.try_into()?,
+        })
+    }
+}
+
+impl From<ContentVersionFile> for ContentVersionFileDto {
+    fn from(value: ContentVersionFile) -> Self {
+        Self {
+            file_name: value.file_name,
+            size: value.size,
+            primary: value.primary,
+        }
+    }
 }
 
 impl TryFrom<ContentListVersionParamsDto> for ContentListVersionsParams {
@@ -170,6 +210,7 @@ impl From<ContentVersion> for ContentVersionDto {
             requested_status: value.requested_status.map(Into::into),
             date_published: value.date_published,
             downloads: value.downloads,
+            files: value.files.into_iter().map(Into::into).collect(),
             web_url: value.web_url.map(String::from).unwrap_or_default(),
         }
     }
