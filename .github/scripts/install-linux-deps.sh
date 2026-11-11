@@ -53,7 +53,8 @@ select_mirrors() {
     echo "azure.archive.ubuntu.com does not answer; using: ${ok[*]}"
     for url in "${ok[@]}"; do
       i=$((i + 1))
-      echo "$url/ priority:$i"
+      # the runner's own file separates the url and the priority with a tab; a space made apt read "priority:N" as part of the url
+      printf '%s/\tpriority:%s\n' "$url" "$i"
     done | sudo tee "$mirrors" >/dev/null
   fi
 }
