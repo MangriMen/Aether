@@ -1,4 +1,6 @@
-import { createMemo, createSignal, type Component } from 'solid-js';
+import type { CollectionNode } from '@kobalte/core';
+
+import { createMemo, createSignal, type Component, type JSX } from 'solid-js';
 
 import type { SettingsEntryProps } from '@/shared/settings-layout';
 
@@ -20,6 +22,10 @@ import {
   ComboboxItem,
   ComboboxTrigger,
 } from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
+
+/** From this many rows the list draws only the ones in view. */
+const VIRTUALIZE_FROM = 50;
 
 type FontOption = { value: UiFont; label: string };
 
@@ -54,26 +60,13 @@ export const UiFontEntry: Component<UiFontEntryProps> = (props) => {
     );
   });
 
-  const customOption = createMemo<FontOption | undefined>(() => {
-    const typed = draftOption();
-
-    if (typed?.value === UI_FONTS.Custom) {
-      return typed;
-    }
-
-    const stored = sanitizeFontFamily(themeContext.customFontFamily);
-
-    return stored ? { value: UI_FONTS.Custom, label: stored } : undefined;
-  });
-
   const systemFonts = useSystemFonts();
 
-  // The installed fonts, but not the ones the built-in choices (or the typed name) already stand for.
+  // The installed fonts, but not the ones the built-in choices already stand for. A name typed
+  // in or stored that is not installed is shown in the field only, not as a row of the list.
   const installedOptions = createMemo<FontOption[]>(() => {
     const taken = new Set(
-      [systemOption(), interOption, customOption()].map((option) =>
-        option?.label.toLowerCase(),
-      ),
+      [systemOption(), interOption].map((option) => option.label.toLowerCase()),
     );
 
     return (systemFonts.data ?? [])
@@ -81,16 +74,47 @@ export const UiFontEntry: Component<UiFontEntryProps> = (props) => {
       .map((name) => ({ value: UI_FONTS.Custom, label: name }));
   });
 
+  // The applied name that is not installed (not in the list), kept among the options only so
+  // the field can show it: the list itself leaves it out.
+  const unlistedOption = createMemo<FontOption | undefined>(() => {
+    const stored = sanitizeFontFamily(themeContext.customFontFamily);
+    const isListed = installedOptions().some(
+      (option) => option.label.toLowerCase() === stored.toLowerCase(),
+    );
+
+    return themeContext.uiFont === UI_FONTS.Custom && stored && !isListed
+      ? { value: UI_FONTS.Custom, label: stored }
+      : undefined;
+  });
+
   const options = createMemo(() => {
-    const custom = customOption();
+    const unlisted = unlistedOption();
 
     return [
       systemOption(),
       interOption,
-      ...(custom ? [custom] : []),
+      ...(unlisted ? [unlisted] : []),
       ...installedOptions(),
     ];
   });
+
+  // Drawing only the rows in view costs more than it saves on a short list.
+  const isVirtualized = () => options().length > VIRTUALIZE_FROM;
+
+  // Quoted the way the interface font is, so the name is a safe `font-family` value.
+  const previewStyle = (option: FontOption): JSX.CSSProperties | undefined => {
+    if (option.value !== UI_FONTS.Custom) {
+      return undefined;
+    }
+
+    const family = sanitizeFontFamily(option.label);
+
+    return family ? { 'font-family': `'${family}', sans-serif` } : undefined;
+  };
+
+  // The row that closes the built-in choices, set off from the installed fonts after it.
+  const hasSeparatorAfter = (option: FontOption) =>
+    option.value === UI_FONTS.Inter && installedOptions().length > 0;
 
   const currentOption = createMemo<FontOption>(() => {
     if (themeContext.uiFont === UI_FONTS.Inter) {
@@ -103,6 +127,26 @@ export const UiFontEntry: Component<UiFontEntryProps> = (props) => {
       ? { value: UI_FONTS.Custom, label: stored }
       : systemOption();
   });
+
+  const FontItem = (itemProps: {
+    item: CollectionNode<FontOption>;
+    style?: JSX.CSSProperties;
+  }) => (
+    <ComboboxItem
+      class={cn(
+        'whitespace-nowrap',
+        hasSeparatorAfter(itemProps.item.rawValue) &&
+          'after:absolute after:inset-x-2 after:bottom-0 after:h-px after:bg-border',
+      )}
+      item={itemProps.item}
+      style={{
+        ...itemProps.style,
+        ...previewStyle(itemProps.item.rawValue),
+      }}
+    >
+      {itemProps.item.rawValue.label}
+    </ComboboxItem>
+  );
 
   const [isOpen, setIsOpen] = createSignal(false);
 
@@ -144,12 +188,13 @@ export const UiFontEntry: Component<UiFontEntryProps> = (props) => {
     >
       <Combobox<FontOption>
         class='w-52'
-        virtualized
+        virtualized={isVirtualized()}
         triggerMode='focus'
         // Opened without typing, the list shows every choice, not only the one named in the field.
         defaultFilter={(option, inputValue) =>
-          draft() === '' ||
-          option.label.toLowerCase().includes(inputValue.toLowerCase())
+          option.label !== unlistedOption()?.label &&
+          (draft() === '' ||
+            option.label.toLowerCase().includes(inputValue.toLowerCase()))
         }
         options={options()}
         optionValue='label'
@@ -159,11 +204,7 @@ export const UiFontEntry: Component<UiFontEntryProps> = (props) => {
         onChange={handleChange}
         open={isOpen()}
         onOpenChange={setIsOpen}
-        itemComponent={(itemProps) => (
-          <ComboboxItem item={itemProps.item}>
-            {itemProps.item.rawValue.label}
-          </ComboboxItem>
-        )}
+        itemComponent={(itemProps) => <FontItem item={itemProps.item} />}
       >
         <ComboboxControl<FontOption>>
           <ComboboxInput
@@ -219,17 +260,11 @@ export const UiFontEntry: Component<UiFontEntryProps> = (props) => {
         </ComboboxControl>
         {/* A click outside the open list is leaving the field */}
         <ComboboxContent<FontOption>
-          virtualized
+          virtualized={isVirtualized()}
           class='max-h-72'
           onInteractOutside={commitDraft}
           itemComponent={(itemProps) => (
-            <ComboboxItem
-              class='whitespace-nowrap'
-              item={itemProps.item}
-              style={itemProps.style}
-            >
-              {itemProps.item.rawValue.label}
-            </ComboboxItem>
+            <FontItem item={itemProps.item} style={itemProps.style} />
           )}
         />
       </Combobox>
