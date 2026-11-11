@@ -1,21 +1,6 @@
 [advisories]
-# `zip` 4.x comes through `tauri-plugin-updater` (also in its 3.0 alpha), which extracts the
-# update archive. These advisories need a malicious archive, and the updater verifies the
-# minisign signature of the download before extracting it, so only an archive signed with our
-# release key reaches `zip`. Drop these once the plugin moves to `zip` >= 9.
-ignore = [
-  "RUSTSEC-2026-0367",
-  "RUSTSEC-2026-0368",
-  "RUSTSEC-2026-0369",
-  # `zstd` 0.13 and `zstd-safe` 7 come through `wasmtime` (pinned by `extism`), which only uses
-  # them for its own compiled-module cache; no untrusted zstd stream reaches them. Drop these
-  # once `extism` moves to a `wasmtime` that uses `zstd` >= 0.14.3.
-  "RUSTSEC-2026-0391",
-  "RUSTSEC-2026-0398",
-  "RUSTSEC-2026-0403",
-  # `libsqlite3-sys` 0.37 comes through `sqlx-sqlite` (pinned `=0.9.0`, the latest `sqlx`); the
-  # fix is in `libsqlite3-sys` >= 0.39. The bug needs a crafted database file next to a `-wal`
-  # file with another page size, and we only open our own database in the app data directory.
-  # Drop this once `sqlx` moves to `libsqlite3-sys` >= 0.39.
-  "RUSTSEC-2026-0459",
-]
+# `libsqlite3-sys` 0.37 comes through `sqlx-sqlite` (pinned `=0.9.0`, the latest `sqlx`); the
+# fix is in `libsqlite3-sys` >= 0.39. The bug needs a crafted database file next to a `-wal`
+# file with another page size, and we only open our own database in the app data directory.
+# Drop this once `sqlx` moves to `libsqlite3-sys` >= 0.39.
+ignore = ["RUSTSEC-2026-0459"]
