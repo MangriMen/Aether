@@ -42,11 +42,7 @@ impl CachePathResolver for MinecraftDownloadResolver {
             (ns, CacheId::Named(version_id))
                 if ns == MinecraftDownloadCacheNamespaces::VersionJar.as_str() =>
             {
-                Some(
-                    self.location_info
-                        .version_dir(version_id)
-                        .join(format!("{version_id}.jar")),
-                )
+                Some(self.location_info.version_jar_path(version_id))
             }
 
             _ => None,

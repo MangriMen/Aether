@@ -103,10 +103,7 @@ impl MinecraftHealthService for MinecraftFileHealthService {
         }
 
         // --- Step 5: Check client.jar ---
-        let client_path = self
-            .location_info
-            .version_dir(&version_jar)
-            .join(format!("{version_jar}.jar"));
+        let client_path = self.location_info.version_jar_path(&version_jar);
 
         if !client_path.exists() {
             return Ok(false);
