@@ -120,7 +120,8 @@ export type InstanceErrorDto = { code: "STORAGE"; payload: {
 } } | { code: "PLUGIN_NOT_RUNNING"; payload: {
 	plugin_id: string,
 } } | { code: "CACHES_BEING_CLEARED" } | { code: "ICON_TOO_LARGE"; payload: {
-limit: string } } | { code: "ICON_NOT_SUPPORTED" } | { code: "CANCELLED" } | { code: "PACK_INFO_NOT_FOUND" } | { code: "UPDATER_NOT_FOUND"; payload: {
+	limit: string,
+} } | { code: "ICON_NOT_SUPPORTED" } | { code: "CANCELLED" } | { code: "PACK_INFO_NOT_FOUND" } | { code: "UPDATER_NOT_FOUND"; payload: {
 	modpack_id: string,
 } } | { code: "UPDATE_FAILED"; payload: {
 	modpack_id: string,
