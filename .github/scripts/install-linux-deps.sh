@@ -34,7 +34,7 @@ probe() {
   if err=$(curl -fsS -o /dev/null --max-time 5 "$url/dists/$codename/InRelease" 2>&1); then
     return 0
   fi
-  ip=$(getent hosts "$host" | head -n 1 | cut -d' ' -f1 || true)
+  ip=$(timeout 5 getent hosts "$host" | head -n 1 | cut -d' ' -f1 || true)
   echo "probe failed: $host (resolves to: ${ip:-nothing}): $err"
   return 1
 }
