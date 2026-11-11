@@ -10,6 +10,7 @@ use crate::{
     shared::{
         IdempotencyManager, RequestId, TauriIdempotencyExt,
         commands::{SETTINGS_PLUGIN_NAME, settings_commands},
+        system_fonts::list_system_font_families,
     },
 };
 
@@ -122,6 +123,16 @@ async fn get_max_ram() -> FrontendResult<RamSettingsDto> {
         total_memory: aether_core::shared::system::infra::get_total_memory()
             .map_err(|err| FrontendError::Generic(err.to_string()))?,
     })
+}
+
+/// The names of the font families installed on the system, for the interface font to choose from.
+#[tauri::command]
+#[specta::specta]
+async fn list_system_fonts() -> FrontendResult<Vec<String>> {
+    list_system_font_families()
+        .await
+        .map(<[String]>::to_vec)
+        .map_err(|err| FrontendError::Generic(err.to_string()))
 }
 
 #[tauri::command]

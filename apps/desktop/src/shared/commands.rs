@@ -158,6 +158,7 @@ macro_rules! settings_commands {
             edit_default_instance_settings,
             get_app_settings,
             edit_app_settings,
+            list_system_fonts,
         ]
     };
 }

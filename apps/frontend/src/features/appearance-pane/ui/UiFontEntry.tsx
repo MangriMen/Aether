@@ -9,6 +9,7 @@ import {
   useThemeContext,
   type UiFont,
 } from '@/features/appearance';
+import { useSystemFonts } from '@/features/settings';
 import { useTranslation } from '@/shared/i18n';
 import { SettingsEntry } from '@/shared/settings-layout';
 import {
@@ -65,12 +66,30 @@ export const UiFontEntry: Component<UiFontEntryProps> = (props) => {
     return stored ? { value: UI_FONTS.Custom, label: stored } : undefined;
   });
 
+  const systemFonts = useSystemFonts();
+
+  // The installed fonts, but not the ones the built-in choices (or the typed name) already stand for.
+  const installedOptions = createMemo<FontOption[]>(() => {
+    const taken = new Set(
+      [systemOption(), interOption, customOption()].map((option) =>
+        option?.label.toLowerCase(),
+      ),
+    );
+
+    return (systemFonts.data ?? [])
+      .filter((name) => !taken.has(name.toLowerCase()))
+      .map((name) => ({ value: UI_FONTS.Custom, label: name }));
+  });
+
   const options = createMemo(() => {
     const custom = customOption();
 
-    return custom
-      ? [systemOption(), interOption, custom]
-      : [systemOption(), interOption];
+    return [
+      systemOption(),
+      interOption,
+      ...(custom ? [custom] : []),
+      ...installedOptions(),
+    ];
   });
 
   const currentOption = createMemo<FontOption>(() => {
@@ -132,7 +151,7 @@ export const UiFontEntry: Component<UiFontEntryProps> = (props) => {
           option.label.toLowerCase().includes(inputValue.toLowerCase())
         }
         options={options()}
-        optionValue='value'
+        optionValue='label'
         optionTextValue='label'
         optionLabel='label'
         value={currentOption()}

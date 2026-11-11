@@ -81,6 +81,8 @@ reqwest = { version = "0.13.4", features = ["json", "stream", "deflate", "gzip",
 reqwest-middleware = "0.5.2"
 reqwest-retry = "0.9.1"
 windows-sys = "0.61.2"
+fontdb = "0.24.0"
+ttf-parser = "0.25.1"
 
 [build-dependencies]
 paste = "1.0.15"

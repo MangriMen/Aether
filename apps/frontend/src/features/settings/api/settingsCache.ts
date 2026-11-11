@@ -35,6 +35,12 @@ export const settingsQueries = {
     queryFn: settingsCommands.getMaxRam,
     staleTime: Infinity,
   }),
+  // The installed fonts change rarely, and the backend lists them once per run.
+  systemFonts: () => ({
+    queryKey: settingsKeys.systemFonts(),
+    queryFn: settingsCommands.listSystemFonts,
+    staleTime: Infinity,
+  }),
 } as const;
 
 export const settingsCache = {
