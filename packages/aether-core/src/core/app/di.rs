@@ -244,10 +244,10 @@ impl AetherContainer {
         params.event_emitter.on::<PluginEvent, _>({
             let content_metadata = content_metadata.clone();
             move |event| match event {
-                PluginEvent::Add { plugin_id } | PluginEvent::Edit { plugin_id } => {
+                PluginEvent::Edit { plugin_id } => {
                     content_metadata.forget_unsupported(&plugin_id);
                 }
-                PluginEvent::Remove { .. } | PluginEvent::Sync => {}
+                PluginEvent::Sync => {}
             }
         });
 

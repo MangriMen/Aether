@@ -113,8 +113,10 @@ const DialogContent = <T extends ValidComponent = 'div'>(
 
   const resize = createResizableWidth({
     defaultWidth: local.defaultWidth ?? 512,
+    // Read once as the starting value; the dialog does not follow later changes.
     // eslint-disable-next-line solid/reactivity
     minWidth: local.minWidth ?? 320,
+    // Read once as the starting value; the dialog does not follow later changes.
     // eslint-disable-next-line solid/reactivity
     storageKey: local.resizeStorageKey,
   });
