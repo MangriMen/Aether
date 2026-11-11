@@ -11,6 +11,8 @@ import { cn } from '@/shared/utils';
 
 export interface ContentVersionTypeBadgeProps {
   type: ContentVersion['versionType'];
+  /** Shows the badge as a pill with this text, not as the square with the first letter. */
+  label?: string;
 }
 
 const variants = {
@@ -29,7 +31,7 @@ const isVariant = (value: unknown): value is Variant =>
 export const ContentVersionTypeBadge: Component<
   ComponentProps<'div'> & ContentVersionTypeBadgeProps
 > = (props) => {
-  const [local, others] = splitProps(props, ['type', 'class']);
+  const [local, others] = splitProps(props, ['type', 'label', 'class']);
 
   const data = createMemo(() => {
     const firstLetter = local.type.charAt(0).toUpperCase();
@@ -54,10 +56,16 @@ export const ContentVersionTypeBadge: Component<
   return (
     <div
       class={cn(
-        `
-          size-9 rounded-sm bg-muted text-base font-medium text-muted-foreground
-          flex items-center justify-center
-        `,
+        local.label
+          ? `
+            h-6 px-2.5 text-sm font-medium text-muted-foreground flex w-fit
+            items-center rounded-full bg-muted
+          `
+          : `
+            size-9 rounded-sm bg-muted text-base font-medium
+            text-muted-foreground
+            flex items-center justify-center
+          `,
         local.class,
         {
           [variantClass() ?? '']: Boolean(variantClass()),
@@ -65,7 +73,7 @@ export const ContentVersionTypeBadge: Component<
       )}
       {...others}
     >
-      {data().firstLetter}
+      {local.label ?? data().firstLetter}
     </div>
   );
 };

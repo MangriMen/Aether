@@ -1,5 +1,5 @@
 import { A, useParams } from '@solidjs/router';
-import IconMdiArrowLeft from '~icons/mdi/arrow-left';
+import IconMdiChevronRight from '~icons/mdi/chevron-right';
 import IconMdiOpenInNew from '~icons/mdi/open-in-new';
 import {
   Match,
@@ -20,10 +20,17 @@ import {
 import { isUnsupportedOperationError } from '@/features/errors';
 import { useTranslation } from '@/shared/i18n';
 import { MarkdownRenderer } from '@/shared/markdown';
-import { Button, CombinedTooltip, IconButton, Skeleton } from '@/shared/ui-kit';
+import {
+  Button,
+  CombinedTooltip,
+  IconButton,
+  Separator,
+  Skeleton,
+} from '@/shared/ui-kit';
 import { cn } from '@/shared/utils';
 
 import { useContentVersionInstall } from '../lib/useContentVersionInstall';
+import { ContentItemPageInfo } from './ContentItemPageInfo';
 import { ContentVersionDetails } from './ContentVersionDetails';
 import { ContentVersionTypeBadge } from './ContentVersionTypeBadge';
 
@@ -76,16 +83,22 @@ export const ContentVersionPage: Component<ContentVersionPageProps> = (
       class={cn('gap-4 p-0.5 flex grow flex-col overflow-auto', local.class)}
       {...others}
     >
-      <A
-        href={projectHref()}
-        class='
-          gap-1 text-muted-foreground flex w-fit items-center
-          hover:text-foreground
-        '
-      >
-        <IconMdiArrowLeft />
-        {item.data?.name ?? t('contentVersion.backToProject')}
-      </A>
+      <ContentItemPageInfo
+        item={item.data}
+        isLoading={item.isFetching}
+        hideActions
+      />
+      <Separator />
+
+      <nav class='gap-1 text-muted-foreground flex items-center'>
+        <A href={projectHref()} class='hover:text-foreground hover:underline'>
+          {t('content.item.versions')}
+        </A>
+        <IconMdiChevronRight />
+        <span class='min-w-0 truncate text-foreground'>
+          {version.data?.versionNumber ?? params.versionId}
+        </span>
+      </nav>
 
       <Switch>
         <Match
@@ -101,11 +114,18 @@ export const ContentVersionPage: Component<ContentVersionPageProps> = (
             <>
               <div class='gap-3 flex flex-wrap items-center justify-between'>
                 <div class='gap-3 flex min-w-0 items-center'>
-                  <ContentVersionTypeBadge type={data().versionType} />
-                  <div class='flex min-w-0 flex-col'>
-                    <h1 class='text-2xl font-bold text-foreground'>
-                      {data().name || data().versionNumber}
-                    </h1>
+                  <div class='gap-1 flex min-w-0 flex-col'>
+                    <div class='gap-2 flex flex-wrap items-center'>
+                      <h1 class='text-2xl font-bold text-foreground'>
+                        {data().name || data().versionNumber}
+                      </h1>
+                      <ContentVersionTypeBadge
+                        type={data().versionType}
+                        label={t(
+                          `contentVersion.channels.${data().versionType}`,
+                        )}
+                      />
+                    </div>
                     <span class='text-muted-foreground'>
                       {data().versionNumber}
                     </span>
