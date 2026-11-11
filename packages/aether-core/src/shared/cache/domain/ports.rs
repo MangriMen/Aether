@@ -59,7 +59,9 @@ pub trait CachePathResolver: Send + Sync {
 pub trait FileStore: Send + Sync {
     async fn exists(&self, key: &CacheKey<()>) -> bool;
     async fn read(&self, key: &CacheKey<()>) -> Option<Bytes>;
-    async fn write(&self, key: &CacheKey<()>, value: Bytes);
+    /// Writes whole or not at all. A file that could not be written is the caller's to handle:
+    /// a cache entry may be skipped, a file the caller needs may not.
+    async fn write(&self, key: &CacheKey<()>, value: Bytes) -> std::io::Result<()>;
     async fn invalidate(&self, key: &CacheKey<()>);
     /// Like [`Self::invalidate`], but says why a file that exists could not be deleted.
     async fn delete(&self, key: &CacheKey<()>) -> std::io::Result<()>;

@@ -86,7 +86,11 @@ impl<C: FileStore> AssetsStorage for FsAssetsStorage<C> {
         let key = CacheKey::new(ASSETS_CACHE_NAMESPACE, CacheId::Named(filename.clone()));
 
         if !self.cache.exists(&key).await {
-            self.cache.write(&key, bytes).await;
+            // The asset is what the instance will point at: a file not written is a failed import.
+            self.cache
+                .write(&key, bytes)
+                .await
+                .map_err(|err| AssetError::Write(err.to_string()))?;
         }
 
         Ok(filename)
@@ -124,7 +128,9 @@ mod tests {
         async fn read(&self, _: &CacheKey<()>) -> Option<Bytes> {
             None
         }
-        async fn write(&self, _: &CacheKey<()>, _: Bytes) {}
+        async fn write(&self, _: &CacheKey<()>, _: Bytes) -> std::io::Result<()> {
+            Ok(())
+        }
         async fn invalidate(&self, key: &CacheKey<()>) {
             if let CacheId::Named(name) = key.id() {
                 self.invalidated.lock().unwrap().push(name.clone());
@@ -149,8 +155,9 @@ mod tests {
         async fn read(&self, _: &CacheKey<()>) -> Option<Bytes> {
             None
         }
-        async fn write(&self, _: &CacheKey<()>, bytes: Bytes) {
+        async fn write(&self, _: &CacheKey<()>, bytes: Bytes) -> std::io::Result<()> {
             *self.written.lock().unwrap() = Some(bytes.to_vec());
+            Ok(())
         }
         async fn invalidate(&self, _: &CacheKey<()>) {}
         async fn delete(&self, _: &CacheKey<()>) -> std::io::Result<()> {

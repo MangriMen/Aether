@@ -78,4 +78,6 @@ pub enum AssetError {
     NotAnImage,
     #[error("Remove error: {0}")]
     Remove(String),
+    #[error("Write error: {0}")]
+    Write(String),
 }

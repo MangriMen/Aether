@@ -7,9 +7,12 @@ use tracing::debug;
 
 use crate::shared::{
     cache::domain::{Cache, CacheKey, CachePathResolver, FileStore},
-    io::infra::{
-        create_dir_all, read_async, read_json_async, remove_file, write_json_async,
-        write_replacing_async,
+    io::{
+        domain::IoError,
+        infra::{
+            create_dir_all, read_async, read_json_async, remove_file, write_json_async,
+            write_replacing_async,
+        },
     },
 };
 
@@ -92,15 +95,21 @@ impl<R: CachePathResolver> FileStore for FileCache<R> {
         read_async(path).await.ok().map(Into::into)
     }
 
-    async fn write(&self, key: &CacheKey<()>, data: Bytes) {
+    async fn write(&self, key: &CacheKey<()>, data: Bytes) -> std::io::Result<()> {
         let Some(path) = self.path(key) else {
-            return;
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                "the key has no path in the cache",
+            ));
         };
 
         // Whole or not at all: `exists` must never take a file cut short for one that is there.
-        if let Err(err) = write_replacing_async(&path, data).await {
-            debug!("Failed to write cache file {:?}. {:?}", path, err);
-        }
+        write_replacing_async(&path, data)
+            .await
+            .map_err(|err| match err {
+                IoError::IoError(err) => err,
+                other => std::io::Error::other(other),
+            })
     }
 
     async fn invalidate(&self, key: &CacheKey<()>) {
