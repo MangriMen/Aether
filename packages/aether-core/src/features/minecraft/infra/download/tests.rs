@@ -296,6 +296,23 @@ fn with_natives(json: &mut serde_json::Value) {
         }));
 }
 
+/// Adds a library like Mojang's 1.7.10-1.12.2 ones: natives and classifiers, no `artifact`.
+fn with_natives_only(json: &mut serde_json::Value) {
+    let classifier = serde_json::json!({
+        "path": "n.jar", "sha1": "0", "size": 3, "url": NATIVE_URL
+    });
+    json["libraries"]
+        .as_array_mut()
+        .unwrap()
+        .push(serde_json::json!({
+            "name": NATIVE_LIBRARY,
+            "natives": {
+                "linux": "natives-all", "windows": "natives-all", "osx": "natives-all"
+            },
+            "downloads": { "classifiers": { "natives-all": classifier } }
+        }));
+}
+
 fn natives_zip() -> Vec<u8> {
     use std::io::Write;
     let mut writer = zip::ZipWriter::new(std::io::Cursor::new(Vec::new()));
@@ -373,6 +390,28 @@ async fn should_extract_the_natives_when_they_are_downloaded() {
         .version_natives_dir("1.20.1")
         .join("native.so");
     assert_eq!(std::fs::read(extracted).unwrap(), b"machine code");
+}
+
+#[tokio::test]
+async fn should_install_a_library_with_only_natives_when_it_has_no_artifact() {
+    let fixture = fixture();
+    let version = version_from(&fixture.client, "1.12.2", ASSET_HASH, with_natives_only);
+    // The main jar is not served: asking for it would fail the install.
+    fixture.client.serve(NATIVE_URL, natives_zip());
+
+    let (result, _) = download(&fixture.service, &version, None).await.unwrap();
+
+    result.unwrap();
+    let extracted = fixture
+        .location_info
+        .version_natives_dir("1.12.2")
+        .join("native.so");
+    assert_eq!(std::fs::read(extracted).unwrap(), b"machine code");
+    let jar = fixture
+        .location_info
+        .libraries_dir()
+        .join("com/example/native/1.0/native-1.0.jar");
+    assert!(!jar.exists());
 }
 
 /// A digest that is none of the bodies the tests serve.

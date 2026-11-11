@@ -146,7 +146,7 @@ pub fn get_class_paths(
             .rules
             .as_deref()
             .is_some_and(|rules| !parse_rules(rules, java_arch, minecraft_updated));
-        if denied || !library.include_in_classpath {
+        if denied || !library.include_in_classpath || library.is_natives_only() {
             continue;
         }
 
@@ -456,6 +456,21 @@ mod tests {
         hidden.include_in_classpath = false;
         let cp = get_class_paths(&e.libs, &[hidden, lib("g:b:2")], &e.client, "x64", true).unwrap();
         assert_eq!(split_set(&cp), HashSet::from([b, canon(&e.client)]));
+    }
+
+    #[test]
+    fn class_paths_skips_a_natives_only_library_without_a_jar() {
+        let e = env();
+        let natives_only: Library = serde_json::from_value(serde_json::json!({
+            "name": "g:natives:1",
+            "natives": { "linux": "natives-linux", "windows": "natives-windows", "osx": "natives-osx" },
+            "downloads": { "classifiers": {
+                "natives-linux": { "path": "n.jar", "sha1": "0", "size": 3, "url": "https://x/n.jar" }
+            } }
+        }))
+        .unwrap();
+        let cp = get_class_paths(&e.libs, &[natives_only], &e.client, "x64", true).unwrap();
+        assert_eq!(cp, canon(&e.client));
     }
 
     #[test]

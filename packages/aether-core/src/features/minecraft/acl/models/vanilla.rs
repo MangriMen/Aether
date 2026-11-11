@@ -332,6 +332,17 @@ pub struct Library {
 }
 
 impl Library {
+    /// Whether the library is only natives: Mojang's old libraries (1.7.10-1.12.2) have
+    /// `natives` and classifiers but no main jar.
+    pub fn is_natives_only(&self) -> bool {
+        self.natives
+            .as_ref()
+            .is_some_and(|natives| !natives.is_empty())
+            && self.downloads.as_ref().is_some_and(|downloads| {
+                downloads.artifact.is_none() && downloads.classifiers.is_some()
+            })
+    }
+
     /// Returns the OS key and classifiers for downloading natives, if applicable
     pub fn natives_os_key_and_classifiers(
         &self,
@@ -501,4 +512,52 @@ pub struct Asset {
 pub struct AssetsIndex {
     /// A hashmap containing the filename (key) and asset (value)
     pub objects: HashMap<String, Asset>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn library(json: &serde_json::Value) -> Library {
+        let mut base = serde_json::json!({ "name": "g:a:1" });
+        base.as_object_mut()
+            .unwrap()
+            .extend(json.as_object().unwrap().clone());
+        serde_json::from_value(base).unwrap()
+    }
+
+    fn download() -> serde_json::Value {
+        serde_json::json!({ "path": "a.jar", "sha1": "0", "size": 1, "url": "https://x/a.jar" })
+    }
+
+    fn natives() -> serde_json::Value {
+        serde_json::json!({ "linux": "natives-linux" })
+    }
+
+    #[test]
+    fn is_natives_only_when_there_are_natives_and_classifiers_but_no_artifact() {
+        let lib = library(&serde_json::json!({
+            "natives": natives(),
+            "downloads": { "classifiers": { "natives-linux": download() } }
+        }));
+        assert!(lib.is_natives_only());
+    }
+
+    #[test]
+    fn is_not_natives_only_without_downloads() {
+        let lib = library(&serde_json::json!({ "natives": natives(), "url": "https://x/" }));
+        assert!(!lib.is_natives_only());
+    }
+
+    #[test]
+    fn is_not_natives_only_when_there_is_an_artifact() {
+        let lib = library(&serde_json::json!({
+            "natives": natives(),
+            "downloads": {
+                "artifact": download(),
+                "classifiers": { "natives-linux": download() }
+            }
+        }));
+        assert!(!lib.is_natives_only());
+    }
 }

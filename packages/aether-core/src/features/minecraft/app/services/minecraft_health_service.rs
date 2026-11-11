@@ -166,9 +166,34 @@ fn should_check_library(
         return false;
     }
 
-    if !library.downloadable {
+    // A natives-only library has no main jar to look for.
+    if !library.downloadable || library.is_natives_only() {
         return false;
     }
 
     true
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn library(json: serde_json::Value) -> vanilla::Library {
+        serde_json::from_value(json).unwrap()
+    }
+
+    #[test]
+    fn should_not_check_the_jar_of_a_natives_only_library() {
+        let natives_only = library(serde_json::json!({
+            "name": "g:natives:1",
+            "natives": { "linux": "natives-linux" },
+            "downloads": { "classifiers": {
+                "natives-linux": { "path": "n.jar", "sha1": "0", "size": 3, "url": "https://x/n.jar" }
+            } }
+        }));
+        assert!(!should_check_library(&natives_only, "x64", true));
+
+        let plain = library(serde_json::json!({ "name": "g:a:1" }));
+        assert!(should_check_library(&plain, "x64", true));
+    }
 }
