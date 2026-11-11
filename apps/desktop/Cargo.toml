@@ -38,6 +38,10 @@ generate-bindings = []
 tauri-plugin-updater = "2.10.1"
 tauri-plugin-window-state = "2.4.1"
 
+# Must stay on the version tao links: the main-thread check below reads tao's GTK init flag.
+[target.'cfg(target_os = "linux")'.dependencies]
+gtk = "0.18"
+
 [dependencies]
 
 # Tauri & Plugins
