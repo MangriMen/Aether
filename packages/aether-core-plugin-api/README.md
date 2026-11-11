@@ -67,6 +67,10 @@ response from an older host (the flags then read `false`), but a plugin built **
 flags cannot decode a `run_command` response from a host that sends them: rebuild it against
 this version.
 
+`ContentMetadataDto` no longer has `description`, which sat before `author` in the msgpack layout: a plugin built
+against an older crate cannot decode a `getContentsMetadata` answer correctly. Rebuild it against this
+version.
+
 ## Ids
 
 `id` in the manifest (and every capability id and platform name) must match

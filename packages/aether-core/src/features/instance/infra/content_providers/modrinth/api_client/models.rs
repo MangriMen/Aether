@@ -153,7 +153,6 @@ pub struct ProjectMetadataResponse {
     pub id: String,
     pub slug: String,
     pub title: String,
-    pub description: Option<String>,
     pub icon_url: Option<String>,
     /// The id of the project's team.
     #[serde(default)]

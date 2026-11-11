@@ -163,7 +163,6 @@ mod tests {
                 content_id: ContentId::try_from("AANobbMI").unwrap(),
                 slug: "sodium".into(),
                 name: "Sodium".into(),
-                description: None,
                 author: None,
                 author_ref: None,
                 icon_url: None,
