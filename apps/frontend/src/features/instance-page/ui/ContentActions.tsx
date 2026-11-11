@@ -2,7 +2,7 @@ import type { Component, ComponentProps } from 'solid-js';
 
 import IconMdiDelete from '~icons/mdi/delete';
 import IconMdiMore from '~icons/mdi/dots-vertical';
-import { splitProps } from 'solid-js';
+import { createSignal, splitProps } from 'solid-js';
 
 import {
   useDisableContents,
@@ -25,6 +25,8 @@ import {
   SwitchThumb,
 } from '@/shared/ui-kit';
 import { cn } from '@/shared/utils';
+
+import { RemoveContentsDialog } from './RemoveContentsDialog';
 
 export type ContentActionsProps = ComponentProps<'div'> & {
   instanceId: string;
@@ -62,7 +64,10 @@ export const ContentActions: Component<ContentActionsProps> = (props) => {
     }
   };
 
+  const [confirmingRemove, setConfirmingRemove] = createSignal(false);
+
   const handleRemove = () => {
+    setConfirmingRemove(false);
     removeInstanceContents({
       id: local.instanceId,
       paths: [local.content.contentPath],
@@ -93,7 +98,13 @@ export const ContentActions: Component<ContentActionsProps> = (props) => {
           enabled:active:bg-destructive/solid-active
         '
         icon={IconMdiDelete}
-        onClick={handleRemove}
+        onClick={() => setConfirmingRemove(true)}
+      />
+      <RemoveContentsDialog
+        open={confirmingRemove()}
+        onOpenChange={setConfirmingRemove}
+        files={[local.content]}
+        onConfirm={handleRemove}
       />
       <DropdownMenu>
         <DropdownMenuTrigger

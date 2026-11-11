@@ -87,3 +87,14 @@ describe('CombinedDialog', () => {
     expect(document.querySelector('[role="dialog"]')).not.toBeNull();
   });
 });
+
+describe('CombinedDialog accessibility', () => {
+  it('names the dialog by its header', () => {
+    mount(() => <CombinedDialog header='Delete it?' open />);
+
+    const dialog = document.querySelector('[role="dialog"]')!;
+    const titleId = dialog.getAttribute('aria-labelledby')!;
+
+    expect(document.getElementById(titleId)?.textContent).toBe('Delete it?');
+  });
+});

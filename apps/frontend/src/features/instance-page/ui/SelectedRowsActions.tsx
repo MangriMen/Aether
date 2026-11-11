@@ -5,6 +5,7 @@ import IconMdiCheck from '~icons/mdi/check';
 import IconMdiDelete from '~icons/mdi/delete';
 import {
   createMemo,
+  createSignal,
   Show,
   splitProps,
   type Component,
@@ -25,9 +26,13 @@ import { logError } from '@/shared/log';
 import { CombinedTooltip, IconButton } from '@/shared/ui-kit';
 import { cn } from '@/shared/utils';
 
+import { RemoveContentsDialog } from './RemoveContentsDialog';
+
 export type SelectedRowsActionsProps = ComponentProps<'div'> & {
   instanceId: Instance['id'];
   selectedRows: RowModel<AppTableFeatures, ContentFile>;
+  /** Called after the files are removed, so the selection does not point at them. */
+  onRemoved?: () => void;
 };
 
 export const SelectedRowsActions: Component<SelectedRowsActionsProps> = (
@@ -36,6 +41,7 @@ export const SelectedRowsActions: Component<SelectedRowsActionsProps> = (
   const [local, others] = splitProps(props, [
     'instanceId',
     'selectedRows',
+    'onRemoved',
     'class',
   ]);
 
@@ -76,11 +82,16 @@ export const SelectedRowsActions: Component<SelectedRowsActionsProps> = (
     }).catch(logError);
   };
 
+  const [confirmingRemove, setConfirmingRemove] = createSignal(false);
+
   const handleDeleteContents = () => {
+    setConfirmingRemove(false);
     removeInstanceContents({
       id: local.instanceId,
       paths: getContentIds(),
-    }).catch(logError);
+    })
+      .then(() => local.onRemoved?.())
+      .catch(logError);
   };
 
   return (
@@ -117,7 +128,13 @@ export const SelectedRowsActions: Component<SelectedRowsActionsProps> = (
         variant='destructive'
         size='sm'
         icon={IconMdiDelete}
-        onClick={handleDeleteContents}
+        onClick={() => setConfirmingRemove(true)}
+      />
+      <RemoveContentsDialog
+        open={confirmingRemove()}
+        onOpenChange={setConfirmingRemove}
+        files={selectedContents()}
+        onConfirm={handleDeleteContents}
       />
     </div>
   );

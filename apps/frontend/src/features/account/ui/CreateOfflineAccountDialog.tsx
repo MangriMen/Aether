@@ -4,7 +4,12 @@ import { createEffect, createSignal, type Component } from 'solid-js';
 
 import { getTranslatedError, isLauncherError } from '@/features/errors';
 import { useTranslation } from '@/shared/i18n';
-import { Dialog, DialogContent, DialogHeader } from '@/shared/ui-kit';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/shared/ui-kit';
 
 import { useCreateOfflineAccount } from '../api/accountQueries';
 import { isAuthValidationError } from '../model/accountError';
@@ -55,7 +60,9 @@ export const CreateOfflineAccountDialog: Component<
   return (
     <Dialog {...props}>
       <DialogContent class='max-w-80'>
-        <DialogHeader>{t('createOfflineAccount.title')}</DialogHeader>
+        <DialogHeader>
+          <DialogTitle>{t('createOfflineAccount.title')}</DialogTitle>
+        </DialogHeader>
         <CreateOfflineAccountForm
           onCreate={handleCreate}
           onCancel={closeDialog}

@@ -54,28 +54,34 @@ export const createContentTableColumns = () =>
       minSize: 40,
       maxSize: 40,
       size: 40,
-      header: (props) => (
-        <div class='flex items-center justify-center'>
-          <Checkbox
-            checked={props.table.getIsAllPageRowsSelected()}
-            indeterminate={
-              props.table.getIsSomePageRowsSelected() &&
-              !props.table.getIsAllPageRowsSelected()
-            }
-            onChange={(value) => props.table.toggleAllRowsSelected(value)}
-            aria-label='Select all'
-          />
-        </div>
-      ),
-      cell: (props) => (
-        <div class='flex items-center justify-center'>
-          <Checkbox
-            checked={props.row.getIsSelected()}
-            onChange={(value) => props.row.toggleSelected(value)}
-            aria-label='Select row'
-          />
-        </div>
-      ),
+      header: (props) => {
+        const [{ t }] = useTranslation();
+        return (
+          <div class='flex items-center justify-center'>
+            <Checkbox
+              checked={props.table.getIsAllPageRowsSelected()}
+              indeterminate={
+                props.table.getIsSomePageRowsSelected() &&
+                !props.table.getIsAllPageRowsSelected()
+              }
+              onChange={(value) => props.table.toggleAllPageRowsSelected(value)}
+              aria-label={t('common.selectAll')}
+            />
+          </div>
+        );
+      },
+      cell: (props) => {
+        const [{ t }] = useTranslation();
+        return (
+          <div class='flex items-center justify-center'>
+            <Checkbox
+              checked={props.row.getIsSelected()}
+              onChange={(value) => props.row.toggleSelected(value)}
+              aria-label={t('common.selectRow')}
+            />
+          </div>
+        );
+      },
     }),
 
     contentTableColumnHelper.accessor(getContentFileDisplayTitle, {
