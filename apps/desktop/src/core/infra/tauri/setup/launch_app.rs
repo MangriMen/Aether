@@ -35,6 +35,7 @@ fn create_app() -> Builder<Wry> {
     crate::shared::specta::export_specta_builders(&builders_with_name);
 
     Builder::default()
+        .pipe(configure_single_instance)
         .setup(move |app| {
             for (_, builder) in &builders_with_name {
                 builder.mount_events(app);
@@ -54,6 +55,18 @@ fn create_app() -> Builder<Wry> {
         .pipe(configure_system_plugins)
         .pipe(configure_feature_plugins)
         .pipe(configure_commands)
+}
+
+/// Must be the first plugin: a second copy has to exit before anything opens the database.
+/// A debug build may run next to a release one (and against its own `AETHER_DATA_DIR`).
+fn configure_single_instance(builder: Builder<Wry>) -> Builder<Wry> {
+    if cfg!(debug_assertions) {
+        return builder;
+    }
+
+    builder.plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+        super::single_instance::focus_main_window(app);
+    }))
 }
 
 fn configure_system_plugins(builder: Builder<Wry>) -> Builder<Wry> {

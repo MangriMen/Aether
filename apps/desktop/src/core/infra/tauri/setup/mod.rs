@@ -7,6 +7,7 @@ pub mod log;
 pub mod migrations;
 pub mod pipe;
 pub mod protocols;
+pub mod single_instance;
 pub mod sqlite;
 pub mod state;
 pub mod watchdog;
