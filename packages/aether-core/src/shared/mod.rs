@@ -4,6 +4,7 @@ pub mod capability;
 pub mod fetch;
 pub mod hash;
 pub mod housekeeping;
+pub mod image;
 pub mod io;
 pub mod java;
 pub mod json_store;

@@ -72,6 +72,10 @@ impl<T> CachedValue<T> {
 pub enum AssetError {
     #[error("Source read error: {0}")]
     ReadSource(String),
+    #[error("Icon is larger than {limit} bytes")]
+    TooLarge { limit: u64 },
+    #[error("Icon is not a PNG, JPEG, GIF or WebP image")]
+    NotAnImage,
     #[error("Remove error: {0}")]
     Remove(String),
 }

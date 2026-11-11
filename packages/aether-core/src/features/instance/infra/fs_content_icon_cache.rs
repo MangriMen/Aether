@@ -29,6 +29,7 @@ use crate::{
     shared::{
         hash::infra::sha256_hex,
         housekeeping::CacheCleaner,
+        image::sniff_image_extension,
         io::infra::{REPLACING_TEMP_PREFIX, write_replacing_async},
         request_client::{FileDownload, Request, RequestClient},
         web_url::HttpsUrl,
@@ -138,21 +139,6 @@ fn check_public(url: &HttpsUrl) -> Result<(), ContentIconError> {
         Ok(())
     } else {
         Err(ContentIconError::InvalidUrl(url.to_string()))
-    }
-}
-
-/// The extension of the image format `head` (the first bytes of a file) starts, if taken.
-fn sniff_extension(head: &[u8]) -> Option<&'static str> {
-    if head.starts_with(b"\x89PNG\r\n\x1a\n") {
-        Some("png")
-    } else if head.starts_with(b"\xff\xd8\xff") {
-        Some("jpg")
-    } else if head.starts_with(b"GIF87a") || head.starts_with(b"GIF89a") {
-        Some("gif")
-    } else if head.len() >= 12 && &head[..4] == b"RIFF" && &head[8..12] == b"WEBP" {
-        Some("webp")
-    } else {
-        None
     }
 }
 
@@ -293,7 +279,7 @@ impl ContentIconCache for FsContentIconCache {
             return Err(ContentIconError::NotAnImage);
         }
         let head = read_head(&staging).await.map_err(storage_error)?;
-        let Some(extension) = sniff_extension(&head) else {
+        let Some(extension) = sniff_image_extension(&head) else {
             return Err(ContentIconError::NotAnImage);
         };
 
