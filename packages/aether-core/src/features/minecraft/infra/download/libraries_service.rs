@@ -20,7 +20,7 @@ use crate::{
             infra::{create_dir_all, write_replacing_async},
         },
         keyed_locks::KeyedLocks,
-        request_client::{Request, RequestClient},
+        request_client::{Request, RequestClient, RequestError},
     },
 };
 
@@ -62,7 +62,7 @@ impl<RC: RequestClient> LibrariesService<RC> {
         url: &str,
         sha1: Option<&str>,
         bar: Option<(&ProgressBarId, f64)>,
-    ) -> Result<Bytes, IoError> {
+    ) -> Result<Bytes, RequestError> {
         let request = match sha1 {
             Some(sha1) => checked_get(url, sha1),
             // From a repository that names no digest.
@@ -71,7 +71,6 @@ impl<RC: RequestClient> LibrariesService<RC> {
         self.request_client
             .fetch_bytes_with_progress(request, bar)
             .await
-            .map_err(get_network_error)
     }
 
     async fn create_libraries_directories(
@@ -255,37 +254,33 @@ impl<RC: RequestClient> LibrariesService<RC> {
         Ok(())
     }
 
+    /// Fetch the jar from `artifact`, checked by its digest. The error is kept as it is, to tell
+    /// a body that is not the one named from a failed request.
     async fn try_download_from_artifact(
         &self,
-        library: &vanilla::Library,
+        artifact: &vanilla::LibraryDownload,
         library_path: &Path,
         bar: Option<&ProgressBarId>,
-    ) -> Result<(), MinecraftDomainError> {
-        if let Some(downloads) = &library.downloads
-            && let Some(artifact) = &downloads.artifact
-            && !artifact.url.is_empty()
-        {
-            let bytes = self
-                .fetch_bytes(
-                    &artifact.url,
-                    Some(&artifact.sha1),
-                    bar.map(|bar| (bar, 1.0)),
-                )
-                .await?;
-            write_replacing_async(library_path, bytes).await?;
-            return Ok(());
-        }
-
-        Err(MinecraftDomainError::StorageFailure {
-            reason: "No artifact URL found".to_owned(),
-        })
+    ) -> Result<(), ArtifactError> {
+        let bytes = self
+            .fetch_bytes(
+                &artifact.url,
+                Some(&artifact.sha1),
+                bar.map(|bar| (bar, 1.0)),
+            )
+            .await?;
+        write_replacing_async(library_path, bytes).await?;
+        Ok(())
     }
 
+    /// `sha1` is the digest of the artifact, when the metadata names one: a mirror is no reason
+    /// to take a body unchecked.
     async fn download_from_fallback_url(
         &self,
         library: &vanilla::Library,
         library_path: &Path,
         path_part: &str,
+        sha1: Option<&str>,
         bar: Option<&ProgressBarId>,
     ) -> Result<(), MinecraftDomainError> {
         let base_url = library
@@ -296,8 +291,9 @@ impl<RC: RequestClient> LibrariesService<RC> {
         let url = format!("{base_url}{path_part}");
 
         let bytes = self
-            .fetch_bytes(&url, None, bar.map(|bar| (bar, 1.0)))
-            .await?;
+            .fetch_bytes(&url, sha1, bar.map(|bar| (bar, 1.0)))
+            .await
+            .map_err(get_network_error)?;
         write_replacing_async(library_path, bytes).await?;
 
         Ok(())
@@ -326,19 +322,36 @@ impl<RC: RequestClient> LibrariesService<RC> {
 
         debug!("Downloading java library \"{}\"", &library.name);
 
-        // Get library by artifact url
-        match self
-            .try_download_from_artifact(library, &library_path, bar)
-            .await
-        {
-            Ok(()) => return Ok(()),
-            Err(err) => warn!(
-                "Failed to download {} from artifact, trying fallback: {:?}",
-                library.name, err
-            ),
+        let artifact = library
+            .downloads
+            .as_ref()
+            .and_then(|downloads| downloads.artifact.as_ref());
+        let sha1 = artifact
+            .map(|artifact| artifact.sha1.as_str())
+            .filter(|sha1| !sha1.is_empty());
+
+        if let Some(artifact) = artifact.filter(|artifact| !artifact.url.is_empty()) {
+            match self
+                .try_download_from_artifact(artifact, &library_path, bar)
+                .await
+            {
+                Ok(()) => return Ok(()),
+                // The mirror serves the same file: the body would be refused there as well.
+                Err(ArtifactError::Request(err @ RequestError::Hash { .. })) => {
+                    error!(
+                        "Library {} from its artifact does not match its digest: {:?}",
+                        library.name, err
+                    );
+                    return Err(get_network_error(err).into());
+                }
+                Err(err) => warn!(
+                    "Failed to download {} from artifact, trying fallback: {:?}",
+                    library.name, err
+                ),
+            }
         }
 
-        self.download_from_fallback_url(library, &library_path, path_part, bar)
+        self.download_from_fallback_url(library, &library_path, path_part, sha1, bar)
             .await
             .map_err(|e| {
                 error!(
@@ -427,6 +440,7 @@ impl<RC: RequestClient> LibrariesService<RC> {
         let bytes = self
             .fetch_bytes(&native.url, Some(&native.sha1), bar.map(|bar| (bar, 0.0)))
             .await
+            .map_err(get_network_error)
             .map_err(|e| {
                 error!("Failed to fetch native library {}: {:?}", library.name, e);
                 e
@@ -441,6 +455,14 @@ impl<RC: RequestClient> LibrariesService<RC> {
 
         Ok(())
     }
+}
+
+#[derive(Debug, thiserror::Error)]
+enum ArtifactError {
+    #[error(transparent)]
+    Request(#[from] RequestError),
+    #[error(transparent)]
+    Io(#[from] IoError),
 }
 
 fn get_network_error<E>(error: E) -> IoError
