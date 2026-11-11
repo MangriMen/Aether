@@ -46,15 +46,9 @@ async fn migrate_legacy_migrations_table(pool: &SqlitePool) -> Result<(), sqlx::
     .fetch_one(pool)
     .await?;
 
+    // The split is atomic, so a core table means the old table already holds only desktop
+    // entries. Anything newer in it is a desktop migration that must be kept.
     if new_exists {
-        // Split was done before, but the old table may still have stale
-        // core entries from a previous interrupted attempt. Clean them up.
-        sqlx::query(
-            "DELETE FROM _sqlx_migrations
-             WHERE version >= 20260505171710",
-        )
-        .execute(pool)
-        .await?;
         return Ok(());
     }
 
@@ -216,6 +210,29 @@ mod tests {
 
         assert_eq!(versions(&pool, "core").await, vec![CORE_VERSION]);
         assert_eq!(versions(&pool, "desktop").await, vec![DESKTOP_VERSION]);
+    }
+
+    #[tokio::test]
+    async fn should_keep_desktop_migration_when_split_was_done_before() {
+        const NEWER_DESKTOP_VERSION: i64 = 20_270_101_000_000;
+        let pool = legacy_pool().await;
+        migrate_legacy_migrations_table(&pool).await.unwrap();
+        sqlx::query(
+            "INSERT INTO _sqlx_migrations (version, description, success, checksum, execution_time)
+             VALUES (?, 'newer_desktop', 1, x'00', 0)",
+        )
+        .bind(NEWER_DESKTOP_VERSION)
+        .execute(&pool)
+        .await
+        .unwrap();
+
+        migrate_legacy_migrations_table(&pool).await.unwrap();
+
+        assert_eq!(
+            versions(&pool, "desktop").await,
+            vec![DESKTOP_VERSION, NEWER_DESKTOP_VERSION]
+        );
+        assert_eq!(versions(&pool, "core").await, vec![CORE_VERSION]);
     }
 
     #[tokio::test]
