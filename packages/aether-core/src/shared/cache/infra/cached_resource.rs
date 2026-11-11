@@ -65,6 +65,8 @@ impl<C: Cache> CachedResource<C> {
 
 #[cfg(test)]
 mod tests {
+    use std::time::SystemTime;
+
     use sqlx::{SqlitePool, pool::PoolOptions};
 
     use crate::{
@@ -107,26 +109,55 @@ mod tests {
             .await
     }
 
+    /// Puts `value` in the cache as fetched an hour ago.
+    async fn seed_old(resource: &CachedResource<SqliteCache>, value: &str) {
+        let old = CachedValue {
+            value: value.to_owned(),
+            updated_at: SystemTime::now() - Duration::from_hours(1),
+        };
+        resource
+            .cache
+            .set(&key(), &old, Duration::from_hours(24))
+            .await;
+    }
+
     #[tokio::test]
     async fn should_return_the_stale_value_when_the_fetch_fails() {
         let resource = create_resource().await;
-        let ttl = Duration::from_millis(1);
-        assert_eq!(get(&resource, Ok("old"), ttl).await.unwrap(), "old");
-        tokio::time::sleep(Duration::from_millis(20)).await;
+        seed_old(&resource, "old").await;
 
-        let result = get(&resource, Err("offline"), ttl).await;
+        let tried = std::sync::atomic::AtomicBool::new(false);
 
+        let result: Result<String, String> = resource
+            .get_cached(
+                key,
+                async {
+                    tried.store(true, std::sync::atomic::Ordering::SeqCst);
+                    Err("offline".to_owned())
+                },
+                || "resource".to_owned(),
+                Duration::from_mins(1),
+            )
+            .await;
+
+        assert!(
+            tried.load(std::sync::atomic::Ordering::SeqCst),
+            "a stale value is fetched again"
+        );
         assert_eq!(result.unwrap(), "old");
     }
 
     #[tokio::test]
     async fn should_fetch_again_when_the_value_is_stale() {
         let resource = create_resource().await;
-        let ttl = Duration::from_millis(1);
-        get(&resource, Ok("old"), ttl).await.unwrap();
-        tokio::time::sleep(Duration::from_millis(20)).await;
+        seed_old(&resource, "old").await;
 
-        assert_eq!(get(&resource, Ok("new"), ttl).await.unwrap(), "new");
+        assert_eq!(
+            get(&resource, Ok("new"), Duration::from_mins(1))
+                .await
+                .unwrap(),
+            "new"
+        );
         assert_eq!(
             get(&resource, Err("offline"), Duration::from_hours(1))
                 .await

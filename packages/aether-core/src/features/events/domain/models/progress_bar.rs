@@ -526,6 +526,9 @@ mod tests {
         event
     }
 
+    /// Lets the tasks the test spawned run. Only sound on a `current_thread` runtime and for
+    /// work that is in memory, which a few turns of the scheduler finish; when a test must know
+    /// that something is blocked, it waits for a signal from the blocked side instead.
     async fn settle() {
         for _ in 0..10 {
             tokio::task::yield_now().await;
@@ -719,8 +722,14 @@ mod tests {
                 ],
                 "round {round}"
             );
-            settle().await;
-            assert!(rx.try_recv().is_err(), "round {round}: an event too many");
+            // The workers run apart from this task, so yielding would not wait for them: give an
+            // event too many a moment to show.
+            assert!(
+                tokio::time::timeout(std::time::Duration::from_millis(2), rx.recv())
+                    .await
+                    .is_err(),
+                "round {round}: an event too many"
+            );
         }
     }
 
