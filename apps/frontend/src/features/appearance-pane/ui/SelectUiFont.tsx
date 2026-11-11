@@ -27,6 +27,9 @@ const SelectUiFont = <T extends Option<UiFont> = Option<UiFont>>(
   return (
     <Select
       class={cn('gap-2 flex flex-col', local.class)}
+      // Sits in the header of a collapsible entry: a click must not toggle it
+      onClick={(e: MouseEvent) => e.stopPropagation()}
+      onKeyPress={(e: KeyboardEvent) => e.stopPropagation()}
       validationState={local.errorMessage ? 'invalid' : 'valid'}
       optionTextValue='name'
       optionValue='value'
