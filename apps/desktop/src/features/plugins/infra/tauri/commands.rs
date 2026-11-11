@@ -241,6 +241,21 @@ async fn get_settings(
 
 #[tauri::command]
 #[specta::specta]
+async fn get_readme(
+    id: String,
+    container: State<'_, ContainerState>,
+) -> FrontendResult<Option<String>> {
+    let id = parse_id(id)?;
+    let container = container.0.clone();
+    Ok(container
+        .get_plugin_readme_use_case()
+        .execute(id)
+        .await
+        .map_err(aether_core::Error::from)?)
+}
+
+#[tauri::command]
+#[specta::specta]
 async fn edit_settings(
     id: String,
     edit_settings: EditPluginSettingsDto,

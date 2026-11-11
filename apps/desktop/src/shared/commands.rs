@@ -120,6 +120,7 @@ macro_rules! plugin_commands {
             disable,
             reload,
             get_settings,
+            get_readme,
             edit_settings,
             grant_folder_access,
             grant_host_access,

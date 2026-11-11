@@ -51,6 +51,7 @@ export const pluginsCommands = {
   disable: withIdempotency(pluginsRawCommands.disable),
   reload: withIdempotency(pluginsRawCommands.reload),
   getSettings: pluginsRawCommands.getSettings,
+  getReadme: pluginsRawCommands.getReadme,
   editSettings: withIdempotency(pluginsRawCommands.editSettings),
   grantFolderAccess: withIdempotency(pluginsRawCommands.grantFolderAccess),
   grantHostAccess: withIdempotency(pluginsRawCommands.grantHostAccess),

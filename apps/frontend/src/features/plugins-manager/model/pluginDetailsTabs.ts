@@ -4,8 +4,10 @@ import type { TabConfig } from '@/shared/ui-kit';
 import { PluginSettingsTab } from '@/features/plugins-settings';
 
 import { PluginCapabilitiesTab } from '../ui/PluginCapabilitiesTab';
+import { PluginDescriptionTab } from '../ui/PluginDescriptionTab';
 
 export const PluginDetailsTabs = {
+  Description: 'description',
   Capabilities: 'capabilities',
   Settings: 'settings',
 } as const;
@@ -15,7 +17,11 @@ export interface PluginDetailsTabProps {
 }
 
 export const PLUGIN_DETAILS_TABS = [
-  // TODO: add a description tab, maybe in MD format
+  {
+    value: PluginDetailsTabs.Description,
+    label: 'description',
+    component: PluginDescriptionTab,
+  },
   {
     value: PluginDetailsTabs.Capabilities,
     label: 'capabilities',

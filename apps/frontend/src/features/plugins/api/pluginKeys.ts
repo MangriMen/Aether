@@ -5,6 +5,8 @@ export const pluginKeys = {
   skippedDirs: () => [...pluginKeys.all, 'skipped-dirs'] as const,
   settings: (id: string) => [...pluginKeys.all, 'settings', id] as const,
   apiVersion: () => [...pluginKeys.list(), 'api_version'] as const,
+  readme: (id: string, version: string) =>
+    [...pluginKeys.all, 'readme', id, version] as const,
   source: (id: string) => [...pluginKeys.all, 'source', id] as const,
   updates: (id: string) => [...pluginKeys.all, 'updates', id] as const,
   preview: (provider: string, identifier: string) =>

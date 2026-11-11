@@ -29,6 +29,7 @@ export const commands = {
 	 */
 	ignoredPaths?: IgnoredAllowedPathDto[],
 } | null>("plugin:plugin|get_settings", { id }),
+	getReadme: (id: string) => __TAURI_INVOKE<string | null>("plugin:plugin|get_readme", { id }),
 	editSettings: (id: string, editSettings: EditPluginSettingsDto, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<PluginSettingsDto>("plugin:plugin|edit_settings", { id, editSettings, requestId }),
 	/**
 	 *  Gives the plugin read access to the folder of a file the user named for it, restarting the
