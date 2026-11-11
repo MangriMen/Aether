@@ -4,6 +4,7 @@ import {
   splitProps,
   type Component,
   type ComponentProps,
+  type JSX,
 } from 'solid-js';
 
 import type { ContentVersion } from '@/features/content';
@@ -39,6 +40,14 @@ const Section: Component<ComponentProps<'section'> & { title?: string }> = (
   );
 };
 
+/** A label over its value, so that a long value has the whole width of the card. */
+const Field: Component<{ label?: string; children: JSX.Element }> = (props) => (
+  <div class='gap-1 flex flex-col'>
+    <dt class='text-sm text-muted-foreground'>{props.label}</dt>
+    <dd class='min-w-0'>{props.children}</dd>
+  </div>
+);
+
 /** What the provider says of the version besides its changelog: for the side of the page. */
 export const ContentVersionDetails: Component<ContentVersionDetailsProps> = (
   props,
@@ -50,26 +59,21 @@ export const ContentVersionDetails: Component<ContentVersionDetailsProps> = (
   return (
     <div class={cn('gap-4 flex flex-col', local.class)} {...others}>
       <Section title={t('contentVersion.details')}>
-        <dl class='gap-x-4 gap-y-2 grid grid-cols-[auto_1fr]'>
-          <dt class='text-muted-foreground'>{t('contentVersion.published')}</dt>
-          <dd>{formatTime(dayjs(local.version.datePublished))}</dd>
+        <dl class='gap-3 flex flex-col'>
+          <Field label={t('contentVersion.published')}>
+            {formatTime(dayjs(local.version.datePublished))}
+          </Field>
 
           <Show when={local.version.gameVersions.length > 0}>
-            <dt class='text-muted-foreground'>
-              {t('contentVersion.gameVersion')}
-            </dt>
-            <dd>
+            <Field label={t('contentVersion.gameVersion')}>
               <ContentVersionBadgeList items={local.version.gameVersions} />
-            </dd>
+            </Field>
           </Show>
 
           <Show when={local.version.loaders.length > 0}>
-            <dt class='text-muted-foreground'>
-              {t('contentVersion.platforms')}
-            </dt>
-            <dd>
+            <Field label={t('contentVersion.platforms')}>
               <ContentVersionBadgeList items={local.version.loaders} />
-            </dd>
+            </Field>
           </Show>
         </dl>
       </Section>
@@ -79,18 +83,16 @@ export const ContentVersionDetails: Component<ContentVersionDetailsProps> = (
           <ul class='gap-2 flex flex-col'>
             <For each={local.version.files}>
               {(file) => (
-                <li class='gap-2 flex items-center justify-between'>
-                  <span class='flex min-w-0 flex-col'>
-                    <span class='truncate'>{file.fileName}</span>
-                    <span class='text-muted-foreground'>
-                      {formatBytes(file.size, locale())}
-                    </span>
+                <li class='gap-1 flex flex-col'>
+                  <span class='break-all'>{file.fileName}</span>
+                  <span class='gap-2 text-muted-foreground flex items-center'>
+                    {formatBytes(file.size, locale())}
+                    <Show when={file.primary}>
+                      <Badge variant='secondary'>
+                        {t('contentVersion.primaryFile')}
+                      </Badge>
+                    </Show>
                   </span>
-                  <Show when={file.primary}>
-                    <Badge variant='secondary'>
-                      {t('contentVersion.primaryFile')}
-                    </Badge>
-                  </Show>
                 </li>
               )}
             </For>
