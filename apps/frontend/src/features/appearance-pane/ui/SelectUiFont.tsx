@@ -1,4 +1,4 @@
-import { splitProps } from 'solid-js';
+import { splitProps, type ComponentProps } from 'solid-js';
 
 import type { UiFont } from '@/features/appearance';
 import type { SelectRootProps, Option } from '@/shared/ui-kit';
@@ -17,7 +17,7 @@ type SelectUiFontProps<Opt extends Option<UiFont> = Option<UiFont>> =
   SelectRootProps<Opt, never, 'div'> & {
     multiple?: false;
     errorMessage?: string;
-  };
+  } & Pick<ComponentProps<'div'>, 'onClick' | 'onKeyPress'>;
 
 const SelectUiFont = <T extends Option<UiFont> = Option<UiFont>>(
   props: SelectUiFontProps<T>,
@@ -27,9 +27,6 @@ const SelectUiFont = <T extends Option<UiFont> = Option<UiFont>>(
   return (
     <Select
       class={cn('gap-2 flex flex-col', local.class)}
-      // Sits in the header of a collapsible entry: a click must not toggle it
-      onClick={(e: MouseEvent) => e.stopPropagation()}
-      onKeyPress={(e: KeyboardEvent) => e.stopPropagation()}
       validationState={local.errorMessage ? 'invalid' : 'valid'}
       optionTextValue='name'
       optionValue='value'

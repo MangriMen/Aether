@@ -74,6 +74,8 @@ export const UiFontEntry: Component<UiFontEntryProps> = (props) => {
         options={options()}
         value={currentOption()}
         onChange={handleChange}
+        onClick={(e) => e.stopPropagation()}
+        onKeyPress={(e) => e.stopPropagation()}
       />
     </CollapsibleSettingsEntry>
   );
