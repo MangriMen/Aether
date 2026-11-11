@@ -725,7 +725,6 @@
     "changelog": "Changelog",
     "noChangelog": "This version has no changelog",
     "details": "Details",
-    "channel": "Release channel",
     "channels": {
       "release": "Release",
       "beta": "Beta",

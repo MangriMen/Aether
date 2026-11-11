@@ -51,9 +51,6 @@ export const ContentVersionDetails: Component<ContentVersionDetailsProps> = (
     <div class={cn('gap-4 flex flex-col', local.class)} {...others}>
       <Section title={t('contentVersion.details')}>
         <dl class='gap-x-4 gap-y-2 grid grid-cols-[auto_1fr]'>
-          <dt class='text-muted-foreground'>{t('contentVersion.channel')}</dt>
-          <dd>{t(`contentVersion.channels.${local.version.versionType}`)}</dd>
-
           <dt class='text-muted-foreground'>{t('contentVersion.published')}</dt>
           <dd>{formatTime(dayjs(local.version.datePublished))}</dd>
 
