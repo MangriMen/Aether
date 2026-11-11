@@ -561,18 +561,39 @@ mod tests {
         headers: &str,
         body: &'static [u8],
     ) -> SocketAddr {
-        let listener = TcpListener::bind("127.0.0.1:0")
-            .await
-            .expect("test server should bind");
-        let addr = listener.local_addr().expect("test server should have addr");
         let head = format!(
             "HTTP/1.1 {status_line}\r\n{headers}Content-Length: {}\r\nConnection: close\r\n\r\n",
             body.len()
         );
+        serve_raw(head, body.to_vec()).await
+    }
+
+    /// As [`serve`], but the length is not announced: the body is sent in chunks, one per piece,
+    /// and a last empty chunk ends the response.
+    async fn serve_chunked(pieces: &[&[u8]]) -> SocketAddr {
+        let head = "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\nConnection: close\r\n\r\n";
+        let mut payload = Vec::new();
+        for piece in pieces {
+            payload.extend_from_slice(format!("{:x}\r\n", piece.len()).as_bytes());
+            payload.extend_from_slice(piece);
+            payload.extend_from_slice(b"\r\n");
+        }
+        payload.extend_from_slice(b"0\r\n\r\n");
+        serve_raw(head.to_owned(), payload).await
+    }
+
+    /// Send `head` and then `payload` to every connection, then close.
+    async fn serve_raw(head: String, payload: Vec<u8>) -> SocketAddr {
+        let listener = TcpListener::bind("127.0.0.1:0")
+            .await
+            .expect("test server should bind");
+        let addr = listener.local_addr().expect("test server should have addr");
+        let payload = Arc::new(payload);
 
         tokio::spawn(async move {
             while let Ok((mut stream, _)) = listener.accept().await {
                 let head = head.clone();
+                let payload = payload.clone();
                 tokio::spawn(async move {
                     // Read the request head, so closing does not reset a client still writing.
                     let mut received = Vec::new();
@@ -584,7 +605,7 @@ mod tests {
                         }
                     }
                     let _ = stream.write_all(head.as_bytes()).await;
-                    let _ = stream.write_all(body).await;
+                    let _ = stream.write_all(&payload).await;
                     let _ = stream.shutdown().await;
                 });
             }
@@ -852,6 +873,59 @@ mod tests {
         assert_eq!(size, BODY.len() as u64);
         assert_eq!(total, size);
         assert_eq!(std::fs::read(&destination).unwrap(), BODY);
+    }
+
+    #[tokio::test]
+    async fn should_refuse_the_body_when_the_announced_length_is_over_the_limit() {
+        // The head announces more than the limit and almost no body follows, so only the check
+        // of the announced length can refuse it.
+        let head = "HTTP/1.1 200 OK\r\nContent-Length: 2000\r\nConnection: close\r\n\r\n";
+        let addr = serve_raw(head.to_owned(), vec![1_u8; 10]).await;
+        let dir = tempfile::tempdir().unwrap();
+        let destination = dir.path().join("file");
+
+        let result = client()
+            .download_to_file(Request::get(url(addr)), &destination, 1_000, None)
+            .await;
+
+        assert!(
+            matches!(result, Err(RequestError::TooLarge { limit: 1_000 })),
+            "{result:?}"
+        );
+        assert!(dir_is_empty(dir.path()));
+    }
+
+    /// With no length announced, only the bytes that arrive can show the body is too large.
+    #[tokio::test]
+    async fn should_refuse_the_body_and_leave_nothing_when_a_chunked_body_passes_the_limit() {
+        let addr = serve_chunked(&[&[1_u8; 600], &[2_u8; 600]]).await;
+        let dir = tempfile::tempdir().unwrap();
+        let destination = dir.path().join("file");
+
+        let result = client()
+            .download_to_file(Request::get(url(addr)), &destination, 1_000, None)
+            .await;
+
+        assert!(
+            matches!(result, Err(RequestError::TooLarge { limit: 1_000 })),
+            "{result:?}"
+        );
+        assert!(dir_is_empty(dir.path()));
+    }
+
+    #[tokio::test]
+    async fn should_save_a_chunked_body_when_it_fits_the_limit() {
+        let addr = serve_chunked(&[b"hello ", b"world"]).await;
+        let dir = tempfile::tempdir().unwrap();
+        let destination = dir.path().join("file");
+
+        let size = client()
+            .download_to_file(Request::get(url(addr)), &destination, 1_000, None)
+            .await
+            .unwrap();
+
+        assert_eq!(size, 11);
+        assert_eq!(std::fs::read(&destination).unwrap(), b"hello world");
     }
 
     #[tokio::test]
