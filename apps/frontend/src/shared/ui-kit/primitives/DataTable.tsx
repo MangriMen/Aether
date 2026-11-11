@@ -69,8 +69,20 @@ const createDefaultTable = <TData extends RowData>(
   });
 };
 
+/**
+ * Takes the header cells after one column over with a single cell of its own, for as long as
+ * `show` is true. The row keeps its height, so nothing around the table moves.
+ */
+export type DataTableHeaderBar = {
+  /** Id of the last column that stays; the bar replaces the ones after it. */
+  afterColumn: string;
+  show: boolean;
+  content: () => JSX.Element;
+};
+
 type BaseDataTableProps = {
   class?: string;
+  headerBar?: DataTableHeaderBar;
   tableClass?: string;
   isLoading?: boolean;
   noContentPlaceholder?: string;
@@ -96,6 +108,7 @@ export const DataTable = <TData extends RowData>(
 ) => {
   const [local, others] = splitProps(props, [
     'class',
+    'headerBar',
     'tableClass',
     'columns',
     'isLoading',
@@ -151,6 +164,7 @@ export const DataTable = <TData extends RowData>(
               <DataTableHeaderRow
                 headerGroup={headerGroup}
                 cellStyles={columnsData().columnStyles}
+                bar={local.headerBar}
               />
             )}
           </For>
@@ -191,25 +205,58 @@ export const DataTable = <TData extends RowData>(
 interface DataTableHeaderRowProps<TData extends RowData> {
   headerGroup: HeaderGroup<DataTableFeatures, TData>;
   cellStyles: Record<string, JSX.CSSProperties>;
+  bar?: DataTableHeaderBar;
 }
 
 export const DataTableHeaderRow = <TData extends RowData>(
   props: DataTableHeaderRowProps<TData>,
 ) => {
+  // Memos on plain values: `props.bar` is a new object after every change of what it reads, and
+  // the kept cells (the select-all checkbox among them) must not be rebuilt because of that.
+  const afterColumn = createMemo(() => props.bar?.afterColumn);
+  const barShown = createMemo(() => !!props.bar?.show);
+
+  const split = createMemo(() => {
+    const headers = props.headerGroup.headers;
+    const index = afterColumn()
+      ? headers.findIndex((header) => header.column.id === afterColumn())
+      : -1;
+
+    return index === -1
+      ? { kept: headers, replaced: [] }
+      : {
+          kept: headers.slice(0, index + 1),
+          replaced: headers.slice(index + 1),
+        };
+  });
+
+  const renderHeaders = (headers: typeof props.headerGroup.headers) => (
+    <For each={headers}>
+      {(header) => (
+        <TableHead
+          colSpan={header.colSpan}
+          style={props.cellStyles[header.column.id]}
+        >
+          <Show when={!header.isPlaceholder}>
+            <FlexRender header={header} />
+          </Show>
+        </TableHead>
+      )}
+    </For>
+  );
+
   return (
     <TableRow class='group'>
-      <For each={props.headerGroup.headers}>
-        {(header) => (
-          <TableHead
-            colSpan={header.colSpan}
-            style={props.cellStyles[header.column.id]}
-          >
-            <Show when={!header.isPlaceholder}>
-              <FlexRender header={header} />
-            </Show>
-          </TableHead>
-        )}
-      </For>
+      {renderHeaders(split().kept)}
+      <Show
+        when={barShown() && split().replaced.length > 0}
+        fallback={renderHeaders(split().replaced)}
+      >
+        {/* A cell rather than a column header: it must not name the columns under it. */}
+        <TableHead role='cell' colSpan={split().replaced.length} class='py-0'>
+          {props.bar?.content()}
+        </TableHead>
+      </Show>
     </TableRow>
   );
 };

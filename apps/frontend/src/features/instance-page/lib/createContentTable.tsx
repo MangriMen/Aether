@@ -3,50 +3,43 @@ import type {
   SortingState,
   RowSelectionState,
   PaginationState,
-  RowModel,
 } from '@tanstack/solid-table';
 import type { Accessor, Component } from 'solid-js';
 
 import { createTable } from '@tanstack/solid-table';
-import { createMemo, createSignal } from 'solid-js';
+import { createEffect, createMemo, createSignal, on } from 'solid-js';
 
 import type { ContentFile } from '@/features/content';
 
-import { appTableFeatures, type AppTableFeatures } from '@/shared/ui-kit';
+import { appTableFeatures } from '@/shared/ui-kit';
 
 import { contentTableColumnHelper } from '../model/contentTableColumnHelper';
 import { createContentTableColumns } from '../ui/createContentTableColumns';
 
 export interface CreateContentTableProps {
   headerActions: Component<{
-    allRowsSelected?: boolean;
-    someRowsSelected?: boolean;
     refetch?: () => void;
-    selectedRows: RowModel<AppTableFeatures, ContentFile>;
   }>;
   contentActions: Component<{ file: ContentFile }>;
   data: Accessor<ContentFile[]>;
   refetch: () => void;
   isLoading: Accessor<boolean>;
+  /** The selection belongs to one instance, so it is dropped when this changes. */
+  instanceId?: Accessor<string>;
 }
 
 export const createContentTable = (props: CreateContentTableProps) => {
+  const [rowSelection, setRowSelection] = createSignal<RowSelectionState>({});
+  const clearSelection = () => setRowSelection({});
+
   const columns = createMemo(() => {
     const actionsColumn = contentTableColumnHelper.display({
       id: 'actions',
       size: 116,
       maxSize: 116,
-      header: (headerProps) => (
+      header: () => (
         <div class='flex justify-end'>
-          <props.headerActions
-            allRowsSelected={headerProps.table.getIsAllPageRowsSelected()}
-            someRowsSelected={
-              headerProps.table.getIsSomePageRowsSelected() &&
-              !headerProps.table.getIsAllPageRowsSelected()
-            }
-            selectedRows={headerProps.table.getSelectedRowModel()}
-            refetch={props.refetch}
-          />
+          <props.headerActions refetch={props.refetch} />
         </div>
       ),
       cell: (cellProps) => (
@@ -66,11 +59,24 @@ export const createContentTable = (props: CreateContentTableProps) => {
   const [columnFilters, setColumnFilters] = createSignal<ColumnFiltersState>(
     [],
   );
-  const [rowSelection, setRowSelection] = createSignal<RowSelectionState>({});
   const [pagination, setPagination] = createSignal<PaginationState>({
     pageIndex: 0,
     pageSize: 20,
   });
+
+  // Rows hidden by a filter stay in the selection otherwise, and a bulk action would still touch them.
+  const handleColumnFiltersChange: typeof setColumnFilters = (updater) => {
+    setColumnFilters(updater);
+    clearSelection();
+  };
+
+  createEffect(
+    on(
+      () => props.instanceId?.(),
+      () => clearSelection(),
+      { defer: true },
+    ),
+  );
 
   const table = createTable({
     features: appTableFeatures,
@@ -81,7 +87,9 @@ export const createContentTable = (props: CreateContentTableProps) => {
       return columns();
     },
     onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
+    // Selection is keyed by path, so it survives the data coming back in another order.
+    getRowId: (row) => row.contentPath,
+    onColumnFiltersChange: handleColumnFiltersChange,
     onRowSelectionChange: setRowSelection,
     onPaginationChange: setPagination,
     state: {
