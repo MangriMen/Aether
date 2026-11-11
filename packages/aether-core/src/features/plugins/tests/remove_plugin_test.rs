@@ -5,25 +5,13 @@ use std::{
 
 use async_trait::async_trait;
 
+use crate::features::events::test_support::NoOpEmitter;
 use crate::features::instance::PluginId;
+use crate::features::plugins::PluginRegistry;
 use crate::features::plugins::{
     ExtractedPlugin, Plugin, PluginDisableService, PluginError, PluginStorage, PluginSyncService,
     RemovePluginUseCase,
 };
-use crate::features::{
-    events::{Event, EventEmitter, EventError},
-    plugins::PluginRegistry,
-};
-
-struct NoOpEmitter;
-
-#[async_trait]
-impl EventEmitter<Event> for NoOpEmitter {
-    async fn emit(&self, _event: Event) -> Result<(), EventError> {
-        Ok(())
-    }
-    fn listen(&self, _handler: Box<dyn Fn(Event) + Send + Sync + 'static>) {}
-}
 
 type Log = Arc<Mutex<Vec<&'static str>>>;
 

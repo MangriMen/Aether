@@ -3,6 +3,7 @@
 //! A URL a plugin supplied (in its plan, or by resolving a ref) reaches only that plugin's
 //! `allowed_hosts`; a built-in provider's URL goes through the application's client. Whatever
 //! fails, the instance is left as it was.
+use crate::features::events::test_support::NoOpEmitter;
 use crate::features::minecraft::GameVersion;
 
 use crate::features::instance::InstanceName;
@@ -23,9 +24,7 @@ use tempfile::TempDir;
 use crate::features::instance::{CapabilityId, PluginId};
 use crate::{
     features::{
-        events::{
-            Event, EventEmitter, EventError, ProgressBarId, ProgressEventType, ProgressService,
-        },
+        events::{EventError, ProgressBarId, ProgressEventType, ProgressService},
         instance::{
             CachedContentAuthor, CachedContentMetadata, CachedContentVersionMetadata,
             CapabilityMetadata, ChangeInstanceGameUseCasePort, ContentAuthor,
@@ -158,16 +157,6 @@ impl ProgressService for NoProgress {
     ) -> Result<(), EventError> {
         Ok(())
     }
-}
-
-struct NoOpEmitter;
-
-#[async_trait]
-impl EventEmitter<Event> for NoOpEmitter {
-    async fn emit(&self, _event: Event) -> Result<(), EventError> {
-        Ok(())
-    }
-    fn listen(&self, _handler: Box<dyn Fn(Event) + Send + Sync + 'static>) {}
 }
 
 #[derive(Default)]

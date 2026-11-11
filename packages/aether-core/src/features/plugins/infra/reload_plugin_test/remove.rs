@@ -10,6 +10,7 @@ use std::{
 
 use async_trait::async_trait;
 
+use crate::features::events::test_support::NoOpEmitter;
 use crate::features::instance::PluginId;
 use crate::features::plugins::{
     DisablePluginUseCase, EnablePluginUseCase, ExtractedPlugin, Plugin, PluginDisableService,

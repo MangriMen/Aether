@@ -1,5 +1,6 @@
 //! The content provider contract end to end, without a WASM runtime: a `capabilities.json` in
 //! the new format becomes a registered provider whose trait methods call the functions it names.
+use crate::features::events::test_support::NoOpEmitter;
 use crate::features::minecraft::GameVersion;
 
 use crate::features::instance::PlatformId;
@@ -16,14 +17,13 @@ use aether_core_plugin_api::v0::{
     OverrideLocationDto, OverrideSourceDto, PackMetadataDto, PackSourceDto, ResolveFileParamsDto,
     ResolveInstallPlanParamsDto, ResolveTargetDto, ResolvedFileDto,
 };
-use async_trait::async_trait;
 use extism_convert::{FromBytes, Msgpack, ToBytes};
 use serde::{Serialize, de::DeserializeOwned};
 
 use crate::features::instance::{CapabilityId, PluginId};
 use crate::{
     features::{
-        events::{Event, EventEmitter, EventError, PluginEvent},
+        events::PluginEvent,
         instance::{
             AnchoredPath, ContentCompatibilityCheckParams, ContentItem, ContentProvider,
             ContentSource, ContentType, FileSide, Importer, InstallTarget, InstanceError,
@@ -115,16 +115,6 @@ impl PluginInstance for RecordingPlugin {
     fn handle_event(&mut self, _event: &PluginInternalEvent) -> Result<(), PluginError> {
         Ok(())
     }
-}
-
-struct NoOpEmitter;
-
-#[async_trait]
-impl EventEmitter<Event> for NoOpEmitter {
-    async fn emit(&self, _event: Event) -> Result<(), EventError> {
-        Ok(())
-    }
-    fn listen(&self, _handler: Box<dyn Fn(Event) + Send + Sync + 'static>) {}
 }
 
 // ─── Fixtures ──────────────────────────────────────────────────

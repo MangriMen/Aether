@@ -2,6 +2,7 @@
 //! `capabilities.json` of the new format and the `resolve_*` round trip through the wasm
 //! boundary, the errors a looping or crashing plugin gives the user, a busy plugin next to the
 //! others, and what WASI may do in the read-only `/instances`.
+use crate::features::events::test_support::NoOpEmitter;
 use crate::features::minecraft::GameVersion;
 
 use crate::features::instance::{ContentId, ContentVersionId};
@@ -20,7 +21,6 @@ use aether_core_plugin_api::v0::{
     ContentAuthorDto, ContentMetadataDto, ContentSearchResultDto, ContentVersionMetadataDto,
     FileHashDto, ModLoaderDto, PackMetadataDto, ProviderIdDto, ResolvedFileDto,
 };
-use async_trait::async_trait;
 use extism::{Function, Manifest, PluginBuilder, UserData, Wasm};
 use extism_convert::{Msgpack, ToBytes};
 use serde::Serialize;
@@ -28,7 +28,7 @@ use serde::Serialize;
 use crate::features::instance::{CapabilityId, PluginId};
 use crate::{
     features::{
-        events::{Event, EventEmitter, EventError, PluginEvent},
+        events::PluginEvent,
         instance::{
             ContentProvider, ContentSearchParams, ContentType, Importer, InstanceError, InstanceId,
             PackSource, PageIndex, PageSize, ProviderId, Updater,
@@ -309,16 +309,6 @@ fn provider_error(result: Result<impl std::fmt::Debug, InstanceError>) -> String
 }
 
 // ─── Registration and `resolve_*` ──────────────────────────────
-
-struct NoOpEmitter;
-
-#[async_trait]
-impl EventEmitter<Event> for NoOpEmitter {
-    async fn emit(&self, _event: Event) -> Result<(), EventError> {
-        Ok(())
-    }
-    fn listen(&self, _handler: Box<dyn Fn(Event) + Send + Sync + 'static>) {}
-}
 
 fn manifest() -> PluginManifest {
     PluginManifest {

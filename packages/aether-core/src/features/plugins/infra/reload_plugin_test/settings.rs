@@ -2,6 +2,7 @@
 
 use std::sync::Arc;
 
+use crate::features::plugins::test_support::SlowPluginSettings;
 use crate::features::plugins::{
     AllowedPath, EditPluginSettings, EditPluginSettingsUseCase, FolderMounts,
     GrantPluginHostAccessUseCase, PluginError, PluginSettingsStorage,
@@ -138,7 +139,7 @@ async fn should_refuse_the_restart_and_still_need_it_when_the_plugin_is_busy() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn should_keep_each_other_when_two_changes_are_made_at_once() {
     let harness = Harness::enabled().await;
-    let settings = Arc::new(SlowPluginSettings::default());
+    let settings = Arc::new(SlowPluginSettings::<MemoryPluginSettings>::default());
     let storage = Arc::clone(&settings) as Arc<dyn PluginSettingsStorage>;
     let folder = tempfile::tempdir().unwrap();
     let folder = AllowedPath::read_only_folder(folder.path()).unwrap();
@@ -156,6 +157,6 @@ async fn should_keep_each_other_when_two_changes_are_made_at_once() {
 
     edited.unwrap();
     granted.unwrap();
-    assert_eq!(settings.0.folders(), [folder]);
-    assert_eq!(settings.0.hosts(), ["example.com"]);
+    assert_eq!(settings.inner.folders(), [folder]);
+    assert_eq!(settings.inner.hosts(), ["example.com"]);
 }

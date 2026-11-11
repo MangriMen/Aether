@@ -8,9 +8,9 @@ use async_trait::async_trait;
 use tempfile::TempDir;
 use zip::{ZipWriter, write::SimpleFileOptions};
 
+use crate::features::events::test_support::NoOpEmitter;
 use crate::features::instance::PluginId;
 use crate::features::{
-    events::{Event, EventEmitter, EventError},
     plugins::{
         ExtractedPlugin, ImportPluginsUseCase, Plugin, PluginError, PluginRegistry,
         PluginSettingsStorage, PluginSource, PluginSourceStorage, PluginSourceType, PluginStorage,
@@ -42,16 +42,6 @@ const MANIFEST: &str = r#"{
     "load": { "type": "extism", "file": "plugin.wasm", "memoryLimit": null },
     "api": { "version": "*", "features": [] }
 }"#;
-
-struct NoOpEmitter;
-
-#[async_trait]
-impl EventEmitter<Event> for NoOpEmitter {
-    async fn emit(&self, _event: Event) -> Result<(), EventError> {
-        Ok(())
-    }
-    fn listen(&self, _handler: Box<dyn Fn(Event) + Send + Sync + 'static>) {}
-}
 
 fn registry() -> Arc<PluginRegistry> {
     Arc::new(PluginRegistry::new(Arc::new(NoOpEmitter)))

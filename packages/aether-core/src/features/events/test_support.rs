@@ -25,6 +25,18 @@ impl EventEmitter<Event> for ChannelEmitter {
     fn listen(&self, _handler: Box<dyn Fn(Event) + Send + Sync + 'static>) {}
 }
 
+/// Drops every event.
+pub(crate) struct NoOpEmitter;
+
+#[async_trait]
+impl EventEmitter<Event> for NoOpEmitter {
+    async fn emit(&self, _event: Event) -> Result<(), EventError> {
+        Ok(())
+    }
+
+    fn listen(&self, _handler: Box<dyn Fn(Event) + Send + Sync + 'static>) {}
+}
+
 /// The kind of bar of a pack, which waits on shared downloads.
 pub(crate) fn pack(name: &str) -> ProgressEventType {
     ProgressEventType::PluginDownload {

@@ -2,6 +2,7 @@
 
 use std::sync::{Arc, atomic::Ordering};
 
+use crate::features::plugins::test_support::SlowPluginSettings;
 use crate::features::plugins::{
     EnablePluginUseCase, PluginError, PluginLoaderRegistry, PluginSettingsStorage, PluginState,
     PluginStateReason,
@@ -47,7 +48,7 @@ async fn should_build_one_instance_when_the_plugin_is_enabled_twice_at_once() {
 async fn should_build_one_instance_when_two_enables_check_the_state_at_once() {
     let harness = Harness::enabled().await;
     harness.disable().execute(plugin_id()).await.unwrap();
-    let settings = Arc::new(SlowPluginSettings::default());
+    let settings = Arc::new(SlowPluginSettings::<MemoryPluginSettings>::default());
     let enable = || {
         EnablePluginUseCase::new(
             Arc::clone(&harness.plugins),
