@@ -93,6 +93,16 @@ impl ActivityGate {
         self.state.borrow().busy()
     }
 
+    /// Resolves once a [`lease`](Self::lease) is waiting for the pause to end: the wait is the
+    /// only thing that subscribes to the state, so a test can tell a lease that is blocked from
+    /// one that has not started. Nothing else may watch the gate while it is used.
+    #[cfg(test)]
+    pub(crate) async fn wait_for_waiting_lease(&self) {
+        while self.state.receiver_count() == 0 {
+            tokio::task::yield_now().await;
+        }
+    }
+
     /// Wakes when [`is_busy`](Self::is_busy) changes.
     pub fn watch_busy(&self) -> BusyWatch {
         BusyWatch {
@@ -217,7 +227,9 @@ mod tests {
             let gate = gate.clone();
             async move { gate.lease().await }
         });
-        tokio::time::sleep(Duration::from_millis(20)).await;
+        tokio::time::timeout(Duration::from_secs(1), gate.wait_for_waiting_lease())
+            .await
+            .unwrap();
         assert!(!waiting.is_finished());
 
         drop(pause);
