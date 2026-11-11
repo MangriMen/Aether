@@ -1,4 +1,4 @@
-use std::collections::BTreeSet;
+use std::collections::BTreeMap;
 
 use fontdb::{Database, FaceInfo, ID};
 use tokio::sync::OnceCell;
@@ -38,7 +38,8 @@ fn face_has_latin(data: &[u8], index: u32) -> bool {
 /// is named by its first name (English, unless the font has none): the same family under its
 /// localized name is not listed twice.
 fn collect_families(db: &Database, has_latin: impl Fn(ID) -> bool) -> Vec<String> {
-    let mut families = BTreeSet::new();
+    // Keyed by the lowercase name, so "iA Writer" does not sort after "Zapfino".
+    let mut families = BTreeMap::new();
 
     for face in db.faces() {
         let Some(name) = primary_family(face) else {
@@ -47,12 +48,12 @@ fn collect_families(db: &Database, has_latin: impl Fn(ID) -> bool) -> Vec<String
 
         // A family is listed by its first face with Latin; the check opens the file, so the
         // families already listed are not asked again.
-        if !families.contains(name) && has_latin(face.id) {
-            families.insert(name.to_owned());
+        if !families.contains_key(&name.to_lowercase()) && has_latin(face.id) {
+            families.insert(name.to_lowercase(), name.to_owned());
         }
     }
 
-    families.into_iter().collect()
+    families.into_values().collect()
 }
 
 fn primary_family(face: &FaceInfo) -> Option<&str> {
@@ -91,8 +92,12 @@ mod tests {
         push_face(&mut db, &["Zeta"]);
         push_face(&mut db, &["Alpha"]);
         push_face(&mut db, &["Alpha"]);
+        push_face(&mut db, &["iA Writer"]);
 
-        assert_eq!(collect_families(&db, |_| true), ["Alpha", "Zeta"]);
+        assert_eq!(
+            collect_families(&db, |_| true),
+            ["Alpha", "iA Writer", "Zeta"]
+        );
     }
 
     #[test]
