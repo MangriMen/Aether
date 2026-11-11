@@ -66,6 +66,12 @@ impl LocationInfo {
         self.versions_dir().join(version)
     }
 
+    /// Get the path of the client jar of a given version
+    #[inline]
+    pub fn version_jar_path(&self, version: &str) -> PathBuf {
+        self.version_dir(version).join(format!("{version}.jar"))
+    }
+
     /// Get the Minecraft libraries metadata directory
     #[inline]
     pub fn libraries_dir(&self) -> PathBuf {
@@ -287,6 +293,10 @@ mod tests {
         let meta = p(".minecraft");
         assert_eq!(li.versions_dir(), meta.join("versions"));
         assert_eq!(li.version_dir("1.20"), meta.join("versions").join("1.20"));
+        assert_eq!(
+            li.version_jar_path("1.20"),
+            meta.join("versions").join("1.20").join("1.20.jar")
+        );
         assert_eq!(li.libraries_dir(), meta.join("libraries"));
         assert_eq!(li.assets_dir(), meta.join("assets"));
         assert_eq!(li.assets_index_dir(), meta.join("assets").join("indexes"));

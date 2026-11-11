@@ -63,10 +63,7 @@ impl<PS: ProgressService> ModLoaderProcessor for ForgeProcessor<PS> {
         };
 
         let libraries_dir = self.location_info.libraries_dir();
-        let client_jar = self
-            .location_info
-            .version_dir(&version_jar)
-            .join(format!("{version_jar}.jar"));
+        let client_jar = self.location_info.version_jar_path(&version_jar);
 
         fill_client_data(
             data,

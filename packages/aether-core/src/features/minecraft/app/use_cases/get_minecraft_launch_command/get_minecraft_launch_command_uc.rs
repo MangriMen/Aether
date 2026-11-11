@@ -120,11 +120,7 @@ impl GetMinecraftLaunchCommandUseCase {
 
         let java = self.resolve_java(java_path.as_ref(), &version_info).await?;
 
-        // TODO: refactor
-        let client_path = self
-            .location_info
-            .version_dir(&version_jar)
-            .join(format!("{version_jar}.jar"));
+        let client_path = self.location_info.version_jar_path(&version_jar);
 
         let args = version_info.arguments.clone().unwrap_or_default();
 
