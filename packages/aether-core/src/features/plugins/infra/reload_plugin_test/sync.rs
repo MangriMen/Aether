@@ -20,8 +20,8 @@ use crate::shared::io::domain::IoError;
 
 use super::common::*;
 
-/// The plugins found on disk, as the sync lists them.
-struct OnDisk(HashMap<PluginId, Plugin>);
+/// The plugins found on disk, as the sync lists them; `None` is a disk that cannot be listed.
+struct OnDisk(Option<HashMap<PluginId, Plugin>>);
 
 #[async_trait]
 impl PluginStorage for OnDisk {
@@ -29,7 +29,9 @@ impl PluginStorage for OnDisk {
         unimplemented!("the sync only lists")
     }
     async fn list(&self) -> Result<HashMap<PluginId, Plugin>, PluginError> {
-        Ok(self.0.clone())
+        self.0
+            .clone()
+            .ok_or_else(|| PluginError::Storage(IoError::DeserializationError("unreadable".into())))
     }
     async fn get(&self, _: &PluginId) -> Result<Plugin, PluginError> {
         unimplemented!("the sync only lists")
@@ -55,7 +57,7 @@ impl Harness {
     /// A sync that finds `on_disk`.
     fn sync(&self, on_disk: HashMap<PluginId, Plugin>) -> SyncPluginsUseCase {
         SyncPluginsUseCase::new(
-            Arc::new(OnDisk(on_disk)),
+            Arc::new(OnDisk(Some(on_disk))),
             Arc::clone(&self.plugins),
             Arc::new(self.disable()),
             Arc::new(self.enable()),
@@ -122,45 +124,12 @@ async fn should_forget_the_plugin_as_enabled_when_its_files_are_gone() {
     assert!(!harness.is_enabled());
 }
 
-/// A disk that cannot be listed.
-struct UnreadableDisk;
-
-#[async_trait]
-impl PluginStorage for UnreadableDisk {
-    async fn add(&self, _: ExtractedPlugin) -> Result<(), PluginError> {
-        unimplemented!("the sync only lists")
-    }
-    async fn list(&self) -> Result<HashMap<PluginId, Plugin>, PluginError> {
-        Err(PluginError::Storage(IoError::DeserializationError(
-            "unreadable".into(),
-        )))
-    }
-    async fn get(&self, _: &PluginId) -> Result<Plugin, PluginError> {
-        unimplemented!("the sync only lists")
-    }
-    async fn remove(&self, _: &PluginId) -> Result<(), PluginError> {
-        unimplemented!("the sync only lists")
-    }
-    async fn replace(&self, _: ExtractedPlugin) -> Result<(), PluginError> {
-        unimplemented!("the sync only lists")
-    }
-    async fn restore_replaced(&self, _: &PluginId) -> Result<(), PluginError> {
-        unimplemented!("the sync only lists")
-    }
-    async fn discard_replaced(&self, _: &PluginId) -> Result<(), PluginError> {
-        unimplemented!("the sync only lists")
-    }
-    async fn wasm_sha256(&self, _: &PluginId) -> Result<String, PluginError> {
-        unimplemented!("the sync only lists")
-    }
-}
-
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn should_announce_the_sync_even_when_it_failed() {
     let harness = Harness::enabled().await;
     let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
     let sync = SyncPluginsUseCase::new(
-        Arc::new(UnreadableDisk),
+        Arc::new(OnDisk(None)),
         Arc::clone(&harness.plugins),
         Arc::new(harness.disable()),
         Arc::new(harness.enable()),
