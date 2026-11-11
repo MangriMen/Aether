@@ -98,28 +98,37 @@ async fn should_keep_both_changes_when_edit_and_launch_update_run_concurrently()
     assert!(stored.last_played.is_some());
 }
 
-#[tokio::test]
+/// The update reads the row, then is held in its change closure while the remove runs; only the
+/// write lock taken before the read keeps the remove behind it, so the update cannot write the
+/// row back after it was deleted, nor fail for having read a row that changed meanwhile.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn should_not_resurrect_the_row_when_remove_runs_under_a_concurrent_update() {
     let (_dir, pool) = pool().await;
     let storage = Arc::new(SqliteInstanceStorage::new(pool));
     let id = InstanceId::try_from(uuid::Uuid::new_v4().to_string().as_str()).unwrap();
     storage.upsert(&instance(&id)).await.unwrap();
 
+    let (read, mut was_read) = tokio::sync::mpsc::unbounded_channel();
     let updater = storage.clone();
     let update_id = id.clone();
     let update = tokio::spawn(async move {
-        let _ = updater
+        updater
             .update(
                 &update_id,
-                Box::new(|instance| {
+                Box::new(move |instance| {
+                    let _ = read.send(());
+                    // Long enough for a remove that is not kept behind the update to finish.
+                    std::thread::sleep(std::time::Duration::from_millis(300));
                     instance.install_stage = InstanceInstallStage::Installed;
                     Ok(true)
                 }),
             )
-            .await;
+            .await
     });
+    was_read.recv().await.unwrap();
     storage.remove(&id).await.unwrap();
-    update.await.unwrap();
+    // The remove waited, so the update was applied (not refused as stale) and then deleted.
+    update.await.unwrap().expect("the update is applied");
 
     assert!(storage.get(&id).await.is_err());
 }
