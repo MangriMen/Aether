@@ -1,8 +1,12 @@
+import type { Collection, CollectionNode } from '@kobalte/core';
 import type { PolymorphicProps } from '@kobalte/core/polymorphic';
-import type { JSX, ValidComponent } from 'solid-js';
+import type { VirtualItem } from '@tanstack/solid-virtual';
+import type { Accessor, Component, JSX, ValidComponent } from 'solid-js';
 
 import * as ComboboxPrimitive from '@kobalte/core/combobox';
-import { splitProps } from 'solid-js';
+import { createVirtualizer } from '@tanstack/solid-virtual';
+import { For, Show, splitProps } from 'solid-js';
+import { Dynamic } from 'solid-js/web';
 
 import { cn } from '@/shared/utils';
 
@@ -116,13 +120,36 @@ const ComboboxTrigger = <T extends ValidComponent = 'button'>(
   );
 };
 
-type ComboboxContentProps<T extends ValidComponent = 'div'> =
-  ComboboxPrimitive.ComboboxContentProps<T> & { class?: string | undefined };
+type ComboboxVirtualizedItemComponentProps<Option> =
+  ComboboxPrimitive.ComboboxRootItemComponentProps<Option> & {
+    style: JSX.CSSProperties;
+  };
 
-const ComboboxContent = <T extends ValidComponent = 'div'>(
-  props: PolymorphicProps<T, ComboboxContentProps<T>>,
+type ComboboxContentProps<
+  Option = unknown,
+  T extends ValidComponent = 'div',
+> = ComboboxPrimitive.ComboboxContentProps<T> & {
+  class?: string | undefined;
+  /**
+   * Renders only the rows in view, for lists of hundreds. The `Combobox` must be `virtualized`
+   * too (that is Kobalte's switch for its focus handling), and the list needs a height of its own
+   * (a `max-h-*` on the content), or it would show every row.
+   */
+  virtualized?: boolean;
+  /** The row of a virtualized list; it must put the `style` it is given on the item. */
+  itemComponent?: Component<ComboboxVirtualizedItemComponentProps<Option>>;
+};
+
+const ESTIMATED_ROW_HEIGHT = 32;
+
+const ComboboxContent = <Option, T extends ValidComponent = 'div'>(
+  props: PolymorphicProps<T, ComboboxContentProps<Option, T>>,
 ) => {
-  const [local, others] = splitProps(props as ComboboxContentProps, ['class']);
+  const [local, others] = splitProps(props as ComboboxContentProps<Option>, [
+    'class',
+    'virtualized',
+    'itemComponent',
+  ]);
 
   return (
     <ComboboxPrimitive.Portal>
@@ -141,12 +168,116 @@ const ComboboxContent = <T extends ValidComponent = 'div'>(
             overflow-hidden border
           `,
           local.class,
+          { 'flex flex-col': local.virtualized },
         )}
         {...others}
       >
-        <ComboboxPrimitive.Listbox class='m-0 p-1 max-h-full' />
+        <Show
+          when={local.virtualized}
+          fallback={<ComboboxPrimitive.Listbox class='m-0 p-1 max-h-full' />}
+        >
+          <ComboboxListboxVirtualized itemComponent={local.itemComponent} />
+        </Show>
       </ComboboxPrimitive.Content>
     </ComboboxPrimitive.Portal>
+  );
+};
+
+type ComboboxListboxVirtualizedProps<Option> = {
+  itemComponent?: Component<ComboboxVirtualizedItemComponentProps<Option>>;
+};
+
+/**
+ * The rows come from the combobox's own collection, so what the typed text filters out is
+ * not drawn, and the keys are the ones the combobox itself navigates by.
+ */
+const ComboboxListboxVirtualized = <Option,>(
+  props: ComboboxListboxVirtualizedProps<Option>,
+) => {
+  // oxlint-disable-next-line no-unassigned-vars
+  let listboxRef: HTMLUListElement | undefined;
+
+  let scrollToKey: ((key: string) => void) | undefined;
+
+  const getItemStyle = (virtualRow: VirtualItem): JSX.CSSProperties => ({
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: `${virtualRow.size}px`,
+    transform: `translateY(${virtualRow.start}px)`,
+  });
+
+  return (
+    <ComboboxPrimitive.Listbox
+      class='m-0 p-1 min-h-0 overflow-x-hidden overflow-y-auto'
+      ref={listboxRef}
+      scrollToItem={(key) => scrollToKey?.(key)}
+    >
+      {(items: Accessor<Collection<CollectionNode<Option>>>) => {
+        const keys = () => [...items()].map((node) => node.key);
+
+        const virtualizer = createVirtualizer({
+          get count() {
+            return keys().length;
+          },
+          overscan: 5,
+          getScrollElement: () => listboxRef ?? null,
+          getItemKey: (index: number) => keys()[index] ?? index,
+          estimateSize: () => ESTIMATED_ROW_HEIGHT,
+        });
+
+        scrollToKey = (key) => {
+          const index = keys().indexOf(key);
+
+          if (index !== -1) {
+            virtualizer.scrollToIndex(index);
+          }
+        };
+
+        return (
+          <div
+            style={{
+              height: `${virtualizer.getTotalSize()}px`,
+              width: '100%',
+              position: 'relative',
+            }}
+          >
+            <For each={virtualizer.getVirtualItems()}>
+              {(virtualRow) => {
+                const item = () => items().getItem(String(virtualRow.key));
+
+                return (
+                  <Show when={item()}>
+                    {(node) => (
+                      <Show
+                        when={props.itemComponent}
+                        fallback={
+                          <ComboboxItem
+                            item={node()}
+                            style={getItemStyle(virtualRow)}
+                          >
+                            {node().textValue}
+                          </ComboboxItem>
+                        }
+                      >
+                        {(Row) => (
+                          <Dynamic
+                            component={Row()}
+                            item={node()}
+                            style={getItemStyle(virtualRow)}
+                          />
+                        )}
+                      </Show>
+                    )}
+                  </Show>
+                );
+              }}
+            </For>
+          </div>
+        );
+      }}
+    </ComboboxPrimitive.Listbox>
   );
 };
 

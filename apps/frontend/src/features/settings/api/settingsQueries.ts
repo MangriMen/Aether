@@ -20,6 +20,9 @@ export const useCacheBusy = () => useQuery(settingsQueries.cacheBusy);
 
 export const useMaxRam = () => useQuery(settingsQueries.maxRam);
 
+/** The font families installed on the system, by name. */
+export const useSystemFonts = () => useQuery(settingsQueries.systemFonts);
+
 /**
  * Choose (or, with `null`, drop the choice of) the provider serving a platform.
  * The edit command carries the rest of the settings too, so they are sent back as they are —

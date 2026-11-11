@@ -5,4 +5,5 @@ export const settingsKeys = {
   cacheUsage: () => [...settingsKeys.all, 'cacheUsage'] as const,
   cacheBusy: () => [...settingsKeys.all, 'cacheBusy'] as const,
   maxRam: () => [...settingsKeys.all, 'maxRam'] as const,
+  systemFonts: () => [...settingsKeys.all, 'systemFonts'] as const,
 } as const;
