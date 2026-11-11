@@ -6,7 +6,7 @@ use bytes::Bytes;
 use crate::shared::{
     cache::domain::{AssetError, AssetsStorage, CacheId, CacheKey, FileStore},
     hash::infra::sha1_async,
-    image::sniff_image_extension,
+    image::{looks_like_svg, sniff_image_extension},
 };
 
 pub const ASSETS_CACHE_NAMESPACE: &str = "assets";
@@ -40,6 +40,21 @@ async fn read_limited(source: &Path, limit: u64) -> Result<Vec<u8>, AssetError> 
     .map_err(|err: std::io::Error| AssetError::ReadSource(err.to_string()))?
 }
 
+/// An SVG is a document that can carry scripts and references to other files, and the asset is
+/// served to the UI as it is stored, so what can run or fetch is stripped first. A file that
+/// does not parse is no image.
+async fn sanitize_svg(data: Vec<u8>) -> Result<Vec<u8>, AssetError> {
+    tokio::task::spawn_blocking(move || {
+        let mut clean = Vec::with_capacity(data.len());
+        svg_hush::Filter::new()
+            .filter(data.as_slice(), &mut clean)
+            .map(|()| clean)
+            .map_err(|_| AssetError::NotAnImage)
+    })
+    .await
+    .map_err(|err| AssetError::ReadSource(err.to_string()))?
+}
+
 pub struct FsAssetsStorage<C> {
     cache: Arc<C>,
 }
@@ -54,7 +69,13 @@ impl<C: FileStore> FsAssetsStorage<C> {
 impl<C: FileStore> AssetsStorage for FsAssetsStorage<C> {
     async fn import_file(&self, source: &Path) -> Result<String, AssetError> {
         let data = read_limited(source, MAX_ASSET_BYTES).await?;
-        let ext = sniff_image_extension(&data).ok_or(AssetError::NotAnImage)?;
+        let (data, ext) = if let Some(ext) = sniff_image_extension(&data) {
+            (data, ext)
+        } else if looks_like_svg(&data) {
+            (sanitize_svg(data).await?, "svg")
+        } else {
+            return Err(AssetError::NotAnImage);
+        };
         let bytes = Bytes::from_owner(data);
 
         let hash = sha1_async(bytes.clone())
@@ -115,6 +136,28 @@ mod tests {
         }
     }
 
+    #[derive(Default)]
+    struct WritingStore {
+        written: Mutex<Option<Vec<u8>>>,
+    }
+
+    #[async_trait]
+    impl FileStore for WritingStore {
+        async fn exists(&self, _: &CacheKey<()>) -> bool {
+            false
+        }
+        async fn read(&self, _: &CacheKey<()>) -> Option<Bytes> {
+            None
+        }
+        async fn write(&self, _: &CacheKey<()>, bytes: Bytes) {
+            *self.written.lock().unwrap() = Some(bytes.to_vec());
+        }
+        async fn invalidate(&self, _: &CacheKey<()>) {}
+        async fn delete(&self, _: &CacheKey<()>) -> std::io::Result<()> {
+            Ok(())
+        }
+    }
+
     const PNG_HEAD: &[u8] = &[0x89, b'P', b'N', b'G', 0x0d, 0x0a, 0x1a, 0x0a];
 
     async fn import(bytes: &[u8], name: &str) -> Result<String, AssetError> {
@@ -138,6 +181,35 @@ mod tests {
     #[tokio::test]
     async fn should_refuse_a_file_that_is_not_an_image() {
         let result = import(b"<html><script>", "icon.png").await;
+
+        assert!(matches!(result, Err(AssetError::NotAnImage)));
+    }
+
+    #[tokio::test]
+    async fn should_store_an_svg_without_what_runs_in_it() {
+        let svg = br#"<svg xmlns="http://www.w3.org/2000/svg" onload="alert(1)"><script>alert(2)</script><rect width="1" height="1"/></svg>"#;
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("icon.svg");
+        std::fs::write(&path, svg).unwrap();
+        let store = Arc::new(WritingStore::default());
+
+        let name = FsAssetsStorage::new(store.clone())
+            .import_file(&path)
+            .await
+            .unwrap();
+
+        assert_eq!(Path::new(&name).extension().unwrap(), "svg");
+        let stored = String::from_utf8(store.written.lock().unwrap().clone().unwrap()).unwrap();
+        assert!(stored.contains("<rect"), "{stored}");
+        assert!(
+            !stored.contains("script") && !stored.contains("onload"),
+            "{stored}"
+        );
+    }
+
+    #[tokio::test]
+    async fn should_refuse_an_svg_that_does_not_parse() {
+        let result = import(b"<svg><rect></svg>", "icon.svg").await;
 
         assert!(matches!(result, Err(AssetError::NotAnImage)));
     }

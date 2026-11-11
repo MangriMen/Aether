@@ -92,7 +92,7 @@ export const GeneralSettingsForm: Component<GeneralSettingsFormProps> = (
         filters: [
           {
             name: 'Image',
-            extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif'],
+            extensions: ['png', 'jpg', 'jpeg', 'svg', 'webp', 'gif'],
           },
         ],
       });

@@ -60,6 +60,8 @@
       "INSTANCE_STILL_INSTALLING": "Инстанс еще устанавливается",
       "INSTANCE_ALREADY_RUNNING": "Инстанс уже запущен",
       "CACHES_BEING_CLEARED": "Идёт очистка кеша, повторите через мгновение",
+      "ICON_TOO_LARGE": "Иконка слишком большая (лимит {{limit}} байт)",
+      "ICON_NOT_SUPPORTED": "Неподдерживаемая иконка: нужно изображение PNG, JPEG, GIF, WebP или SVG",
       "CANCELLED": "Установка отменена",
       "PRELAUNCH_COMMAND_ERROR": "Ошибка команды перед запуском",
       "VALIDATION_ERROR": "Ошибка проверки файлов инстанса",

@@ -60,6 +60,8 @@
       "INSTANCE_STILL_INSTALLING": "Instance is still installing",
       "INSTANCE_ALREADY_RUNNING": "Instance is already running",
       "CACHES_BEING_CLEARED": "Caches are being cleared, try again in a moment",
+      "ICON_TOO_LARGE": "The icon is too large (limit {{limit}} bytes)",
+      "ICON_NOT_SUPPORTED": "Unsupported icon: use a PNG, JPEG, GIF, WebP or SVG image",
       "CANCELLED": "Installation cancelled",
       "PRELAUNCH_COMMAND_ERROR": "Pre-launch command error",
       "VALIDATION_ERROR": "Instance validation failed",
