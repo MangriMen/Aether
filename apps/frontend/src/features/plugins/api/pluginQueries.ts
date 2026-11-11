@@ -27,6 +27,11 @@ export const useSkippedPluginDirs = () => useQuery(pluginsQueries.skippedDirs);
 export const usePluginSettings = (id: Accessor<PluginId>) =>
   useQuery(() => pluginsQueries.settings(id()));
 
+export const usePluginReadme = (
+  id: Accessor<PluginId>,
+  version: Accessor<string>,
+) => useQuery(() => pluginsQueries.readme(id(), version()));
+
 export const useApiVersion = () => useQuery(pluginsQueries.apiVersion);
 
 export const useSyncPlugins = () => {

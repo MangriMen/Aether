@@ -6,6 +6,7 @@ use std::{
 };
 
 use async_trait::async_trait;
+use tokio::io::AsyncReadExt;
 use tracing::{error, warn};
 
 use crate::{
@@ -158,6 +159,69 @@ async fn remove_dir_if_present(dir: &Path) -> Result<(), IoError> {
 /// plugin id does.
 fn is_side_dir(name: &std::ffi::OsStr) -> bool {
     name.to_str().is_some_and(|name| name.starts_with('.'))
+}
+
+/// The name a plugin's description goes by, matched case-insensitively.
+const README_FILE_NAME: &str = "README.md";
+
+/// A README past this is not shown: the text goes to the UI whole, and a plugin's archive is not
+/// the launcher's to trust.
+const MAX_README_BYTES: u64 = 256 * 1024;
+
+/// The text of the README in `dir`, or `None` when there is none or it must not be shown.
+///
+/// Only a plain file counts: a link could lead anywhere on the disk, and a directory of that
+/// name is none. A larger file is left out (read only up to the limit, the size a file reports
+/// can change under the read), and text that is not UTF-8 is read as lossy.
+async fn read_readme_in(dir: &Path) -> Result<Option<String>, IoError> {
+    let mut entries = match tokio::fs::read_dir(dir).await {
+        Ok(entries) => entries,
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+        Err(err) => return Err(IoError::with_path(err, dir)),
+    };
+
+    // Of the files that differ only in case (on a case-sensitive file system) the same one every time.
+    let mut candidates = Vec::new();
+    while let Some(entry) = entries.next_entry().await.map_err(IoError::from)? {
+        let name = entry.file_name();
+        if name
+            .to_str()
+            .is_some_and(|name| name.eq_ignore_ascii_case(README_FILE_NAME))
+        {
+            candidates.push(name);
+        }
+    }
+    candidates.sort();
+    let Some(name) = candidates.into_iter().next() else {
+        return Ok(None);
+    };
+
+    let path = dir.join(&name);
+    let metadata = tokio::fs::symlink_metadata(&path)
+        .await
+        .map_err(|err| IoError::with_path(err, &path))?;
+    if !metadata.is_file() {
+        warn!("'{}' is not a plain file, no README shown", path.display());
+        return Ok(None);
+    }
+
+    let file = tokio::fs::File::open(&path)
+        .await
+        .map_err(|err| IoError::with_path(err, &path))?;
+    let mut bytes = Vec::new();
+    file.take(MAX_README_BYTES + 1)
+        .read_to_end(&mut bytes)
+        .await
+        .map_err(|err| IoError::with_path(err, &path))?;
+    if bytes.len() as u64 > MAX_README_BYTES {
+        warn!(
+            "'{}' is larger than {MAX_README_BYTES} bytes, no README shown",
+            path.display()
+        );
+        return Ok(None);
+    }
+
+    Ok(Some(String::from_utf8_lossy(&bytes).into_owned()))
 }
 
 pub struct FsPluginStorage {
@@ -612,6 +676,10 @@ impl PluginStorage for FsPluginStorage {
         sha256_async(file_content)
             .await
             .map_err(|err| hash_failed(&err))
+    }
+
+    async fn read_readme(&self, plugin_id: &PluginId) -> Result<Option<String>, PluginError> {
+        Ok(read_readme_in(&self.location_info.plugin_dir(plugin_id)).await?)
     }
 }
 
@@ -1105,5 +1173,90 @@ mod tests {
             b"0.1.0"
         );
         assert_eq!(fixture.plugins_dir_entries(), ["test-plugin"]);
+    }
+
+    #[tokio::test]
+    async fn should_read_the_readme_whatever_the_case_of_its_name() {
+        let fixture = Fixture::installed();
+        std::fs::write(fixture.plugin_dir().join("Readme.MD"), "# Test\n").unwrap();
+
+        let readme = fixture.storage.read_readme(&test_plugin()).await.unwrap();
+
+        assert_eq!(readme.as_deref(), Some("# Test\n"));
+    }
+
+    #[tokio::test]
+    async fn should_read_no_readme_when_the_plugin_has_none() {
+        let fixture = Fixture::installed();
+
+        assert_eq!(
+            fixture.storage.read_readme(&test_plugin()).await.unwrap(),
+            None
+        );
+    }
+
+    #[tokio::test]
+    async fn should_read_no_readme_when_the_plugin_is_not_installed() {
+        let fixture = Fixture::installed();
+        let other = PluginId::from_static("other-plugin");
+
+        assert_eq!(fixture.storage.read_readme(&other).await.unwrap(), None);
+    }
+
+    #[tokio::test]
+    async fn should_read_no_readme_when_it_is_over_the_limit() {
+        let fixture = Fixture::installed();
+        let limit = usize::try_from(MAX_README_BYTES).unwrap();
+        let at_limit = vec![b'a'; limit];
+        std::fs::write(fixture.plugin_dir().join("README.md"), &at_limit).unwrap();
+
+        let readme = fixture.storage.read_readme(&test_plugin()).await.unwrap();
+        assert_eq!(readme.map(|text| text.len()), Some(at_limit.len()));
+
+        std::fs::write(
+            fixture.plugin_dir().join("README.md"),
+            vec![b'a'; limit + 1],
+        )
+        .unwrap();
+
+        assert_eq!(
+            fixture.storage.read_readme(&test_plugin()).await.unwrap(),
+            None
+        );
+    }
+
+    #[tokio::test]
+    async fn should_read_no_readme_when_the_name_is_a_directory() {
+        let fixture = Fixture::installed();
+        std::fs::create_dir(fixture.plugin_dir().join("README.md")).unwrap();
+
+        assert_eq!(
+            fixture.storage.read_readme(&test_plugin()).await.unwrap(),
+            None
+        );
+    }
+
+    #[tokio::test]
+    async fn should_read_a_readme_that_is_not_utf8_as_lossy_text() {
+        let fixture = Fixture::installed();
+        std::fs::write(fixture.plugin_dir().join("README.md"), b"ok \xFF end").unwrap();
+
+        let readme = fixture.storage.read_readme(&test_plugin()).await.unwrap();
+
+        assert_eq!(readme.as_deref(), Some("ok \u{FFFD} end"));
+    }
+
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn should_read_no_readme_when_it_is_a_link() {
+        let fixture = Fixture::installed();
+        let secret = fixture.plugin_dir().join("..").join("secret.txt");
+        std::fs::write(&secret, "secret").unwrap();
+        std::os::unix::fs::symlink(&secret, fixture.plugin_dir().join("README.md")).unwrap();
+
+        assert_eq!(
+            fixture.storage.read_readme(&test_plugin()).await.unwrap(),
+            None
+        );
     }
 }

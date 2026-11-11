@@ -103,6 +103,12 @@ export const pluginsQueries = {
     queryFn: () => pluginsCommands.getSettings(id),
     enabled: !!id,
   }),
+  // The README of one version: it changes with an update, which changes the version.
+  readme: (id: PluginId, version: string) => ({
+    queryKey: pluginKeys.readme(id, version),
+    queryFn: () => pluginsCommands.getReadme(id),
+    enabled: !!id,
+  }),
   apiVersion: () => ({
     queryKey: pluginKeys.apiVersion(),
     queryFn: pluginsCommands.getApiVersion,

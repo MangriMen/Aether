@@ -1,9 +1,17 @@
-import { splitProps, type Component, For, createMemo } from 'solid-js';
+import {
+  splitProps,
+  type Component,
+  For,
+  createEffect,
+  createMemo,
+  createSignal,
+} from 'solid-js';
 import { Dynamic } from 'solid-js/web';
 
 import type { Plugin } from '@/features/plugins';
 import type { TabsProps } from '@/shared/ui-kit';
 
+import { usePluginReadme } from '@/features/plugins';
 import { useTranslation } from '@/shared/i18n';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui-kit';
 import { cn } from '@/shared/utils';
@@ -22,24 +30,53 @@ export const PluginDetailsBody: Component<PluginDetailsBodyProps> = (props) => {
 
   const [{ t }] = useTranslation();
 
-  const tabs = createMemo(() => {
-    if (!local.plugin.capabilities) {
-      return PLUGIN_DETAILS_TABS.filter(
-        (tab) => tab.value !== PluginDetailsTabs.Capabilities,
-      );
-    }
+  const readme = usePluginReadme(
+    () => local.plugin.manifest.metadata.id,
+    () => local.plugin.manifest.metadata.version,
+  );
 
-    return PLUGIN_DETAILS_TABS;
+  const tabs = createMemo(() =>
+    PLUGIN_DETAILS_TABS.filter((tab) => {
+      switch (tab.value) {
+        case PluginDetailsTabs.Description:
+          return Boolean(readme.data);
+        case PluginDetailsTabs.Capabilities:
+          return Boolean(local.plugin.capabilities);
+        default:
+          return true;
+      }
+    }),
+  );
+
+  // The README arrives after the tabs are shown: it takes the first place unless the user has
+  // already chosen a tab by then.
+  const [selectedTab, setSelectedTab] = createSignal<string>(
+    PluginDetailsTabs.Capabilities,
+  );
+  const [hasChosenTab, setHasChosenTab] = createSignal(false);
+
+  createEffect(() => {
+    if (readme.data && !hasChosenTab()) {
+      setSelectedTab(PluginDetailsTabs.Description);
+    }
   });
+
+  // Not in `onChange`: the tabs report a change on their own too, when the selected one is gone.
+  const markChosen = () => setHasChosenTab(true);
 
   return (
     <Tabs
       class={cn('flex flex-1 flex-col overflow-hidden', local.class)}
-      defaultValue={PluginDetailsTabs.Capabilities}
+      value={selectedTab()}
+      onChange={setSelectedTab}
       orientation='horizontal'
       {...others}
     >
-      <TabsList class='self-start'>
+      <TabsList
+        class='self-start'
+        onPointerDown={markChosen}
+        onKeyDown={markChosen}
+      >
         <For each={tabs()}>
           {(tab) => (
             <TabsTrigger value={tab.value}>

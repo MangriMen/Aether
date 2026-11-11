@@ -73,6 +73,11 @@ pub trait PluginStorage: Send + Sync {
     async fn discard_replaced(&self, plugin_id: &PluginId) -> Result<(), PluginError>;
     /// Lowercase hex sha256 of the plugin's wasm blob as it currently sits on disk.
     async fn wasm_sha256(&self, plugin_id: &PluginId) -> Result<String, PluginError>;
+    /// The text of the plugin's `README.md`, or `None` when it has none, or one that is not a
+    /// plain file or is too large to show.
+    async fn read_readme(&self, _plugin_id: &PluginId) -> Result<Option<String>, PluginError> {
+        Ok(None)
+    }
 }
 
 #[async_trait]
@@ -164,6 +169,11 @@ pub trait GetPluginApiVersionUseCasePort: Send + Sync {
 #[async_trait]
 pub trait GetPluginDtoUseCasePort: Send + Sync {
     async fn execute(&self, plugin_id: PluginId) -> Result<PluginDto, PluginError>;
+}
+
+#[async_trait]
+pub trait GetPluginReadmeUseCasePort: Send + Sync {
+    async fn execute(&self, plugin_id: PluginId) -> Result<Option<String>, PluginError>;
 }
 
 #[async_trait]

@@ -58,17 +58,18 @@ use crate::features::{
         EditPluginSettingsUseCase, EditPluginSettingsUseCasePort, EnablePluginUseCase,
         EnablePluginUseCasePort, ForceEnablePluginUseCase, ForceEnablePluginUseCasePort,
         GetPluginApiVersionUseCase, GetPluginApiVersionUseCasePort, GetPluginDtoUseCase,
-        GetPluginDtoUseCasePort, GetPluginSettingsUseCase, GetPluginSettingsUseCasePort,
-        GrantPluginFolderAccessUseCase, GrantPluginFolderAccessUseCasePort,
-        GrantPluginHostAccessUseCase, GrantPluginHostAccessUseCasePort, ImportPluginsUseCase,
-        ImportPluginsUseCasePort, InstallPluginFromProviderUseCase,
-        InstallPluginFromProviderUseCasePort, ListPluginsDtoUseCase, ListPluginsDtoUseCasePort,
-        ListSkippedPluginDirsUseCase, ListSkippedPluginDirsUseCasePort, LoadConfigType,
-        PluginDisableService, PluginExtractor, PluginLoader, PluginLoaderRegistry,
-        PluginProviderFactory, PluginRegistry, PluginSettingsStorage, PluginSourceStorage,
-        PluginStorage, PluginSyncService, PluginVerificationStorage, PluginsFeature,
-        ReloadPluginUseCase, ReloadPluginUseCasePort, RemovePluginUseCase, RemovePluginUseCasePort,
-        SyncPluginsUseCase, UpdatePluginUseCase, UpdatePluginUseCasePort,
+        GetPluginDtoUseCasePort, GetPluginReadmeUseCase, GetPluginReadmeUseCasePort,
+        GetPluginSettingsUseCase, GetPluginSettingsUseCasePort, GrantPluginFolderAccessUseCase,
+        GrantPluginFolderAccessUseCasePort, GrantPluginHostAccessUseCase,
+        GrantPluginHostAccessUseCasePort, ImportPluginsUseCase, ImportPluginsUseCasePort,
+        InstallPluginFromProviderUseCase, InstallPluginFromProviderUseCasePort,
+        ListPluginsDtoUseCase, ListPluginsDtoUseCasePort, ListSkippedPluginDirsUseCase,
+        ListSkippedPluginDirsUseCasePort, LoadConfigType, PluginDisableService, PluginExtractor,
+        PluginLoader, PluginLoaderRegistry, PluginProviderFactory, PluginRegistry,
+        PluginSettingsStorage, PluginSourceStorage, PluginStorage, PluginSyncService,
+        PluginVerificationStorage, PluginsFeature, ReloadPluginUseCase, ReloadPluginUseCasePort,
+        RemovePluginUseCase, RemovePluginUseCasePort, SyncPluginsUseCase, UpdatePluginUseCase,
+        UpdatePluginUseCasePort,
     },
     process::{
         KillProcessUseCase, KillProcessUseCasePort, ListProcessMetadataUseCase,
@@ -994,6 +995,9 @@ impl PluginsFeature for AetherContainer {
             self.plugins().registry.clone(),
             self.plugins().settings_storage.clone(),
         ))
+    }
+    fn get_plugin_readme_use_case(&self) -> Arc<dyn GetPluginReadmeUseCasePort> {
+        Arc::new(GetPluginReadmeUseCase::new(self.plugins().storage.clone()))
     }
     fn get_plugin_settings_use_case(&self) -> Arc<dyn GetPluginSettingsUseCasePort> {
         Arc::new(GetPluginSettingsUseCase::new(
