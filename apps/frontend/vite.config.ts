@@ -46,13 +46,7 @@ const testConfig = {
   // create jsdom once per worker instead of once per test file; files stay isolated
   pool: 'vmThreads',
   globals: true,
-  transformMode: {
-    web: [/\.[jt]sx?$/],
-  },
-  // isolates context for solid-js
-  deps: {
-    registerNodeLoader: false,
-  },
+  setupFiles: ['./src/test/setup.ts'],
   alias: srcAliases,
 };
 
