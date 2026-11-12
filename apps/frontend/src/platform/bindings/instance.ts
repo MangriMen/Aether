@@ -42,6 +42,8 @@ export const events = {
 };
 
 /* Types */
+export type AllowedHostEntryRejectionDto = "empty" | "not_a_host_name" | "invalid_pattern";
+
 export type AllowedHostRejectionDto = "invalid_url" | "unsupported_scheme" | "missing_host" | "not_public" | "wildcard";
 
 export type AllowedPathRejectionDto = "host_not_absolute" | "host_not_a_folder" | "host_is_root" | "plugin_not_absolute" | "plugin_not_normalized" | "plugin_is_root" | "plugin_reserved" | "host_overlaps_core";
@@ -675,6 +677,10 @@ export type PluginErrorDto = { code: "NOT_FOUND"; payload: {
 	plugin_id: string,
 	url: string,
 	reason: AllowedHostRejectionDto,
+} } | { code: "INVALID_ALLOWED_HOST_ENTRY"; payload: {
+	plugin_id: string,
+	entry: string,
+	reason: AllowedHostEntryRejectionDto,
 } } | { code: "HASH_COMPUTATION_FAILED" } | { code: "SETTINGS"; payload: {
 	details: string,
 } } | { code: "STORAGE"; payload: {

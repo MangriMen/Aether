@@ -11,7 +11,7 @@ use crate::{
         instance::PluginId,
         plugins::{
             AllowedPathInput, AllowedPathRejection, PluginError, PluginRegistry, PluginSettings,
-            PluginSettingsStorage, core_folders,
+            PluginSettingsStorage, core_folders, validate_allowed_host_entry,
         },
         settings::LocationInfo,
     },
@@ -89,6 +89,36 @@ pub(super) async fn settings_to_edit(
     }
 }
 
+/// The host entries to save, trimmed. A bad entry the edit adds refuses the whole edit; one already
+/// saved (it predates the check) is dropped with a warning, as a saved folder is: the settings
+/// screen sends every saved entry back with each edit, so refusing it would block every
+/// unrelated change.
+fn checked_hosts(
+    plugin_id: &PluginId,
+    saved: &[String],
+    entries: Vec<String>,
+) -> Result<Vec<String>, PluginError> {
+    let mut kept = Vec::with_capacity(entries.len());
+    for entry in entries {
+        match validate_allowed_host_entry(&entry) {
+            Ok(checked) => kept.push(checked),
+            Err(reason) if saved.contains(&entry) => {
+                warn!(
+                    "Plugin '{plugin_id}': dropping saved host '{entry}' from its settings: {reason}"
+                );
+            }
+            Err(reason) => {
+                return Err(PluginError::InvalidAllowedHostEntry {
+                    plugin_id: plugin_id.to_owned(),
+                    entry,
+                    reason,
+                });
+            }
+        }
+    }
+    Ok(kept)
+}
+
 /// Refuses the whole edit over one bad folder, so that nothing the user did not ask for is
 /// saved. A host folder that does not exist is dropped instead: it may be one given earlier
 /// and since removed, which should not block every later edit. A file is refused: the user
@@ -105,7 +135,7 @@ fn apply_edit_changes(
     edit_settings: EditPluginSettings,
 ) -> Result<PluginSettings, PluginError> {
     if let Some(allowed_hosts) = edit_settings.allowed_hosts {
-        settings.allowed_hosts = allowed_hosts;
+        settings.allowed_hosts = checked_hosts(plugin_id, &settings.allowed_hosts, allowed_hosts)?;
     }
 
     if let Some(allowed_paths) = edit_settings.allowed_paths {
@@ -191,7 +221,7 @@ mod tests {
     use tempfile::TempDir;
 
     use crate::features::events::test_support::NoOpEmitter;
-    use crate::features::plugins::{AllowedPath, IgnoredAllowedPath};
+    use crate::features::plugins::{AllowedHostEntryRejection, AllowedPath, IgnoredAllowedPath};
 
     use super::*;
 
@@ -554,6 +584,51 @@ mod tests {
         let settings = edit_ignored(Some(vec![ignored("/c", "/cache").path]));
 
         assert!(settings.ignored_paths.is_empty());
+    }
+
+    fn edit_hosts(saved: &[&str], hosts: &[&str]) -> Result<Vec<String>, PluginError> {
+        let settings = PluginSettings {
+            allowed_hosts: saved.iter().map(ToString::to_string).collect(),
+            ..PluginSettings::default()
+        };
+        apply_edit_changes(
+            &PluginId::from_static("packwiz"),
+            &[],
+            settings,
+            EditPluginSettings {
+                allowed_hosts: Some(hosts.iter().map(ToString::to_string).collect()),
+                ..EditPluginSettings::default()
+            },
+        )
+        .map(|settings| settings.allowed_hosts)
+    }
+
+    #[test]
+    fn should_save_hosts_trimmed_when_they_are_names_or_globs() {
+        let hosts = edit_hosts(&[], &[" example.com ", "*.example.com", "*"]).unwrap();
+
+        assert_eq!(hosts, ["example.com", "*.example.com", "*"]);
+    }
+
+    #[test]
+    fn should_refuse_the_edit_when_it_adds_a_host_that_could_never_match() {
+        let result = edit_hosts(&["example.com"], &["example.com", "https://host:443/"]);
+
+        assert!(matches!(
+            result,
+            Err(PluginError::InvalidAllowedHostEntry {
+                reason: AllowedHostEntryRejection::NotAHostName,
+                ..
+            })
+        ));
+    }
+
+    #[test]
+    fn should_drop_a_saved_host_that_is_invalid_instead_of_refusing_the_edit() {
+        let hosts =
+            edit_hosts(&["https://old/", ""], &["https://old/", "", "example.com"]).unwrap();
+
+        assert_eq!(hosts, ["example.com"]);
     }
 
     #[tokio::test]

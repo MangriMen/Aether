@@ -3,7 +3,8 @@ use serde::Serialize;
 use specta::Type;
 
 use crate::features::plugins::{
-    AllowedHostRejectionDto, AllowedPathRejectionDto, LoadConfigTypeDto,
+    AllowedHostEntryRejectionDto, AllowedHostRejectionDto, AllowedPathRejectionDto,
+    LoadConfigTypeDto,
 };
 
 #[derive(Debug, Serialize, Type)]
@@ -87,6 +88,11 @@ pub enum PluginErrorDto {
         plugin_id: String,
         url: String,
         reason: AllowedHostRejectionDto,
+    },
+    InvalidAllowedHostEntry {
+        plugin_id: String,
+        entry: String,
+        reason: AllowedHostEntryRejectionDto,
     },
     HashComputationFailed,
     Settings {
@@ -208,6 +214,15 @@ impl From<&PluginError> for PluginErrorDto {
             } => Self::InvalidAllowedHost {
                 plugin_id: plugin_id.to_string(),
                 url: url.clone(),
+                reason: (*reason).into(),
+            },
+            PluginError::InvalidAllowedHostEntry {
+                plugin_id,
+                entry,
+                reason,
+            } => Self::InvalidAllowedHostEntry {
+                plugin_id: plugin_id.to_string(),
+                entry: entry.clone(),
                 reason: (*reason).into(),
             },
             PluginError::HashComputationFailed => Self::HashComputationFailed,

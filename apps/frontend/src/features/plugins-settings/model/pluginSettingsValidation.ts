@@ -21,11 +21,7 @@ export const PluginSettingsSchema = v.object({
   allowedHosts: v.pipe(
     v.optional(
       v.array(
-        v.pipe(
-          v.string(),
-          v.trim(),
-          v.minLength(1, 'Not allowed empty domain name'),
-        ),
+        v.pipe(v.string(), v.trim(), v.minLength(1, 'validation.hostRequired')),
       ),
     ),
     v.transform((value) => value ?? []),

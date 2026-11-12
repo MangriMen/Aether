@@ -71,6 +71,56 @@ impl std::fmt::Display for AllowedHostRejection {
     }
 }
 
+/// Why an `allowed_hosts` entry typed into the plugin's settings is refused.
+///
+/// Only an entry that could never match: the settings take a glob (`*.example.com`, even a bare
+/// `*`) on purpose, for a plugin of the user's own or a host that moved, so a wide pattern is
+/// not refused here.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AllowedHostEntryRejection {
+    /// Empty, or only spaces.
+    Empty,
+    /// A scheme, port, path, credentials or spaces: a host is matched by its name alone, so
+    /// such an entry would never match anything.
+    NotAHostName,
+    /// Not a valid glob pattern.
+    InvalidPattern,
+}
+
+impl std::fmt::Display for AllowedHostEntryRejection {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            Self::Empty => "the entry is empty",
+            Self::NotAHostName => {
+                "a host is written as its name only, without a scheme, port or path"
+            }
+            Self::InvalidPattern => "the entry is not a valid pattern",
+        })
+    }
+}
+
+/// Checks one `allowed_hosts` entry of the plugin's settings, and returns it trimmed.
+///
+/// An IPv6 literal is stored in the glob-escaped form [`GrantableHost`] gives (`[[]::1[]]`), so
+/// the colons of an entry that starts that way are not a port.
+pub(crate) fn validate_allowed_host_entry(
+    entry: &str,
+) -> Result<String, AllowedHostEntryRejection> {
+    let entry = entry.trim();
+    if entry.is_empty() {
+        return Err(AllowedHostEntryRejection::Empty);
+    }
+    let escaped_ipv6 = entry.starts_with("[[]");
+    if entry.contains(['/', '\\', '@', '#'])
+        || entry.contains(char::is_whitespace)
+        || (!escaped_ipv6 && entry.contains(':'))
+    {
+        return Err(AllowedHostEntryRejection::NotAHostName);
+    }
+    glob::Pattern::new(entry).map_err(|_| AllowedHostEntryRejection::InvalidPattern)?;
+    Ok(entry.to_owned())
+}
+
 /// A host the user may give a plugin for `raw_url`: the URL's host as the plugin's requests will
 /// name it, and the `allowed_hosts` entry that admits that host and nothing else.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -189,6 +239,49 @@ mod tests {
             ),
         ] {
             assert_eq!(grantable(url), Err(expected), "{url}");
+        }
+    }
+
+    #[test]
+    fn should_accept_a_host_entry_that_is_a_name_or_a_glob() {
+        for (entry, expected) in [
+            ("example.com", "example.com"),
+            ("  example.com  ", "example.com"),
+            ("*.example.com", "*.example.com"),
+            ("*", "*"),
+            ("*.*", "*.*"),
+            ("192.168.1.5", "192.168.1.5"),
+            ("[[]::1[]]", "[[]::1[]]"),
+        ] {
+            assert_eq!(
+                validate_allowed_host_entry(entry).as_deref(),
+                Ok(expected),
+                "{entry}"
+            );
+        }
+    }
+
+    #[test]
+    fn should_refuse_a_host_entry_that_could_never_match() {
+        for (entry, expected) in [
+            ("", AllowedHostEntryRejection::Empty),
+            ("   ", AllowedHostEntryRejection::Empty),
+            (
+                "https://example.com",
+                AllowedHostEntryRejection::NotAHostName,
+            ),
+            (
+                "https://example.com:443/",
+                AllowedHostEntryRejection::NotAHostName,
+            ),
+            ("example.com:443", AllowedHostEntryRejection::NotAHostName),
+            ("example.com/path", AllowedHostEntryRejection::NotAHostName),
+            ("user@example.com", AllowedHostEntryRejection::NotAHostName),
+            ("exa mple.com", AllowedHostEntryRejection::NotAHostName),
+            ("[abc", AllowedHostEntryRejection::InvalidPattern),
+            ("**.example.com", AllowedHostEntryRejection::InvalidPattern),
+        ] {
+            assert_eq!(validate_allowed_host_entry(entry), Err(expected), "{entry}");
         }
     }
 

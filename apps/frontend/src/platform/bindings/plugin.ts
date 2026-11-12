@@ -59,6 +59,8 @@ export const events = {
 };
 
 /* Types */
+export type AllowedHostEntryRejectionDto = "empty" | "not_a_host_name" | "invalid_pattern";
+
 export type AllowedHostRejectionDto = "invalid_url" | "unsupported_scheme" | "missing_host" | "not_public" | "wildcard";
 
 /**  A folder of the user's given to a plugin. */
@@ -458,6 +460,10 @@ export type PluginErrorDto = { code: "NOT_FOUND"; payload: {
 	plugin_id: string,
 	url: string,
 	reason: AllowedHostRejectionDto,
+} } | { code: "INVALID_ALLOWED_HOST_ENTRY"; payload: {
+	plugin_id: string,
+	entry: string,
+	reason: AllowedHostEntryRejectionDto,
 } } | { code: "HASH_COMPUTATION_FAILED" } | { code: "SETTINGS"; payload: {
 	details: string,
 } } | { code: "STORAGE"; payload: {
