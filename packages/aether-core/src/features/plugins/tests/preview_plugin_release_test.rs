@@ -169,7 +169,6 @@ async fn should_preview_the_picked_tag_from_its_archive_with_the_hash_and_size_o
     assert_eq!(preview.tag, "v1");
     assert_eq!(preview.manifest.version, "0.1.0");
     assert_eq!(preview.archive_sha256, sha256_hex(&archive));
-    assert_eq!(preview.size, archive.len() as u64);
     assert_eq!(preview.releases.len(), 3);
     assert_eq!(
         (preview.owner.as_str(), preview.repo.as_str()),

@@ -10,14 +10,10 @@ pub struct ProviderPluginPreviewDto {
     pub owner: String,
     pub repo: String,
     pub releases: Vec<ProviderReleaseInfoDto>,
-    /// The tag the manifest, capabilities and hash below were read from.
     pub tag: String,
     pub manifest: PluginManifestPreviewDto,
     pub capabilities: Option<PluginCapabilitiesDto>,
-    /// Hash of the archive that was read; the install holds the download to it.
     pub archive_sha256: String,
-    #[specta(type = f64)]
-    pub size: u64,
 }
 
 impl From<aether_core::features::plugins::PluginReleasePreview> for ProviderPluginPreviewDto {
@@ -44,7 +40,6 @@ impl From<aether_core::features::plugins::PluginReleasePreview> for ProviderPlug
             manifest: PluginManifestPreviewDto::from(value.manifest),
             capabilities,
             archive_sha256: value.archive_sha256,
-            size: value.size,
             releases: value
                 .releases
                 .into_iter()

@@ -118,7 +118,6 @@ struct UseCaseCache {
     install_instance_uc: OnceLock<Arc<dyn InstanceInstallService>>,
     disable_plugin_uc: OnceLock<Arc<dyn PluginDisableService>>,
     sync_plugins_uc: OnceLock<Arc<dyn PluginSyncService>>,
-    /// One for the app, shared by the preview and the install of a plugin release.
     release_archive_cache: Arc<ReleaseArchiveCache>,
     health_service: OnceLock<Arc<dyn MinecraftHealthService>>,
     launch_command_service: OnceLock<Arc<dyn MinecraftLaunchCommandService>>,
@@ -240,7 +239,7 @@ pub struct AetherContainer {
 impl AetherContainer {
     pub fn new(params: AetherContainerParams) -> Arc<Self> {
         params.sandbox_limits.assert_consistent();
-        // What an earlier run left of its downloads of plugin archives.
+        // Remove archives a previous run left behind.
         crate::features::plugins::clean_plugin_archives();
 
         let content_metadata = Arc::new(ContentMetadataService::new(

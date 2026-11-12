@@ -525,8 +525,7 @@ impl From<&PluginProviderError> for PluginErrorDto {
             PluginProviderError::ProviderNoAssets { source_type } => Self::ProviderNoAssets {
                 source_type: source_type.into(),
             },
-            // Only the install from a provider produces it; the ABI's closest kind, as a new one
-            // would not decode in plugins built before it.
+            // ABI has no matching kind; a new one would not decode in plugins built before it.
             PluginProviderError::ArchiveChangedSincePreview => Self::InvalidManifestFormat {
                 error: value.to_string(),
             },

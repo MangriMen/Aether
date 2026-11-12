@@ -518,9 +518,7 @@ export type PluginManifestPreviewDto = {
 	authors: string[],
 	license: string | null,
 	api_version: string | null,
-	/**  The hosts the plugin asks to reach, globs as written in its manifest. */
 	allowed_hosts: string[],
-	/**  The host functions it declares. */
 	host_functions: string[] | null,
 };
 
@@ -629,13 +627,10 @@ export type ProviderPluginPreviewDto = {
 	owner: string,
 	repo: string,
 	releases: ProviderReleaseInfoDto[],
-	/**  The tag the manifest, capabilities and hash below were read from. */
 	tag: string,
 	manifest: PluginManifestPreviewDto,
 	capabilities: PluginCapabilitiesDto | null,
-	/**  Hash of the archive that was read; the install holds the download to it. */
 	archive_sha256: string,
-	size: number | null,
 };
 
 export type ProviderReleaseInfoDto = {

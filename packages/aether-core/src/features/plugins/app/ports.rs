@@ -95,8 +95,7 @@ pub trait PluginSettingsStorage: Send + Sync {
 pub trait PluginExtractor: Send + Sync {
     async fn extract(&self, file_path: &Path) -> Result<ExtractedPlugin, PluginProviderError>;
 
-    /// The manifest and capabilities of the archive at `file_path`, read without unpacking it and
-    /// checked as `extract` checks them.
+    /// Reads manifest and capabilities without unpacking; applies the same checks as `extract`.
     async fn read_metadata(&self, file_path: &Path)
     -> Result<ArchiveMetadata, PluginProviderError>;
 }
@@ -218,9 +217,8 @@ pub trait UpdatePluginUseCasePort: Send + Sync {
 
 #[async_trait]
 pub trait InstallPluginFromProviderUseCasePort: Send + Sync {
-    /// Installs the release of `identifier` tagged `tag`. The archive's address is the
-    /// provider's to say, not the caller's. The archive downloaded must hash to
-    /// `expected_sha256` (hex, case does not matter), the hash of the one that was previewed.
+    /// Fails with `ArchiveChangedSincePreview` if the archive does not hash to `expected_sha256`
+    /// (hex, case-insensitive).
     /// Returns the id of the plugin the archive holds.
     async fn execute(
         &self,
@@ -233,8 +231,7 @@ pub trait InstallPluginFromProviderUseCasePort: Send + Sync {
 
 #[async_trait]
 pub trait PreviewPluginReleaseUseCasePort: Send + Sync {
-    /// The release of `identifier` tagged `tag` (the first stable one, else the first, when no
-    /// tag is given), read from its downloaded archive.
+    /// With no `tag`, the first stable release is used.
     async fn execute(
         &self,
         source_type: PluginSourceType,

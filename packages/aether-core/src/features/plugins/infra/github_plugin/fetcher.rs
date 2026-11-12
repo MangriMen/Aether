@@ -160,12 +160,9 @@ impl GitHubPluginFetcher {
         Ok(releases
             .into_iter()
             .map(|r| {
-                // A release is installable when it has exactly one `.zip` asset. With none there
-                // is nothing to install; with several there is no telling which one is the plugin,
-                // and guessing would install a file the author may not have meant, so such a
-                // release is listed without a download address, like one with no archive. An
-                // archive whose size, as GitHub reports it, is over the limit is left out the
-                // same way, before any byte of it is requested.
+                // Installable only with exactly one .zip within the size limit: with several
+                // there is no telling which is the plugin. Anything else is listed without a
+                // download address.
                 let mut zips = r.assets.iter().filter(|a| {
                     std::path::Path::new(&a.name)
                         .extension()
@@ -284,8 +281,7 @@ impl GitHubPluginFetcher {
         Ok(response)
     }
 
-    /// Preview a plugin from a GitHub repo URL: the releases only. What a release holds is read
-    /// from its archive, which is not downloaded here.
+    /// Lists releases only; their contents are read from the archive on preview.
     pub async fn preview_plugin(
         &self,
         owner: &str,

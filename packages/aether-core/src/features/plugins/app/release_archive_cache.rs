@@ -11,10 +11,8 @@ use crate::features::plugins::PluginError;
 
 use super::DownloadedArchive;
 
-/// How long a downloaded archive is kept for the next preview or install of the same release.
 pub(super) const RELEASE_ARCHIVE_TTL: Duration = Duration::from_mins(10);
 
-/// How many archives are kept at once. Past it the oldest is let go.
 pub(super) const RELEASE_ARCHIVE_CAPACITY: usize = 4;
 
 type Clock = Box<dyn Fn() -> Instant + Send + Sync>;
@@ -24,17 +22,9 @@ type Loaded = (Arc<DownloadedArchive>, Instant);
 
 type Slots = HashMap<String, Arc<OnceCell<Loaded>>>;
 
-/// A short-lived cache of downloaded release archives, so that previewing another tag and back,
-/// or installing right after the preview, does not download the same archive again.
-///
-/// Keyed by the archive's download URL. Only the archive is kept, never what is decided about it:
-/// the size and host limits are those of the download, and the caller still checks the hash of
-/// what it gets. A file lives while anyone holds its `Arc`, so an install that is under way keeps
-/// its archive when the cache lets it go.
-///
-/// Requests for the same URL that overlap share one download. A download that fails is not kept.
-/// An archive is dropped when it expires even if nobody asks for it again: each download starts a
-/// task that sweeps the cache once the time to live is up.
+/// Keeps downloaded archives for a short time so a preview and the install after it share one
+/// download. Keyed by URL; only the file is cached, the caller still checks the hash. A file lives
+/// while anyone holds its `Arc`.
 pub struct ReleaseArchiveCache {
     slots: Mutex<Slots>,
     clock: Clock,
@@ -58,7 +48,6 @@ impl ReleaseArchiveCache {
         }
     }
 
-    /// The archive at `url`: the cached one, or the one `download` fetches.
     pub(crate) async fn get_or_download<F, Fut>(
         self: &Arc<Self>,
         url: &str,
@@ -77,19 +66,17 @@ impl ReleaseArchiveCache {
             })
             .await;
 
-        // A failure leaves the slot empty, for the requests waiting on it to download in their
-        // turn into the same cell, and for the next request to drop when none is.
+        // On failure the slot stays empty: waiting requests retry in the same cell, otherwise the
+        // next sweep drops it.
         result.map(|(archive, _)| archive.clone())
     }
 
-    /// Drops the archives that have expired.
     pub(crate) fn sweep(&self) {
         let now = (self.clock)();
         retain_live(&mut self.lock(), now);
     }
 
-    /// Sweeps once the time to live is up. The task holds the cache weakly, so it does not keep it
-    /// alive.
+    /// The task holds the cache weakly so it does not keep it alive.
     fn sweep_later(self: &Arc<Self>) {
         let cache: Weak<Self> = Arc::downgrade(self);
         tokio::spawn(async move {
@@ -100,8 +87,6 @@ impl ReleaseArchiveCache {
         });
     }
 
-    /// The slot for `url`, made if there is none, after the expired ones are dropped and room is
-    /// made for it.
     fn slot(&self, url: &str) -> Arc<OnceCell<Loaded>> {
         let now = (self.clock)();
         let mut slots = self.lock();
@@ -132,8 +117,7 @@ impl ReleaseArchiveCache {
     }
 }
 
-/// Keeps the archives that have not expired and the downloads that someone waits for. An empty
-/// slot that only the map holds is a download that was given up.
+// An empty slot only the map holds is an abandoned download.
 fn retain_live(slots: &mut Slots, now: Instant) {
     slots.retain(|_, cell| match cell.get() {
         Some((_, at)) => now.saturating_duration_since(*at) < RELEASE_ARCHIVE_TTL,

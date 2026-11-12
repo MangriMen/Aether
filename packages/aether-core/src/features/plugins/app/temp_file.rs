@@ -9,12 +9,10 @@ use crate::shared::io::domain::IoError;
 
 use super::PluginProvider;
 
-/// A plugin archive downloaded into a temporary file, with its SHA-256 and size. The reader opens
-/// the file by path. The file is deleted when this is dropped.
+/// A downloaded plugin archive; the temp file is deleted on drop.
 pub struct DownloadedArchive {
     file: tempfile::NamedTempFile,
     sha256: String,
-    size: u64,
 }
 
 impl DownloadedArchive {
@@ -22,27 +20,20 @@ impl DownloadedArchive {
         self.file.path()
     }
 
-    /// Lowercase hex SHA-256 of the file as it was downloaded.
     pub fn sha256(&self) -> &str {
         &self.sha256
     }
-
-    /// Number of bytes downloaded.
-    pub fn size(&self) -> u64 {
-        self.size
-    }
 }
 
-/// Downloads a plugin archive into a temporary file and hashes it. The file is deleted when the
-/// returned archive is dropped, so a download that fails or is cut short leaves nothing behind.
+/// Downloads and hashes an archive; a failed or cut-short download leaves no file behind.
 pub async fn download_to_temp_file(
     provider: &dyn PluginProvider,
     download_url: &str,
 ) -> Result<DownloadedArchive, PluginError> {
     let dir = plugin_archives_dir();
-    tokio::fs::create_dir_all(&dir)
+    crate::shared::io::infra::create_dir_all(&dir)
         .await
-        .map_err(|e| PluginError::Storage(IoError::IoError(e)))?;
+        .map_err(PluginError::Storage)?;
     download_to_temp_file_in(&dir, provider, download_url).await
 }
 
@@ -79,7 +70,7 @@ async fn download_to_temp_file_in(
     let temp_file = tempfile::NamedTempFile::new_in(dir).map_err(io)?;
     let mut file = tokio::fs::File::from_std(temp_file.reopen().map_err(io)?);
 
-    let size = provider.download_plugin(download_url, &mut file).await?;
+    provider.download_plugin(download_url, &mut file).await?;
     file.flush().await.map_err(io)?;
 
     // The digest is of the file on disk, which is what gets read afterwards, whatever the
@@ -91,7 +82,6 @@ async fn download_to_temp_file_in(
     Ok(DownloadedArchive {
         file: temp_file,
         sha256,
-        size,
     })
 }
 
@@ -183,7 +173,6 @@ mod tests {
             .unwrap();
 
         assert_eq!(std::fs::read(file.path()).unwrap(), b"archive");
-        assert_eq!(file.size(), 7);
         assert_eq!(
             file.sha256(),
             crate::shared::hash::infra::sha256_hex(b"archive")

@@ -34,7 +34,7 @@ impl fmt::Display for PluginSourceType {
     }
 }
 
-/// The releases a provider lists for a plugin. What a release holds is read from its archive.
+/// The releases a provider lists; their contents come from the archive.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProviderPluginPreview {
     /// Owner / namespace within the source (e.g., GitHub owner).
@@ -45,24 +45,18 @@ pub struct ProviderPluginPreview {
     pub releases: Vec<ProviderReleaseInfo>,
 }
 
-/// One release as the user is shown it before installing, read from its archive: what it asks
-/// for is what the archive holds, nothing a publisher states beside it.
+/// A release as shown before install, read from its archive rather than from publisher metadata.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PluginReleasePreview {
     pub owner: String,
     pub repo: String,
-    /// Every release the provider lists, so that another can be picked.
     pub releases: Vec<ProviderReleaseInfo>,
-    /// The tag of the release this preview is of.
     pub tag: String,
     pub manifest: PluginManifestPreview,
-    /// The archive's `capabilities.json`, as written, when it has one.
     pub capabilities: Option<String>,
     /// Lowercase hex SHA-256 of the archive that was read. The install is given it back and
     /// refuses an archive that hashes differently.
     pub archive_sha256: String,
-    /// Size of the archive, in bytes.
-    pub size: u64,
 }
 
 /// Information about a single release from a provider.

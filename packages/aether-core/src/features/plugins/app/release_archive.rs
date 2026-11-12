@@ -4,10 +4,9 @@ use crate::features::plugins::{
 
 use std::sync::Arc;
 
-use super::{DownloadedArchive, PluginProvider, ReleaseArchiveCache, download_to_temp_file};
+use super::{DownloadedArchive, PluginProviderFactory, ReleaseArchiveCache, download_to_temp_file};
 
-/// The release asked for, from the provider's own listing: the one tagged `tag`, or with no tag
-/// the first that is not a prerelease, else the first.
+/// With no tag: the first stable release, else the first.
 pub(super) fn pick_release<'a>(
     releases: &'a [ProviderReleaseInfo],
     tag: Option<&str>,
@@ -21,29 +20,35 @@ pub(super) fn pick_release<'a>(
     }
 }
 
-/// A release of a plugin, and its archive downloaded.
 pub(super) struct ReleaseArchive {
+    pub identifier: String,
     pub listing: ProviderPluginPreview,
     pub release: ProviderReleaseInfo,
     pub archive: Arc<DownloadedArchive>,
 }
 
-/// Finds the release in the provider's listing and downloads its archive. The archive's address
-/// is the provider's, never the caller's, so what is downloaded is the release of this very
-/// repository. The archive comes from `cache` when it was downloaded not long ago. A release that
-/// is not listed, or that has no archive to install, is `ProviderNoAssets`.
+/// The archive URL comes from the provider's listing, never from the caller, so only this
+/// repository's release is fetched. A release that is not listed or has no archive is
+/// `ProviderNoAssets`.
 pub(super) async fn download_release_archive(
-    provider: &dyn PluginProvider,
+    factory: &PluginProviderFactory,
     cache: &Arc<ReleaseArchiveCache>,
     source_type: &PluginSourceType,
     identifier: &str,
     tag: Option<&str>,
 ) -> Result<ReleaseArchive, PluginError> {
+    let provider = factory.get_provider(source_type).ok_or_else(|| {
+        PluginProviderError::ProviderFetchError {
+            source_type: source_type.clone(),
+            details: "No provider is registered for it".to_string(),
+        }
+    })?;
+    let identifier = provider.parse_identifier(identifier)?;
     let no_assets = || PluginProviderError::ProviderNoAssets {
         source_type: source_type.clone(),
     };
 
-    let listing = provider.fetch_preview(identifier).await?;
+    let listing = provider.fetch_preview(&identifier).await?;
     let release = pick_release(&listing.releases, tag)
         .filter(|r| !r.download_url.is_empty())
         .ok_or_else(no_assets)?
@@ -55,6 +60,7 @@ pub(super) async fn download_release_archive(
         .await?;
 
     Ok(ReleaseArchive {
+        identifier,
         listing,
         release,
         archive,

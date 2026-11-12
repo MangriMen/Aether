@@ -39,7 +39,6 @@ export const PluginPreviewCard: Component<PluginPreviewCardProps> = (props) => {
   const [{ t }] = useTranslation();
 
   const hasReleases = () => props.releaseOptions.length > 0;
-  const canInstall = () => props.preview !== undefined;
 
   return (
     <div class='gap-4 rounded-lg p-4 flex flex-col border'>
@@ -53,7 +52,6 @@ export const PluginPreviewCard: Component<PluginPreviewCardProps> = (props) => {
       >
         {(preview) => (
           <>
-            {/* Header: icon + info row */}
             <div class='gap-4 flex items-center'>
               <Image class='h-31 w-max' />
               <PluginInfoHeader
@@ -68,12 +66,10 @@ export const PluginPreviewCard: Component<PluginPreviewCardProps> = (props) => {
 
             <Separator />
 
-            {/* Capabilities */}
             <Show when={preview().capabilities}>
               {(c) => <PluginCapabilitiesSection capabilities={c()} />}
             </Show>
 
-            {/* What the plugin asks for: shown before it is installed */}
             <PluginAllowedHostsSection
               allowedHosts={preview().manifest.allowed_hosts}
             />
@@ -81,7 +77,6 @@ export const PluginPreviewCard: Component<PluginPreviewCardProps> = (props) => {
               hostFunctions={preview().manifest.host_functions}
             />
 
-            {/* License */}
             <Show when={preview().manifest.license}>
               {(license) => (
                 <span class='text-sm text-muted-foreground'>
@@ -118,7 +113,7 @@ export const PluginPreviewCard: Component<PluginPreviewCardProps> = (props) => {
         <Button
           variant='default'
           onClick={props.onInstall}
-          disabled={!canInstall() || props.isInstalling}
+          disabled={!props.preview || props.isInstalling}
         >
           {props.isInstalling ? t('common.installing') : t('plugins.install')}
         </Button>

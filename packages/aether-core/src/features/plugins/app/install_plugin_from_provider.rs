@@ -18,8 +18,7 @@ use crate::shared::io::domain::IoError;
 
 use super::{PluginProviderFactory, ReleaseArchiveCache};
 
-/// Installs the release a user picked from a provider, if its archive is the one that was
-/// previewed: it must hash to what the preview gave.
+/// Installs the release a user picked, provided its archive hashes to what the preview showed.
 ///
 /// The archive is unpacked before anything is written, and the files and the records about them
 /// (trust on first use, source, settings) go in as a whole: an install that fails at any step
@@ -73,24 +72,16 @@ impl InstallPluginFromProviderUseCase {
         tag: &str,
         expected_sha256: &str,
     ) -> Result<PluginId, PluginError> {
-        let provider = self
-            .provider_factory
-            .get_provider(&source_type)
-            .ok_or_else(|| PluginProviderError::ProviderFetchError {
-                source_type: source_type.clone(),
-                details: "No provider is registered for it".to_string(),
-            })?;
-        let identifier = provider.parse_identifier(identifier)?;
-
         let downloaded = download_release_archive(
-            provider,
+            &self.provider_factory,
             &self.archive_cache,
             &source_type,
-            &identifier,
+            identifier,
             Some(tag),
         )
         .await?;
         let release = downloaded.release;
+        let identifier = downloaded.identifier;
 
         // Refused before the archive is read: it has to be the one that was previewed. The file is
         // hashed again, not trusted to be what it was when it was downloaded: it may have sat in

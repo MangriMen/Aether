@@ -27,8 +27,7 @@ impl ZipPluginExtractor {
         Self { constants }
     }
 
-    /// One of the archive's small JSON files, read whole; `None` when the archive has no such
-    /// entry. A file over the limit is refused instead of being taken into memory.
+    /// Reads a small JSON entry whole, refusing one over `max_metadata_bytes`; `None` if absent.
     fn read_small_entry<R: Read + Seek>(
         &self,
         archive: &mut zip::ZipArchive<R>,
@@ -89,9 +88,7 @@ impl ZipPluginExtractor {
         Ok(dto.try_into()?)
     }
 
-    /// Reads `capabilities.json`, when the plugin has one, and checks it the way loading it
-    /// would: a plugin whose capabilities would be refused on load is refused before any file is
-    /// copied. Returns it as written.
+    /// Reads and validates `capabilities.json` before any file is copied; returns it as written.
     fn read_capabilities<R: Read + Seek>(
         &self,
         archive: &mut zip::ZipArchive<R>,
@@ -111,7 +108,6 @@ impl ZipPluginExtractor {
             .map_err(|e| invalid(e.to_string()))
     }
 
-    /// The manifest and the capabilities of the archive, with the checks installing it makes.
     fn read_metadata_from<R: Read + Seek>(
         &self,
         archive: &mut zip::ZipArchive<R>,
@@ -218,9 +214,8 @@ impl PluginExtractor for ZipPluginExtractor {
 }
 
 impl ZipPluginExtractor {
-    /// Opens the archive and reads it with `work`. Unpacking is plain blocking I/O and
-    /// decompression, up to the archive's limits: off the async workers. The archive is read
-    /// from the file as it goes, never held in memory whole.
+    /// Blocking I/O and decompression run off the async workers; the archive is read from disk,
+    /// never held whole.
     async fn run_blocking<T, F>(&self, file_path: &Path, work: F) -> Result<T, PluginProviderError>
     where
         T: Send + 'static,

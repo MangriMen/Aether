@@ -9,8 +9,7 @@ use crate::features::plugins::domain::{
 /// its own way of fetching metadata, checking updates, and downloading plugins.
 #[async_trait::async_trait]
 pub trait PluginProvider: Send + Sync {
-    /// List the releases of a plugin. Nothing is downloaded: what a release holds is read from
-    /// its archive.
+    /// Lists the releases of a plugin; nothing is downloaded.
     async fn fetch_preview(
         &self,
         identifier: &str,

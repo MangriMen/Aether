@@ -101,7 +101,6 @@ impl UpdatePluginUseCase {
             (latest_tag, Some(updates.all_releases))
         };
 
-        // The listing only: nothing is downloaded until the release is picked.
         let releases = match latest_releases {
             Some(releases) => releases,
             None => provider.fetch_preview(&identifier).await?.releases,

@@ -110,7 +110,6 @@ describe('InstallFromGithubView', () => {
       expect(findButton(container, 'Install')?.disabled).toBe(false);
     });
 
-    // Pick the older release.
     container
       .querySelector<HTMLElement>('[role="combobox"], button[aria-haspopup]')!
       .dispatchEvent(
