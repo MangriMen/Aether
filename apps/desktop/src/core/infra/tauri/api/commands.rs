@@ -5,11 +5,7 @@ use tauri::State;
 
 use crate::{
     FrontendResult,
-    core::{
-        AppSettingsStorageState, InitializePluginsUseCase, RecreateWindowUseCase,
-        WindowManagerState,
-    },
-    core::{ContainerState, LocationInfoState},
+    core::{AppSettingsStorageState, LocationInfoState, RecreateWindowUseCase, WindowManagerState},
     shared::{
         self,
         commands::{APPLICATION_PLUGIN_NAME, application_commands},
@@ -26,19 +22,6 @@ pub fn init() -> tauri::plugin::TauriPlugin<tauri::Wry> {
 #[must_use]
 pub fn get_specta_commands() -> tauri_specta::Commands<tauri::Wry> {
     application_commands!(tauri_specta::collect_commands!)
-}
-
-#[tauri::command]
-#[specta::specta]
-pub async fn wait_for_initialization(container: State<'_, ContainerState>) -> FrontendResult<()> {
-    let _container = container.0.clone();
-    Ok(())
-}
-
-#[tauri::command]
-#[specta::specta]
-pub async fn initialize_plugins(container: State<'_, ContainerState>) -> FrontendResult<()> {
-    Ok(InitializePluginsUseCase::execute(container.0.clone()).await?)
 }
 
 #[tauri::command]

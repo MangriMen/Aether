@@ -2,7 +2,11 @@ use std::sync::Arc;
 
 use aether_core::{
     core::app::AetherContainer,
-    features::{instance::PluginId, plugins::PluginsFeature, settings::SettingsFeature},
+    features::{
+        instance::PluginId,
+        plugins::{PluginError, PluginsFeature},
+        settings::SettingsFeature,
+    },
 };
 
 pub struct InitializePluginsUseCase {}
@@ -31,11 +35,36 @@ impl InitializePluginsUseCase {
                 tracing::warn!("Skipping enabled plugin '{plugin_id}': not a plugin id");
                 continue;
             };
-            if let Err(e) = container.enable_plugin_use_case().execute(id).await {
-                log::error!("Failed to load plugin {plugin_id}: {e}");
+            match container.enable_plugin_use_case().execute(id).await {
+                Ok(()) => {}
+                Err(e) if is_already_loaded(&e) => {
+                    tracing::debug!("Plugin {plugin_id} is already loaded");
+                }
+                Err(e) => tracing::error!("Failed to load plugin {plugin_id}: {e}"),
             }
         }
 
         Ok(())
+    }
+}
+
+fn is_already_loaded(error: &PluginError) -> bool {
+    matches!(error, PluginError::AlreadyLoaded { .. })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn should_treat_already_loaded_as_normal_and_other_errors_as_failures() {
+        let id = PluginId::try_from("test-plugin").unwrap();
+
+        assert!(is_already_loaded(&PluginError::AlreadyLoaded {
+            plugin_id: id.clone()
+        }));
+        assert!(!is_already_loaded(&PluginError::LoadingInProgress {
+            plugin_id: id
+        }));
     }
 }

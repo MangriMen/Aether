@@ -144,8 +144,6 @@ export const eventsCommands = {
 };
 
 export const applicationCommands = {
-  waitForInitialization: applicationRawCommands.waitForInitialization,
-  initializePlugins: applicationRawCommands.initializePlugins,
   recreateWindow: applicationRawCommands.recreateWindow,
 };
 
