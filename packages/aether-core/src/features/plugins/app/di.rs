@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use crate::features::plugins::app::PluginProviderFactory;
 use crate::features::plugins::app::ports::{
     CheckForPluginUpdatesUseCasePort, EditPluginSettingsUseCasePort, EnablePluginUseCasePort,
     ForceEnablePluginUseCasePort, GetPluginApiVersionUseCasePort, GetPluginDtoUseCasePort,
@@ -13,6 +12,7 @@ use crate::features::plugins::app::ports::{
     RemovePluginUseCasePort, UpdatePluginUseCasePort,
 };
 use crate::features::plugins::app::services::{PluginLoaderRegistry, PluginRegistry};
+use crate::features::plugins::app::{PluginProviderFactory, ReleaseArchiveCache};
 
 /// Extension trait providing access to all plugins feature use cases and services.
 ///
@@ -49,6 +49,7 @@ pub trait PluginsFeature {
     fn plugin_registry(&self) -> Arc<PluginRegistry>;
     fn plugin_loader_registry(&self) -> Arc<PluginLoaderRegistry>;
     fn plugin_provider_factory(&self) -> Arc<PluginProviderFactory>;
+    fn release_archive_cache(&self) -> Arc<ReleaseArchiveCache>;
 
     // ── Ports ──
     fn plugin_source_storage(&self) -> Arc<dyn PluginSourceStorage>;

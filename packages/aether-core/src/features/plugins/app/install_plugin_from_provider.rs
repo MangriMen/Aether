@@ -9,10 +9,10 @@ use crate::features::plugins::{
     PluginVerificationStorage,
 };
 
-use super::PluginProviderFactory;
 use super::ports::InstallPluginFromProviderUseCasePort;
 use super::release_archive::download_release_archive;
 use super::release_installer::ReleaseInstaller;
+use super::{PluginProviderFactory, ReleaseArchiveCache};
 
 /// Installs the release a user picked from a provider, if its archive is the one that was
 /// previewed: it must hash to what the preview gave.
@@ -29,6 +29,7 @@ pub(crate) struct InstallPluginFromProviderUseCase {
     installer: ReleaseInstaller,
     provider_factory: Arc<PluginProviderFactory>,
     sync_plugins_service: Arc<dyn PluginSyncService>,
+    archive_cache: Arc<ReleaseArchiveCache>,
 }
 
 impl InstallPluginFromProviderUseCase {
@@ -44,6 +45,7 @@ impl InstallPluginFromProviderUseCase {
         plugin_settings_storage: Arc<dyn PluginSettingsStorage>,
         provider_factory: Arc<PluginProviderFactory>,
         sync_plugins_service: Arc<dyn PluginSyncService>,
+        archive_cache: Arc<ReleaseArchiveCache>,
     ) -> Self {
         Self {
             plugin_extractor,
@@ -56,6 +58,7 @@ impl InstallPluginFromProviderUseCase {
             },
             provider_factory,
             sync_plugins_service,
+            archive_cache,
         }
     }
 
@@ -75,8 +78,14 @@ impl InstallPluginFromProviderUseCase {
             })?;
         let identifier = provider.parse_identifier(identifier)?;
 
-        let downloaded =
-            download_release_archive(provider, &source_type, &identifier, Some(tag)).await?;
+        let downloaded = download_release_archive(
+            provider,
+            &self.archive_cache,
+            &source_type,
+            &identifier,
+            Some(tag),
+        )
+        .await?;
         let release = downloaded.release;
 
         // Refused before the archive is read: it has to be the one that was previewed.

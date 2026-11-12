@@ -2,7 +2,9 @@ use crate::features::plugins::{
     PluginError, PluginProviderError, PluginSourceType, ProviderPluginPreview, ProviderReleaseInfo,
 };
 
-use super::{DownloadedArchive, PluginProvider, download_to_temp_file};
+use std::sync::Arc;
+
+use super::{DownloadedArchive, PluginProvider, ReleaseArchiveCache, download_to_temp_file};
 
 /// The release asked for, from the provider's own listing: the one tagged `tag`, or with no tag
 /// the first that is not a prerelease, else the first.
@@ -23,15 +25,16 @@ pub(super) fn pick_release<'a>(
 pub(super) struct ReleaseArchive {
     pub listing: ProviderPluginPreview,
     pub release: ProviderReleaseInfo,
-    pub archive: DownloadedArchive,
+    pub archive: Arc<DownloadedArchive>,
 }
 
 /// Finds the release in the provider's listing and downloads its archive. The archive's address
 /// is the provider's, never the caller's, so what is downloaded is the release of this very
-/// repository. A release that is not listed, or that has no archive to install, is
+/// repository. The archive comes from `cache` when it was downloaded not long ago. A release that is not listed, or that has no archive to install, is
 /// `ProviderNoAssets`.
 pub(super) async fn download_release_archive(
     provider: &dyn PluginProvider,
+    cache: &ReleaseArchiveCache,
     source_type: &PluginSourceType,
     identifier: &str,
     tag: Option<&str>,
@@ -45,7 +48,11 @@ pub(super) async fn download_release_archive(
         .filter(|r| !r.download_url.is_empty())
         .ok_or_else(no_assets)?
         .clone();
-    let archive = download_to_temp_file(provider, &release.download_url).await?;
+    let archive = cache
+        .get_or_download(&release.download_url, || {
+            download_to_temp_file(provider, &release.download_url)
+        })
+        .await?;
 
     Ok(ReleaseArchive {
         listing,

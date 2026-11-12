@@ -1,6 +1,9 @@
 use std::{
     io::{Cursor, Write},
-    sync::Arc,
+    sync::{
+        Arc,
+        atomic::{AtomicUsize, Ordering},
+    },
 };
 
 use async_trait::async_trait;
@@ -9,7 +12,7 @@ use zip::{ZipWriter, write::SimpleFileOptions};
 use crate::features::plugins::{
     PluginProvider, PluginProviderError, PluginProviderFactory, PluginSourceType,
     PreviewPluginReleaseUseCase, ProviderPluginPreview, ProviderReleaseInfo, ProviderUpdateInfo,
-    infra::ZipPluginExtractor,
+    ReleaseArchiveCache, infra::ZipPluginExtractor,
 };
 use crate::shared::hash::infra::sha256_hex;
 
@@ -57,7 +60,10 @@ fn release(tag: &str, is_prerelease: bool) -> ProviderReleaseInfo {
 }
 
 /// Lists v3 (a prerelease), v2 and v1; each one's archive is a different build.
-struct Releases;
+#[derive(Default)]
+struct Releases {
+    downloads: Arc<AtomicUsize>,
+}
 
 impl Releases {
     fn archive(tag: &str) -> Vec<u8> {
@@ -99,6 +105,7 @@ impl PluginProvider for Releases {
     ) -> Result<u64, PluginProviderError> {
         use tokio::io::AsyncWriteExt;
 
+        self.downloads.fetch_add(1, Ordering::SeqCst);
         let tag = url
             .trim_start_matches("https://example.com/")
             .trim_end_matches(".zip");
@@ -121,10 +128,34 @@ impl PluginProvider for Releases {
 }
 
 fn use_case() -> PreviewPluginReleaseUseCase {
+    use_case_counting(Arc::default())
+}
+
+/// A preview that counts the archives its provider is asked to download.
+fn use_case_counting(downloads: Arc<AtomicUsize>) -> PreviewPluginReleaseUseCase {
     PreviewPluginReleaseUseCase::new(
         Arc::new(ZipPluginExtractor::default()),
-        Arc::new(PluginProviderFactory::new(vec![Box::new(Releases)])),
+        Arc::new(PluginProviderFactory::new(vec![Box::new(Releases {
+            downloads,
+        })])),
+        Arc::new(ReleaseArchiveCache::new()),
     )
+}
+
+#[tokio::test]
+async fn should_download_a_tag_once_when_it_is_previewed_again() {
+    let downloads = Arc::new(AtomicUsize::new(0));
+    let use_case = use_case_counting(downloads.clone());
+
+    for tag in ["v1", "v2", "v1"] {
+        use_case
+            .execute(PluginSourceType::GitHub, "owner/repo", Some(tag.into()))
+            .await
+            .unwrap();
+    }
+
+    // v1 and v2, each once.
+    assert_eq!(downloads.load(Ordering::SeqCst), 2);
 }
 
 #[tokio::test]

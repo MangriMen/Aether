@@ -7,9 +7,9 @@ use crate::features::plugins::{
     PluginSourceType,
 };
 
-use super::PluginProviderFactory;
 use super::ports::PreviewPluginReleaseUseCasePort;
 use super::release_archive::download_release_archive;
+use super::{PluginProviderFactory, ReleaseArchiveCache};
 
 /// Shows a release of a plugin as its archive describes it.
 ///
@@ -19,16 +19,19 @@ use super::release_archive::download_release_archive;
 pub(crate) struct PreviewPluginReleaseUseCase {
     plugin_extractor: Arc<dyn PluginExtractor>,
     provider_factory: Arc<PluginProviderFactory>,
+    archive_cache: Arc<ReleaseArchiveCache>,
 }
 
 impl PreviewPluginReleaseUseCase {
     pub(crate) fn new(
         plugin_extractor: Arc<dyn PluginExtractor>,
         provider_factory: Arc<PluginProviderFactory>,
+        archive_cache: Arc<ReleaseArchiveCache>,
     ) -> Self {
         Self {
             plugin_extractor,
             provider_factory,
+            archive_cache,
         }
     }
 
@@ -47,8 +50,14 @@ impl PreviewPluginReleaseUseCase {
             })?;
         let identifier = provider.parse_identifier(identifier)?;
 
-        let downloaded =
-            download_release_archive(provider, &source_type, &identifier, tag.as_deref()).await?;
+        let downloaded = download_release_archive(
+            provider,
+            &self.archive_cache,
+            &source_type,
+            &identifier,
+            tag.as_deref(),
+        )
+        .await?;
         let metadata = self
             .plugin_extractor
             .read_metadata(downloaded.archive.path())

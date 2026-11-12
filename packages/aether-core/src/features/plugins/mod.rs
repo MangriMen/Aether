@@ -49,7 +49,7 @@ pub(crate) use app::{
     InstallPluginFromProviderUseCase, InstallPluginFromProviderUseCasePort, ListPluginsDtoUseCase,
     ListPluginsDtoUseCasePort, ListSkippedPluginDirsUseCase, ListSkippedPluginDirsUseCasePort,
     PluginDisableService, PluginSyncService, PreviewPluginReleaseUseCase,
-    PreviewPluginReleaseUseCasePort, ReloadPluginUseCase, ReloadPluginUseCasePort,
-    RemovePluginUseCase, RemovePluginUseCasePort, SyncPluginsUseCase, UpdatePluginUseCase,
-    UpdatePluginUseCasePort,
+    PreviewPluginReleaseUseCasePort, ReleaseArchiveCache, ReloadPluginUseCase,
+    ReloadPluginUseCasePort, RemovePluginUseCase, RemovePluginUseCasePort, SyncPluginsUseCase,
+    UpdatePluginUseCase, UpdatePluginUseCasePort,
 };

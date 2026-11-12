@@ -22,6 +22,7 @@ mod ports;
 mod preview_plugin_release;
 mod record_plugin_verification;
 mod release_archive;
+mod release_archive_cache;
 mod release_installer;
 mod reload_plugin;
 mod remove_plugin;
@@ -70,6 +71,7 @@ pub use ports::{
 };
 pub(crate) use preview_plugin_release::PreviewPluginReleaseUseCase;
 pub use record_plugin_verification::record_plugin_verification;
+pub use release_archive_cache::ReleaseArchiveCache;
 pub(crate) use reload_plugin::ReloadPluginUseCase;
 pub(crate) use remove_plugin::RemovePluginUseCase;
 pub use services::{PluginLoaderRegistry, PluginRegistry};
