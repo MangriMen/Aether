@@ -88,7 +88,7 @@ impl PluginProvider for GithubProvider {
             .ok_or(PluginProviderError::ProviderNoAssets {
                 source_type: PluginSourceType::GitHub,
             })?;
-        let (manifest, capabilities) = self.fetcher.fetch_release_metadata(&release).await;
+        let (manifest, capabilities) = self.fetcher.fetch_release_metadata(&release).await?;
 
         Ok(ProviderReleasePreview {
             release: ProviderReleaseInfo {

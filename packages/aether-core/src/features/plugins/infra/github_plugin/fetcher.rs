@@ -349,7 +349,9 @@ impl GitHubPluginFetcher {
         releases: &[GitHubReleaseInfo],
     ) -> (Option<PluginManifestPreview>, Option<String>) {
         for release in releases {
-            let (manifest, capabilities) = self.fetch_release_metadata(release).await;
+            let Ok((manifest, capabilities)) = self.fetch_release_metadata(release).await else {
+                continue;
+            };
             if manifest.is_some() {
                 return (manifest, capabilities);
             }
@@ -357,26 +359,23 @@ impl GitHubPluginFetcher {
         (None, None)
     }
 
-    /// The manifest and capabilities published beside one release's archive. A manifest that
-    /// cannot be fetched or read is none, and its capabilities are not looked at.
+    /// The manifest and capabilities published beside one release's archive. A release that
+    /// publishes none gives none; one whose files cannot be fetched or read is an error, so that
+    /// a failed download is not taken for a release with nothing to hold the archive to.
     pub async fn fetch_release_metadata(
         &self,
         release: &GitHubReleaseInfo,
-    ) -> (Option<PluginManifestPreview>, Option<String>) {
+    ) -> Result<(Option<PluginManifestPreview>, Option<String>), PluginProviderError> {
         let Some(manifest_url) = &release.manifest_download_url else {
-            return (None, None);
+            return Ok((None, None));
         };
-        let Ok(bytes) = self
+        let bytes = self
             .download_asset_capped(manifest_url, MAX_METADATA_BYTES)
-            .await
-        else {
-            return (None, None);
-        };
-        let Ok(dto) =
-            serde_json::from_slice::<aether_core_plugin_api::v0::PluginManifestDto>(&bytes)
-        else {
-            return (None, None);
-        };
+            .await?;
+        let dto = serde_json::from_slice::<aether_core_plugin_api::v0::PluginManifestDto>(&bytes)
+            .map_err(|e| PluginProviderError::InvalidManifestFormat {
+            error: e.to_string(),
+        })?;
         let manifest = PluginManifestPreview {
             id: dto.metadata.id,
             name: dto.metadata.name,
@@ -386,18 +385,22 @@ impl GitHubPluginFetcher {
             license: dto.metadata.license,
             api_version: Some(dto.api.version),
             allowed_hosts: dto.runtime.allowed_hosts,
-            host_functions: dto.api.host_functions.unwrap_or_default(),
+            host_functions: dto.api.host_functions,
         };
 
         let capabilities = if let Some(cap_url) = &release.capabilities_download_url {
-            self.download_asset_capped(cap_url, MAX_METADATA_BYTES)
-                .await
-                .ok()
-                .and_then(|bytes| String::from_utf8(bytes).ok())
+            let bytes = self
+                .download_asset_capped(cap_url, MAX_METADATA_BYTES)
+                .await?;
+            Some(String::from_utf8(bytes).map_err(|e| {
+                PluginProviderError::InvalidManifestFormat {
+                    error: e.to_string(),
+                }
+            })?)
         } else {
             None
         };
-        (Some(manifest), capabilities)
+        Ok((Some(manifest), capabilities))
     }
 
     /// Parse a GitHub URL to extract owner and repo.

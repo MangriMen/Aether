@@ -371,7 +371,7 @@ fn shown_manifest() -> PluginManifestPreview {
         license: None,
         api_version: Some("*".into()),
         allowed_hosts: Vec::new(),
-        host_functions: Vec::new(),
+        host_functions: Some(Vec::new()),
     }
 }
 
@@ -558,5 +558,22 @@ fn should_list_each_provider_with_the_name_it_gives_itself() {
             source_type: PluginSourceType::GitHub,
             name: "Stub source".to_owned(),
         }]
+    );
+}
+
+#[tokio::test]
+async fn should_refuse_when_the_archive_declares_other_host_functions_than_were_published() {
+    let fixture = Fixture::empty();
+    let mut shown = shown_manifest();
+    shown.host_functions = Some(vec!["run_command".into()]);
+
+    let result = fixture
+        .install_published(plugin_zip(b"\0asm v2"), shown, None)
+        .await;
+
+    assert_eq!(refused_field(result), "host_functions");
+    assert_eq!(
+        fixture.plugins_dir_entries(),
+        Vec::<std::ffi::OsString>::new()
     );
 }

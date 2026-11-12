@@ -13,7 +13,7 @@ pub struct PluginManifestPreviewDto {
     /// The hosts the plugin asks to reach, globs as written in its manifest.
     pub allowed_hosts: Vec<String>,
     /// The host functions it declares.
-    pub host_functions: Vec<String>,
+    pub host_functions: Option<Vec<String>>,
 }
 
 impl From<aether_core::features::plugins::PluginManifestPreview> for PluginManifestPreviewDto {

@@ -60,6 +60,6 @@ pub struct PluginManifestPreview {
     pub api_version: Option<String>,
     /// The hosts the plugin asks to reach (globs, as written in its manifest).
     pub allowed_hosts: Vec<String>,
-    /// The host functions the plugin declares; empty when it declares none.
-    pub host_functions: Vec<String>,
+    /// The host functions the plugin declares; none when its manifest does not say.
+    pub host_functions: Option<Vec<String>>,
 }

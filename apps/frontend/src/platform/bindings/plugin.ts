@@ -523,7 +523,7 @@ export type PluginManifestPreviewDto = {
 	/**  The hosts the plugin asks to reach, globs as written in its manifest. */
 	allowed_hosts: string[],
 	/**  The host functions it declares. */
-	host_functions: string[],
+	host_functions: string[] | null,
 };
 
 export type PluginMetadataDto = {

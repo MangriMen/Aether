@@ -6,11 +6,13 @@ use crate::features::plugins::{
 
 const CAPABILITIES_FILE: &str = "capabilities.json";
 
-/// Holds a downloaded archive to what the release's published manifest and capabilities said,
-/// which is what the user was shown before agreeing to the install: an archive that asks for
-/// more than that is refused, and so is any other difference.
+/// Holds a downloaded archive to the manifest and capabilities its release published beside it,
+/// which are what the preview shows: an archive that asks for more than that is refused, and so
+/// is any other difference.
 ///
-/// A release that publishes no manifest showed the user nothing to hold the archive to.
+/// Both are read again at install time, so a publisher who swaps the release between the preview
+/// and the install is not caught here. A release that publishes no manifest has nothing to hold
+/// the archive to, and the preview showed no permissions either.
 pub(crate) fn check_against_preview(
     extracted: &ExtractedPlugin,
     manifest: Option<&PluginManifestPreview>,
@@ -38,13 +40,11 @@ pub(crate) fn check_against_preview(
     ) {
         return Err(differs("allowed_hosts"));
     }
-    let host_functions = extracted
-        .manifest
-        .api
-        .host_functions
-        .as_deref()
-        .unwrap_or(&[]);
-    if !same_set(&shown.host_functions, host_functions) {
+    let declared = |list: &Option<Vec<String>>| list.clone().unwrap_or_default();
+    if !same_set(
+        &declared(&shown.host_functions),
+        &declared(&extracted.manifest.api.host_functions),
+    ) {
         return Err(differs("host_functions"));
     }
     if !same_capabilities(capabilities, archive_capabilities(extracted)) {
