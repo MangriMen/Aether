@@ -1,7 +1,7 @@
 use std::{
     collections::HashMap,
     future::Future,
-    sync::{Arc, Mutex, MutexGuard, PoisonError},
+    sync::{Arc, Mutex, MutexGuard, PoisonError, Weak},
     time::{Duration, Instant},
 };
 
@@ -33,6 +33,8 @@ type Slots = HashMap<String, Arc<OnceCell<Loaded>>>;
 /// its archive when the cache lets it go.
 ///
 /// Requests for the same URL that overlap share one download. A download that fails is not kept.
+/// An archive is dropped when it expires even if nobody asks for it again: each download starts a
+/// task that sweeps the cache once the time to live is up.
 pub struct ReleaseArchiveCache {
     slots: Mutex<Slots>,
     clock: Clock,
@@ -58,7 +60,7 @@ impl ReleaseArchiveCache {
 
     /// The archive at `url`: the cached one, or the one `download` fetches.
     pub(crate) async fn get_or_download<F, Fut>(
-        &self,
+        self: &Arc<Self>,
         url: &str,
         download: F,
     ) -> Result<Arc<DownloadedArchive>, PluginError>
@@ -70,21 +72,32 @@ impl ReleaseArchiveCache {
         let result = cell
             .get_or_try_init(|| async {
                 let archive = download().await?;
+                self.sweep_later();
                 Ok::<_, PluginError>((Arc::new(archive), (self.clock)()))
             })
             .await;
 
-        match result {
-            Ok((archive, _)) => Ok(archive.clone()),
-            Err(err) => {
-                // Do not keep the empty slot, unless it is another request's by now.
-                let mut slots = self.lock();
-                if slots.get(url).is_some_and(|c| Arc::ptr_eq(c, &cell)) {
-                    slots.remove(url);
-                }
-                Err(err)
+        // A failure leaves the slot empty, for the requests waiting on it to download in their
+        // turn into the same cell, and for the next request to drop when none is.
+        result.map(|(archive, _)| archive.clone())
+    }
+
+    /// Drops the archives that have expired.
+    pub(crate) fn sweep(&self) {
+        let now = (self.clock)();
+        retain_live(&mut self.lock(), now);
+    }
+
+    /// Sweeps once the time to live is up. The task holds the cache weakly, so it does not keep it
+    /// alive.
+    fn sweep_later(self: &Arc<Self>) {
+        let cache: Weak<Self> = Arc::downgrade(self);
+        tokio::spawn(async move {
+            tokio::time::sleep(RELEASE_ARCHIVE_TTL).await;
+            if let Some(cache) = cache.upgrade() {
+                cache.sweep();
             }
-        }
+        });
     }
 
     /// The slot for `url`, made if there is none, after the expired ones are dropped and room is
@@ -93,10 +106,7 @@ impl ReleaseArchiveCache {
         let now = (self.clock)();
         let mut slots = self.lock();
 
-        slots.retain(|_, cell| {
-            cell.get()
-                .is_none_or(|(_, at)| now.saturating_duration_since(*at) < RELEASE_ARCHIVE_TTL)
-        });
+        retain_live(&mut slots, now);
         if let Some(cell) = slots.get(url) {
             return cell.clone();
         }
@@ -120,4 +130,13 @@ impl ReleaseArchiveCache {
         // The map is consistent after every step, so a poisoned lock is still good to use.
         self.slots.lock().unwrap_or_else(PoisonError::into_inner)
     }
+}
+
+/// Keeps the archives that have not expired and the downloads that someone waits for. An empty
+/// slot that only the map holds is a download that was given up.
+fn retain_live(slots: &mut Slots, now: Instant) {
+    slots.retain(|_, cell| match cell.get() {
+        Some((_, at)) => now.saturating_duration_since(*at) < RELEASE_ARCHIVE_TTL,
+        None => Arc::strong_count(cell) > 1,
+    });
 }

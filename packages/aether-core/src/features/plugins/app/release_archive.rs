@@ -30,11 +30,11 @@ pub(super) struct ReleaseArchive {
 
 /// Finds the release in the provider's listing and downloads its archive. The archive's address
 /// is the provider's, never the caller's, so what is downloaded is the release of this very
-/// repository. The archive comes from `cache` when it was downloaded not long ago. A release that is not listed, or that has no archive to install, is
-/// `ProviderNoAssets`.
+/// repository. The archive comes from `cache` when it was downloaded not long ago. A release that
+/// is not listed, or that has no archive to install, is `ProviderNoAssets`.
 pub(super) async fn download_release_archive(
     provider: &dyn PluginProvider,
-    cache: &ReleaseArchiveCache,
+    cache: &Arc<ReleaseArchiveCache>,
     source_type: &PluginSourceType,
     identifier: &str,
     tag: Option<&str>,

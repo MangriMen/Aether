@@ -485,6 +485,55 @@ async fn should_refuse_an_archive_from_the_cache_that_hashes_to_something_else()
     );
 }
 
+#[tokio::test]
+async fn should_refuse_an_archive_that_was_replaced_in_the_cache_after_the_preview() {
+    let fixture = Fixture::empty();
+    let archive = plugin_zip(b" asm v2");
+    let sha256 = sha256_hex(&archive);
+    let download = Download::new(archive);
+    let factory = Arc::new(PluginProviderFactory::new(vec![Box::new(download)]));
+    let cache = Arc::new(ReleaseArchiveCache::new());
+    PreviewPluginReleaseUseCase::new(
+        Arc::new(ZipPluginExtractor::default()),
+        factory.clone(),
+        cache.clone(),
+    )
+    .execute(PluginSourceType::GitHub, "owner/repo", Some("v2".into()))
+    .await
+    .unwrap();
+
+    // The cached file is swapped for another archive that is a valid one.
+    let cached = cache
+        .get_or_download("https://example.com/v2.zip", || async {
+            unreachable!("the archive is cached")
+        })
+        .await
+        .unwrap();
+    std::fs::write(cached.path(), plugin_zip(b" asm swapped")).unwrap();
+
+    let result = fixture
+        .use_case(
+            fixture.source.clone(),
+            fixture.verification.clone(),
+            factory,
+            cache,
+        )
+        .execute(PluginSourceType::GitHub, "owner/repo", "v2", &sha256)
+        .await;
+
+    assert!(matches!(
+        result,
+        Err(PluginError::Provider(
+            PluginProviderError::ArchiveChangedSincePreview
+        ))
+    ));
+    assert_eq!(
+        fixture.plugins_dir_entries(),
+        Vec::<std::ffi::OsString>::new()
+    );
+    assert!(fixture.source.get(&plugin_id()).await.unwrap().is_none());
+}
+
 /// Version `v1` installed from GitHub, with settings the user changed.
 async fn installed(fixture: &Fixture) {
     fixture.install(plugin_zip(b"\0asm v1")).await.unwrap();

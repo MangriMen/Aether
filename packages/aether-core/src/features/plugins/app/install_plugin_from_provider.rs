@@ -12,6 +12,10 @@ use crate::features::plugins::{
 use super::ports::InstallPluginFromProviderUseCasePort;
 use super::release_archive::download_release_archive;
 use super::release_installer::ReleaseInstaller;
+use crate::shared::hash::HashAlgorithm;
+use crate::shared::hash::infra::hash_file_hex_async;
+use crate::shared::io::domain::IoError;
+
 use super::{PluginProviderFactory, ReleaseArchiveCache};
 
 /// Installs the release a user picked from a provider, if its archive is the one that was
@@ -88,12 +92,13 @@ impl InstallPluginFromProviderUseCase {
         .await?;
         let release = downloaded.release;
 
-        // Refused before the archive is read: it has to be the one that was previewed.
-        if !downloaded
-            .archive
-            .sha256()
-            .eq_ignore_ascii_case(expected_sha256.trim())
-        {
+        // Refused before the archive is read: it has to be the one that was previewed. The file is
+        // hashed again, not trusted to be what it was when it was downloaded: it may have sat in
+        // the cache since.
+        let sha256 = hash_file_hex_async(HashAlgorithm::Sha256, downloaded.archive.path())
+            .await
+            .map_err(|e| PluginError::Storage(IoError::IoError(e)))?;
+        if !sha256.eq_ignore_ascii_case(expected_sha256.trim()) {
             return Err(PluginProviderError::ArchiveChangedSincePreview.into());
         }
 

@@ -240,6 +240,8 @@ pub struct AetherContainer {
 impl AetherContainer {
     pub fn new(params: AetherContainerParams) -> Arc<Self> {
         params.sandbox_limits.assert_consistent();
+        // What an earlier run left of its downloads of plugin archives.
+        crate::features::plugins::clean_plugin_archives();
 
         let content_metadata = Arc::new(ContentMetadataService::new(
             params.storage.content_metadata_cache.clone(),

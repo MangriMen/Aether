@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use tokio::io::AsyncWriteExt;
 
@@ -39,7 +39,34 @@ pub async fn download_to_temp_file(
     provider: &dyn PluginProvider,
     download_url: &str,
 ) -> Result<DownloadedArchive, PluginError> {
-    download_to_temp_file_in(&std::env::temp_dir(), provider, download_url).await
+    let dir = plugin_archives_dir();
+    tokio::fs::create_dir_all(&dir)
+        .await
+        .map_err(|e| PluginError::Storage(IoError::IoError(e)))?;
+    download_to_temp_file_in(&dir, provider, download_url).await
+}
+
+/// Where downloaded plugin archives are put, apart from the rest of the temporary files so that
+/// what a crash leaves behind can be cleared as a whole.
+fn plugin_archives_dir() -> PathBuf {
+    std::env::temp_dir().join("aether-plugin-archives")
+}
+
+/// Removes the archives that an earlier run left in the temporary directory. A failure is logged
+/// and nothing more: they are only temporary files.
+pub fn clean_plugin_archives() {
+    remove_archives_dir(&plugin_archives_dir());
+}
+
+fn remove_archives_dir(dir: &Path) {
+    match std::fs::remove_dir_all(dir) {
+        Ok(()) => {}
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+        Err(e) => tracing::warn!(
+            "Could not remove the plugin archives left in '{}': {e}",
+            dir.display()
+        ),
+    }
 }
 
 async fn download_to_temp_file_in(
@@ -128,6 +155,19 @@ mod tests {
         fn parse_identifier(&self, raw: &str) -> Result<String, PluginProviderError> {
             Ok(raw.to_owned())
         }
+    }
+
+    #[test]
+    fn should_remove_the_archives_left_behind_and_not_fail_when_there_is_no_directory() {
+        let root = tempfile::tempdir().unwrap();
+        let dir = root.path().join("aether-plugin-archives");
+        std::fs::create_dir(&dir).unwrap();
+        std::fs::write(dir.join("left.tmp"), b"archive").unwrap();
+
+        remove_archives_dir(&dir);
+        assert!(!dir.exists());
+
+        remove_archives_dir(&dir);
     }
 
     #[tokio::test]
