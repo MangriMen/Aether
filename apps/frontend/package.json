@@ -82,7 +82,7 @@
     "eslint-plugin-solid": "^0.19.0",
     "eslint-plugin-sonarjs": "^4.2.2",
     "execa": "^10.2.0",
-    "jsdom": "^30.1.2",
+    "jsdom": "^31.0.0",
     "knip": "^6.44.2",
     "oxfmt": "^0.78.0",
     "oxlint": "^1.93.0",
