@@ -4,8 +4,6 @@ import { invoke as __TAURI_INVOKE } from "@tauri-apps/api/core";
 
 /** Commands */
 export const commands = {
-	waitForInitialization: () => __TAURI_INVOKE<null>("plugin:application|wait_for_initialization"),
-	initializePlugins: () => __TAURI_INVOKE<null>("plugin:application|initialize_plugins"),
 	recreateWindow: () => __TAURI_INVOKE<null>("plugin:application|recreate_window"),
 };
 

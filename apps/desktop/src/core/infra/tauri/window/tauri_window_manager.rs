@@ -7,7 +7,8 @@ use tauri_plugin_window_state::AppHandleExt;
 
 use crate::{
     core::{
-        PreventExitState, WindowError, WindowLabel, WindowManager, get_main_window_state_flags,
+        PreventExitState, WindowError, WindowLabel, WindowManager, exit_with_error,
+        get_main_window_state_flags,
     },
     features::settings::WindowEffect,
 };
@@ -154,7 +155,20 @@ impl<R: tauri::Runtime> WindowManager for TauriWindowManager<R> {
             return Err(WindowError::AlreadyExists { label });
         }
 
-        let window = build_main_window(&self.app_handle, label.as_ref(), transparent, false)?;
+        let window = match build_main_window(&self.app_handle, label.as_ref(), transparent, false) {
+            Ok(window) => window,
+            Err(err) => {
+                // A concurrent create may have won the race; then there is nothing to report.
+                if self.get_window(label).is_err() {
+                    self.get_prevent_exit_state().set_prevented(false);
+                    exit_with_error(&format!(
+                        "Failed to create the main window. Make sure the WebView2 runtime is \
+                         installed and check the log files.\n\n{err}"
+                    ));
+                }
+                return Err(err.into());
+            }
+        };
 
         if label == WindowLabel::Main {
             self.get_prevent_exit_state().set_prevented(false);

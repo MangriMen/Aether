@@ -11,8 +11,8 @@ use super::migrations::StartupMigrationError;
 
 use crate::core::app::build_container;
 use crate::core::{
-    AppSettingsStorageState, ContainerState, EventEmitterState, WindowLabel, WindowManager,
-    WindowManagerState,
+    AppSettingsStorageState, ContainerState, EventEmitterState, InitializePluginsUseCase,
+    WindowLabel, WindowManager, WindowManagerState,
 };
 use crate::features::settings::{AppSettings, AppSettingsStorage};
 
@@ -78,7 +78,7 @@ fn post_initialize<R: tauri::Runtime>(
             .await
             .unwrap_or_else(|err| exit_with_error(&format!("Failed to initialize Aether: {err}")));
 
-        app_handle.manage(ContainerState(container));
+        app_handle.manage(ContainerState(container.clone()));
 
         let main_window_label = WindowLabel::Main;
 
@@ -107,6 +107,12 @@ fn post_initialize<R: tauri::Runtime>(
             })
             .await
             .unwrap_or_else(|err| error!("Failed to set actual transparent: {err}"));
+
+        tauri::async_runtime::spawn(async move {
+            if let Err(err) = InitializePluginsUseCase::execute(container).await {
+                error!("Failed to initialize plugins: {err}");
+            }
+        });
 
         setup_listeners(
             app_settings_storage.clone(),
