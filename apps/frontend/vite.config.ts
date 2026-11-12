@@ -43,6 +43,8 @@ const srcAliases = {
 
 const testConfig = {
   environment: 'jsdom',
+  // create jsdom once per worker instead of once per test file; files stay isolated
+  pool: 'vmThreads',
   globals: true,
   transformMode: {
     web: [/\.[jt]sx?$/],
