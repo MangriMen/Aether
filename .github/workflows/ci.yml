@@ -77,11 +77,13 @@ jobs:
         working-directory: apps/frontend
         run: bun run lint:format
 
-      # the better-tailwindcss rule sometimes times out on its cold start on a slow runner (Atomics.wait),
-      # so retry once
+      # the better-tailwindcss worker compiles Tailwind on its first call; on a slow runner that exceeds
+      # synckit's default 30s (Atomics.wait timed-out), and a retry hits the same timeout, so raise it
       - name: ESLint (rules oxlint cannot run)
         working-directory: apps/frontend
-        run: bun run lint:eslint || bun run lint:eslint
+        env:
+          SYNCKIT_TIMEOUT: "120000"
+        run: bun run lint:eslint
 
       - name: Architecture (dependency-cruiser)
         working-directory: apps/frontend
