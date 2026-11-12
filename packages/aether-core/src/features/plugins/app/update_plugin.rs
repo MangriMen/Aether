@@ -81,8 +81,8 @@ impl UpdatePluginUseCase {
                 plugin_id: plugin_id.clone(),
             })?;
 
-        let tag = if let Some(t) = target_tag {
-            t.to_string()
+        let (tag, latest_releases) = if let Some(t) = target_tag {
+            (t.to_string(), None)
         } else {
             let current_tag = source.current_tag().unwrap_or_default();
             let current_version = source_version(&source);
@@ -90,19 +90,24 @@ impl UpdatePluginUseCase {
                 .fetch_latest_version(&identifier, current_tag, current_version)
                 .await?;
 
-            updates
-                .latest_tag
-                .ok_or_else(|| PluginProviderError::ProviderFetchError {
-                    source_type: source_type.clone(),
-                    details: "No releases found".to_string(),
-                })?
+            let latest_tag =
+                updates
+                    .latest_tag
+                    .ok_or_else(|| PluginProviderError::ProviderFetchError {
+                        source_type: source_type.clone(),
+                        details: "No releases found".to_string(),
+                    })?;
+            // The update check listed the releases already.
+            (latest_tag, Some(updates.all_releases))
         };
 
-        // Fetch preview to get all releases with download URLs
-        let preview = provider.fetch_preview(&identifier).await?;
+        // The listing only: nothing is downloaded until the release is picked.
+        let releases = match latest_releases {
+            Some(releases) => releases,
+            None => provider.fetch_preview(&identifier).await?.releases,
+        };
 
-        let release = preview
-            .releases
+        let release = releases
             .into_iter()
             .find(|r| r.tag_name == tag)
             .ok_or_else(|| PluginProviderError::ProviderNoAssets {
@@ -110,11 +115,11 @@ impl UpdatePluginUseCase {
             })?;
 
         // Download zip to temp file, reuse PluginExtractor
-        let temp_file = download_to_temp_file(provider, &release.download_url).await?;
+        let archive = download_to_temp_file(provider, &release.download_url).await?;
 
         // Unpacked before anything is removed: an archive that cannot be read, or that is of
         // another plugin, leaves the installed version in place.
-        let extracted = self.plugin_extractor.extract(temp_file.path()).await?;
+        let extracted = self.plugin_extractor.extract(archive.path()).await?;
         if &extracted.plugin_id != plugin_id {
             return Err(PluginError::IdMismatch {
                 plugin_id: plugin_id.clone(),

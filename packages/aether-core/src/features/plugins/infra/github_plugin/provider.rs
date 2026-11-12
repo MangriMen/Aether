@@ -7,7 +7,7 @@ use super::fetcher::GitHubPluginFetcher;
 use crate::features::plugins::app::PluginProvider;
 use crate::features::plugins::domain::{
     PluginProviderError, PluginSourceType, ProviderPluginPreview, ProviderReleaseInfo,
-    ProviderReleasePreview, ProviderUpdateInfo,
+    ProviderUpdateInfo,
 };
 
 /// Concrete provider for GitHub-sourced plugins.
@@ -56,8 +56,6 @@ impl PluginProvider for GithubProvider {
         Ok(ProviderPluginPreview {
             owner: preview.owner,
             repo: preview.repo,
-            manifest: preview.manifest,
-            capabilities: preview.capabilities,
             releases: preview
                 .releases
                 .into_iter()
@@ -70,37 +68,6 @@ impl PluginProvider for GithubProvider {
                     download_url: r.zip_download_url,
                 })
                 .collect(),
-        })
-    }
-
-    async fn fetch_release_preview(
-        &self,
-        identifier: &str,
-        tag: &str,
-    ) -> Result<ProviderReleasePreview, PluginProviderError> {
-        let (owner, repo) = split_identifier(identifier);
-        let release = self
-            .fetcher
-            .fetch_releases(owner, repo, 20)
-            .await?
-            .into_iter()
-            .find(|r| r.tag_name == tag)
-            .ok_or(PluginProviderError::ProviderNoAssets {
-                source_type: PluginSourceType::GitHub,
-            })?;
-        let (manifest, capabilities) = self.fetcher.fetch_release_metadata(&release).await?;
-
-        Ok(ProviderReleasePreview {
-            release: ProviderReleaseInfo {
-                tag_name: release.tag_name,
-                version: release.version,
-                is_prerelease: release.is_prerelease,
-                published_at: release.published_at,
-                html_url: release.html_url,
-                download_url: release.zip_download_url,
-            },
-            manifest,
-            capabilities,
         })
     }
 

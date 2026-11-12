@@ -527,7 +527,7 @@ impl From<&PluginProviderError> for PluginErrorDto {
             },
             // Only the install from a provider produces it; the ABI's closest kind, as a new one
             // would not decode in plugins built before it.
-            PluginProviderError::ArchiveDiffersFromPreview { .. } => Self::InvalidManifestFormat {
+            PluginProviderError::ArchiveChangedSincePreview => Self::InvalidManifestFormat {
                 error: value.to_string(),
             },
             PluginProviderError::NoRemoteSource { plugin_id } => Self::NoRemoteSource {

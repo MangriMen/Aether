@@ -23,7 +23,9 @@ export interface ReleaseOption {
 }
 
 export type PluginPreviewCardProps = {
-  preview: ProviderPluginPreview;
+  /** The preview of the selected tag; undefined while it loads or when it failed. */
+  preview: ProviderPluginPreview | undefined;
+  isPreviewLoading: boolean;
   releaseOptions: ReleaseOption[];
   selectedTag: string;
   onReleaseChange: (option: ReleaseOption | null) => void;
@@ -36,49 +38,58 @@ export type PluginPreviewCardProps = {
 export const PluginPreviewCard: Component<PluginPreviewCardProps> = (props) => {
   const [{ t }] = useTranslation();
 
-  const manifest = () => props.preview.manifest;
-  const capabilities = () => props.preview.capabilities;
   const hasReleases = () => props.releaseOptions.length > 0;
-  const hasTag = () => props.selectedTag.length > 0;
+  const canInstall = () => props.preview !== undefined;
 
   return (
     <div class='gap-4 rounded-lg p-4 flex flex-col border'>
-      {/* Header: icon + info row */}
-      <div class='gap-4 flex items-center'>
-        <Image class='h-31 w-max' />
-        <PluginInfoHeader
-          class='flex-1'
-          name={manifest()?.name ?? props.preview.repo}
-          version={manifest()?.version ?? ''}
-          apiVersion={manifest()?.api_version ?? null}
-          authors={props.authors}
-          description={manifest()?.description ?? null}
-        />
-      </div>
-
-      <Separator />
-
-      {/* Capabilities */}
-      <Show when={capabilities()}>
-        {(c) => <PluginCapabilitiesSection capabilities={c()} />}
-      </Show>
-
-      {/* What the plugin asks for: shown before it is installed */}
-      <Show when={manifest()}>
-        {(m) => (
+      <Show
+        when={props.preview}
+        fallback={
+          <Show when={props.isPreviewLoading}>
+            <p class='text-sm text-muted-foreground'>{t('common.loading')}</p>
+          </Show>
+        }
+      >
+        {(preview) => (
           <>
-            <PluginAllowedHostsSection allowedHosts={m().allowed_hosts} />
-            <PluginHostFunctionsSection hostFunctions={m().host_functions} />
-          </>
-        )}
-      </Show>
+            {/* Header: icon + info row */}
+            <div class='gap-4 flex items-center'>
+              <Image class='h-31 w-max' />
+              <PluginInfoHeader
+                class='flex-1'
+                name={preview().manifest.name || preview().repo}
+                version={preview().manifest.version}
+                apiVersion={preview().manifest.api_version ?? null}
+                authors={props.authors}
+                description={preview().manifest.description ?? null}
+              />
+            </div>
 
-      {/* License */}
-      <Show when={manifest()?.license}>
-        {(license) => (
-          <span class='text-sm text-muted-foreground'>
-            {t('plugins.pluginLicense')}: {license()}
-          </span>
+            <Separator />
+
+            {/* Capabilities */}
+            <Show when={preview().capabilities}>
+              {(c) => <PluginCapabilitiesSection capabilities={c()} />}
+            </Show>
+
+            {/* What the plugin asks for: shown before it is installed */}
+            <PluginAllowedHostsSection
+              allowedHosts={preview().manifest.allowed_hosts}
+            />
+            <PluginHostFunctionsSection
+              hostFunctions={preview().manifest.host_functions}
+            />
+
+            {/* License */}
+            <Show when={preview().manifest.license}>
+              {(license) => (
+                <span class='text-sm text-muted-foreground'>
+                  {t('plugins.pluginLicense')}: {license()}
+                </span>
+              )}
+            </Show>
+          </>
         )}
       </Show>
 
@@ -101,18 +112,13 @@ export const PluginPreviewCard: Component<PluginPreviewCardProps> = (props) => {
 
       {/* Actions row */}
       <div class='gap-2 flex justify-end'>
-        <Show when={!hasTag()}>
-          <span class='mr-auto self-center text-sm text-muted-foreground'>
-            {t('plugins.noReleaseSelected')}
-          </span>
-        </Show>
         <Button variant='secondary' onClick={props.onClear}>
           {t('common.clear')}
         </Button>
         <Button
           variant='default'
           onClick={props.onInstall}
-          disabled={!hasTag() || props.isInstalling}
+          disabled={!canInstall() || props.isInstalling}
         >
           {props.isInstalling ? t('common.installing') : t('plugins.install')}
         </Button>

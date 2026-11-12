@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 
 use aether_core::features::{
     instance::PluginId,
-    plugins::{PluginError, PluginSourceType, PluginsFeature},
+    plugins::{PluginError, PluginsFeature},
 };
 use tauri::State;
 
@@ -432,28 +432,15 @@ async fn update_plugin(
 async fn preview_plugin_from_provider(
     source_type: PluginSourceTypeDto,
     identifier: String,
+    tag: Option<String>,
     container: State<'_, ContainerState>,
 ) -> FrontendResult<ProviderPluginPreviewDto> {
-    let st: PluginSourceType = source_type.into();
-
     let container = container.0.clone();
-    let factory = container.plugin_provider_factory();
-    let provider = factory.get_provider(&st).ok_or_else(|| {
-        crate::Error::from(aether_core::Error::from(aether_core::ErrorKind::CoreError(
-            format!("No provider registered for: {st:?}"),
-        )))
-    })?;
-
-    let normalized = provider.parse_identifier(&identifier).map_err(|e| {
-        crate::Error::from(aether_core::Error::from(aether_core::ErrorKind::CoreError(
-            e.to_string(),
-        )))
-    })?;
-
-    Ok(provider
-        .fetch_preview(&normalized)
+    Ok(container
+        .preview_plugin_release_use_case()
+        .execute(source_type.into(), &identifier, tag)
         .await
-        .map_err(|e| crate::Error::from(aether_core::Error::from(e)))?
+        .map_err(aether_core::Error::from)?
         .into())
 }
 
@@ -463,6 +450,7 @@ async fn install_plugin_from_provider(
     source_type: PluginSourceTypeDto,
     identifier: String,
     tag_name: String,
+    archive_sha256: String,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
     container: State<'_, ContainerState>,
@@ -472,7 +460,7 @@ async fn install_plugin_from_provider(
     let container = container.0.clone();
     Ok(container
         .install_plugin_from_provider_use_case()
-        .execute(source_type.into(), &identifier, &tag_name)
+        .execute(source_type.into(), &identifier, &tag_name, &archive_sha256)
         .await
         .map_err(aether_core::Error::from)?
         .into())

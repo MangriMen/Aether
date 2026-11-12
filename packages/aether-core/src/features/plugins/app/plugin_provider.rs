@@ -1,6 +1,6 @@
 use crate::features::plugins::domain::{
     PluginProviderError, PluginProviderInfo, PluginSourceType, ProviderPluginPreview,
-    ProviderReleasePreview, ProviderUpdateInfo,
+    ProviderUpdateInfo,
 };
 
 /// Common interface for all plugin providers (GitHub, custom server, Modrinth, etc.).
@@ -9,19 +9,12 @@ use crate::features::plugins::domain::{
 /// its own way of fetching metadata, checking updates, and downloading plugins.
 #[async_trait::async_trait]
 pub trait PluginProvider: Send + Sync {
-    /// Fetch preview metadata (manifest, capabilities, releases) for a plugin.
+    /// List the releases of a plugin. Nothing is downloaded: what a release holds is read from
+    /// its archive.
     async fn fetch_preview(
         &self,
         identifier: &str,
     ) -> Result<ProviderPluginPreview, PluginProviderError>;
-
-    /// One release by its tag, with the manifest and capabilities published for *that* release:
-    /// what the install holds the downloaded archive to.
-    async fn fetch_release_preview(
-        &self,
-        identifier: &str,
-        tag: &str,
-    ) -> Result<ProviderReleasePreview, PluginProviderError>;
 
     /// Get the latest version info for update checking.
     async fn fetch_latest_version(

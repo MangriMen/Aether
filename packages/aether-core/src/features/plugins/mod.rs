@@ -13,13 +13,13 @@ pub use domain::{
     AllowedPathRejection, ApiConfig, IgnoredAllowedPath, LoadConfig, LoadConfigType, PathMapping,
     PluginCapabilities, PluginContentProviderCapability, PluginError, PluginImporterCapability,
     PluginManifest, PluginManifestPreview, PluginMetadata, PluginProviderError, PluginProviderInfo,
-    PluginSettings, PluginSource, PluginSourceType, PluginUpdaterCapability, ProviderHandlers,
-    ProviderPluginPreview, ProviderReleaseInfo, ProviderReleasePreview, ProviderUpdateInfo,
+    PluginReleasePreview, PluginSettings, PluginSource, PluginSourceType, PluginUpdaterCapability,
+    ProviderHandlers, ProviderPluginPreview, ProviderReleaseInfo, ProviderUpdateInfo,
     RuntimeConfig, SkippedPluginDir, SkippedPluginDirReason,
 };
 pub(crate) use domain::{
-    AsCapabilityMetadata, Compatibility, CoreMount, ExtractedPlugin, FolderMounts, GrantableHost,
-    ManifestError, PLUGIN_API_VERSION, PLUGIN_CACHE_MOUNT, Plugin, PluginCallError,
+    ArchiveMetadata, AsCapabilityMetadata, Compatibility, CoreMount, ExtractedPlugin, FolderMounts,
+    GrantableHost, ManifestError, PLUGIN_API_VERSION, PLUGIN_CACHE_MOUNT, Plugin, PluginCallError,
     PluginCheckCompatibilityParams, PluginContent, PluginHandle, PluginImportInstance,
     PluginInstance, PluginInternalEvent, PluginPath, PluginState, PluginStateReason,
     PluginVerification, core_folders, effective_allowed_hosts, is_blocked_ip, is_filesystem_root,
@@ -27,15 +27,15 @@ pub(crate) use domain::{
 };
 
 pub use app::{
-    ApiConfigDto, CapabilityMetadataDto, ContentProviderCapabilityMetadataDto, EditPluginSettings,
-    FolderAccess, HostAccess, ImporterCapabilityMetadataDto, LoadConfigDto, PathMappingDto,
-    PluginCapabilitiesDto, PluginContentProviderCapabilityDto, PluginDto, PluginDtoState,
-    PluginExtractor, PluginImporterCapabilityDto, PluginLoader, PluginLoaderRegistry,
-    PluginManifestDto, PluginMetadataDto, PluginProvider, PluginProviderFactory, PluginRegistry,
-    PluginSettingsStorage, PluginSourceStorage, PluginStateReasonDto, PluginStorage,
-    PluginUpdaterCapabilityDto, PluginVerificationStorage, PluginsFeature, ProviderHandlersDto,
-    RuntimeConfigDto, UpdaterCapabilityMetadataDto, download_to_temp_file,
-    record_plugin_verification,
+    ApiConfigDto, CapabilityMetadataDto, ContentProviderCapabilityMetadataDto, DownloadedArchive,
+    EditPluginSettings, FolderAccess, HostAccess, ImporterCapabilityMetadataDto, LoadConfigDto,
+    PathMappingDto, PluginCapabilitiesDto, PluginContentProviderCapabilityDto, PluginDto,
+    PluginDtoState, PluginExtractor, PluginImporterCapabilityDto, PluginLoader,
+    PluginLoaderRegistry, PluginManifestDto, PluginMetadataDto, PluginProvider,
+    PluginProviderFactory, PluginRegistry, PluginSettingsStorage, PluginSourceStorage,
+    PluginStateReasonDto, PluginStorage, PluginUpdaterCapabilityDto, PluginVerificationStorage,
+    PluginsFeature, ProviderHandlersDto, RuntimeConfigDto, UpdaterCapabilityMetadataDto,
+    download_to_temp_file, record_plugin_verification,
 };
 pub(crate) use app::{
     CheckForPluginUpdatesUseCase, CheckForPluginUpdatesUseCasePort, DisablePluginUseCase,
@@ -48,7 +48,8 @@ pub(crate) use app::{
     GrantPluginHostAccessUseCasePort, ImportPluginsUseCase, ImportPluginsUseCasePort,
     InstallPluginFromProviderUseCase, InstallPluginFromProviderUseCasePort, ListPluginsDtoUseCase,
     ListPluginsDtoUseCasePort, ListSkippedPluginDirsUseCase, ListSkippedPluginDirsUseCasePort,
-    PluginDisableService, PluginSyncService, ReloadPluginUseCase, ReloadPluginUseCasePort,
+    PluginDisableService, PluginSyncService, PreviewPluginReleaseUseCase,
+    PreviewPluginReleaseUseCasePort, ReloadPluginUseCase, ReloadPluginUseCasePort,
     RemovePluginUseCase, RemovePluginUseCasePort, SyncPluginsUseCase, UpdatePluginUseCase,
     UpdatePluginUseCasePort,
 };

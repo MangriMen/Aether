@@ -8,8 +8,9 @@ use crate::features::instance::PluginId;
 use crate::features::plugins::app::{EditPluginSettings, FolderAccess, HostAccess, PluginDto};
 use crate::features::plugins::domain::PluginHandle;
 use crate::features::plugins::{
-    ExtractedPlugin, Plugin, PluginError, PluginManifest, PluginProviderError, PluginSettings,
-    PluginSource, PluginSourceType, PluginVerification, ProviderUpdateInfo, SkippedPluginDir,
+    ArchiveMetadata, ExtractedPlugin, Plugin, PluginError, PluginManifest, PluginProviderError,
+    PluginReleasePreview, PluginSettings, PluginSource, PluginSourceType, PluginVerification,
+    ProviderUpdateInfo, SkippedPluginDir,
 };
 
 #[async_trait]
@@ -93,6 +94,11 @@ pub trait PluginSettingsStorage: Send + Sync {
 #[async_trait]
 pub trait PluginExtractor: Send + Sync {
     async fn extract(&self, file_path: &Path) -> Result<ExtractedPlugin, PluginProviderError>;
+
+    /// The manifest and capabilities of the archive at `file_path`, read without unpacking it and
+    /// checked as `extract` checks them.
+    async fn read_metadata(&self, file_path: &Path)
+    -> Result<ArchiveMetadata, PluginProviderError>;
 }
 
 #[async_trait]
@@ -213,11 +219,26 @@ pub trait UpdatePluginUseCasePort: Send + Sync {
 #[async_trait]
 pub trait InstallPluginFromProviderUseCasePort: Send + Sync {
     /// Installs the release of `identifier` tagged `tag`. The archive's address is the
-    /// provider's to say, not the caller's. Returns the id of the plugin the archive holds.
+    /// provider's to say, not the caller's. The archive downloaded must hash to
+    /// `expected_sha256` (hex, case does not matter), the hash of the one that was previewed.
+    /// Returns the id of the plugin the archive holds.
     async fn execute(
         &self,
         source_type: PluginSourceType,
         identifier: &str,
         tag: &str,
+        expected_sha256: &str,
     ) -> Result<PluginId, PluginError>;
+}
+
+#[async_trait]
+pub trait PreviewPluginReleaseUseCasePort: Send + Sync {
+    /// The release of `identifier` tagged `tag` (the first stable one, else the first, when no
+    /// tag is given), read from its downloaded archive.
+    async fn execute(
+        &self,
+        source_type: PluginSourceType,
+        identifier: &str,
+        tag: Option<String>,
+    ) -> Result<PluginReleasePreview, PluginError>;
 }

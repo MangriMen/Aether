@@ -9,8 +9,8 @@ use tempfile::TempDir;
 
 use crate::{
     features::plugins::{
-        ExtractedPlugin, PluginCapabilities, PluginContent, PluginExtractor, PluginManifest,
-        PluginProviderError, infra::PluginCapabilitiesV1,
+        ArchiveMetadata, ExtractedPlugin, PluginCapabilities, PluginContent, PluginExtractor,
+        PluginManifest, PluginProviderError, infra::PluginCapabilitiesV1,
     },
     shared::io::domain::IoError,
 };
@@ -27,47 +27,97 @@ impl ZipPluginExtractor {
         Self { constants }
     }
 
+    /// One of the archive's small JSON files, read whole; `None` when the archive has no such
+    /// entry. A file over the limit is refused instead of being taken into memory.
+    fn read_small_entry<R: Read + Seek>(
+        &self,
+        archive: &mut zip::ZipArchive<R>,
+        name: &str,
+    ) -> Result<Option<Vec<u8>>, PluginProviderError> {
+        let entry = match archive.by_name(name) {
+            Ok(entry) => entry,
+            Err(zip::result::ZipError::FileNotFound) => return Ok(None),
+            Err(_) => return Err(PluginProviderError::InvalidExtractionFormat),
+        };
+
+        let limit = self.constants.max_metadata_bytes;
+        let mut bytes = Vec::new();
+        entry
+            .take(limit + 1)
+            .read_to_end(&mut bytes)
+            .map_err(|_| PluginProviderError::InvalidExtractionFormat)?;
+        if bytes.len() as u64 > limit {
+            return Err(PluginProviderError::InvalidManifestFormat {
+                error: format!("{name} is larger than {limit} bytes"),
+            });
+        }
+        Ok(Some(bytes))
+    }
+
     fn read_manifest<R: Read + Seek>(
         &self,
         archive: &mut zip::ZipArchive<R>,
     ) -> Result<PluginManifest, PluginProviderError> {
-        let manifest_file = archive
-            .by_name(self.constants.manifest_filename)
-            .map_err(|_| PluginProviderError::ManifestNotFound {
-                path: self.constants.manifest_filename.to_string(),
-            })?;
+        let name = self.constants.manifest_filename;
+        let bytes = self.read_small_entry(archive, name)?.ok_or_else(|| {
+            PluginProviderError::ManifestNotFound {
+                path: name.to_string(),
+            }
+        })?;
 
-        let dto: aether_core_plugin_api::v0::PluginManifestDto =
-            serde_json::from_reader(manifest_file).map_err(|e| {
-                PluginProviderError::InvalidManifestFormat {
-                    error: e.to_string(),
-                }
+        let dto: aether_core_plugin_api::v0::PluginManifestDto = serde_json::from_slice(&bytes)
+            .map_err(|e| PluginProviderError::InvalidManifestFormat {
+                error: e.to_string(),
             })?;
         Ok(dto.try_into()?)
     }
 
-    /// Checks `capabilities.json`, when the plugin has one, the way loading it would: a plugin
-    /// whose capabilities would be refused on load is refused before any file is copied.
-    fn check_capabilities<R: Read + Seek>(
+    /// Reads `capabilities.json`, when the plugin has one, and checks it the way loading it
+    /// would: a plugin whose capabilities would be refused on load is refused before any file is
+    /// copied. Returns it as written.
+    fn read_capabilities<R: Read + Seek>(
         &self,
         archive: &mut zip::ZipArchive<R>,
-    ) -> Result<(), PluginProviderError> {
-        let capabilities_file = match archive.by_name(self.constants.capabilities_filename) {
-            Ok(file) => file,
-            Err(zip::result::ZipError::FileNotFound) => return Ok(()),
-            Err(_) => return Err(PluginProviderError::InvalidExtractionFormat),
+    ) -> Result<Option<String>, PluginProviderError> {
+        let invalid = |error: String| PluginProviderError::InvalidManifestFormat { error };
+        let Some(bytes) = self.read_small_entry(archive, self.constants.capabilities_filename)?
+        else {
+            return Ok(None);
         };
 
         let dto: PluginCapabilitiesV1 =
-            serde_json::from_reader(capabilities_file).map_err(|e| {
-                PluginProviderError::InvalidManifestFormat {
-                    error: e.to_string(),
-                }
-            })?;
-
+            serde_json::from_slice(&bytes).map_err(|e| invalid(e.to_string()))?;
         PluginCapabilities::try_from(dto)?.validate()?;
 
-        Ok(())
+        String::from_utf8(bytes)
+            .map(Some)
+            .map_err(|e| invalid(e.to_string()))
+    }
+
+    /// The manifest and the capabilities of the archive, with the checks installing it makes.
+    fn read_metadata_from<R: Read + Seek>(
+        &self,
+        archive: &mut zip::ZipArchive<R>,
+    ) -> Result<ArchiveMetadata, PluginProviderError> {
+        let manifest = self.read_manifest(archive)?;
+        let capabilities = self.read_capabilities(archive)?;
+        Ok(ArchiveMetadata {
+            manifest,
+            capabilities,
+        })
+    }
+
+    fn open_archive(
+        file: fs::File,
+        source_path: &str,
+    ) -> Result<zip::ZipArchive<std::io::BufReader<fs::File>>, PluginProviderError> {
+        zip::ZipArchive::new(std::io::BufReader::new(file)).map_err(|err| match err {
+            // A file that could not be read is not a file in the wrong format.
+            zip::result::ZipError::Io(_) => PluginProviderError::ExtractionFailed {
+                from: source_path.to_string(),
+            },
+            _ => PluginProviderError::InvalidExtractionFormat,
+        })
     }
 
     /// Extract every entry manually instead of using `ZipArchive::extract`, so that each path is
@@ -131,45 +181,58 @@ impl ZipPluginExtractor {
 #[async_trait]
 impl PluginExtractor for ZipPluginExtractor {
     async fn extract(&self, file_path: &Path) -> Result<ExtractedPlugin, PluginProviderError> {
-        let source_path = file_path.to_string_lossy().to_string();
+        self.run_blocking(file_path, |extractor, file, source_path| {
+            extractor.extract_blocking(file, source_path)
+        })
+        .await
+    }
 
-        // Unpacking is plain blocking I/O and decompression, up to the archive's limits: off the
-        // async workers.
+    async fn read_metadata(
+        &self,
+        file_path: &Path,
+    ) -> Result<ArchiveMetadata, PluginProviderError> {
+        self.run_blocking(file_path, |extractor, file, source_path| {
+            let mut archive = Self::open_archive(file, source_path)?;
+            extractor.read_metadata_from(&mut archive)
+        })
+        .await
+    }
+}
+
+impl ZipPluginExtractor {
+    /// Opens the archive and reads it with `work`. Unpacking is plain blocking I/O and
+    /// decompression, up to the archive's limits: off the async workers. The archive is read
+    /// from the file as it goes, never held in memory whole.
+    async fn run_blocking<T, F>(&self, file_path: &Path, work: F) -> Result<T, PluginProviderError>
+    where
+        T: Send + 'static,
+        F: FnOnce(&Self, fs::File, &str) -> Result<T, PluginProviderError> + Send + 'static,
+    {
+        let source_path = file_path.to_string_lossy().to_string();
         let extractor = Self {
             constants: self.constants.clone(),
         };
         let from = source_path.clone();
         let path = file_path.to_path_buf();
-        // The archive is read from the file as it is unpacked, never held in memory whole.
         tokio::task::spawn_blocking(move || {
             let file =
                 fs::File::open(&path).map_err(|_| PluginProviderError::ExtractionFailed {
                     from: source_path.clone(),
                 })?;
-            extractor.extract_blocking(file, &source_path)
+            work(&extractor, file, &source_path)
         })
         .await
         .map_err(|_| PluginProviderError::ExtractionFailed { from })?
     }
-}
 
-impl ZipPluginExtractor {
     fn extract_blocking(
         &self,
         file: fs::File,
         source_path: &str,
     ) -> Result<ExtractedPlugin, PluginProviderError> {
-        let mut archive =
-            zip::ZipArchive::new(std::io::BufReader::new(file)).map_err(|err| match err {
-                // A file that could not be read is not a file in the wrong format.
-                zip::result::ZipError::Io(_) => PluginProviderError::ExtractionFailed {
-                    from: source_path.to_string(),
-                },
-                _ => PluginProviderError::InvalidExtractionFormat,
-            })?;
+        let mut archive = Self::open_archive(file, source_path)?;
 
-        let manifest = self.read_manifest(&mut archive)?;
-        self.check_capabilities(&mut archive)?;
+        let ArchiveMetadata { manifest, .. } = self.read_metadata_from(&mut archive)?;
         let plugin_id = manifest.metadata.id.clone();
 
         let temp_dir = TempDir::new().map_err(IoError::from)?;
@@ -401,6 +464,73 @@ mod tests {
         assert!(matches!(
             extractor.extract(&zip_path).await,
             Err(PluginProviderError::FileExtractionFailed { .. })
+        ));
+    }
+
+    #[tokio::test]
+    async fn should_read_the_manifest_and_capabilities_without_unpacking_the_archive() {
+        let source_dir = TempDir::new().unwrap();
+        let capabilities = br#"{"importers": [], "updaters": []}"#;
+        let zip_path = write_zip(
+            source_dir.path(),
+            &[
+                ("manifest.json", MANIFEST.as_bytes()),
+                ("capabilities.json", capabilities),
+                // Not a plugin file the reading would touch: it would fail on an unpack.
+                ("../escape.txt", b"x"),
+            ],
+        )
+        .await;
+
+        let metadata = ZipPluginExtractor::default()
+            .read_metadata(&zip_path)
+            .await
+            .unwrap();
+
+        assert_eq!(metadata.manifest.metadata.id.as_str(), "test-plugin");
+        assert_eq!(
+            metadata.capabilities.as_deref().map(str::as_bytes),
+            Some(&capabilities[..])
+        );
+    }
+
+    #[tokio::test]
+    async fn should_read_no_capabilities_when_the_archive_has_none() {
+        let source_dir = TempDir::new().unwrap();
+        let zip_path =
+            write_zip(source_dir.path(), &[("manifest.json", MANIFEST.as_bytes())]).await;
+
+        let metadata = ZipPluginExtractor::default()
+            .read_metadata(&zip_path)
+            .await
+            .unwrap();
+
+        assert!(metadata.capabilities.is_none());
+    }
+
+    #[tokio::test]
+    async fn should_refuse_to_read_metadata_when_the_manifest_is_invalid() {
+        let source_dir = TempDir::new().unwrap();
+        let zip_path = write_zip(source_dir.path(), &[("manifest.json", b"{ not json")]).await;
+
+        let result = ZipPluginExtractor::default().read_metadata(&zip_path).await;
+
+        assert!(matches!(
+            result,
+            Err(PluginProviderError::InvalidManifestFormat { .. })
+        ));
+    }
+
+    #[tokio::test]
+    async fn should_refuse_to_read_metadata_when_the_manifest_is_missing() {
+        let source_dir = TempDir::new().unwrap();
+        let zip_path = write_zip(source_dir.path(), &[("plugin.wasm", b"\0asm")]).await;
+
+        let result = ZipPluginExtractor::default().read_metadata(&zip_path).await;
+
+        assert!(matches!(
+            result,
+            Err(PluginProviderError::ManifestNotFound { .. })
         ));
     }
 }

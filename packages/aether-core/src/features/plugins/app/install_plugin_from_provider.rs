@@ -9,12 +9,13 @@ use crate::features::plugins::{
     PluginVerificationStorage,
 };
 
+use super::PluginProviderFactory;
 use super::ports::InstallPluginFromProviderUseCasePort;
-use super::preview_check::check_against_preview;
+use super::release_archive::download_release_archive;
 use super::release_installer::ReleaseInstaller;
-use super::{PluginProviderFactory, download_to_temp_file};
 
-/// Installs the release a user picked from a provider.
+/// Installs the release a user picked from a provider, if its archive is the one that was
+/// previewed: it must hash to what the preview gave.
 ///
 /// The archive is unpacked before anything is written, and the files and the records about them
 /// (trust on first use, source, settings) go in as a whole: an install that fails at any step
@@ -63,6 +64,7 @@ impl InstallPluginFromProviderUseCase {
         source_type: PluginSourceType,
         identifier: &str,
         tag: &str,
+        expected_sha256: &str,
     ) -> Result<PluginId, PluginError> {
         let provider = self
             .provider_factory
@@ -73,20 +75,24 @@ impl InstallPluginFromProviderUseCase {
             })?;
         let identifier = provider.parse_identifier(identifier)?;
 
-        // The archive's address comes from the provider's own listing of the release, never from
-        // the caller, so what is downloaded is the release of this very repository.
-        let preview = provider.fetch_release_preview(&identifier, tag).await?;
-        let release = preview.release;
+        let downloaded =
+            download_release_archive(provider, &source_type, &identifier, Some(tag)).await?;
+        let release = downloaded.release;
 
-        let temp_file = download_to_temp_file(provider, &release.download_url).await?;
-        let extracted = self.plugin_extractor.extract(temp_file.path()).await?;
+        // Refused before the archive is read: it has to be the one that was previewed.
+        if !downloaded
+            .archive
+            .sha256()
+            .eq_ignore_ascii_case(expected_sha256.trim())
+        {
+            return Err(PluginProviderError::ArchiveChangedSincePreview.into());
+        }
+
+        let extracted = self
+            .plugin_extractor
+            .extract(downloaded.archive.path())
+            .await?;
         let plugin_id = extracted.plugin_id.clone();
-        // Unpacked, and refused before anything is written, when it is not what was shown.
-        check_against_preview(
-            &extracted,
-            preview.manifest.as_ref(),
-            preview.capabilities.as_deref(),
-        )?;
 
         let source = PluginSource::Remote {
             source_type,
@@ -112,7 +118,9 @@ impl InstallPluginFromProviderUseCasePort for InstallPluginFromProviderUseCase {
         source_type: PluginSourceType,
         identifier: &str,
         tag: &str,
+        expected_sha256: &str,
     ) -> Result<PluginId, PluginError> {
-        self.execute(source_type, identifier, tag).await
+        self.execute(source_type, identifier, tag, expected_sha256)
+            .await
     }
 }

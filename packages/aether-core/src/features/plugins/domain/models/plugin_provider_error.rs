@@ -39,9 +39,9 @@ pub enum PluginProviderError {
     #[error("No release assets found for plugin from provider {source_type}")]
     ProviderNoAssets { source_type: PluginSourceType },
 
-    /// The archive is not what the release's published manifest and capabilities described.
-    #[error("The downloaded archive differs from the release preview: {field}")]
-    ArchiveDiffersFromPreview { field: &'static str },
+    /// The archive downloaded for the install is not the one the preview was made from.
+    #[error("The release's archive has changed since it was previewed")]
+    ArchiveChangedSincePreview,
 
     #[error("Plugin \"{plugin_id}\" has no remote source configured")]
     NoRemoteSource { plugin_id: PluginId },

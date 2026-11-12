@@ -11,3 +11,10 @@ pub struct ExtractedPlugin {
 pub enum PluginContent {
     Filesystem { temp_dir: TempDir },
 }
+
+/// What an archive says about the plugin, read without unpacking it.
+pub struct ArchiveMetadata {
+    pub manifest: PluginManifest,
+    /// `capabilities.json` as written, checked as loading it would; none when there is none.
+    pub capabilities: Option<String>,
+}

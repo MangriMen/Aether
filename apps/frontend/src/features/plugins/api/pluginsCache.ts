@@ -129,9 +129,11 @@ export const pluginsQueries = {
     queryFn: pluginsCommands.getAvailableProviders,
     staleTime: Infinity,
   }),
-  preview: (provider: PluginSourceType, url: string) => ({
-    queryKey: pluginKeys.preview(provider, url),
-    queryFn: () => pluginsCommands.previewPluginFromProvider(provider, url),
+  // Without a tag the newest stable release is read; the answer names the tag it read.
+  preview: (provider: PluginSourceType, url: string, tag?: string | null) => ({
+    queryKey: pluginKeys.preview(provider, url, tag ?? null),
+    queryFn: () =>
+      pluginsCommands.previewPluginFromProvider(provider, url, tag ?? null),
     enabled: url.length > 0,
   }),
 } as const;

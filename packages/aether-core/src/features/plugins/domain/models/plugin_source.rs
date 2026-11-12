@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use super::PluginSourceType;
+use super::{PluginManifest, PluginSourceType};
 
 /// Describes where a plugin was originally installed from,
 /// enabling update checks and version switching.
@@ -62,4 +62,20 @@ pub struct PluginManifestPreview {
     pub allowed_hosts: Vec<String>,
     /// The host functions the plugin declares; none when its manifest does not say.
     pub host_functions: Option<Vec<String>>,
+}
+
+impl From<&PluginManifest> for PluginManifestPreview {
+    fn from(manifest: &PluginManifest) -> Self {
+        Self {
+            id: manifest.metadata.id.to_string(),
+            name: manifest.metadata.name.clone(),
+            version: manifest.metadata.version.to_string(),
+            description: manifest.metadata.description.clone(),
+            authors: manifest.metadata.authors.clone(),
+            license: manifest.metadata.license.clone(),
+            api_version: Some(manifest.api.version.to_string()),
+            allowed_hosts: manifest.runtime.allowed_hosts.clone(),
+            host_functions: manifest.api.host_functions.clone(),
+        }
+    }
 }

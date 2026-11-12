@@ -3,5 +3,6 @@ mod enable_plugin_test;
 mod import_plugins_test;
 mod install_plan_download_test;
 mod install_plugin_from_provider_test;
+mod preview_plugin_release_test;
 mod remove_plugin_test;
 mod update_plugin_test;

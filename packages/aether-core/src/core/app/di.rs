@@ -68,7 +68,8 @@ use crate::features::{
         ListSkippedPluginDirsUseCasePort, LoadConfigType, PluginDisableService, PluginExtractor,
         PluginLoader, PluginLoaderRegistry, PluginProviderFactory, PluginRegistry,
         PluginSettingsStorage, PluginSourceStorage, PluginStorage, PluginSyncService,
-        PluginVerificationStorage, PluginsFeature, ReloadPluginUseCase, ReloadPluginUseCasePort,
+        PluginVerificationStorage, PluginsFeature, PreviewPluginReleaseUseCase,
+        PreviewPluginReleaseUseCasePort, ReloadPluginUseCase, ReloadPluginUseCasePort,
         RemovePluginUseCase, RemovePluginUseCasePort, SyncPluginsUseCase, UpdatePluginUseCase,
         UpdatePluginUseCasePort,
     },
@@ -1066,6 +1067,12 @@ impl PluginsFeature for AetherContainer {
             self.plugins().settings_storage.clone(),
             self.plugins().provider_factory.clone(),
             self.sync_plugins_service(),
+        ))
+    }
+    fn preview_plugin_release_use_case(&self) -> Arc<dyn PreviewPluginReleaseUseCasePort> {
+        Arc::new(PreviewPluginReleaseUseCase::new(
+            self.plugins().extractor.clone(),
+            self.plugins().provider_factory.clone(),
         ))
     }
     fn update_plugin_use_case(&self) -> Arc<dyn UpdatePluginUseCasePort> {

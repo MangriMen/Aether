@@ -3,17 +3,42 @@ use std::path::Path;
 use tokio::io::AsyncWriteExt;
 
 use crate::features::plugins::domain::PluginError;
+use crate::shared::hash::HashAlgorithm;
+use crate::shared::hash::infra::hash_file_hex_async;
 use crate::shared::io::domain::IoError;
 
 use super::PluginProvider;
 
-/// Downloads a plugin archive into a temporary file and returns it; the reader opens it by path.
-/// The file is deleted when the returned `NamedTempFile` is dropped, so a download that fails or
-/// is cut short leaves nothing behind.
+/// A plugin archive downloaded into a temporary file, with its SHA-256 and size. The reader opens
+/// the file by path. The file is deleted when this is dropped.
+pub struct DownloadedArchive {
+    file: tempfile::NamedTempFile,
+    sha256: String,
+    size: u64,
+}
+
+impl DownloadedArchive {
+    pub fn path(&self) -> &Path {
+        self.file.path()
+    }
+
+    /// Lowercase hex SHA-256 of the file as it was downloaded.
+    pub fn sha256(&self) -> &str {
+        &self.sha256
+    }
+
+    /// Number of bytes downloaded.
+    pub fn size(&self) -> u64 {
+        self.size
+    }
+}
+
+/// Downloads a plugin archive into a temporary file and hashes it. The file is deleted when the
+/// returned archive is dropped, so a download that fails or is cut short leaves nothing behind.
 pub async fn download_to_temp_file(
     provider: &dyn PluginProvider,
     download_url: &str,
-) -> Result<tempfile::NamedTempFile, PluginError> {
+) -> Result<DownloadedArchive, PluginError> {
     download_to_temp_file_in(&std::env::temp_dir(), provider, download_url).await
 }
 
@@ -21,16 +46,26 @@ async fn download_to_temp_file_in(
     dir: &Path,
     provider: &dyn PluginProvider,
     download_url: &str,
-) -> Result<tempfile::NamedTempFile, PluginError> {
+) -> Result<DownloadedArchive, PluginError> {
     let io = |e| PluginError::Storage(IoError::IoError(e));
 
     let temp_file = tempfile::NamedTempFile::new_in(dir).map_err(io)?;
     let mut file = tokio::fs::File::from_std(temp_file.reopen().map_err(io)?);
 
-    provider.download_plugin(download_url, &mut file).await?;
+    let size = provider.download_plugin(download_url, &mut file).await?;
     file.flush().await.map_err(io)?;
 
-    Ok(temp_file)
+    // The digest is of the file on disk, which is what gets read afterwards, whatever the
+    // provider wrote into it.
+    let sha256 = hash_file_hex_async(HashAlgorithm::Sha256, temp_file.path())
+        .await
+        .map_err(io)?;
+
+    Ok(DownloadedArchive {
+        file: temp_file,
+        sha256,
+        size,
+    })
 }
 
 #[cfg(test)]
@@ -55,14 +90,6 @@ mod tests {
             &self,
             _: &str,
         ) -> Result<ProviderPluginPreview, PluginProviderError> {
-            unimplemented!()
-        }
-
-        async fn fetch_release_preview(
-            &self,
-            _: &str,
-            _: &str,
-        ) -> Result<crate::features::plugins::ProviderReleasePreview, PluginProviderError> {
             unimplemented!()
         }
 
@@ -116,6 +143,11 @@ mod tests {
             .unwrap();
 
         assert_eq!(std::fs::read(file.path()).unwrap(), b"archive");
+        assert_eq!(file.size(), 7);
+        assert_eq!(
+            file.sha256(),
+            crate::shared::hash::infra::sha256_hex(b"archive")
+        );
     }
 
     #[tokio::test]

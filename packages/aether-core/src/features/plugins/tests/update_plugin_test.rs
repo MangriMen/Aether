@@ -91,8 +91,6 @@ impl PluginProvider for OneRelease {
         Ok(ProviderPluginPreview {
             owner: "owner".into(),
             repo: "repo".into(),
-            manifest: None,
-            capabilities: None,
             releases: vec![ProviderReleaseInfo {
                 tag_name: "v2".into(),
                 version: "0.2.0".into(),
@@ -102,14 +100,6 @@ impl PluginProvider for OneRelease {
                 download_url: "https://example.com/v2.zip".into(),
             }],
         })
-    }
-
-    async fn fetch_release_preview(
-        &self,
-        _: &str,
-        _: &str,
-    ) -> Result<crate::features::plugins::ProviderReleasePreview, PluginProviderError> {
-        unimplemented!("the update does not hold the archive to a preview")
     }
 
     async fn fetch_latest_version(

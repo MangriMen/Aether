@@ -34,19 +34,35 @@ impl fmt::Display for PluginSourceType {
     }
 }
 
-/// Metadata returned by a provider for the preview screen.
+/// The releases a provider lists for a plugin. What a release holds is read from its archive.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProviderPluginPreview {
     /// Owner / namespace within the source (e.g., GitHub owner).
     pub owner: String,
     /// Repository / project name within the source.
     pub repo: String,
-    /// Parsed manifest if available.
-    pub manifest: Option<PluginManifestPreview>,
-    /// Raw capabilities JSON if available.
-    pub capabilities: Option<String>,
     /// Available releases/versions.
     pub releases: Vec<ProviderReleaseInfo>,
+}
+
+/// One release as the user is shown it before installing, read from its archive: what it asks
+/// for is what the archive holds, nothing a publisher states beside it.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PluginReleasePreview {
+    pub owner: String,
+    pub repo: String,
+    /// Every release the provider lists, so that another can be picked.
+    pub releases: Vec<ProviderReleaseInfo>,
+    /// The tag of the release this preview is of.
+    pub tag: String,
+    pub manifest: PluginManifestPreview,
+    /// The archive's `capabilities.json`, as written, when it has one.
+    pub capabilities: Option<String>,
+    /// Lowercase hex SHA-256 of the archive that was read. The install is given it back and
+    /// refuses an archive that hashes differently.
+    pub archive_sha256: String,
+    /// Size of the archive, in bytes.
+    pub size: u64,
 }
 
 /// Information about a single release from a provider.
@@ -58,15 +74,6 @@ pub struct ProviderReleaseInfo {
     pub published_at: String,
     pub html_url: String,
     pub download_url: String,
-}
-
-/// One release as the user is shown it before installing: the release itself, and the manifest
-/// and capabilities the provider published beside the archive.
-#[derive(Debug, Clone)]
-pub struct ProviderReleasePreview {
-    pub release: ProviderReleaseInfo,
-    pub manifest: Option<PluginManifestPreview>,
-    pub capabilities: Option<String>,
 }
 
 /// Result of checking for updates from a provider.
