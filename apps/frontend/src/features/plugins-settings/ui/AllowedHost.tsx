@@ -1,5 +1,6 @@
 import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
+import { useTranslation } from '@/shared/i18n';
 import { cn } from '@/shared/utils';
 
 import type { AllowedItemProps } from '../model/allowedItem';
@@ -17,6 +18,7 @@ export const AllowedHost: Component<AllowedHostProps> = (props) => {
     'leadingItems',
     'class',
   ]);
+  const [{ t }] = useTranslation();
 
   return (
     <div class={cn('flex flex-col', local.class)} {...others}>
@@ -30,7 +32,9 @@ export const AllowedHost: Component<AllowedHostProps> = (props) => {
         <AllowedTruncatedText value={local.value} />
         <AllowedItemLeadingItems items={local.leadingItems} />
       </div>
-      <span class='text-destructive'>{local.error}</span>
+      <span class='text-destructive'>
+        {local.error ? t('validation.hostRequired') : undefined}
+      </span>
     </div>
   );
 };

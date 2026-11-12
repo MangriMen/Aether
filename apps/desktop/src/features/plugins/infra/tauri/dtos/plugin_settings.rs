@@ -1,8 +1,9 @@
 use std::path::PathBuf;
 
 use aether_core::features::plugins::{
-    AllowedHostRejection, AllowedPath, AllowedPathInput, AllowedPathRejection, EditPluginSettings,
-    FolderAccess, HostAccess, IgnoredAllowedPath, PluginSettings,
+    AllowedHostEntryRejection, AllowedHostRejection, AllowedPath, AllowedPathInput,
+    AllowedPathRejection, EditPluginSettings, FolderAccess, HostAccess, IgnoredAllowedPath,
+    PluginSettings,
 };
 use serde::{Deserialize, Serialize};
 use specta::Type;
@@ -76,6 +77,14 @@ pub enum HostAccessDto {
     Needed { host: String },
     /// The host was added to the plugin's allowed hosts.
     Granted { host: String },
+}
+
+#[derive(Serialize, Debug, Clone, Copy, Type)]
+#[serde(rename_all = "snake_case")]
+pub enum AllowedHostEntryRejectionDto {
+    Empty,
+    NotAHostName,
+    InvalidPattern,
 }
 
 #[derive(Serialize, Debug, Clone, Copy, Type)]
@@ -174,6 +183,16 @@ impl From<HostAccess> for HostAccessDto {
             HostAccess::AlreadyAllowed { host } => Self::AlreadyAllowed { host },
             HostAccess::Needed { host } => Self::Needed { host },
             HostAccess::Granted { host } => Self::Granted { host },
+        }
+    }
+}
+
+impl From<AllowedHostEntryRejection> for AllowedHostEntryRejectionDto {
+    fn from(value: AllowedHostEntryRejection) -> Self {
+        match value {
+            AllowedHostEntryRejection::Empty => Self::Empty,
+            AllowedHostEntryRejection::NotAHostName => Self::NotAHostName,
+            AllowedHostEntryRejection::InvalidPattern => Self::InvalidPattern,
         }
     }
 }

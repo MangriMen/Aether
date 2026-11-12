@@ -9,11 +9,11 @@ mod tests;
 pub(crate) mod test_support;
 
 pub use domain::{
-    AllowedHostRejection, AllowedPath, AllowedPathInput, AllowedPathRejection, ApiConfig,
-    IgnoredAllowedPath, LoadConfig, LoadConfigType, PathMapping, PluginCapabilities,
-    PluginContentProviderCapability, PluginError, PluginImporterCapability, PluginManifest,
-    PluginManifestPreview, PluginMetadata, PluginProviderError, PluginProviderInfo, PluginSettings,
-    PluginSource, PluginSourceType, PluginUpdaterCapability, ProviderHandlers,
+    AllowedHostEntryRejection, AllowedHostRejection, AllowedPath, AllowedPathInput,
+    AllowedPathRejection, ApiConfig, IgnoredAllowedPath, LoadConfig, LoadConfigType, PathMapping,
+    PluginCapabilities, PluginContentProviderCapability, PluginError, PluginImporterCapability,
+    PluginManifest, PluginManifestPreview, PluginMetadata, PluginProviderError, PluginProviderInfo,
+    PluginSettings, PluginSource, PluginSourceType, PluginUpdaterCapability, ProviderHandlers,
     ProviderPluginPreview, ProviderUpdateInfo, RuntimeConfig, SkippedPluginDir,
     SkippedPluginDirReason,
 };
@@ -23,7 +23,7 @@ pub(crate) use domain::{
     PluginCheckCompatibilityParams, PluginContent, PluginHandle, PluginImportInstance,
     PluginInstance, PluginInternalEvent, PluginPath, PluginState, PluginStateReason,
     PluginVerification, core_folders, effective_allowed_hosts, is_blocked_ip, is_filesystem_root,
-    is_host_allowed, partition_mountable, to_wasi_path,
+    is_host_allowed, partition_mountable, to_wasi_path, validate_allowed_host_entry,
 };
 
 pub use app::{

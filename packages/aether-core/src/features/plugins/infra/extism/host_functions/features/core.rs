@@ -213,14 +213,34 @@ async fn collect_capped(
     }
 }
 
+/// How much of a failed command's stderr goes to the error log.
+const LOGGED_STDERR_BYTES: usize = 4 * 1024;
+
+/// The start of `stderr` for the log, cut at a character boundary.
+fn stderr_excerpt(stderr: &[u8]) -> String {
+    let text = String::from_utf8_lossy(stderr);
+    if text.len() <= LOGGED_STDERR_BYTES {
+        return text.into_owned();
+    }
+    let mut end = LOGGED_STDERR_BYTES;
+    while !text.is_char_boundary(end) {
+        end -= 1;
+    }
+    format!("{}… [{} bytes more]", &text[..end], text.len() - end)
+}
+
 /// Handle `run_command` — execute a command on behalf of a plugin.
 pub(crate) async fn handle_run_command(
     plugin_id: &PluginId,
     command: CommandDto,
     container: &AetherContainer,
 ) -> crate::Result<OutputDto> {
-    let command_for_log = command.clone();
-    log::debug!(target: "plugin", "[{plugin_id}]: run_command {command_for_log:?}");
+    tracing::debug!(
+        target: "plugin",
+        "[{plugin_id}]: run_command `{}` with {} argument(s)",
+        command.program,
+        command.args.len()
+    );
 
     // The allowlist is whatever the core hands out through `get_java` / `install_java`, so a
     // system-wide Java the user registered counts too. Read on every call: a runtime removed
@@ -235,7 +255,8 @@ pub(crate) async fn handle_run_command(
         &allowed_program_dirs,
     )?;
 
-    log::debug!(target: "plugin", "[{plugin_id}]: running {host_command:?}");
+    // Arguments and environment can hold a token or a pack URL with one: in full only at trace.
+    tracing::trace!(target: "plugin", "[{plugin_id}]: running {host_command:?}");
     let max_output_bytes = container.sandbox_limits().max_output_bytes;
     let CappedOutput {
         output,
@@ -244,7 +265,7 @@ pub(crate) async fn handle_run_command(
     } = run_capped(&host_command, COMMAND_TIMEOUT, max_output_bytes).await?;
 
     if stdout_truncated || stderr_truncated {
-        log::warn!(
+        tracing::warn!(
             target: "plugin",
             "[{plugin_id}]: output of `{}` was truncated at {max_output_bytes} bytes per stream \
              (stdout: {stdout_truncated}, stderr: {stderr_truncated})",
@@ -253,11 +274,14 @@ pub(crate) async fn handle_run_command(
     }
 
     if !output.status.success() {
-        log::error!(
+        // The program and the exit code only, with the start of stderr: the log is what a user
+        // is asked to attach to a bug report, and the arguments are the plugin's.
+        tracing::error!(
             target: "plugin",
-            "[{plugin_id}]: command failed: {:?}, stderr: {:?}",
-            command_for_log,
-            String::from_utf8_lossy(&output.stderr)
+            "[{plugin_id}]: command `{}` failed with {}, stderr: {:?}",
+            host_command.program,
+            output.status,
+            stderr_excerpt(&output.stderr)
         );
         return Err(crate::ErrorKind::CoreError("Command execution failed".to_string()).as_error());
     }
@@ -307,6 +331,23 @@ pub run_command(user_data: PluginContext; command: Msgpack<CommandDto>) -> HostR
 mod tests {
     use super::*;
     use rstest::rstest;
+
+    #[test]
+    fn should_keep_the_whole_stderr_when_it_is_short() {
+        assert_eq!(stderr_excerpt(b"boom"), "boom");
+    }
+
+    #[test]
+    fn should_cut_stderr_at_a_character_boundary_when_it_is_long() {
+        // "é" is two bytes, so the limit falls inside one.
+        let stderr = "é".repeat(LOGGED_STDERR_BYTES);
+
+        let excerpt = stderr_excerpt(stderr.as_bytes());
+
+        assert!(excerpt.starts_with(&"é".repeat(LOGGED_STDERR_BYTES / 2)));
+        assert!(excerpt.len() < LOGGED_STDERR_BYTES + 64);
+        assert!(excerpt.ends_with("bytes more]"));
+    }
 
     fn max_output_bytes() -> usize {
         crate::shared::limits::PluginSandboxLimits::default().max_output_bytes

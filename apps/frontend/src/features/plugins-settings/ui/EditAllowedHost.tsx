@@ -57,7 +57,7 @@ export const EditAllowedHost: Component<EditAllowedHostProps> = (props) => {
           }}
           value={value()}
           onChange={setValue}
-          errorMessage={local.error}
+          errorMessage={local.error ? t('validation.hostRequired') : undefined}
         />
         <Button class='h-full' size='sm' onClick={handleSubmit}>
           {t('common.ok')}

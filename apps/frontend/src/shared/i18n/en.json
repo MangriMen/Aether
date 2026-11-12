@@ -154,6 +154,7 @@
       "ACCESS_VIOLATION": "Plugin access violation",
       "INVALID_ALLOWED_PATH": "Folder {{path}} cannot be given to the plugin: the host path must be an absolute path to a folder other than a whole drive, and the plugin path must start with / and stay clear of /cache and /instances. The folder itself must not be the plugin's own cache or the instances folder, nor lie inside or contain either",
       "INVALID_ALLOWED_HOST": "The host of {{url}} cannot be given to the plugin: only http and https addresses of public hosts are allowed, without wildcards",
+      "INVALID_ALLOWED_HOST_ENTRY": "Host {{entry}} cannot be saved: write a host name or a pattern such as *.example.com, without a scheme, port or path",
       "HASH_COMPUTATION_FAILED": "Failed to compute plugin hash",
       "SETTINGS": "Plugin settings error",
       "STORAGE": "Plugin storage error",
@@ -286,7 +287,8 @@
     "gameVersionRequired": "Select a game version",
     "loaderRequired": "Select a mod loader",
     "loaderVersionRequired": "Select a loader version",
-    "pathRequired": "Enter a path"
+    "pathRequired": "Enter a path",
+    "hostRequired": "Enter a host name"
   },
   "createInstance": {
     "custom": "Custom",

@@ -19,9 +19,10 @@ mod plugin_source;
 mod plugin_verification;
 mod skipped_plugin_dir;
 
-pub use allowed_host::AllowedHostRejection;
+pub use allowed_host::{AllowedHostEntryRejection, AllowedHostRejection};
 pub(crate) use allowed_host::{
     GrantableHost, effective_allowed_hosts, is_blocked_ip, is_host_allowed,
+    validate_allowed_host_entry,
 };
 pub use allowed_path::{
     AllowedPath, AllowedPathInput, AllowedPathRejection, FolderMounts, IgnoredAllowedPath,

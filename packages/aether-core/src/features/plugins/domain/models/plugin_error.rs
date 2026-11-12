@@ -2,8 +2,8 @@ use crate::{
     features::{
         instance::{CapabilityId, PluginId},
         plugins::{
-            AllowedHostRejection, AllowedPathRejection, LoadConfigType, ManifestError,
-            PluginCallError, PluginProviderError,
+            AllowedHostEntryRejection, AllowedHostRejection, AllowedPathRejection, LoadConfigType,
+            ManifestError, PluginCallError, PluginProviderError,
         },
         settings::SettingsError,
     },
@@ -102,6 +102,13 @@ pub enum PluginError {
         plugin_id: PluginId,
         url: String,
         reason: AllowedHostRejection,
+    },
+
+    #[error("Host entry \"{entry}\" cannot be given to plugin \"{plugin_id}\": {reason}")]
+    InvalidAllowedHostEntry {
+        plugin_id: PluginId,
+        entry: String,
+        reason: AllowedHostEntryRejection,
     },
 
     // Infrastructure errors

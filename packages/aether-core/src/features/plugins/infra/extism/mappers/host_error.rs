@@ -480,6 +480,11 @@ fn plugin_dto(value: &PluginError) -> PluginErrorDto {
             plugin_id,
             url: path,
             ..
+        }
+        | PluginError::InvalidAllowedHostEntry {
+            plugin_id,
+            entry: path,
+            ..
         } => Dto::AccessViolation {
             plugin_id: plugin_id.to_string(),
             path: path.clone(),
