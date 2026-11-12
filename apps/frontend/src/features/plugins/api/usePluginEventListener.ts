@@ -8,6 +8,9 @@ import { pluginsCache } from './pluginsCache';
 export const usePluginEventListener = () => {
   const queryClient = useQueryClient();
 
+  // The backend loads plugins on its own at startup, possibly before this listener exists.
+  pluginsCache.invalidate.all(queryClient);
+
   useEventListener(pluginsEvents.pluginEventDto, (e) => {
     logDebug('[EVENT][DEBUG]', e);
 
