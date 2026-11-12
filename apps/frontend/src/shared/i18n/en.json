@@ -139,6 +139,7 @@
       "BUSY": "Plugin is busy: an import, install or update is in progress. Try again once it finishes",
       "STOPPED": "Plugin is not running: it was unloaded or is restarting. Try again once it is loaded",
       "ID_MISMATCH": "The update is for another plugin (\"{{archive_id}}\"), so it was not installed",
+      "ARCHIVE_DIFFERS_FROM_PREVIEW": "The downloaded archive does not match the release preview ({{field}}), so it was not installed",
       "LOAD_FAILED": "Failed to load plugin: {{reason}}",
       "FUNCTION_CALL_FAILED": "Failed to call plugin function",
       "MANIFEST_NOT_FOUND": "Plugin manifest not found",
@@ -694,7 +695,12 @@
     "hostFunctions": "Host functions",
     "hostFunctionsDescription": "What the plugin may ask the launcher to do. It is linked with these functions only. Plugins that can run commands (run_command) effectively have full code execution access on your computer: install only plugins you trust.",
     "hostFunctionsNotDeclared": "Not declared. The plugin was built for an older launcher and cannot be enabled until it is rebuilt.",
-    "hostFunctionsNone": "None — the plugin does not call the launcher."
+    "hostFunctionsNone": "None — the plugin does not call the launcher.",
+    "hostFunctionsRunCommand": "This plugin can run commands on your computer (run_command).",
+    "allowedHosts": "Network access",
+    "allowedHostsDescription": "The sites the plugin may contact.",
+    "allowedHostsNone": "None — the plugin makes no network requests.",
+    "allowedHostsWide": "Matches almost any site: the plugin could send data anywhere."
   },
   "pluginSettings": {
     "hostPathPlaceholder": "Enter host path",

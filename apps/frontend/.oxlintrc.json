@@ -1,11 +1,6 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": [
-    "typescript",
-    "unicorn",
-    "jsx-a11y",
-    "react"
-  ],
+  "plugins": ["typescript", "unicorn", "jsx-a11y", "react"],
   "categories": {
     "correctness": "off"
   },
@@ -39,10 +34,7 @@
       }
     ],
     "prefer-object-spread": "warn",
-    "object-shorthand": [
-      "error",
-      "always"
-    ],
+    "object-shorthand": ["error", "always"],
     "no-debugger": "warn",
     "no-console": "warn",
     "constructor-super": "error",
@@ -104,10 +96,7 @@
     "valid-typeof": "error",
     "no-array-constructor": "error",
     "no-unused-expressions": "error",
-    "curly": [
-      "error",
-      "all"
-    ],
+    "curly": ["error", "all"],
     "jsx-a11y/alt-text": "error",
     "jsx-a11y/anchor-has-content": "error",
     "jsx-a11y/anchor-is-valid": "error",
@@ -144,13 +133,8 @@
     "jsx-a11y/no-interactive-element-to-noninteractive-role": [
       "error",
       {
-        "tr": [
-          "none",
-          "presentation"
-        ],
-        "canvas": [
-          "img"
-        ]
+        "tr": ["none", "presentation"],
+        "canvas": ["img"]
       }
     ],
     "jsx-a11y/no-noninteractive-element-interactions": [
@@ -166,28 +150,11 @@
           "onKeyDown",
           "onKeyUp"
         ],
-        "alert": [
-          "onKeyUp",
-          "onKeyDown",
-          "onKeyPress"
-        ],
-        "body": [
-          "onError",
-          "onLoad"
-        ],
-        "dialog": [
-          "onKeyUp",
-          "onKeyDown",
-          "onKeyPress"
-        ],
-        "iframe": [
-          "onError",
-          "onLoad"
-        ],
-        "img": [
-          "onError",
-          "onLoad"
-        ]
+        "alert": ["onKeyUp", "onKeyDown", "onKeyPress"],
+        "body": ["onError", "onLoad"],
+        "dialog": ["onKeyUp", "onKeyDown", "onKeyPress"],
+        "iframe": ["onError", "onLoad"],
+        "img": ["onError", "onLoad"]
       }
     ],
     "jsx-a11y/no-noninteractive-element-to-interactive-role": [
@@ -220,25 +187,16 @@
           "tab",
           "treeitem"
         ],
-        "table": [
-          "grid"
-        ],
-        "td": [
-          "gridcell"
-        ],
-        "fieldset": [
-          "radiogroup",
-          "presentation"
-        ]
+        "table": ["grid"],
+        "td": ["gridcell"],
+        "fieldset": ["radiogroup", "presentation"]
       }
     ],
     "jsx-a11y/no-noninteractive-tabindex": [
       "error",
       {
         "tags": [],
-        "roles": [
-          "tabpanel"
-        ],
+        "roles": ["tabpanel"],
         "allowExpressionValues": true
       }
     ],
@@ -269,10 +227,7 @@
         "propElementValues": "always"
       }
     ],
-    "react/jsx-boolean-value": [
-      "error",
-      "never"
-    ],
+    "react/jsx-boolean-value": ["error", "never"],
     "typescript/ban-ts-comment": "error",
     "typescript/no-duplicate-enum-values": "error",
     "typescript/no-empty-object-type": "error",
@@ -304,12 +259,7 @@
   },
   "overrides": [
     {
-      "files": [
-        "**/*.ts",
-        "**/*.tsx",
-        "**/*.mts",
-        "**/*.cts"
-      ],
+      "files": ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts"],
       "rules": {
         "constructor-super": "off",
         "getter-return": "off",
@@ -334,9 +284,7 @@
       }
     },
     {
-      "files": [
-        "src/**/*.{ts,tsx}"
-      ],
+      "files": ["src/**/*.{ts,tsx}"],
       "rules": {
         "no-restricted-imports": [
           "error",
@@ -356,9 +304,7 @@
       }
     },
     {
-      "files": [
-        "src/features/**/*.{ts,tsx}"
-      ],
+      "files": ["src/features/**/*.{ts,tsx}"],
       "rules": {
         "no-restricted-imports": [
           "error",
@@ -382,9 +328,7 @@
       }
     },
     {
-      "files": [
-        "src/platform/**/*.{ts,tsx}"
-      ],
+      "files": ["src/platform/**/*.{ts,tsx}"],
       "rules": {
         "no-restricted-imports": [
           "error",
@@ -412,9 +356,7 @@
       }
     },
     {
-      "files": [
-        "src/shared/**/*.{ts,tsx}"
-      ],
+      "files": ["src/shared/**/*.{ts,tsx}"],
       "rules": {
         "no-restricted-imports": [
           "error",
@@ -446,9 +388,7 @@
       }
     },
     {
-      "files": [
-        "src/shared/ui-kit/**/*.{ts,tsx}"
-      ],
+      "files": ["src/shared/ui-kit/**/*.{ts,tsx}"],
       "rules": {
         "no-restricted-imports": [
           "error",
@@ -484,9 +424,7 @@
       }
     },
     {
-      "files": [
-        "src/features/*/model/**/*.{ts,tsx}"
-      ],
+      "files": ["src/features/*/model/**/*.{ts,tsx}"],
       "rules": {
         "no-restricted-imports": [
           "error",
@@ -505,9 +443,7 @@
                 "message": "Only app/ imports app/."
               },
               {
-                "group": [
-                  "@tauri-apps/**"
-                ],
+                "group": ["@tauri-apps/**"],
                 "allowTypeImports": true,
                 "message": "model/ is plain code: call Tauri from api/ (or from the component or primitive that needs it)."
               }
@@ -539,9 +475,7 @@
                 "message": "Only app/ imports app/."
               },
               {
-                "group": [
-                  "@/platform/bindings/**"
-                ],
+                "group": ["@/platform/bindings/**"],
                 "message": "Use the alias from the feature model/ instead of a *Dto from platform/bindings."
               }
             ]
@@ -550,9 +484,7 @@
       }
     },
     {
-      "files": [
-        "src/app/**/*.{ts,tsx}"
-      ],
+      "files": ["src/app/**/*.{ts,tsx}"],
       "rules": {
         "no-restricted-imports": [
           "error",
@@ -567,9 +499,7 @@
                 "message": "Import a module through its index; inside a module, use relative imports."
               },
               {
-                "group": [
-                  "@/platform/bindings/**"
-                ],
+                "group": ["@/platform/bindings/**"],
                 "message": "Use the alias from the feature model/ instead of a *Dto from platform/bindings."
               }
             ]
@@ -606,9 +536,7 @@
       }
     },
     {
-      "files": [
-        "src/app/**/__tests__/**"
-      ],
+      "files": ["src/app/**/__tests__/**"],
       "rules": {
         "no-restricted-imports": [
           "error",

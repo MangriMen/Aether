@@ -50,7 +50,7 @@ export const commands = {
 	updatePlugin: (id: string, targetTag: string | null, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:plugin|update_plugin", { id, targetTag, requestId }),
 	getAvailableProviders: () => __TAURI_INVOKE<PluginProviderDto[]>("plugin:plugin|get_available_providers"),
 	previewPluginFromProvider: (sourceType: PluginSourceTypeDto, identifier: string) => __TAURI_INVOKE<ProviderPluginPreviewDto>("plugin:plugin|preview_plugin_from_provider", { sourceType, identifier }),
-	installPluginFromProvider: (sourceType: PluginSourceTypeDto, identifier: string, downloadUrl: string, tagName: string, version: string, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<string>("plugin:plugin|install_plugin_from_provider", { sourceType, identifier, downloadUrl, tagName, version, requestId }),
+	installPluginFromProvider: (sourceType: PluginSourceTypeDto, identifier: string, tagName: string, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<string>("plugin:plugin|install_plugin_from_provider", { sourceType, identifier, tagName, requestId }),
 };
 
 /** Events */
@@ -473,6 +473,8 @@ export type PluginErrorDto = { code: "NOT_FOUND"; payload: {
 	details: string,
 } } | { code: "PROVIDER_NO_ASSETS"; payload: {
 	source_type: string,
+} } | { code: "ARCHIVE_DIFFERS_FROM_PREVIEW"; payload: {
+	field: string,
 } } | { code: "NO_REMOTE_SOURCE"; payload: {
 	plugin_id: string,
 } } | { code: "DOWNLOAD_FAILED"; payload: {
@@ -518,6 +520,10 @@ export type PluginManifestPreviewDto = {
 	authors: string[],
 	license: string | null,
 	api_version: string | null,
+	/**  The hosts the plugin asks to reach, globs as written in its manifest. */
+	allowed_hosts: string[],
+	/**  The host functions it declares. */
+	host_functions: string[],
 };
 
 export type PluginMetadataDto = {

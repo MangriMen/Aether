@@ -14,10 +14,11 @@ use crate::features::events::test_support::NoOpEmitter;
 use crate::features::instance::PluginId;
 use crate::features::{
     plugins::{
-        InstallPluginFromProviderUseCase, PluginError, PluginProvider, PluginProviderError,
-        PluginProviderFactory, PluginRegistry, PluginSettings, PluginSettingsStorage, PluginSource,
-        PluginSourceStorage, PluginSourceType, PluginSyncService, PluginVerification,
-        PluginVerificationStorage, ProviderPluginPreview, ProviderRelease, ProviderUpdateInfo,
+        InstallPluginFromProviderUseCase, PluginError, PluginManifestPreview, PluginProvider,
+        PluginProviderError, PluginProviderFactory, PluginRegistry, PluginSettings,
+        PluginSettingsStorage, PluginSource, PluginSourceStorage, PluginSourceType,
+        PluginSyncService, PluginVerification, PluginVerificationStorage, ProviderPluginPreview,
+        ProviderReleaseInfo, ProviderReleasePreview, ProviderUpdateInfo,
         infra::{
             FsPluginSettingsStorage, FsPluginSourceStorage, FsPluginStorage,
             FsPluginVerificationStorage, ZipPluginExtractor,
@@ -63,12 +64,44 @@ fn plugin_zip(wasm: &[u8]) -> Vec<u8> {
 /// A GitHub-like source whose download is `archive`.
 struct Download {
     archive: Vec<u8>,
+    /// What the release published beside the archive.
+    manifest: Option<PluginManifestPreview>,
+    capabilities: Option<String>,
+}
+
+impl Download {
+    fn unpublished(archive: Vec<u8>) -> Self {
+        Self {
+            archive,
+            manifest: None,
+            capabilities: None,
+        }
+    }
 }
 
 #[async_trait]
 impl PluginProvider for Download {
     async fn fetch_preview(&self, _: &str) -> Result<ProviderPluginPreview, PluginProviderError> {
         unimplemented!("the install does not preview")
+    }
+
+    async fn fetch_release_preview(
+        &self,
+        _: &str,
+        tag: &str,
+    ) -> Result<ProviderReleasePreview, PluginProviderError> {
+        Ok(ProviderReleasePreview {
+            release: ProviderReleaseInfo {
+                tag_name: tag.to_owned(),
+                version: "0.2.0".into(),
+                is_prerelease: false,
+                published_at: "2026-01-01T00:00:00Z".into(),
+                html_url: "https://example.com/v2".into(),
+                download_url: "https://example.com/v2.zip".into(),
+            },
+            manifest: self.manifest.clone(),
+            capabilities: self.capabilities.clone(),
+        })
     }
 
     async fn fetch_latest_version(
@@ -188,6 +221,35 @@ impl Fixture {
         source: Arc<dyn PluginSourceStorage>,
         verification: Arc<dyn PluginVerificationStorage>,
     ) -> Result<PluginId, PluginError> {
+        self.install_download(Download::unpublished(archive), source, verification)
+            .await
+    }
+
+    /// An install of a release that published `manifest` and `capabilities` beside `archive`.
+    async fn install_published(
+        &self,
+        archive: Vec<u8>,
+        manifest: PluginManifestPreview,
+        capabilities: Option<&str>,
+    ) -> Result<PluginId, PluginError> {
+        self.install_download(
+            Download {
+                archive,
+                manifest: Some(manifest),
+                capabilities: capabilities.map(str::to_owned),
+            },
+            self.source.clone(),
+            self.verification.clone(),
+        )
+        .await
+    }
+
+    async fn install_download(
+        &self,
+        download: Download,
+        source: Arc<dyn PluginSourceStorage>,
+        verification: Arc<dyn PluginVerificationStorage>,
+    ) -> Result<PluginId, PluginError> {
         InstallPluginFromProviderUseCase::new(
             self.registry.clone(),
             Arc::new(ZipPluginExtractor::default()),
@@ -199,20 +261,10 @@ impl Fixture {
             source,
             verification,
             self.settings.clone(),
-            Arc::new(PluginProviderFactory::new(vec![Box::new(Download {
-                archive,
-            })])),
+            Arc::new(PluginProviderFactory::new(vec![Box::new(download)])),
             self.sync.clone(),
         )
-        .execute(
-            PluginSourceType::GitHub,
-            "owner/repo",
-            ProviderRelease {
-                download_url: "https://example.com/v2.zip".into(),
-                tag_name: "v2".into(),
-                version: "0.2.0".into(),
-            },
-        )
+        .execute(PluginSourceType::GitHub, "owner/repo", "v2")
         .await
     }
 
@@ -308,6 +360,108 @@ async fn should_write_nothing_when_the_archive_cannot_be_read() {
     assert_eq!(fixture.sync.0.load(Ordering::SeqCst), 0);
 }
 
+/// What the published manifest of `plugin_zip` says.
+fn shown_manifest() -> PluginManifestPreview {
+    PluginManifestPreview {
+        id: PLUGIN_ID.into(),
+        name: "Test Plugin".into(),
+        version: "0.2.0".into(),
+        description: None,
+        authors: Vec::new(),
+        license: None,
+        api_version: Some("*".into()),
+        allowed_hosts: Vec::new(),
+        host_functions: Vec::new(),
+    }
+}
+
+fn refused_field(result: Result<PluginId, PluginError>) -> &'static str {
+    match result {
+        Err(PluginError::Provider(PluginProviderError::ArchiveDiffersFromPreview { field })) => {
+            field
+        }
+        other => panic!("expected the archive to be refused, got {other:?}"),
+    }
+}
+
+#[tokio::test]
+async fn should_install_when_the_archive_is_what_the_release_published() {
+    let fixture = Fixture::empty();
+
+    let result = fixture
+        .install_published(plugin_zip(b"\0asm v2"), shown_manifest(), None)
+        .await;
+
+    assert!(result.is_ok(), "{result:?}");
+}
+
+#[tokio::test]
+async fn should_refuse_and_write_nothing_when_the_archive_asks_for_more_hosts_than_were_shown() {
+    let fixture = Fixture::empty();
+    let mut shown = shown_manifest();
+    shown.allowed_hosts = vec!["example.com".into()];
+
+    let result = fixture
+        .install_published(plugin_zip(b"\0asm v2"), shown, None)
+        .await;
+
+    assert_eq!(refused_field(result), "allowed_hosts");
+    assert_eq!(
+        fixture.plugins_dir_entries(),
+        Vec::<std::ffi::OsString>::new()
+    );
+    assert_eq!(fixture.sync.0.load(Ordering::SeqCst), 0);
+}
+
+#[tokio::test]
+async fn should_refuse_when_the_archive_is_of_another_plugin_or_version_than_was_shown() {
+    let fixture = Fixture::empty();
+    let mut other_id = shown_manifest();
+    other_id.id = "another-plugin".into();
+    let mut other_version = shown_manifest();
+    other_version.version = "9.9.9".into();
+
+    assert_eq!(
+        refused_field(
+            fixture
+                .install_published(plugin_zip(b"\0asm v2"), other_id, None)
+                .await
+        ),
+        "id"
+    );
+    assert_eq!(
+        refused_field(
+            fixture
+                .install_published(plugin_zip(b"\0asm v2"), other_version, None)
+                .await
+        ),
+        "version"
+    );
+}
+
+#[tokio::test]
+async fn should_refuse_when_the_archive_holds_capabilities_that_were_not_published() {
+    let fixture = Fixture::empty();
+    let mut writer = ZipWriter::new(Cursor::new(Vec::new()));
+    for (name, data) in [
+        ("manifest.json", MANIFEST.as_bytes()),
+        ("plugin.wasm", &b"\0asm v2"[..]),
+        ("capabilities.json", br#"{"importers": [], "updaters": []}"#),
+    ] {
+        writer
+            .start_file(name, SimpleFileOptions::default())
+            .unwrap();
+        writer.write_all(data).unwrap();
+    }
+    let archive = writer.finish().unwrap().into_inner();
+
+    let result = fixture
+        .install_published(archive, shown_manifest(), None)
+        .await;
+
+    assert_eq!(refused_field(result), "capabilities");
+}
+
 /// Version `v1` installed from GitHub, with settings the user changed.
 async fn installed(fixture: &Fixture) {
     fixture.install(plugin_zip(b"\0asm v1")).await.unwrap();
@@ -396,9 +550,7 @@ async fn should_replace_the_files_and_keep_the_settings_when_the_plugin_is_insta
 
 #[test]
 fn should_list_each_provider_with_the_name_it_gives_itself() {
-    let factory = PluginProviderFactory::new(vec![Box::new(Download {
-        archive: Vec::new(),
-    })]);
+    let factory = PluginProviderFactory::new(vec![Box::new(Download::unpublished(Vec::new()))]);
 
     assert_eq!(
         factory.list_providers(),

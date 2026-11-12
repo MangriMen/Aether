@@ -11,8 +11,8 @@ pub use models::{
     PluginInternalEvent, PluginManifest, PluginManifestPreview, PluginMetadata,
     PluginProviderError, PluginProviderInfo, PluginSettings, PluginSource, PluginSourceType,
     PluginState, PluginStateReason, PluginUpdaterCapability, PluginVerification, ProviderHandlers,
-    ProviderPluginPreview, ProviderReleaseInfo, ProviderUpdateInfo, RuntimeConfig,
-    SkippedPluginDir, SkippedPluginDirReason,
+    ProviderPluginPreview, ProviderReleaseInfo, ProviderReleasePreview, ProviderUpdateInfo,
+    RuntimeConfig, SkippedPluginDir, SkippedPluginDirReason,
 };
 pub(crate) use models::{
     AsCapabilityMetadata, CoreMount, GrantableHost, PLUGIN_API_VERSION, PLUGIN_CACHE_MOUNT,

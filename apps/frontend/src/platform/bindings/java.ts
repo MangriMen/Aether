@@ -317,6 +317,8 @@ export type PluginErrorDto = { code: "NOT_FOUND"; payload: {
 	details: string,
 } } | { code: "PROVIDER_NO_ASSETS"; payload: {
 	source_type: string,
+} } | { code: "ARCHIVE_DIFFERS_FROM_PREVIEW"; payload: {
+	field: string,
 } } | { code: "NO_REMOTE_SOURCE"; payload: {
 	plugin_id: string,
 } } | { code: "DOWNLOAD_FAILED"; payload: {

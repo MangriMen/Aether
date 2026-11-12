@@ -34,15 +34,7 @@ impl From<aether_core::features::plugins::ProviderPluginPreview> for ProviderPlu
         Self {
             owner: value.owner,
             repo: value.repo,
-            manifest: value.manifest.map(|m| PluginManifestPreviewDto {
-                id: m.id,
-                name: m.name,
-                version: m.version,
-                description: m.description,
-                authors: m.authors,
-                license: m.license,
-                api_version: m.api_version,
-            }),
+            manifest: value.manifest.map(PluginManifestPreviewDto::from),
             capabilities,
             releases: value
                 .releases

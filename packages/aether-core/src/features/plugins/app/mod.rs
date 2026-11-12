@@ -19,6 +19,7 @@ mod plugin_access_grant;
 mod plugin_enabler;
 mod plugin_provider;
 mod ports;
+mod preview_check;
 mod record_plugin_verification;
 mod release_installer;
 mod reload_plugin;
@@ -63,7 +64,7 @@ pub use ports::{
     InstallPluginFromProviderUseCasePort, ListPluginsDtoUseCasePort,
     ListSkippedPluginDirsUseCasePort, PluginDisableService, PluginExtractor, PluginLoader,
     PluginSettingsStorage, PluginSourceStorage, PluginStorage, PluginSyncService,
-    PluginVerificationStorage, ProviderRelease, ReloadPluginUseCasePort, RemovePluginUseCasePort,
+    PluginVerificationStorage, ReloadPluginUseCasePort, RemovePluginUseCasePort,
     UpdatePluginUseCasePort,
 };
 pub use record_plugin_verification::record_plugin_verification;

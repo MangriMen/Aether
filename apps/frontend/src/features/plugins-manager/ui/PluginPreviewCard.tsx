@@ -1,7 +1,9 @@
 import { Show, type Component } from 'solid-js';
 
 import {
+  PluginAllowedHostsSection,
   PluginCapabilitiesSection,
+  PluginHostFunctionsSection,
   PluginInfoHeader,
 } from '@/features/plugins';
 import { useTranslation } from '@/shared/i18n';
@@ -59,6 +61,16 @@ export const PluginPreviewCard: Component<PluginPreviewCardProps> = (props) => {
       {/* Capabilities */}
       <Show when={capabilities()}>
         {(c) => <PluginCapabilitiesSection capabilities={c()} />}
+      </Show>
+
+      {/* What the plugin asks for: shown before it is installed */}
+      <Show when={manifest()}>
+        {(m) => (
+          <>
+            <PluginAllowedHostsSection allowedHosts={m().allowed_hosts} />
+            <PluginHostFunctionsSection hostFunctions={m().host_functions} />
+          </>
+        )}
       </Show>
 
       {/* License */}

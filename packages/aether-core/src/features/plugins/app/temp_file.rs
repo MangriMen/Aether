@@ -58,6 +58,14 @@ mod tests {
             unimplemented!()
         }
 
+        async fn fetch_release_preview(
+            &self,
+            _: &str,
+            _: &str,
+        ) -> Result<crate::features::plugins::ProviderReleasePreview, PluginProviderError> {
+            unimplemented!()
+        }
+
         async fn fetch_latest_version(
             &self,
             _: &str,

@@ -123,9 +123,7 @@ export const InstallFromGithubView: Component<InstallFromGithubViewProps> = (
       await installMutation.mutateAsync({
         sourceType: PROVIDER,
         identifier: debouncedUrl(),
-        downloadUrl: release.download_url,
         tagName: release.tag_name,
-        version: release.version,
       });
       props.onInstalled?.();
     } catch {

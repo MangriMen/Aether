@@ -10,6 +10,8 @@ export * from './model/pluginManifest';
 export * from './model/pluginSettings';
 export * from './model/pluginSource';
 export * from './model/skippedPluginDir';
+export * from './model/wideHostPattern';
+export * from './ui/PluginAllowedHostsSection';
 export * from './ui/PluginCapabilitiesSection';
 export * from './ui/PluginCard';
 export * from './ui/PluginCardContextMenu';

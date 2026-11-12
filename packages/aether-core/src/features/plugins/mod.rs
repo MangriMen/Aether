@@ -14,8 +14,8 @@ pub use domain::{
     PluginCapabilities, PluginContentProviderCapability, PluginError, PluginImporterCapability,
     PluginManifest, PluginManifestPreview, PluginMetadata, PluginProviderError, PluginProviderInfo,
     PluginSettings, PluginSource, PluginSourceType, PluginUpdaterCapability, ProviderHandlers,
-    ProviderPluginPreview, ProviderUpdateInfo, RuntimeConfig, SkippedPluginDir,
-    SkippedPluginDirReason,
+    ProviderPluginPreview, ProviderReleaseInfo, ProviderReleasePreview, ProviderUpdateInfo,
+    RuntimeConfig, SkippedPluginDir, SkippedPluginDirReason,
 };
 pub(crate) use domain::{
     AsCapabilityMetadata, Compatibility, CoreMount, ExtractedPlugin, FolderMounts, GrantableHost,
@@ -34,7 +34,7 @@ pub use app::{
     PluginManifestDto, PluginMetadataDto, PluginProvider, PluginProviderFactory, PluginRegistry,
     PluginSettingsStorage, PluginSourceStorage, PluginStateReasonDto, PluginStorage,
     PluginUpdaterCapabilityDto, PluginVerificationStorage, PluginsFeature, ProviderHandlersDto,
-    ProviderRelease, RuntimeConfigDto, UpdaterCapabilityMetadataDto, download_to_temp_file,
+    RuntimeConfigDto, UpdaterCapabilityMetadataDto, download_to_temp_file,
     record_plugin_verification,
 };
 pub(crate) use app::{

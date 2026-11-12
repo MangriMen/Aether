@@ -109,6 +109,9 @@ pub enum PluginErrorDto {
     ProviderNoAssets {
         source_type: String,
     },
+    ArchiveDiffersFromPreview {
+        field: String,
+    },
     NoRemoteSource {
         plugin_id: String,
     },
@@ -263,6 +266,11 @@ impl From<&PluginProviderError> for PluginErrorDto {
             PluginProviderError::ProviderNoAssets { source_type } => Self::ProviderNoAssets {
                 source_type: source_type.to_string(),
             },
+            PluginProviderError::ArchiveDiffersFromPreview { field } => {
+                Self::ArchiveDiffersFromPreview {
+                    field: (*field).to_string(),
+                }
+            }
             PluginProviderError::NoRemoteSource { plugin_id } => Self::NoRemoteSource {
                 plugin_id: plugin_id.to_string(),
             },

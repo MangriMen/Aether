@@ -104,6 +104,14 @@ impl PluginProvider for OneRelease {
         })
     }
 
+    async fn fetch_release_preview(
+        &self,
+        _: &str,
+        _: &str,
+    ) -> Result<crate::features::plugins::ProviderReleasePreview, PluginProviderError> {
+        unimplemented!("the update does not hold the archive to a preview")
+    }
+
     async fn fetch_latest_version(
         &self,
         _: &str,

@@ -406,22 +406,16 @@ export const useInstallPluginFromProvider = () => {
     mutationFn: ({
       sourceType,
       identifier,
-      downloadUrl,
       tagName,
-      version,
     }: {
       sourceType: PluginSourceType;
       identifier: string;
-      downloadUrl: string;
       tagName: string;
-      version: string;
     }) =>
       pluginsCommands.installPluginFromProvider(
         sourceType,
         identifier,
-        downloadUrl,
         tagName,
-        version,
       ),
     onSuccess: () => pluginsCache.invalidate.all(queryClient),
     onError: (err) => {

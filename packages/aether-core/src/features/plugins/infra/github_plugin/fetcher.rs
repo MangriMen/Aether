@@ -349,46 +349,55 @@ impl GitHubPluginFetcher {
         releases: &[GitHubReleaseInfo],
     ) -> (Option<PluginManifestPreview>, Option<String>) {
         for release in releases {
-            // Fetch manifest
-            let manifest = if let Some(manifest_url) = &release.manifest_download_url {
-                match self
-                    .download_asset_capped(manifest_url, MAX_METADATA_BYTES)
-                    .await
-                {
-                    Ok(bytes) => serde_json::from_slice::<
-                        aether_core_plugin_api::v0::PluginManifestDto,
-                    >(&bytes)
-                    .ok()
-                    .map(|dto| PluginManifestPreview {
-                        id: dto.metadata.id,
-                        name: dto.metadata.name,
-                        version: dto.metadata.version,
-                        description: dto.metadata.description,
-                        authors: dto.metadata.authors,
-                        license: dto.metadata.license,
-                        api_version: Some(dto.api.version),
-                    }),
-                    Err(_) => continue,
-                }
-            } else {
-                continue;
-            };
-
-            // Fetch capabilities if URL is present
-            let capabilities = if let Some(cap_url) = &release.capabilities_download_url {
-                self.download_asset_capped(cap_url, MAX_METADATA_BYTES)
-                    .await
-                    .ok()
-                    .and_then(|bytes| String::from_utf8(bytes).ok())
-            } else {
-                None
-            };
-
+            let (manifest, capabilities) = self.fetch_release_metadata(release).await;
             if manifest.is_some() {
                 return (manifest, capabilities);
             }
         }
         (None, None)
+    }
+
+    /// The manifest and capabilities published beside one release's archive. A manifest that
+    /// cannot be fetched or read is none, and its capabilities are not looked at.
+    pub async fn fetch_release_metadata(
+        &self,
+        release: &GitHubReleaseInfo,
+    ) -> (Option<PluginManifestPreview>, Option<String>) {
+        let Some(manifest_url) = &release.manifest_download_url else {
+            return (None, None);
+        };
+        let Ok(bytes) = self
+            .download_asset_capped(manifest_url, MAX_METADATA_BYTES)
+            .await
+        else {
+            return (None, None);
+        };
+        let Ok(dto) =
+            serde_json::from_slice::<aether_core_plugin_api::v0::PluginManifestDto>(&bytes)
+        else {
+            return (None, None);
+        };
+        let manifest = PluginManifestPreview {
+            id: dto.metadata.id,
+            name: dto.metadata.name,
+            version: dto.metadata.version,
+            description: dto.metadata.description,
+            authors: dto.metadata.authors,
+            license: dto.metadata.license,
+            api_version: Some(dto.api.version),
+            allowed_hosts: dto.runtime.allowed_hosts,
+            host_functions: dto.api.host_functions.unwrap_or_default(),
+        };
+
+        let capabilities = if let Some(cap_url) = &release.capabilities_download_url {
+            self.download_asset_capped(cap_url, MAX_METADATA_BYTES)
+                .await
+                .ok()
+                .and_then(|bytes| String::from_utf8(bytes).ok())
+        } else {
+            None
+        };
+        (Some(manifest), capabilities)
     }
 
     /// Parse a GitHub URL to extract owner and repo.

@@ -60,6 +60,15 @@ pub struct ProviderReleaseInfo {
     pub download_url: String,
 }
 
+/// One release as the user is shown it before installing: the release itself, and the manifest
+/// and capabilities the provider published beside the archive.
+#[derive(Debug, Clone)]
+pub struct ProviderReleasePreview {
+    pub release: ProviderReleaseInfo,
+    pub manifest: Option<PluginManifestPreview>,
+    pub capabilities: Option<String>,
+}
+
 /// Result of checking for updates from a provider.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProviderUpdateInfo {

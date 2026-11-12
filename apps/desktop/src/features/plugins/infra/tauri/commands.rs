@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 
 use aether_core::features::{
     instance::PluginId,
-    plugins::{PluginError, PluginSourceType, PluginsFeature, ProviderRelease},
+    plugins::{PluginError, PluginSourceType, PluginsFeature},
 };
 use tauri::State;
 
@@ -459,13 +459,10 @@ async fn preview_plugin_from_provider(
 
 #[tauri::command]
 #[specta::specta]
-#[allow(clippy::too_many_arguments)]
 async fn install_plugin_from_provider(
     source_type: PluginSourceTypeDto,
     identifier: String,
-    download_url: String,
     tag_name: String,
-    version: String,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
     container: State<'_, ContainerState>,
@@ -475,15 +472,7 @@ async fn install_plugin_from_provider(
     let container = container.0.clone();
     Ok(container
         .install_plugin_from_provider_use_case()
-        .execute(
-            source_type.into(),
-            &identifier,
-            ProviderRelease {
-                download_url,
-                tag_name,
-                version,
-            },
-        )
+        .execute(source_type.into(), &identifier, &tag_name)
         .await
         .map_err(aether_core::Error::from)?
         .into())

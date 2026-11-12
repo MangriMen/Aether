@@ -210,20 +210,14 @@ pub trait UpdatePluginUseCasePort: Send + Sync {
     ) -> Result<(), PluginError>;
 }
 
-/// The release a user picked from a provider's preview.
-pub struct ProviderRelease {
-    pub download_url: String,
-    pub tag_name: String,
-    pub version: String,
-}
-
 #[async_trait]
 pub trait InstallPluginFromProviderUseCasePort: Send + Sync {
-    /// Returns the id of the plugin the archive holds.
+    /// Installs the release of `identifier` tagged `tag`. The archive's address is the
+    /// provider's to say, not the caller's. Returns the id of the plugin the archive holds.
     async fn execute(
         &self,
         source_type: PluginSourceType,
         identifier: &str,
-        release: ProviderRelease,
+        tag: &str,
     ) -> Result<PluginId, PluginError>;
 }

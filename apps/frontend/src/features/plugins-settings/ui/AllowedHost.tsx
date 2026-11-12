@@ -1,5 +1,11 @@
-import { splitProps, type Component, type ComponentProps } from 'solid-js';
+import {
+  Show,
+  splitProps,
+  type Component,
+  type ComponentProps,
+} from 'solid-js';
 
+import { isWideHostPattern } from '@/features/plugins';
 import { useTranslation } from '@/shared/i18n';
 import { cn } from '@/shared/utils';
 
@@ -35,6 +41,11 @@ export const AllowedHost: Component<AllowedHostProps> = (props) => {
       <span class='text-destructive'>
         {local.error ? t('validation.hostRequired') : undefined}
       </span>
+      <Show when={isWideHostPattern(local.value ?? '')}>
+        <span class='px-2 text-sm text-warning'>
+          {t('plugin.allowedHostsWide')}
+        </span>
+      </Show>
     </div>
   );
 };

@@ -9,7 +9,8 @@ use crate::features::plugins::{
     PluginVerificationStorage,
 };
 
-use super::ports::{InstallPluginFromProviderUseCasePort, ProviderRelease};
+use super::ports::InstallPluginFromProviderUseCasePort;
+use super::preview_check::check_against_preview;
 use super::release_installer::ReleaseInstaller;
 use super::{PluginProviderFactory, download_to_temp_file};
 
@@ -61,7 +62,7 @@ impl InstallPluginFromProviderUseCase {
         &self,
         source_type: PluginSourceType,
         identifier: &str,
-        release: ProviderRelease,
+        tag: &str,
     ) -> Result<PluginId, PluginError> {
         let provider = self
             .provider_factory
@@ -72,9 +73,20 @@ impl InstallPluginFromProviderUseCase {
             })?;
         let identifier = provider.parse_identifier(identifier)?;
 
+        // The archive's address comes from the provider's own listing of the release, never from
+        // the caller, so what is downloaded is the release of this very repository.
+        let preview = provider.fetch_release_preview(&identifier, tag).await?;
+        let release = preview.release;
+
         let temp_file = download_to_temp_file(provider, &release.download_url).await?;
         let extracted = self.plugin_extractor.extract(temp_file.path()).await?;
         let plugin_id = extracted.plugin_id.clone();
+        // Unpacked, and refused before anything is written, when it is not what was shown.
+        check_against_preview(
+            &extracted,
+            preview.manifest.as_ref(),
+            preview.capabilities.as_deref(),
+        )?;
 
         let source = PluginSource::Remote {
             source_type,
@@ -99,8 +111,8 @@ impl InstallPluginFromProviderUseCasePort for InstallPluginFromProviderUseCase {
         &self,
         source_type: PluginSourceType,
         identifier: &str,
-        release: ProviderRelease,
+        tag: &str,
     ) -> Result<PluginId, PluginError> {
-        self.execute(source_type, identifier, release).await
+        self.execute(source_type, identifier, tag).await
     }
 }
