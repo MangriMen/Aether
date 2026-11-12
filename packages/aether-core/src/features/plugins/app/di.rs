@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use crate::features::plugins::app::PluginProviderFactory;
 use crate::features::plugins::app::ports::{
     CheckForPluginUpdatesUseCasePort, EditPluginSettingsUseCasePort, EnablePluginUseCasePort,
     ForceEnablePluginUseCasePort, GetPluginApiVersionUseCasePort, GetPluginDtoUseCasePort,
@@ -9,10 +8,11 @@ use crate::features::plugins::app::ports::{
     InstallPluginFromProviderUseCasePort, ListPluginsDtoUseCasePort,
     ListSkippedPluginDirsUseCasePort, PluginDisableService, PluginExtractor, PluginLoader,
     PluginSettingsStorage, PluginSourceStorage, PluginStorage, PluginSyncService,
-    PluginVerificationStorage, ReloadPluginUseCasePort, RemovePluginUseCasePort,
-    UpdatePluginUseCasePort,
+    PluginVerificationStorage, PreviewPluginReleaseUseCasePort, ReloadPluginUseCasePort,
+    RemovePluginUseCasePort, UpdatePluginUseCasePort,
 };
 use crate::features::plugins::app::services::{PluginLoaderRegistry, PluginRegistry};
+use crate::features::plugins::app::{PluginProviderFactory, ReleaseArchiveCache};
 
 /// Extension trait providing access to all plugins feature use cases and services.
 ///
@@ -34,6 +34,7 @@ pub trait PluginsFeature {
     fn install_plugin_from_provider_use_case(
         &self,
     ) -> Arc<dyn InstallPluginFromProviderUseCasePort>;
+    fn preview_plugin_release_use_case(&self) -> Arc<dyn PreviewPluginReleaseUseCasePort>;
     fn list_plugins_dto_use_case(&self) -> Arc<dyn ListPluginsDtoUseCasePort>;
     fn list_skipped_plugin_dirs_use_case(&self) -> Arc<dyn ListSkippedPluginDirsUseCasePort>;
     fn reload_plugin_use_case(&self) -> Arc<dyn ReloadPluginUseCasePort>;
@@ -48,6 +49,7 @@ pub trait PluginsFeature {
     fn plugin_registry(&self) -> Arc<PluginRegistry>;
     fn plugin_loader_registry(&self) -> Arc<PluginLoaderRegistry>;
     fn plugin_provider_factory(&self) -> Arc<PluginProviderFactory>;
+    fn release_archive_cache(&self) -> Arc<ReleaseArchiveCache>;
 
     // ── Ports ──
     fn plugin_source_storage(&self) -> Arc<dyn PluginSourceStorage>;

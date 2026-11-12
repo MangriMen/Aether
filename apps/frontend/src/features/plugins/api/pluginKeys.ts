@@ -9,8 +9,8 @@ export const pluginKeys = {
     [...pluginKeys.all, 'readme', id, version] as const,
   source: (id: string) => [...pluginKeys.all, 'source', id] as const,
   updates: (id: string) => [...pluginKeys.all, 'updates', id] as const,
-  preview: (provider: string, identifier: string) =>
-    [...pluginKeys.all, 'preview', provider, identifier] as const,
+  preview: (provider: string, identifier: string, tag: string | null) =>
+    [...pluginKeys.all, 'preview', provider, identifier, tag] as const,
   providers: () => [...pluginKeys.all, 'providers'] as const,
   importers: () => [...pluginKeys.all, 'importer'] as const,
   importerList: () => [...pluginKeys.importers(), 'list'] as const,

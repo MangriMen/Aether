@@ -19,7 +19,10 @@ mod plugin_access_grant;
 mod plugin_enabler;
 mod plugin_provider;
 mod ports;
+mod preview_plugin_release;
 mod record_plugin_verification;
+mod release_archive;
+mod release_archive_cache;
 mod release_installer;
 mod reload_plugin;
 mod remove_plugin;
@@ -63,13 +66,15 @@ pub use ports::{
     InstallPluginFromProviderUseCasePort, ListPluginsDtoUseCasePort,
     ListSkippedPluginDirsUseCasePort, PluginDisableService, PluginExtractor, PluginLoader,
     PluginSettingsStorage, PluginSourceStorage, PluginStorage, PluginSyncService,
-    PluginVerificationStorage, ProviderRelease, ReloadPluginUseCasePort, RemovePluginUseCasePort,
-    UpdatePluginUseCasePort,
+    PluginVerificationStorage, PreviewPluginReleaseUseCasePort, ReloadPluginUseCasePort,
+    RemovePluginUseCasePort, UpdatePluginUseCasePort,
 };
+pub(crate) use preview_plugin_release::PreviewPluginReleaseUseCase;
 pub use record_plugin_verification::record_plugin_verification;
+pub use release_archive_cache::ReleaseArchiveCache;
 pub(crate) use reload_plugin::ReloadPluginUseCase;
 pub(crate) use remove_plugin::RemovePluginUseCase;
 pub use services::{PluginLoaderRegistry, PluginRegistry};
 pub(crate) use sync_plugins::SyncPluginsUseCase;
-pub use temp_file::download_to_temp_file;
+pub use temp_file::{DownloadedArchive, clean_plugin_archives, download_to_temp_file};
 pub(crate) use update_plugin::UpdatePluginUseCase;

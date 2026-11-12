@@ -11,3 +11,9 @@ pub struct ExtractedPlugin {
 pub enum PluginContent {
     Filesystem { temp_dir: TempDir },
 }
+
+pub struct ArchiveMetadata {
+    pub manifest: PluginManifest,
+    /// `capabilities.json` as written, already validated; `None` when absent.
+    pub capabilities: Option<String>,
+}

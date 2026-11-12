@@ -32,7 +32,7 @@ pub(crate) use allowed_path::{
     to_wasi_path,
 };
 pub(crate) use constants::PLUGIN_API_VERSION;
-pub use extracted_plugin::{ExtractedPlugin, PluginContent};
+pub use extracted_plugin::{ArchiveMetadata, ExtractedPlugin, PluginContent};
 pub use manifest_error::ManifestError;
 pub use plugin::{Plugin, PluginState, PluginStateReason};
 pub use plugin_call_error::PluginCallError;
@@ -51,8 +51,8 @@ pub use plugin_manifest::{
 };
 pub(crate) use plugin_path::PluginPath;
 pub use plugin_provider::{
-    PluginProviderInfo, PluginSourceType, ProviderPluginPreview, ProviderReleaseInfo,
-    ProviderUpdateInfo,
+    PluginProviderInfo, PluginReleasePreview, PluginSourceType, ProviderPluginPreview,
+    ProviderReleaseInfo, ProviderUpdateInfo,
 };
 pub use plugin_provider_error::PluginProviderError;
 pub use plugin_settings::PluginSettings;

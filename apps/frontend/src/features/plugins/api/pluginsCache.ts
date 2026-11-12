@@ -11,6 +11,9 @@ import { pluginKeys } from './pluginKeys';
 
 const PLUGIN_STALE_TIME = 60 * 1000;
 
+// Below the backend's archive cache TTL, so returning to an already viewed tag skips the IPC call.
+const PREVIEW_STALE_TIME = 5 * 60 * 1000;
+
 type PluginList = Awaited<ReturnType<typeof pluginsCommands.list>>;
 
 const pluginIdOf = (plugin: Plugin): PluginId => plugin.manifest.metadata.id;
@@ -129,10 +132,13 @@ export const pluginsQueries = {
     queryFn: pluginsCommands.getAvailableProviders,
     staleTime: Infinity,
   }),
-  preview: (provider: PluginSourceType, url: string) => ({
-    queryKey: pluginKeys.preview(provider, url),
-    queryFn: () => pluginsCommands.previewPluginFromProvider(provider, url),
+  // No tag: the newest stable release; the answer carries the tag it read.
+  preview: (provider: PluginSourceType, url: string, tag?: string | null) => ({
+    queryKey: pluginKeys.preview(provider, url, tag ?? null),
+    queryFn: () =>
+      pluginsCommands.previewPluginFromProvider(provider, url, tag ?? null),
     enabled: url.length > 0,
+    staleTime: PREVIEW_STALE_TIME,
   }),
 } as const;
 

@@ -9,11 +9,16 @@ use crate::features::plugins::{
     PluginVerificationStorage,
 };
 
-use super::ports::{InstallPluginFromProviderUseCasePort, ProviderRelease};
+use super::ports::InstallPluginFromProviderUseCasePort;
+use super::release_archive::download_release_archive;
 use super::release_installer::ReleaseInstaller;
-use super::{PluginProviderFactory, download_to_temp_file};
+use crate::shared::hash::HashAlgorithm;
+use crate::shared::hash::infra::hash_file_hex_async;
+use crate::shared::io::domain::IoError;
 
-/// Installs the release a user picked from a provider.
+use super::{PluginProviderFactory, ReleaseArchiveCache};
+
+/// Installs the release a user picked, provided its archive hashes to what the preview showed.
 ///
 /// The archive is unpacked before anything is written, and the files and the records about them
 /// (trust on first use, source, settings) go in as a whole: an install that fails at any step
@@ -27,6 +32,7 @@ pub(crate) struct InstallPluginFromProviderUseCase {
     installer: ReleaseInstaller,
     provider_factory: Arc<PluginProviderFactory>,
     sync_plugins_service: Arc<dyn PluginSyncService>,
+    archive_cache: Arc<ReleaseArchiveCache>,
 }
 
 impl InstallPluginFromProviderUseCase {
@@ -42,6 +48,7 @@ impl InstallPluginFromProviderUseCase {
         plugin_settings_storage: Arc<dyn PluginSettingsStorage>,
         provider_factory: Arc<PluginProviderFactory>,
         sync_plugins_service: Arc<dyn PluginSyncService>,
+        archive_cache: Arc<ReleaseArchiveCache>,
     ) -> Self {
         Self {
             plugin_extractor,
@@ -54,6 +61,7 @@ impl InstallPluginFromProviderUseCase {
             },
             provider_factory,
             sync_plugins_service,
+            archive_cache,
         }
     }
 
@@ -61,19 +69,34 @@ impl InstallPluginFromProviderUseCase {
         &self,
         source_type: PluginSourceType,
         identifier: &str,
-        release: ProviderRelease,
+        tag: &str,
+        expected_sha256: &str,
     ) -> Result<PluginId, PluginError> {
-        let provider = self
-            .provider_factory
-            .get_provider(&source_type)
-            .ok_or_else(|| PluginProviderError::ProviderFetchError {
-                source_type: source_type.clone(),
-                details: "No provider is registered for it".to_string(),
-            })?;
-        let identifier = provider.parse_identifier(identifier)?;
+        let downloaded = download_release_archive(
+            &self.provider_factory,
+            &self.archive_cache,
+            &source_type,
+            identifier,
+            Some(tag),
+        )
+        .await?;
+        let release = downloaded.release;
+        let identifier = downloaded.identifier;
 
-        let temp_file = download_to_temp_file(provider, &release.download_url).await?;
-        let extracted = self.plugin_extractor.extract(temp_file.path()).await?;
+        // Refused before the archive is read: it has to be the one that was previewed. The file is
+        // hashed again, not trusted to be what it was when it was downloaded: it may have sat in
+        // the cache since.
+        let sha256 = hash_file_hex_async(HashAlgorithm::Sha256, downloaded.archive.path())
+            .await
+            .map_err(|e| PluginError::Storage(IoError::IoError(e)))?;
+        if !sha256.eq_ignore_ascii_case(expected_sha256.trim()) {
+            return Err(PluginProviderError::ArchiveChangedSincePreview.into());
+        }
+
+        let extracted = self
+            .plugin_extractor
+            .extract(downloaded.archive.path())
+            .await?;
         let plugin_id = extracted.plugin_id.clone();
 
         let source = PluginSource::Remote {
@@ -99,8 +122,10 @@ impl InstallPluginFromProviderUseCasePort for InstallPluginFromProviderUseCase {
         &self,
         source_type: PluginSourceType,
         identifier: &str,
-        release: ProviderRelease,
+        tag: &str,
+        expected_sha256: &str,
     ) -> Result<PluginId, PluginError> {
-        self.execute(source_type, identifier, release).await
+        self.execute(source_type, identifier, tag, expected_sha256)
+            .await
     }
 }

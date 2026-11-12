@@ -6,15 +6,11 @@ use tokio::io::{AsyncWrite, AsyncWriteExt};
 use crate::shared::io::domain::IoError;
 
 use super::types::{GitHubPluginPreview, GitHubReleaseInfo, PluginUpdateInfo};
-use crate::features::plugins::{PluginManifestPreview, PluginProviderError, PluginSourceType};
+use crate::features::plugins::{PluginProviderError, PluginSourceType};
 
 /// Upper bound for a downloaded plugin archive. The body goes to disk as it arrives, so this stops
 /// an endless stream rather than limiting what a plugin may weigh.
-const MAX_ARCHIVE_BYTES: u64 = 256 * 1024 * 1024;
-
-/// Upper bound for a manifest or capabilities file. Both are small JSON documents; a release
-/// asset that claims to be one has no reason to be large.
-const MAX_METADATA_BYTES: u64 = 1024 * 1024;
+const MAX_ARCHIVE_BYTES: u64 = 64 * 1024 * 1024;
 
 /// Only GitHub itself may serve plugin assets; the URL can come from a user-pasted repo.
 fn is_allowed_asset_url(url: &str) -> bool {
@@ -57,17 +53,6 @@ async fn copy_capped<W: AsyncWrite + Unpin>(
     }
     dest.flush().await.map_err(IoError::from)?;
     Ok(written)
-}
-
-/// Reads a body that has to fit in memory (a manifest or a capabilities file).
-async fn read_capped(
-    response: reqwest::Response,
-    url: &str,
-    limit: u64,
-) -> Result<Vec<u8>, PluginProviderError> {
-    let mut body = Vec::new();
-    copy_capped(response, url, limit, &mut body).await?;
-    Ok(body)
 }
 
 /// Fetches plugin release information from GitHub repositories.
@@ -147,6 +132,7 @@ impl GitHubPluginFetcher {
         struct GitHubAsset {
             name: String,
             browser_download_url: String,
+            size: u64,
         }
 
         if !response.status().is_success() {
@@ -174,22 +160,18 @@ impl GitHubPluginFetcher {
         Ok(releases
             .into_iter()
             .map(|r| {
-                // Identify assets by file extension pattern
-                let manifest_asset = r.assets.iter().find(|a| a.name.ends_with(".manifest.json"));
-                let capabilities_asset = r
-                    .assets
-                    .iter()
-                    .find(|a| a.name.ends_with(".capabilities.json"));
-                let zip_asset = r.assets.iter().find(|a| {
+                // Installable only with exactly one .zip within the size limit: with several
+                // there is no telling which is the plugin. Anything else is listed without a
+                // download address.
+                let mut zips = r.assets.iter().filter(|a| {
                     std::path::Path::new(&a.name)
                         .extension()
                         .is_some_and(|ext| ext.eq_ignore_ascii_case("zip"))
                 });
-
-                // Derive plugin_id from manifest filename if present
-                let plugin_id = manifest_asset
-                    .and_then(|a| a.name.strip_suffix(".manifest.json"))
-                    .map(String::from);
+                let zip_asset = match (zips.next(), zips.next()) {
+                    (Some(only), None) if only.size <= MAX_ARCHIVE_BYTES => Some(only),
+                    _ => None,
+                };
 
                 let version = r.tag_name.trim_start_matches('v').to_string();
 
@@ -202,10 +184,6 @@ impl GitHubPluginFetcher {
                     zip_download_url: zip_asset
                         .map(|a| a.browser_download_url.clone())
                         .unwrap_or_default(),
-                    manifest_download_url: manifest_asset.map(|a| a.browser_download_url.clone()),
-                    capabilities_download_url: capabilities_asset
-                        .map(|a| a.browser_download_url.clone()),
-                    plugin_id,
                 }
             })
             .collect())
@@ -268,16 +246,6 @@ impl GitHubPluginFetcher {
         copy_capped(response, url, MAX_ARCHIVE_BYTES, dest).await
     }
 
-    /// Download a file from a URL and return the bytes, refusing a body over `limit`.
-    async fn download_asset_capped(
-        &self,
-        url: &str,
-        limit: u64,
-    ) -> Result<Vec<u8>, PluginProviderError> {
-        let response = self.asset_response(url).await?;
-        read_capped(response, url, limit).await
-    }
-
     /// Asks GitHub for an asset and checks the answer; the body is left to the caller.
     async fn asset_response(&self, url: &str) -> Result<reqwest::Response, PluginProviderError> {
         if !is_allowed_asset_url(url) {
@@ -313,82 +281,19 @@ impl GitHubPluginFetcher {
         Ok(response)
     }
 
-    /// Preview a plugin from a GitHub repo URL.
-    /// Fetches releases, manifest and capabilities from the latest release.
+    /// Lists releases only; their contents are read from the archive on preview.
     pub async fn preview_plugin(
         &self,
         owner: &str,
         repo: &str,
     ) -> Result<GitHubPluginPreview, PluginProviderError> {
-        let mut releases = self.fetch_releases(owner, repo, 20).await?;
-
-        // Try to get manifest + capabilities from the first release that has a manifest
-        let (manifest, capabilities) = self.fetch_manifest_and_capabilities(&releases).await;
-
-        // Propagate plugin_id to all releases if we found it
-        if let Some(ref manifest) = manifest {
-            for release in &mut releases {
-                if release.plugin_id.is_none() {
-                    release.plugin_id = Some(manifest.id.clone());
-                }
-            }
-        }
+        let releases = self.fetch_releases(owner, repo, 20).await?;
 
         Ok(GitHubPluginPreview {
             owner: owner.to_string(),
             repo: repo.to_string(),
-            manifest,
-            capabilities,
             releases,
         })
-    }
-
-    /// Try to fetch manifest and capabilities from releases' assets.
-    async fn fetch_manifest_and_capabilities(
-        &self,
-        releases: &[GitHubReleaseInfo],
-    ) -> (Option<PluginManifestPreview>, Option<String>) {
-        for release in releases {
-            // Fetch manifest
-            let manifest = if let Some(manifest_url) = &release.manifest_download_url {
-                match self
-                    .download_asset_capped(manifest_url, MAX_METADATA_BYTES)
-                    .await
-                {
-                    Ok(bytes) => serde_json::from_slice::<
-                        aether_core_plugin_api::v0::PluginManifestDto,
-                    >(&bytes)
-                    .ok()
-                    .map(|dto| PluginManifestPreview {
-                        id: dto.metadata.id,
-                        name: dto.metadata.name,
-                        version: dto.metadata.version,
-                        description: dto.metadata.description,
-                        authors: dto.metadata.authors,
-                        license: dto.metadata.license,
-                        api_version: Some(dto.api.version),
-                    }),
-                    Err(_) => continue,
-                }
-            } else {
-                continue;
-            };
-
-            // Fetch capabilities if URL is present
-            let capabilities = if let Some(cap_url) = &release.capabilities_download_url {
-                self.download_asset_capped(cap_url, MAX_METADATA_BYTES)
-                    .await
-                    .ok()
-                    .and_then(|bytes| String::from_utf8(bytes).ok())
-            } else {
-                None
-            };
-
-            if manifest.is_some() {
-                return (manifest, capabilities);
-            }
-        }
-        (None, None)
     }
 
     /// Parse a GitHub URL to extract owner and repo.
@@ -421,18 +326,6 @@ mod tests {
 
     fn response(body: &'static [u8]) -> reqwest::Response {
         reqwest::Response::from(http::Response::new(body))
-    }
-
-    #[tokio::test]
-    async fn should_read_a_body_within_the_limit() {
-        let body = read_capped(response(b"hello"), "u", 5).await.unwrap();
-        assert_eq!(body, b"hello");
-    }
-
-    #[tokio::test]
-    async fn should_reject_a_body_over_the_limit() {
-        let err = read_capped(response(b"hello!"), "u", 5).await.unwrap_err();
-        assert!(matches!(err, PluginProviderError::DownloadFailed { .. }));
     }
 
     /// A body in `chunks` with no `Content-Length`, the way a chunked answer arrives; an `Err`

@@ -1,6 +1,7 @@
 import {
   For,
   Match,
+  Show,
   splitProps,
   Switch,
   type Component,
@@ -29,6 +30,11 @@ export const PluginHostFunctionsSection: Component<
       <span class='text-sm text-muted-foreground'>
         {t('plugin.hostFunctionsDescription')}
       </span>
+      <Show when={local.hostFunctions?.includes('run_command')}>
+        <span class='text-sm text-warning'>
+          {t('plugin.hostFunctionsRunCommand')}
+        </span>
+      </Show>
       <Switch>
         <Match when={local.hostFunctions == null}>
           <span class='text-sm text-warning'>

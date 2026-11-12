@@ -109,6 +109,7 @@ pub enum PluginErrorDto {
     ProviderNoAssets {
         source_type: String,
     },
+    ArchiveChangedSincePreview,
     NoRemoteSource {
         plugin_id: String,
     },
@@ -263,6 +264,7 @@ impl From<&PluginProviderError> for PluginErrorDto {
             PluginProviderError::ProviderNoAssets { source_type } => Self::ProviderNoAssets {
                 source_type: source_type.to_string(),
             },
+            PluginProviderError::ArchiveChangedSincePreview => Self::ArchiveChangedSincePreview,
             PluginProviderError::NoRemoteSource { plugin_id } => Self::NoRemoteSource {
                 plugin_id: plugin_id.to_string(),
             },

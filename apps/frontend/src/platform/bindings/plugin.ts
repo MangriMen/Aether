@@ -49,8 +49,8 @@ export const commands = {
 	checkForUpdates: (id: string) => __TAURI_INVOKE<PluginUpdateInfoDto>("plugin:plugin|check_for_updates", { id }),
 	updatePlugin: (id: string, targetTag: string | null, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:plugin|update_plugin", { id, targetTag, requestId }),
 	getAvailableProviders: () => __TAURI_INVOKE<PluginProviderDto[]>("plugin:plugin|get_available_providers"),
-	previewPluginFromProvider: (sourceType: PluginSourceTypeDto, identifier: string) => __TAURI_INVOKE<ProviderPluginPreviewDto>("plugin:plugin|preview_plugin_from_provider", { sourceType, identifier }),
-	installPluginFromProvider: (sourceType: PluginSourceTypeDto, identifier: string, downloadUrl: string, tagName: string, version: string, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<string>("plugin:plugin|install_plugin_from_provider", { sourceType, identifier, downloadUrl, tagName, version, requestId }),
+	previewPluginFromProvider: (sourceType: PluginSourceTypeDto, identifier: string, tag: string | null) => __TAURI_INVOKE<ProviderPluginPreviewDto>("plugin:plugin|preview_plugin_from_provider", { sourceType, identifier, tag }),
+	installPluginFromProvider: (sourceType: PluginSourceTypeDto, identifier: string, tagName: string, archiveSha256: string, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<string>("plugin:plugin|install_plugin_from_provider", { sourceType, identifier, tagName, archiveSha256, requestId }),
 };
 
 /** Events */
@@ -473,7 +473,7 @@ export type PluginErrorDto = { code: "NOT_FOUND"; payload: {
 	details: string,
 } } | { code: "PROVIDER_NO_ASSETS"; payload: {
 	source_type: string,
-} } | { code: "NO_REMOTE_SOURCE"; payload: {
+} } | { code: "ARCHIVE_CHANGED_SINCE_PREVIEW" } | { code: "NO_REMOTE_SOURCE"; payload: {
 	plugin_id: string,
 } } | { code: "DOWNLOAD_FAILED"; payload: {
 	url: string,
@@ -518,6 +518,8 @@ export type PluginManifestPreviewDto = {
 	authors: string[],
 	license: string | null,
 	api_version: string | null,
+	allowed_hosts: string[],
+	host_functions: string[] | null,
 };
 
 export type PluginMetadataDto = {
@@ -624,9 +626,11 @@ export type ProviderHandlersDto = {
 export type ProviderPluginPreviewDto = {
 	owner: string,
 	repo: string,
-	manifest: PluginManifestPreviewDto | null,
-	capabilities: PluginCapabilitiesDto | null,
 	releases: ProviderReleaseInfoDto[],
+	tag: string,
+	manifest: PluginManifestPreviewDto,
+	capabilities: PluginCapabilitiesDto | null,
+	archive_sha256: string,
 };
 
 export type ProviderReleaseInfoDto = {

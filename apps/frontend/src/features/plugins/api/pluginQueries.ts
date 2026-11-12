@@ -366,7 +366,8 @@ export const usePluginProviders = () => useQuery(pluginsQueries.providers);
 export const usePluginPreview = (
   provider: PluginSourceType,
   url: Accessor<string>,
-) => useQuery(() => pluginsQueries.preview(provider, url()));
+  tag: Accessor<string | null> = () => null,
+) => useQuery(() => pluginsQueries.preview(provider, url(), tag()));
 
 export const useUpdatePlugin = () => {
   const [{ t }] = useTranslation();
@@ -406,22 +407,19 @@ export const useInstallPluginFromProvider = () => {
     mutationFn: ({
       sourceType,
       identifier,
-      downloadUrl,
       tagName,
-      version,
+      archiveSha256,
     }: {
       sourceType: PluginSourceType;
       identifier: string;
-      downloadUrl: string;
       tagName: string;
-      version: string;
+      archiveSha256: string;
     }) =>
       pluginsCommands.installPluginFromProvider(
         sourceType,
         identifier,
-        downloadUrl,
         tagName,
-        version,
+        archiveSha256,
       ),
     onSuccess: () => pluginsCache.invalidate.all(queryClient),
     onError: (err) => {

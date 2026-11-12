@@ -17,7 +17,8 @@ use crate::features::{
         InstallPluginFromProviderUseCase, PluginError, PluginProvider, PluginProviderError,
         PluginProviderFactory, PluginRegistry, PluginSettings, PluginSettingsStorage, PluginSource,
         PluginSourceStorage, PluginSourceType, PluginSyncService, PluginVerification,
-        PluginVerificationStorage, ProviderPluginPreview, ProviderRelease, ProviderUpdateInfo,
+        PluginVerificationStorage, PreviewPluginReleaseUseCase, ProviderPluginPreview,
+        ProviderReleaseInfo, ProviderUpdateInfo, ReleaseArchiveCache,
         infra::{
             FsPluginSettingsStorage, FsPluginSourceStorage, FsPluginStorage,
             FsPluginVerificationStorage, ZipPluginExtractor,
@@ -25,6 +26,7 @@ use crate::features::{
     },
     settings::LocationInfo,
 };
+use crate::shared::hash::infra::sha256_hex;
 
 const PLUGIN_ID: &str = "test-plugin";
 
@@ -63,12 +65,33 @@ fn plugin_zip(wasm: &[u8]) -> Vec<u8> {
 /// A GitHub-like source whose download is `archive`.
 struct Download {
     archive: Vec<u8>,
+    downloads: Arc<AtomicUsize>,
+}
+
+impl Download {
+    fn new(archive: Vec<u8>) -> Self {
+        Self {
+            archive,
+            downloads: Arc::default(),
+        }
+    }
 }
 
 #[async_trait]
 impl PluginProvider for Download {
     async fn fetch_preview(&self, _: &str) -> Result<ProviderPluginPreview, PluginProviderError> {
-        unimplemented!("the install does not preview")
+        Ok(ProviderPluginPreview {
+            owner: "owner".into(),
+            repo: "repo".into(),
+            releases: vec![ProviderReleaseInfo {
+                tag_name: "v2".into(),
+                version: "0.2.0".into(),
+                is_prerelease: false,
+                published_at: "2026-01-01T00:00:00Z".into(),
+                html_url: "https://example.com/v2".into(),
+                download_url: "https://example.com/v2.zip".into(),
+            }],
+        })
     }
 
     async fn fetch_latest_version(
@@ -87,6 +110,7 @@ impl PluginProvider for Download {
     ) -> Result<u64, PluginProviderError> {
         use tokio::io::AsyncWriteExt;
 
+        self.downloads.fetch_add(1, Ordering::SeqCst);
         dest.write_all(&self.archive).await.unwrap();
         Ok(self.archive.len() as u64)
     }
@@ -188,6 +212,56 @@ impl Fixture {
         source: Arc<dyn PluginSourceStorage>,
         verification: Arc<dyn PluginVerificationStorage>,
     ) -> Result<PluginId, PluginError> {
+        let sha256 = sha256_hex(&archive);
+        self.install_download(Download::new(archive), &sha256, source, verification)
+            .await
+    }
+
+    /// An install of `archive` that expects the previewed archive to hash to `expected_sha256`.
+    async fn install_expecting(
+        &self,
+        archive: Vec<u8>,
+        expected_sha256: &str,
+    ) -> Result<PluginId, PluginError> {
+        self.install_download(
+            Download::new(archive),
+            expected_sha256,
+            self.source.clone(),
+            self.verification.clone(),
+        )
+        .await
+    }
+
+    async fn install_download(
+        &self,
+        download: Download,
+        expected_sha256: &str,
+        source: Arc<dyn PluginSourceStorage>,
+        verification: Arc<dyn PluginVerificationStorage>,
+    ) -> Result<PluginId, PluginError> {
+        let factory = Arc::new(PluginProviderFactory::new(vec![Box::new(download)]));
+        self.use_case(
+            source,
+            verification,
+            factory,
+            Arc::new(ReleaseArchiveCache::new()),
+        )
+        .execute(
+            PluginSourceType::GitHub,
+            "owner/repo",
+            "v2",
+            expected_sha256,
+        )
+        .await
+    }
+
+    fn use_case(
+        &self,
+        source: Arc<dyn PluginSourceStorage>,
+        verification: Arc<dyn PluginVerificationStorage>,
+        factory: Arc<PluginProviderFactory>,
+        cache: Arc<ReleaseArchiveCache>,
+    ) -> InstallPluginFromProviderUseCase {
         InstallPluginFromProviderUseCase::new(
             self.registry.clone(),
             Arc::new(ZipPluginExtractor::default()),
@@ -199,21 +273,10 @@ impl Fixture {
             source,
             verification,
             self.settings.clone(),
-            Arc::new(PluginProviderFactory::new(vec![Box::new(Download {
-                archive,
-            })])),
+            factory,
             self.sync.clone(),
+            cache,
         )
-        .execute(
-            PluginSourceType::GitHub,
-            "owner/repo",
-            ProviderRelease {
-                download_url: "https://example.com/v2.zip".into(),
-                tag_name: "v2".into(),
-                version: "0.2.0".into(),
-            },
-        )
-        .await
     }
 
     fn plugin_dir(&self) -> std::path::PathBuf {
@@ -308,6 +371,169 @@ async fn should_write_nothing_when_the_archive_cannot_be_read() {
     assert_eq!(fixture.sync.0.load(Ordering::SeqCst), 0);
 }
 
+#[tokio::test]
+async fn should_install_when_the_archive_hashes_to_what_was_previewed() {
+    let fixture = Fixture::empty();
+    let archive = plugin_zip(b"\0asm v2");
+    // The case of the hex does not matter.
+    let expected = sha256_hex(&archive).to_uppercase();
+
+    let result = fixture.install_expecting(archive, &expected).await;
+
+    assert!(result.is_ok(), "{result:?}");
+}
+
+#[tokio::test]
+async fn should_refuse_and_write_nothing_when_the_archive_hashes_to_something_else() {
+    let fixture = Fixture::empty();
+
+    let result = fixture
+        .install_expecting(plugin_zip(b"\0asm v2"), &sha256_hex(b"another archive"))
+        .await;
+
+    assert!(matches!(
+        result,
+        Err(PluginError::Provider(
+            PluginProviderError::ArchiveChangedSincePreview
+        ))
+    ));
+    assert_eq!(
+        fixture.plugins_dir_entries(),
+        Vec::<std::ffi::OsString>::new()
+    );
+    assert!(fixture.source.get(&plugin_id()).await.unwrap().is_none());
+    assert!(
+        fixture
+            .verification
+            .get(&plugin_id())
+            .await
+            .unwrap()
+            .is_none()
+    );
+    assert_eq!(fixture.sync.0.load(Ordering::SeqCst), 0);
+}
+
+/// Previews `v2` and then installs it with `expected_sha256`, the way the app does, through one
+/// cache. Gives the result of the install and how many times the provider was asked to download.
+async fn preview_then_install(
+    fixture: &Fixture,
+    archive: Vec<u8>,
+    expected_sha256: Option<&str>,
+) -> (Result<PluginId, PluginError>, usize) {
+    let sha256 = sha256_hex(&archive);
+    let download = Download::new(archive);
+    let downloads = download.downloads.clone();
+    let factory = Arc::new(PluginProviderFactory::new(vec![Box::new(download)]));
+    let cache = Arc::new(ReleaseArchiveCache::new());
+
+    PreviewPluginReleaseUseCase::new(
+        Arc::new(ZipPluginExtractor::default()),
+        factory.clone(),
+        cache.clone(),
+    )
+    .execute(PluginSourceType::GitHub, "owner/repo", Some("v2".into()))
+    .await
+    .unwrap();
+    let result = fixture
+        .use_case(
+            fixture.source.clone(),
+            fixture.verification.clone(),
+            factory,
+            cache,
+        )
+        .execute(
+            PluginSourceType::GitHub,
+            "owner/repo",
+            "v2",
+            expected_sha256.unwrap_or(&sha256),
+        )
+        .await;
+    (result, downloads.load(Ordering::SeqCst))
+}
+
+#[tokio::test]
+async fn should_download_once_when_a_release_is_installed_after_its_preview() {
+    let fixture = Fixture::empty();
+
+    let (result, downloads) = preview_then_install(&fixture, plugin_zip(b"\0asm v2"), None).await;
+
+    assert!(result.is_ok(), "{result:?}");
+    assert_eq!(downloads, 1);
+}
+
+#[tokio::test]
+async fn should_refuse_an_archive_from_the_cache_that_hashes_to_something_else() {
+    let fixture = Fixture::empty();
+
+    let (result, downloads) = preview_then_install(
+        &fixture,
+        plugin_zip(b"\0asm v2"),
+        Some(&sha256_hex(b"another archive")),
+    )
+    .await;
+
+    assert!(matches!(
+        result,
+        Err(PluginError::Provider(
+            PluginProviderError::ArchiveChangedSincePreview
+        ))
+    ));
+    assert_eq!(downloads, 1);
+    assert_eq!(
+        fixture.plugins_dir_entries(),
+        Vec::<std::ffi::OsString>::new()
+    );
+}
+
+#[tokio::test]
+async fn should_refuse_an_archive_that_was_replaced_in_the_cache_after_the_preview() {
+    let fixture = Fixture::empty();
+    let archive = plugin_zip(b" asm v2");
+    let sha256 = sha256_hex(&archive);
+    let download = Download::new(archive);
+    let factory = Arc::new(PluginProviderFactory::new(vec![Box::new(download)]));
+    let cache = Arc::new(ReleaseArchiveCache::new());
+    PreviewPluginReleaseUseCase::new(
+        Arc::new(ZipPluginExtractor::default()),
+        factory.clone(),
+        cache.clone(),
+    )
+    .execute(PluginSourceType::GitHub, "owner/repo", Some("v2".into()))
+    .await
+    .unwrap();
+
+    // The cached file is swapped for another archive that is a valid one.
+    let cached = cache
+        .get_or_download("https://example.com/v2.zip", || async {
+            unreachable!("the archive is cached")
+        })
+        .await
+        .unwrap();
+    std::fs::write(cached.path(), plugin_zip(b" asm swapped")).unwrap();
+
+    let result = fixture
+        .use_case(
+            fixture.source.clone(),
+            fixture.verification.clone(),
+            factory,
+            cache,
+        )
+        .execute(PluginSourceType::GitHub, "owner/repo", "v2", &sha256)
+        .await;
+
+    assert!(matches!(
+        result,
+        Err(PluginError::Provider(
+            PluginProviderError::ArchiveChangedSincePreview
+        ))
+    ));
+    assert_eq!(
+        fixture.plugins_dir_entries(),
+        Vec::<std::ffi::OsString>::new()
+    );
+    assert!(fixture.source.get(&plugin_id()).await.unwrap().is_none());
+}
+
 /// Version `v1` installed from GitHub, with settings the user changed.
 async fn installed(fixture: &Fixture) {
     fixture.install(plugin_zip(b"\0asm v1")).await.unwrap();
@@ -396,9 +622,7 @@ async fn should_replace_the_files_and_keep_the_settings_when_the_plugin_is_insta
 
 #[test]
 fn should_list_each_provider_with_the_name_it_gives_itself() {
-    let factory = PluginProviderFactory::new(vec![Box::new(Download {
-        archive: Vec::new(),
-    })]);
+    let factory = PluginProviderFactory::new(vec![Box::new(Download::new(Vec::new()))]);
 
     assert_eq!(
         factory.list_providers(),

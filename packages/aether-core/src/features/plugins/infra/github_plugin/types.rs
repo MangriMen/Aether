@@ -1,12 +1,8 @@
-use crate::features::plugins::PluginManifestPreview;
-
 /// Preview of a GitHub plugin before installation.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct GitHubPluginPreview {
     pub owner: String,
     pub repo: String,
-    pub manifest: Option<PluginManifestPreview>,
-    pub capabilities: Option<String>,
     pub releases: Vec<GitHubReleaseInfo>,
 }
 
@@ -20,9 +16,6 @@ pub struct GitHubReleaseInfo {
     pub published_at: String,
     pub html_url: String,
     pub zip_download_url: String,
-    pub manifest_download_url: Option<String>,
-    pub capabilities_download_url: Option<String>,
-    pub plugin_id: Option<String>,
 }
 
 /// DTO for plugin update check results from GitHub.

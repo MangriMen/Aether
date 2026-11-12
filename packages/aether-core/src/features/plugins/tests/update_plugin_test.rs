@@ -91,8 +91,6 @@ impl PluginProvider for OneRelease {
         Ok(ProviderPluginPreview {
             owner: "owner".into(),
             repo: "repo".into(),
-            manifest: None,
-            capabilities: None,
             releases: vec![ProviderReleaseInfo {
                 tag_name: "v2".into(),
                 version: "0.2.0".into(),

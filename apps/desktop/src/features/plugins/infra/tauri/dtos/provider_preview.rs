@@ -9,13 +9,15 @@ use super::{PluginCapabilitiesDto, PluginManifestPreviewDto};
 pub struct ProviderPluginPreviewDto {
     pub owner: String,
     pub repo: String,
-    pub manifest: Option<PluginManifestPreviewDto>,
-    pub capabilities: Option<PluginCapabilitiesDto>,
     pub releases: Vec<ProviderReleaseInfoDto>,
+    pub tag: String,
+    pub manifest: PluginManifestPreviewDto,
+    pub capabilities: Option<PluginCapabilitiesDto>,
+    pub archive_sha256: String,
 }
 
-impl From<aether_core::features::plugins::ProviderPluginPreview> for ProviderPluginPreviewDto {
-    fn from(value: aether_core::features::plugins::ProviderPluginPreview) -> Self {
+impl From<aether_core::features::plugins::PluginReleasePreview> for ProviderPluginPreviewDto {
+    fn from(value: aether_core::features::plugins::PluginReleasePreview) -> Self {
         // Read the raw file the way loading the plugin does, so the preview shows what the
         // launcher would register (handlers, flags derived from them, platform).
         let capabilities = value
@@ -34,16 +36,10 @@ impl From<aether_core::features::plugins::ProviderPluginPreview> for ProviderPlu
         Self {
             owner: value.owner,
             repo: value.repo,
-            manifest: value.manifest.map(|m| PluginManifestPreviewDto {
-                id: m.id,
-                name: m.name,
-                version: m.version,
-                description: m.description,
-                authors: m.authors,
-                license: m.license,
-                api_version: m.api_version,
-            }),
+            tag: value.tag,
+            manifest: PluginManifestPreviewDto::from(value.manifest),
             capabilities,
+            archive_sha256: value.archive_sha256,
             releases: value
                 .releases
                 .into_iter()

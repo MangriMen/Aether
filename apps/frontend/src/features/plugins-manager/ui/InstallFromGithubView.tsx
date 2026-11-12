@@ -1,4 +1,5 @@
 import {
+  batch,
   createEffect,
   createMemo,
   createSignal,
@@ -18,7 +19,6 @@ import { debounce } from '@/shared/utils';
 import type { ProviderPluginPreview } from '../model/pluginProvider';
 import type { ReleaseOption } from './PluginPreviewCard';
 
-import { resolveReleaseTag } from '../model/resolveReleaseTag';
 import { PluginPreviewCard } from './PluginPreviewCard';
 
 export type InstallFromGithubViewProps = {
@@ -38,10 +38,24 @@ export const InstallFromGithubView: Component<InstallFromGithubViewProps> = (
   const [url, setUrl] = createSignal('');
   const [debouncedUrl, setDebouncedUrl] = createSignal('');
 
-  const debounceUrl = debounce(
-    (value: string) => setDebouncedUrl(value),
-    DEBOUNCE_MS,
-  );
+  // null until the user picks a tag: the first preview is requested without one.
+  const [requestedTag, setRequestedTag] = createSignal<string | null>(null);
+
+  // Kept across tag loads so the release picker does not vanish while another tag loads.
+  const [releases, setReleases] = createSignal<
+    ProviderPluginPreview['releases']
+  >([]);
+
+  // Reset tag and releases together with the URL, so a new URL is never queried with the old tag.
+  const applyUrl = (value: string) => {
+    batch(() => {
+      setRequestedTag(null);
+      setReleases([]);
+      setDebouncedUrl(value);
+    });
+  };
+
+  const debounceUrl = debounce(applyUrl, DEBOUNCE_MS);
 
   const handleUrlChange = (value: string) => {
     setUrl(value);
@@ -49,73 +63,59 @@ export const InstallFromGithubView: Component<InstallFromGithubViewProps> = (
   };
 
   const handleUrlClear = () => {
+    debounceUrl.clear();
     setUrl('');
-    setDebouncedUrl('');
+    applyUrl('');
   };
 
-  const previewQuery = usePluginPreview(PROVIDER, debouncedUrl);
+  const previewQuery = usePluginPreview(PROVIDER, debouncedUrl, requestedTag);
   const installMutation = useInstallPluginFromProvider();
 
-  const previewData = createMemo<ProviderPluginPreview | null | undefined>(
-    () => previewQuery.data,
-  );
-
-  const [pickedTag, setPickedTag] = createSignal('');
-
-  // A pick belongs to the repository it was made in; a new URL or release list invalidates it.
-  let previousUrl: string | undefined;
-
   createEffect(() => {
-    const url = debouncedUrl();
-    const releases = previewData()?.releases ?? [];
-    const urlChanged = url !== previousUrl;
+    const data = previewQuery.data;
 
-    previousUrl = url;
-
-    if (
-      urlChanged ||
-      !releases.some((release) => release.tag_name === pickedTag())
-    ) {
-      setPickedTag('');
+    if (data) {
+      setReleases(data.releases);
     }
   });
 
-  const selectedTag = createMemo(() =>
-    resolveReleaseTag(previewData()?.releases ?? [], pickedTag()),
+  const selectedTag = createMemo(
+    () => requestedTag() ?? previewQuery.data?.tag ?? '',
   );
 
-  const releaseOptions = createMemo<ReleaseOption[]>(() => {
-    const p = previewData();
+  const isUrlPending = () => url() !== debouncedUrl();
 
-    if (!p) {
-      return [];
-    }
+  // Installable only when the preview matches the selected tag and the URL shown.
+  const readyPreview = createMemo(() => {
+    const data = previewQuery.data;
 
-    return p.releases.map((r) => ({
+    return data &&
+      data.tag === selectedTag() &&
+      !previewQuery.isFetching &&
+      !isUrlPending()
+      ? data
+      : undefined;
+  });
+
+  const releaseOptions = createMemo<ReleaseOption[]>(() =>
+    releases().map((r) => ({
       value: r.tag_name,
       label: r.is_prerelease
         ? `${r.tag_name} (${t('plugins.prerelease')})`
         : r.tag_name,
-    }));
-  });
+    })),
+  );
 
   const handleReleaseChange = (option: ReleaseOption | null) => {
     if (option) {
-      setPickedTag(option.value);
+      setRequestedTag(option.value);
     }
   };
 
   const handleInstall = async () => {
-    const p = previewData();
-    const tag = selectedTag();
+    const p = readyPreview();
 
-    if (!p || !tag) {
-      return;
-    }
-
-    const release = p.releases.find((r) => r.tag_name === tag);
-
-    if (!release) {
+    if (!p) {
       return;
     }
 
@@ -123,9 +123,8 @@ export const InstallFromGithubView: Component<InstallFromGithubViewProps> = (
       await installMutation.mutateAsync({
         sourceType: PROVIDER,
         identifier: debouncedUrl(),
-        downloadUrl: release.download_url,
-        tagName: release.tag_name,
-        version: release.version,
+        tagName: p.tag,
+        archiveSha256: p.archive_sha256,
       });
       props.onInstalled?.();
     } catch {
@@ -134,7 +133,7 @@ export const InstallFromGithubView: Component<InstallFromGithubViewProps> = (
   };
 
   const authorsStr = createMemo(() => {
-    const authors = previewData()?.manifest?.authors;
+    const authors = readyPreview()?.manifest.authors;
     return authors ? authors.join(', ') : undefined;
   });
 
@@ -152,7 +151,7 @@ export const InstallFromGithubView: Component<InstallFromGithubViewProps> = (
       />
 
       {/* Loading indicator */}
-      <Show when={previewQuery.isLoading}>
+      <Show when={previewQuery.isLoading && releases().length === 0}>
         <p class='text-sm text-muted-foreground'>{t('common.loading')}</p>
       </Show>
 
@@ -166,19 +165,18 @@ export const InstallFromGithubView: Component<InstallFromGithubViewProps> = (
       </Show>
 
       {/* Preview card */}
-      <Show when={previewData()}>
-        {(p) => (
-          <PluginPreviewCard
-            preview={p()}
-            releaseOptions={releaseOptions()}
-            selectedTag={selectedTag()}
-            onReleaseChange={handleReleaseChange}
-            onInstall={handleInstall}
-            onClear={handleUrlClear}
-            authors={authorsStr()}
-            isInstalling={installMutation.isPending}
-          />
-        )}
+      <Show when={releases().length > 0 || previewQuery.data}>
+        <PluginPreviewCard
+          preview={readyPreview()}
+          isPreviewLoading={previewQuery.isFetching || isUrlPending()}
+          releaseOptions={releaseOptions()}
+          selectedTag={selectedTag()}
+          onReleaseChange={handleReleaseChange}
+          onInstall={handleInstall}
+          onClear={handleUrlClear}
+          authors={authorsStr()}
+          isInstalling={installMutation.isPending}
+        />
       </Show>
     </div>
   );

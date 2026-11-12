@@ -68,9 +68,10 @@ use crate::features::{
         ListSkippedPluginDirsUseCasePort, LoadConfigType, PluginDisableService, PluginExtractor,
         PluginLoader, PluginLoaderRegistry, PluginProviderFactory, PluginRegistry,
         PluginSettingsStorage, PluginSourceStorage, PluginStorage, PluginSyncService,
-        PluginVerificationStorage, PluginsFeature, ReloadPluginUseCase, ReloadPluginUseCasePort,
-        RemovePluginUseCase, RemovePluginUseCasePort, SyncPluginsUseCase, UpdatePluginUseCase,
-        UpdatePluginUseCasePort,
+        PluginVerificationStorage, PluginsFeature, PreviewPluginReleaseUseCase,
+        PreviewPluginReleaseUseCasePort, ReleaseArchiveCache, ReloadPluginUseCase,
+        ReloadPluginUseCasePort, RemovePluginUseCase, RemovePluginUseCasePort, SyncPluginsUseCase,
+        UpdatePluginUseCase, UpdatePluginUseCasePort,
     },
     process::{
         KillProcessUseCase, KillProcessUseCasePort, ListProcessMetadataUseCase,
@@ -117,6 +118,7 @@ struct UseCaseCache {
     install_instance_uc: OnceLock<Arc<dyn InstanceInstallService>>,
     disable_plugin_uc: OnceLock<Arc<dyn PluginDisableService>>,
     sync_plugins_uc: OnceLock<Arc<dyn PluginSyncService>>,
+    release_archive_cache: Arc<ReleaseArchiveCache>,
     health_service: OnceLock<Arc<dyn MinecraftHealthService>>,
     launch_command_service: OnceLock<Arc<dyn MinecraftLaunchCommandService>>,
     launch_instance_uc: OnceLock<Arc<dyn InstanceLaunchService>>,
@@ -138,6 +140,7 @@ impl UseCaseCache {
             install_instance_uc: OnceLock::new(),
             disable_plugin_uc: OnceLock::new(),
             sync_plugins_uc: OnceLock::new(),
+            release_archive_cache: Arc::new(ReleaseArchiveCache::new()),
             health_service: OnceLock::new(),
             launch_command_service: OnceLock::new(),
             launch_instance_uc: OnceLock::new(),
@@ -236,6 +239,8 @@ pub struct AetherContainer {
 impl AetherContainer {
     pub fn new(params: AetherContainerParams) -> Arc<Self> {
         params.sandbox_limits.assert_consistent();
+        // Remove archives a previous run left behind.
+        crate::features::plugins::clean_plugin_archives();
 
         let content_metadata = Arc::new(ContentMetadataService::new(
             params.storage.content_metadata_cache.clone(),
@@ -1066,6 +1071,14 @@ impl PluginsFeature for AetherContainer {
             self.plugins().settings_storage.clone(),
             self.plugins().provider_factory.clone(),
             self.sync_plugins_service(),
+            self.release_archive_cache(),
+        ))
+    }
+    fn preview_plugin_release_use_case(&self) -> Arc<dyn PreviewPluginReleaseUseCasePort> {
+        Arc::new(PreviewPluginReleaseUseCase::new(
+            self.plugins().extractor.clone(),
+            self.plugins().provider_factory.clone(),
+            self.release_archive_cache(),
         ))
     }
     fn update_plugin_use_case(&self) -> Arc<dyn UpdatePluginUseCasePort> {
@@ -1088,6 +1101,9 @@ impl PluginsFeature for AetherContainer {
     }
     fn plugin_provider_factory(&self) -> Arc<PluginProviderFactory> {
         self.plugins().provider_factory.clone()
+    }
+    fn release_archive_cache(&self) -> Arc<ReleaseArchiveCache> {
+        self.cache.release_archive_cache.clone()
     }
     fn plugin_source_storage(&self) -> Arc<dyn PluginSourceStorage> {
         self.plugins().source_storage.clone()

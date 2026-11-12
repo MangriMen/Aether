@@ -56,8 +56,6 @@ impl PluginProvider for GithubProvider {
         Ok(ProviderPluginPreview {
             owner: preview.owner,
             repo: preview.repo,
-            manifest: preview.manifest,
-            capabilities: preview.capabilities,
             releases: preview
                 .releases
                 .into_iter()

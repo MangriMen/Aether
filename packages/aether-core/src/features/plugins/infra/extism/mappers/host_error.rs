@@ -525,6 +525,10 @@ impl From<&PluginProviderError> for PluginErrorDto {
             PluginProviderError::ProviderNoAssets { source_type } => Self::ProviderNoAssets {
                 source_type: source_type.into(),
             },
+            // ABI has no matching kind; a new one would not decode in plugins built before it.
+            PluginProviderError::ArchiveChangedSincePreview => Self::InvalidManifestFormat {
+                error: value.to_string(),
+            },
             PluginProviderError::NoRemoteSource { plugin_id } => Self::NoRemoteSource {
                 plugin_id: plugin_id.to_string(),
             },

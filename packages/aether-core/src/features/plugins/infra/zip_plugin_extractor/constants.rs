@@ -2,6 +2,7 @@
 pub struct ZipPluginExtractorConstants {
     pub manifest_filename: &'static str,
     pub capabilities_filename: &'static str,
+    pub max_metadata_bytes: u64,
     /// Upper bound on the number of entries in a plugin archive (zip-bomb guard).
     pub max_entries: usize,
     /// Upper bound on the total uncompressed size of a plugin archive (zip-bomb guard).
@@ -13,6 +14,7 @@ impl Default for ZipPluginExtractorConstants {
         Self {
             manifest_filename: "manifest.json",
             capabilities_filename: "capabilities.json",
+            max_metadata_bytes: 1024 * 1024,
             max_entries: 10_000,
             max_total_uncompressed_bytes: 512 * 1024 * 1024,
         }

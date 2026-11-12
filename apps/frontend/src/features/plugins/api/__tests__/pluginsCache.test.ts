@@ -200,7 +200,28 @@ describe('plugin preview query', () => {
     expect(commands.previewPluginFromProvider).toHaveBeenCalledWith(
       'git_hub',
       'owner/repo',
+      null,
     );
+  });
+
+  it('should_ask_for_the_tag_and_keep_each_tag_apart_when_one_is_given', async () => {
+    commands.previewPluginFromProvider
+      .mockResolvedValueOnce({ tag: 'v1' })
+      .mockResolvedValueOnce({ tag: 'v2' });
+
+    await queryClient.fetchQuery(pluginsQueries.preview('git_hub', 'x', 'v1'));
+    await queryClient.fetchQuery(pluginsQueries.preview('git_hub', 'x', 'v2'));
+
+    expect(commands.previewPluginFromProvider).toHaveBeenLastCalledWith(
+      'git_hub',
+      'x',
+      'v2',
+    );
+    expect(
+      queryClient.getQueryData(
+        pluginsQueries.preview('git_hub', 'x', 'v1').queryKey,
+      ),
+    ).toEqual({ tag: 'v1' });
   });
 
   it('should_keep_the_preview_of_each_provider_apart_when_the_url_is_the_same', async () => {

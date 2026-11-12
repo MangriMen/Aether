@@ -8,8 +8,9 @@ use crate::features::instance::PluginId;
 use crate::features::plugins::app::{EditPluginSettings, FolderAccess, HostAccess, PluginDto};
 use crate::features::plugins::domain::PluginHandle;
 use crate::features::plugins::{
-    ExtractedPlugin, Plugin, PluginError, PluginManifest, PluginProviderError, PluginSettings,
-    PluginSource, PluginSourceType, PluginVerification, ProviderUpdateInfo, SkippedPluginDir,
+    ArchiveMetadata, ExtractedPlugin, Plugin, PluginError, PluginManifest, PluginProviderError,
+    PluginReleasePreview, PluginSettings, PluginSource, PluginSourceType, PluginVerification,
+    ProviderUpdateInfo, SkippedPluginDir,
 };
 
 #[async_trait]
@@ -93,6 +94,10 @@ pub trait PluginSettingsStorage: Send + Sync {
 #[async_trait]
 pub trait PluginExtractor: Send + Sync {
     async fn extract(&self, file_path: &Path) -> Result<ExtractedPlugin, PluginProviderError>;
+
+    /// Reads manifest and capabilities without unpacking; applies the same checks as `extract`.
+    async fn read_metadata(&self, file_path: &Path)
+    -> Result<ArchiveMetadata, PluginProviderError>;
 }
 
 #[async_trait]
@@ -210,20 +215,27 @@ pub trait UpdatePluginUseCasePort: Send + Sync {
     ) -> Result<(), PluginError>;
 }
 
-/// The release a user picked from a provider's preview.
-pub struct ProviderRelease {
-    pub download_url: String,
-    pub tag_name: String,
-    pub version: String,
-}
-
 #[async_trait]
 pub trait InstallPluginFromProviderUseCasePort: Send + Sync {
+    /// Fails with `ArchiveChangedSincePreview` if the archive does not hash to `expected_sha256`
+    /// (hex, case-insensitive).
     /// Returns the id of the plugin the archive holds.
     async fn execute(
         &self,
         source_type: PluginSourceType,
         identifier: &str,
-        release: ProviderRelease,
+        tag: &str,
+        expected_sha256: &str,
     ) -> Result<PluginId, PluginError>;
+}
+
+#[async_trait]
+pub trait PreviewPluginReleaseUseCasePort: Send + Sync {
+    /// With no `tag`, the first stable release is used.
+    async fn execute(
+        &self,
+        source_type: PluginSourceType,
+        identifier: &str,
+        tag: Option<String>,
+    ) -> Result<PluginReleasePreview, PluginError>;
 }
