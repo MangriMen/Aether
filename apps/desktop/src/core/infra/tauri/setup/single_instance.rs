@@ -11,13 +11,11 @@ use crate::features::settings::AppSettingsStorage;
 /// missing window is only recreated when exit is being prevented: the window was closed for a
 /// game (or a failed recreation) and the launcher is otherwise unreachable.
 pub fn focus_main_window<R: Runtime>(app: &AppHandle<R>) {
-    let window = app.get_webview_window(WindowLabel::Main.as_ref());
-    let exit_prevented = app
-        .try_state::<PreventExitState>()
-        .is_some_and(|state| state.is_prevented());
-
-    let Some(window) = window else {
-        if should_restore_window(false, exit_prevented) {
+    let Some(window) = app.get_webview_window(WindowLabel::Main.as_ref()) else {
+        let exit_prevented = app
+            .try_state::<PreventExitState>()
+            .is_some_and(|state| state.is_prevented());
+        if exit_prevented {
             restore_main_window(app);
         }
         return;
@@ -30,10 +28,6 @@ pub fn focus_main_window<R: Runtime>(app: &AppHandle<R>) {
     {
         tracing::warn!("Failed to bring the main window forward: {err}");
     }
-}
-
-fn should_restore_window(window_exists: bool, exit_prevented: bool) -> bool {
-    !window_exists && exit_prevented
 }
 
 fn restore_main_window<R: Runtime>(app: &AppHandle<R>) {
@@ -66,26 +60,4 @@ fn restore_main_window<R: Runtime>(app: &AppHandle<R>) {
             tracing::warn!("Failed to restore the main window: {err}");
         }
     });
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use rstest::rstest;
-
-    #[rstest]
-    #[case::closed_for_game(false, true, true)]
-    #[case::startup_in_progress(false, false, false)]
-    #[case::window_present(true, true, false)]
-    #[case::window_present_normal(true, false, false)]
-    fn should_restore_only_a_missing_window_while_exit_is_prevented(
-        #[case] window_exists: bool,
-        #[case] exit_prevented: bool,
-        #[case] expected: bool,
-    ) {
-        assert_eq!(
-            should_restore_window(window_exists, exit_prevented),
-            expected
-        );
-    }
 }

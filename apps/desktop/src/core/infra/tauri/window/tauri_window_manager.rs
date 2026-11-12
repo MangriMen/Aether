@@ -159,7 +159,7 @@ impl<R: tauri::Runtime> WindowManager for TauriWindowManager<R> {
             Ok(window) => window,
             Err(err) => {
                 // A concurrent create may have won the race; then there is nothing to report.
-                if is_fatal_creation_failure(self.get_window(label).is_ok()) {
+                if self.get_window(label).is_err() {
                     self.get_prevent_exit_state().set_prevented(false);
                     exit_with_error(&format!(
                         "Failed to create the main window. Make sure the WebView2 runtime is \
@@ -177,21 +177,5 @@ impl<R: tauri::Runtime> WindowManager for TauriWindowManager<R> {
         apply_effect_to_window(&window, effect.into())?;
 
         Ok(())
-    }
-}
-
-/// The launcher has no tray, so a missing main window means nobody can reach or quit it.
-fn is_fatal_creation_failure(window_exists: bool) -> bool {
-    !window_exists
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn should_treat_failed_window_creation_as_fatal_only_when_no_window_exists() {
-        assert!(is_fatal_creation_failure(false));
-        assert!(!is_fatal_creation_failure(true));
     }
 }
