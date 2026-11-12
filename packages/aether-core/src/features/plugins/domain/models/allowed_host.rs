@@ -99,14 +99,16 @@ impl std::fmt::Display for AllowedHostEntryRejection {
     }
 }
 
-/// Checks one `allowed_hosts` entry of the plugin's settings, and returns it trimmed.
+/// Checks one `allowed_hosts` entry of the plugin's settings, and returns it trimmed and
+/// lowercased.
 ///
 /// An IPv6 literal is stored in the glob-escaped form [`GrantableHost`] gives (`[[]::1[]]`), so
 /// the colons of an entry that starts that way are not a port.
 pub(crate) fn validate_allowed_host_entry(
     entry: &str,
 ) -> Result<String, AllowedHostEntryRejection> {
-    let entry = entry.trim();
+    // Lowercased: the host a request names is, and a glob matches case-sensitively.
+    let entry = entry.trim().to_lowercase();
     if entry.is_empty() {
         return Err(AllowedHostEntryRejection::Empty);
     }
@@ -117,8 +119,8 @@ pub(crate) fn validate_allowed_host_entry(
     {
         return Err(AllowedHostEntryRejection::NotAHostName);
     }
-    glob::Pattern::new(entry).map_err(|_| AllowedHostEntryRejection::InvalidPattern)?;
-    Ok(entry.to_owned())
+    glob::Pattern::new(&entry).map_err(|_| AllowedHostEntryRejection::InvalidPattern)?;
+    Ok(entry)
 }
 
 /// A host the user may give a plugin for `raw_url`: the URL's host as the plugin's requests will
@@ -250,6 +252,8 @@ mod tests {
             ("*.example.com", "*.example.com"),
             ("*", "*"),
             ("*.*", "*.*"),
+            ("Example.COM", "example.com"),
+            ("*.GitHub.com", "*.github.com"),
             ("192.168.1.5", "192.168.1.5"),
             ("[[]::1[]]", "[[]::1[]]"),
         ] {
