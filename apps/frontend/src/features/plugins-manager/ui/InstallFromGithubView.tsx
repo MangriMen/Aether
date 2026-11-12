@@ -1,4 +1,5 @@
 import {
+  batch,
   createEffect,
   createMemo,
   createSignal,
@@ -37,10 +38,27 @@ export const InstallFromGithubView: Component<InstallFromGithubViewProps> = (
   const [url, setUrl] = createSignal('');
   const [debouncedUrl, setDebouncedUrl] = createSignal('');
 
-  const debounceUrl = debounce(
-    (value: string) => setDebouncedUrl(value),
-    DEBOUNCE_MS,
-  );
+  // The tag the user asked for. Null until they pick one: the first preview is then
+  // requested without a tag and names the release it read.
+  const [requestedTag, setRequestedTag] = createSignal<string | null>(null);
+
+  // The release list outlives the preview of a single tag, so that it stays on screen
+  // while another tag loads. It belongs to the repository it was read from.
+  const [releases, setReleases] = createSignal<
+    ProviderPluginPreview['releases']
+  >([]);
+
+  // A new repository starts from scratch, in one step with the URL the query is keyed by:
+  // the new URL is never asked for with the old tag.
+  const applyUrl = (value: string) => {
+    batch(() => {
+      setRequestedTag(null);
+      setReleases([]);
+      setDebouncedUrl(value);
+    });
+  };
+
+  const debounceUrl = debounce(applyUrl, DEBOUNCE_MS);
 
   const handleUrlChange = (value: string) => {
     setUrl(value);
@@ -48,13 +66,10 @@ export const InstallFromGithubView: Component<InstallFromGithubViewProps> = (
   };
 
   const handleUrlClear = () => {
+    debounceUrl.clear();
     setUrl('');
-    setDebouncedUrl('');
+    applyUrl('');
   };
-
-  // The tag the user asked for. Null until they pick one: the first preview is then
-  // requested without a tag and names the release it read.
-  const [requestedTag, setRequestedTag] = createSignal<string | null>(null);
 
   const previewQuery = usePluginPreview(PROVIDER, debouncedUrl, requestedTag);
   const installMutation = useInstallPluginFromProvider();
@@ -63,24 +78,6 @@ export const InstallFromGithubView: Component<InstallFromGithubViewProps> = (
   const previewData = createMemo<ProviderPluginPreview | undefined>(
     () => previewQuery.data,
   );
-
-  // The release list outlives the preview of a single tag, so that it stays on screen
-  // while another tag loads. It belongs to the repository it was read from.
-  const [releases, setReleases] = createSignal<
-    ProviderPluginPreview['releases']
-  >([]);
-
-  let previousUrl: string | undefined;
-
-  createEffect(() => {
-    const url = debouncedUrl();
-
-    if (url !== previousUrl) {
-      previousUrl = url;
-      setRequestedTag(null);
-      setReleases([]);
-    }
-  });
 
   createEffect(() => {
     const data = previewData();
@@ -94,11 +91,18 @@ export const InstallFromGithubView: Component<InstallFromGithubViewProps> = (
     () => requestedTag() ?? previewData()?.tag ?? '',
   );
 
-  // What may be installed: the preview that was read for the selected tag, nothing else.
+  // The URL typed is not yet the one the preview was read for.
+  const isUrlPending = () => url() !== debouncedUrl();
+
+  // What may be installed: the preview that was read for the selected tag of the URL shown,
+  // nothing else.
   const readyPreview = createMemo(() => {
     const data = previewData();
 
-    return data && data.tag === selectedTag() && !previewQuery.isFetching
+    return data &&
+      data.tag === selectedTag() &&
+      !previewQuery.isFetching &&
+      !isUrlPending()
       ? data
       : undefined;
   });
@@ -174,7 +178,7 @@ export const InstallFromGithubView: Component<InstallFromGithubViewProps> = (
       <Show when={releases().length > 0 || previewData()}>
         <PluginPreviewCard
           preview={readyPreview()}
-          isPreviewLoading={previewQuery.isFetching}
+          isPreviewLoading={previewQuery.isFetching || isUrlPending()}
           releaseOptions={releaseOptions()}
           selectedTag={selectedTag()}
           onReleaseChange={handleReleaseChange}

@@ -54,6 +54,23 @@ impl ZipPluginExtractor {
         Ok(Some(bytes))
     }
 
+    /// Refuses an archive that names one path twice, also when only the letter case differs:
+    /// on a case-insensitive file system the later entry would replace the earlier one, so the
+    /// files unpacked would not be the ones the manifest was read from.
+    fn check_unique_names<R: Read + Seek>(
+        archive: &zip::ZipArchive<R>,
+    ) -> Result<(), PluginProviderError> {
+        let mut seen = std::collections::HashSet::new();
+        for name in archive.file_names() {
+            let name = name.map_err(|_| PluginProviderError::InvalidExtractionFormat)?;
+            let key = name.replace('\\', "/").trim_end_matches('/').to_lowercase();
+            if !seen.insert(key) {
+                return Err(PluginProviderError::InvalidExtractionFormat);
+            }
+        }
+        Ok(())
+    }
+
     fn read_manifest<R: Read + Seek>(
         &self,
         archive: &mut zip::ZipArchive<R>,
@@ -99,6 +116,7 @@ impl ZipPluginExtractor {
         &self,
         archive: &mut zip::ZipArchive<R>,
     ) -> Result<ArchiveMetadata, PluginProviderError> {
+        Self::check_unique_names(archive)?;
         let manifest = self.read_manifest(archive)?;
         let capabilities = self.read_capabilities(archive)?;
         Ok(ArchiveMetadata {
@@ -464,6 +482,26 @@ mod tests {
         assert!(matches!(
             extractor.extract(&zip_path).await,
             Err(PluginProviderError::FileExtractionFailed { .. })
+        ));
+    }
+
+    #[tokio::test]
+    async fn should_refuse_an_archive_naming_a_path_twice_or_in_another_letter_case() {
+        let source_dir = TempDir::new().unwrap();
+        let zip_path = write_zip(
+            source_dir.path(),
+            &[
+                ("manifest.json", MANIFEST.as_bytes()),
+                ("MANIFEST.JSON", MANIFEST.as_bytes()),
+            ],
+        )
+        .await;
+
+        let result = ZipPluginExtractor::default().read_metadata(&zip_path).await;
+
+        assert!(matches!(
+            result,
+            Err(PluginProviderError::InvalidExtractionFormat)
         ));
     }
 
