@@ -245,13 +245,15 @@ impl ListContentUseCase {
             return Ok(pack_file);
         }
 
-        let pack_file = PackFile::from_hash(file_name.to_owned(), hash);
-
+        // The hashing took a while: a plan may have recorded the file (with its owner) since the
+        // snapshot, and that record is not ours to replace.
         self.pack_storage
-            .update_pack_file(instance_id, content_path, &pack_file)
-            .await?;
-
-        Ok(pack_file)
+            .insert_pack_file_if_absent(
+                instance_id,
+                content_path,
+                &PackFile::from_hash(file_name.to_owned(), hash),
+            )
+            .await
     }
 }
 

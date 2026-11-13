@@ -215,6 +215,72 @@ impl SqlitePackStorage {
             .map_err(InstanceError::storage)
     }
 
+    /// Writes the file only when there is no row for the path; a row that is there, with its
+    /// owner and updates, is left as it is.
+    async fn insert_file_if_absent_internal(
+        tx: &mut Transaction<'_, Sqlite>,
+        instance_id: &InstanceId,
+        content_path: &ContentPath,
+        pack_file: &PackFile,
+    ) -> Result<(), InstanceError> {
+        let content_path = content_path.as_str();
+        sqlx::query("INSERT OR IGNORE INTO packs (instance_id) VALUES (?)")
+            .bind(instance_id.as_str())
+            .execute(&mut **tx)
+            .await
+            .map_err(InstanceError::storage)?;
+
+        let inserted = sqlx::query(
+            "INSERT INTO pack_files (instance_id, content_path, file_name, name, hash, side, update_provider_id, installed_by_provider_id, installed_by_content_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(instance_id, content_path) DO NOTHING",
+        )
+        .bind(instance_id.as_str())
+        .bind(content_path)
+        .bind(&pack_file.file_name)
+        .bind(&pack_file.name)
+        .bind(pack_file.hash.to_string())
+        .bind(pack_file.side.map(FileSide::as_str))
+        .bind(
+            pack_file
+                .update_provider_id
+                .as_ref()
+                .map(std::string::ToString::to_string),
+        )
+        .bind(
+            pack_file
+                .installed_by
+                .as_ref()
+                .map(|origin| origin.provider_id.to_string()),
+        )
+        .bind(
+            pack_file
+                .installed_by
+                .as_ref()
+                .map(|origin| origin.content_id.as_str()),
+        )
+        .execute(&mut **tx)
+        .await
+        .map_err(InstanceError::storage)?
+        .rows_affected();
+        if inserted == 0 {
+            return Ok(());
+        }
+
+        for (pid, info) in pack_file.update.iter().flatten() {
+            sqlx::query(
+                "INSERT INTO pack_file_updates (instance_id, content_path, provider_id, content_id, version_id) VALUES (?, ?, ?, ?, ?)",
+            )
+            .bind(instance_id.as_str())
+            .bind(content_path)
+            .bind(pid.to_string())
+            .bind(info.content_id.as_str())
+            .bind(info.version.as_ref().map_or("", |v| v.as_str()))
+            .execute(&mut **tx)
+            .await
+            .map_err(InstanceError::storage)?;
+        }
+        Ok(())
+    }
+
     // Helper to internalize update logic for reuse in transactions
     async fn upsert_file_internal(
         tx: &mut Transaction<'_, Sqlite>,
@@ -379,6 +445,27 @@ impl PackStorage for SqlitePackStorage {
             .load_pack_file(instance_id, content_path)
             .await?
             .and_then(Result::ok))
+    }
+
+    async fn insert_pack_file_if_absent(
+        &self,
+        instance_id: &InstanceId,
+        content_path: &ContentPath,
+        pack_file: &PackFile,
+    ) -> Result<PackFile, InstanceError> {
+        let mut tx = self.pool.begin().await.map_err(InstanceError::storage)?;
+        Self::insert_file_if_absent_internal(&mut tx, instance_id, content_path, pack_file).await?;
+        tx.commit().await.map_err(InstanceError::storage)?;
+
+        match self.load_pack_file(instance_id, content_path).await? {
+            Some(Ok(stored)) => Ok(stored),
+            // A row that exists but cannot be used keeps all but its hash.
+            Some(Err(_)) => Ok(self
+                .rehash_pack_file(instance_id, content_path, &pack_file.hash)
+                .await?
+                .unwrap_or_else(|| pack_file.clone())),
+            None => Ok(pack_file.clone()),
+        }
     }
 
     async fn find_pack_file(
@@ -772,5 +859,119 @@ mod tests {
             .unwrap();
 
         assert!(rehashed.is_none());
+    }
+
+    #[tokio::test]
+    async fn should_keep_the_stored_record_when_inserting_a_file_that_is_already_recorded() {
+        let storage = SqlitePackStorage::in_memory().await;
+        let id = InstanceId::try_from("inst").unwrap();
+        let path = cp("mods/a.jar");
+        let owner = PlanOrigin {
+            provider_id: "plugin#cap".parse().unwrap(),
+            content_id: ContentId::try_from("pack").unwrap(),
+        };
+        let planned = PackFile {
+            name: Some("Sodium".into()),
+            side: Some(FileSide::Client),
+            installed_by: Some(owner.clone()),
+            ..PackFile::from_hash("a.jar".into(), sha1_hash('a'))
+        };
+        storage
+            .update_pack_file(&id, &path, &planned)
+            .await
+            .unwrap();
+
+        let stored = storage
+            .insert_pack_file_if_absent(
+                &id,
+                &path,
+                &PackFile::from_hash("a.jar".into(), sha1_hash('b')),
+            )
+            .await
+            .unwrap();
+
+        for read in [stored, storage.get_pack_file(&id, &path).await.unwrap()] {
+            assert_eq!(read.hash, sha1_hash('a'));
+            assert_eq!(read.name.as_deref(), Some("Sodium"));
+            assert_eq!(read.side, Some(FileSide::Client));
+            assert_eq!(read.installed_by.unwrap().content_id, owner.content_id);
+        }
+    }
+
+    #[tokio::test]
+    async fn should_store_the_file_when_inserting_one_with_no_record() {
+        let storage = SqlitePackStorage::in_memory().await;
+        let id = InstanceId::try_from("inst").unwrap();
+        let path = cp("mods/a.jar");
+        let file = PackFile::from_hash("a.jar".into(), sha1_hash('a'));
+
+        let stored = storage
+            .insert_pack_file_if_absent(&id, &path, &file)
+            .await
+            .unwrap();
+
+        assert_eq!(stored.hash, sha1_hash('a'));
+        let read = storage.get_pack_file(&id, &path).await.unwrap();
+        assert_eq!(read.hash, file.hash);
+        assert_eq!(read.file_name, "a.jar");
+        assert_eq!(storage.get_pack(&id).await.unwrap().files.len(), 1);
+    }
+
+    #[tokio::test]
+    async fn should_repair_only_the_hash_when_inserting_a_file_whose_record_has_an_unusable_hash() {
+        let storage = SqlitePackStorage::in_memory().await;
+        let id = InstanceId::try_from("inst").unwrap();
+        let path = cp("mods/a.jar");
+        sqlx::query("INSERT INTO packs (instance_id) VALUES ('inst')")
+            .execute(&storage.pool)
+            .await
+            .unwrap();
+        sqlx::query("INSERT INTO pack_files (instance_id, content_path, file_name, name, hash, installed_by_provider_id, installed_by_content_id) VALUES ('inst', 'mods/a.jar', 'a.jar', 'Sodium', 'garbage', 'plugin#cap', 'pack')")
+            .execute(&storage.pool)
+            .await
+            .unwrap();
+
+        let stored = storage
+            .insert_pack_file_if_absent(
+                &id,
+                &path,
+                &PackFile::from_hash("a.jar".into(), sha1_hash('b')),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(stored.hash, sha1_hash('b'));
+        assert_eq!(stored.name.as_deref(), Some("Sodium"));
+        assert_eq!(stored.installed_by.unwrap().content_id.as_str(), "pack");
+    }
+
+    #[tokio::test]
+    async fn should_keep_the_updates_of_a_stored_record_when_inserting_over_it() {
+        let storage = SqlitePackStorage::in_memory().await;
+        let id = InstanceId::try_from("inst").unwrap();
+        let path = cp("mods/a.jar");
+        let provider: ProviderId = "plugin#cap".parse().unwrap();
+        let with_update = |content: &str| PackFile {
+            update: Some(HashMap::from([(
+                provider.clone(),
+                ContentFileUpdateInfo {
+                    content_id: ContentId::try_from(content).unwrap(),
+                    version: None,
+                },
+            )])),
+            ..PackFile::from_hash("a.jar".into(), sha1_hash('a'))
+        };
+
+        storage
+            .insert_pack_file_if_absent(&id, &path, &with_update("first"))
+            .await
+            .unwrap();
+        storage
+            .insert_pack_file_if_absent(&id, &path, &with_update("second"))
+            .await
+            .unwrap();
+
+        let read = storage.get_pack_file(&id, &path).await.unwrap();
+        assert_eq!(read.update.unwrap()[&provider].content_id.as_str(), "first");
     }
 }
