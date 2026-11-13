@@ -36,7 +36,7 @@ mod tests {
 
     #[test]
     fn should_serialize_serialize_error_with_an_unknown_cause() {
-        let dto = EventErrorDto::from(&EventError::SerializeError(anyhow::anyhow!("boom")));
+        let dto = EventErrorDto::from(&EventError::SerializeError(anyhow::anyhow!("boom").into()));
 
         assert_eq!(
             serde_json::to_value(&dto).unwrap(),

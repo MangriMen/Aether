@@ -98,7 +98,7 @@ impl PluginContentProviderProxy {
 
         ContentProviderRejection::InvalidAnswer {
             handler: handler_name.to_owned(),
-            source,
+            source: source.into(),
         }
         .into()
     }

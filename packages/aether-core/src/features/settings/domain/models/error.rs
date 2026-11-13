@@ -1,6 +1,6 @@
 use crate::features::instance::ProviderIdError;
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Clone, Debug, thiserror::Error)]
 pub enum SettingsError {
     #[error("Settings file not found. Please run initial setup.")]
     NotFound,

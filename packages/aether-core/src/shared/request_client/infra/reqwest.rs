@@ -116,8 +116,8 @@ impl<PS: ProgressService + ?Sized> ReqwestClient<PS> {
         }
 
         request.send().await.map_err(|e| match e {
-            reqwest_middleware::Error::Middleware(error) => RequestError::Middleware(error),
-            reqwest_middleware::Error::Reqwest(error) => RequestError::RequestSend(error),
+            reqwest_middleware::Error::Middleware(error) => error.into(),
+            reqwest_middleware::Error::Reqwest(error) => error.into(),
         })
     }
 
@@ -141,7 +141,7 @@ impl<PS: ProgressService + ?Sized> ReqwestClient<PS> {
             .add_progress_bytes_total_safe(progress_bar_id, total_size)
             .await;
         while let Some(chunk) = stream.next().await {
-            let chunk = chunk.map_err(RequestError::RequestSend)?;
+            let chunk = chunk.map_err(RequestError::from)?;
             bytes.extend_from_slice(&chunk);
 
             self.progress_service
@@ -162,7 +162,7 @@ impl<PS: ProgressService + ?Sized> ReqwestClient<PS> {
     async fn verify_hash(&self, bytes: Bytes, expected: &FileHash) -> Result<(), RequestError> {
         let actual = hash_hex_async(expected.algorithm(), bytes)
             .await
-            .map_err(|err| RequestError::Middleware(err.into()))?;
+            .map_err(|err| RequestError::from(anyhow::Error::new(err)))?;
         check_hash(expected, actual)
     }
 }
@@ -194,7 +194,7 @@ fn ensure_success(response: &Response, url: &str) -> Result<(), RequestError> {
 fn io_error(path: &Path) -> impl FnOnce(std::io::Error) -> RequestError + '_ {
     move |source| RequestError::Io {
         path: path.to_path_buf(),
-        source,
+        source: Arc::new(source),
     }
 }
 
@@ -317,10 +317,10 @@ async fn save_body(
 
     let parent = destination.parent().ok_or_else(|| RequestError::Io {
         path: destination.to_path_buf(),
-        source: std::io::Error::new(
+        source: Arc::new(std::io::Error::new(
             std::io::ErrorKind::InvalidInput,
             "destination has no parent directory",
-        ),
+        )),
     })?;
 
     if let Some(length) = response.content_length()
@@ -345,7 +345,7 @@ async fn save_body(
     let mut stream = response.bytes_stream();
 
     while let Some(chunk) = stream.next().await {
-        let chunk = chunk.map_err(RequestError::RequestSend)?;
+        let chunk = chunk.map_err(RequestError::from)?;
 
         size += chunk.len() as u64;
         if size > max_size {

@@ -304,6 +304,11 @@ pub(in super::super) fn policy_error(err: anyhow::Error) -> Result<PluginHttpErr
     find_policy_error(&err).cloned().ok_or(err)
 }
 
+/// The refusal of the policy a request was stopped by, if that is what stopped it.
+pub(in super::super) fn find_policy_refusal(err: &anyhow::Error) -> Option<PluginHttpError> {
+    find_policy_error(err).cloned()
+}
+
 /// The retry middleware re-wraps every error transparently, so the refusal may sit under it
 /// without showing up in the `source()` chain.
 fn find_policy_error(err: &anyhow::Error) -> Option<&PluginHttpError> {

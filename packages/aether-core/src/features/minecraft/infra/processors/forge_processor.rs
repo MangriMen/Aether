@@ -268,7 +268,7 @@ pub(super) async fn get_processor_main_class(
     tokio::task::spawn_blocking(move || read_main_class(&path))
         .await
         .map_err(|err| MinecraftDomainError::ProcessorFailed {
-            reason: ProcessorFailure::TaskFailed(err),
+            reason: ProcessorFailure::TaskFailed(std::sync::Arc::new(err)),
         })?
 }
 

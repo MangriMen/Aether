@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::path::Path;
+use std::sync::Arc;
 
 // --- IoErrorKind ---
 
@@ -73,7 +74,7 @@ impl From<IoErrorKind> for std::io::ErrorKind {
 
 // --- IoErrorRepr ---
 
-#[derive(Debug, Serialize, Deserialize, thiserror::Error)]
+#[derive(Clone, Debug, Serialize, Deserialize, thiserror::Error)]
 pub enum IoErrorRepr {
     #[error("{kind:?}, path: {path}")]
     IoPathError {
@@ -94,16 +95,16 @@ pub enum IoErrorRepr {
 
 // --- IoError ---
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Clone, Debug, thiserror::Error)]
 pub enum IoError {
     #[error("{source}, path: {path}")]
     IoPathError {
         #[source]
-        source: std::io::Error,
+        source: Arc<std::io::Error>,
         path: String,
     },
     #[error(transparent)]
-    IoError(#[from] std::io::Error),
+    IoError(Arc<std::io::Error>),
 
     #[error("Serialization error: {0}")]
     SerializationError(String),
@@ -119,9 +120,15 @@ impl IoError {
     /// `From<std::io::Error>` conversion).
     pub fn with_path(source: std::io::Error, path: impl AsRef<Path>) -> Self {
         Self::IoPathError {
-            source,
+            source: Arc::new(source),
             path: path.as_ref().to_string_lossy().to_string(),
         }
+    }
+}
+
+impl From<std::io::Error> for IoError {
+    fn from(err: std::io::Error) -> Self {
+        Self::IoError(Arc::new(err))
     }
 }
 
@@ -151,11 +158,11 @@ impl From<IoErrorRepr> for IoError {
                 path,
                 message,
             } => Self::IoPathError {
-                source: std::io::Error::new(kind.into(), message.clone()),
+                source: Arc::new(std::io::Error::new(kind.into(), message.clone())),
                 path,
             },
             IoErrorRepr::IoError { kind, message } => {
-                Self::IoError(std::io::Error::new(kind.into(), message.clone()))
+                Self::IoError(Arc::new(std::io::Error::new(kind.into(), message.clone())))
             }
 
             IoErrorRepr::SerializationError(msg) => Self::SerializationError(msg),

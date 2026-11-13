@@ -3,16 +3,16 @@ use crate::{
         instance::PluginId,
         plugins::{ManifestError, PluginSourceType},
     },
-    shared::{error::BoxedSource, io::domain::IoError},
+    shared::{error::SharedSource, io::domain::IoError},
 };
 
 /// What went wrong talking to a plugin source. The client's errors are kept as the source; the
 /// conversion from them lives with the client.
-#[derive(thiserror::Error, Debug)]
+#[derive(Clone, thiserror::Error, Debug)]
 pub enum ProviderFailure {
     /// The request did not get an answer, or the answer could not be read.
     #[error("{0}")]
-    Request(#[source] BoxedSource),
+    Request(#[source] SharedSource),
 
     #[error("HTTP {status}")]
     Status { status: u16, url: String },
@@ -35,10 +35,10 @@ pub enum ProviderFailure {
 }
 
 /// Why a file of a plugin archive that must be JSON is not.
-#[derive(thiserror::Error, Debug)]
+#[derive(Clone, thiserror::Error, Debug)]
 pub enum ManifestFormatError {
     #[error("{0}")]
-    Json(#[from] serde_json::Error),
+    Json(#[source] std::sync::Arc<serde_json::Error>),
 
     #[error("{0}")]
     Utf8(#[from] std::string::FromUtf8Error),
@@ -47,8 +47,14 @@ pub enum ManifestFormatError {
     TooLarge { name: String, limit: u64 },
 }
 
+impl From<serde_json::Error> for ManifestFormatError {
+    fn from(err: serde_json::Error) -> Self {
+        Self::Json(std::sync::Arc::new(err))
+    }
+}
+
 /// Errors of obtaining a plugin from a source: remote provider, download, archive extraction.
-#[derive(thiserror::Error, Debug)]
+#[derive(Clone, thiserror::Error, Debug)]
 pub enum PluginProviderError {
     #[error("Plugin manifest not found: {path}")]
     ManifestNotFound { path: String },

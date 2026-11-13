@@ -35,7 +35,7 @@ impl std::fmt::Display for GamePathKind {
 }
 
 /// Why a modloader processor did not finish.
-#[derive(Debug, thiserror::Error)]
+#[derive(Clone, Debug, thiserror::Error)]
 pub enum ProcessorFailure {
     #[error("Could not find processor main class for {jar}")]
     MainClassNotFound { jar: String },
@@ -58,10 +58,10 @@ pub enum ProcessorFailure {
     Exited { code: Option<i32>, stderr: String },
 
     #[error("Processor task failed: {0}")]
-    TaskFailed(#[source] tokio::task::JoinError),
+    TaskFailed(#[source] std::sync::Arc<tokio::task::JoinError>),
 }
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Clone, Debug, thiserror::Error)]
 pub enum MinecraftDomainError {
     #[error("Minecraft version \"{version}\" not found")]
     VersionNotFound { version: String },

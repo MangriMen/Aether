@@ -1,6 +1,6 @@
 use uuid::Uuid;
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Clone, Debug, thiserror::Error)]
 pub enum AuthDomainError {
     #[error("Credentials with id: {id} not found")]
     CredentialsNotFound { id: Uuid },

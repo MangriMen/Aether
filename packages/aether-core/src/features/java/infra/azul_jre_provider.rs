@@ -216,7 +216,7 @@ impl<PS: ProgressService, RC: RequestClient> AzulJreProvider<PS, RC> {
         progress_bar_id: Option<&ProgressBarId>,
     ) -> Result<Bytes, RequestError> {
         let hash = FileHash::new(HashAlgorithm::Sha256, package.sha256_hash.as_str())
-            .map_err(|err| RequestError::Middleware(err.into()))?;
+            .map_err(|err| RequestError::from(anyhow::Error::new(err)))?;
         let request = Request::get(&package.download_url).with_hash(hash);
 
         self.download_client

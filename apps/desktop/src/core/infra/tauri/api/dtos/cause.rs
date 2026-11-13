@@ -1,5 +1,7 @@
 use aether_core::shared::cache::AssetError;
-use aether_core::shared::error::DatabaseError;
+use std::sync::Arc;
+
+use aether_core::shared::error::{AnyhowSource, DatabaseError};
 use aether_core::shared::io::{IoError, IoErrorKind};
 use aether_core::shared::request_client::RequestError;
 use serde::Serialize;
@@ -63,6 +65,19 @@ impl CauseDto {
             if let Some(err) = err.downcast_ref::<std::io::Error>() {
                 return err.into();
             }
+            // The library errors an error shares between its clones.
+            if let Some(err) = err.downcast_ref::<Arc<std::io::Error>>() {
+                return err.into();
+            }
+            if let Some(err) = err.downcast_ref::<Arc<reqwest::Error>>() {
+                return err.into();
+            }
+            if let Some(err) = err.downcast_ref::<Arc<serde_json::Error>>() {
+                return err.into();
+            }
+            if let Some(err) = err.downcast_ref::<AnyhowSource>() {
+                return super::request_error::middleware_cause(err.inner());
+            }
             if let Some(err) = err.downcast_ref::<IoError>() {
                 return err.into();
             }
@@ -87,6 +102,25 @@ impl From<&std::io::Error> for CauseDto {
             Some(kind) => Self::Io { kind },
             None => Self::unknown(value),
         }
+    }
+}
+
+// The library errors the core shares between the clones of an error.
+impl From<&Arc<std::io::Error>> for CauseDto {
+    fn from(value: &Arc<std::io::Error>) -> Self {
+        value.as_ref().into()
+    }
+}
+
+impl From<&Arc<reqwest::Error>> for CauseDto {
+    fn from(value: &Arc<reqwest::Error>) -> Self {
+        value.as_ref().into()
+    }
+}
+
+impl From<&Arc<serde_json::Error>> for CauseDto {
+    fn from(value: &Arc<serde_json::Error>) -> Self {
+        value.as_ref().into()
     }
 }
 
@@ -289,6 +323,19 @@ mod tests {
 
         let source: aether_core::shared::error::BoxedSource =
             Box::new(Retry(std::io::Error::from(std::io::ErrorKind::TimedOut)));
+
+        assert_eq!(
+            to_json(&CauseDto::of_source(source.as_ref())),
+            json!({"type": "io", "kind": "timedOut"})
+        );
+    }
+
+    #[test]
+    fn should_categorize_the_error_inside_a_shared_anyhow_source() {
+        let source: aether_core::shared::error::SharedSource =
+            std::sync::Arc::new(aether_core::shared::error::AnyhowSource::new(
+                anyhow::Error::new(std::io::Error::from(std::io::ErrorKind::TimedOut)),
+            ));
 
         assert_eq!(
             to_json(&CauseDto::of_source(source.as_ref())),

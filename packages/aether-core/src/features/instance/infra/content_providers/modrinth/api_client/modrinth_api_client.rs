@@ -58,7 +58,7 @@ impl<RC: RequestClient> ModrinthApiClient<RC> {
         self.request_client
             .fetch_json_with_progress(request, None)
             .await
-            .map_err(|err| ContentProviderRejection::Request(err.into()))
+            .map_err(|err| ContentProviderRejection::Request(Arc::new(err)))
     }
 
     pub(crate) async fn search(
@@ -149,7 +149,7 @@ impl<RC: RequestClient> ModrinthApiClient<RC> {
 fn invalid_request(
     err: impl std::error::Error + Send + Sync + 'static,
 ) -> ContentProviderRejection {
-    ContentProviderRejection::InvalidRequest(err.into())
+    ContentProviderRejection::InvalidRequest(Arc::new(err))
 }
 
 /// The `ids=[...]` query of the routes that take many ids at once.

@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use crate::shared::error::DatabaseError;
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Clone, Debug, thiserror::Error)]
 pub enum JavaDomainError {
     #[error("No JRE found for version {version}")]
     NotFound { version: u32 },
@@ -26,7 +26,7 @@ pub enum JavaDomainError {
     FailedToGetProperties {
         path: PathBuf,
         #[source]
-        source: std::io::Error,
+        source: std::sync::Arc<std::io::Error>,
     },
 
     #[error("No JRE version found to download: version {version}, os {os}, architecture {arch}")]

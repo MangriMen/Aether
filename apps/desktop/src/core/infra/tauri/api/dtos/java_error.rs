@@ -122,7 +122,7 @@ mod tests {
         let path = PathBuf::from("jre").join("java");
         let out = domain(&JavaDomainError::FailedToGetProperties {
             path: path.clone(),
-            source: std::io::Error::from(std::io::ErrorKind::PermissionDenied),
+            source: std::io::Error::from(std::io::ErrorKind::PermissionDenied).into(),
         });
 
         assert_eq!(

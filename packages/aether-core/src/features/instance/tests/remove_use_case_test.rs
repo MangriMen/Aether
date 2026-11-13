@@ -545,7 +545,7 @@ impl crate::shared::cache::domain::AssetsStorage for FailingRemoveAssets {
 
     async fn remove(&self, _id: &str) -> Result<(), crate::shared::cache::domain::AssetError> {
         Err(crate::shared::cache::domain::AssetError::Remove(
-            std::io::Error::other("locked"),
+            std::sync::Arc::new(std::io::Error::other("locked")),
         ))
     }
 }

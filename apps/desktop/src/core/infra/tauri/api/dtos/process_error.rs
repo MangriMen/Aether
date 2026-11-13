@@ -30,7 +30,7 @@ mod tests {
 
     #[test]
     fn should_serialize_io_with_an_io_cause() {
-        let err = ProcessError::Io(IoError::IoError(std::io::Error::from(
+        let err = ProcessError::Io(IoError::from(std::io::Error::from(
             std::io::ErrorKind::PermissionDenied,
         )));
 

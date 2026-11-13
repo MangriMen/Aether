@@ -716,7 +716,7 @@ mod tests {
 
     #[test]
     fn should_categorize_the_io_error_of_plugin_storage() {
-        let err = PluginError::Storage(IoError::IoError(std::io::Error::from(
+        let err = PluginError::Storage(IoError::from(std::io::Error::from(
             std::io::ErrorKind::NotFound,
         )));
 
@@ -750,7 +750,7 @@ mod tests {
             }})
         );
         assert_eq!(
-            plugin(&fetch(ProviderFailure::Request(Box::new(
+            plugin(&fetch(ProviderFailure::Request(std::sync::Arc::new(
                 std::io::Error::from(std::io::ErrorKind::TimedOut)
             ))))["payload"]["reason"],
             json!({"code": "REQUEST", "payload": {"cause": {"type": "io", "kind": "timedOut"}}})
@@ -820,7 +820,7 @@ mod tests {
     fn should_serialize_an_invalid_manifest_format_as_a_parse_cause() {
         let parse = serde_json::from_slice::<serde_json::Value>(b"{ not json").unwrap_err();
         let err = PluginError::Provider(PluginProviderError::InvalidManifestFormat {
-            error: ManifestFormatError::Json(parse),
+            error: parse.into(),
         });
 
         assert_eq!(
@@ -833,7 +833,7 @@ mod tests {
 
     #[test]
     fn should_categorize_the_io_error_of_provider_storage() {
-        let err = PluginError::Provider(PluginProviderError::Storage(IoError::IoError(
+        let err = PluginError::Provider(PluginProviderError::Storage(IoError::from(
             std::io::Error::from(std::io::ErrorKind::PermissionDenied),
         )));
 

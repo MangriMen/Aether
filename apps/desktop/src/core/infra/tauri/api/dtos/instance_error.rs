@@ -595,9 +595,9 @@ mod tests {
 
     #[test]
     fn should_report_a_wrapped_minecraft_error_as_a_minecraft_error() {
-        let err = InstanceError::MinecraftError(MinecraftApplicationError::Storage(
-            IoError::IoError(std::io::Error::from(std::io::ErrorKind::NotFound)),
-        ));
+        let err = InstanceError::MinecraftError(MinecraftApplicationError::Storage(IoError::from(
+            std::io::Error::from(std::io::ErrorKind::NotFound),
+        )));
 
         assert!(matches!(
             FrontendError::from(&err),
@@ -727,7 +727,7 @@ mod tests {
     fn should_serialize_a_prelaunch_command_that_cannot_start_with_an_io_cause() {
         let err = InstanceError::PrelaunchCommandSpawnFailed {
             program: "x".into(),
-            source: std::io::Error::from(std::io::ErrorKind::PermissionDenied),
+            source: std::io::Error::from(std::io::ErrorKind::PermissionDenied).into(),
         };
 
         assert_eq!(

@@ -5,7 +5,7 @@ use uuid::Uuid;
 use crate::features::instance::InstanceId;
 use crate::shared::io::domain::IoError;
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Clone, Debug, thiserror::Error)]
 pub enum ProcessError {
     #[error("Failed to kill process {id}")]
     KillError { id: String },

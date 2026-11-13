@@ -68,16 +68,16 @@ impl<T> CachedValue<T> {
 
 // --- AssetError ---
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Clone, Debug, thiserror::Error)]
 pub enum AssetError {
     #[error("Failed to read the icon: {0}")]
-    ReadSource(#[source] std::io::Error),
+    ReadSource(#[source] std::sync::Arc<std::io::Error>),
     #[error("Icon is larger than {limit} bytes")]
     TooLarge { limit: u64 },
     #[error("Icon is not a PNG, JPEG, GIF or WebP image")]
     NotAnImage,
     #[error("Failed to remove the icon: {0}")]
-    Remove(#[source] std::io::Error),
+    Remove(#[source] std::sync::Arc<std::io::Error>),
     #[error("Failed to write the icon: {0}")]
-    Write(#[source] std::io::Error),
+    Write(#[source] std::sync::Arc<std::io::Error>),
 }

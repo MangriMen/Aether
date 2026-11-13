@@ -2,7 +2,7 @@
 //! those of each side) the plan's overrides, its dependencies the game the pack runs on. Nothing
 //! here touches the network: the archive is already on disk.
 
-use std::{io::Read, path::Path};
+use std::{io::Read, path::Path, sync::Arc};
 
 use crate::{
     features::instance::{
@@ -61,10 +61,13 @@ fn read_index_within(
     max_files: usize,
 ) -> Result<ModrinthIndex, InstanceError> {
     let file = std::fs::File::open(mrpack_path)
-        .map_err(|e| rejected(ContentProviderRejection::PackUnreadable(e)))?;
+        .map_err(|e| rejected(ContentProviderRejection::PackUnreadable(Arc::new(e))))?;
 
-    let mut archive = zip::ZipArchive::new(file)
-        .map_err(|e| rejected(ContentProviderRejection::PackInvalidArchive(e.into())))?;
+    let mut archive = zip::ZipArchive::new(file).map_err(|e| {
+        rejected(ContentProviderRejection::PackInvalidArchive(Arc::new(
+            e.into(),
+        )))
+    })?;
 
     let index_file = archive
         .by_name(INDEX_PATH)
@@ -75,7 +78,7 @@ fn read_index_within(
     index_file
         .take(max_bytes + 1)
         .read_to_end(&mut bytes)
-        .map_err(|e| rejected(ContentProviderRejection::PackUnreadable(e)))?;
+        .map_err(|e| rejected(ContentProviderRejection::PackUnreadable(Arc::new(e))))?;
     if bytes.len() as u64 > max_bytes {
         return Err(rejected(ContentProviderRejection::PackIndexTooLarge {
             max_bytes,
@@ -83,7 +86,7 @@ fn read_index_within(
     }
 
     let index: ModrinthIndex = serde_json::from_slice(&bytes)
-        .map_err(|e| rejected(ContentProviderRejection::PackIndexMalformed(e.into())))?;
+        .map_err(|e| rejected(ContentProviderRejection::PackIndexMalformed(Arc::new(e))))?;
 
     if index.files.len() > max_files {
         return Err(rejected(ContentProviderRejection::TooManyFiles {

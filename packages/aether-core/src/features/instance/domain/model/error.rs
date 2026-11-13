@@ -1,4 +1,5 @@
 use std::path::PathBuf;
+use std::sync::Arc;
 
 use uuid::Uuid;
 
@@ -17,18 +18,18 @@ use crate::features::{
 };
 use crate::shared::cache::AssetError;
 use crate::shared::capability::InvalidId;
-pub use crate::shared::error::BoxedSource;
 use crate::shared::error::DatabaseError;
+pub use crate::shared::error::{BoxedSource, SharedSource, shared_source};
 use crate::shared::io::IoError;
 use crate::shared::safe_path::PathRejection;
 use crate::shared::serializable_command::CommandParseError;
 use crate::shared::web_url::InvalidUrl;
 
 /// What the storage of instances failed on.
-#[derive(Debug, thiserror::Error)]
+#[derive(Clone, Debug, thiserror::Error)]
 pub enum StorageError {
     #[error(transparent)]
-    Io(#[from] std::io::Error),
+    Io(Arc<std::io::Error>),
 
     #[error(transparent)]
     SharedIo(#[from] IoError),
@@ -38,7 +39,13 @@ pub enum StorageError {
 
     /// A failure with no category; its error is kept as the source.
     #[error("{0}")]
-    Other(#[source] BoxedSource),
+    Other(#[source] SharedSource),
+}
+
+impl From<std::io::Error> for StorageError {
+    fn from(err: std::io::Error) -> Self {
+        Self::Io(Arc::new(err))
+    }
 }
 
 impl From<crate::shared::hash::InvalidFileHash> for StorageError {
@@ -49,14 +56,14 @@ impl From<crate::shared::hash::InvalidFileHash> for StorageError {
 
 impl StorageError {
     pub fn other(err: impl Into<BoxedSource>) -> Self {
-        Self::Other(err.into())
+        Self::Other(shared_source(err))
     }
 }
 
 /// Why a content provider's answer, or the request made to it, is refused. The reasons are the
 /// same for every provider: what a provider calls a project, a pack index or a file list is
 /// named here as content, a pack and its files.
-#[derive(Debug, thiserror::Error)]
+#[derive(Clone, Debug, thiserror::Error)]
 pub enum ContentProviderRejection {
     #[error("{provider_id} answered with a plan for another target than the one asked for")]
     WrongTarget { provider_id: ProviderId },
@@ -78,7 +85,7 @@ pub enum ContentProviderRejection {
 
     /// `zip` errors that are not an I/O failure arrive as `InvalidData`.
     #[error("Invalid overrides archive: {0}")]
-    InvalidOverridesArchive(#[source] std::io::Error),
+    InvalidOverridesArchive(#[source] Arc<std::io::Error>),
 
     #[error("Version {version_id} belongs to content {owner_id}, not {content_id}")]
     VersionOfAnotherContent {
@@ -101,11 +108,11 @@ pub enum ContentProviderRejection {
 
     /// The request to the provider could not be built from what was asked.
     #[error("Invalid request: {0}")]
-    InvalidRequest(#[source] BoxedSource),
+    InvalidRequest(#[source] SharedSource),
 
     /// The request to the provider failed; the client's error is the source.
     #[error("Request failed: {0}")]
-    Request(#[source] BoxedSource),
+    Request(#[source] SharedSource),
 
     #[error("The response names an invalid {kind} {value:?}")]
     ResponseInvalidId { kind: &'static str, value: String },
@@ -117,10 +124,10 @@ pub enum ContentProviderRejection {
     ResponseInvalidPagination(#[source] InvalidPagination),
 
     #[error("Failed to read the pack file: {0}")]
-    PackUnreadable(#[source] std::io::Error),
+    PackUnreadable(#[source] Arc<std::io::Error>),
 
     #[error("The pack file is not a valid archive: {0}")]
-    PackInvalidArchive(#[source] std::io::Error),
+    PackInvalidArchive(#[source] Arc<std::io::Error>),
 
     #[error("The pack has no index ({index})")]
     PackNoIndex { index: &'static str },
@@ -129,7 +136,7 @@ pub enum ContentProviderRejection {
     PackIndexTooLarge { max_bytes: u64 },
 
     #[error("Malformed pack index: {0}")]
-    PackIndexMalformed(#[source] BoxedSource),
+    PackIndexMalformed(#[source] SharedSource),
 
     #[error("The pack is for \"{game}\", not Minecraft")]
     PackWrongGame { game: String },
@@ -149,7 +156,7 @@ pub enum ContentProviderRejection {
     InvalidAnswer {
         handler: String,
         #[source]
-        source: BoxedSource,
+        source: SharedSource,
     },
 
     /// A provider is a plugin: what it says is not ours to categorize.
@@ -194,7 +201,7 @@ impl From<ContentProviderRejection> for InstanceError {
 }
 
 /// Why content could not be downloaded.
-#[derive(Debug, thiserror::Error)]
+#[derive(Clone, Debug, thiserror::Error)]
 pub enum ContentDownloadFailure {
     #[error("No files found for version {version_id}")]
     NoFiles { version_id: String },
@@ -210,7 +217,7 @@ pub enum ContentDownloadFailure {
     Download {
         url: String,
         #[source]
-        source: BoxedSource,
+        source: SharedSource,
     },
 
     /// The plugin behind a download is not loaded, so there is no telling where it may connect.
@@ -222,12 +229,12 @@ impl ContentDownloadFailure {
     pub fn download(url: impl std::fmt::Display, source: impl Into<BoxedSource>) -> Self {
         Self::Download {
             url: url.to_string(),
-            source: source.into(),
+            source: shared_source(source),
         }
     }
 }
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Clone, Debug, thiserror::Error)]
 pub enum InstanceError {
     #[error("Storage error: {0}")]
     Storage(#[from] StorageError),
@@ -278,7 +285,7 @@ pub enum InstanceError {
     PrelaunchCommandSpawnFailed {
         program: String,
         #[source]
-        source: std::io::Error,
+        source: Arc<std::io::Error>,
     },
 
     #[error("The pre-launch command did not finish in {seconds} seconds")]
@@ -610,9 +617,9 @@ mod icon_error_tests {
             InstanceError::IconNotSupported
         ));
         assert!(matches!(
-            InstanceError::from(AssetError::ReadSource(std::io::Error::from(
+            InstanceError::from(AssetError::ReadSource(Arc::new(std::io::Error::from(
                 std::io::ErrorKind::NotFound
-            ))),
+            )))),
             InstanceError::Storage(StorageError::Io(_))
         ));
     }

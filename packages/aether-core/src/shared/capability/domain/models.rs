@@ -13,7 +13,7 @@ pub struct CapabilityEntry<C: Send + Sync + Clone> {
 
 // --- RegistryError ---
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Clone, Debug, thiserror::Error)]
 pub enum RegistryError {
     #[error("Capability {capability_type} with id \"{capability_id}\" not found")]
     CapabilityNotFound {

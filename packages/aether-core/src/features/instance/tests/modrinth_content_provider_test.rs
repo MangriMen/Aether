@@ -73,7 +73,7 @@ impl FakeHttp {
             .unwrap()
             .get(&url)
             .cloned()
-            .ok_or_else(|| RequestError::Middleware(anyhow::anyhow!("404 {url}")))
+            .ok_or_else(|| RequestError::from(anyhow::anyhow!("404 {url}")))
     }
 
     /// The ids of each `GET /projects` asked for, in the order asked.

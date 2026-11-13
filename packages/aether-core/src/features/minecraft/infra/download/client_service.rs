@@ -110,7 +110,7 @@ fn get_network_error<E>(error: E) -> IoError
 where
     E: Into<Box<dyn std::error::Error + Send + Sync>>,
 {
-    IoError::IoError(std::io::Error::new(
+    IoError::from(std::io::Error::new(
         std::io::ErrorKind::NetworkUnreachable,
         error,
     ))

@@ -55,9 +55,9 @@ mod tests {
     #[test]
     fn should_serialize_an_icon_not_imported_with_the_category_of_its_cause() {
         let event = WarningEvent::InstanceIconNotImported {
-            cause: Arc::new(AssetError::ReadSource(std::io::Error::from(
+            cause: Arc::new(AssetError::ReadSource(Arc::new(std::io::Error::from(
                 std::io::ErrorKind::PermissionDenied,
-            ))),
+            )))),
         };
 
         assert_eq!(

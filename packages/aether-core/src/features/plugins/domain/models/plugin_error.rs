@@ -10,7 +10,7 @@ use crate::{
     shared::io::domain::IoError,
 };
 
-#[derive(thiserror::Error, Debug)]
+#[derive(Clone, thiserror::Error, Debug)]
 pub enum PluginError {
     // Plugin lifecycle errors
     /// The id as it was asked for: one outside the id scheme names no plugin either.

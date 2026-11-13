@@ -220,6 +220,7 @@ impl From<&ContentDownloadFailure> for ContentDownloadReasonDto {
 mod tests {
     use super::*;
     use aether_core::features::instance::{BoxedSource, InstanceError, InvalidContentId, PageSize};
+    use aether_core::shared::error::shared_source;
     use aether_core::shared::request_client::RequestError;
     use aether_core::shared::web_url::HttpsUrl;
     use serde_json::{Value, json};
@@ -287,7 +288,9 @@ mod tests {
         let err = std::io::Error::from(std::io::ErrorKind::InvalidData);
 
         assert_eq!(
-            provider(ContentProviderRejection::InvalidOverridesArchive(err))["payload"]["reason"],
+            provider(ContentProviderRejection::InvalidOverridesArchive(
+                err.into()
+            ))["payload"]["reason"],
             json!({"code": "INVALID_OVERRIDES_ARCHIVE", "payload": {"cause": {"type": "io", "kind": "invalidData"}}})
         );
     }
@@ -340,7 +343,7 @@ mod tests {
         let source: BoxedSource = "bad page".into();
 
         assert_eq!(
-            provider(ContentProviderRejection::InvalidRequest(source))["payload"]["reason"],
+            provider(ContentProviderRejection::InvalidRequest(source.into()))["payload"]["reason"],
             json!({"code": "INVALID_REQUEST", "payload": {"cause": {"type": "unknown", "details": "bad page"}}})
         );
     }
@@ -353,7 +356,9 @@ mod tests {
         };
 
         assert_eq!(
-            provider(ContentProviderRejection::Request(source.into()))["payload"]["reason"],
+            provider(ContentProviderRejection::Request(std::sync::Arc::new(
+                source
+            )))["payload"]["reason"],
             json!({"code": "REQUEST", "payload": {"cause": {"type": "httpStatus", "status": 503, "url": "https://api.example.com/v2/project/x"}}})
         );
     }
@@ -388,7 +393,9 @@ mod tests {
     fn should_serialize_a_pack_index_that_cannot_be_parsed_with_a_parse_cause() {
         let err = serde_json::from_str::<u8>("x").unwrap_err();
 
-        let value = provider(ContentProviderRejection::PackIndexMalformed(err.into()));
+        let value = provider(ContentProviderRejection::PackIndexMalformed(
+            std::sync::Arc::new(err),
+        ));
 
         assert_eq!(value["payload"]["reason"]["code"], "PACK_INDEX_MALFORMED");
         assert_eq!(
@@ -404,11 +411,11 @@ mod tests {
 
         for (reason, code) in [
             (
-                ContentProviderRejection::PackUnreadable(io()),
+                ContentProviderRejection::PackUnreadable(io().into()),
                 "PACK_UNREADABLE",
             ),
             (
-                ContentProviderRejection::PackInvalidArchive(io()),
+                ContentProviderRejection::PackInvalidArchive(io().into()),
                 "PACK_INVALID_ARCHIVE",
             ),
         ] {
@@ -458,7 +465,7 @@ mod tests {
         assert_eq!(
             provider(ContentProviderRejection::InvalidAnswer {
                 handler: "cf_resolve_file".into(),
-                source: "url is not https".into(),
+                source: shared_source("url is not https"),
             })["payload"]["reason"],
             json!({"code": "INVALID_ANSWER", "payload": {
                 "handler": "cf_resolve_file",

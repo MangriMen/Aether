@@ -3,7 +3,7 @@ use crate::{
     shared::io::domain::IoError,
 };
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Clone, Debug, thiserror::Error)]
 pub enum MinecraftApplicationError {
     #[error(transparent)]
     Domain(#[from] MinecraftDomainError),

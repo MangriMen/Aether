@@ -4,7 +4,7 @@ pub const CONSOLE_PREFIX: &str = "console-";
 const LOG_SUFFIX: &str = ".log";
 const GZ_SUFFIX: &str = ".log.gz";
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Clone, Debug, thiserror::Error)]
 pub enum GameLogError {
     #[error("Invalid log source {source_id}")]
     InvalidSource { source_id: String },

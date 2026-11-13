@@ -406,7 +406,7 @@ impl<RC: RequestClient> LibrariesService<RC> {
 
         let mut archive = zip::ZipArchive::new(reader).map_err(|err| {
             error!("Failed to create zip archive: {:?}", err);
-            IoError::IoError(std::io::Error::new(std::io::ErrorKind::InvalidData, err))
+            IoError::from(std::io::Error::new(std::io::ErrorKind::InvalidData, err))
         })?;
 
         let extract_path = self.location_info.version_natives_dir(&version_info.id);
@@ -416,7 +416,7 @@ impl<RC: RequestClient> LibrariesService<RC> {
                 "Failed to extract zip archive to {:?}: {:?}",
                 extract_path, err
             );
-            IoError::IoError(std::io::Error::other(err))
+            IoError::from(std::io::Error::other(err))
         })?;
 
         Ok(())
@@ -457,7 +457,7 @@ impl<RC: RequestClient> LibrariesService<RC> {
     }
 }
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Clone, Debug, thiserror::Error)]
 enum ArtifactError {
     #[error(transparent)]
     Request(#[from] RequestError),
@@ -469,7 +469,7 @@ fn get_network_error<E>(error: E) -> IoError
 where
     E: Into<Box<dyn std::error::Error + Send + Sync>>,
 {
-    IoError::IoError(std::io::Error::new(
+    IoError::from(std::io::Error::new(
         std::io::ErrorKind::NetworkUnreachable,
         error,
     ))

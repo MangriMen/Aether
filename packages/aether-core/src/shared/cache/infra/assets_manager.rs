@@ -36,8 +36,8 @@ async fn read_limited(source: &Path, limit: u64) -> Result<Vec<u8>, AssetError> 
         })
     })
     .await
-    .map_err(|err| AssetError::ReadSource(std::io::Error::other(err)))?
-    .map_err(AssetError::ReadSource)?
+    .map_err(|err| AssetError::ReadSource(Arc::new(std::io::Error::other(err))))?
+    .map_err(|err| AssetError::ReadSource(Arc::new(err)))?
 }
 
 /// An SVG is a document that can carry scripts and references to other files, and the asset is
@@ -52,7 +52,7 @@ async fn sanitize_svg(data: Vec<u8>) -> Result<Vec<u8>, AssetError> {
             .map_err(|_| AssetError::NotAnImage)
     })
     .await
-    .map_err(|err| AssetError::ReadSource(std::io::Error::other(err)))?
+    .map_err(|err| AssetError::ReadSource(Arc::new(std::io::Error::other(err))))?
 }
 
 pub struct FsAssetsStorage<C> {
@@ -80,7 +80,7 @@ impl<C: FileStore> AssetsStorage for FsAssetsStorage<C> {
 
         let hash = sha1_async(bytes.clone())
             .await
-            .map_err(AssetError::ReadSource)?;
+            .map_err(|err| AssetError::ReadSource(Arc::new(err)))?;
 
         let filename = format!("{hash}.{ext}");
         let key = CacheKey::new(ASSETS_CACHE_NAMESPACE, CacheId::Named(filename.clone()));
@@ -90,7 +90,7 @@ impl<C: FileStore> AssetsStorage for FsAssetsStorage<C> {
             self.cache
                 .write(&key, bytes)
                 .await
-                .map_err(AssetError::Write)?;
+                .map_err(|err| AssetError::Write(Arc::new(err)))?;
         }
 
         Ok(filename)
@@ -102,7 +102,10 @@ impl<C: FileStore> AssetsStorage for FsAssetsStorage<C> {
             return Ok(());
         }
         let key = CacheKey::new(ASSETS_CACHE_NAMESPACE, CacheId::Named(id.to_owned()));
-        self.cache.delete(&key).await.map_err(AssetError::Remove)
+        self.cache
+            .delete(&key)
+            .await
+            .map_err(|err| AssetError::Remove(Arc::new(err)))
     }
 }
 

@@ -88,7 +88,7 @@ impl InstallPluginFromProviderUseCase {
         // the cache since.
         let sha256 = hash_file_hex_async(HashAlgorithm::Sha256, downloaded.archive.path())
             .await
-            .map_err(|e| PluginError::Storage(IoError::IoError(e)))?;
+            .map_err(|e| PluginError::Storage(IoError::from(e)))?;
         if !sha256.eq_ignore_ascii_case(expected_sha256.trim()) {
             return Err(PluginProviderError::ArchiveChangedSincePreview.into());
         }

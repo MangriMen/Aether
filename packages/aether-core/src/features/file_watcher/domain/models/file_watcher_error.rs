@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Clone, Debug, thiserror::Error)]
 pub enum FileWatcherError {
     #[error("Path not found: {path}")]
     PathNotFound { path: PathBuf },

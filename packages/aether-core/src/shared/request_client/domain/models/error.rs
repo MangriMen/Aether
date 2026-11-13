@@ -1,21 +1,24 @@
-use std::{path::PathBuf, str::Utf8Error};
+use std::{path::PathBuf, str::Utf8Error, sync::Arc};
 
-#[derive(thiserror::Error, Debug)]
+use crate::shared::error::AnyhowSource;
+
+/// Clones share the library errors they hold, which are not `Clone` themselves.
+#[derive(Clone, thiserror::Error, Debug)]
 pub enum RequestError {
     #[error("Failed to acquire semaphore")]
-    Acquire(#[from] tokio::sync::AcquireError),
+    Acquire(#[source] Arc<tokio::sync::AcquireError>),
 
     #[error("Failed to send request: {0}")]
-    RequestSend(#[from] reqwest::Error),
+    RequestSend(#[source] Arc<reqwest::Error>),
 
     #[error("Failed to process request with middleware: {0}")]
-    Middleware(#[from] anyhow::Error),
+    Middleware(#[source] AnyhowSource),
 
     #[error("Failed to verify hash: {actual} != {expected}")]
     Hash { actual: String, expected: String },
 
     #[error("Failed to parse JSON: {0}")]
-    Json(#[from] serde_json::Error),
+    Json(#[source] Arc<serde_json::Error>),
 
     #[error("Failed to parse Toml: {0}")]
     Toml(#[from] toml::de::Error),
@@ -33,6 +36,30 @@ pub enum RequestError {
     Io {
         path: PathBuf,
         #[source]
-        source: std::io::Error,
+        source: Arc<std::io::Error>,
     },
+}
+
+impl From<tokio::sync::AcquireError> for RequestError {
+    fn from(err: tokio::sync::AcquireError) -> Self {
+        Self::Acquire(Arc::new(err))
+    }
+}
+
+impl From<reqwest::Error> for RequestError {
+    fn from(err: reqwest::Error) -> Self {
+        Self::RequestSend(Arc::new(err))
+    }
+}
+
+impl From<anyhow::Error> for RequestError {
+    fn from(err: anyhow::Error) -> Self {
+        Self::Middleware(err.into())
+    }
+}
+
+impl From<serde_json::Error> for RequestError {
+    fn from(err: serde_json::Error) -> Self {
+        Self::Json(Arc::new(err))
+    }
 }

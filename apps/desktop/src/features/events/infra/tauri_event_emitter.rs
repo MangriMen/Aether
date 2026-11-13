@@ -91,7 +91,7 @@ fn spawn_forwarding<E: Clone + Send + 'static>(
 }
 
 fn handle_err(e: tauri::Error) -> EventError {
-    EventError::SerializeError(anyhow::Error::from(e))
+    EventError::SerializeError(anyhow::Error::from(e).into())
 }
 
 #[cfg(test)]

@@ -105,7 +105,7 @@ impl TryFrom<ContentSearchParams> for ProjectSearchParams {
         // pages stay adjacent.
         let page_size = value.page_size.at_most(MODRINTH_MAX_PAGE_SIZE);
         let offset = i64::try_from(value.page.offset(page_size))
-            .map_err(|err| ContentProviderRejection::InvalidRequest(err.into()))?;
+            .map_err(|err| ContentProviderRejection::InvalidRequest(std::sync::Arc::new(err)))?;
 
         Ok(Self {
             index: SearchIndex::Relevance,

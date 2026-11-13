@@ -330,7 +330,7 @@ mod tests {
             .await
             .unwrap_err();
 
-        let out = reason(ProcessorFailure::TaskFailed(join));
+        let out = reason(ProcessorFailure::TaskFailed(join.into()));
 
         assert_eq!(out["code"], "TASK_FAILED");
         assert_eq!(out["payload"]["cause"]["type"], "unknown");

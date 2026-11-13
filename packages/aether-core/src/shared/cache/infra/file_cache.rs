@@ -107,7 +107,9 @@ impl<R: CachePathResolver> FileStore for FileCache<R> {
         write_replacing_async(&path, data)
             .await
             .map_err(|err| match err {
-                IoError::IoError(err) => err,
+                // The only holder of the error once the `IoError` is taken apart.
+                IoError::IoError(err) => std::sync::Arc::try_unwrap(err)
+                    .unwrap_or_else(|err| std::io::Error::new(err.kind(), err.to_string())),
                 other => std::io::Error::other(other),
             })
     }

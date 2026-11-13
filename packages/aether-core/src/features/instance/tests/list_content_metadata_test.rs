@@ -346,7 +346,9 @@ impl<T: Clone> Answer<T> {
         match self {
             Answer::Items(items) => Ok(items.clone()),
             Answer::Fail => Err(InstanceError::ContentProviderError {
-                reason: ContentProviderRejection::Request("offline".into()),
+                reason: ContentProviderRejection::Request(crate::shared::error::shared_source(
+                    "offline",
+                )),
             }),
             Answer::Unsupported => Err(provider.unsupported(operation)),
         }
