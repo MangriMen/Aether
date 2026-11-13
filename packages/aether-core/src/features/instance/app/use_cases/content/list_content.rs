@@ -106,10 +106,10 @@ impl ListContentUseCase {
 
         let read_dir = tokio::fs::read_dir(&content_dir)
             .await
-            .map_err(|err| InstanceError::Storage(err.to_string()))?;
+            .map_err(InstanceError::storage)?;
 
         tokio_stream::wrappers::ReadDirStream::new(read_dir)
-            .map_err(|e| InstanceError::Storage(e.to_string()))
+            .map_err(InstanceError::storage)
             .try_for_each_concurrent(8, |entry| {
                 let entries_ref = Arc::clone(&entries_by_path);
                 let files_ref = Arc::clone(&files);
@@ -159,7 +159,7 @@ impl ListContentUseCase {
 
         let file_size = tokio::fs::metadata(file_path)
             .await
-            .map_err(|err| InstanceError::Storage(err.to_string()))?
+            .map_err(InstanceError::storage)?
             .len();
 
         let original_path = PathBuf::from(content_type.get_folder())
@@ -230,10 +230,10 @@ impl ListContentUseCase {
 
         let file_content = read_async(file_path)
             .await
-            .map_err(|err| InstanceError::Storage(err.to_string()))?;
+            .map_err(InstanceError::storage)?;
         let hash = sha1_hash_async(file_content)
             .await
-            .map_err(|err| InstanceError::Storage(err.to_string()))?;
+            .map_err(InstanceError::storage)?;
 
         // A record that exists but could not be used keeps everything but its hash.
         if entries_by_path.contains_key(content_path)

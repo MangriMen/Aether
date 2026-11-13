@@ -340,7 +340,7 @@ impl AnchoredPath {
         if !plain {
             return Err(InstanceError::InvalidRelativePath {
                 path: relative.display().to_string(),
-                reason: "not a chain of plain names under its root".to_owned(),
+                reason: crate::shared::safe_path::PathRejection::NotPlain,
             });
         }
 

@@ -87,7 +87,7 @@
       "CANCELLED": "Установка отменена",
       "PRELAUNCH_COMMAND_ERROR": "Команда перед запуском завершилась с кодом {{code}}",
       "PRELAUNCH_COMMAND_INVALID": "Неверная команда перед запуском: {{reason}}",
-      "PRELAUNCH_COMMAND_SPAWN_FAILED": "Не удалось запустить команду перед запуском: {{reason}}",
+      "PRELAUNCH_COMMAND_SPAWN_FAILED": "Не удалось запустить команду перед запуском",
       "PRELAUNCH_COMMAND_TIMEOUT": "Команда перед запуском не завершилась за {{duration}} и была остановлена",
       "VALIDATION_ERROR": "Ошибка проверки файлов инстанса",
       "NOT_BROKEN": "Инстанс не повреждён (или уже починен), поэтому его не тронули",
@@ -96,9 +96,9 @@
       "CONTENT_FILENAME": "Недопустимое имя файла контента",
       "INVALID_RELATIVE_PATH": "Недопустимый путь {{path}}: {{reason}}",
       "INVALID_CONTENT_ID": "Недопустимый идентификатор: {{value}}",
-      "INVALID_GAME_VERSION": "Недопустимая версия Minecraft: {{value}}",
-      "INVALID_PAGINATION": "Недопустимое значение ({{field}}): {{value}}",
-      "INVALID_LOADER_VERSION": "Недопустимая версия загрузчика: {{value}}",
+      "INVALID_GAME_VERSION": "Недопустимая версия Minecraft {{value}}: {{reason}}",
+      "INVALID_PAGINATION": "Недопустимое значение страницы {{value}}: {{reason}}",
+      "INVALID_LOADER_VERSION": "Недопустимая версия загрузчика {{value}}: {{reason}}",
       "PATH_ESCAPES_INSTANCE": "Путь {{path}} выходит за пределы инстанса {{instance_id}}",
       "FILE_TOO_LARGE": "Файл {{path}} слишком большой ({{size}} байт, лимит {{limit}})",
       "CONTENT_DOWNLOAD_ERROR": "Не удалось загрузить содержимое инстанса",
@@ -109,18 +109,55 @@
       "PLATFORM_PROVIDER_NOT_FOUND": "Нет доступного провайдера контента для этой платформы",
       "PLATFORM_PROVIDER_NOT_CHOSEN": "Выберите провайдер контента для этой платформы",
       "GAME_CHANGE_NOT_ALLOWED": "Сборка {{content_id}} ({{provider_id}}) не может менять версию игры или загрузчик инстанса {{instance_id}}",
-      "SETTINGS_LOAD_ERROR": "Не удалось загрузить настройки инстанса",
-      "MINECRAFT_ERROR": "Ошибка при работе Minecraft",
-      "PROCESS_ERROR": "Ошибка процесса инстанса",
-      "CREDENTIALS_ERROR": "Активный аккаунт не найден",
       "IMPORTER_NOT_FOUND": "Импортер {{importer_id}} не найден",
-      "IMPORT_FAILED": "Не удалось импортировать инстанс через {{capability_id}}: {{reason}}",
+      "IMPORT_FAILED": "Не удалось импортировать инстанс через {{capability_id}}",
       "PLUGIN_NOT_RUNNING": "Плагин {{plugin_id}} не запущен: он выгружен или перезапускается. Повторите, когда он загрузится",
       "PACK_INFO_NOT_FOUND": "Информация о модпаке не найдена",
       "UPDATER_NOT_FOUND": "Обновление для модпака {{modpack_id}} не найдено",
       "UPDATE_FAILED": "Не удалось обновить инстанс с модпаком {{modpack_id}}",
       "NOT_FOUND": "Инстанс с ID {{instance_id}} не найден",
-      "STORAGE": "Ошибка хранилища инстансов"
+      "STORAGE": "Ошибка хранилища инстансов",
+      "reason": {
+        "PRELAUNCH_COMMAND_INVALID": {
+          "EMPTY": "команда пустая"
+        },
+        "INVALID_RELATIVE_PATH": {
+          "EMPTY": "путь пустой",
+          "NUL_BYTE": "он содержит нулевой символ",
+          "BACKSLASH": "он содержит обратную косую черту, разделяйте папки символом /",
+          "ABSOLUTE": "путь должен быть относительным к папке инстанса",
+          "EMPTY_SEGMENT": "в нём двойной или завершающий разделитель",
+          "DOT_SEGMENT": "он содержит части . или ..",
+          "COLON": "имя в нём содержит двоеточие",
+          "TRAILING_DOT_OR_SPACE": "имя в нём заканчивается точкой или пробелом",
+          "RESERVED_NAME": "имя в нём зарезервировано Windows",
+          "NOT_PLAIN": "он состоит не только из обычных имён",
+          "ESCAPES_ROOT": "он ведёт за пределы своей папки",
+          "NOT_UTF8": "имя в нём не является корректным текстом",
+          "NOT_SINGLE_SEGMENT": "имя файла не должно содержать разделителей",
+          "NOT_REGULAR_FILE": "это не обычный файл",
+          "LAUNCHER_FOLDER": "он принадлежит лаунчеру"
+        },
+        "INVALID_GAME_VERSION": {
+          "EMPTY": "значение пустое",
+          "TOO_LONG": "значение слишком длинное",
+          "SURROUNDING_WHITESPACE": "оно начинается или заканчивается пробелом",
+          "CONTROL_CHARACTER": "оно содержит управляющий символ",
+          "FORBIDDEN_CHARACTER": "оно содержит недопустимый символ {{char}}",
+          "DOTS": "оно заканчивается точкой или содержит \"..\"",
+          "RESERVED_NAME": "это имя зарезервировано Windows"
+        },
+        "INVALID_LOADER_VERSION": {
+          "EMPTY": "значение пустое",
+          "TOO_LONG": "значение слишком длинное",
+          "CONTROL_CHARACTER": "оно содержит управляющий символ",
+          "WHITESPACE": "оно содержит пробел"
+        },
+        "INVALID_PAGINATION": {
+          "TOO_SMALL": "значение должно быть не меньше 1",
+          "TOO_LARGE": "значение должно быть не больше {{max}}"
+        }
+      }
     },
     "java": {
       "NOT_FOUND": "Исполняемый файл Java не найден",

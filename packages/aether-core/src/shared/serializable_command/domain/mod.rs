@@ -21,11 +21,14 @@ pub struct SerializableCommand {
 }
 
 impl SerializableCommand {
-    pub fn from_string(command: &str, current_dir: Option<&Path>) -> Result<Self, String> {
+    pub fn from_string(
+        command: &str,
+        current_dir: Option<&Path>,
+    ) -> Result<Self, CommandParseError> {
         let mut parts = command.split_whitespace();
 
         Ok(Self {
-            program: parts.next().ok_or("Error to parse command")?.to_string(),
+            program: parts.next().ok_or(CommandParseError::Empty)?.to_string(),
             args: parts.map(ToString::to_string).collect(),
             current_dir: current_dir.map(Path::to_path_buf),
             env: None,
@@ -70,9 +73,37 @@ impl SerializableCommand {
 }
 
 impl FromStr for SerializableCommand {
-    type Err = String;
+    type Err = CommandParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Self::from_string(s, None)
+    }
+}
+
+/// Why a text is not a command.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
+pub enum CommandParseError {
+    #[error("the command is empty")]
+    Empty,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn should_refuse_an_empty_command() {
+        assert_eq!(
+            SerializableCommand::from_string("   ", None).unwrap_err(),
+            CommandParseError::Empty
+        );
+    }
+
+    #[test]
+    fn should_split_a_command_into_program_and_arguments() {
+        let command = SerializableCommand::from_string("java -jar app.jar", None).unwrap();
+
+        assert_eq!(command.program, "java");
+        assert_eq!(command.args, ["-jar", "app.jar"]);
     }
 }

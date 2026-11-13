@@ -7,7 +7,7 @@ use crate::{
     features::{
         instance::{
             app::{ContentFileService, DISABLED_SUFFIX, LocatedContentFile},
-            domain::{ContentPath, InstanceError, InstanceId},
+            domain::{ContentPath, InstanceError, InstanceId, StorageError},
         },
         settings::LocationInfo,
     },
@@ -88,7 +88,7 @@ impl ContentFileService for FsContentFileService {
                 // Neither the file nor its disabled variant is there: nothing left to remove.
                 Err(IoError::IoPathError { source, .. })
                     if source.kind() == std::io::ErrorKind::NotFound => {}
-                Err(err) => return Err(InstanceError::Storage(err.to_string())),
+                Err(err) => return Err(InstanceError::storage(err)),
             }
         }
 
@@ -119,7 +119,7 @@ impl ContentFileService for FsContentFileService {
 
             rename(disabled_path, enabled_path)
                 .await
-                .map_err(|err| InstanceError::Storage(err.to_string()))?;
+                .map_err(InstanceError::storage)?;
         }
 
         Ok(())
@@ -149,7 +149,7 @@ impl ContentFileService for FsContentFileService {
 
             rename(enabled_path, disabled_path)
                 .await
-                .map_err(|err| InstanceError::Storage(err.to_string()))?;
+                .map_err(InstanceError::storage)?;
         }
 
         Ok(())
@@ -197,23 +197,21 @@ impl ContentFileService for FsContentFileService {
         match tokio::fs::symlink_metadata(&path).await {
             // Whatever the user keeps in a directory at a content path is not a content file.
             Ok(metadata) if metadata.is_dir() => {
-                return Err(InstanceError::Storage(format!(
+                return Err(InstanceError::storage(StorageError::other(format!(
                     "\"{content_path}\" of \"{instance_id}\" is a directory, not a content file"
-                )));
+                ))));
             }
             Ok(_) => {}
             Err(err) if err.kind() == std::io::ErrorKind::NotFound => return Ok(false),
             Err(err) => {
-                return Err(InstanceError::Storage(
-                    IoError::with_path(err, &path).to_string(),
-                ));
+                return Err(InstanceError::storage(IoError::with_path(err, &path)));
             }
         }
 
         rename(&path, destination)
             .await
             .map(|()| true)
-            .map_err(|err| InstanceError::Storage(err.to_string()))
+            .map_err(InstanceError::storage)
     }
 
     async fn install_content_file(
@@ -232,13 +230,13 @@ impl ContentFileService for FsContentFileService {
         if let Some(parent) = absolute_content_path.parent() {
             create_dir_all(parent)
                 .await
-                .map_err(|err| InstanceError::Storage(err.to_string()))?;
+                .map_err(InstanceError::storage)?;
         }
 
         let absolute_content_path = resolve_content(instance_id, &instance_dir, content_path)?;
 
         rename(temp_path, absolute_content_path)
             .await
-            .map_err(|err| InstanceError::Storage(err.to_string()))
+            .map_err(InstanceError::storage)
     }
 }

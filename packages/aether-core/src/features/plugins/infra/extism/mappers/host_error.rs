@@ -128,7 +128,7 @@ fn instance_dto(value: &InstanceError) -> InstanceErrorDto {
     use InstanceErrorDto as Dto;
 
     match value {
-        InstanceError::Storage(err) => Dto::Storage(err.clone()),
+        InstanceError::Storage(err) => Dto::Storage(err.to_string()),
         InstanceError::NotFound { instance_id } => Dto::NotFound {
             instance_id: instance_id.clone(),
         },
@@ -203,7 +203,7 @@ fn instance_dto(value: &InstanceError) -> InstanceErrorDto {
         },
         InstanceError::InvalidRelativePath { path, reason } => Dto::InvalidRelativePath {
             path: path.clone(),
-            reason: reason.clone(),
+            reason: reason.to_string(),
         },
         InstanceError::InvalidContentId { kind, value } => Dto::InvalidContentId {
             kind: kind.clone(),
@@ -211,20 +211,20 @@ fn instance_dto(value: &InstanceError) -> InstanceErrorDto {
         },
         InstanceError::InvalidGameVersion { value, reason } => Dto::InvalidGameVersion {
             value: value.clone(),
-            reason: reason.clone(),
+            reason: reason.to_string(),
         },
         InstanceError::InvalidPagination {
             field,
             value,
             reason,
         } => Dto::InvalidPagination {
-            field: field.clone(),
-            value: value.clone(),
-            reason: reason.clone(),
+            field: field.to_string(),
+            value: value.to_string(),
+            reason: reason.to_string(),
         },
         InstanceError::InvalidLoaderVersion { value, reason } => Dto::InvalidLoaderVersion {
             value: value.clone(),
-            reason: reason.clone(),
+            reason: reason.to_string(),
         },
         InstanceError::PathEscapesInstance { path, instance_id } => Dto::PathEscapesInstance {
             path: path.clone(),

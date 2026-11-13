@@ -107,7 +107,7 @@ impl From<&aether_core::ErrorKind> for FrontendError {
             aether_core::ErrorKind::EventError(err) => Self::Event(err.into()),
             aether_core::ErrorKind::FileWatcherError(err) => Self::FileWatcher(err.into()),
             aether_core::ErrorKind::GameLogError(err) => Self::GameLog(err.into()),
-            aether_core::ErrorKind::InstanceError(err) => Self::Instance(err.into()),
+            aether_core::ErrorKind::InstanceError(err) => err.into(),
             aether_core::ErrorKind::JavaError(err) => Self::Java(err.into()),
             aether_core::ErrorKind::MinecraftError(err) => Self::Minecraft(err.into()),
             aether_core::ErrorKind::PluginError(err) => Self::Plugin(err.into()),

@@ -9,7 +9,7 @@ use async_trait::async_trait;
 use crate::{
     features::{
         events::ProgressService,
-        instance::{ContentDownloader, InstanceError, PluginId, ProviderId},
+        instance::{ContentDownloader, InstanceError, PluginId, ProviderId, StorageError},
         plugins::{PluginRegistry, PluginSettingsStorage},
     },
     shared::{
@@ -110,7 +110,7 @@ impl ProviderContentDownloader {
             .plugin_settings
             .get(plugin_id)
             .await
-            .map_err(|err| InstanceError::Storage(err.to_string()))?;
+            .map_err(|err| InstanceError::storage(StorageError::other(err)))?;
 
         Ok(effective_allowed_hosts(&manifest, settings.as_ref()))
     }

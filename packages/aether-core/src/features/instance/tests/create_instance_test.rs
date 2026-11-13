@@ -134,7 +134,7 @@ impl InstanceFileService for MemInstanceFileService {
         let dir = self.instances_root.join(base_id.as_str());
         tokio::fs::create_dir_all(&dir)
             .await
-            .map_err(|e| InstanceError::Storage(e.to_string()))?;
+            .map_err(InstanceError::storage)?;
         Ok((base_id.clone(), dir))
     }
 
@@ -143,7 +143,7 @@ impl InstanceFileService for MemInstanceFileService {
         if dir.exists() {
             tokio::fs::remove_dir_all(&dir)
                 .await
-                .map_err(|e| InstanceError::Storage(e.to_string()))?;
+                .map_err(InstanceError::storage)?;
         }
         Ok(())
     }
@@ -671,7 +671,9 @@ async fn should_roll_back_when_storage_fails() {
             })
         }
         async fn upsert(&self, _instance: &Instance) -> Result<(), InstanceError> {
-            Err(InstanceError::Storage("disk full".to_string()))
+            Err(InstanceError::storage(
+                crate::features::instance::StorageError::other("disk full"),
+            ))
         }
         async fn update(
             &self,
@@ -919,8 +921,10 @@ async fn warnings_when_the_install_ends_in(error: InstanceError) -> (usize, bool
 
 #[tokio::test]
 async fn should_warn_and_remove_the_instance_when_its_install_fails() {
-    let (warnings, removed) =
-        warnings_when_the_install_ends_in(InstanceError::Storage("boom".to_owned())).await;
+    let (warnings, removed) = warnings_when_the_install_ends_in(InstanceError::storage(
+        crate::features::instance::StorageError::other("boom"),
+    ))
+    .await;
 
     assert_eq!((warnings, removed), (1, true));
 }

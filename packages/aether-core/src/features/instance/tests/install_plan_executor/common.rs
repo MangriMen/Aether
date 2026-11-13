@@ -339,7 +339,9 @@ impl ChangeInstanceGameUseCasePort for RecordingChangeGame {
             .push((instance_id.into(), game));
 
         if fail {
-            Err(InstanceError::Storage("install failed".into()))
+            Err(InstanceError::storage(
+                crate::features::instance::StorageError::other("install failed"),
+            ))
         } else {
             Ok(())
         }
@@ -612,7 +614,9 @@ impl ContentFileService for FailingRestore {
             .and_then(|name| name.to_str())
             .is_some_and(|name| name.ends_with("-backup"));
         if from_backup {
-            return Err(InstanceError::Storage("cannot put the file back".into()));
+            return Err(InstanceError::storage(
+                crate::features::instance::StorageError::other("cannot put the file back"),
+            ));
         }
         self.0
             .install_content_file(instance_id, content_path, temp_path)

@@ -1,3 +1,3 @@
 pub(crate) mod domain;
 
-pub use domain::SerializableCommand;
+pub use domain::{CommandParseError, SerializableCommand};

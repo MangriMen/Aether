@@ -358,7 +358,10 @@ mod tests {
         let result = ContentSearchParams::try_from(dto);
         assert!(matches!(
             result,
-            Err(InstanceError::InvalidPagination { ref field, .. }) if field == "page"
+            Err(InstanceError::InvalidPagination {
+                field: aether_core::features::instance::PaginationField::Page,
+                ..
+            })
         ));
 
         let mut dto = search(&[]);
@@ -366,7 +369,10 @@ mod tests {
         let result = ContentSearchParams::try_from(dto);
         assert!(matches!(
             result,
-            Err(InstanceError::InvalidPagination { ref field, .. }) if field == "page size"
+            Err(InstanceError::InvalidPagination {
+                field: aether_core::features::instance::PaginationField::PageSize,
+                ..
+            })
         ));
     }
 

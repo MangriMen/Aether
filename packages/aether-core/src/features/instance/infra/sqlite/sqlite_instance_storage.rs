@@ -24,7 +24,7 @@ impl SqliteInstanceStorage {
         self.pool
             .begin_with("BEGIN IMMEDIATE")
             .await
-            .map_err(|e| InstanceError::Storage(e.to_string()))
+            .map_err(InstanceError::storage)
     }
 
     /// Writes the instances in one transaction, each under its own savepoint: an instance that
@@ -37,21 +37,13 @@ impl SqliteInstanceStorage {
         let mut tx = self.begin_write().await?;
         let mut failed = Vec::new();
         for instance in instances {
-            let mut savepoint = tx
-                .begin()
-                .await
-                .map_err(|e| InstanceError::Storage(e.to_string()))?;
+            let mut savepoint = tx.begin().await.map_err(InstanceError::storage)?;
             match write_instance(&mut savepoint, instance).await {
-                Ok(()) => savepoint
-                    .commit()
-                    .await
-                    .map_err(|e| InstanceError::Storage(e.to_string()))?,
+                Ok(()) => savepoint.commit().await.map_err(InstanceError::storage)?,
                 Err(e) => failed.push((instance, e)),
             }
         }
-        tx.commit()
-            .await
-            .map_err(|e| InstanceError::Storage(e.to_string()))?;
+        tx.commit().await.map_err(InstanceError::storage)?;
         Ok(failed)
     }
 
@@ -154,7 +146,7 @@ impl SqliteInstanceStorage {
         )
         .fetch_all(&self.pool)
         .await
-        .map_err(|e| InstanceError::Storage(e.to_string()))?;
+        .map_err(InstanceError::storage)?;
 
         let mut scan = Scan::default();
         for row in rows {
@@ -242,24 +234,18 @@ impl InstanceStorage for SqliteInstanceStorage {
         sqlx::query_scalar!("SELECT id FROM instances")
             .fetch_all(&self.pool)
             .await
-            .map_err(|e| InstanceError::Storage(e.to_string()))
+            .map_err(InstanceError::storage)
     }
 
     async fn get(&self, id: &InstanceId) -> Result<Instance, InstanceError> {
-        let mut conn = self
-            .pool
-            .acquire()
-            .await
-            .map_err(|e| InstanceError::Storage(e.to_string()))?;
+        let mut conn = self.pool.acquire().await.map_err(InstanceError::storage)?;
         read_instance(&mut conn, id).await
     }
 
     async fn upsert(&self, instance: &Instance) -> Result<(), InstanceError> {
         let mut tx = self.begin_write().await?;
         write_instance(&mut tx, instance).await?;
-        tx.commit()
-            .await
-            .map_err(|e| InstanceError::Storage(e.to_string()))
+        tx.commit().await.map_err(InstanceError::storage)
     }
 
     async fn update(
@@ -272,9 +258,7 @@ impl InstanceStorage for SqliteInstanceStorage {
         if change(&mut instance)? {
             write_instance(&mut tx, &instance).await?;
         }
-        tx.commit()
-            .await
-            .map_err(|e| InstanceError::Storage(e.to_string()))?;
+        tx.commit().await.map_err(InstanceError::storage)?;
         Ok(instance)
     }
 
@@ -283,10 +267,8 @@ impl InstanceStorage for SqliteInstanceStorage {
         sqlx::query!("DELETE FROM instances WHERE id = ?", id.as_str())
             .execute(&mut *tx)
             .await
-            .map_err(|e| InstanceError::Storage(e.to_string()))?;
-        tx.commit()
-            .await
-            .map_err(|e| InstanceError::Storage(e.to_string()))
+            .map_err(InstanceError::storage)?;
+        tx.commit().await.map_err(InstanceError::storage)
     }
 }
 
@@ -321,7 +303,7 @@ async fn read_instance(
     )
     .fetch_optional(&mut *conn)
     .await
-    .map_err(|e| InstanceError::Storage(e.to_string()))?;
+    .map_err(InstanceError::storage)?;
 
     let row = row.ok_or_else(|| InstanceError::NotFound {
         instance_id: id.to_string(),
@@ -478,7 +460,7 @@ async fn write_instance(
         )
         .execute(&mut *tx)
         .await
-        .map_err(|e| InstanceError::Storage(e.to_string()))?;
+        .map_err(InstanceError::storage)?;
 
     let instance_id = instance.id().as_str();
 
@@ -505,7 +487,7 @@ async fn write_instance(
                 .await
             }
         }
-        .map_err(|e| InstanceError::Storage(e.to_string()))?;
+        .map_err(InstanceError::storage)?;
 
     Ok(())
 }
@@ -528,7 +510,7 @@ impl BrokenInstanceSource for SqliteInstanceStorage {
             .execute(&self.pool)
             .await
             .map(|_| ())
-            .map_err(|e| InstanceError::Storage(e.to_string()))
+            .map_err(InstanceError::storage)
     }
 }
 
@@ -584,7 +566,7 @@ mod tests {
         let result = storage.get(&InstanceId::try_from("a").unwrap()).await;
 
         assert!(
-            matches!(result, Err(InstanceError::Storage(ref m)) if m.contains("launch_args_json"))
+            matches!(result, Err(InstanceError::Storage(crate::features::instance::StorageError::Other(ref m))) if m.contains("launch_args_json"))
         );
     }
 
@@ -600,7 +582,7 @@ mod tests {
         let result = storage.get(&InstanceId::try_from("a").unwrap()).await;
 
         assert!(
-            matches!(result, Err(InstanceError::Storage(ref m)) if m.contains("env_vars_json"))
+            matches!(result, Err(InstanceError::Storage(crate::features::instance::StorageError::Other(ref m))) if m.contains("env_vars_json"))
         );
     }
 
@@ -710,7 +692,7 @@ mod tests {
         let listed = storage.list().await.unwrap();
 
         assert!(
-            matches!(result, Err(InstanceError::Storage(ref m)) if m.contains("game_version")),
+            matches!(result, Err(InstanceError::Storage(crate::features::instance::StorageError::Other(ref m))) if m.contains("game_version")),
             "{result:?}"
         );
         assert!(

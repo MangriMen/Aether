@@ -134,6 +134,9 @@ export type CauseDto = { type: "io"; kind: IoErrorKindDto } | { type: "network";
 /**  The only place raw error text reaches the frontend. */
 { type: "unknown"; details: string };
 
+/**  Why a text is not a command. */
+export type CommandParseReasonDto = { code: "EMPTY" };
+
 export type ContentCompatibilityCheckParamsDto = {
 	providerId: ProviderIdDto,
 	contentItem: ContentItemDto,
@@ -367,6 +370,11 @@ export type GameLogErrorDto = { code: "INVALID_SOURCE"; payload: {
 	cause: CauseDto,
 } };
 
+/**  Why a text is not a Minecraft version. */
+export type GameVersionReasonDto = { code: "EMPTY" } | { code: "TOO_LONG" } | { code: "SURROUNDING_WHITESPACE" } | { code: "CONTROL_CHARACTER" } | { code: "FORBIDDEN_CHARACTER"; payload: {
+	char: string,
+} } | { code: "DOTS" } | { code: "RESERVED_NAME" };
+
 export type HooksDto = {
 	preLaunch: string,
 	wrapper: string,
@@ -409,7 +417,7 @@ export type InstanceDto = {
 };
 
 export type InstanceErrorDto = { code: "STORAGE"; payload: {
-	details: string,
+	cause: CauseDto,
 } } | { code: "NOT_FOUND"; payload: {
 	instance_id: string,
 } } | { code: "CONTENT_PROVIDER_NOT_FOUND"; payload: {
@@ -423,9 +431,9 @@ export type InstanceErrorDto = { code: "STORAGE"; payload: {
 } } | { code: "PRELAUNCH_COMMAND_ERROR"; payload: {
 	code: number,
 } } | { code: "PRELAUNCH_COMMAND_INVALID"; payload: {
-	reason: string,
+	reason: CommandParseReasonDto,
 } } | { code: "PRELAUNCH_COMMAND_SPAWN_FAILED"; payload: {
-	reason: string,
+	cause: CauseDto,
 } } | { code: "PRELAUNCH_COMMAND_TIMEOUT"; payload: {
 	seconds: string,
 } } | { code: "VALIDATION_ERROR"; payload: {
@@ -436,7 +444,7 @@ export type InstanceErrorDto = { code: "STORAGE"; payload: {
 } } | { code: "IMPORT_FAILED"; payload: {
 	plugin_id: string,
 	capability_id: string,
-	reason: string,
+	cause: CauseDto,
 } } | { code: "PLUGIN_NOT_RUNNING"; payload: {
 	plugin_id: string,
 } } | { code: "CACHES_BEING_CLEARED" } | { code: "ICON_TOO_LARGE"; payload: {
@@ -455,20 +463,20 @@ export type InstanceErrorDto = { code: "STORAGE"; payload: {
 	path: string,
 } } | { code: "INVALID_RELATIVE_PATH"; payload: {
 	path: string,
-	reason: string,
+	reason: PathRejectionDto,
 } } | { code: "INVALID_CONTENT_ID"; payload: {
 	kind: string,
 	value: string,
 } } | { code: "INVALID_GAME_VERSION"; payload: {
 	value: string,
-	reason: string,
+	reason: GameVersionReasonDto,
 } } | { code: "INVALID_PAGINATION"; payload: {
-	field: string,
+	field: PaginationFieldDto,
 	value: string,
-	reason: string,
+	reason: PaginationReasonDto,
 } } | { code: "INVALID_LOADER_VERSION"; payload: {
 	value: string,
-	reason: string,
+	reason: LoaderVersionReasonDto,
 } } | { code: "PATH_ESCAPES_INSTANCE"; payload: {
 	path: string,
 	instance_id: string,
@@ -493,14 +501,6 @@ export type InstanceErrorDto = { code: "STORAGE"; payload: {
 	instance_id: string,
 	provider_id: string,
 	content_id: string,
-} } | { code: "SETTINGS_LOAD_ERROR"; payload: {
-	details: string,
-} } | { code: "MINECRAFT_ERROR"; payload: {
-	details: string,
-} } | { code: "PROCESS_ERROR"; payload: {
-	details: string,
-} } | { code: "CREDENTIALS_ERROR"; payload: {
-	details: string,
 } };
 
 export type InstanceEventDto = {
@@ -565,6 +565,9 @@ export type LoadConfigTypeDto = "extism";
 
 export type LoaderVersionPreferenceDto = "latest" | "stable" | string;
 
+/**  Why a text is not a loader version id. */
+export type LoaderVersionReasonDto = { code: "EMPTY" } | { code: "TOO_LONG" } | { code: "CONTROL_CHARACTER" } | { code: "WHITESPACE" };
+
 export type MemorySettingsDto = {
 	maximum: number,
 };
@@ -626,6 +629,17 @@ export type PackInfoDto = {
 	modpackId: string,
 	version: string,
 };
+
+/**  Which pagination value was refused. */
+export type PaginationFieldDto = "PAGE" | "PAGE_SIZE";
+
+/**  Why a number is not a page index or a page size. */
+export type PaginationReasonDto = { code: "TOO_SMALL" } | { code: "TOO_LARGE"; payload: {
+	max: number,
+} };
+
+/**  Why a path is not a path inside an instance. */
+export type PathRejectionDto = { code: "EMPTY" } | { code: "NUL_BYTE" } | { code: "BACKSLASH" } | { code: "ABSOLUTE" } | { code: "EMPTY_SEGMENT" } | { code: "DOT_SEGMENT" } | { code: "COLON" } | { code: "TRAILING_DOT_OR_SPACE" } | { code: "RESERVED_NAME" } | { code: "NOT_PLAIN" } | { code: "ESCAPES_ROOT" } | { code: "NOT_UTF8" } | { code: "NOT_SINGLE_SEGMENT" } | { code: "NOT_REGULAR_FILE" } | { code: "LAUNCHER_FOLDER" };
 
 export type PluginErrorDto = { code: "NOT_FOUND"; payload: {
 	plugin_id: string,

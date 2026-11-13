@@ -98,7 +98,7 @@ impl InstanceFileService for FsInstanceFileService {
 
         create_dir_all(&instance_dir)
             .await
-            .map_err(|err| InstanceError::Storage(err.to_string()))
+            .map_err(InstanceError::storage)
     }
 
     async fn create_unique_instance_dir(
@@ -110,7 +110,7 @@ impl InstanceFileService for FsInstanceFileService {
         // Ensure the instances root directory exists first
         create_dir_all(&instances_root)
             .await
-            .map_err(|err| InstanceError::Storage(err.to_string()))?;
+            .map_err(InstanceError::storage)?;
 
         let mut counter = 0u32;
         loop {
@@ -127,10 +127,7 @@ impl InstanceFileService for FsInstanceFileService {
                     counter += 1;
                 }
                 Err(e) => {
-                    return Err(InstanceError::Storage(format!(
-                        "Failed to create instance directory '{}': {e}",
-                        path.display()
-                    )));
+                    return Err(InstanceError::storage(IoError::with_path(e, &path)));
                 }
             }
         }
@@ -150,7 +147,7 @@ impl InstanceFileService for FsInstanceFileService {
         let trash_root = self.location_info.removed_instances_dir();
         create_dir_all(&trash_root)
             .await
-            .map_err(|err| InstanceError::Storage(err.to_string()))?;
+            .map_err(InstanceError::storage)?;
         let trash = trash_root.join(uuid::Uuid::new_v4().simple().to_string());
 
         let moved = retry(MOVE_ATTEMPTS, MOVE_RETRY_DELAY, is_held_open, || {
@@ -161,7 +158,7 @@ impl InstanceFileService for FsInstanceFileService {
             Ok(()) => {}
             // Another removal (the rollback of a creation, say) moved it first: it is gone.
             Err(_) if !instance_dir.exists() => return Ok(()),
-            Err(err) => return Err(InstanceError::Storage(err.to_string())),
+            Err(err) => return Err(InstanceError::storage(err)),
         }
 
         if let Err(err) = remove_dir_all(&trash).await {
@@ -188,7 +185,7 @@ impl InstanceFileService for FsInstanceFileService {
         if let Some(parent) = target.parent() {
             create_dir_all(parent)
                 .await
-                .map_err(|err| InstanceError::Storage(err.to_string()))?;
+                .map_err(InstanceError::storage)?;
         }
 
         // Resolve a second time, now that the parent chain exists. `create_dir_all` only ever
@@ -196,9 +193,9 @@ impl InstanceFileService for FsInstanceFileService {
         // something replaced a component with a symlink since the first check.
         let target = resolve_instance_file_path(instance_id, &instance_dir, relative_path)?;
 
-        fs::write(&target, bytes).await.map_err(|err| {
-            InstanceError::Storage(format!("Failed to write \"{}\": {err}", target.display()))
-        })
+        fs::write(&target, bytes)
+            .await
+            .map_err(|err| InstanceError::storage(IoError::with_path(err, &target)))
     }
 
     async fn read_instance_file(
@@ -209,14 +206,14 @@ impl InstanceFileService for FsInstanceFileService {
         let instance_dir = self.location_info.instance_dir(instance_id);
         let target = resolve_instance_file_path(instance_id, &instance_dir, relative_path)?;
 
-        let metadata = fs::metadata(&target).await.map_err(|err| {
-            InstanceError::Storage(format!("Failed to read \"{}\": {err}", target.display()))
-        })?;
+        let metadata = fs::metadata(&target)
+            .await
+            .map_err(|err| InstanceError::storage(IoError::with_path(err, &target)))?;
 
         if !metadata.is_file() {
             return Err(InstanceError::InvalidRelativePath {
                 path: relative_path.as_str().to_owned(),
-                reason: "path is not a regular file".to_owned(),
+                reason: crate::shared::safe_path::PathRejection::NotRegularFile,
             });
         }
 
@@ -224,9 +221,9 @@ impl InstanceFileService for FsInstanceFileService {
         // pulled into memory at all.
         check_size(relative_path.as_str(), metadata.len(), self.max_file_bytes)?;
 
-        fs::read(&target).await.map_err(|err| {
-            InstanceError::Storage(format!("Failed to read \"{}\": {err}", target.display()))
-        })
+        fs::read(&target)
+            .await
+            .map_err(|err| InstanceError::storage(IoError::with_path(err, &target)))
     }
 }
 

@@ -310,7 +310,7 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
         if let Some(parent) = path.parent() {
             create_dir_all(parent)
                 .await
-                .map_err(|err| InstanceError::Storage(err.to_string()))?;
+                .map_err(InstanceError::storage)?;
         }
         if let Ok(size) = u64::try_from(file.size) {
             report(DownloadEvent::Expected(size));
@@ -520,7 +520,7 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
         let temp_dir = self.location_info.temp_dir();
         create_dir_all(&temp_dir)
             .await
-            .map_err(|err| InstanceError::Storage(err.to_string()))?;
+            .map_err(InstanceError::storage)?;
         let path = temp_dir.join(format!("pack-{}.mrpack", uuid::Uuid::new_v4()));
 
         self.download_client

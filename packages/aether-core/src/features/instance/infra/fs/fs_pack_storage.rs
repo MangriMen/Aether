@@ -49,11 +49,9 @@ impl FsPackStorage {
         if target.exists() {
             remove_dir_all(&target)
                 .await
-                .map_err(|err| InstanceError::Storage(err.to_string()))?;
+                .map_err(InstanceError::storage)?;
         }
-        rename(&dir, &target)
-            .await
-            .map_err(|err| InstanceError::Storage(err.to_string()))
+        rename(&dir, &target).await.map_err(InstanceError::storage)
     }
 
     /// Reads a legacy record for migration: one with an invalid hash keeps its other fields (the
@@ -65,7 +63,7 @@ impl FsPackStorage {
     ) -> Result<PackFile, InstanceError> {
         self.read_pack_file(instance_id, content_path, true)
             .await?
-            .map_err(|err| InstanceError::Storage(err.to_string()))
+            .map_err(InstanceError::storage)
     }
 
     /// The record, or why its hash is not one. With `rehash`, an invalid hash is replaced by the
@@ -84,7 +82,7 @@ impl FsPackStorage {
         } else {
             let v1: PackFileV1 = read_toml_async(&path)
                 .await
-                .map_err(|e| InstanceError::Storage(e.to_string()))?;
+                .map_err(InstanceError::storage)?;
             (v1.file_name, v1.hash)
         };
 
@@ -103,7 +101,7 @@ impl FsPackStorage {
 
         let v1: PackFileV1 = read_toml_async(&path)
             .await
-            .map_err(|e| InstanceError::Storage(e.to_string()))?;
+            .map_err(InstanceError::storage)?;
         let migrated = v1.into_pack_file(hash);
         let _ = self
             .update_pack_file(instance_id, content_path, &migrated)
@@ -157,7 +155,7 @@ impl PackStorage for FsPackStorage {
     async fn get_pack(&self, instance_id: &InstanceId) -> Result<Pack, InstanceError> {
         let dto: PackV2 = ensure_read_toml_async(&self.get_pack_path(instance_id))
             .await
-            .map_err(|err| InstanceError::Storage(err.to_string()))?;
+            .map_err(InstanceError::storage)?;
 
         // An entry that fails the check can never name a file of an instance: it is dropped
         // rather than failing the read of the whole pack.
@@ -188,7 +186,7 @@ impl PackStorage for FsPackStorage {
         };
         write_toml_async(&self.get_pack_path(instance_id), &dto)
             .await
-            .map_err(|err| InstanceError::Storage(err.to_string()))?;
+            .map_err(InstanceError::storage)?;
         Ok(())
     }
 
@@ -199,7 +197,7 @@ impl PackStorage for FsPackStorage {
     ) -> Result<PackFile, InstanceError> {
         self.read_pack_file(instance_id, content_path, false)
             .await?
-            .map_err(|err| InstanceError::Storage(err.to_string()))
+            .map_err(InstanceError::storage)
     }
 
     async fn rehash_pack_file(
@@ -211,7 +209,7 @@ impl PackStorage for FsPackStorage {
         let path = self.get_pack_file_path(instance_id, content_path);
         if !tokio::fs::try_exists(&path)
             .await
-            .map_err(|err| InstanceError::Storage(err.to_string()))?
+            .map_err(InstanceError::storage)?
         {
             return Ok(None);
         }
@@ -222,7 +220,7 @@ impl PackStorage for FsPackStorage {
         } else {
             let v1: PackFileV1 = read_toml_async(&path)
                 .await
-                .map_err(|e| InstanceError::Storage(e.to_string()))?;
+                .map_err(InstanceError::storage)?;
             v1.into_pack_file(hash.clone())
         };
         self.update_pack_file(instance_id, content_path, &pack_file)
@@ -303,7 +301,7 @@ impl PackStorage for FsPackStorage {
             let dto: PackFileV2 = pack_file.clone().into();
             write_toml_async(&pack_file_path, &dto)
                 .await
-                .map_err(|err| InstanceError::Storage(err.to_string()))?;
+                .map_err(InstanceError::storage)?;
         }
 
         let mut pack = self.get_pack(instance_id).await?;
@@ -372,7 +370,7 @@ impl PackStorage for FsPackStorage {
         if pack_dir.exists() {
             remove_dir_all(&pack_dir)
                 .await
-                .map_err(|err| InstanceError::Storage(err.to_string()))?;
+                .map_err(InstanceError::storage)?;
         }
 
         Ok(())

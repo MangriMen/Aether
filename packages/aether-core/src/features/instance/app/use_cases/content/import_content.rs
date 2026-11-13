@@ -126,7 +126,7 @@ impl ImportContentUseCase {
         if content_path.as_str() != spelled {
             return Err(InstanceError::InvalidRelativePath {
                 path: spelled,
-                reason: "the file name is not a single path segment".to_owned(),
+                reason: crate::shared::safe_path::PathRejection::NotSingleSegment,
             });
         }
 
@@ -157,13 +157,11 @@ impl ImportContentUseCase {
             });
         }
 
-        let file_content = read_async(path)
-            .await
-            .map_err(|err| InstanceError::Storage(err.to_string()))?;
+        let file_content = read_async(path).await.map_err(InstanceError::storage)?;
 
         let hash = sha1_hash_async(file_content)
             .await
-            .map_err(|err| InstanceError::Storage(err.to_string()))?;
+            .map_err(InstanceError::storage)?;
 
         Ok((
             content_path,
@@ -177,10 +175,9 @@ impl ImportContentUseCase {
         instance_dir: &Path,
         content_folder: &str,
     ) -> Result<(), InstanceError> {
-        let root =
-            canonicalize(instance_dir).map_err(|err| InstanceError::Storage(err.to_string()))?;
-        let folder = canonicalize(instance_dir.join(content_folder))
-            .map_err(|err| InstanceError::Storage(err.to_string()))?;
+        let root = canonicalize(instance_dir).map_err(InstanceError::storage)?;
+        let folder =
+            canonicalize(instance_dir.join(content_folder)).map_err(InstanceError::storage)?;
         if folder.starts_with(&root) {
             Ok(())
         } else {
@@ -207,7 +204,7 @@ impl ImportContentUseCase {
                 // wanted either.
                 copied.push(dest_path);
                 Self::remove_files(&copied).await;
-                return Err(InstanceError::Storage(err.to_string()));
+                return Err(InstanceError::storage(err));
             }
             copied.push(dest_path);
         }

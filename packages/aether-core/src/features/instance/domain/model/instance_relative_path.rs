@@ -21,7 +21,7 @@ use crate::shared::safe_path::{self, PathRejection, Separators};
 #[error("Path \"{path}\" is not a valid path inside an instance: {reason}")]
 pub struct InvalidRelativePath {
     pub path: String,
-    pub reason: String,
+    pub reason: PathRejection,
 }
 
 impl From<InvalidRelativePath> for InstanceError {
@@ -33,10 +33,10 @@ impl From<InvalidRelativePath> for InstanceError {
     }
 }
 
-fn invalid(path: &str, reason: &str) -> InvalidRelativePath {
+fn invalid(path: &str, reason: PathRejection) -> InvalidRelativePath {
     InvalidRelativePath {
         path: path.to_owned(),
-        reason: reason.to_owned(),
+        reason,
     }
 }
 
@@ -53,13 +53,7 @@ impl InstanceRelativePath {
     pub fn parse(relative_path: &str) -> Result<Self, InvalidRelativePath> {
         safe_path::parse_relative(relative_path, Separators::SlashOrBackslash)
             .map(Self)
-            .map_err(|rejection| match rejection {
-                PathRejection::Absolute => invalid(
-                    relative_path,
-                    "path is absolute; only paths relative to the instance root are accepted",
-                ),
-                other => invalid(relative_path, &other.to_string()),
-            })
+            .map_err(|rejection| invalid(relative_path, rejection))
     }
 
     pub fn as_str(&self) -> &str {
@@ -108,12 +102,7 @@ impl ContentPath {
             .first_segment()
             .eq_ignore_ascii_case(INSTANCE_METADATA_FOLDER_NAME)
         {
-            return Err(invalid(
-                content_path,
-                &format!(
-                    "`{INSTANCE_METADATA_FOLDER_NAME}` belongs to the launcher, not to content"
-                ),
-            ));
+            return Err(invalid(content_path, PathRejection::LauncherFolder));
         }
 
         Ok(Self(path))

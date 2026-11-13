@@ -233,3 +233,48 @@ describe('plugin state reason translations', () => {
     },
   );
 });
+
+describe('instance reason translations', () => {
+  /** `{ code: "X"; payload: { ..., reason: SomeReasonDto } }` → `{ X: 'SomeReasonDto' }` */
+  const getReasonDtos = (): Record<string, string> => {
+    const start = bindings.indexOf('export type InstanceErrorDto =');
+    const rest = bindings.slice(start + 1);
+    const end = rest.search(/\nexport type /);
+    const body = rest.slice(0, end === -1 ? undefined : end);
+    const result: Record<string, string> = {};
+
+    for (const m of body.matchAll(
+      /\{ code: "(\w+)"; payload: \{[^}]*?reason: (\w+Dto),/gs,
+    )) {
+      result[m[1]!] = m[2]!;
+    }
+
+    return result;
+  };
+
+  const reasonDtos = getReasonDtos();
+
+  it('finds the errors with a reason in the bindings', () => {
+    expect(Object.keys(reasonDtos)).toContain('INVALID_RELATIVE_PATH');
+  });
+
+  it.each(dictionaries)(
+    'every instance reason code is translated in %s',
+    (_lang, dictionary) => {
+      const reasons = dictionary.errors.instance?.reason as unknown as
+        | Record<string, Record<string, string>>
+        | undefined;
+      const missing: string[] = [];
+
+      for (const [code, dtoName] of Object.entries(reasonDtos)) {
+        for (const reasonCode of getCodes(dtoName)) {
+          if (!reasons?.[code]?.[reasonCode]) {
+            missing.push(`errors.instance.reason.${code}.${reasonCode}`);
+          }
+        }
+      }
+
+      expect(missing).toEqual([]);
+    },
+  );
+});

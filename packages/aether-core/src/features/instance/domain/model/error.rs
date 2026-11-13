@@ -2,20 +2,56 @@ use std::path::PathBuf;
 
 use uuid::Uuid;
 
-use super::InvalidPagination;
+use super::{InvalidPagination, PaginationField, PaginationRejection};
 use crate::features::{
     auth::AuthApplicationError,
     instance::{ContentType, PlatformId, ProviderId},
-    minecraft::{InvalidGameVersion, InvalidLoaderVersionId, MinecraftApplicationError},
+    minecraft::{
+        GameVersionRejection, InvalidGameVersion, InvalidLoaderVersionId, LoaderVersionIdRejection,
+        MinecraftApplicationError,
+    },
     process::ProcessError,
     settings::SettingsError,
 };
 use crate::shared::cache::AssetError;
+use crate::shared::io::IoError;
+use crate::shared::safe_path::PathRejection;
+use crate::shared::serializable_command::CommandParseError;
+
+/// What the storage of instances failed on.
+#[derive(Debug, thiserror::Error)]
+pub enum StorageError {
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
+
+    #[error(transparent)]
+    SharedIo(#[from] IoError),
+
+    #[error(transparent)]
+    Database(#[from] sqlx::Error),
+
+    /// A failure with no typed source: a message of the core's own, or the text of a library
+    /// that does not expose a category.
+    #[error("{0}")]
+    Other(String),
+}
+
+impl From<crate::shared::hash::InvalidFileHash> for StorageError {
+    fn from(err: crate::shared::hash::InvalidFileHash) -> Self {
+        Self::other(err)
+    }
+}
+
+impl StorageError {
+    pub fn other(err: impl std::fmt::Display) -> Self {
+        Self::Other(err.to_string())
+    }
+}
 
 #[derive(Debug, thiserror::Error)]
 pub enum InstanceError {
     #[error("Storage error: {0}")]
-    Storage(String),
+    Storage(#[from] StorageError),
 
     #[error("The icon is larger than {limit_bytes} bytes")]
     IconTooLarge { limit_bytes: u64 },
@@ -50,10 +86,14 @@ pub enum InstanceError {
     PrelaunchCommandError { code: i32 },
 
     #[error("The pre-launch command is invalid: {reason}")]
-    PrelaunchCommandInvalid { reason: String },
+    PrelaunchCommandInvalid { reason: CommandParseError },
 
-    #[error("The pre-launch command could not be started: {reason}")]
-    PrelaunchCommandSpawnFailed { reason: String },
+    #[error("The pre-launch command \"{program}\" could not be started: {source}")]
+    PrelaunchCommandSpawnFailed {
+        program: String,
+        #[source]
+        source: std::io::Error,
+    },
 
     #[error("The pre-launch command did not finish in {seconds} seconds")]
     PrelaunchCommandTimeout { seconds: u64 },
@@ -115,22 +155,29 @@ pub enum InstanceError {
 
     // Instance files
     #[error("Path \"{path}\" is not a valid path inside an instance: {reason}")]
-    InvalidRelativePath { path: String, reason: String },
+    InvalidRelativePath { path: String, reason: PathRejection },
 
     #[error("Invalid {kind} {value:?}")]
     InvalidContentId { kind: String, value: String },
 
     #[error("Invalid Minecraft version {value:?}: {reason}")]
-    InvalidGameVersion { value: String, reason: String },
+    InvalidGameVersion {
+        value: String,
+        reason: GameVersionRejection,
+    },
 
     #[error("Invalid {field} {value}: {reason}")]
     InvalidPagination {
-        field: String,
-        value: String,
-        reason: String,
+        field: PaginationField,
+        value: i64,
+        reason: PaginationRejection,
     },
+
     #[error("Invalid loader version {value:?}: {reason}")]
-    InvalidLoaderVersion { value: String, reason: String },
+    InvalidLoaderVersion {
+        value: String,
+        reason: LoaderVersionIdRejection,
+    },
 
     #[error("Path \"{path}\" resolves outside instance \"{instance_id}\"")]
     PathEscapesInstance { path: String, instance_id: String },
@@ -200,7 +247,7 @@ impl From<InvalidGameVersion> for InstanceError {
     fn from(err: InvalidGameVersion) -> Self {
         InstanceError::InvalidGameVersion {
             value: err.value,
-            reason: err.reason.to_string(),
+            reason: err.reason,
         }
     }
 }
@@ -208,9 +255,9 @@ impl From<InvalidGameVersion> for InstanceError {
 impl From<InvalidPagination> for InstanceError {
     fn from(err: InvalidPagination) -> Self {
         InstanceError::InvalidPagination {
-            field: err.field.to_string(),
-            value: err.value.to_string(),
-            reason: err.reason.to_string(),
+            field: err.field,
+            value: err.value,
+            reason: err.reason,
         }
     }
 }
@@ -219,8 +266,14 @@ impl From<InvalidLoaderVersionId> for InstanceError {
     fn from(err: InvalidLoaderVersionId) -> Self {
         InstanceError::InvalidLoaderVersion {
             value: err.value,
-            reason: err.reason.to_string(),
+            reason: err.reason,
         }
+    }
+}
+
+impl InstanceError {
+    pub fn storage(err: impl Into<StorageError>) -> Self {
+        Self::Storage(err.into())
     }
 }
 
@@ -337,7 +390,7 @@ impl From<AssetError> for InstanceError {
         match value {
             AssetError::TooLarge { limit } => Self::IconTooLarge { limit_bytes: limit },
             AssetError::NotAnImage => Self::IconNotSupported,
-            other => Self::Storage(other.to_string()),
+            other => Self::Storage(StorageError::other(other)),
         }
     }
 }
@@ -359,6 +412,46 @@ mod icon_error_tests {
         assert!(matches!(
             InstanceError::from(AssetError::ReadSource("x".into())),
             InstanceError::Storage(_)
+        ));
+    }
+}
+
+#[cfg(test)]
+mod storage_error_tests {
+    use super::*;
+
+    #[test]
+    fn should_keep_the_io_error_as_the_source_of_a_storage_failure() {
+        let err = InstanceError::storage(std::io::Error::from(std::io::ErrorKind::NotFound));
+
+        assert!(matches!(
+            err,
+            InstanceError::Storage(StorageError::Io(ref io))
+                if io.kind() == std::io::ErrorKind::NotFound
+        ));
+    }
+
+    #[test]
+    fn should_keep_the_database_error_as_the_source_of_a_storage_failure() {
+        let err = InstanceError::storage(sqlx::Error::RowNotFound);
+
+        assert!(matches!(
+            err,
+            InstanceError::Storage(StorageError::Database(sqlx::Error::RowNotFound))
+        ));
+    }
+
+    #[test]
+    fn should_keep_the_rejection_when_a_pagination_value_is_refused() {
+        let err = InstanceError::from(crate::features::instance::PageSize::parse(0).unwrap_err());
+
+        assert!(matches!(
+            err,
+            InstanceError::InvalidPagination {
+                field: PaginationField::PageSize,
+                value: 0,
+                reason: PaginationRejection::TooSmall,
+            }
         ));
     }
 }

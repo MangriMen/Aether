@@ -87,7 +87,7 @@
       "CANCELLED": "Installation cancelled",
       "PRELAUNCH_COMMAND_ERROR": "Pre-launch command failed with exit code {{code}}",
       "PRELAUNCH_COMMAND_INVALID": "Pre-launch command is invalid: {{reason}}",
-      "PRELAUNCH_COMMAND_SPAWN_FAILED": "Pre-launch command could not be started: {{reason}}",
+      "PRELAUNCH_COMMAND_SPAWN_FAILED": "Pre-launch command could not be started",
       "PRELAUNCH_COMMAND_TIMEOUT": "Pre-launch command did not finish in {{duration}} and was stopped",
       "VALIDATION_ERROR": "Instance validation failed",
       "NOT_BROKEN": "The instance is not broken (any more), so it was left as it is",
@@ -97,7 +97,7 @@
       "INVALID_RELATIVE_PATH": "Invalid path {{path}}: {{reason}}",
       "INVALID_CONTENT_ID": "Invalid {{kind}}: {{value}}",
       "INVALID_GAME_VERSION": "Invalid Minecraft version {{value}}: {{reason}}",
-      "INVALID_PAGINATION": "Invalid {{field}} {{value}}: {{reason}}",
+      "INVALID_PAGINATION": "Invalid pagination value {{value}}: {{reason}}",
       "INVALID_LOADER_VERSION": "Invalid loader version {{value}}: {{reason}}",
       "PATH_ESCAPES_INSTANCE": "Path {{path}} points outside instance {{instance_id}}",
       "FILE_TOO_LARGE": "File {{path}} is too large ({{size}} bytes, limit {{limit}})",
@@ -109,18 +109,55 @@
       "PLATFORM_PROVIDER_NOT_FOUND": "No content provider is available for this platform",
       "PLATFORM_PROVIDER_NOT_CHOSEN": "Choose a content provider for this platform",
       "GAME_CHANGE_NOT_ALLOWED": "The pack {{content_id}} ({{provider_id}}) cannot change the game version or loader of instance {{instance_id}}",
-      "SETTINGS_LOAD_ERROR": "Failed to load instance settings",
-      "MINECRAFT_ERROR": "Minecraft execution error",
-      "PROCESS_ERROR": "Instance process error",
-      "CREDENTIALS_ERROR": "Active account not found",
       "IMPORTER_NOT_FOUND": "Importer {{importer_id}} not found",
-      "IMPORT_FAILED": "Failed to import instance via {{capability_id}}: {{reason}}",
+      "IMPORT_FAILED": "Failed to import instance via {{capability_id}}",
       "PLUGIN_NOT_RUNNING": "Plugin {{plugin_id}} is not running: it was unloaded or is restarting. Try again once it is loaded",
       "PACK_INFO_NOT_FOUND": "Modpack info not found in instance",
       "UPDATER_NOT_FOUND": "Updater for modpack {{modpack_id}} not found",
       "UPDATE_FAILED": "Failed to update instance with modpack {{modpack_id}}",
       "NOT_FOUND": "Instance with id {{instance_id}} not found",
-      "STORAGE": "Instance storage error"
+      "STORAGE": "Instance storage error",
+      "reason": {
+        "PRELAUNCH_COMMAND_INVALID": {
+          "EMPTY": "the command is empty"
+        },
+        "INVALID_RELATIVE_PATH": {
+          "EMPTY": "the path is empty",
+          "NUL_BYTE": "it contains a null character",
+          "BACKSLASH": "it contains a backslash, use / between folders",
+          "ABSOLUTE": "it must be relative to the instance folder",
+          "EMPTY_SEGMENT": "it has a doubled or trailing separator",
+          "DOT_SEGMENT": "it contains . or .. parts",
+          "COLON": "a name in it contains a colon",
+          "TRAILING_DOT_OR_SPACE": "a name in it ends with a dot or a space",
+          "RESERVED_NAME": "a name in it is reserved by Windows",
+          "NOT_PLAIN": "it is not made of plain names",
+          "ESCAPES_ROOT": "it leads outside its folder",
+          "NOT_UTF8": "a name in it is not valid text",
+          "NOT_SINGLE_SEGMENT": "the file name must not contain separators",
+          "NOT_REGULAR_FILE": "it is not a regular file",
+          "LAUNCHER_FOLDER": "it belongs to the launcher"
+        },
+        "INVALID_GAME_VERSION": {
+          "EMPTY": "it is empty",
+          "TOO_LONG": "it is too long",
+          "SURROUNDING_WHITESPACE": "it starts or ends with a space",
+          "CONTROL_CHARACTER": "it contains a control character",
+          "FORBIDDEN_CHARACTER": "it contains the forbidden character {{char}}",
+          "DOTS": "it ends with a dot or contains \"..\"",
+          "RESERVED_NAME": "it is a name reserved by Windows"
+        },
+        "INVALID_LOADER_VERSION": {
+          "EMPTY": "it is empty",
+          "TOO_LONG": "it is too long",
+          "CONTROL_CHARACTER": "it contains a control character",
+          "WHITESPACE": "it contains a space"
+        },
+        "INVALID_PAGINATION": {
+          "TOO_SMALL": "it must be at least 1",
+          "TOO_LARGE": "it must be at most {{max}}"
+        }
+      }
     },
     "java": {
       "NOT_FOUND": "Java executable not found",

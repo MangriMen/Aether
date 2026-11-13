@@ -81,7 +81,7 @@ impl LegacyInstanceScanner {
             Ok(v2) => Instance::try_from(v2),
             Err(v2_err) => match read_json_async::<super::instance::InstanceV1>(file).await {
                 Ok(v1) => Instance::try_from(v1),
-                Err(_) => Err(InstanceError::Storage(v2_err.to_string())),
+                Err(_) => Err(InstanceError::storage(v2_err)),
             },
         };
         read.map_err(|err| match err {

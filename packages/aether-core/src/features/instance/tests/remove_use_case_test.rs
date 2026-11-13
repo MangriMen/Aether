@@ -293,7 +293,9 @@ impl crate::features::instance::InstanceFileService for FailingRemoveFileService
         unimplemented!()
     }
     async fn remove_instance_dir(&self, _id: &InstanceId) -> Result<(), InstanceError> {
-        Err(InstanceError::Storage("locked".to_string()))
+        Err(InstanceError::storage(
+            crate::features::instance::StorageError::other("locked"),
+        ))
     }
     async fn write_instance_file(
         &self,

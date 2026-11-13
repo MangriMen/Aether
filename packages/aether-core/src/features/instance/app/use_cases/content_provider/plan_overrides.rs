@@ -27,7 +27,7 @@ use std::{
 use cap_fs_ext::{DirExt, FollowSymlinks, OpenOptionsFollowExt};
 use cap_std::{ambient_authority, fs::Dir};
 
-use crate::features::instance::{AnchoredPath, InstanceError, OverrideLocation};
+use crate::features::instance::{AnchoredPath, InstanceError, OverrideLocation, StorageError};
 
 /// One file of the overrides, by the path it gets in the instance.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -83,7 +83,7 @@ pub(super) async fn stage_overrides(
     let staging = staging.to_owned();
 
     blocking(move || {
-        std::fs::create_dir_all(&staging).map_err(|err| storage(&err))?;
+        std::fs::create_dir_all(&staging).map_err(InstanceError::storage)?;
 
         let mut staged = Vec::new();
         let mut copied: u64 = 0;
@@ -106,7 +106,7 @@ pub(super) async fn stage_overrides(
                         let mut entry = archive
                             .by_index(*entry)
                             .map_err(|err| invalid_archive(&err))?;
-                        let mut out = File::create(&path).map_err(|err| storage(&err))?;
+                        let mut out = File::create(&path).map_err(InstanceError::storage)?;
                         copy(
                             &mut (&mut entry).take(remaining.saturating_add(1)),
                             &mut out,
@@ -115,14 +115,10 @@ pub(super) async fn stage_overrides(
                     (OverrideFileSource::DirectoryFile, _, Some(root)) => {
                         // Reached again from the root: the directory may have changed since it
                         // was listed, and no symlink put in since is followed out of it.
-                        let input = open_in(root, &file.relative_path).map_err(|err| {
-                            InstanceError::Storage(format!(
-                                "Override \"{}\" is no longer a file of its directory: {err}",
-                                file.relative_path
-                            ))
-                        })?;
+                        let input =
+                            open_in(root, &file.relative_path).map_err(InstanceError::storage)?;
                         // Counted as it is read: the file may have grown since it was listed.
-                        let mut out = File::create(&path).map_err(|err| storage(&err))?;
+                        let mut out = File::create(&path).map_err(InstanceError::storage)?;
                         copy(&mut input.take(remaining.saturating_add(1)), &mut out)
                     }
                     (OverrideFileSource::ArchiveEntry(_), None, _) => {
@@ -132,7 +128,7 @@ pub(super) async fn stage_overrides(
                         unreachable!("a directory file is listed from a directory")
                     }
                 }
-                .map_err(|err| storage(&err))?;
+                .map_err(InstanceError::storage)?;
 
                 if written > remaining {
                     return Err(InstanceError::FileTooLarge {
@@ -185,7 +181,7 @@ fn list_archive(
         if entry.enclosed_name().is_none() || is_absolute(name) {
             return Err(InstanceError::InvalidRelativePath {
                 path: name.to_owned(),
-                reason: format!("the entry of \"{archive_path}\" escapes the archive"),
+                reason: crate::shared::safe_path::PathRejection::EscapesRoot,
             });
         }
 
@@ -222,9 +218,9 @@ fn list_directory(
     ) -> Result<(), InstanceError> {
         let mut entries = dir
             .entries()
-            .map_err(|err| storage(&err))?
+            .map_err(InstanceError::storage)?
             .collect::<Result<Vec<_>, _>>()
-            .map_err(|err| storage(&err))?;
+            .map_err(InstanceError::storage)?;
         entries.sort_by_key(cap_std::fs::DirEntry::file_name);
 
         for entry in entries {
@@ -237,17 +233,19 @@ fn list_directory(
                 .to_str()
                 .ok_or_else(|| InstanceError::InvalidRelativePath {
                     path: format!("{prefix}{}", name.to_string_lossy()),
-                    reason: "override file name is not valid UTF-8".to_owned(),
+                    reason: crate::shared::safe_path::PathRejection::NotUtf8,
                 })?;
             let relative_path = format!("{prefix}{name}");
 
             // `DirEntry::file_type` does not follow symlinks.
-            let file_type = entry.file_type().map_err(|err| storage(&err))?;
+            let file_type = entry.file_type().map_err(InstanceError::storage)?;
             if file_type.is_dir() {
-                let subdir = dir.open_dir_nofollow(name).map_err(|err| storage(&err))?;
+                let subdir = dir
+                    .open_dir_nofollow(name)
+                    .map_err(InstanceError::storage)?;
                 walk(&subdir, &format!("{relative_path}/"), max_files, files)?;
             } else if file_type.is_file() {
-                let declared_size = entry.metadata().map_err(|err| storage(&err))?.len();
+                let declared_size = entry.metadata().map_err(InstanceError::storage)?.len();
                 files.push(OverrideFile {
                     relative_path,
                     declared_size,
@@ -274,22 +272,14 @@ fn open_source_dir(path: &AnchoredPath) -> Result<Dir, InstanceError> {
         Ok(open_dirs_nofollow(&root, &names)?.unwrap_or(root))
     });
 
-    opened.map_err(|err| {
-        InstanceError::Storage(format!(
-            "Failed to open overrides directory \"{path}\": {err}"
-        ))
-    })
+    opened.map_err(InstanceError::storage)
 }
 
 /// Open an archive source, reached from its root without following a symlink.
 fn open_archive(archive_path: &AnchoredPath) -> Result<zip::ZipArchive<File>, InstanceError> {
     let file = open_root(archive_path.root())
         .and_then(|root| open_file_nofollow_in(&root, archive_path.relative()))
-        .map_err(|err| {
-            InstanceError::Storage(format!(
-                "Failed to open overrides archive \"{archive_path}\": {err}"
-            ))
-        })?;
+        .map_err(InstanceError::storage)?;
 
     zip::ZipArchive::new(file).map_err(|err| invalid_archive(&err))
 }
@@ -372,16 +362,12 @@ fn invalid_archive(err: &zip::result::ZipError) -> InstanceError {
     }
 }
 
-fn storage(err: &std::io::Error) -> InstanceError {
-    InstanceError::Storage(err.to_string())
-}
-
 async fn blocking<T: Send + 'static>(
     f: impl FnOnce() -> Result<T, InstanceError> + Send + 'static,
 ) -> Result<T, InstanceError> {
     tokio::task::spawn_blocking(f)
         .await
-        .map_err(|err| InstanceError::Storage(err.to_string()))?
+        .map_err(|err| InstanceError::storage(StorageError::other(err)))?
 }
 
 #[cfg(test)]
