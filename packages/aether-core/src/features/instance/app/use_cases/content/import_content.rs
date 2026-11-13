@@ -16,10 +16,7 @@ use crate::{
         },
         settings::LocationInfo,
     },
-    shared::{
-        hash::infra::sha1_hash_async,
-        io::infra::{canonicalize, read_async},
-    },
+    shared::{hash::infra::sha1_file_hash_async, io::infra::canonicalize},
 };
 
 pub struct ImportContent {
@@ -157,9 +154,7 @@ impl ImportContentUseCase {
             });
         }
 
-        let file_content = read_async(path).await.map_err(InstanceError::storage)?;
-
-        let hash = sha1_hash_async(file_content)
+        let hash = sha1_file_hash_async(path)
             .await
             .map_err(InstanceError::storage)?;
 

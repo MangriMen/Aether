@@ -812,6 +812,7 @@ impl ContentManagementPort for AetherContainer {
             self.storage().pack_storage.clone(),
             self.location_info().clone(),
             self.content_metadata.clone(),
+            self.instance_locks.clone(),
         ))
     }
     fn remove_content_use_case(&self) -> Arc<dyn RemoveContentUseCasePort> {

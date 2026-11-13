@@ -1,14 +1,21 @@
 //! `ListContentUseCase` reading an instance's content folders.
 
 use crate::features::instance::{
-    ContentId, ContentPath, ContentVersionId, InstanceError, Pack, PackFile, PackStorage,
-    PlanOrigin,
+    ContentId, ContentPath, ContentVersionId, InstanceError, InstanceLocks, Pack, PackFile,
+    PackStorage, PlanOrigin,
 };
 use crate::shared::{
     hash::{FileHash, HashAlgorithm},
     web_url::HttpsUrl,
 };
-use std::{collections::HashMap, sync::Arc, time::SystemTime};
+use std::{
+    collections::HashMap,
+    sync::{
+        Arc,
+        atomic::{AtomicUsize, Ordering},
+    },
+    time::SystemTime,
+};
 
 use async_trait::async_trait;
 use tempfile::TempDir;
@@ -123,6 +130,7 @@ async fn should_list_the_content_there_is_when_some_content_folders_are_missing(
             Arc::new(MemoryCapabilityRegistry::<Arc<dyn ContentProvider>>::default()),
             Arc::new(NoEvents),
         )),
+        Arc::new(InstanceLocks::new()),
     );
 
     let files = use_case
@@ -160,6 +168,7 @@ async fn should_list_the_enabled_file_when_it_sits_next_to_its_disabled_copy() {
             Arc::new(MemoryCapabilityRegistry::<Arc<dyn ContentProvider>>::default()),
             Arc::new(NoEvents),
         )),
+        Arc::new(InstanceLocks::new()),
     );
 
     for _ in 0..5 {
@@ -197,6 +206,7 @@ async fn should_strip_only_one_disabled_suffix_when_listing() {
             Arc::new(MemoryCapabilityRegistry::<Arc<dyn ContentProvider>>::default()),
             Arc::new(NoEvents),
         )),
+        Arc::new(InstanceLocks::new()),
     );
 
     let files = use_case
@@ -209,18 +219,54 @@ async fn should_strip_only_one_disabled_suffix_when_listing() {
     assert!(file.file.disabled);
 }
 
-/// Storage whose `get_pack` answers with no files, as a listing's snapshot does when a plan
-/// records a file only afterwards.
-struct StaleSnapshot(SqlitePackStorage);
+/// Storage that can answer `get_pack` with no files, as a listing's snapshot does when a plan
+/// records a file only afterwards, and counts the reads of a single file's record.
+struct SpyStorage {
+    inner: SqlitePackStorage,
+    stale: bool,
+    single_reads: AtomicUsize,
+}
+
+impl SpyStorage {
+    fn new(inner: SqlitePackStorage, stale: bool) -> Self {
+        Self {
+            inner,
+            stale,
+            single_reads: AtomicUsize::new(0),
+        }
+    }
+}
 
 #[async_trait]
-impl PackStorage for StaleSnapshot {
-    async fn get_pack(&self, _: &InstanceId) -> Result<Pack, InstanceError> {
-        Ok(Pack::default())
+impl PackStorage for SpyStorage {
+    async fn get_pack(&self, id: &InstanceId) -> Result<Pack, InstanceError> {
+        if self.stale {
+            return Ok(Pack::default());
+        }
+        self.inner.get_pack(id).await
+    }
+
+    async fn find_pack_file(
+        &self,
+        id: &InstanceId,
+        path: &ContentPath,
+    ) -> Result<Option<PackFile>, InstanceError> {
+        self.single_reads.fetch_add(1, Ordering::SeqCst);
+        self.inner.find_pack_file(id, path).await
+    }
+
+    async fn get_pack_files(
+        &self,
+        id: &InstanceId,
+    ) -> Result<HashMap<ContentPath, PackFile>, InstanceError> {
+        if self.stale {
+            return Ok(HashMap::new());
+        }
+        self.inner.get_pack_files(id).await
     }
 
     async fn update_pack(&self, id: &InstanceId, pack: &Pack) -> Result<(), InstanceError> {
-        self.0.update_pack(id, pack).await
+        self.inner.update_pack(id, pack).await
     }
 
     async fn get_pack_file(
@@ -228,7 +274,8 @@ impl PackStorage for StaleSnapshot {
         id: &InstanceId,
         path: &ContentPath,
     ) -> Result<PackFile, InstanceError> {
-        self.0.get_pack_file(id, path).await
+        self.single_reads.fetch_add(1, Ordering::SeqCst);
+        self.inner.get_pack_file(id, path).await
     }
 
     async fn insert_pack_file_if_absent(
@@ -237,7 +284,7 @@ impl PackStorage for StaleSnapshot {
         path: &ContentPath,
         file: &PackFile,
     ) -> Result<PackFile, InstanceError> {
-        self.0.insert_pack_file_if_absent(id, path, file).await
+        self.inner.insert_pack_file_if_absent(id, path, file).await
     }
 
     async fn find_by_provider_id(
@@ -246,7 +293,7 @@ impl PackStorage for StaleSnapshot {
         provider_id: &ProviderId,
         content_id: &ContentId,
     ) -> Result<Option<PackFile>, InstanceError> {
-        self.0
+        self.inner
             .find_by_provider_id(id, provider_id, content_id)
             .await
     }
@@ -257,7 +304,7 @@ impl PackStorage for StaleSnapshot {
         path: &ContentPath,
         file: &PackFile,
     ) -> Result<(), InstanceError> {
-        self.0.update_pack_file(id, path, file).await
+        self.inner.update_pack_file(id, path, file).await
     }
 
     async fn update_pack_file_many(
@@ -266,7 +313,7 @@ impl PackStorage for StaleSnapshot {
         paths: &[ContentPath],
         files: &[PackFile],
     ) -> Result<(), InstanceError> {
-        self.0.update_pack_file_many(id, paths, files).await
+        self.inner.update_pack_file_many(id, paths, files).await
     }
 
     async fn remove_pack_file(
@@ -274,7 +321,7 @@ impl PackStorage for StaleSnapshot {
         id: &InstanceId,
         path: &ContentPath,
     ) -> Result<(), InstanceError> {
-        self.0.remove_pack_file(id, path).await
+        self.inner.remove_pack_file(id, path).await
     }
 
     async fn remove_pack_file_many(
@@ -282,11 +329,11 @@ impl PackStorage for StaleSnapshot {
         id: &InstanceId,
         paths: &[ContentPath],
     ) -> Result<(), InstanceError> {
-        self.0.remove_pack_file_many(id, paths).await
+        self.inner.remove_pack_file_many(id, paths).await
     }
 
     async fn remove_all_for_instance(&self, id: &InstanceId) -> Result<(), InstanceError> {
-        self.0.remove_all_for_instance(id).await
+        self.inner.remove_all_for_instance(id).await
     }
 }
 
@@ -319,7 +366,7 @@ async fn should_keep_the_owner_of_a_file_a_plan_recorded_after_the_listing_took_
         .update_pack_file(&instance_id, &path, &planned)
         .await
         .unwrap();
-    let storage = Arc::new(StaleSnapshot(storage));
+    let storage = Arc::new(SpyStorage::new(storage, true));
     let use_case = ListContentUseCase::new(
         storage.clone(),
         location_info,
@@ -329,6 +376,7 @@ async fn should_keep_the_owner_of_a_file_a_plan_recorded_after_the_listing_took_
             Arc::new(MemoryCapabilityRegistry::<Arc<dyn ContentProvider>>::default()),
             Arc::new(NoEvents),
         )),
+        Arc::new(InstanceLocks::new()),
     );
 
     use_case.execute(instance_id.clone()).await.unwrap();
@@ -336,4 +384,102 @@ async fn should_keep_the_owner_of_a_file_a_plan_recorded_after_the_listing_took_
     let stored = storage.get_pack_file(&instance_id, &path).await.unwrap();
     assert_eq!(stored.name.as_deref(), Some("Sodium"));
     assert_eq!(stored.installed_by.unwrap().content_id, origin.content_id);
+}
+
+fn use_case_for(
+    storage: Arc<dyn PackStorage>,
+    location_info: Arc<LocationInfo>,
+    locks: Arc<InstanceLocks>,
+) -> ListContentUseCase {
+    ListContentUseCase::new(
+        storage,
+        location_info,
+        Arc::new(ContentMetadataService::new(
+            Arc::new(NoCache),
+            Arc::new(NoIcons),
+            Arc::new(MemoryCapabilityRegistry::<Arc<dyn ContentProvider>>::default()),
+            Arc::new(NoEvents),
+        )),
+        locks,
+    )
+}
+
+async fn instance_with_jars(names: &[&str]) -> (TempDir, Arc<LocationInfo>, InstanceId) {
+    let temp = TempDir::new().unwrap();
+    let location_info = Arc::new(LocationInfo::new(
+        temp.path().join("settings"),
+        temp.path().to_path_buf(),
+    ));
+    let instance_id = InstanceId::try_from("instance").unwrap();
+    let mods = location_info.instance_dir(&instance_id).join("mods");
+    tokio::fs::create_dir_all(&mods).await.unwrap();
+    for name in names {
+        tokio::fs::write(mods.join(name), name.as_bytes())
+            .await
+            .unwrap();
+    }
+    (temp, location_info, instance_id)
+}
+
+#[tokio::test]
+async fn should_not_read_the_records_one_by_one_when_listing_recorded_files() {
+    let names = ["a.jar", "b.jar", "c.jar", "d.jar"];
+    let (_temp, location_info, instance_id) = instance_with_jars(&names).await;
+    let storage = Arc::new(SpyStorage::new(SqlitePackStorage::in_memory().await, false));
+    let use_case = use_case_for(
+        storage.clone(),
+        location_info,
+        Arc::new(InstanceLocks::new()),
+    );
+    use_case.execute(instance_id.clone()).await.unwrap();
+    storage.single_reads.store(0, Ordering::SeqCst);
+
+    let files = use_case.execute(instance_id).await.unwrap();
+
+    assert_eq!(files.len(), names.len());
+    assert_eq!(storage.single_reads.load(Ordering::SeqCst), 0);
+}
+
+#[tokio::test]
+async fn should_list_a_file_without_recording_it_when_the_instance_is_locked() {
+    let (_temp, location_info, instance_id) = instance_with_jars(&["a.jar"]).await;
+    let storage = Arc::new(SqlitePackStorage::in_memory().await);
+    let locks = Arc::new(InstanceLocks::new());
+    let use_case = use_case_for(storage.clone(), location_info, locks.clone());
+
+    let held = locks.try_lock(&instance_id).unwrap();
+    let files = use_case.execute(instance_id.clone()).await.unwrap();
+    assert!(files.contains_key("mods/a.jar"));
+    assert!(
+        storage
+            .get_pack(&instance_id)
+            .await
+            .unwrap()
+            .files
+            .is_empty()
+    );
+
+    drop(held);
+    use_case.execute(instance_id.clone()).await.unwrap();
+    assert_eq!(storage.get_pack(&instance_id).await.unwrap().files.len(), 1);
+}
+
+#[tokio::test]
+async fn should_record_every_new_file_in_one_pass_when_the_instance_is_free() {
+    let names: Vec<String> = (0..40).map(|n| format!("m{n}.jar")).collect();
+    let name_refs: Vec<&str> = names.iter().map(String::as_str).collect();
+    let (_temp, location_info, instance_id) = instance_with_jars(&name_refs).await;
+    let storage = Arc::new(SqlitePackStorage::in_memory().await);
+    let use_case = use_case_for(
+        storage.clone(),
+        location_info,
+        Arc::new(InstanceLocks::new()),
+    );
+
+    use_case.execute(instance_id.clone()).await.unwrap();
+
+    assert_eq!(
+        storage.get_pack(&instance_id).await.unwrap().files.len(),
+        names.len()
+    );
 }

@@ -1,6 +1,7 @@
 use std::{
+    collections::{HashMap, HashSet},
     path::{Path, PathBuf},
-    sync::Arc,
+    sync::{Arc, Mutex},
 };
 
 use async_trait::async_trait;
@@ -12,18 +13,60 @@ use crate::{
     features::{
         instance::{
             ContentFile, ContentFileView, ContentMetadataService, ContentPath, ContentType,
-            InstanceError, InstanceId, PackEntry, PackFile, PackStorage,
+            InstanceError, InstanceId, InstanceLocks, PackFile, PackStorage,
             app::{DISABLED_SUFFIX, ports::ListContentUseCasePort},
         },
         settings::LocationInfo,
     },
-    shared::{hash::infra::sha1_hash_async, io::infra::read_async},
+    shared::hash::infra::sha1_file_hash_async,
 };
 
 pub struct ListContentUseCase {
     pack_storage: Arc<dyn PackStorage>,
     location_info: Arc<LocationInfo>,
     content_metadata: Arc<ContentMetadataService>,
+    instance_locks: Arc<InstanceLocks>,
+}
+
+/// What the listing read once, before it walked the folders.
+struct Snapshot {
+    /// Every path with a record, usable or not.
+    recorded: HashSet<ContentPath>,
+    /// The records that can be used.
+    records: HashMap<ContentPath, PackFile>,
+}
+
+/// How a listed file stands with the storage.
+enum Record {
+    Stored,
+    /// Nothing is recorded for it.
+    Missing,
+    /// A record exists but its hash cannot be used.
+    Unusable,
+}
+
+/// A file of a content folder, with the record it is listed by.
+struct Found {
+    pack_file: PackFile,
+    content_path: ContentPath,
+    content_type: ContentType,
+    file_path: PathBuf,
+    size: u64,
+    modified: Option<std::time::SystemTime>,
+    is_disabled: bool,
+    record: Record,
+}
+
+impl Found {
+    fn into_content_file(self) -> ContentFile {
+        ContentFile::from_pack_file(
+            self.pack_file,
+            self.content_path,
+            self.content_type,
+            self.size,
+            self.is_disabled,
+        )
+    }
 }
 
 impl ListContentUseCase {
@@ -31,11 +74,13 @@ impl ListContentUseCase {
         pack_storage: Arc<dyn PackStorage>,
         location_info: Arc<LocationInfo>,
         content_metadata: Arc<ContentMetadataService>,
+        instance_locks: Arc<InstanceLocks>,
     ) -> Self {
         Self {
             pack_storage,
             location_info,
             content_metadata,
+            instance_locks,
         }
     }
 
@@ -48,44 +93,51 @@ impl ListContentUseCase {
     ) -> Result<DashMap<String, ContentFileView>, InstanceError> {
         let instance_dir = self.location_info.instance_dir(&instance_id);
 
-        let entries_by_path = Arc::new(self.get_entries_by_path(&instance_id).await?);
+        let snapshot = Arc::new(self.read_snapshot(&instance_id).await?);
 
-        let files = Arc::new(DashMap::new());
+        let found = Arc::new(Mutex::new(Vec::new()));
         for content_type in ContentType::iterator() {
             self.process_content_directory(
                 &instance_id,
                 &instance_dir,
                 content_type,
-                entries_by_path.clone(),
-                files.clone(),
+                snapshot.clone(),
+                found.clone(),
             )
             .await?;
         }
 
-        let files = match Arc::try_unwrap(files) {
-            Ok(map) => map,
-            Err(arc) => (*arc).clone(),
-        };
-        let views: DashMap<String, ContentFileView> = files
+        let mut found = std::mem::take(
+            &mut *found
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner),
+        );
+        self.record_found(&instance_id, &mut found).await?;
+
+        let views: DashMap<String, ContentFileView> = found
             .into_iter()
-            .map(|(path, file)| (path.into_string(), file.into()))
+            .map(|found| {
+                let file = found.into_content_file();
+                (file.content_path.clone().into_string(), file.into())
+            })
             .collect();
         self.content_metadata.attach(&instance_id, &views).await;
 
         Ok(views)
     }
 
-    async fn get_entries_by_path(
-        &self,
-        instance_id: &InstanceId,
-    ) -> Result<DashMap<ContentPath, PackEntry>, InstanceError> {
-        let metadata = self.pack_storage.get_pack(instance_id).await?;
-
-        Ok(metadata
+    async fn read_snapshot(&self, instance_id: &InstanceId) -> Result<Snapshot, InstanceError> {
+        let recorded = self
+            .pack_storage
+            .get_pack(instance_id)
+            .await?
             .files
             .into_iter()
-            .map(|entry| (entry.file.clone(), entry))
-            .collect())
+            .map(|entry| entry.file)
+            .collect();
+        let records = self.pack_storage.get_pack_files(instance_id).await?;
+
+        Ok(Snapshot { recorded, records })
     }
 
     async fn process_content_directory(
@@ -93,8 +145,8 @@ impl ListContentUseCase {
         instance_id: &InstanceId,
         instance_dir: &Path,
         content_type: ContentType,
-        entries_by_path: Arc<DashMap<ContentPath, PackEntry>>,
-        files: Arc<DashMap<ContentPath, ContentFile>>,
+        snapshot: Arc<Snapshot>,
+        found: Arc<Mutex<Vec<Found>>>,
     ) -> Result<(), InstanceError> {
         let content_dir = instance_dir.join(content_type.get_folder());
 
@@ -111,8 +163,8 @@ impl ListContentUseCase {
         tokio_stream::wrappers::ReadDirStream::new(read_dir)
             .map_err(InstanceError::storage)
             .try_for_each_concurrent(8, |entry| {
-                let entries_ref = Arc::clone(&entries_by_path);
-                let files_ref = Arc::clone(&files);
+                let snapshot_ref = Arc::clone(&snapshot);
+                let found_ref = Arc::clone(&found);
 
                 async move {
                     let path = entry.path();
@@ -132,10 +184,13 @@ impl ListContentUseCase {
                     }
 
                     if let Some(file) = self
-                        .process_content_file(instance_id, &path, content_type, &entries_ref)
+                        .process_content_file(instance_id, &path, content_type, &snapshot_ref)
                         .await?
                     {
-                        files_ref.insert(file.content_path.clone(), file);
+                        found_ref
+                            .lock()
+                            .unwrap_or_else(std::sync::PoisonError::into_inner)
+                            .push(file);
                     }
 
                     Ok(())
@@ -151,16 +206,20 @@ impl ListContentUseCase {
         instance_id: &InstanceId,
         file_path: &Path,
         content_type: ContentType,
-        entries_by_path: &DashMap<ContentPath, PackEntry>,
-    ) -> Result<Option<ContentFile>, InstanceError> {
+        snapshot: &Snapshot,
+    ) -> Result<Option<Found>, InstanceError> {
         let Some(file_name) = file_path.file_name().and_then(|n| n.to_str()) else {
             return Ok(None);
         };
 
-        let file_size = tokio::fs::metadata(file_path)
-            .await
-            .map_err(InstanceError::storage)?
-            .len();
+        // A file a change removes while the listing runs is left out, not an error.
+        let metadata = match tokio::fs::metadata(file_path).await {
+            Ok(metadata) => metadata,
+            Err(err) if err.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+            Err(err) => return Err(InstanceError::storage(err)),
+        };
+        let file_size = metadata.len();
+        let modified = metadata.modified().ok();
 
         let original_path = PathBuf::from(content_type.get_folder())
             .join(file_name)
@@ -192,67 +251,102 @@ impl ListContentUseCase {
             }
         };
 
-        let pack_file = self
-            .get_or_create_pack_file(
-                instance_id,
-                file_path,
-                file_name,
-                &content_path,
-                entries_by_path,
-            )
-            .await?;
+        let (pack_file, record) = if let Some(pack_file) = snapshot.records.get(&content_path) {
+            (pack_file.clone(), Record::Stored)
+        } else {
+            let hash = match sha1_file_hash_async(file_path).await {
+                Ok(hash) => hash,
+                Err(err) if err.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+                Err(err) => return Err(InstanceError::storage(err)),
+            };
+            let record = if snapshot.recorded.contains(&content_path) {
+                Record::Unusable
+            } else {
+                Record::Missing
+            };
+            (PackFile::from_hash(file_name.to_owned(), hash), record)
+        };
 
-        Ok(Some(ContentFile::from_pack_file(
+        Ok(Some(Found {
             pack_file,
             content_path,
             content_type,
-            file_size,
+            file_path: file_path.to_path_buf(),
+            size: file_size,
+            modified,
             is_disabled,
-        )))
+            record,
+        }))
     }
 
-    async fn get_or_create_pack_file(
+    /// Records the files the storage knows nothing usable about, all under one hold of the
+    /// instance's lock. Not while a plan or another change holds it: the listing shows the files
+    /// as found and records them on a later pass, rather than waiting on a lock that can be held
+    /// for a whole install.
+    async fn record_found(
         &self,
         instance_id: &InstanceId,
-        file_path: &Path,
-        file_name: &str,
-        content_path: &ContentPath,
-        entries_by_path: &DashMap<ContentPath, PackEntry>,
+        found: &mut [Found],
+    ) -> Result<(), InstanceError> {
+        if found
+            .iter()
+            .all(|file| matches!(file.record, Record::Stored))
+        {
+            return Ok(());
+        }
+        let Ok(_lock) = self.instance_locks.try_lock(instance_id) else {
+            return Ok(());
+        };
+
+        for file in found
+            .iter_mut()
+            .filter(|file| !matches!(file.record, Record::Stored))
+        {
+            // The hashing took a while: a change that held the lock meanwhile may have removed
+            // or replaced the file, and a record of what is no longer there would stay.
+            let unchanged = tokio::fs::metadata(&file.file_path)
+                .await
+                .is_ok_and(|metadata| {
+                    metadata.len() == file.size && metadata.modified().ok() == file.modified
+                });
+            if !unchanged {
+                continue;
+            }
+
+            file.pack_file = self.record_file(instance_id, file).await?;
+        }
+
+        Ok(())
+    }
+
+    async fn record_file(
+        &self,
+        instance_id: &InstanceId,
+        file: &Found,
     ) -> Result<PackFile, InstanceError> {
-        if let Some(entry) = entries_by_path.get(content_path)
-            && let Some(pack_file) = self
+        if matches!(file.record, Record::Unusable) {
+            // A plan may have replaced the record since the snapshot.
+            if let Some(stored) = self
                 .pack_storage
-                .find_pack_file(instance_id, &entry.file)
+                .find_pack_file(instance_id, &file.content_path)
                 .await?
-        {
-            return Ok(pack_file);
+            {
+                return Ok(stored);
+            }
+            // What is there keeps everything but its hash.
+            if let Some(repaired) = self
+                .pack_storage
+                .rehash_pack_file(instance_id, &file.content_path, &file.pack_file.hash)
+                .await?
+            {
+                return Ok(repaired);
+            }
         }
 
-        let file_content = read_async(file_path)
-            .await
-            .map_err(InstanceError::storage)?;
-        let hash = sha1_hash_async(file_content)
-            .await
-            .map_err(InstanceError::storage)?;
-
-        // A record that exists but could not be used keeps everything but its hash.
-        if entries_by_path.contains_key(content_path)
-            && let Some(pack_file) = self
-                .pack_storage
-                .rehash_pack_file(instance_id, content_path, &hash)
-                .await?
-        {
-            return Ok(pack_file);
-        }
-
-        // The hashing took a while: a plan may have recorded the file (with its owner) since the
-        // snapshot, and that record is not ours to replace.
+        // A plan may have recorded the file (with its owner) since the snapshot, and that record
+        // is not ours to replace.
         self.pack_storage
-            .insert_pack_file_if_absent(
-                instance_id,
-                content_path,
-                &PackFile::from_hash(file_name.to_owned(), hash),
-            )
+            .insert_pack_file_if_absent(instance_id, &file.content_path, &file.pack_file)
             .await
     }
 }
