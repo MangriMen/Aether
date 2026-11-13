@@ -301,8 +301,10 @@ export type JavaErrorDto = { code: "NOT_FOUND"; payload: {
 	version: number,
 	os: string,
 	arch: string,
+	cause: CauseDto,
 } } | { code: "REMOVE_OLD_INSTALLATION_ERROR"; payload: {
 	path: string,
+	cause: CauseDto,
 } } | { code: "STORAGE_ERROR"; payload: {
 	cause: CauseDto,
 } } | { code: "CANCELLED" };

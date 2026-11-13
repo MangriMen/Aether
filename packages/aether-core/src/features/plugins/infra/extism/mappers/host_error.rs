@@ -321,12 +321,14 @@ impl From<&JavaDomainError> for JavaErrorDto {
                 os: os.clone(),
                 arch: arch.clone(),
             },
-            JavaDomainError::FailedToInstall { version, os, arch } => Self::FailedToInstall {
+            JavaDomainError::FailedToInstall {
+                version, os, arch, ..
+            } => Self::FailedToInstall {
                 version: *version,
                 os: os.clone(),
                 arch: arch.clone(),
             },
-            JavaDomainError::RemoveOldInstallationError { path } => {
+            JavaDomainError::RemoveOldInstallationError { path, .. } => {
                 Self::RemoveOldInstallationError {
                     path: path.to_string_lossy().into_owned(),
                 }
