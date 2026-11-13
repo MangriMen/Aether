@@ -16,7 +16,7 @@ use crate::{
         cache::domain::{Cache, FileStore},
         cache::infra::InfinityCachedResource,
         io::domain::IoError,
-        keyed_locks::KeyedLocks,
+        keyed_locks::{KeyedLockGuard, KeyedLocks},
     },
 };
 
@@ -26,7 +26,8 @@ use super::{
 };
 
 /// The files of a game version are one shared download: one install of a version downloads
-/// them at a time (a lock per version), under a shared bar, and the others wait on it.
+/// them at a time (a lock per version), under a shared bar, and the others wait on it. The
+/// install keeps the lock for its loader's processors, which write the version's files too.
 pub struct MinecraftDownloadService<RC: RequestClient, PS: ProgressService, C: Cache, FS: FileStore>
 {
     client_service: ClientService<RC, FS>,
@@ -183,7 +184,7 @@ impl<RC: RequestClient, PS: ProgressService, C: Cache, FS: FileStore> MinecraftD
         force: bool,
         minecraft_updated: bool,
         waiting_bar: Option<&ProgressBarId>,
-    ) -> Result<(), MinecraftDomainError> {
+    ) -> Result<KeyedLockGuard, MinecraftDomainError> {
         // Before the lock: a download another install runs under it is mirrored too.
         let _wait = self
             .progress_service
@@ -194,10 +195,11 @@ impl<RC: RequestClient, PS: ProgressService, C: Cache, FS: FileStore> MinecraftD
                 },
             )
             .await;
-        let _lock = self.version_locks.lock(&version_info.id).await;
+        let lock = self.version_locks.lock(&version_info.id).await;
 
         self.download_missing(version_info, java_arch, force, minecraft_updated)
-            .await
+            .await?;
+        Ok(lock)
     }
 
     async fn get_version_info(

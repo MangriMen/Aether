@@ -329,8 +329,8 @@ fn library_path(location_info: &LocationInfo) -> std::path::PathBuf {
         .join("com/example/lib/1.0/lib-1.0.jar")
 }
 
-/// Download `version`, waiting with `waiting`, in a task of its own; the bar comes back with
-/// the result.
+/// Download `version`, waiting with `waiting`, in a task of its own, and let the version go;
+/// the bar comes back with the result.
 fn download(
     service: &Arc<Service>,
     version: &Arc<vanilla::VersionInfo>,
@@ -340,9 +340,65 @@ fn download(
     tokio::spawn(async move {
         let result = service
             .download_minecraft(&version, "x86_64", false, false, waiting.as_ref())
-            .await;
+            .await
+            .map(drop);
         (result, waiting)
     })
+}
+
+/// An install keeps the version for its processors: one more of it waits until it is let go,
+/// while another version goes ahead.
+#[tokio::test]
+async fn should_make_an_install_of_the_version_wait_until_the_lock_it_returned_is_dropped() {
+    let fixture = fixture();
+    let other = version(&fixture.client, "1.20.2", "cd0123456789");
+    let version = version(&fixture.client, "1.20.1", ASSET_HASH);
+    let lock = fixture
+        .service
+        .download_minecraft(&version, "x86_64", false, false, None)
+        .await
+        .unwrap();
+
+    let same = download(&fixture.service, &version, None);
+    download(&fixture.service, &other, None)
+        .await
+        .unwrap()
+        .0
+        .unwrap();
+    tokio::time::sleep(Duration::from_millis(50)).await;
+    assert!(!same.is_finished(), "the version is still held");
+
+    drop(lock);
+    tokio::time::timeout(Duration::from_secs(5), same)
+        .await
+        .expect("the version was never let go")
+        .unwrap()
+        .0
+        .unwrap();
+}
+
+#[tokio::test]
+async fn should_let_the_version_go_when_its_download_fails() {
+    let fixture = fixture();
+    let version = version_from(&fixture.client, "1.20.1", ASSET_HASH, |json| {
+        json["downloads"]["client"]["sha1"] = WRONG_SHA1.into();
+    });
+    let failed = fixture
+        .service
+        .download_minecraft(&version, "x86_64", false, false, None)
+        .await;
+    assert!(failed.is_err());
+
+    let again = tokio::time::timeout(
+        Duration::from_secs(5),
+        fixture
+            .service
+            .download_minecraft(&version, "x86_64", false, false, None),
+    )
+    .await
+    .expect("the version was kept after the failure");
+
+    assert!(again.is_err(), "the digest is still wrong");
 }
 
 /// A game without its natives starts and crashes: a failed download of them is the install's.

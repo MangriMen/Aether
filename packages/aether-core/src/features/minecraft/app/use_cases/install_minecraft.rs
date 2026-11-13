@@ -3,18 +3,21 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use tracing::debug;
 
-use crate::features::{
-    events::{ProgressBarId, ProgressService, ProgressServiceExt},
-    java::{
-        InstallJava, JavaApplicationError, JavaInstallService, JavaInstallationService,
-        JavaQueryService,
+use crate::{
+    features::{
+        events::{ProgressBarId, ProgressService, ProgressServiceExt},
+        java::{
+            InstallJava, JavaApplicationError, JavaInstallService, JavaInstallationService,
+            JavaQueryService,
+        },
+        minecraft::{
+            GameDownloadParams, GameVersion, InstallMinecraftParams, LoaderVersionPreference,
+            LoaderVersionService, MinecraftApplicationError, MinecraftDownloader,
+            MinecraftInstallService, ModLoader, ModLoaderProcessor, VersionManifestService,
+            get_compatible_java_version, resolve_minecraft_version, version_jar_name,
+        },
     },
-    minecraft::{
-        GameDownloadParams, GameVersion, InstallMinecraftParams, LoaderVersionPreference,
-        LoaderVersionService, MinecraftApplicationError, MinecraftDownloader,
-        MinecraftInstallService, ModLoader, ModLoaderProcessor, VersionManifestService,
-        get_compatible_java_version, resolve_minecraft_version, version_jar_name,
-    },
+    shared::keyed_locks::KeyedLockGuard,
 };
 
 /// The part of the bar of an install (out of 100) that the shared files of its version take,
@@ -43,6 +46,9 @@ struct GameFiles {
     version_info: crate::features::minecraft::vanilla::VersionInfo,
     java: crate::features::java::Java,
     version_jar: String,
+    /// Held while the loader's processors run: they write the version's shared files, which no
+    /// other install may download or process meanwhile.
+    version_lock: KeyedLockGuard,
 }
 
 pub struct InstallMinecraftUseCase {
@@ -144,7 +150,8 @@ impl InstallMinecraftUseCase {
             }
         }?;
 
-        self.minecraft_download_service
+        let version_lock = self
+            .minecraft_download_service
             .download_minecraft(
                 &version_info,
                 java.architecture(),
@@ -173,6 +180,7 @@ impl InstallMinecraftUseCase {
             version_info,
             java,
             version_jar,
+            version_lock,
         })
     }
 
@@ -194,6 +202,7 @@ impl InstallMinecraftUseCase {
             mut version_info,
             java,
             version_jar,
+            version_lock,
         } = self
             .download_game_files(
                 GameDownloadParams {
@@ -223,6 +232,7 @@ impl InstallMinecraftUseCase {
             }
             ModLoader::Vanilla | ModLoader::Fabric | ModLoader::Quilt => {}
         }
+        drop(version_lock);
 
         Ok(())
     }
@@ -256,6 +266,7 @@ impl MinecraftInstallService for InstallMinecraftUseCase {
             loader_version,
             ..params
         };
+        // No processors run ahead of an install, so the version is let go at once.
         self.download_game_files(params, waiting_bar, None, false)
             .await
             .map(|_| ())
@@ -324,5 +335,322 @@ mod tests {
     #[tokio::test]
     async fn should_pick_no_loader_version_when_the_game_is_vanilla() {
         assert_eq!(preference_of(ModLoader::Vanilla, None).await, None);
+    }
+
+    // ---- the version's lock over the processors ----
+
+    use std::{
+        path::Path,
+        sync::atomic::{AtomicBool, AtomicUsize, Ordering},
+        time::Duration,
+    };
+
+    use tokio::sync::{Notify, watch};
+
+    use crate::{
+        features::{
+            events::{ProgressServiceImpl, infra::InMemoryProgressBarStorage},
+            java::{Java, JavaDomainError, JavaPath},
+            minecraft::{ProcessorFailure, vanilla},
+        },
+        shared::keyed_locks::KeyedLocks,
+    };
+
+    const GAME: &str = "1.20.1";
+
+    fn java() -> Java {
+        let path = std::env::temp_dir().join("java");
+        Java::new(
+            17,
+            "17".to_owned(),
+            "x86_64".to_owned(),
+            JavaPath::parse(&path.to_string_lossy()).unwrap(),
+        )
+    }
+
+    /// The game and its Forge, both there: only the version's lock and processors matter.
+    struct Forge;
+
+    #[async_trait]
+    impl LoaderVersionService for Forge {
+        async fn resolve(
+            &self,
+            _: &GameVersion,
+            _: &ModLoader,
+            _: Option<&LoaderVersionPreference>,
+        ) -> Result<Option<modded::LoaderVersion>, MinecraftDomainError> {
+            Ok(Some(modded::LoaderVersion {
+                id: "forge-47.0".to_owned(),
+                url: String::new(),
+                stable: true,
+            }))
+        }
+
+        async fn try_get_default(
+            &self,
+            _: &GameVersion,
+            _: &ModLoader,
+        ) -> Result<Option<LoaderVersionPreference>, MinecraftDomainError> {
+            unimplemented!("the install pins its loader version")
+        }
+    }
+
+    #[async_trait]
+    impl VersionManifestService for Forge {
+        async fn execute(&self) -> Result<vanilla::VersionManifest, MinecraftApplicationError> {
+            Ok(vanilla::VersionManifest {
+                latest: vanilla::LatestVersion {
+                    release: GAME.to_owned(),
+                    snapshot: GAME.to_owned(),
+                },
+                versions: vec![vanilla::Version {
+                    id: GAME.to_owned(),
+                    type_: vanilla::VersionType::Release,
+                    url: String::new(),
+                    time: chrono::DateTime::UNIX_EPOCH,
+                    release_time: chrono::DateTime::UNIX_EPOCH,
+                    sha1: String::new(),
+                    compliance_level: 0,
+                    original_sha1: None,
+                }],
+            })
+        }
+    }
+
+    #[async_trait]
+    impl JavaInstallationService for Forge {
+        async fn locate_java(&self, _: &Path) -> Result<Java, JavaDomainError> {
+            Ok(java())
+        }
+
+        async fn discover_installations(
+            &self,
+            _: &[std::path::PathBuf],
+        ) -> Result<Vec<Java>, JavaDomainError> {
+            unimplemented!("the install names its Java")
+        }
+    }
+
+    #[async_trait]
+    impl JavaQueryService for Forge {
+        async fn execute(&self, _: u32) -> Result<Java, JavaApplicationError> {
+            unimplemented!("the install names its Java")
+        }
+    }
+
+    #[async_trait]
+    impl JavaInstallService for Forge {
+        async fn execute(
+            &self,
+            _: InstallJava,
+            _: Option<&ProgressBarId>,
+        ) -> Result<Java, JavaApplicationError> {
+            unimplemented!("the install names its Java")
+        }
+    }
+
+    /// Has every file of a version already, and locks the version as the real downloader does.
+    #[derive(Default)]
+    struct Downloader {
+        locks: KeyedLocks<String>,
+        /// How many installs have asked for the version's files.
+        asked: AtomicUsize,
+    }
+
+    #[async_trait]
+    impl MinecraftDownloader for Downloader {
+        async fn download_minecraft(
+            &self,
+            version_info: &vanilla::VersionInfo,
+            _: &str,
+            _: bool,
+            _: bool,
+            _: Option<&ProgressBarId>,
+        ) -> Result<KeyedLockGuard, MinecraftDomainError> {
+            self.asked.fetch_add(1, Ordering::SeqCst);
+            Ok(self.locks.lock(&version_info.id).await)
+        }
+
+        async fn get_version_info(
+            &self,
+            version: &vanilla::Version,
+            loader: Option<&modded::LoaderVersion>,
+            _: Option<bool>,
+            _: Option<&ProgressBarId>,
+        ) -> Result<vanilla::VersionInfo, MinecraftDomainError> {
+            let id = version_jar_name(&version.id, loader.map(|loader| loader.id.as_str()));
+            Ok(serde_json::from_value(serde_json::json!({
+                "assetIndex": { "id": "1", "sha1": "0", "size": 1, "totalSize": 1, "url": "" },
+                "assets": "1",
+                "downloads": {},
+                "id": id,
+                "javaVersion": null,
+                "libraries": [],
+                "mainClass": "Main",
+                "minimumLauncherVersion": 1,
+                "releaseTime": "2020-01-01T00:00:00Z",
+                "time": "2020-01-01T00:00:00Z",
+                "type": "release",
+                "data": {},
+                "processors": [{ "jar": "a:b:1", "classpath": [], "args": [] }],
+            }))
+            .unwrap())
+        }
+    }
+
+    /// Writes the version's outputs once they are not there, as the real processors do: until
+    /// the gate opens, then it skips them. Counts the runs, and how many ran at once.
+    struct Processors {
+        done: AtomicBool,
+        runs: AtomicUsize,
+        running: AtomicUsize,
+        most_at_once: AtomicUsize,
+        started: Notify,
+        gate: watch::Sender<bool>,
+        /// The next run fails once through the gate.
+        fails: AtomicBool,
+    }
+
+    impl Default for Processors {
+        fn default() -> Self {
+            Self {
+                done: AtomicBool::default(),
+                runs: AtomicUsize::default(),
+                running: AtomicUsize::default(),
+                most_at_once: AtomicUsize::default(),
+                started: Notify::new(),
+                gate: watch::channel(false).0,
+                fails: AtomicBool::default(),
+            }
+        }
+    }
+
+    #[async_trait]
+    impl ModLoaderProcessor for Processors {
+        async fn run(
+            &self,
+            _: GameVersion,
+            _: String,
+            _: &Path,
+            _: &mut vanilla::VersionInfo,
+            _: &Java,
+            _: Option<&ProgressBarId>,
+        ) -> Result<(), MinecraftDomainError> {
+            if self.done.load(Ordering::SeqCst) {
+                return Ok(());
+            }
+            self.runs.fetch_add(1, Ordering::SeqCst);
+            let now = self.running.fetch_add(1, Ordering::SeqCst) + 1;
+            self.most_at_once.fetch_max(now, Ordering::SeqCst);
+            self.started.notify_one();
+            self.gate.subscribe().wait_for(|open| *open).await.unwrap();
+            self.running.fetch_sub(1, Ordering::SeqCst);
+            if self.fails.swap(false, Ordering::SeqCst) {
+                return Err(MinecraftDomainError::ProcessorFailed {
+                    reason: ProcessorFailure::Exited {
+                        code: Some(1),
+                        stderr: String::new(),
+                    },
+                });
+            }
+            self.done.store(true, Ordering::SeqCst);
+            Ok(())
+        }
+    }
+
+    struct Installs {
+        use_case: Arc<InstallMinecraftUseCase>,
+        downloader: Arc<Downloader>,
+        processors: Arc<Processors>,
+    }
+
+    fn installs() -> Installs {
+        let downloader = Arc::new(Downloader::default());
+        let processors = Arc::new(Processors::default());
+        let progress = Arc::new(ProgressServiceImpl::new(
+            Arc::new(crate::features::events::test_support::NoOpEmitter),
+            Arc::new(InMemoryProgressBarStorage::default()),
+        ));
+        let use_case = Arc::new(InstallMinecraftUseCase::new(
+            Arc::new(Forge),
+            Arc::new(Forge),
+            downloader.clone(),
+            processors.clone(),
+            Arc::new(Forge),
+            Arc::new(Forge),
+            Arc::new(Forge),
+            progress,
+        ));
+        Installs {
+            use_case,
+            downloader,
+            processors,
+        }
+    }
+
+    impl Installs {
+        fn install(&self) -> tokio::task::JoinHandle<Result<(), MinecraftApplicationError>> {
+            let use_case = self.use_case.clone();
+            let params = InstallMinecraftParams {
+                game_version: GameVersion::from_static(GAME),
+                loader: ModLoader::Forge,
+                loader_version: Some(LoaderVersionPreference::Exact(
+                    LoaderVersionId::from_static("forge-47.0"),
+                )),
+                install_dir: std::env::temp_dir(),
+                java_path: Some(java().path().clone()),
+            };
+            tokio::spawn(async move { use_case.execute(params, None, false).await })
+        }
+
+        /// Until `count` installs have asked for the version, and a while more: long enough for
+        /// one that is not held back to reach the processors.
+        async fn asked(&self, count: usize) {
+            tokio::time::timeout(Duration::from_secs(5), async {
+                while self.downloader.asked.load(Ordering::SeqCst) < count {
+                    tokio::task::yield_now().await;
+                }
+            })
+            .await
+            .expect("the installs never asked for the version");
+            tokio::time::sleep(Duration::from_millis(50)).await;
+        }
+    }
+
+    #[tokio::test]
+    async fn should_run_the_processors_once_when_two_installs_of_a_version_run_together() {
+        let installs = installs();
+        let first = installs.install();
+        installs.processors.started.notified().await;
+
+        let second = installs.install();
+        installs.asked(2).await;
+        installs.processors.gate.send_replace(true);
+
+        first.await.unwrap().unwrap();
+        second.await.unwrap().unwrap();
+        assert_eq!(installs.processors.runs.load(Ordering::SeqCst), 1);
+        assert_eq!(installs.processors.most_at_once.load(Ordering::SeqCst), 1);
+    }
+
+    #[tokio::test]
+    async fn should_let_the_version_go_when_its_processors_fail() {
+        let installs = installs();
+        installs.processors.fails.store(true, Ordering::SeqCst);
+        let first = installs.install();
+        installs.processors.started.notified().await;
+        let second = installs.install();
+        installs.asked(2).await;
+
+        installs.processors.gate.send_replace(true);
+
+        assert!(first.await.unwrap().is_err());
+        tokio::time::timeout(Duration::from_secs(5), second)
+            .await
+            .expect("the version was kept after its processors failed")
+            .unwrap()
+            .unwrap();
+        assert_eq!(installs.processors.runs.load(Ordering::SeqCst), 2);
+        assert_eq!(installs.processors.most_at_once.load(Ordering::SeqCst), 1);
     }
 }

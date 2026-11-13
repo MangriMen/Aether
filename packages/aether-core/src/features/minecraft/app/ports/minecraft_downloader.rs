@@ -1,8 +1,11 @@
 use async_trait::async_trait;
 
-use crate::features::{
-    events::ProgressBarId,
-    minecraft::{MinecraftDomainError, modded, vanilla},
+use crate::{
+    features::{
+        events::ProgressBarId,
+        minecraft::{MinecraftDomainError, modded, vanilla},
+    },
+    shared::keyed_locks::KeyedLockGuard,
 };
 
 #[async_trait]
@@ -14,6 +17,9 @@ pub trait MinecraftDownloader: Send + Sync {
     /// `waiting_bar` is the bar of the install that needs the version: while it waits on the
     /// download (its own or another's), the bar has a mirror of the download's bar. It gets none
     /// when every file is there already.
+    ///
+    /// Returns the version's lock: until it is dropped, no other install downloads the version
+    /// or runs its loader's processors, so an install keeps it while it runs them.
     async fn download_minecraft(
         &self,
         version_info: &vanilla::VersionInfo,
@@ -21,7 +27,7 @@ pub trait MinecraftDownloader: Send + Sync {
         force: bool,
         minecraft_updated: bool,
         waiting_bar: Option<&ProgressBarId>,
-    ) -> Result<(), MinecraftDomainError>;
+    ) -> Result<KeyedLockGuard, MinecraftDomainError>;
 
     async fn get_version_info(
         &self,

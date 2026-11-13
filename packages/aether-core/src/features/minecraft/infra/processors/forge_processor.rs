@@ -19,7 +19,10 @@ use crate::{
         settings::LocationInfo,
     },
     processor_rules,
-    shared::io::domain::IoError,
+    shared::{
+        hash::{HashAlgorithm, infra::hash_file_hex_async},
+        io::domain::IoError,
+    },
 };
 
 pub struct ForgeProcessor<PS: ProgressService> {
@@ -83,7 +86,14 @@ impl<PS: ProgressService> ModLoaderProcessor for ForgeProcessor<PS> {
                 continue;
             }
 
-            execute_processor(processor, data, &libraries_dir, java_version).await?;
+            if outputs_ready(processor, data, &libraries_dir).await {
+                tracing::debug!(
+                    "Skipping forge processor {}: its outputs are in place",
+                    processor.jar
+                );
+            } else {
+                execute_processor(processor, data, &libraries_dir, java_version).await?;
+            }
 
             let text = format!("Running forge processor {}/{total}", position + 1);
             self.report(loading_bar, step, &text).await;
@@ -189,6 +199,60 @@ fn runs_on_client(processor: &modded::Processor) -> bool {
         .sides
         .as_ref()
         .is_none_or(|sides| sides.iter().any(|s| s == "client"))
+}
+
+/// Whether every output the processor declares is in place with the sha1 it names, as the Forge
+/// installer checks before running one: running it again would only rewrite the same files,
+/// which a running game of the version may hold open. A processor that declares none always
+/// runs; an output that cannot be resolved or read counts as missing.
+async fn outputs_ready(
+    processor: &modded::Processor,
+    data: &HashMap<String, modded::SidedDataEntry>,
+    libraries_dir: &Path,
+) -> bool {
+    let Some(outputs) = processor
+        .outputs
+        .as_ref()
+        .filter(|outputs| !outputs.is_empty())
+    else {
+        return false;
+    };
+    for (path, sha1) in outputs {
+        if !output_ready(path, sha1, data, libraries_dir).await {
+            return false;
+        }
+    }
+    true
+}
+
+/// `path` and `sha1` are resolved as the arguments are: `[coordinates]` or `{DATA}` keys.
+async fn output_ready(
+    path: &str,
+    sha1: &str,
+    data: &HashMap<String, modded::SidedDataEntry>,
+    libraries_dir: &Path,
+) -> bool {
+    let resolved = process_argument(libraries_dir, path, data)
+        .and_then(|path| Ok((path, process_argument(libraries_dir, sha1, data)?)));
+    let (path, expected) = match resolved {
+        Ok(resolved) => resolved,
+        Err(err) => {
+            tracing::debug!("Cannot resolve the forge processor output {path}: {err}");
+            return false;
+        }
+    };
+    match hash_file_hex_async(HashAlgorithm::Sha1, &path).await {
+        Ok(actual) => actual.eq_ignore_ascii_case(literal(&expected)),
+        Err(_) => false,
+    }
+}
+
+/// A data value in quotes is a literal (a digest); the Forge installer drops the quotes.
+fn literal(value: &str) -> &str {
+    value
+        .strip_prefix('\'')
+        .and_then(|rest| rest.strip_suffix('\''))
+        .unwrap_or(value)
 }
 
 /// Share of the overall progress (in percent) that all processors together may fill.
@@ -631,5 +695,213 @@ mod tests {
             matches!(result, Err(MinecraftDomainError::StorageFailure { .. })),
             "{result:?}"
         );
+    }
+
+    // ---- skipping the processors whose outputs are in place ----
+
+    const PROCESSOR_JAR: &str = "com.example:processor:1.0";
+    const SLIM: &str = "net.minecraft:client:1.20.1-1:slim";
+    const SLIM_BODY: &[u8] = b"slim client";
+    const EXTRA: &str = "net.minecraft:client:1.20.1-1:extra";
+    const EXTRA_BODY: &[u8] = b"extra client";
+
+    type Progress = crate::features::events::ProgressServiceImpl<
+        crate::features::events::infra::InMemoryProgressBarStorage,
+    >;
+
+    /// A game directory with the processor's jar in place, and a Java that is not there: a
+    /// processor that is run fails to start, one that is skipped does not.
+    struct Install {
+        processor: ForgeProcessor<Progress>,
+        location_info: Arc<LocationInfo>,
+        java: Java,
+        _temp: tempfile::TempDir,
+    }
+
+    fn install() -> Install {
+        let temp = tempfile::tempdir().unwrap();
+        let location_info = Arc::new(LocationInfo::new(
+            temp.path().join("settings"),
+            temp.path().to_path_buf(),
+        ));
+        let libraries = location_info.libraries_dir();
+        let jar_dir = libraries.join("com/example/processor/1.0");
+        std::fs::create_dir_all(&jar_dir).unwrap();
+        write_jar(&jar_dir, "processor-1.0.jar", Some("Main-Class: a.Main\n"));
+        let progress = Arc::new(Progress::new(
+            Arc::new(crate::features::events::test_support::NoOpEmitter),
+            Arc::default(),
+        ));
+        let java_path = temp.path().join("no-java").join("java");
+        let java = Java::new(
+            17,
+            "17".to_owned(),
+            "x86_64".to_owned(),
+            crate::features::java::JavaPath::parse(&java_path.to_string_lossy()).unwrap(),
+        );
+        Install {
+            processor: ForgeProcessor::new(progress, location_info.clone()),
+            location_info,
+            java,
+            _temp: temp,
+        }
+    }
+
+    impl Install {
+        /// Put `body` where the library `coordinates` goes.
+        fn put(&self, coordinates: &str, body: &[u8]) {
+            let path = self
+                .location_info
+                .libraries_dir()
+                .join(daedalus::get_path_from_artifact(coordinates).unwrap());
+            std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+            std::fs::write(path, body).unwrap();
+        }
+
+        /// Run a version whose one processor declares `outputs` and runs on `sides`, with the
+        /// data of a Forge profile: the outputs by coordinates, their digests as literals.
+        async fn run(
+            &self,
+            outputs: Option<serde_json::Value>,
+            sides: Option<&[&str]>,
+        ) -> Result<(), MinecraftDomainError> {
+            let digest = |body: &[u8]| format!("'{}'", sha1_smol::Sha1::from(body).hexdigest());
+            let mut processor = serde_json::json!({
+                "jar": PROCESSOR_JAR, "classpath": [], "args": ["--slim", "{MC_SLIM}"]
+            });
+            if let Some(outputs) = outputs {
+                processor["outputs"] = outputs;
+            }
+            if let Some(sides) = sides {
+                processor["sides"] = sides.into();
+            }
+            let mut version_info: VersionInfo = serde_json::from_value(serde_json::json!({
+                "assetIndex": { "id": "1", "sha1": "0", "size": 1, "totalSize": 1, "url": "" },
+                "assets": "1",
+                "downloads": {},
+                "id": "1.20.1-forge-1",
+                "javaVersion": null,
+                "libraries": [],
+                "mainClass": "Main",
+                "minimumLauncherVersion": 1,
+                "releaseTime": "2020-01-01T00:00:00Z",
+                "time": "2020-01-01T00:00:00Z",
+                "type": "release",
+                "data": {
+                    "MC_SLIM": { "client": format!("[{SLIM}]"), "server": "" },
+                    "MC_SLIM_SHA": { "client": digest(SLIM_BODY), "server": "" },
+                    "MC_EXTRA": { "client": format!("[{EXTRA}]"), "server": "" },
+                    "MC_EXTRA_SHA": { "client": digest(EXTRA_BODY), "server": "" },
+                },
+                "processors": [processor],
+            }))
+            .unwrap();
+            let minecraft_dir = self.location_info.libraries_dir();
+            self.processor
+                .run(
+                    GameVersion::from_static("1.20.1"),
+                    "1.20.1-forge-1".to_owned(),
+                    minecraft_dir.parent().unwrap(),
+                    &mut version_info,
+                    &self.java,
+                    None,
+                )
+                .await
+        }
+    }
+
+    fn slim_and_extra() -> serde_json::Value {
+        serde_json::json!({ "{MC_SLIM}": "{MC_SLIM_SHA}", "{MC_EXTRA}": "{MC_EXTRA_SHA}" })
+    }
+
+    fn ran(result: &Result<(), MinecraftDomainError>) -> bool {
+        matches!(
+            result,
+            Err(MinecraftDomainError::ProcessorFailed {
+                reason: ProcessorFailure::SpawnFailed(_)
+            })
+        )
+    }
+
+    #[tokio::test]
+    async fn should_skip_a_processor_when_its_outputs_are_in_place_with_their_digests() {
+        let install = install();
+        install.put(SLIM, SLIM_BODY);
+        install.put(EXTRA, EXTRA_BODY);
+
+        let result = install
+            .run(Some(slim_and_extra()), Some(&["client"][..]))
+            .await;
+
+        assert!(result.is_ok(), "{result:?}");
+    }
+
+    #[tokio::test]
+    async fn should_skip_a_processor_when_its_outputs_are_named_by_coordinates_and_digests() {
+        let install = install();
+        install.put(SLIM, SLIM_BODY);
+        let digest = sha1_smol::Sha1::from(SLIM_BODY).hexdigest().to_uppercase();
+
+        let result = install
+            .run(
+                Some(serde_json::json!({ format!("[{SLIM}]"): digest })),
+                None,
+            )
+            .await;
+
+        assert!(result.is_ok(), "{result:?}");
+    }
+
+    #[tokio::test]
+    async fn should_run_a_processor_when_one_of_its_outputs_is_missing() {
+        let install = install();
+        install.put(SLIM, SLIM_BODY);
+
+        let result = install
+            .run(Some(slim_and_extra()), Some(&["client"][..]))
+            .await;
+
+        assert!(ran(&result), "{result:?}");
+    }
+
+    #[tokio::test]
+    async fn should_run_a_processor_when_the_digest_of_an_output_differs() {
+        let install = install();
+        install.put(SLIM, SLIM_BODY);
+        install.put(EXTRA, b"half-written extra");
+
+        let result = install
+            .run(Some(slim_and_extra()), Some(&["client"][..]))
+            .await;
+
+        assert!(ran(&result), "{result:?}");
+    }
+
+    #[rstest]
+    #[case::no_outputs(None)]
+    #[case::empty_outputs(Some(serde_json::json!({})))]
+    #[case::unknown_digest_key(Some(serde_json::json!({ "{MC_SLIM}": "{NO_SUCH_SHA}" })))]
+    #[tokio::test]
+    async fn should_run_a_processor_when_its_outputs_cannot_be_checked(
+        #[case] outputs: Option<serde_json::Value>,
+    ) {
+        let install = install();
+        install.put(SLIM, SLIM_BODY);
+        install.put(EXTRA, EXTRA_BODY);
+
+        let result = install.run(outputs, None).await;
+
+        assert!(ran(&result), "{result:?}");
+    }
+
+    #[tokio::test]
+    async fn should_not_run_a_server_processor_when_its_outputs_are_missing() {
+        let install = install();
+
+        let result = install
+            .run(Some(slim_and_extra()), Some(&["server"][..]))
+            .await;
+
+        assert!(result.is_ok(), "{result:?}");
     }
 }
