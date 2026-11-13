@@ -46,6 +46,24 @@ pub trait PackStorage: Send + Sync {
         Ok(None)
     }
 
+    /// Records `pack_file` for the path unless a record is already there, and returns the record
+    /// that is stored after the call. A record someone else wrote in the meantime (an install
+    /// plan's, with its owner) is never overwritten. The default is neither atomic nor able to see a
+    /// record with an unusable hash; a storage shared by concurrent writers overrides it.
+    async fn insert_pack_file_if_absent(
+        &self,
+        instance_id: &InstanceId,
+        content_path: &ContentPath,
+        pack_file: &PackFile,
+    ) -> Result<PackFile, InstanceError> {
+        if let Some(existing) = self.find_pack_file(instance_id, content_path).await? {
+            return Ok(existing);
+        }
+        self.update_pack_file(instance_id, content_path, pack_file)
+            .await?;
+        Ok(pack_file.clone())
+    }
+
     /// Every file recorded for the instance, by content path — what an install plan is diffed
     /// against. The default asks for each file of [`Self::get_pack`] in turn.
     async fn get_pack_files(

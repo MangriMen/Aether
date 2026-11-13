@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO packs (instance_id) VALUES ('inst')",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "58e0db2cdcdadd1da9c289eaeaa217a23a6b5d3564a99738067b2e99702a0590"
+}
