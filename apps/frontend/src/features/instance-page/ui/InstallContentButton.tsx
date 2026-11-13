@@ -98,7 +98,7 @@ export const InstallContentButton: Component<InstallContentButtonProps> = (
         <DropdownMenuContent>
           <For each={contentTypes()}>
             {(contentType) => (
-              <DropdownMenuItem onClick={() => handleAddContents(contentType)}>
+              <DropdownMenuItem onSelect={() => handleAddContents(contentType)}>
                 <span>
                   {t('common.add')}
                   &nbsp;

@@ -22,7 +22,6 @@ import {
   CombinedTooltip,
   ContextMenuTrigger,
 } from '@/shared/ui-kit';
-import { preventAll } from '@/shared/utils';
 
 export type InstanceControlledCardProps = Pick<InstanceCardProps, 'instance'>;
 
@@ -48,8 +47,7 @@ export const InstanceControlledCard: Component<InstanceControlledCardProps> = (
   const { launch: launchInstance, remove: removeInstance } =
     useInstanceActions();
 
-  const handleLaunch = (e: MouseEvent) => {
-    preventAll(e);
+  const handleLaunch = () => {
     launchInstance(props.instance);
   };
 

@@ -1,5 +1,5 @@
 import type { ContextMenuRootProps } from '@kobalte/core/context-menu';
-import type { Component, ComponentProps } from 'solid-js';
+import type { Component } from 'solid-js';
 
 import { splitProps } from 'solid-js';
 
@@ -12,8 +12,8 @@ import {
 } from '@/shared/ui-kit';
 
 export type BrokenInstanceContextMenuProps = ContextMenuRootProps & {
-  onOpenFolder?: ComponentProps<'button'>['onClick'];
-  onRemove?: ComponentProps<'button'>['onClick'];
+  onOpenFolder?: () => void;
+  onRemove?: () => void;
   disableOpenFolder?: boolean;
 };
 
@@ -36,7 +36,7 @@ export const BrokenInstanceContextMenu: Component<
       <ContextMenuContent>
         <ContextMenuItem
           class='w-full'
-          onClick={local.onOpenFolder}
+          onSelect={local.onOpenFolder}
           disabled={local.disableOpenFolder}
         >
           {t('instance.openFolder')}
@@ -47,7 +47,7 @@ export const BrokenInstanceContextMenu: Component<
             hover:bg-destructive! hover:text-destructive-foreground
             w-full
           '
-          onClick={local.onRemove}
+          onSelect={local.onRemove}
         >
           {t('common.remove')}
         </ContextMenuItem>

@@ -193,7 +193,9 @@ describe('BrokenInstanceCard', () => {
 
     [...document.querySelectorAll<HTMLElement>('[role=menuitem]')]
       .find((item) => item.textContent.includes('Remove'))
-      ?.click();
+      ?.dispatchEvent(
+        new MouseEvent('pointerup', { bubbles: true, button: 0 }),
+      );
     await Promise.resolve();
 
     expect(mocks.removeBroken).not.toHaveBeenCalled();

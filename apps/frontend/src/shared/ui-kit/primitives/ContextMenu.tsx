@@ -46,10 +46,14 @@ const ContextMenuContent = <T extends ValidComponent = 'div'>(
   );
 };
 
-type ContextMenuItemProps<T extends ValidComponent = 'div'> =
-  ContextMenuPrimitive.ContextMenuItemProps<T> & {
-    class?: string | undefined;
-  };
+type ContextMenuItemProps<T extends ValidComponent = 'div'> = Omit<
+  ContextMenuPrimitive.ContextMenuItemProps<T>,
+  'onClick'
+> & {
+  /** Menu items are activated by `onSelect`: `onClick` misses the keyboard. */
+  onClick?: never;
+  class?: string | undefined;
+};
 
 const ContextMenuItem = <T extends ValidComponent = 'div'>(
   props: PolymorphicProps<T, ContextMenuItemProps<T>>,
@@ -170,11 +174,15 @@ const ContextMenuSubContent = <T extends ValidComponent = 'div'>(
   );
 };
 
-type ContextMenuCheckboxItemProps<T extends ValidComponent = 'div'> =
-  ContextMenuPrimitive.ContextMenuCheckboxItemProps<T> & {
-    class?: string | undefined;
-    children?: JSX.Element;
-  };
+type ContextMenuCheckboxItemProps<T extends ValidComponent = 'div'> = Omit<
+  ContextMenuPrimitive.ContextMenuCheckboxItemProps<T>,
+  'onClick'
+> & {
+  /** Menu items are activated by `onSelect`: `onClick` misses the keyboard. */
+  onClick?: never;
+  class?: string | undefined;
+  children?: JSX.Element;
+};
 
 const ContextMenuCheckboxItem = <T extends ValidComponent = 'div'>(
   props: PolymorphicProps<T, ContextMenuCheckboxItemProps<T>>,
@@ -237,11 +245,15 @@ const ContextMenuGroupLabel = <T extends ValidComponent = 'span'>(
   );
 };
 
-type ContextMenuRadioItemProps<T extends ValidComponent = 'div'> =
-  ContextMenuPrimitive.ContextMenuRadioItemProps<T> & {
-    class?: string | undefined;
-    children?: JSX.Element;
-  };
+type ContextMenuRadioItemProps<T extends ValidComponent = 'div'> = Omit<
+  ContextMenuPrimitive.ContextMenuRadioItemProps<T>,
+  'onClick'
+> & {
+  /** Menu items are activated by `onSelect`: `onClick` misses the keyboard. */
+  onClick?: never;
+  class?: string | undefined;
+  children?: JSX.Element;
+};
 
 const ContextMenuRadioItem = <T extends ValidComponent = 'div'>(
   props: PolymorphicProps<T, ContextMenuRadioItemProps<T>>,

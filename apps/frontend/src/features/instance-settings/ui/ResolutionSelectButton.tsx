@@ -85,7 +85,7 @@ export const ResolutionSelectButton: Component<ResolutionSelectButtonProps> = (
         <For each={filteredResolutions()}>
           {(option) => (
             <DropdownMenuItem
-              onClick={() => local.onResolutionChange?.(option.value)}
+              onSelect={() => local.onResolutionChange?.(option.value)}
             >
               {option.name}
               <Show when={isDefaultResolution(option.value)}>

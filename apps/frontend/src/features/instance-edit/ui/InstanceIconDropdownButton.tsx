@@ -73,7 +73,7 @@ export const InstanceIconDropdownButton: Component<
           class='w-full justify-start'
           variant='ghost'
           leadingIcon={IconMdiDownload}
-          onClick={local.onSelectIcon}
+          onSelect={local.onSelectIcon}
         >
           <Show
             when={local.src === undefined}
@@ -92,7 +92,7 @@ export const InstanceIconDropdownButton: Component<
             '
             variant='ghost'
             leadingIcon={IconMdiDelete}
-            onClick={local.onRemoveIcon}
+            onSelect={local.onRemoveIcon}
           >
             {t('instance.removeIcon')}
           </DropdownMenuItem>

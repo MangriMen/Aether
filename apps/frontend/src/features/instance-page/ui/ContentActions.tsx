@@ -123,7 +123,7 @@ export const ContentActions: Component<ContentActionsProps> = (props) => {
         />
         <DropdownMenuContent>
           <DropdownMenuItem
-            onClick={handleShowFile}
+            onSelect={handleShowFile}
             disabled={!local.instancePath}
           >
             {t('instance.showFile')}

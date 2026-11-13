@@ -1,5 +1,5 @@
 import type { ContextMenuRootProps } from '@kobalte/core/context-menu';
-import type { Component, ComponentProps } from 'solid-js';
+import type { Component } from 'solid-js';
 
 import { splitProps } from 'solid-js';
 
@@ -12,10 +12,10 @@ import {
 } from '@/shared/ui-kit';
 
 export type InstanceContextMenuProps = ContextMenuRootProps & {
-  onPlay?: ComponentProps<'button'>['onClick'];
-  onOpenFolder?: ComponentProps<'button'>['onClick'];
-  onOpenSettings?: ComponentProps<'button'>['onClick'];
-  onRemove?: ComponentProps<'button'>['onClick'];
+  onPlay?: () => void;
+  onOpenFolder?: () => void;
+  onOpenSettings?: () => void;
+  onRemove?: () => void;
   isLoading?: boolean;
   disableOpenFolder?: boolean;
 };
@@ -44,7 +44,7 @@ export const InstanceContextMenu: Component<InstanceContextMenuProps> = (
             hover:bg-success! hover:text-success-foreground
             w-full
           '
-          onClick={local.onPlay}
+          onSelect={local.onPlay}
           disabled={local.isLoading}
         >
           {t('instance.launch')}
@@ -52,14 +52,14 @@ export const InstanceContextMenu: Component<InstanceContextMenuProps> = (
         <ContextMenuSeparator />
         <ContextMenuItem
           class='w-full'
-          onClick={local.onOpenFolder}
+          onSelect={local.onOpenFolder}
           disabled={local.isLoading || local.disableOpenFolder}
         >
           {t('instance.openFolder')}
         </ContextMenuItem>
         <ContextMenuItem
           class='w-full'
-          onClick={local.onOpenSettings}
+          onSelect={local.onOpenSettings}
           disabled={local.isLoading}
         >
           {t('instance.settings')}
@@ -70,7 +70,7 @@ export const InstanceContextMenu: Component<InstanceContextMenuProps> = (
             hover:bg-destructive! hover:text-destructive-foreground
             w-full
           '
-          onClick={local.onRemove}
+          onSelect={local.onRemove}
           disabled={local.isLoading}
         >
           {t('common.remove')}

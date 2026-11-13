@@ -1,5 +1,5 @@
 import type { ContextMenuRootProps } from '@kobalte/core/context-menu';
-import type { Component, ComponentProps } from 'solid-js';
+import type { Component } from 'solid-js';
 
 import { splitProps, Switch, Match } from 'solid-js';
 
@@ -13,8 +13,8 @@ import {
 import { stopPropagation } from '@/shared/utils';
 
 export type PluginContextMenuProps = ContextMenuRootProps & {
-  onToggleEnabled?: ComponentProps<'button'>['onClick'];
-  onRemove?: ComponentProps<'button'>['onClick'];
+  onToggleEnabled?: () => void;
+  onRemove?: () => void;
   isDisabled?: boolean;
   isLoading?: boolean;
   isEnabled?: boolean;
@@ -45,7 +45,7 @@ export const PluginContextMenu: Component<PluginContextMenuProps> = (props) => {
             hover:bg-primary! hover:text-primary-foreground
             w-full
           '
-          onClick={local.onToggleEnabled}
+          onSelect={local.onToggleEnabled}
           disabled={local.isLoading}
         >
           <Switch>
@@ -61,7 +61,7 @@ export const PluginContextMenu: Component<PluginContextMenuProps> = (props) => {
             hover:bg-destructive! hover:text-destructive-foreground
             w-full
           '
-          onClick={local.onRemove}
+          onSelect={local.onRemove}
           disabled={local.isLoading}
         >
           {t('common.remove')}
