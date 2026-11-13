@@ -674,6 +674,12 @@ impl<PS: ProgressBarStorage + 'static> ProgressService for ProgressServiceImpl<P
 
 #[cfg(test)]
 mod tests {
+    /// A failure for a test, by its text.
+    fn failure(text: &str) -> crate::ErrorKind {
+        crate::ErrorKind::CoreError(text.to_owned())
+    }
+
+    use crate::features::events::ProgressFailure;
     use std::time::Duration;
 
     use tokio::sync::mpsc;
@@ -1328,7 +1334,7 @@ mod tests {
         };
         sent(&mut rx);
 
-        pack_bar.fail("A mod is missing").await;
+        pack_bar.fail(failure("A mod is missing")).await;
         drop(waits);
         drop(pack_bar);
         settle().await;
@@ -1343,9 +1349,7 @@ mod tests {
                 (Some(shared.id), ProgressStatus::Cancelled),
                 (
                     None,
-                    ProgressStatus::Failed {
-                        message: "A mod is missing".to_string()
-                    }
+                    ProgressStatus::Failed(ProgressFailure::new(failure("A mod is missing")))
                 ),
             ]
         );
@@ -1389,10 +1393,8 @@ mod tests {
             ProgressStatus::Done
         );
         assert_eq!(
-            cancellable_ended_as(async |bar| bar.fail("Broken").await).await,
-            ProgressStatus::Failed {
-                message: "Broken".to_string()
-            }
+            cancellable_ended_as(async |bar| bar.fail(failure("Broken")).await).await,
+            ProgressStatus::Failed(ProgressFailure::new(failure("Broken")))
         );
         assert_eq!(
             cancellable_ended_as(async |bar| drop(bar)).await,

@@ -1,6 +1,5 @@
-use std::fmt::Display;
-
 use super::ProgressBarId;
+use crate::ErrorKind;
 
 /// The bar of a part of some work that the failure of another part may cut short: the parts
 /// run side by side, and the first failure drops the rest halfway. Dropped before it is settled
@@ -28,10 +27,10 @@ impl CancellableBar {
         self.settled = true;
     }
 
-    /// End the bar as failed with `message`.
-    pub async fn fail(mut self, message: impl Into<String> + Send) {
+    /// End the bar as failed with `error`.
+    pub async fn fail(mut self, error: impl Into<ErrorKind> + Send) {
         if let Some(bar) = &self.bar {
-            bar.fail(message).await;
+            bar.fail(error).await;
         }
         self.settled = true;
     }
@@ -44,11 +43,11 @@ impl CancellableBar {
         self.settled = true;
     }
 
-    /// End the bar by `result`: done, or failed with its error.
-    pub async fn settle<T, E: Display>(self, result: &Result<T, E>) {
+    /// End the bar by `result`: done, or failed with its error, which the caller still has.
+    pub async fn settle<T, E: Clone + Into<ErrorKind> + Send>(self, result: &Result<T, E>) {
         match result {
             Ok(_) => self.done(),
-            Err(err) => self.fail(err.to_string()).await,
+            Err(err) => self.fail(err.clone()).await,
         }
     }
 }

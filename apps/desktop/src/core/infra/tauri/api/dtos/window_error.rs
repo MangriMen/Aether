@@ -4,7 +4,7 @@ use specta::Type;
 use super::CauseDto;
 use crate::core::{WindowError, WindowLabel};
 
-#[derive(Debug, Serialize, Type)]
+#[derive(Clone, Debug, Serialize, Type)]
 #[serde(tag = "code", content = "payload", rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum WindowErrorDto {
     AlreadyExists { label: WindowLabelDto },
@@ -34,7 +34,7 @@ impl From<WindowError> for WindowErrorDto {
     }
 }
 
-#[derive(Debug, Serialize, Type)]
+#[derive(Clone, Debug, Serialize, Type)]
 #[serde(rename_all = "snake_case")]
 pub enum WindowLabelDto {
     Main,

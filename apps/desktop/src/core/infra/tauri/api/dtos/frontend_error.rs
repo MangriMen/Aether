@@ -9,7 +9,7 @@ use crate::core::{
 
 pub type FrontendResult<T, E = FrontendError> = Result<T, E>;
 
-#[derive(Debug, Serialize, Type)]
+#[derive(Clone, Debug, Serialize, Type)]
 #[serde(tag = "type", content = "payload", rename_all = "camelCase")]
 pub enum FrontendError {
     AppSettings(AppSettingsErrorDto),

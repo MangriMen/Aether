@@ -4,6 +4,11 @@ import IconChevronDown from '~icons/mdi/chevron-down';
 import IconDownloadOutline from '~icons/mdi/download-outline';
 import { createMemo, createSignal, For, Show, splitProps } from 'solid-js';
 
+import {
+  ErrorDetails,
+  getErrorDetails,
+  getTranslatedError,
+} from '@/features/errors';
 import { useTranslation } from '@/shared/i18n';
 import {
   Collapsible,
@@ -66,12 +71,17 @@ const ProgressNode: Component<ProgressNodeProps> = (props) => {
       ? props.index().othersWaitingOn(props.payload.progressBarId)
       : 0,
   );
-  const failedMessage = createMemo(() => {
+  const failure = createMemo(() => {
     const status = findFailedDescendant(
       props.index(),
       props.payload.progressBarId,
     )?.status;
-    return status?.type === 'failed' ? status.message : undefined;
+    return status?.type === 'failed'
+      ? {
+          text: getTranslatedError(status.error, t),
+          details: getErrorDetails(status.error),
+        }
+      : undefined;
   });
 
   const card = () => (
@@ -114,10 +124,17 @@ const ProgressNode: Component<ProgressNodeProps> = (props) => {
           </CollapsibleTrigger>
           {card()}
         </div>
-        <Show when={!isOpen() && failedMessage()}>
-          <span class='text-sm text-destructive pl-4.5 truncate'>
-            {failedMessage()}
-          </span>
+        <Show when={!isOpen() && failure()}>
+          {(failed) => (
+            <div class='gap-1 pl-4.5 flex flex-col'>
+              <span class='text-sm text-destructive truncate'>
+                {failed().text}
+              </span>
+              <Show when={failed().details}>
+                {(details) => <ErrorDetails details={details()} />}
+              </Show>
+            </div>
+          )}
         </Show>
         <CollapsibleContent>
           <div class='gap-2 pl-4.5 flex flex-col'>

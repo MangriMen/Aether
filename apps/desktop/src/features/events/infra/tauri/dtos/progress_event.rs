@@ -8,9 +8,10 @@ use specta::Type;
 use tauri_specta::Event;
 use uuid::Uuid;
 
+use crate::core::{ApplicationErrorDto, CauseDto, FrontendError};
 use crate::features::update::{UpdatePhase, UpdateProgress};
 
-#[derive(Debug, Clone, Serialize, Deserialize, Type, Event)]
+#[derive(Debug, Clone, Serialize, Type, Event)]
 #[serde(rename_all = "camelCase")]
 pub struct ProgressEventDto {
     /// The number of the event, from one counter for all the events the backend sends: the
@@ -66,12 +67,15 @@ pub enum CancelStateDto {
     Closed,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq, Type)]
+#[derive(Debug, Clone, Serialize, Type)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum ProgressStatusDto {
     Running,
     Done,
-    Failed { message: String },
+    /// `error` is the failure the initiator of the work got too, translated the same way.
+    Failed {
+        error: FrontendError,
+    },
     Cancelled,
 }
 
@@ -184,7 +188,9 @@ impl From<ProgressStatus> for ProgressStatusDto {
         match value {
             ProgressStatus::Running => Self::Running,
             ProgressStatus::Done => Self::Done,
-            ProgressStatus::Failed { message } => Self::Failed { message },
+            ProgressStatus::Failed(failure) => Self::Failed {
+                error: failure.error().into(),
+            },
             ProgressStatus::Cancelled => Self::Cancelled,
         }
     }
@@ -264,8 +270,11 @@ impl From<UpdateProgress> for ProgressEventDto {
         let status = match value.phase {
             UpdatePhase::Started | UpdatePhase::Progress => ProgressStatusDto::Running,
             UpdatePhase::Finished => ProgressStatusDto::Done,
+            // The updater reports no typed error yet: the failure has no category.
             UpdatePhase::Error => ProgressStatusDto::Failed {
-                message: "Launcher update failed".to_owned(),
+                error: FrontendError::Application(ApplicationErrorDto::Internal {
+                    cause: CauseDto::unknown("Launcher update failed"),
+                }),
             },
         };
         Self {
@@ -298,5 +307,44 @@ impl From<UpdatePhase> for LauncherUpdatePhaseDto {
             UpdatePhase::Finished => Self::Finished,
             UpdatePhase::Error => Self::Error,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use aether_core::features::events::ProgressFailure;
+    use aether_core::features::instance::InstanceError;
+    use serde_json::json;
+
+    use super::*;
+
+    #[test]
+    fn should_serialize_a_failed_status_with_the_error_the_initiator_gets() {
+        let status = ProgressStatus::Failed(ProgressFailure::new(InstanceError::NotFound {
+            instance_id: "abc".to_owned(),
+        }));
+
+        assert_eq!(
+            serde_json::to_value(ProgressStatusDto::from(status)).unwrap(),
+            json!({"type": "failed", "error": {
+                "type": "instance",
+                "payload": {"code": "NOT_FOUND", "payload": {"instance_id": "abc"}},
+            }})
+        );
+    }
+
+    #[test]
+    fn should_serialize_a_failed_launcher_update_as_an_internal_error() {
+        let dto = ProgressEventDto::from(UpdateProgress {
+            fraction: None,
+            phase: UpdatePhase::Error,
+            version: "2.0.0".to_owned(),
+            current_version: "1.0.0".to_owned(),
+        });
+
+        assert_eq!(
+            serde_json::to_value(dto.status).unwrap()["error"]["payload"]["code"],
+            "INTERNAL"
+        );
     }
 }

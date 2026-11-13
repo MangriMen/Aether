@@ -381,7 +381,7 @@ impl PlanProgress {
         match (result, &self.bar) {
             (Ok(_), _) => self.step("Complete").await,
             (Err(InstanceError::Cancelled), Some(bar)) => bar.cancel().await,
-            (Err(err), Some(bar)) => bar.fail(err.to_string()).await,
+            (Err(err), Some(bar)) => bar.fail(err.clone()).await,
             (Err(_), None) => {}
         }
     }

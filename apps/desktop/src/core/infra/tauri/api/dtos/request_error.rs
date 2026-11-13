@@ -4,7 +4,7 @@ use specta::Type;
 
 use super::CauseDto;
 
-#[derive(Debug, Serialize, Type)]
+#[derive(Clone, Debug, Serialize, Type)]
 #[serde(tag = "code", content = "payload", rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum RequestErrorDto {
     Acquire,

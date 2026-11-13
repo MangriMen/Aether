@@ -114,6 +114,18 @@ pub fn error_chain(err: &(dyn std::error::Error + 'static)) -> String {
 
 pub type Result<T> = core::result::Result<T, Error>;
 
+impl From<minecraft::MinecraftDomainError> for ErrorKind {
+    fn from(value: minecraft::MinecraftDomainError) -> Self {
+        Self::MinecraftError(value.into())
+    }
+}
+
+impl From<java::JavaDomainError> for ErrorKind {
+    fn from(value: java::JavaDomainError) -> Self {
+        Self::JavaError(value.into())
+    }
+}
+
 impl From<plugins::PluginProviderError> for ErrorKind {
     fn from(value: plugins::PluginProviderError) -> Self {
         Self::PluginError(value.into())

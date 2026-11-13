@@ -1,12 +1,23 @@
 import { render } from 'solid-js/web';
 import { afterEach, describe, expect, it } from 'vitest';
 
+import type { LauncherError } from '@/features/errors';
+
 import { I18nProvider, LOCALE_RESOURCES, LOCALES } from '@/shared/i18n';
 
 import type { ProgressEvent } from '../../model/progressEvent';
 
 import { buildProgressIndex } from '../../model/progressTree';
 import { ProgressDetails } from '../ProgressDetails';
+
+/** A failure with no category, as the backend sends one. */
+const failure = (details: string): LauncherError => ({
+  type: 'application',
+  payload: {
+    code: 'INTERNAL',
+    payload: { cause: { type: 'unknown', details } },
+  },
+});
 
 const make = (
   id: string,
@@ -99,7 +110,7 @@ describe('ProgressDetails', () => {
   it('folds the finished children once the parent is over', async () => {
     const container = mount([
       done('root', null),
-      make('a', 'root', { status: { type: 'failed', message: 'boom' } }),
+      make('a', 'root', { status: { type: 'failed', error: failure('boom') } }),
       done('b', 'root'),
     ]);
 
@@ -108,5 +119,18 @@ describe('ProgressDetails', () => {
 
     await expect.poll(() => container.textContent).toContain('Completed: 1');
     expect(titles(container, ['a', 'b'])).toEqual(['a']);
+  });
+
+  it('shows the translated failure under a folded bar, its raw text only in the details', async () => {
+    const container = mount([
+      make('root', null),
+      make('a', 'root', { status: { type: 'failed', error: failure('boom') } }),
+    ]);
+
+    await expect
+      .poll(() => container.textContent)
+      .toContain('Unexpected error');
+    expect(container.textContent).toContain('Details');
+    expect(container.textContent).not.toContain('boom');
   });
 });

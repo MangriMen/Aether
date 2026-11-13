@@ -10,7 +10,10 @@ use crate::features::events::ProgressBarStorage;
 
 use super::event_sequencer::EventSequencer;
 use super::transfer_window::TransferWindow;
-use super::{CancelState, ProgressEvent, ProgressEventType, ProgressStage, ProgressStatus};
+use super::{
+    CancelState, ProgressEvent, ProgressEventType, ProgressFailure, ProgressStage, ProgressStatus,
+};
+use crate::ErrorKind;
 
 #[derive(Debug, Clone)]
 pub struct ProgressBar {
@@ -255,18 +258,20 @@ impl fmt::Debug for ProgressBarId {
 }
 
 const COMPLETED_MESSAGE: &str = "Completed";
+/// The text of a failed bar; the error itself is in its status.
+const FAILED_MESSAGE: &str = "Failed";
 const CANCELLED_MESSAGE: &str = "Cancelled";
 
 impl ProgressBarId {
     /// Marks the bar as failed: when the last use of it ends (the handle is dropped), listeners
-    /// get a failed event with `message` instead of a completed one.
+    /// get a failed event with `error` instead of a completed one. The failure is logged here,
+    /// once, whoever else reports it.
     ///
     /// Does nothing for an id that was never attached to a storage or whose bar is already gone.
-    pub async fn fail(&self, message: impl Into<String> + Send) {
-        self.end_as(ProgressStatus::Failed {
-            message: message.into(),
-        })
-        .await;
+    pub async fn fail(&self, error: impl Into<ErrorKind> + Send) {
+        let failure = ProgressFailure::new(error);
+        tracing::warn!(bar = %self.id, error = %failure.error().display_chain(), "Progress failed");
+        self.end_as(ProgressStatus::Failed(failure)).await;
     }
 
     /// Marks the bar as cancelled: when the last use of it ends (the handle is dropped),
@@ -398,8 +403,8 @@ impl ProgressBarId {
     /// [`cancel`](Self::cancel), failed or cancelled.
     fn finished_event(bar: &ProgressBar) -> ProgressEvent {
         match &bar.status {
-            ProgressStatus::Failed { message } => {
-                bar.event(None, message.clone(), bar.status.clone())
+            ProgressStatus::Failed(_) => {
+                bar.event(None, FAILED_MESSAGE.to_string(), bar.status.clone())
             }
             ProgressStatus::Cancelled => bar.event(
                 None,
@@ -431,6 +436,10 @@ impl Drop for ProgressBarId {
 
 #[cfg(test)]
 mod tests {
+    /// A failure for a test, by its text.
+    fn failure(text: &str) -> ErrorKind {
+        ErrorKind::CoreError(text.to_owned())
+    }
     use std::time::Duration;
 
     use dashmap::DashMap;
@@ -578,25 +587,24 @@ mod tests {
         storage.insert(id, bar(id)).await.unwrap();
         let bar_id = attached(id, &storage, tx);
 
-        bar_id.fail("Checksum mismatch").await;
+        bar_id.fail(failure("Checksum mismatch")).await;
         assert!(rx.try_recv().is_err(), "fail alone must not emit");
         assert_eq!(
             storage.get(id).await.unwrap().status,
-            ProgressStatus::Failed {
-                message: "Checksum mismatch".to_string()
-            }
+            ProgressStatus::Failed(ProgressFailure::new(failure("Checksum mismatch")))
         );
         drop(bar_id);
 
         let failed = next_progress(&mut rx).await;
         assert_eq!(failed.progress_bar_id, id);
         assert_eq!(failed.fraction, None);
-        assert_eq!(failed.message, "Checksum mismatch");
-        assert_eq!(
-            failed.status,
-            ProgressStatus::Failed {
-                message: "Checksum mismatch".to_string()
-            }
+        assert_eq!(failed.message, FAILED_MESSAGE);
+        let ProgressStatus::Failed(failure) = failed.status else {
+            panic!("expected a failed status, got {:?}", failed.status);
+        };
+        assert!(
+            matches!(failure.error(), ErrorKind::CoreError(text) if text == "Checksum mismatch"),
+            "the error itself is kept: {failure:?}"
         );
         assert!(storage.list().await.is_empty());
     }
@@ -777,12 +785,10 @@ mod tests {
         }
         let shared_id = attached(shared, &storage, tx);
 
-        shared_id.fail("No network").await;
+        shared_id.fail(failure("No network")).await;
         drop(shared_id);
 
-        let failed = ProgressStatus::Failed {
-            message: "No network".to_string(),
-        };
+        let failed = ProgressStatus::Failed(ProgressFailure::new(failure("No network")));
         let mirrored = next_progress(&mut rx).await;
         assert_eq!(mirrored.progress_bar_id, mirror);
         assert_eq!(mirrored.mirror_of, Some(shared));
@@ -807,7 +813,7 @@ mod tests {
             sequencer: Some(Arc::new(EventSequencer::new(Arc::new(ChannelEmitter(tx))))),
         };
 
-        id.fail("ignored").await;
+        id.fail(failure("ignored")).await;
         drop(id);
         settle().await;
 

@@ -3,7 +3,7 @@ use aether_core::features::settings::SettingsError;
 use serde::Serialize;
 use specta::Type;
 
-#[derive(Debug, Serialize, Type)]
+#[derive(Clone, Debug, Serialize, Type)]
 #[serde(tag = "code", content = "payload", rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum SettingsErrorDto {
     NotFound,

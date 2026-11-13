@@ -295,7 +295,7 @@ impl InstallInstanceUseCase {
                         .await;
                 }
                 Err(InstanceError::Cancelled) => loading_bar.cancel().await,
-                Err(err) => loading_bar.fail(err.to_string()).await,
+                Err(err) => loading_bar.fail(err.clone()).await,
             }
         }
 

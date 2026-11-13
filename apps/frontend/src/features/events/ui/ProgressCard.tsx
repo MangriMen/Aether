@@ -3,6 +3,7 @@ import type { Component, ComponentProps } from 'solid-js';
 import IconClose from '~icons/mdi/close';
 import { createMemo, Show, splitProps } from 'solid-js';
 
+import { getTranslatedError } from '@/features/errors';
 import { formatBytes } from '@/shared/format';
 import { useTranslation } from '@/shared/i18n';
 import {
@@ -80,7 +81,7 @@ export const ProgressCard: Component<ProgressCardProps> = (props) => {
     const { status, stage, event } = local.payload;
 
     if (status.type === 'failed') {
-      return status.message;
+      return getTranslatedError(status.error, t);
     }
 
     if (status.type === 'done') {

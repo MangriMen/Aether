@@ -591,7 +591,9 @@ export type ProgressEventTypeDto = { type: "java_download"; version: number } | 
 
 export type ProgressStageDto = "preparing" | "downloading" | "verifying" | "installing" | "extracting" | "finishing" | "by_plugin";
 
-export type ProgressStatusDto = { type: "running" } | { type: "done" } | { type: "failed"; message: string } | { type: "cancelled" };
+export type ProgressStatusDto = { type: "running" } | { type: "done" } | 
+/**  `error` is the failure the initiator of the work got too, translated the same way. */
+{ type: "failed"; error: FrontendError } | { type: "cancelled" };
 
 /**  What went wrong talking to a plugin source. */
 export type ProviderFailureDto = { code: "REQUEST"; payload: {

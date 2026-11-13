@@ -14,7 +14,7 @@ use uuid::Uuid;
 use super::{CauseDto, ContentDownloadReasonDto, ContentProviderReasonDto, FrontendError};
 use crate::features::instance::infra::{BrokenInstanceReasonDto, ContentTypeDto};
 
-#[derive(Debug, Serialize, Type)]
+#[derive(Clone, Debug, Serialize, Type)]
 #[serde(tag = "code", content = "payload", rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum InstanceErrorDto {
     Storage {

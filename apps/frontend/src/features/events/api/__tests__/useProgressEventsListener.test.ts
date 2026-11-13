@@ -20,7 +20,6 @@ vi.mock('@/platform/ipc', () => ({
 vi.mock('@/shared/i18n', () => ({
   useTranslation: () => [{ t: (key: string) => key }],
 }));
-vi.mock('@/shared/ui-kit', () => ({ showToast: vi.fn() }));
 vi.mock('@/shared/log', () => ({ logDebug: vi.fn(), logError: vi.fn() }));
 
 import { useProgressStore } from '../../model/progressStore';

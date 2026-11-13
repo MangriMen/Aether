@@ -2,23 +2,18 @@ import { batch, onCleanup, onMount } from 'solid-js';
 import { produce } from 'solid-js/store';
 
 import { useEventListener, eventsCommands, eventsEvents } from '@/platform/ipc';
-import { useTranslation } from '@/shared/i18n';
 import { logDebug, logError } from '@/shared/log';
-import { showToast } from '@/shared/ui-kit';
 
 import type { ProgressEvent } from '../model/progressEvent';
 
 import { useProgressStore } from '../model/progressStore';
-import { isPartOfContentInstall } from '../model/progressTree';
 
 const FLUSH_DELAY_MS = 16;
 
 export const useProgressEventsListener = () => {
+  // A failed bar is shown by the panel; the toast of the failure is the initiator's
+  // (`showError`), so none comes from here.
   const [progressStore, setProgressStore] = useProgressStore();
-  const [{ t }] = useTranslation();
-
-  // Bars whose failure was already reported, so the toast comes up once.
-  const notifiedFailures = new Set<string>();
 
   // Bars updated by live events while the initial snapshot is loading;
   // the snapshot must not overwrite them. Not needed once it is applied.
@@ -125,21 +120,5 @@ export const useProgressEventsListener = () => {
     logDebug('[EVENT][DEBUG]', e);
     liveBarIds?.add(e.payload.progressBarId);
     enqueueEvent(e.payload);
-
-    // A mirror fails with the shared download it shows, which reports it once; a content
-    // install reports its own failure.
-    if (
-      e.payload.status.type === 'failed' &&
-      e.payload.mirrorOf === null &&
-      !notifiedFailures.has(e.payload.progressBarId) &&
-      !isPartOfContentInstall(e.payload, progressStore.payloads)
-    ) {
-      notifiedFailures.add(e.payload.progressBarId);
-      showToast({
-        title: t('events.installFailed'),
-        description: e.payload.status.message,
-        variant: 'destructive',
-      });
-    }
   });
 };
