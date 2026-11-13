@@ -430,9 +430,7 @@ impl FsPluginStorage {
                     warn!("Failed to load plugin from '{}': {}", path.display(), e);
                     scan.skipped.push(SkippedPluginDir {
                         dir_name,
-                        reason: SkippedPluginDirReason::LoadFailed {
-                            details: e.to_string(),
-                        },
+                        reason: SkippedPluginDirReason::LoadFailed { error: Arc::new(e) },
                     });
                 }
             }
@@ -528,9 +526,7 @@ impl FsPluginStorage {
             manifest,
             capabilities: None,
             verified: false,
-            state: PluginState::Failed(PluginStateReason::InvalidManifest {
-                details: refusal.to_string(),
-            }),
+            state: PluginState::Failed(PluginStateReason::InvalidManifest { error: refusal }),
         })
     }
 }
@@ -831,7 +827,7 @@ mod tests {
         assert!(
             skipped
                 .iter()
-                .all(|dir| dir.reason == SkippedPluginDirReason::InvalidName)
+                .all(|dir| matches!(dir.reason, SkippedPluginDirReason::InvalidName))
         );
     }
 

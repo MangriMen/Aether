@@ -393,10 +393,13 @@ async fn should_reject_enable_when_the_loader_does_not_provide_a_declared_host_f
         .plugin_registry
         .get_state_and_manifest(&PluginId::from_static("test-plugin"))
         .unwrap();
-    let PluginState::Incompatible(PluginStateReason::InvalidManifest { details }) = state else {
+    let PluginState::Incompatible(PluginStateReason::InvalidManifest { error }) = state else {
         panic!("the plugin should be marked incompatible for its manifest");
     };
-    assert!(details.contains("`spawn_shell`"), "{details}");
+    assert_eq!(
+        error,
+        ManifestError::UnknownHostFunctions(vec!["spawn_shell".to_owned()])
+    );
 }
 
 /// Force-enable overrides the API version check only: it cannot conjure up a host function
@@ -462,10 +465,10 @@ async fn should_reject_enable_when_the_manifest_has_no_host_function_declaration
         .plugin_registry
         .get_state_and_manifest(&PluginId::from_static("test-plugin"))
         .unwrap();
-    let PluginState::Incompatible(PluginStateReason::InvalidManifest { details }) = state else {
+    let PluginState::Incompatible(PluginStateReason::InvalidManifest { error }) = state else {
         panic!("the plugin should be marked incompatible for its manifest");
     };
-    assert!(details.contains("api.hostFunctions"), "{details}");
+    assert_eq!(error, ManifestError::HostFunctionsNotDeclared);
 }
 
 #[tokio::test]

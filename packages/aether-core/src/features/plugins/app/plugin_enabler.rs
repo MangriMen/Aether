@@ -3,8 +3,8 @@ use std::sync::Arc;
 use crate::features::{
     instance::PluginId,
     plugins::{
-        FolderMounts, LoadConfigType, PluginError, PluginLoaderRegistry, PluginManifest,
-        PluginRegistry, PluginSettingsStorage, PluginState, PluginStateReason,
+        FolderMounts, LoadConfigType, PluginError, PluginLoadFailure, PluginLoaderRegistry,
+        PluginManifest, PluginRegistry, PluginSettingsStorage, PluginState, PluginStateReason,
     },
     settings::SettingsStorage,
 };
@@ -33,9 +33,7 @@ impl PluginEnabler {
         if let Err(err) = manifest.validate_requirements(&loader.host_functions()) {
             self.mark_incompatible(
                 plugin_id,
-                PluginStateReason::InvalidManifest {
-                    details: err.to_string(),
-                },
+                PluginStateReason::InvalidManifest { error: err.clone() },
             )
             .await?;
             return Err(PluginError::Manifest(err));
@@ -132,9 +130,9 @@ impl PluginEnabler {
 /// The loader's own explanation when it has one: the plugin id and "failed to load" around it
 /// are already said by the state the reason goes with.
 pub(super) fn load_failure(err: &PluginError) -> PluginStateReason {
-    let details = match err {
+    let reason = match err {
         PluginError::LoadFailed { reason, .. } => reason.clone(),
-        other => other.to_string(),
+        other => PluginLoadFailure::Build(other.to_string()),
     };
-    PluginStateReason::LoadFailed { details }
+    PluginStateReason::LoadFailed { reason }
 }

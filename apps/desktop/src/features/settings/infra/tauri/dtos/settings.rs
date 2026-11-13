@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use aether_core::features::{
-    instance::PlatformId,
+    instance::{PlatformId, ProviderIdError},
     settings::{
         EditPlatformProvider, EditSettings, MaxConcurrentDownloads, Settings, SettingsError,
     },
@@ -66,7 +66,7 @@ impl TryFrom<EditSettingsDto> for EditSettings {
                 let platform = PlatformId::try_from(choice.platform.as_str()).map_err(|err| {
                     SettingsError::InvalidPlatformProvider {
                         platform: choice.platform.clone(),
-                        reason: err.to_string(),
+                        reason: ProviderIdError::InvalidPart(err),
                     }
                 })?;
                 Ok::<_, SettingsError>(EditPlatformProvider {
@@ -107,8 +107,10 @@ mod tests {
 
             assert!(matches!(
                 result,
-                Err(SettingsError::InvalidPlatformProvider { platform: ref got, .. })
-                    if got == platform
+                Err(SettingsError::InvalidPlatformProvider {
+                    platform: ref got,
+                    reason: ProviderIdError::InvalidPart(_),
+                }) if got == platform
             ));
         }
     }

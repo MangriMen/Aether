@@ -9,8 +9,8 @@ use tempfile::TempDir;
 
 use crate::{
     features::plugins::{
-        ArchiveMetadata, ExtractedPlugin, PluginCapabilities, PluginContent, PluginExtractor,
-        PluginManifest, PluginProviderError, infra::PluginCapabilitiesV1,
+        ArchiveMetadata, ExtractedPlugin, ManifestFormatError, PluginCapabilities, PluginContent,
+        PluginExtractor, PluginManifest, PluginProviderError, infra::PluginCapabilitiesV1,
     },
     shared::io::domain::IoError,
 };
@@ -47,7 +47,10 @@ impl ZipPluginExtractor {
             .map_err(|_| PluginProviderError::InvalidExtractionFormat)?;
         if bytes.len() as u64 > limit {
             return Err(PluginProviderError::InvalidManifestFormat {
-                error: format!("{name} is larger than {limit} bytes"),
+                error: ManifestFormatError::TooLarge {
+                    name: name.to_owned(),
+                    limit,
+                },
             });
         }
         Ok(Some(bytes))
@@ -82,9 +85,7 @@ impl ZipPluginExtractor {
         })?;
 
         let dto: aether_core_plugin_api::v0::PluginManifestDto = serde_json::from_slice(&bytes)
-            .map_err(|e| PluginProviderError::InvalidManifestFormat {
-                error: e.to_string(),
-            })?;
+            .map_err(|e| PluginProviderError::InvalidManifestFormat { error: e.into() })?;
         Ok(dto.try_into()?)
     }
 
@@ -93,19 +94,20 @@ impl ZipPluginExtractor {
         &self,
         archive: &mut zip::ZipArchive<R>,
     ) -> Result<Option<String>, PluginProviderError> {
-        let invalid = |error: String| PluginProviderError::InvalidManifestFormat { error };
+        let invalid =
+            |error: ManifestFormatError| PluginProviderError::InvalidManifestFormat { error };
         let Some(bytes) = self.read_small_entry(archive, self.constants.capabilities_filename)?
         else {
             return Ok(None);
         };
 
         let dto: PluginCapabilitiesV1 =
-            serde_json::from_slice(&bytes).map_err(|e| invalid(e.to_string()))?;
+            serde_json::from_slice(&bytes).map_err(|e| invalid(e.into()))?;
         PluginCapabilities::try_from(dto)?.validate()?;
 
         String::from_utf8(bytes)
             .map(Some)
-            .map_err(|e| invalid(e.to_string()))
+            .map_err(|e| invalid(e.into()))
     }
 
     fn read_metadata_from<R: Read + Seek>(

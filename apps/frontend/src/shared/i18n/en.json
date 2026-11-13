@@ -246,12 +246,12 @@
       "STOPPED": "Plugin is not running: it was unloaded or is restarting. Try again once it is loaded",
       "ID_MISMATCH": "The update is for another plugin (\"{{archive_id}}\"), so it was not installed",
       "ARCHIVE_CHANGED_SINCE_PREVIEW": "The release changed after the preview. Refresh the preview and try again",
-      "LOAD_FAILED": "Failed to load plugin: {{reason}}",
-      "FUNCTION_CALL_FAILED": "Failed to call plugin function",
+      "LOAD_FAILED": "Failed to load plugin {{plugin_id}}: {{reason}}",
+      "FUNCTION_CALL_FAILED": "Failed to call function {{function_name}} of plugin {{plugin_id}}",
       "MANIFEST_NOT_FOUND": "Plugin manifest not found",
-      "INCOMPATIBLE_API_VERSION": "Plugin requires a newer API version. Enable at your own risk",
+      "INCOMPATIBLE_API_VERSION": "Plugin {{plugin_id}} requires API {{required}}, this launcher provides {{host}}. Enable at your own risk",
       "INVALID_MANIFEST_FORMAT": "Invalid manifest format",
-      "MANIFEST": "Plugin manifest error: {{message}}",
+      "MANIFEST": "Plugin manifest error",
       "LOADER_NOT_FOUND": "Plugin loader not found",
       "EXTRACTION_FAILED": "Plugin extraction failed",
       "INVALID_EXTRACTION_FORMAT": "Unsupported archive format",
@@ -263,13 +263,30 @@
       "INVALID_ALLOWED_HOST": "The host of {{url}} cannot be given to the plugin: only http and https addresses of public hosts are allowed, without wildcards",
       "INVALID_ALLOWED_HOST_ENTRY": "Host {{entry}} cannot be saved: write a host name or a pattern such as *.example.com, without a scheme, port or path",
       "HASH_COMPUTATION_FAILED": "Failed to compute plugin hash",
-      "SETTINGS": "Plugin settings error",
       "STORAGE": "Plugin storage error",
-      "PROVIDER_FETCH_ERROR": "Failed to fetch plugin info from provider",
+      "PROVIDER_FETCH_ERROR": "Failed to fetch plugin info from provider {{source_type}}",
       "PROVIDER_NO_ASSETS": "No suitable release assets found",
       "NO_REMOTE_SOURCE": "Plugin has no remote source configured",
       "PROVIDER_RATE_LIMITED": "Provider rate limit exceeded. Please wait {retry_after, plural, one {1 second} other {{retry_after} seconds}} before trying again.",
-      "DOWNLOAD_FAILED": "Failed to download plugin"
+      "DOWNLOAD_FAILED": "Failed to download plugin from {{url}}",
+      "manifest": {
+        "UNSUPPORTED_API": "The plugin manifest asks for an unsupported API version",
+        "INVALID_SEMVER": "The plugin manifest has an invalid version in {{field}}: \"{{value}}\"",
+        "INVALID_PATH_MAPPING": "The plugin manifest has an invalid path mapping",
+        "INVALID_LOAD_FILE": "The plugin manifest names an invalid file to load: \"{{path}}\". It must be a plain relative path inside the plugin folder",
+        "UNKNOWN_HOST_FUNCTIONS": "The plugin declares host functions this launcher does not provide: {{names}}. It was probably built for a newer version of the launcher",
+        "HOST_FUNCTIONS_NOT_DECLARED": "The plugin manifest does not declare the host functions it needs (api.hostFunctions). The plugin was built for an older plugin API: rebuild it for the current one",
+        "INVALID_ID": "The plugin manifest has an invalid id in {{field}}: \"{{value}}\". An id may contain only lowercase Latin letters, digits, \"_\" and \"-\", and must start with a letter or digit",
+        "RESERVED_PLUGIN_ID": "The plugin id is reserved for the providers built into Aether",
+        "PLATFORM_WITHOUT_RESOLVE_FILE": "The content provider \"{{capability_id}}\" declares a platform but no resolveFile handler, which a platform requires"
+      },
+      "reason": {
+        "LOAD_FAILED": {
+          "HASH_MISMATCH": "the plugin file changed on disk since it was installed from {{source_type}}; reinstall the plugin from its source before enabling it",
+          "BUILD": "the plugin could not be built",
+          "CONTAINER_UNAVAILABLE": "the launcher is not ready to run plugins"
+        }
+      }
     },
     "process": {
       "KILL_ERROR": "Failed to terminate process",
@@ -292,6 +309,12 @@
       "NOT_FOUND": "Settings file not found",
       "STORAGE_FAILURE": "Settings storage failure",
       "INVALID_PLATFORM_PROVIDER": "Invalid content provider choice for platform \"{{platform}}\": {{reason}}",
+      "reason": {
+        "INVALID_PLATFORM_PROVIDER": {
+          "FORMAT": "\"{{value}}\" is not a provider id: write it as plugin#capability",
+          "INVALID_PART": "\"{{value}}\" is not a valid id: it may contain only lowercase Latin letters, digits, \"_\" and \"-\", and must start with a letter or digit"
+        }
+      },
       "INVALID_MAX_CONCURRENT_DOWNLOADS": "The number of concurrent downloads must be at least 1",
       "INVALID_MEMORY": "The memory amount must be at least 1 MB"
     },
@@ -601,7 +624,7 @@
     "skippedDirs": {
       "title": "These folders in the plugins folder are not loaded:",
       "invalidName": "the name may only contain lowercase letters, digits, \"-\" and \"_\"; rename the folder and sync the plugins",
-      "loadFailed": "the plugin cannot be read ({{details}})"
+      "loadFailed": "the plugin cannot be read"
     },
     "saveSettings": "Save settings",
     "title": "Plugins",
@@ -779,8 +802,8 @@
     "stateReasonUnknown": "Reason not recorded",
     "stateReason": {
       "INCOMPATIBLE_API_VERSION": "The plugin requires API {{required}}, this launcher provides {{host}}",
-      "INVALID_MANIFEST": "The plugin manifest failed validation: {{details}}",
-      "LOAD_FAILED": "The plugin failed to load: {{details}}"
+      "INVALID_MANIFEST": "The plugin manifest failed validation",
+      "LOAD_FAILED": "The plugin failed to load"
     },
     "restart": "Restart",
     "restartFailed": "Could not restart the plugin",

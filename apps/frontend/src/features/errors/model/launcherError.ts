@@ -1,4 +1,8 @@
 import type { FrontendError } from '@/platform/bindings/application';
+import type {
+  ManifestErrorDto,
+  PluginLoadFailureDto,
+} from '@/platform/bindings/plugin';
 import type { TFunction } from '@/shared/i18n';
 
 import { dayjs, formatDuration } from '@/shared/format';
@@ -187,11 +191,62 @@ const getCause = (error: LauncherError): unknown => {
   return isRecord(payload) ? getCauseOf(payload.payload) : undefined;
 };
 
+/** Why a plugin manifest is refused, in the user's language. */
+export const getTranslatedManifestError = (
+  error: ManifestErrorDto,
+  t: TFunction,
+): string => {
+  if (error.code === 'UNKNOWN_HOST_FUNCTIONS') {
+    const names = error.payload.names.map((name) => `\`${name}\``).join(', ');
+
+    return t('errors.plugin.manifest.UNKNOWN_HOST_FUNCTIONS', { names }) ?? '';
+  }
+
+  const args = 'payload' in error ? error.payload : undefined;
+
+  return t(`errors.plugin.manifest.${error.code}`, args) ?? error.code;
+};
+
+/** Why the loader could not bring a plugin up, with the category of its cause when it has one. */
+export const getTranslatedLoadFailure = (
+  reason: PluginLoadFailureDto,
+  t: TFunction,
+): string => {
+  const payload: unknown = 'payload' in reason ? reason.payload : undefined;
+  const main =
+    t(`errors.plugin.reason.LOAD_FAILED.${reason.code}`, payload as never) ??
+    reason.code;
+  const causeText = getCauseText(
+    isRecord(payload) ? payload.cause : undefined,
+    t,
+  );
+
+  return causeText ? `${main}: ${causeText}` : main;
+};
+
+/** The raw text of an unknown cause held by a reason (`{ code, payload: { cause } }`). Only `ErrorDetails` may show it. */
+export const getReasonDetails = (reason: unknown): string | undefined => {
+  const cause =
+    isRecord(reason) && isRecord(reason.payload)
+      ? reason.payload.cause
+      : undefined;
+
+  return isRecord(cause) &&
+    cause.type === 'unknown' &&
+    typeof cause.details === 'string'
+    ? cause.details
+    : undefined;
+};
+
 export const getTranslatedError = (
   error: LauncherError,
   t: TFunction,
 ): string => {
   const { key, args } = getLauncherErrorTranslationData(error);
+
+  if (error.type === 'plugin' && error.payload.code === 'MANIFEST') {
+    return getTranslatedManifestError(error.payload.payload.error, t);
+  }
 
   const main =
     t(

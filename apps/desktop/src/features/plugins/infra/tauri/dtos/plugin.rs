@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
+use crate::core::{ManifestErrorDto, PluginLoadFailureDto};
 use crate::features::plugins::{
     ApiConfigDto, LoadConfigDto, PathMappingDto, PluginCapabilitiesDto,
     PluginContentProviderCapabilityDto, PluginImporterCapabilityDto, PluginManifestDto,
@@ -18,7 +19,7 @@ pub enum PluginDtoState {
 }
 
 /// Translated by its `code`; the payload fills in the message.
-#[derive(Debug, Clone, Serialize, Deserialize, Type)]
+#[derive(Debug, Clone, Serialize, Type)]
 #[serde(tag = "code", content = "payload", rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum PluginStateReasonDto {
     IncompatibleApiVersion {
@@ -26,14 +27,14 @@ pub enum PluginStateReasonDto {
         host: semver::Version,
     },
     InvalidManifest {
-        details: String,
+        error: ManifestErrorDto,
     },
     LoadFailed {
-        details: String,
+        reason: PluginLoadFailureDto,
     },
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Type)]
+#[derive(Debug, Clone, Serialize, Type)]
 pub struct PluginDto {
     pub manifest: PluginManifestDto,
     pub capabilities: Option<PluginCapabilitiesDto>,
@@ -200,8 +201,12 @@ impl From<aether_core::features::plugins::PluginStateReasonDto> for PluginStateR
             Core::IncompatibleApiVersion { required, host } => {
                 Self::IncompatibleApiVersion { required, host }
             }
-            Core::InvalidManifest { details } => Self::InvalidManifest { details },
-            Core::LoadFailed { details } => Self::LoadFailed { details },
+            Core::InvalidManifest { error } => Self::InvalidManifest {
+                error: (&error).into(),
+            },
+            Core::LoadFailed { reason } => Self::LoadFailed {
+                reason: (&reason).into(),
+            },
         }
     }
 }
@@ -224,6 +229,47 @@ mod tests {
             serde_json::json!({
                 "code": "INCOMPATIBLE_API_VERSION",
                 "payload": { "required": "^2.0.0", "host": "1.4.0" },
+            })
+        );
+    }
+
+    #[test]
+    fn should_serialize_an_invalid_manifest_reason_with_the_typed_manifest_error() {
+        use aether_core::features::plugins::{ManifestError, PluginStateReasonDto as Core};
+
+        let reason: PluginStateReasonDto = Core::InvalidManifest {
+            error: ManifestError::UnknownHostFunctions(vec!["spawn_shell".to_owned()]),
+        }
+        .into();
+
+        assert_eq!(
+            serde_json::to_value(&reason).unwrap(),
+            serde_json::json!({
+                "code": "INVALID_MANIFEST",
+                "payload": {
+                    "error": {
+                        "code": "UNKNOWN_HOST_FUNCTIONS",
+                        "payload": { "names": ["spawn_shell"] },
+                    },
+                },
+            })
+        );
+    }
+
+    #[test]
+    fn should_serialize_a_load_failed_reason_with_the_typed_failure() {
+        use aether_core::features::plugins::{PluginLoadFailure, PluginStateReasonDto as Core};
+
+        let reason: PluginStateReasonDto = Core::LoadFailed {
+            reason: PluginLoadFailure::ContainerUnavailable,
+        }
+        .into();
+
+        assert_eq!(
+            serde_json::to_value(&reason).unwrap(),
+            serde_json::json!({
+                "code": "LOAD_FAILED",
+                "payload": { "reason": { "code": "CONTAINER_UNAVAILABLE" } },
             })
         );
     }

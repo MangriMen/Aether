@@ -354,6 +354,21 @@ export type LoaderVersionPreferenceDto = "latest" | "stable" | string;
 /**  Why a text is not a loader version id. */
 export type LoaderVersionReasonDto = { code: "EMPTY" } | { code: "TOO_LONG" } | { code: "CONTROL_CHARACTER" } | { code: "WHITESPACE" };
 
+/**  Why a plugin manifest is refused. */
+export type ManifestErrorDto = { code: "UNSUPPORTED_API" } | { code: "INVALID_SEMVER"; payload: {
+	field: string,
+	value: string,
+} } | { code: "INVALID_PATH_MAPPING" } | { code: "INVALID_LOAD_FILE"; payload: {
+	path: string,
+} } | { code: "UNKNOWN_HOST_FUNCTIONS"; payload: {
+	names: string[],
+} } | { code: "HOST_FUNCTIONS_NOT_DECLARED" } | { code: "INVALID_ID"; payload: {
+	field: string,
+	value: string,
+} } | { code: "RESERVED_PLUGIN_ID" } | { code: "PLATFORM_WITHOUT_RESOLVE_FILE"; payload: {
+	capability_id: string,
+} };
+
 export type MemorySettingsDto = {
 	maximum: number,
 };
@@ -415,20 +430,21 @@ export type PluginErrorDto = { code: "NOT_FOUND"; payload: {
 	archive_id: string,
 } } | { code: "LOAD_FAILED"; payload: {
 	plugin_id: string,
-	reason: string,
+	reason: PluginLoadFailureDto,
 } } | { code: "INCOMPATIBLE_API_VERSION"; payload: {
 	plugin_id: string,
-	reason: string,
+	required: string,
+	host: string,
 } } | { code: "FUNCTION_CALL_FAILED"; payload: {
 	function_name: string,
 	plugin_id: string,
-	error: string,
+	cause: CauseDto,
 } } | { code: "MANIFEST_NOT_FOUND"; payload: {
 	path: string,
 } } | { code: "INVALID_MANIFEST_FORMAT"; payload: {
-	error: string,
+	cause: CauseDto,
 } } | { code: "MANIFEST"; payload: {
-	message: string,
+	error: ManifestErrorDto,
 } } | { code: "LOADER_NOT_FOUND"; payload: {
 	config_type: LoadConfigTypeDto,
 } } | { code: "EXTRACTION_FAILED"; payload: {
@@ -456,24 +472,32 @@ export type PluginErrorDto = { code: "NOT_FOUND"; payload: {
 	plugin_id: string,
 	entry: string,
 	reason: AllowedHostEntryRejectionDto,
-} } | { code: "HASH_COMPUTATION_FAILED" } | { code: "SETTINGS"; payload: {
-	details: string,
-} } | { code: "STORAGE"; payload: {
-	details: string,
+} } | { code: "HASH_COMPUTATION_FAILED" } | { code: "STORAGE"; payload: {
+	cause: CauseDto,
 } } | { code: "PROVIDER_FETCH_ERROR"; payload: {
 	source_type: string,
-	details: string,
+	cause: CauseDto,
 } } | { code: "PROVIDER_NO_ASSETS"; payload: {
 	source_type: string,
 } } | { code: "ARCHIVE_CHANGED_SINCE_PREVIEW" } | { code: "NO_REMOTE_SOURCE"; payload: {
 	plugin_id: string,
 } } | { code: "DOWNLOAD_FAILED"; payload: {
 	url: string,
-	details: string,
+	cause: CauseDto,
 } } | { code: "PROVIDER_RATE_LIMITED"; payload: {
 	source_type: string,
 	retry_after: number | null,
 } };
+
+/**  Why the loader could not bring a plugin up. */
+export type PluginLoadFailureDto = { code: "HASH_MISMATCH"; payload: {
+	path: string,
+	actual_sha256: string,
+	recorded_sha256: string,
+	source_type: string,
+} } | { code: "BUILD"; payload: {
+	cause: CauseDto,
+} } | { code: "CONTAINER_UNAVAILABLE" };
 
 export type ProcessErrorDto = { code: "KILL_ERROR"; payload: {
 	id: string,
@@ -505,6 +529,17 @@ export type ProcessorFailureDto = { code: "MAIN_CLASS_NOT_FOUND"; payload: {
 	cause: CauseDto,
 } } | { code: "TASK_FAILED"; payload: {
 	cause: CauseDto,
+} };
+
+/**  Why a text is not a `plugin#capability` provider id. */
+export type ProviderIdReasonDto = 
+/**  The text is not two parts around the separator. */
+{ code: "FORMAT"; payload: {
+	value: string,
+} } | 
+/**  A part is outside the id scheme. Which one is not told: the value names it. */
+{ code: "INVALID_PART"; payload: {
+	value: string,
 } };
 
 export type RamSettingsDto = {
@@ -540,7 +575,7 @@ export type SettingsDto = {
 
 export type SettingsErrorDto = { code: "NOT_FOUND" } | { code: "STORAGE_FAILURE" } | { code: "INVALID_PLATFORM_PROVIDER"; payload: {
 	platform: string,
-	reason: string,
+	reason: ProviderIdReasonDto,
 } } | { code: "INVALID_MAX_CONCURRENT_DOWNLOADS" } | { code: "INVALID_MEMORY" };
 
 export type StorageKindDto = "minecraft" | "java" | "instances";

@@ -26,9 +26,10 @@ use crate::{
             EnablePluginUseCase, FolderMounts, ForceEnablePluginUseCase, GetPluginDtoUseCase,
             GrantPluginFolderAccessUseCase, GrantPluginHostAccessUseCase, ListPluginsDtoUseCase,
             LoadConfig, LoadConfigType, Plugin, PluginCapabilities, PluginError, PluginHandle,
-            PluginImporterCapability, PluginInternalEvent, PluginLoader, PluginLoaderRegistry,
-            PluginManifest, PluginMetadata, PluginRegistry, PluginSettings, PluginSettingsStorage,
-            PluginState, ReloadPluginUseCase, RuntimeConfig, core_folders, partition_mountable,
+            PluginImporterCapability, PluginInternalEvent, PluginLoadFailure, PluginLoader,
+            PluginLoaderRegistry, PluginManifest, PluginMetadata, PluginRegistry, PluginSettings,
+            PluginSettingsStorage, PluginState, ReloadPluginUseCase, RuntimeConfig, core_folders,
+            partition_mountable,
         },
         settings::{LocationInfo, Settings, SettingsError, SettingsStorage},
     },
@@ -130,7 +131,7 @@ impl PluginLoader for WatLoader {
         if self.fail_next_load.swap(false, Ordering::SeqCst) {
             return Err(PluginError::LoadFailed {
                 plugin_id,
-                reason: "the wasm does not compile".into(),
+                reason: PluginLoadFailure::Build("the wasm does not compile".into()),
             });
         }
 

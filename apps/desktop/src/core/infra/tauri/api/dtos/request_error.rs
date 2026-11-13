@@ -21,7 +21,7 @@ pub enum RequestErrorDto {
 }
 
 /// The middleware error is an opaque `anyhow::Error`, so the typed causes it can wrap are looked up in its chain.
-fn middleware_cause(err: &anyhow::Error) -> CauseDto {
+pub(super) fn middleware_cause(err: &anyhow::Error) -> CauseDto {
     for source in err.chain() {
         if let Some(err) = source.downcast_ref::<reqwest::Error>() {
             return err.into();

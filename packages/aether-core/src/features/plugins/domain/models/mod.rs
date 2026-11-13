@@ -10,6 +10,7 @@ mod plugin_dtos;
 mod plugin_error;
 mod plugin_file_path;
 mod plugin_internal_event;
+mod plugin_load_failure;
 mod plugin_manifest;
 mod plugin_path;
 mod plugin_provider;
@@ -45,6 +46,7 @@ pub use plugin_dtos::{PluginCheckCompatibilityParams, PluginImportInstance};
 pub use plugin_error::PluginError;
 pub use plugin_file_path::PluginFilePath;
 pub use plugin_internal_event::PluginInternalEvent;
+pub use plugin_load_failure::PluginLoadFailure;
 pub use plugin_manifest::{
     ApiConfig, Compatibility, LoadConfig, LoadConfigType, PathMapping, PluginManifest,
     PluginMetadata, RuntimeConfig,
@@ -54,7 +56,7 @@ pub use plugin_provider::{
     PluginProviderInfo, PluginReleasePreview, PluginSourceType, ProviderPluginPreview,
     ProviderReleaseInfo, ProviderUpdateInfo,
 };
-pub use plugin_provider_error::PluginProviderError;
+pub use plugin_provider_error::{ManifestFormatError, PluginProviderError, ProviderFailure};
 pub use plugin_settings::PluginSettings;
 pub use plugin_source::{PluginManifestPreview, PluginSource};
 pub use plugin_verification::PluginVerification;

@@ -431,11 +431,15 @@ fn plugin_dto(value: &PluginError) -> PluginErrorDto {
         }
         PluginError::LoadFailed { plugin_id, reason } => Dto::LoadFailed {
             plugin_id: plugin_id.to_string(),
-            reason: reason.clone(),
+            reason: reason.to_string(),
         },
-        PluginError::IncompatibleApiVersion { plugin_id, reason } => Dto::IncompatibleApiVersion {
+        PluginError::IncompatibleApiVersion {
+            plugin_id,
+            required,
+            host,
+        } => Dto::IncompatibleApiVersion {
             plugin_id: plugin_id.to_string(),
-            reason: reason.clone(),
+            reason: format!("Plugin requires API {required}, host API version is {host}"),
         },
         PluginError::FunctionCallFailed {
             function_name,
@@ -507,7 +511,7 @@ impl From<&PluginProviderError> for PluginErrorDto {
                 Self::ManifestNotFound { path: path.clone() }
             }
             PluginProviderError::InvalidManifestFormat { error } => Self::InvalidManifestFormat {
-                error: error.clone(),
+                error: error.to_string(),
             },
             PluginProviderError::ExtractionFailed { from } => {
                 Self::ExtractionFailed { from: from.clone() }
@@ -518,13 +522,12 @@ impl From<&PluginProviderError> for PluginErrorDto {
             }
             PluginProviderError::Manifest(err) => Self::Manifest(err.into()),
             PluginProviderError::Storage(err) => Self::Storage(err.to_string()),
-            PluginProviderError::ProviderFetchError {
-                source_type,
-                details,
-            } => Self::ProviderFetchError {
-                source_type: source_type.into(),
-                details: details.clone(),
-            },
+            PluginProviderError::ProviderFetchError { source_type, cause } => {
+                Self::ProviderFetchError {
+                    source_type: source_type.into(),
+                    details: cause.to_string(),
+                }
+            }
             PluginProviderError::ProviderNoAssets { source_type } => Self::ProviderNoAssets {
                 source_type: source_type.into(),
             },
@@ -535,9 +538,9 @@ impl From<&PluginProviderError> for PluginErrorDto {
             PluginProviderError::NoRemoteSource { plugin_id } => Self::NoRemoteSource {
                 plugin_id: plugin_id.to_string(),
             },
-            PluginProviderError::DownloadFailed { url, details } => Self::DownloadFailed {
+            PluginProviderError::DownloadFailed { url, cause } => Self::DownloadFailed {
                 url: url.clone(),
-                details: details.clone(),
+                details: cause.to_string(),
             },
             PluginProviderError::ProviderRateLimited {
                 source_type,

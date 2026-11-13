@@ -71,20 +71,22 @@ impl EnablePluginUseCase {
 
         if !is_force_enabled {
             // Run compatibility check
-            let reason = match manifest.api.check_compatibility(&PLUGIN_API_VERSION) {
+            let mismatch = match manifest.api.check_compatibility(&PLUGIN_API_VERSION) {
                 Compatibility::Compatible => None,
                 Compatibility::MajorMismatch { required, host }
-                | Compatibility::Incompatible { required, host } => {
-                    Some(PluginStateReason::IncompatibleApiVersion { required, host })
-                }
+                | Compatibility::Incompatible { required, host } => Some((required, host)),
             };
 
-            if let Some(reason) = reason {
-                let text = reason.to_string();
+            if let Some((required, host)) = mismatch {
+                let reason = PluginStateReason::IncompatibleApiVersion {
+                    required: required.clone(),
+                    host: host.clone(),
+                };
                 self.enabler.mark_incompatible(plugin_id, reason).await?;
                 return Err(PluginError::IncompatibleApiVersion {
                     plugin_id: plugin_id.to_owned(),
-                    reason: text,
+                    required,
+                    host,
                 });
             }
         }

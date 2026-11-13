@@ -38,7 +38,10 @@ mod tests {
 
     use super::*;
     use crate::features::settings::MaxConcurrentDownloads;
-    use crate::features::{instance::PlatformId, settings::app::EditPlatformProvider};
+    use crate::features::{
+        instance::{InvalidId, PlatformId, ProviderIdError},
+        settings::app::EditPlatformProvider,
+    };
 
     struct FixedSettings(Mutex<Settings>);
 
@@ -83,19 +86,28 @@ mod tests {
     }
 
     #[rstest]
-    #[case::malformed_provider_id("curseforge", "not a provider id", "not a provider id")]
+    #[case::malformed_provider_id(
+        "curseforge",
+        "not a provider id",
+        ProviderIdError::Format("not a provider id".to_owned())
+    )]
+    #[case::part_is_not_an_id(
+        "curseforge",
+        "Bad Id#cap",
+        ProviderIdError::InvalidPart(InvalidId { kind: "plugin", value: "Bad Id".to_owned() })
+    )]
     #[tokio::test]
     async fn should_refuse_a_provider_choice_when_it_is_invalid(
         #[case] platform: &str,
         #[case] provider_id: &str,
-        #[case] reason_fragment: &str,
+        #[case] expected: ProviderIdError,
     ) {
         let (result, stored) = run(edit(platform, provider_id)).await;
 
         assert!(matches!(
             result,
             Err(SettingsError::InvalidPlatformProvider { platform: ref got, ref reason })
-                if got == platform && reason.contains(reason_fragment)
+                if got == platform && *reason == expected
         ));
         assert!(stored.platform_providers().is_empty());
     }

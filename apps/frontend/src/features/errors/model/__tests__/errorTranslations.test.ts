@@ -59,9 +59,6 @@ const io = (cause: unknown) =>
     payload: { code: 'IO', payload: { cause } },
   }) as unknown as LauncherError;
 
-/** Texts not yet moved off raw backend text; the list shrinks to empty as DTOs get a `cause`. */
-const PENDING_RAW_TEXT_KEYS = ['errors.plugin.MANIFEST'];
-
 const dictionaries: [string, Dictionary][] = [
   ['en', enDictionary as unknown as Dictionary],
   ['ru', ruDictionary as unknown as Dictionary],
@@ -271,7 +268,7 @@ describe('error dictionaries', () => {
         )
         .map(([key]) => `errors.${key}`);
 
-      expect(offenders).toEqual(PENDING_RAW_TEXT_KEYS);
+      expect(offenders).toEqual([]);
     },
   );
 });
@@ -282,6 +279,17 @@ describe('plugin state reason translations', () => {
   it('finds the reason codes in the bindings', () => {
     expect(codes.length).toBeGreaterThan(0);
   });
+
+  it.each(dictionaries)(
+    'no plugin state reason text in %s inserts raw backend text',
+    (_lang, dictionary) => {
+      const offenders = Object.entries(dictionary.plugin.stateReason ?? {})
+        .filter(([, text]) => /\{\{(details|message|error)\}\}/.test(text))
+        .map(([key]) => `plugin.stateReason.${key}`);
+
+      expect(offenders).toEqual([]);
+    },
+  );
 
   it.each(dictionaries)(
     'every plugin state reason code is translated in %s',
@@ -298,6 +306,8 @@ describe('plugin state reason translations', () => {
 describe.each([
   ['instance', 'InstanceErrorDto', 'CONTENT_PROVIDER_ERROR'],
   ['minecraft', 'MinecraftErrorDto', 'PROCESSOR_FAILED'],
+  ['plugin', 'PluginErrorDto', 'LOAD_FAILED'],
+  ['settings', 'SettingsErrorDto', 'INVALID_PLATFORM_PROVIDER'],
 ] as const)('%s reason translations', (group, errorDtoName, sampleCode) => {
   /** `{ code: "X"; payload: { ..., reason: SomeReasonDto } }` → `{ X: 'SomeReasonDto' }` */
   const getReasonDtos = (): Record<string, string> => {
@@ -371,5 +381,110 @@ describe('minecraft processor failure', () => {
       'Ошибка обработки версии: процессор завершился с кодом 1',
     );
     expect(getErrorDetails(error)).toBe('stack trace');
+  });
+});
+
+describe('plugin manifest errors', () => {
+  const codes = getCodes('ManifestErrorDto');
+
+  it('finds the manifest error codes in the bindings', () => {
+    expect(codes).toContain('UNKNOWN_HOST_FUNCTIONS');
+  });
+
+  it.each(dictionaries)(
+    'every manifest error code is translated in %s',
+    (_lang, dictionary) => {
+      const manifest = dictionary.errors.plugin?.manifest as unknown as
+        | Record<string, string>
+        | undefined;
+
+      expect(
+        codes
+          .filter((code) => !manifest?.[code])
+          .map((code) => `errors.plugin.manifest.${code}`),
+      ).toEqual([]);
+    },
+  );
+
+  const manifestError = (error: unknown) =>
+    ({
+      type: 'plugin',
+      payload: { code: 'MANIFEST', payload: { error } },
+    }) as unknown as LauncherError;
+
+  it('should_build_the_text_of_a_manifest_error_from_its_code_and_arguments', () => {
+    expect(
+      getTranslatedError(
+        manifestError({
+          code: 'INVALID_ID',
+          payload: { field: 'metadata.id', value: 'Bad Id' },
+        }),
+        tEn,
+      ),
+    ).toBe(
+      'The plugin manifest has an invalid id in metadata.id: "Bad Id". An id may contain only lowercase Latin letters, digits, "_" and "-", and must start with a letter or digit',
+    );
+  });
+
+  it('should_quote_every_unknown_host_function_in_the_text', () => {
+    expect(
+      getTranslatedError(
+        manifestError({
+          code: 'UNKNOWN_HOST_FUNCTIONS',
+          payload: { names: ['a', 'b'] },
+        }),
+        tEn,
+      ),
+    ).toContain('`a`, `b`');
+  });
+});
+
+describe('plugin load failure', () => {
+  const loadFailed = (reason: unknown) =>
+    ({
+      type: 'plugin',
+      payload: {
+        code: 'LOAD_FAILED',
+        payload: { plugin_id: 'my-plugin', reason },
+      },
+    }) as unknown as LauncherError;
+
+  it('should_translate_the_reason_and_keep_the_raw_text_of_a_build_failure_out_of_the_message', () => {
+    const error = loadFailed({
+      code: 'BUILD',
+      payload: { cause: { type: 'unknown', details: 'wasmtime trap' } },
+    });
+
+    expect(getTranslatedError(error, tEn)).toBe(
+      'Failed to load plugin my-plugin: the plugin could not be built',
+    );
+    expect(getErrorDetails(error)).toBe('wasmtime trap');
+  });
+
+  it('should_translate_a_load_failure_without_arguments', () => {
+    expect(
+      getTranslatedError(loadFailed({ code: 'CONTAINER_UNAVAILABLE' }), tRu),
+    ).toBe(
+      'Не удалось загрузить плагин my-plugin: лаунчер ещё не готов запускать плагины',
+    );
+  });
+});
+
+describe('settings errors', () => {
+  it('should_translate_the_reason_why_a_provider_choice_is_invalid', () => {
+    const error = {
+      type: 'settings',
+      payload: {
+        code: 'INVALID_PLATFORM_PROVIDER',
+        payload: {
+          platform: 'modrinth',
+          reason: { code: 'FORMAT', payload: { value: 'nope' } },
+        },
+      },
+    } as unknown as LauncherError;
+
+    expect(getTranslatedError(error, tEn)).toBe(
+      'Invalid content provider choice for platform "modrinth": "nope" is not a provider id: write it as plugin#capability',
+    );
   });
 });

@@ -8,9 +8,10 @@ use crate::features::{
         UpdaterCapabilityMetadata,
     },
     plugins::domain::{
-        ApiConfig, LoadConfig, PathMapping, Plugin, PluginCapabilities,
-        PluginContentProviderCapability, PluginImporterCapability, PluginManifest, PluginMetadata,
-        PluginState, PluginStateReason, PluginUpdaterCapability, ProviderHandlers, RuntimeConfig,
+        ApiConfig, LoadConfig, ManifestError, PathMapping, Plugin, PluginCapabilities,
+        PluginContentProviderCapability, PluginImporterCapability, PluginLoadFailure,
+        PluginManifest, PluginMetadata, PluginState, PluginStateReason, PluginUpdaterCapability,
+        ProviderHandlers, RuntimeConfig,
     },
 };
 
@@ -141,21 +142,23 @@ pub enum PluginDtoState {
     Failed,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+/// Carries the typed errors themselves: the desktop turns them into what the frontend
+/// translates, so this is not serialized.
+#[derive(Debug, Clone)]
 pub enum PluginStateReasonDto {
     IncompatibleApiVersion {
         required: semver::VersionReq,
         host: semver::Version,
     },
     InvalidManifest {
-        details: String,
+        error: ManifestError,
     },
     LoadFailed {
-        details: String,
+        reason: PluginLoadFailure,
     },
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct PluginDto {
     pub manifest: PluginManifestDto,
     pub capabilities: Option<PluginCapabilitiesDto>,
@@ -351,11 +354,11 @@ impl From<&PluginStateReason> for PluginStateReasonDto {
                     host: host.clone(),
                 }
             }
-            PluginStateReason::InvalidManifest { details } => Self::InvalidManifest {
-                details: details.clone(),
+            PluginStateReason::InvalidManifest { error } => Self::InvalidManifest {
+                error: error.clone(),
             },
-            PluginStateReason::LoadFailed { details } => Self::LoadFailed {
-                details: details.clone(),
+            PluginStateReason::LoadFailed { reason } => Self::LoadFailed {
+                reason: reason.clone(),
             },
         }
     }

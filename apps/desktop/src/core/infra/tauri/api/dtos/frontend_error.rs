@@ -110,7 +110,7 @@ impl From<&aether_core::ErrorKind> for FrontendError {
             aether_core::ErrorKind::InstanceError(err) => err.into(),
             aether_core::ErrorKind::JavaError(err) => err.into(),
             aether_core::ErrorKind::MinecraftError(err) => err.into(),
-            aether_core::ErrorKind::PluginError(err) => Self::Plugin(err.into()),
+            aether_core::ErrorKind::PluginError(err) => err.into(),
             aether_core::ErrorKind::ProcessError(err) => Self::Process(err.into()),
             aether_core::ErrorKind::SettingsError(err) => Self::Settings(err.into()),
             aether_core::ErrorKind::RequestError(err) => Self::Request(err.into()),

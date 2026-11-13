@@ -1,5 +1,6 @@
 import { Show, type Component } from 'solid-js';
 
+import { ErrorDetails } from '@/features/errors';
 import { useTranslation } from '@/shared/i18n';
 import { cn } from '@/shared/utils';
 
@@ -7,6 +8,7 @@ import type { Plugin } from '../model/plugin';
 
 import {
   getTranslatedStateLabel,
+  getStateReasonDetails,
   getTranslatedStateReason,
 } from '../model/pluginState';
 import { PluginApiCompatibilityBadge } from './PluginApiCompatibilityBadge';
@@ -44,6 +46,7 @@ export const PluginInfoHeader: Component<PluginInfoHeaderProps> = (props) => {
     return {
       title,
       reason: getTranslatedStateReason(props.plugin.state_reason, t),
+      details: getStateReasonDetails(props.plugin.state_reason),
     };
   };
 
@@ -68,9 +71,14 @@ export const PluginInfoHeader: Component<PluginInfoHeaderProps> = (props) => {
       {/* Why the core refused to run the plugin */}
       <Show when={refusal()}>
         {(r) => (
-          <span class='text-sm text-destructive wrap-break-word'>
-            {r().title}: {r().reason}
-          </span>
+          <>
+            <span class='text-sm text-destructive wrap-break-word'>
+              {r().title}: {r().reason}
+            </span>
+            <Show when={r().details}>
+              {(details) => <ErrorDetails details={details()} />}
+            </Show>
+          </>
         )}
       </Show>
       {/* Authors */}

@@ -10,20 +10,21 @@ pub(crate) mod test_support;
 
 pub use domain::{
     AllowedHostEntryRejection, AllowedHostRejection, AllowedPath, AllowedPathInput,
-    AllowedPathRejection, ApiConfig, IgnoredAllowedPath, LoadConfig, LoadConfigType, PathMapping,
-    PluginCapabilities, PluginContentProviderCapability, PluginError, PluginImporterCapability,
+    AllowedPathRejection, ApiConfig, IgnoredAllowedPath, LoadConfig, LoadConfigType, ManifestError,
+    ManifestFormatError, PathMapping, PluginCallError, PluginCapabilities,
+    PluginContentProviderCapability, PluginError, PluginImporterCapability, PluginLoadFailure,
     PluginManifest, PluginManifestPreview, PluginMetadata, PluginProviderError, PluginProviderInfo,
     PluginReleasePreview, PluginSettings, PluginSource, PluginSourceType, PluginUpdaterCapability,
-    ProviderHandlers, ProviderPluginPreview, ProviderReleaseInfo, ProviderUpdateInfo,
-    RuntimeConfig, SkippedPluginDir, SkippedPluginDirReason,
+    ProviderFailure, ProviderHandlers, ProviderPluginPreview, ProviderReleaseInfo,
+    ProviderUpdateInfo, RuntimeConfig, SkippedPluginDir, SkippedPluginDirReason,
 };
 pub(crate) use domain::{
     ArchiveMetadata, AsCapabilityMetadata, Compatibility, CoreMount, ExtractedPlugin, FolderMounts,
-    GrantableHost, ManifestError, PLUGIN_API_VERSION, PLUGIN_CACHE_MOUNT, Plugin, PluginCallError,
-    PluginCheckCompatibilityParams, PluginContent, PluginHandle, PluginImportInstance,
-    PluginInstance, PluginInternalEvent, PluginPath, PluginState, PluginStateReason,
-    PluginVerification, core_folders, effective_allowed_hosts, is_blocked_ip, is_filesystem_root,
-    is_host_allowed, partition_mountable, to_wasi_path, validate_allowed_host_entry,
+    GrantableHost, PLUGIN_API_VERSION, PLUGIN_CACHE_MOUNT, Plugin, PluginCheckCompatibilityParams,
+    PluginContent, PluginHandle, PluginImportInstance, PluginInstance, PluginInternalEvent,
+    PluginPath, PluginState, PluginStateReason, PluginVerification, core_folders,
+    effective_allowed_hosts, is_blocked_ip, is_filesystem_root, is_host_allowed,
+    partition_mountable, to_wasi_path, validate_allowed_host_entry,
 };
 
 pub use app::{

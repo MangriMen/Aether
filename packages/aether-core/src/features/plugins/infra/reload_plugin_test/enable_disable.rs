@@ -4,8 +4,8 @@ use std::sync::{Arc, atomic::Ordering};
 
 use crate::features::plugins::test_support::SlowPluginSettings;
 use crate::features::plugins::{
-    EnablePluginUseCase, PluginError, PluginLoaderRegistry, PluginSettingsStorage, PluginState,
-    PluginStateReason,
+    EnablePluginUseCase, PluginError, PluginLoadFailure, PluginLoaderRegistry,
+    PluginSettingsStorage, PluginState, PluginStateReason,
 };
 
 use super::common::*;
@@ -127,7 +127,7 @@ async fn should_leave_the_plugin_as_it_was_when_enabling_fails_before_the_load()
         .plugins
         .upsert_with(&plugin_id(), |plugin| {
             plugin.state = PluginState::Failed(PluginStateReason::LoadFailed {
-                details: "the wasm does not compile".into(),
+                reason: PluginLoadFailure::Build("the wasm does not compile".into()),
             });
             Ok(())
         })
