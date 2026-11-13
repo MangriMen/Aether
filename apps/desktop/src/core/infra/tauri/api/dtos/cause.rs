@@ -74,9 +74,23 @@ impl From<&IoError> for CauseDto {
     }
 }
 
-/// A URL as text without its query and fragment, which can carry secrets.
+/// A URL as text without its query, fragment and credentials, which can carry secrets.
 pub fn without_query(url: &str) -> String {
-    url.split(['?', '#']).next().unwrap_or_default().to_owned()
+    if let Ok(parsed) = reqwest::Url::parse(url) {
+        return sanitize_url(&parsed);
+    }
+
+    // Not parseable, so cut by hand: everything before `?`/`#`, minus `user:pass@`.
+    let base = url.split(['?', '#']).next().unwrap_or_default();
+    let Some((scheme, rest)) = base.split_once("://") else {
+        return base.to_owned();
+    };
+    let authority_end = rest.find('/').unwrap_or(rest.len());
+    let without_credentials = match rest[..authority_end].rfind('@') {
+        Some(at) => &rest[at + 1..],
+        None => rest,
+    };
+    format!("{scheme}://{without_credentials}")
 }
 
 /// Drops the parts of a URL that can carry secrets or noise (credentials, query, fragment).

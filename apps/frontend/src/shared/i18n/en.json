@@ -284,7 +284,8 @@
         "LOAD_FAILED": {
           "HASH_MISMATCH": "the plugin file changed on disk since it was installed from {{source_type}}; reinstall the plugin from its source before enabling it",
           "BUILD": "the plugin could not be built",
-          "CONTAINER_UNAVAILABLE": "the launcher is not ready to run plugins"
+          "CONTAINER_UNAVAILABLE": "the launcher is not ready to run plugins",
+          "OTHER": "The plugin could not be loaded"
         }
       }
     },

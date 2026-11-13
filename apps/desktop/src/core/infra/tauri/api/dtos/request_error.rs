@@ -70,7 +70,7 @@ impl From<&RequestError> for RequestErrorDto {
             RequestError::Parse(_) => Self::Parse,
             RequestError::Status { status, url } => Self::Status {
                 status: *status,
-                url: url.clone(),
+                url: super::without_query(url),
             },
             RequestError::TooLarge { limit } => Self::TooLarge {
                 limit: limit.to_string(),
@@ -91,6 +91,27 @@ mod tests {
 
     fn to_json(err: &RequestError) -> serde_json::Value {
         serde_json::to_value(RequestErrorDto::from(err)).unwrap()
+    }
+
+    #[test]
+    fn should_strip_the_token_query_and_credentials_from_a_status_url() {
+        let err = RequestError::Status {
+            status: 403,
+            url: "https://user:pass@example.com/a/b?token=secret#frag".to_owned(),
+        };
+
+        assert_eq!(
+            to_json(&err),
+            json!({"code": "STATUS", "payload": {"status": 403, "url": "https://example.com/a/b"}})
+        );
+    }
+
+    #[test]
+    fn should_strip_the_query_and_credentials_from_an_unparseable_url() {
+        assert_eq!(
+            super::super::without_query("https://user:pass@exa mple.com/a?token=secret"),
+            "https://exa mple.com/a"
+        );
     }
 
     #[test]

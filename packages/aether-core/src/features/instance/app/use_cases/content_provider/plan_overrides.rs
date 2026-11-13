@@ -30,6 +30,7 @@ use cap_std::{ambient_authority, fs::Dir};
 use crate::features::instance::{
     AnchoredPath, ContentProviderRejection, InstanceError, OverrideLocation, StorageError,
 };
+use crate::shared::io::IoError;
 
 /// One file of the overrides, by the path it gets in the instance.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -85,7 +86,8 @@ pub(super) async fn stage_overrides(
     let staging = staging.to_owned();
 
     blocking(move || {
-        std::fs::create_dir_all(&staging).map_err(InstanceError::storage)?;
+        std::fs::create_dir_all(&staging)
+            .map_err(|err| InstanceError::storage(IoError::with_path(err, &staging)))?;
 
         let mut staged = Vec::new();
         let mut copied: u64 = 0;
@@ -106,7 +108,9 @@ pub(super) async fn stage_overrides(
                 let written = match (&file.source, archive.as_mut(), &root) {
                     (OverrideFileSource::ArchiveEntry(entry), Some(archive), _) => {
                         let mut entry = archive.by_index(*entry).map_err(invalid_archive)?;
-                        let mut out = File::create(&path).map_err(InstanceError::storage)?;
+                        let mut out = File::create(&path).map_err(|err| {
+                            InstanceError::storage(IoError::with_path(err, &path))
+                        })?;
                         copy(
                             &mut (&mut entry).take(remaining.saturating_add(1)),
                             &mut out,
@@ -115,10 +119,13 @@ pub(super) async fn stage_overrides(
                     (OverrideFileSource::DirectoryFile, _, Some(root)) => {
                         // Reached again from the root: the directory may have changed since it
                         // was listed, and no symlink put in since is followed out of it.
-                        let input =
-                            open_in(root, &file.relative_path).map_err(InstanceError::storage)?;
+                        let input = open_in(root, &file.relative_path).map_err(|err| {
+                            InstanceError::storage(IoError::with_path(err, &file.relative_path))
+                        })?;
                         // Counted as it is read: the file may have grown since it was listed.
-                        let mut out = File::create(&path).map_err(InstanceError::storage)?;
+                        let mut out = File::create(&path).map_err(|err| {
+                            InstanceError::storage(IoError::with_path(err, &path))
+                        })?;
                         copy(&mut input.take(remaining.saturating_add(1)), &mut out)
                     }
                     (OverrideFileSource::ArchiveEntry(_), None, _) => {
@@ -270,14 +277,21 @@ fn open_source_dir(path: &AnchoredPath) -> Result<Dir, InstanceError> {
         Ok(open_dirs_nofollow(&root, &names)?.unwrap_or(root))
     });
 
-    opened.map_err(InstanceError::storage)
+    opened.map_err(|err| {
+        InstanceError::storage(IoError::with_path(err, path.root().join(path.relative())))
+    })
 }
 
 /// Open an archive source, reached from its root without following a symlink.
 fn open_archive(archive_path: &AnchoredPath) -> Result<zip::ZipArchive<File>, InstanceError> {
     let file = open_root(archive_path.root())
         .and_then(|root| open_file_nofollow_in(&root, archive_path.relative()))
-        .map_err(InstanceError::storage)?;
+        .map_err(|err| {
+            InstanceError::storage(IoError::with_path(
+                err,
+                archive_path.root().join(archive_path.relative()),
+            ))
+        })?;
 
     zip::ZipArchive::new(file).map_err(invalid_archive)
 }

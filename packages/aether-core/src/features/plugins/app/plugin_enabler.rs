@@ -132,7 +132,8 @@ impl PluginEnabler {
 pub(super) fn load_failure(err: &PluginError) -> PluginStateReason {
     let reason = match err {
         PluginError::LoadFailed { reason, .. } => reason.clone(),
-        other => PluginLoadFailure::Build(other.to_string()),
+        // Only the loader's own failures are build failures; settings or storage errors are not.
+        other => PluginLoadFailure::Other(other.to_string()),
     };
     PluginStateReason::LoadFailed { reason }
 }

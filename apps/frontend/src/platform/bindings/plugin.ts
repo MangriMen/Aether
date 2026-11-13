@@ -606,7 +606,9 @@ export type PluginLoadFailureDto = { code: "HASH_MISMATCH"; payload: {
 	source_type: string,
 } } | { code: "BUILD"; payload: {
 	cause: CauseDto,
-} } | { code: "CONTAINER_UNAVAILABLE" };
+} } | { code: "CONTAINER_UNAVAILABLE" } | { code: "OTHER"; payload: {
+	cause: CauseDto,
+} };
 
 /**  Root configuration for an Aether plugin. */
 export type PluginManifestDto = {

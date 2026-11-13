@@ -22,6 +22,11 @@ pub enum PluginLoadFailure {
 
     #[error("the application container is not available")]
     ContainerUnavailable,
+
+    /// Any other reason the plugin did not load (settings, storage, loader lookup, ...). Its text
+    /// is the source error's own, not ours to categorize.
+    #[error("{0}")]
+    Other(String),
 }
 
 #[cfg(test)]

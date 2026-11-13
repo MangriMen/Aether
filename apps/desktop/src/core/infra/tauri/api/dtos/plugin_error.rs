@@ -70,6 +70,9 @@ pub enum PluginLoadFailureDto {
         cause: CauseDto,
     },
     ContainerUnavailable,
+    Other {
+        cause: CauseDto,
+    },
 }
 
 impl From<&PluginLoadFailure> for PluginLoadFailureDto {
@@ -91,6 +94,9 @@ impl From<&PluginLoadFailure> for PluginLoadFailureDto {
                 cause: CauseDto::unknown(details),
             },
             PluginLoadFailure::ContainerUnavailable => Self::ContainerUnavailable,
+            PluginLoadFailure::Other(details) => Self::Other {
+                cause: CauseDto::unknown(details),
+            },
         }
     }
 }
@@ -532,6 +538,13 @@ mod tests {
             plugin(&failed(PluginLoadFailure::ContainerUnavailable)),
             json!({"code": "LOAD_FAILED", "payload": {"plugin_id": "p", "reason": {
                 "code": "CONTAINER_UNAVAILABLE",
+            }}})
+        );
+        assert_eq!(
+            plugin(&failed(PluginLoadFailure::Other("storage down".to_owned()))),
+            json!({"code": "LOAD_FAILED", "payload": {"plugin_id": "p", "reason": {
+                "code": "OTHER",
+                "payload": {"cause": {"type": "unknown", "details": "storage down"}},
             }}})
         );
     }
