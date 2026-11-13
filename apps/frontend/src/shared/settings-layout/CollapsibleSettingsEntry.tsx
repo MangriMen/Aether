@@ -56,6 +56,7 @@ export const CollapsibleSettingsEntry: Component<
         as={SettingsEntry}
         tabIndex={-1}
         titleId={titleId}
+        aria-labelledby={labelId()}
         {...others}
       >
         <div class='gap-1 flex items-center'>
@@ -63,7 +64,11 @@ export const CollapsibleSettingsEntry: Component<
             {local.children}
           </SettingsEntryTitleContext.Provider>
 
-          <CollapsibleIcon open={isOpened()} />
+          <CollapsibleIcon
+            open={isOpened()}
+            aria-labelledby={labelId()}
+            aria-expanded={isOpened()}
+          />
         </div>
       </CollapsibleTrigger>
       <CollapsibleContent class='gap-4 pb-4 flex flex-col'>

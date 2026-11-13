@@ -39,22 +39,24 @@ export const InstanceIconDropdownButton: Component<
 
   return (
     <DropdownMenu modal={false}>
-      <DropdownMenuTrigger>
-        <CombinedTooltip
-          as={Button}
-          label={t('instance.changeIcon')}
-          class='
+      <CombinedTooltip
+        as={(triggerProps: ComponentProps<typeof Button>) => (
+          <DropdownMenuTrigger as={Button} {...triggerProps} />
+        )}
+        label={t('instance.changeIcon')}
+        aria-label={t('instance.changeIcon')}
+        class='
             p-0
             active:animate-bump-out
             relative size-full max-h-max max-w-max
           '
-          variant='ghost'
-          placement='top'
-          {...others}
-        >
-          <InstanceIcon src={local.src} alt={t('instance.icon')} />
-          <div
-            class='
+        variant='ghost'
+        placement='top'
+        {...others}
+      >
+        <InstanceIcon src={local.src} alt={t('instance.icon')} />
+        <div
+          class='
               inset-0
               hover:bg-popover/50
               absolute flex size-full items-center justify-center opacity-0
@@ -62,11 +64,10 @@ export const InstanceIconDropdownButton: Component<
               hover:opacity-100
               focus:opacity-100
             '
-          >
-            <IconMdiImageEditOutline class='text-2xl text-muted-foreground' />
-          </div>
-        </CombinedTooltip>
-      </DropdownMenuTrigger>
+        >
+          <IconMdiImageEditOutline class='text-2xl text-muted-foreground' />
+        </div>
+      </CombinedTooltip>
       <DropdownMenuContent>
         <DropdownMenuItem
           as={Button}

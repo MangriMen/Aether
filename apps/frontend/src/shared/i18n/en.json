@@ -1000,6 +1000,8 @@
     "installRecommended": "Install recommended",
     "browse": "Browse",
     "detect": "Detect",
+    "pathLabel": "Java {{majorVersion}} path",
+    "actionsLabel": "Actions for Java {{majorVersion}}",
     "versionWithNumber": "Java {{majorVersion}}",
     "installing": "Installing",
     "emptyPath": "Path is empty"

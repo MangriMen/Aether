@@ -1000,6 +1000,8 @@
     "installRecommended": "Установить рекомендуемую",
     "browse": "Выбрать файл",
     "detect": "Найти автоматически",
+    "pathLabel": "Путь к Java {{majorVersion}}",
+    "actionsLabel": "Действия для Java {{majorVersion}}",
     "versionWithNumber": "Java {{majorVersion}}",
     "installing": "Устанавливается",
     "emptyPath": "Путь не указан"

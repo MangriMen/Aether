@@ -19,6 +19,7 @@ import {
   IconButton,
 } from '@/shared/ui-kit';
 export type JavaVersionActionsProps = ComponentProps<'div'> & {
+  majorVersion: number;
   isInstalling?: boolean;
   onInstallRecommended?: () => void;
   onDetect?: () => void;
@@ -29,6 +30,7 @@ export const JavaVersionActions: Component<JavaVersionActionsProps> = (
   props,
 ) => {
   const [local, others] = splitProps(props, [
+    'majorVersion',
     'isInstalling',
     'onInstallRecommended',
     'onDetect',
@@ -44,6 +46,9 @@ export const JavaVersionActions: Component<JavaVersionActionsProps> = (
         variant='ghost'
         class='p-0'
         icon={IconMdiMore}
+        aria-label={t('javaVersion.actionsLabel', {
+          majorVersion: local.majorVersion,
+        })}
       />
       <DropdownMenuContent>
         <Show when={local.onDetect}>
