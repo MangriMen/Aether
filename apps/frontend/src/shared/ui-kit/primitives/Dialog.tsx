@@ -109,6 +109,8 @@ const DialogContent = <T extends ValidComponent = 'div'>(
     'resizeStorageKey',
     'defaultWidth',
     'minWidth',
+    'onOpenAutoFocus',
+    'onCloseAutoFocus',
   ]);
 
   const resize = createResizableWidth({
@@ -130,11 +132,36 @@ const DialogContent = <T extends ValidComponent = 'div'>(
 
   const labels = useUiKitLabels();
 
+  // The dialogs are controlled, so there is no trigger for Kobalte to return focus to.
+  // Focus is about to move into the dialog: this is where the user was.
+  let previouslyFocused: HTMLElement | undefined;
+
+  const handleOpenAutoFocus = (e: Event) => {
+    previouslyFocused =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : undefined;
+    local.onOpenAutoFocus?.(e);
+  };
+
+  const handleCloseAutoFocus = (e: Event) => {
+    local.onCloseAutoFocus?.(e);
+
+    if (e.defaultPrevented || !previouslyFocused?.isConnected) {
+      return;
+    }
+
+    e.preventDefault();
+    previouslyFocused.focus();
+  };
+
   return (
     <DialogPortal>
       <DialogOverlay variant={local.variant} />
       <DialogPrimitive.Content
         onPointerDownOutside={onPointerDownOutsideGuard}
+        onOpenAutoFocus={handleOpenAutoFocus}
+        onCloseAutoFocus={handleCloseAutoFocus}
         class={cn(
           local.variant !== 'unstyled' &&
             `
