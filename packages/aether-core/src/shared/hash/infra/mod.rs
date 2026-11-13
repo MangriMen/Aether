@@ -30,6 +30,12 @@ where
     FileHash::new(HashAlgorithm::Sha1, hex).map_err(std::io::Error::other)
 }
 
+/// The sha1 of the file at `path` as a validated hash, read in chunks rather than all at once.
+pub(crate) async fn sha1_file_hash_async(path: impl AsRef<Path>) -> std::io::Result<FileHash> {
+    let hex = hash_file_hex_async(HashAlgorithm::Sha1, path).await?;
+    FileHash::new(HashAlgorithm::Sha1, hex).map_err(std::io::Error::other)
+}
+
 /// Lowercase hex sha256 of `input`.
 ///
 /// Extism compares `Wasm::with_hash` to its lowercase digest as a plain string, so the casing
