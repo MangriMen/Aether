@@ -141,12 +141,6 @@ impl SqlJava {
     }
 }
 
-impl From<sqlx::Error> for JavaDomainError {
-    fn from(err: sqlx::Error) -> Self {
-        JavaDomainError::Storage(err.to_string())
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use sqlx::sqlite::SqliteConnectOptions;

@@ -302,8 +302,8 @@ impl From<&JavaDomainError> for JavaErrorDto {
             JavaDomainError::InvalidVersion { version } => Self::InvalidVersion {
                 version: version.clone(),
             },
-            JavaDomainError::FailedToGetProperties { reason } => Self::FailedToGetProperties {
-                reason: reason.clone(),
+            JavaDomainError::FailedToGetProperties { .. } => Self::FailedToGetProperties {
+                reason: value.to_string(),
             },
             JavaDomainError::VersionNotAvailable { version, os, arch } => {
                 Self::VersionNotAvailable {
@@ -327,7 +327,7 @@ impl From<&JavaDomainError> for JavaErrorDto {
                     path: path.to_string_lossy().into_owned(),
                 }
             }
-            JavaDomainError::Storage(err) => Self::Storage(err.clone()),
+            JavaDomainError::Storage(err) => Self::Storage(err.to_string()),
             JavaDomainError::Cancelled => Self::Cancelled,
         }
     }
@@ -368,7 +368,7 @@ impl From<&MinecraftDomainError> for MinecraftErrorDto {
             MinecraftDomainError::LoaderVersionRequired => Self::LoaderVersionRequired,
             MinecraftDomainError::DefaultLoaderNotFound => Self::DefaultLoaderNotFound,
             MinecraftDomainError::ProcessorFailed { reason } => Self::ProcessorFailed {
-                reason: reason.clone(),
+                reason: reason.to_string(),
             },
             MinecraftDomainError::PreLaunchFailed { code } => Self::PreLaunchFailed { code: *code },
             MinecraftDomainError::PostLaunchFailed { code } => {
@@ -381,8 +381,11 @@ impl From<&MinecraftDomainError> for MinecraftErrorDto {
             MinecraftDomainError::ParseFailed { reason } => Self::ParseFailed {
                 reason: reason.clone(),
             },
-            MinecraftDomainError::StorageFailure { reason } => Self::StorageFailure {
-                reason: reason.clone(),
+            MinecraftDomainError::StorageFailure(err) => Self::StorageFailure {
+                reason: err.to_string(),
+            },
+            MinecraftDomainError::InvalidLogConfigName { .. } => Self::StorageFailure {
+                reason: value.to_string(),
             },
         }
     }

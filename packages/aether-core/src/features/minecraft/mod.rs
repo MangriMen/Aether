@@ -22,6 +22,7 @@ pub use domain::LoaderVersionIdRejection;
 pub use domain::LoaderVersionPreference;
 pub use domain::MinecraftDomainError;
 pub use domain::ModLoader;
+pub use domain::ProcessorFailure;
 pub use domain::TEMPORARY_REPLACE_CHAR;
 pub use domain::UnknownModLoader;
 pub use domain::get_compatible_java_version;

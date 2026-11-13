@@ -201,12 +201,11 @@
       "EMPTY_PATH": "Java path is empty",
       "RELATIVE_PATH": "Java path must be absolute: {{path}}",
       "INVALID_VERSION": "Unsupported Java version",
-      "FAILED_TO_GET_PROPERTIES": "Failed to retrieve Java properties",
+      "FAILED_TO_GET_PROPERTIES": "Failed to run Java at {{path}}",
       "VERSION_NOT_AVAILABLE": "Requested Java version is not available",
       "VERSION_GET_FAILED": "Failed to check Java version",
       "FAILED_TO_INSTALL": "Java installation failed",
       "REMOVE_OLD_INSTALLATION_ERROR": "Failed to remove old Java version",
-      "DOWNLOAD_FAILED": "Failed to download Java",
       "STORAGE_ERROR": "Java storage failure",
       "CANCELLED": "Java installation cancelled"
     },
@@ -216,14 +215,26 @@
       "LOADER_NOT_FOUND": "Game loader not found",
       "LOADER_VERSION_REQUIRED": "Loader version must be specified",
       "DEFAULT_LOADER_NOT_FOUND": "Default loader not found",
-      "PROCESSOR_FAILED": "Version processing failed",
+      "PROCESSOR_FAILED": "Version processing failed: {{reason}}",
       "PRE_LAUNCH_FAILED": "Pre-launch checks failed",
       "POST_LAUNCH_FAILED": "Post-launch cleanup failed",
       "PATH_NOT_FOUND": "Game path not found",
       "PARSE_FAILED": "Failed to parse Minecraft configuration",
       "STORAGE_FAILURE": "Minecraft storage failure",
-      "JAVA_ERROR": "Java environment error",
-      "STORAGE": "General storage error"
+      "INVALID_LOG_CONFIG_NAME": "The game log config has an unsafe name: {{name}}",
+      "STORAGE": "General storage error",
+      "reason": {
+        "PROCESSOR_FAILED": {
+          "MAIN_CLASS_NOT_FOUND": "the main class of {{jar}} was not found",
+          "UNRESOLVED_PLACEHOLDER": "the argument {{argument}} has an unresolved placeholder",
+          "CANNOT_READ_PROCESSOR": "cannot read the processor {{path}}",
+          "CANNOT_READ_MANIFEST": "cannot read the manifest of the processor {{path}}",
+          "SPAWN_FAILED": "the processor could not be started",
+          "EXITED": "the processor exited with code {{code}}",
+          "TERMINATED": "the processor was terminated",
+          "TASK_FAILED": "the processor task failed"
+        }
+      }
     },
     "plugin": {
       "NOT_FOUND": "Plugin not found",

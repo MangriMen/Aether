@@ -295,17 +295,20 @@ describe('plugin state reason translations', () => {
   );
 });
 
-describe('instance reason translations', () => {
+describe.each([
+  ['instance', 'InstanceErrorDto', 'CONTENT_PROVIDER_ERROR'],
+  ['minecraft', 'MinecraftErrorDto', 'PROCESSOR_FAILED'],
+] as const)('%s reason translations', (group, errorDtoName, sampleCode) => {
   /** `{ code: "X"; payload: { ..., reason: SomeReasonDto } }` → `{ X: 'SomeReasonDto' }` */
   const getReasonDtos = (): Record<string, string> => {
-    const start = bindings.indexOf('export type InstanceErrorDto =');
+    const start = bindings.indexOf(`export type ${errorDtoName} =`);
     const rest = bindings.slice(start + 1);
     const end = rest.search(/\nexport type /);
     const body = rest.slice(0, end === -1 ? undefined : end);
     const result: Record<string, string> = {};
 
     for (const m of body.matchAll(
-      /\{ code: "(\w+)"; payload: \{[^}]*?reason: (\w+Dto),/gs,
+      /\{ code: "(\w+)"; payload: \{[^}]*?reason: (\w+Dto)\b/gs,
     )) {
       result[m[1]!] = m[2]!;
     }
@@ -316,15 +319,13 @@ describe('instance reason translations', () => {
   const reasonDtos = getReasonDtos();
 
   it('finds the errors with a reason in the bindings', () => {
-    expect(Object.keys(reasonDtos)).toContain('INVALID_RELATIVE_PATH');
-    expect(Object.keys(reasonDtos)).toContain('CONTENT_PROVIDER_ERROR');
-    expect(Object.keys(reasonDtos)).toContain('CONTENT_DOWNLOAD_ERROR');
+    expect(Object.keys(reasonDtos)).toContain(sampleCode);
   });
 
   it.each(dictionaries)(
-    'every instance reason code is translated in %s',
+    `every ${group} reason code is translated in %s`,
     (_lang, dictionary) => {
-      const reasons = dictionary.errors.instance?.reason as unknown as
+      const reasons = dictionary.errors[group]?.reason as unknown as
         | Record<string, Record<string, string>>
         | undefined;
       const missing: string[] = [];
@@ -332,7 +333,7 @@ describe('instance reason translations', () => {
       for (const [code, dtoName] of Object.entries(reasonDtos)) {
         for (const reasonCode of getCodes(dtoName)) {
           if (!reasons?.[code]?.[reasonCode]) {
-            missing.push(`errors.instance.reason.${code}.${reasonCode}`);
+            missing.push(`errors.${group}.reason.${code}.${reasonCode}`);
           }
         }
       }
@@ -340,4 +341,35 @@ describe('instance reason translations', () => {
       expect(missing).toEqual([]);
     },
   );
+});
+
+describe('minecraft processor failure', () => {
+  const failed = (reason: unknown) =>
+    ({
+      type: 'minecraft',
+      payload: { code: 'PROCESSOR_FAILED', payload: { reason } },
+    }) as unknown as LauncherError;
+
+  it('should_translate_the_reason_and_the_category_of_its_cause', () => {
+    const error = failed({
+      code: 'SPAWN_FAILED',
+      payload: { cause: { type: 'io', kind: 'notFound' } },
+    });
+
+    expect(getTranslatedError(error, tEn)).toBe(
+      'Version processing failed: the processor could not be started: file or folder not found',
+    );
+  });
+
+  it('should_keep_the_output_of_the_processor_out_of_the_text', () => {
+    const error = failed({
+      code: 'EXITED',
+      payload: { code: 1, cause: { type: 'unknown', details: 'stack trace' } },
+    });
+
+    expect(getTranslatedError(error, tRu)).toBe(
+      'Ошибка обработки версии: процессор завершился с кодом 1',
+    );
+    expect(getErrorDetails(error)).toBe('stack trace');
+  });
 });

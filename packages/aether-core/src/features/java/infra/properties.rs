@@ -14,8 +14,9 @@ pub fn get_java_properties(path: &Path) -> Result<JavaProperties, JavaDomainErro
         .arg("-version")
         .env_remove("_JAVA_OPTIONS")
         .output()
-        .map_err(|e| JavaDomainError::FailedToGetProperties {
-            reason: e.to_string(),
+        .map_err(|source| JavaDomainError::FailedToGetProperties {
+            path: path.to_path_buf(),
+            source,
         })?;
 
     let mut combined_output = String::new();
@@ -39,4 +40,23 @@ pub fn get_java_properties(path: &Path) -> Result<JavaProperties, JavaDomainErro
         version,
         architecture,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn should_keep_the_path_and_the_io_source_when_java_cannot_be_started() {
+        let tmp = tempfile::tempdir().unwrap();
+        let missing = tmp.path().join("no-java");
+
+        let err = get_java_properties(&missing).unwrap_err();
+
+        assert!(matches!(
+            err,
+            JavaDomainError::FailedToGetProperties { ref path, ref source }
+                if path == &missing && source.kind() == std::io::ErrorKind::NotFound
+        ));
+    }
 }

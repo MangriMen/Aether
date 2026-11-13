@@ -343,7 +343,7 @@ impl InstanceErrorDto {
                 return Err(Box::new(FrontendError::Settings(err.into())));
             }
             InstanceError::MinecraftError(err) => {
-                return Err(Box::new(FrontendError::Minecraft(err.into())));
+                return Err(Box::new(err.into()));
             }
             InstanceError::ProcessError(err) => {
                 return Err(Box::new(FrontendError::Process(err.into())));

@@ -327,7 +327,8 @@ export type JavaErrorDto = { code: "NOT_FOUND"; payload: {
 } } | { code: "INVALID_VERSION"; payload: {
 	version: string,
 } } | { code: "FAILED_TO_GET_PROPERTIES"; payload: {
-	reason: string,
+	path: string,
+	cause: CauseDto,
 } } | { code: "VERSION_NOT_AVAILABLE"; payload: {
 	version: number,
 	os: string,
@@ -342,10 +343,8 @@ export type JavaErrorDto = { code: "NOT_FOUND"; payload: {
 	arch: string,
 } } | { code: "REMOVE_OLD_INSTALLATION_ERROR"; payload: {
 	path: string,
-} } | { code: "DOWNLOAD_FAILED"; payload: {
-	details: string,
 } } | { code: "STORAGE_ERROR"; payload: {
-	details: string,
+	cause: CauseDto,
 } } | { code: "CANCELLED" };
 
 export type LoadConfigTypeDto = "extism";
@@ -366,7 +365,7 @@ export type MinecraftErrorDto = { code: "VERSION_NOT_FOUND"; payload: {
 } } | { code: "LOADER_NOT_FOUND"; payload: {
 	loader_version_preference: LoaderVersionPreferenceDto,
 } } | { code: "LOADER_VERSION_REQUIRED" } | { code: "DEFAULT_LOADER_NOT_FOUND" } | { code: "PROCESSOR_FAILED"; payload: {
-	reason: string,
+	reason: ProcessorFailureDto,
 } } | { code: "PRE_LAUNCH_FAILED"; payload: {
 	code: number,
 } } | { code: "POST_LAUNCH_FAILED"; payload: {
@@ -375,13 +374,13 @@ export type MinecraftErrorDto = { code: "VERSION_NOT_FOUND"; payload: {
 	path: string,
 	entity_type: string,
 } } | { code: "PARSE_FAILED"; payload: {
-	reason: string,
+	cause: CauseDto,
 } } | { code: "STORAGE_FAILURE"; payload: {
-	reason: string,
-} } | { code: "JAVA_ERROR"; payload: {
-	details: string,
+	cause: CauseDto,
+} } | { code: "INVALID_LOG_CONFIG_NAME"; payload: {
+	name: string,
 } } | { code: "STORAGE"; payload: {
-	details: string,
+	cause: CauseDto,
 } };
 
 export type NetworkErrorKindDto = "timeout" | "connect" | "redirect" | "body";
@@ -481,6 +480,30 @@ export type ProcessErrorDto = { code: "KILL_ERROR"; payload: {
 } } | { code: "WAIT_ERROR"; payload: {
 	id: string,
 } } | { code: "IO"; payload: {
+	cause: CauseDto,
+} };
+
+/**  Why a modloader processor did not finish. */
+export type ProcessorFailureDto = { code: "MAIN_CLASS_NOT_FOUND"; payload: {
+	jar: string,
+} } | { code: "UNRESOLVED_PLACEHOLDER"; payload: {
+	argument: string,
+} } | { code: "CANNOT_READ_PROCESSOR"; payload: {
+	path: string,
+} } | { code: "CANNOT_READ_MANIFEST"; payload: {
+	path: string,
+} } | { code: "SPAWN_FAILED"; payload: {
+	cause: CauseDto,
+} } | 
+/**  `cause` carries the output of the processor: its text, not ours. */
+{ code: "EXITED"; payload: {
+	code: number,
+	cause: CauseDto,
+} } | 
+/**  The OS ended the processor by a signal, so there is no exit code. */
+{ code: "TERMINATED"; payload: {
+	cause: CauseDto,
+} } | { code: "TASK_FAILED"; payload: {
 	cause: CauseDto,
 } };
 
