@@ -290,6 +290,7 @@ export type InstanceErrorDto = { code: "STORAGE"; payload: {
 } } | { code: "PRELAUNCH_COMMAND_INVALID"; payload: {
 	reason: CommandParseReasonDto,
 } } | { code: "PRELAUNCH_COMMAND_SPAWN_FAILED"; payload: {
+	program: string,
 	cause: CauseDto,
 } } | { code: "PRELAUNCH_COMMAND_TIMEOUT"; payload: {
 	seconds: string,

@@ -42,6 +42,7 @@ pub enum InstanceErrorDto {
         reason: CommandParseReasonDto,
     },
     PrelaunchCommandSpawnFailed {
+        program: String,
         cause: CauseDto,
     },
     PrelaunchCommandTimeout {
@@ -210,8 +211,9 @@ impl InstanceErrorDto {
             InstanceError::PrelaunchCommandInvalid { reason } => Self::PrelaunchCommandInvalid {
                 reason: (*reason).into(),
             },
-            InstanceError::PrelaunchCommandSpawnFailed { source, .. } => {
+            InstanceError::PrelaunchCommandSpawnFailed { program, source } => {
                 Self::PrelaunchCommandSpawnFailed {
+                    program: program.clone(),
                     cause: source.into(),
                 }
             }
@@ -646,7 +648,7 @@ mod tests {
 
         assert_eq!(
             to_json(&err),
-            json!({"code": "PRELAUNCH_COMMAND_SPAWN_FAILED", "payload": {"cause": {"type": "io", "kind": "permissionDenied"}}})
+            json!({"code": "PRELAUNCH_COMMAND_SPAWN_FAILED", "payload": {"program": "x", "cause": {"type": "io", "kind": "permissionDenied"}}})
         );
     }
 
