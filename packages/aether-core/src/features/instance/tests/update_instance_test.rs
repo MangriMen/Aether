@@ -24,16 +24,17 @@ use crate::{
         instance::{
             CachedContentAuthor, CachedContentMetadata, CachedContentVersionMetadata,
             CapabilityMetadata, ChangeInstanceGameUseCase, ContentAuthor,
-            ContentCompatibilityCheckParams, ContentCompatibilityResult, ContentDownloader,
-            ContentItem, ContentMetadata, ContentMetadataCache, ContentPath, ContentProvider,
-            ContentProviderCapabilityMetadata, ContentSearchParams, ContentSearchResult,
-            ContentSource, ContentType, ContentVersion, ContentVersionMetadata,
-            CreateInstanceUseCasePort, InstallFileEntry, InstallPlan, InstallPlanExecutor,
-            InstallTarget, Instance, InstanceBuilder, InstanceError, InstanceGame, InstanceId,
-            InstanceInstallService, InstanceInstallStage, InstanceLocks, InstanceStorage,
-            NewInstance, PackFile, PackInfo, PackMetadata, PackSource, PackStorage, PlanOrigin,
-            ProviderId, RemoveInstanceUseCasePort, ResolveInstallPlanParams, ResolveTarget,
-            UpdateInstanceUseCase, UpdateInstanceUseCasePort, Updater, UpdaterCapabilityMetadata,
+            ContentCompatibilityCheckParams, ContentCompatibilityResult, ContentDownloadFailure,
+            ContentDownloader, ContentItem, ContentMetadata, ContentMetadataCache, ContentPath,
+            ContentProvider, ContentProviderCapabilityMetadata, ContentProviderRejection,
+            ContentSearchParams, ContentSearchResult, ContentSource, ContentType, ContentVersion,
+            ContentVersionMetadata, CreateInstanceUseCasePort, InstallFileEntry, InstallPlan,
+            InstallPlanExecutor, InstallTarget, Instance, InstanceBuilder, InstanceError,
+            InstanceGame, InstanceId, InstanceInstallService, InstanceInstallStage, InstanceLocks,
+            InstanceStorage, NewInstance, PackFile, PackInfo, PackMetadata, PackSource,
+            PackStorage, PlanOrigin, ProviderId, RemoveInstanceUseCasePort,
+            ResolveInstallPlanParams, ResolveTarget, UpdateInstanceUseCase,
+            UpdateInstanceUseCasePort, Updater, UpdaterCapabilityMetadata,
             infra::{FsContentFileService, NoPlatformProviderSelection, SqlitePackStorage},
         },
         minecraft::{
@@ -256,7 +257,7 @@ impl ContentProvider for PackProvider {
             .unwrap_or_else(|| ContentVersionId::try_from("v2").unwrap());
         let version = self.versions.get(version_id.as_str()).ok_or_else(|| {
             InstanceError::ContentProviderError {
-                reason: format!("no version {version_id}"),
+                reason: ContentProviderRejection::Provider(format!("no version {version_id}")),
             }
         })?;
         let ResolveTarget::Existing { instance_id, .. } = params.target else {
@@ -319,7 +320,9 @@ impl ContentDownloader for UrlDownloader {
     ) -> Result<u64, InstanceError> {
         let url = url.as_str();
         if url.contains("fail") {
-            return Err(InstanceError::ContentDownloadError(url.into()));
+            return Err(InstanceError::ContentDownloadError(
+                ContentDownloadFailure::Other(url.into()),
+            ));
         }
         tokio::fs::write(destination, url).await.unwrap();
         Ok(url.len() as u64)

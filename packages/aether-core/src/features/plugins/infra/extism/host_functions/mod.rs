@@ -10,7 +10,7 @@ pub(crate) use get_host_functions::*;
 #[cfg(test)]
 pub(crate) use features::test_server;
 pub(crate) use features::{
-    AddressFilter, PluginNetwork, ProxySource, VettedDownloadClient, download_with, is_blocked_ip,
-    vetted_download_client,
+    AddressFilter, PluginDownloadError, PluginNetwork, ProxySource, VettedDownloadClient,
+    download_with, is_blocked_ip, vetted_download_client,
 };
 pub(crate) use plugin_context::*;

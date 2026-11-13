@@ -150,12 +150,41 @@ const withTranslatedReason = (
   };
 };
 
+/** An argument named `field` is a raw name of a field, translated by `errors.<type>.field.<NAME>` when there is one. */
+const withTranslatedField = (
+  key: string,
+  args: unknown,
+  t: TFunction,
+): unknown => {
+  if (!isRecord(args) || typeof args.field !== 'string') {
+    return args;
+  }
+
+  const fieldKey = `errors.${key.split('.')[0]}.field.${args.field}`;
+  const translated = t(fieldKey as Parameters<TFunction>[0]);
+
+  return typeof translated === 'string' ? { ...args, field: translated } : args;
+};
+
+/** The arguments of an error: its own payload, or that of its reason when the cause is the reason's. */
+const getCauseOf = (inner: unknown): unknown => {
+  if (!isRecord(inner)) {
+    return undefined;
+  }
+
+  if (inner.cause !== undefined) {
+    return inner.cause;
+  }
+
+  return isRecord(inner.reason) && isRecord(inner.reason.payload)
+    ? inner.reason.payload.cause
+    : undefined;
+};
+
 const getCause = (error: LauncherError): unknown => {
   const payload: unknown = error.payload;
 
-  return isRecord(payload) && isRecord(payload.payload)
-    ? payload.payload.cause
-    : undefined;
+  return isRecord(payload) ? getCauseOf(payload.payload) : undefined;
 };
 
 export const getTranslatedError = (
@@ -167,7 +196,10 @@ export const getTranslatedError = (
   const main =
     t(
       `errors.${key}`,
-      withFormattedArgs(key, withTranslatedReason(key, args, t)),
+      withFormattedArgs(
+        key,
+        withTranslatedReason(key, withTranslatedField(key, args, t), t),
+      ),
     ) ?? key;
   const causeText = getCauseText(getCause(error), t);
 
@@ -190,7 +222,7 @@ export const getErrorDetails = (error: unknown): string | undefined => {
     return undefined;
   }
 
-  const cause = inner.cause;
+  const cause = getCauseOf(inner);
 
   if (isRecord(cause) && cause.type === 'unknown') {
     return typeof cause.details === 'string' ? cause.details : undefined;

@@ -22,15 +22,16 @@ use crate::{
         instance::{
             AnchoredPath, CachedContentAuthor, CachedContentMetadata, CachedContentVersionMetadata,
             CapabilityMetadata, ChangeInstanceGameUseCasePort, ContentAuthor,
-            ContentCompatibilityCheckParams, ContentCompatibilityResult, ContentDownloader,
-            ContentFileUpdateInfo, ContentIdentity, ContentItem, ContentMetadata,
-            ContentMetadataCache, ContentPath, ContentProvider, ContentProviderCapabilityMetadata,
-            ContentSearchParams, ContentSearchResult, ContentSource, ContentType, ContentVersion,
-            ContentVersionMetadata, CreateInstanceUseCasePort, FileSide, InstallFileEntry,
-            InstallPlan, InstallPlanExecutor, InstallTarget, Instance, InstanceBuilder,
-            InstanceError, InstanceGame, InstanceId, InstanceStorage, NewInstance,
-            OverrideLocation, OverrideSource, PackFile, PackInfo, PackStorage, PlanOrigin,
-            PlatformProviderSelection, ProviderId, RemoveInstanceUseCasePort, ResolvedFile,
+            ContentCompatibilityCheckParams, ContentCompatibilityResult, ContentDownloadFailure,
+            ContentDownloader, ContentFileUpdateInfo, ContentIdentity, ContentItem,
+            ContentMetadata, ContentMetadataCache, ContentPath, ContentProvider,
+            ContentProviderCapabilityMetadata, ContentSearchParams, ContentSearchResult,
+            ContentSource, ContentType, ContentVersion, ContentVersionMetadata,
+            CreateInstanceUseCasePort, FileSide, InstallFileEntry, InstallPlan,
+            InstallPlanExecutor, InstallTarget, Instance, InstanceBuilder, InstanceError,
+            InstanceGame, InstanceId, InstanceStorage, NewInstance, OverrideLocation,
+            OverrideSource, PackFile, PackInfo, PackStorage, PlanOrigin, PlatformProviderSelection,
+            ProviderId, RemoveInstanceUseCasePort, ResolvedFile,
             app::{ContentFileService, LocatedContentFile},
             infra::{FsContentFileService, SqlitePackStorage},
         },
@@ -218,7 +219,9 @@ impl ContentDownloader for RecordingDownloader {
         });
 
         if url.contains("fail") {
-            return Err(InstanceError::ContentDownloadError(url.into()));
+            return Err(InstanceError::ContentDownloadError(
+                ContentDownloadFailure::Other(url.into()),
+            ));
         }
         if url.contains("hang") {
             tokio::fs::write(destination, "part").await.unwrap();

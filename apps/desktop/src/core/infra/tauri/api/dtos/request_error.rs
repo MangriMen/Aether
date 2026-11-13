@@ -33,6 +33,26 @@ fn middleware_cause(err: &anyhow::Error) -> CauseDto {
     CauseDto::unknown(err)
 }
 
+impl From<&RequestError> for CauseDto {
+    fn from(value: &RequestError) -> Self {
+        match value {
+            RequestError::RequestSend(err) => err.into(),
+            RequestError::Middleware(err) => middleware_cause(err),
+            RequestError::Json(err) => err.into(),
+            RequestError::Toml(err) => err.into(),
+            RequestError::Status { status, url } => Self::HttpStatus {
+                status: *status,
+                url: super::without_query(url),
+            },
+            RequestError::Io { source, .. } => source.into(),
+            RequestError::Hash { .. }
+            | RequestError::Parse(_)
+            | RequestError::Acquire(_)
+            | RequestError::TooLarge { .. } => Self::unknown(value),
+        }
+    }
+}
+
 impl From<&RequestError> for RequestErrorDto {
     fn from(value: &RequestError) -> Self {
         match value {

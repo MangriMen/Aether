@@ -130,6 +130,20 @@ export type CauseDto = { type: "io"; kind: IoErrorKindDto } | { type: "network";
 /**  Why a text is not a command. */
 export type CommandParseReasonDto = { code: "EMPTY" };
 
+/**  Why content could not be downloaded. */
+export type ContentDownloadReasonDto = { code: "NO_FILES"; payload: {
+	version_id: string,
+} } | { code: "NO_VERSIONS"; payload: {
+	project_id: string,
+} } | { code: "NOT_A_MODPACK_FILE"; payload: {
+	file_name: string,
+} } | { code: "DOWNLOAD"; payload: {
+	url: string,
+	cause: CauseDto,
+} } | { code: "OTHER"; payload: {
+	cause: CauseDto,
+} };
+
 export type ContentProviderCapabilityMetadataDto = {
 	/**
 	 *  The platform whose content the provider serves; providers sharing one are alternatives,
@@ -137,6 +151,57 @@ export type ContentProviderCapabilityMetadataDto = {
 	 */
 	platform: string | null,
 } & CapabilityMetadataDto;
+
+/**  Why a content provider's answer, or the request made to it, was refused. */
+export type ContentProviderReasonDto = { code: "WRONG_TARGET"; payload: {
+	provider_id: string,
+} } | { code: "FOREIGN_PACK"; payload: {
+	provider_id: string,
+	pack_provider_id: string,
+} } | { code: "TOO_MANY_FILES"; payload: {
+	count: string,
+	max: string,
+} } | { code: "TOO_MANY_OVERRIDES"; payload: {
+	max: string,
+} } | { code: "INVALID_OVERRIDES_ARCHIVE"; payload: {
+	cause: CauseDto,
+} } | { code: "VERSION_OF_ANOTHER_PROJECT"; payload: {
+	version_id: string,
+	project_id: string,
+	content_id: string,
+} } | { code: "NOT_A_MODPACK"; payload: {
+	title: string,
+	content_type: ContentTypeDto,
+} } | { code: "NO_GAME_VERSION"; payload: {
+	version_id: string,
+} } | { code: "INVALID_SEARCH_PARAMS"; payload: {
+	cause: CauseDto,
+} } | { code: "INVALID_SEARCH_RESPONSE"; payload: {
+	cause: CauseDto,
+} } | { code: "UNKNOWN_PROJECT_TYPE"; payload: {
+	project_type: string,
+} } | { code: "MAPPING"; payload: {
+	cause: CauseDto,
+} } | { code: "MRPACK_OPEN_FAILED"; payload: {
+	cause: CauseDto,
+} } | { code: "MRPACK_INVALID_ARCHIVE"; payload: {
+	cause: CauseDto,
+} } | { code: "MRPACK_MISSING_INDEX" } | { code: "MRPACK_READ_FAILED"; payload: {
+	cause: CauseDto,
+} } | { code: "MRPACK_INDEX_TOO_LARGE"; payload: {
+	max_bytes: string,
+} } | { code: "MRPACK_MALFORMED_INDEX"; payload: {
+	cause: CauseDto,
+} } | { code: "MRPACK_TOO_MANY_FILES"; payload: {
+	count: string,
+	max: string,
+} } | { code: "MRPACK_NOT_MINECRAFT"; payload: {
+	game: string,
+} } | { code: "MRPACK_INVALID_HASH" } | { code: "MRPACK_NO_ALLOWED_DOWNLOAD"; payload: {
+	path: string,
+} } | { code: "PROVIDER"; payload: {
+	cause: CauseDto,
+} };
 
 export type ContentTypeDto = "modpack" | "mod" | "datapack" | "resourcepack" | "shaderpack";
 
@@ -276,8 +341,10 @@ export type InstanceErrorDto = { code: "STORAGE"; payload: {
 	path: string,
 	size: string,
 	limit: string,
-} } | { code: "CONTENT_DOWNLOAD_ERROR"; payload: string } | { code: "CONTENT_PROVIDER_ERROR"; payload: {
-	reason: string,
+} } | { code: "CONTENT_DOWNLOAD_ERROR"; payload: {
+	reason: ContentDownloadReasonDto,
+} } | { code: "CONTENT_PROVIDER_ERROR"; payload: {
+	reason: ContentProviderReasonDto,
 } } | { code: "CONTENT_FOR_GAME_VERSION_NOT_FOUND"; payload: {
 	game_version: string,
 } } | { code: "UNSUPPORTED_CONTENT_TYPE"; payload: {

@@ -11,13 +11,13 @@ use tracing::warn;
 use crate::{
     features::{
         instance::{
-            CapabilityId, CapabilityMetadata, ContentAuthor, ContentId, ContentIdentity,
-            ContentItem, ContentMetadata, ContentPath, ContentProvider,
-            ContentProviderCapabilityMetadata, ContentSearchParams, ContentSearchResult,
-            ContentSource, ContentType, ContentVersion, ContentVersionId, ContentVersionMetadata,
-            InstallFileEntry, InstallPlan, Instance, InstanceError, InstanceId, InvalidContentId,
-            PackInfo, PackMetadata, PackSource, PlatformId, PluginId, ProviderId, ReleaseChannel,
-            ResolveInstallPlanParams, ResolveTarget, ResolvedFile,
+            CapabilityId, CapabilityMetadata, ContentAuthor, ContentDownloadFailure, ContentId,
+            ContentIdentity, ContentItem, ContentMetadata, ContentPath, ContentProvider,
+            ContentProviderCapabilityMetadata, ContentProviderRejection, ContentSearchParams,
+            ContentSearchResult, ContentSource, ContentType, ContentVersion, ContentVersionId,
+            ContentVersionMetadata, InstallFileEntry, InstallPlan, Instance, InstanceError,
+            InstanceId, InvalidContentId, PackInfo, PackMetadata, PackSource, PlatformId, PluginId,
+            ProviderId, ReleaseChannel, ResolveInstallPlanParams, ResolveTarget, ResolvedFile,
             app::{
                 ContentCompatibilityCheckParams, ContentCompatibilityResult, DownloadEvent,
                 DownloadReport,
@@ -75,7 +75,7 @@ where
         .buffer_unordered(METADATA_CONCURRENCY)
         .try_collect()
         .await
-        .map_err(InstanceError::ContentDownloadError)?;
+        .map_err(api_failure)?;
     Ok(batches.into_iter().flatten().collect())
 }
 
@@ -156,7 +156,7 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
             .api
             .get_project_versions(project_id, &request_params)
             .await
-            .map_err(InstanceError::ContentDownloadError)?;
+            .map_err(api_failure)?;
 
         let installed = self
             .installed_version(project_id, installed, &versions)
@@ -183,22 +183,23 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
             .api
             .get_project_version(version_id)
             .await
-            .map_err(InstanceError::ContentDownloadError)?;
+            .map_err(api_failure)?;
 
         if version.project_id != content_id
             && self
                 .api
                 .get_project(content_id)
                 .await
-                .map_err(InstanceError::ContentDownloadError)?
+                .map_err(api_failure)?
                 .id
                 != version.project_id
         {
             return Err(InstanceError::ContentProviderError {
-                reason: format!(
-                    "Modrinth version {version_id} belongs to project {}, not {content_id}",
-                    version.project_id
-                ),
+                reason: ContentProviderRejection::VersionOfAnotherProject {
+                    version_id: version_id.to_owned(),
+                    project_id: version.project_id,
+                    content_id: content_id.to_owned(),
+                },
             });
         }
 
@@ -254,15 +255,14 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
         self.api
             .get_project_versions(project_id, &ProjectVersionsRequest::without_changelog())
             .await
-            .map_err(InstanceError::ContentDownloadError)
+            .map_err(api_failure)
     }
 
     fn primary_file(version: &ProjectVersionResponse) -> Result<&File, InstanceError> {
         get_first_file_from_project_version(version).ok_or_else(|| {
-            InstanceError::ContentDownloadError(format!(
-                "No files found for Modrinth version {}",
-                version.id
-            ))
+            InstanceError::ContentDownloadError(ContentDownloadFailure::NoFiles {
+                version_id: version.id.clone(),
+            })
         })
     }
 
@@ -289,10 +289,11 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
     ) -> Result<PathBuf, InstanceError> {
         let file = Self::primary_file(version)?;
         if !super::mrpack_cache::is_mrpack(Path::new(&file.filename)) {
-            return Err(InstanceError::ContentDownloadError(format!(
-                "File {} is not a modpack",
-                file.filename
-            )));
+            return Err(InstanceError::ContentDownloadError(
+                ContentDownloadFailure::NotAModpackFile {
+                    file_name: file.filename.clone(),
+                },
+            ));
         }
 
         let url = response_url(&file.url)?;
@@ -324,7 +325,9 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
                 Some(&on_bytes),
             )
             .await
-            .map_err(|err| InstanceError::ContentDownloadError(format!("{url}: {err}")))?;
+            .map_err(|err| {
+                InstanceError::ContentDownloadError(ContentDownloadFailure::download(&url, err))
+            })?;
         self.prune_mrpack_cache(&path).await;
 
         Ok(path)
@@ -350,11 +353,10 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
         } = &params.target
         else {
             return Err(InstanceError::ContentProviderError {
-                reason: format!(
-                    "{} is a {}, not a modpack: it installs into an existing instance",
-                    project.title,
-                    content_type.get_name()
-                ),
+                reason: ContentProviderRejection::NotAModpack {
+                    title: project.title.clone(),
+                    content_type,
+                },
             });
         };
 
@@ -415,7 +417,7 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
     fn project_metadata(project: &ProjectResponse) -> Result<ContentMetadata, InstanceError> {
         ProjectMetadataResponse::from(project)
             .try_into()
-            .map_err(|err| mapper_failure(&err))
+            .map_err(mapper_failure)
     }
 
     async fn resolve_pack_plan(
@@ -471,7 +473,7 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
             .api
             .get_project(content_id)
             .await
-            .map_err(InstanceError::ContentDownloadError)?;
+            .map_err(api_failure)?;
         let version = match version {
             Some(version) => self.version_of(&project.id, version.as_str()).await?,
             None => {
@@ -487,10 +489,9 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
             .into_iter()
             .next()
             .ok_or_else(|| InstanceError::ContentProviderError {
-                reason: format!(
-                    "Modrinth version {} names no valid game version",
-                    version.id
-                ),
+                reason: ContentProviderRejection::NoGameVersion {
+                    version_id: version.id.clone(),
+                },
             })?;
         let mod_loader = [
             ModLoader::Fabric,
@@ -531,7 +532,9 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
                 None,
             )
             .await
-            .map_err(|err| InstanceError::ContentDownloadError(format!("{url}: {err}")))?;
+            .map_err(|err| {
+                InstanceError::ContentDownloadError(ContentDownloadFailure::download(url, err))
+            })?;
         let index = mrpack::read_index_async(&path).await;
         let _ = tokio::fs::remove_file(&path).await;
 
@@ -561,7 +564,7 @@ impl<RC: RequestClient> ContentProvider for ModrinthContentProvider<RC> {
         let modrinth_search_params =
             ProjectSearchParams::try_from(search_params).map_err(|err| {
                 InstanceError::ContentProviderError {
-                    reason: format!("Invalid search params: {err}"),
+                    reason: ContentProviderRejection::InvalidSearchParams(err.into()),
                 }
             })?;
 
@@ -569,11 +572,11 @@ impl<RC: RequestClient> ContentProvider for ModrinthContentProvider<RC> {
             .api
             .search(&modrinth_search_params)
             .await
-            .map_err(|err| InstanceError::ContentDownloadError(err.clone()))?;
+            .map_err(api_failure)?;
 
         response.into_content_search(provider_id).map_err(|err| {
             InstanceError::ContentProviderError {
-                reason: format!("Invalid search response: {err}"),
+                reason: ContentProviderRejection::InvalidSearchResponse(err.into()),
             }
         })
     }
@@ -619,10 +622,12 @@ impl<RC: RequestClient> ContentProvider for ModrinthContentProvider<RC> {
             .api
             .get_project(&params.content_id)
             .await
-            .map_err(InstanceError::ContentDownloadError)?;
+            .map_err(api_failure)?;
         let content_type = ContentType::from_string(&project.project_type).ok_or_else(|| {
             InstanceError::ContentProviderError {
-                reason: format!("Unknown Modrinth project type: {}", project.project_type),
+                reason: ContentProviderRejection::UnknownProjectType {
+                    project_type: project.project_type.clone(),
+                },
             }
         })?;
 
@@ -748,13 +753,13 @@ impl<RC: RequestClient> ContentProvider for ModrinthContentProvider<RC> {
             .api
             .get_project(&check_params.content_item.slug)
             .await
-            .map_err(|err| InstanceError::ContentDownloadError(err.clone()))?;
+            .map_err(api_failure)?;
 
         let project_versions = self
             .api
             .get_project_versions(&project.id, &ProjectVersionsRequest::without_changelog())
             .await
-            .map_err(|err| InstanceError::ContentDownloadError(err.clone()))?;
+            .map_err(api_failure)?;
 
         let mut compatibility_map = HashMap::new();
 
@@ -776,11 +781,9 @@ impl<RC: RequestClient> ContentProvider for ModrinthContentProvider<RC> {
         self.api
             .get_project(&content_id)
             .await
-            .map_err(|err| InstanceError::ContentDownloadError(err.clone()))?
+            .map_err(api_failure)?
             .try_into()
-            .map_err(|err: ModrinthMapperError| {
-                InstanceError::ContentDownloadError(err.to_string())
-            })
+            .map_err(mapper_failure)
     }
 
     async fn get_version(
@@ -790,11 +793,9 @@ impl<RC: RequestClient> ContentProvider for ModrinthContentProvider<RC> {
         self.api
             .get_project_version(version_id.as_str())
             .await
-            .map_err(|err| InstanceError::ContentDownloadError(err.clone()))?
+            .map_err(api_failure)?
             .try_into()
-            .map_err(|err: ModrinthMapperError| {
-                InstanceError::ContentDownloadError(err.to_string())
-            })
+            .map_err(mapper_failure)
     }
 
     async fn list_versions(
@@ -805,7 +806,7 @@ impl<RC: RequestClient> ContentProvider for ModrinthContentProvider<RC> {
             .api
             .get_project_versions(&content_id, &ProjectVersionsRequest::without_changelog())
             .await
-            .map_err(|err| InstanceError::ContentDownloadError(err.clone()))?;
+            .map_err(api_failure)?;
 
         Ok(versions
             .into_iter()
@@ -827,26 +828,33 @@ where
         .ok()
 }
 
-fn mapper_failure(err: &ModrinthMapperError) -> InstanceError {
+fn mapper_failure(err: ModrinthMapperError) -> InstanceError {
     InstanceError::ContentProviderError {
-        reason: err.to_string(),
+        reason: ContentProviderRejection::Mapping(err.into()),
     }
+}
+
+/// The text of an error of the Modrinth API client, which does not keep its category.
+fn api_failure(err: String) -> InstanceError {
+    InstanceError::ContentDownloadError(ContentDownloadFailure::Other(err))
 }
 
 fn response_id<T>(id: &str) -> Result<T, InstanceError>
 where
     T: TryFrom<String, Error = InvalidContentId>,
 {
-    T::try_from(id.to_owned()).map_err(|err| mapper_failure(&err.into()))
+    T::try_from(id.to_owned()).map_err(|err| mapper_failure(err.into()))
 }
 
 /// A URL Modrinth answered with, to fetch.
 fn response_url(url: &str) -> Result<HttpsUrl, InstanceError> {
-    HttpsUrl::parse(url).map_err(|err| mapper_failure(&err.into()))
+    HttpsUrl::parse(url).map_err(|err| mapper_failure(err.into()))
 }
 
 fn no_pack_versions(project_id: &str) -> InstanceError {
-    InstanceError::ContentDownloadError(format!("No versions found for modpack {project_id}"))
+    InstanceError::ContentDownloadError(ContentDownloadFailure::NoVersions {
+        project_id: project_id.to_owned(),
+    })
 }
 
 #[cfg(test)]

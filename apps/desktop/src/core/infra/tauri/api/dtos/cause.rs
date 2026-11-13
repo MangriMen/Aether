@@ -74,6 +74,11 @@ impl From<&IoError> for CauseDto {
     }
 }
 
+/// A URL as text without its query and fragment, which can carry secrets.
+pub fn without_query(url: &str) -> String {
+    url.split(['?', '#']).next().unwrap_or_default().to_owned()
+}
+
 /// Drops the parts of a URL that can carry secrets or noise (credentials, query, fragment).
 fn sanitize_url(url: &reqwest::Url) -> String {
     let mut url = url.clone();

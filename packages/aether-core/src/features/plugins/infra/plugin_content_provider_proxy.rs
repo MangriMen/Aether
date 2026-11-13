@@ -20,11 +20,11 @@ use crate::features::{
     instance::{
         AnchoredPath, ContentAuthor, ContentCompatibilityCheckParams, ContentCompatibilityResult,
         ContentId, ContentItem, ContentMetadata, ContentProvider,
-        ContentProviderCapabilityMetadata, ContentSearchParams, ContentSearchResult,
-        ContentVersion, ContentVersionId, ContentVersionMetadata, InstallFileEntry, InstallPlan,
-        InstallTarget, Instance, InstanceError, InstanceId, OverrideLocation, OverrideSource,
-        PackMetadata, PackSource, PageIndex, PageSize, PluginId, ProviderId,
-        ResolveInstallPlanParams, ResolveTarget, ResolvedFile,
+        ContentProviderCapabilityMetadata, ContentProviderRejection, ContentSearchParams,
+        ContentSearchResult, ContentVersion, ContentVersionId, ContentVersionMetadata,
+        InstallFileEntry, InstallPlan, InstallTarget, Instance, InstanceError, InstanceId,
+        OverrideLocation, OverrideSource, PackMetadata, PackSource, PageIndex, PageSize, PluginId,
+        ProviderId, ResolveInstallPlanParams, ResolveTarget, ResolvedFile,
     },
     minecraft::GameVersion,
     plugins::{
@@ -96,10 +96,10 @@ impl PluginContentProviderProxy {
         );
 
         InstanceError::ContentProviderError {
-            reason: format!(
+            reason: ContentProviderRejection::Provider(format!(
                 "Plugin '{}' returned an invalid answer from '{handler_name}': {reason}",
                 self.plugin_id
-            ),
+            )),
         }
     }
 
@@ -254,12 +254,12 @@ impl PluginContentProviderProxy {
             PackSource::File(path) => PackSourceDto::File(
                 host_path_to_plugin(&self.location_info, &self.plugin_id, &path).ok_or_else(
                     || InstanceError::ContentProviderError {
-                        reason: format!(
+                        reason: ContentProviderRejection::Provider(format!(
                             "Plugin '{}' cannot read {}: a pack file has to be in the plugin's \
                              cache or in an instance",
                             self.plugin_id,
                             path.display()
-                        ),
+                        )),
                     },
                 )?,
             ),
@@ -336,7 +336,7 @@ impl PluginContentProviderProxy {
                     err
                 );
                 Err(InstanceError::ContentProviderError {
-                    reason: err.to_string(),
+                    reason: ContentProviderRejection::Provider(err.to_string()),
                 })
             }
         }

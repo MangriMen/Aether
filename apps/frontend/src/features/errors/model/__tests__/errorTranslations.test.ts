@@ -173,6 +173,67 @@ describe('error translations', () => {
   });
 });
 
+describe('field names', () => {
+  const pagination = (field: string): LauncherError =>
+    ({
+      type: 'instance',
+      payload: {
+        code: 'INVALID_PAGINATION',
+        payload: {
+          field,
+          value: '5000',
+          reason: { code: 'TOO_LARGE', payload: { max: 1000 } },
+        },
+      },
+    }) as unknown as LauncherError;
+
+  it('should_name_the_field_in_the_text_when_it_has_a_translation', () => {
+    expect(getTranslatedError(pagination('PAGE_SIZE'), tEn)).toBe(
+      'Invalid page size value 5000: it must be at most 1000',
+    );
+    expect(getTranslatedError(pagination('PAGE'), tRu)).toContain('страница');
+  });
+
+  it('should_keep_the_raw_name_when_the_field_has_no_translation', () => {
+    expect(getTranslatedError(pagination('OTHER'), tEn)).toContain(
+      'Invalid OTHER value',
+    );
+  });
+});
+
+describe('the cause of a reason', () => {
+  const download = (cause: unknown): LauncherError =>
+    ({
+      type: 'instance',
+      payload: {
+        code: 'CONTENT_DOWNLOAD_ERROR',
+        payload: {
+          reason: {
+            code: 'DOWNLOAD',
+            payload: { url: 'https://x.test/a.jar', cause },
+          },
+        },
+      },
+    }) as unknown as LauncherError;
+
+  it('should_append_the_category_of_the_cause_of_the_reason', () => {
+    expect(
+      getTranslatedError(
+        download({ type: 'httpStatus', status: 404, url: 'https://x.test' }),
+        tEn,
+      ),
+    ).toBe(
+      'Failed to download instance content: could not download https://x.test/a.jar: the server answered 404',
+    );
+  });
+
+  it('should_find_the_raw_text_of_an_unknown_cause_of_the_reason', () => {
+    expect(
+      getErrorDetails(download({ type: 'unknown', details: 'denied' })),
+    ).toBe('denied');
+  });
+});
+
 describe('getErrorDetails', () => {
   it('should_return_the_raw_text_of_an_unknown_cause', () => {
     expect(getErrorDetails(io({ type: 'unknown', details: 'raw' }))).toBe(
@@ -256,6 +317,8 @@ describe('instance reason translations', () => {
 
   it('finds the errors with a reason in the bindings', () => {
     expect(Object.keys(reasonDtos)).toContain('INVALID_RELATIVE_PATH');
+    expect(Object.keys(reasonDtos)).toContain('CONTENT_PROVIDER_ERROR');
+    expect(Object.keys(reasonDtos)).toContain('CONTENT_DOWNLOAD_ERROR');
   });
 
   it.each(dictionaries)(

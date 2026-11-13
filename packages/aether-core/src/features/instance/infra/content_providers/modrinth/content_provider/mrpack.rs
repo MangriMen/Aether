@@ -6,9 +6,9 @@ use std::{io::Read, path::Path};
 
 use crate::{
     features::instance::{
-        AnchoredPath, ContentId, ContentIdentity, ContentPath, ContentSource, ContentType,
-        ContentVersionId, FileSide, InstallFileEntry, InstanceError, OptionalFile,
-        OverrideLocation, OverrideSource, PackMetadata, PlatformId,
+        AnchoredPath, ContentId, ContentIdentity, ContentPath, ContentProviderRejection,
+        ContentSource, ContentType, ContentVersionId, FileSide, InstallFileEntry, InstanceError,
+        OptionalFile, OverrideLocation, OverrideSource, PackMetadata, PlatformId, StorageError,
         infra::content_providers::modrinth::api_client::{
             Hashes, ModrinthEnv, ModrinthIndex, ModrinthIndexFile,
         },
@@ -43,10 +43,8 @@ const ALLOWED_DOWNLOAD_HOSTS: [&str; 4] = [
     "gitlab.com",
 ];
 
-fn invalid_pack(reason: impl Into<String>) -> InstanceError {
-    InstanceError::ContentProviderError {
-        reason: reason.into(),
-    }
+fn rejected(reason: ContentProviderRejection) -> InstanceError {
+    InstanceError::ContentProviderError { reason }
 }
 
 /// Read `modrinth.index.json` out of the archive. Blocking.
@@ -63,42 +61,41 @@ fn read_index_within(
     max_files: usize,
 ) -> Result<ModrinthIndex, InstanceError> {
     let file = std::fs::File::open(mrpack_path)
-        .map_err(|e| invalid_pack(format!("Failed to open .mrpack file: {e}")))?;
+        .map_err(|e| rejected(ContentProviderRejection::MrpackOpenFailed(e)))?;
 
     let mut archive = zip::ZipArchive::new(file)
-        .map_err(|e| invalid_pack(format!("Invalid .mrpack archive: {e}")))?;
+        .map_err(|e| rejected(ContentProviderRejection::MrpackInvalidArchive(e.into())))?;
 
     let index_file = archive
         .by_name(INDEX_PATH)
-        .map_err(|_| invalid_pack(format!("Critical: {INDEX_PATH} missing in modpack")))?;
+        .map_err(|_| rejected(ContentProviderRejection::MrpackMissingIndex))?;
 
     // One byte past the limit tells an index that is too large from one that fits exactly.
     let mut bytes = Vec::new();
     index_file
         .take(max_bytes + 1)
         .read_to_end(&mut bytes)
-        .map_err(|e| invalid_pack(format!("Failed to read {INDEX_PATH}: {e}")))?;
+        .map_err(|e| rejected(ContentProviderRejection::MrpackReadFailed(e)))?;
     if bytes.len() as u64 > max_bytes {
-        return Err(invalid_pack(format!(
-            "{INDEX_PATH} is larger than {max_bytes} bytes"
-        )));
+        return Err(rejected(ContentProviderRejection::MrpackIndexTooLarge {
+            max_bytes,
+        }));
     }
 
     let index: ModrinthIndex = serde_json::from_slice(&bytes)
-        .map_err(|e| invalid_pack(format!("Malformed modpack index: {e}")))?;
+        .map_err(|e| rejected(ContentProviderRejection::MrpackMalformedIndex(e)))?;
 
     if index.files.len() > max_files {
-        return Err(invalid_pack(format!(
-            "{INDEX_PATH} lists {} files, more than {max_files}",
-            index.files.len()
-        )));
+        return Err(rejected(ContentProviderRejection::MrpackTooManyFiles {
+            count: index.files.len(),
+            max: max_files,
+        }));
     }
 
     if index.game != "minecraft" {
-        return Err(invalid_pack(format!(
-            "Modpack is for \"{}\", not Minecraft",
-            index.game
-        )));
+        return Err(rejected(ContentProviderRejection::MrpackNotMinecraft {
+            game: index.game,
+        }));
     }
 
     Ok(index)
@@ -109,7 +106,7 @@ pub(super) async fn read_index_async(mrpack_path: &Path) -> Result<ModrinthIndex
     let mrpack_path = mrpack_path.to_owned();
     tokio::task::spawn_blocking(move || read_index(&mrpack_path))
         .await
-        .map_err(|e| invalid_pack(e.to_string()))?
+        .map_err(|e| InstanceError::storage(StorageError::other(e)))?
 }
 
 /// The project and version a Modrinth CDN URL names:
@@ -144,7 +141,7 @@ pub(super) fn cdn_identity(url: &HttpsUrl) -> Option<ContentIdentity> {
 /// The file's SHA-512, the stronger of the two hashes Modrinth gives, validated.
 pub(super) fn sha512_of(hashes: &Hashes) -> Result<FileHash, InstanceError> {
     FileHash::new(HashAlgorithm::Sha512, hashes.sha512.clone())
-        .map_err(|e| invalid_pack(format!("Invalid SHA-512 from Modrinth: {e}")))
+        .map_err(|e| rejected(ContentProviderRejection::MrpackInvalidHash(e)))
 }
 
 /// Every file of the index as a plan entry — optional and server-only ones too: leaving files
@@ -177,10 +174,9 @@ fn plan_file(file: &ModrinthIndexFile) -> Result<InstallFileEntry, InstanceError
         .iter()
         .find_map(|url| allowed_download(url))
         .ok_or_else(|| {
-            invalid_pack(format!(
-                "No download of \"{}\" is on a host the .mrpack format allows",
-                file.path
-            ))
+            rejected(ContentProviderRejection::MrpackNoAllowedDownload {
+                path: file.path.clone(),
+            })
         })?;
 
     let (side, optional) = side_and_option(file.env.as_ref());
@@ -377,7 +373,15 @@ mod tests {
 
         let err = read_index(&path).unwrap_err();
 
-        assert!(err.to_string().contains("larger than"), "{err}");
+        assert!(
+            matches!(
+                err,
+                InstanceError::ContentProviderError {
+                    reason: ContentProviderRejection::MrpackIndexTooLarge { .. }
+                }
+            ),
+            "{err}"
+        );
     }
 
     #[test]
@@ -390,7 +394,15 @@ mod tests {
 
         let err = read_index_within(&path, MAX_MRPACK_INDEX_BYTES, 2).unwrap_err();
 
-        assert!(err.to_string().contains("more than 2"), "{err}");
+        assert!(
+            matches!(
+                err,
+                InstanceError::ContentProviderError {
+                    reason: ContentProviderRejection::MrpackTooManyFiles { count: 3, max: 2 }
+                }
+            ),
+            "{err}"
+        );
     }
 
     #[test]
@@ -496,7 +508,66 @@ mod tests {
             None,
         )]));
 
-        assert!(result.is_err());
+        assert!(matches!(
+            result,
+            Err(InstanceError::ContentProviderError {
+                reason: ContentProviderRejection::MrpackNoAllowedDownload { .. }
+            })
+        ));
+    }
+
+    #[test]
+    fn should_keep_the_parse_error_when_the_index_is_malformed() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let path = mrpack_with_index(&dir, b"{not json");
+
+        let err = read_index(&path).unwrap_err();
+
+        assert!(matches!(
+            err,
+            InstanceError::ContentProviderError {
+                reason: ContentProviderRejection::MrpackMalformedIndex(_)
+            }
+        ));
+    }
+
+    #[test]
+    fn should_refuse_a_pack_for_another_game() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let mut other = index(Vec::new());
+        other.game = "hytale".into();
+        let path = mrpack_with_index(&dir, &serde_json::to_vec(&other).unwrap());
+
+        let err = read_index(&path).unwrap_err();
+
+        assert!(matches!(
+            err,
+            InstanceError::ContentProviderError {
+                reason: ContentProviderRejection::MrpackNotMinecraft { ref game }
+            } if game == "hytale"
+        ));
+    }
+
+    #[test]
+    fn should_tell_a_missing_file_from_a_damaged_archive() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let missing = read_index(&dir.path().join("none.mrpack")).unwrap_err();
+        let damaged_path = dir.path().join("bad.mrpack");
+        std::fs::write(&damaged_path, b"not a zip").unwrap();
+        let damaged = read_index(&damaged_path).unwrap_err();
+
+        assert!(matches!(
+            missing,
+            InstanceError::ContentProviderError {
+                reason: ContentProviderRejection::MrpackOpenFailed(_)
+            }
+        ));
+        assert!(matches!(
+            damaged,
+            InstanceError::ContentProviderError {
+                reason: ContentProviderRejection::MrpackInvalidArchive(_)
+            }
+        ));
     }
 
     #[test]

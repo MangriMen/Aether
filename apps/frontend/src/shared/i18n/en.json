@@ -97,12 +97,12 @@
       "INVALID_RELATIVE_PATH": "Invalid path {{path}}: {{reason}}",
       "INVALID_CONTENT_ID": "Invalid {{kind}}: {{value}}",
       "INVALID_GAME_VERSION": "Invalid Minecraft version {{value}}: {{reason}}",
-      "INVALID_PAGINATION": "Invalid pagination value {{value}}: {{reason}}",
+      "INVALID_PAGINATION": "Invalid {{field}} value {{value}}: {{reason}}",
       "INVALID_LOADER_VERSION": "Invalid loader version {{value}}: {{reason}}",
       "PATH_ESCAPES_INSTANCE": "Path {{path}} points outside instance {{instance_id}}",
       "FILE_TOO_LARGE": "File {{path}} is too large ({{size}} bytes, limit {{limit}})",
-      "CONTENT_DOWNLOAD_ERROR": "Failed to download instance content",
-      "CONTENT_PROVIDER_ERROR": "Content provider error",
+      "CONTENT_DOWNLOAD_ERROR": "Failed to download instance content: {{reason}}",
+      "CONTENT_PROVIDER_ERROR": "Content provider error: {{reason}}",
       "CONTENT_FOR_GAME_VERSION_NOT_FOUND": "No compatible content found for this game version",
       "UNSUPPORTED_CONTENT_TYPE": "Unsupported content type",
       "UNSUPPORTED_OPERATION": "The content provider does not support this operation",
@@ -156,7 +156,43 @@
         "INVALID_PAGINATION": {
           "TOO_SMALL": "it must be at least 1",
           "TOO_LARGE": "it must be at most {{max}}"
+        },
+        "CONTENT_PROVIDER_ERROR": {
+          "WRONG_TARGET": "the provider {{provider_id}} answered with a plan for another target than the one asked for",
+          "FOREIGN_PACK": "the provider {{provider_id}} answered with a pack of another provider ({{pack_provider_id}})",
+          "TOO_MANY_FILES": "the plan lists {{count}} files, more than {{max}}",
+          "TOO_MANY_OVERRIDES": "the overrides of the plan hold more than {{max}} files",
+          "INVALID_OVERRIDES_ARCHIVE": "the archive with the overrides cannot be read",
+          "VERSION_OF_ANOTHER_PROJECT": "version {{version_id}} belongs to project {{project_id}}, not {{content_id}}",
+          "NOT_A_MODPACK": "{{title}} is not a modpack: it installs into an existing instance",
+          "NO_GAME_VERSION": "version {{version_id}} names no valid game version",
+          "INVALID_SEARCH_PARAMS": "the search request is invalid",
+          "INVALID_SEARCH_RESPONSE": "the search response is invalid",
+          "UNKNOWN_PROJECT_TYPE": "unknown project type {{project_type}}",
+          "MAPPING": "the answer of the provider cannot be understood",
+          "MRPACK_OPEN_FAILED": "the modpack file cannot be opened",
+          "MRPACK_INVALID_ARCHIVE": "the modpack file is not a valid archive",
+          "MRPACK_MISSING_INDEX": "the modpack has no index (modrinth.index.json)",
+          "MRPACK_READ_FAILED": "the index of the modpack cannot be read",
+          "MRPACK_INDEX_TOO_LARGE": "the index of the modpack is larger than {{max_bytes}} bytes",
+          "MRPACK_MALFORMED_INDEX": "the index of the modpack is malformed",
+          "MRPACK_TOO_MANY_FILES": "the modpack lists {{count}} files, more than {{max}}",
+          "MRPACK_NOT_MINECRAFT": "the modpack is for {{game}}, not Minecraft",
+          "MRPACK_INVALID_HASH": "the modpack lists a file with an invalid checksum",
+          "MRPACK_NO_ALLOWED_DOWNLOAD": "no download of {{path}} is on a host the modpack format allows",
+          "PROVIDER": "the content provider failed"
+        },
+        "CONTENT_DOWNLOAD_ERROR": {
+          "NO_FILES": "version {{version_id}} has no files",
+          "NO_VERSIONS": "no versions found for modpack {{project_id}}",
+          "NOT_A_MODPACK_FILE": "the file {{file_name}} is not a modpack",
+          "DOWNLOAD": "could not download {{url}}",
+          "OTHER": "the content source did not answer as expected"
         }
+      },
+      "field": {
+        "PAGE": "page",
+        "PAGE_SIZE": "page size"
       }
     },
     "java": {

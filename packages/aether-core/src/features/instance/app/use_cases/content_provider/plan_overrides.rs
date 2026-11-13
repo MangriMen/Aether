@@ -27,7 +27,9 @@ use std::{
 use cap_fs_ext::{DirExt, FollowSymlinks, OpenOptionsFollowExt};
 use cap_std::{ambient_authority, fs::Dir};
 
-use crate::features::instance::{AnchoredPath, InstanceError, OverrideLocation, StorageError};
+use crate::features::instance::{
+    AnchoredPath, ContentProviderRejection, InstanceError, OverrideLocation, StorageError,
+};
 
 /// One file of the overrides, by the path it gets in the instance.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -103,9 +105,7 @@ pub(super) async fn stage_overrides(
 
                 let written = match (&file.source, archive.as_mut(), &root) {
                     (OverrideFileSource::ArchiveEntry(entry), Some(archive), _) => {
-                        let mut entry = archive
-                            .by_index(*entry)
-                            .map_err(|err| invalid_archive(&err))?;
+                        let mut entry = archive.by_index(*entry).map_err(invalid_archive)?;
                         let mut out = File::create(&path).map_err(InstanceError::storage)?;
                         copy(
                             &mut (&mut entry).take(remaining.saturating_add(1)),
@@ -170,10 +170,8 @@ fn list_archive(
 
     for index in 0..archive.len() {
         // Raw: only the header is read here, nothing is decompressed.
-        let entry = archive
-            .by_index_raw(index)
-            .map_err(|err| invalid_archive(&err))?;
-        let name = entry.name().map_err(|err| invalid_archive(&err))?;
+        let entry = archive.by_index_raw(index).map_err(invalid_archive)?;
+        let name = entry.name().map_err(invalid_archive)?;
         let name = name.as_ref();
 
         // `enclosed_name` refuses a name that climbs out of the root, but takes an absolute
@@ -281,7 +279,7 @@ fn open_archive(archive_path: &AnchoredPath) -> Result<zip::ZipArchive<File>, In
         .and_then(|root| open_file_nofollow_in(&root, archive_path.relative()))
         .map_err(InstanceError::storage)?;
 
-    zip::ZipArchive::new(file).map_err(|err| invalid_archive(&err))
+    zip::ZipArchive::new(file).map_err(invalid_archive)
 }
 
 /// The root of an [`AnchoredPath`], opened by its path: the core trusts it, links and all.
@@ -356,9 +354,9 @@ fn is_absolute(name: &str) -> bool {
             .is_some_and(|first| first.contains(':'))
 }
 
-fn invalid_archive(err: &zip::result::ZipError) -> InstanceError {
+fn invalid_archive(err: zip::result::ZipError) -> InstanceError {
     InstanceError::ContentProviderError {
-        reason: format!("Invalid overrides archive: {err}"),
+        reason: ContentProviderRejection::InvalidOverridesArchive(err.into()),
     }
 }
 

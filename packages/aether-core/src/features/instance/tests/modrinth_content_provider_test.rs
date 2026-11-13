@@ -23,11 +23,11 @@ use crate::{
     features::{
         events::ProgressBarId,
         instance::{
-            ContentAuthor, ContentIdentity, ContentMetadata, ContentProvider, ContentSource,
-            ContentType, ContentVersionFile, ContentVersionMetadata, FileSide, InstallTarget,
-            InstanceError, InstanceGame, InstanceId, OverrideLocation, OverrideSource, PackInfo,
-            PackMetadata, PackSource, ResolveInstallPlanParams, ResolveTarget,
-            infra::ModrinthContentProvider,
+            ContentAuthor, ContentDownloadFailure, ContentIdentity, ContentMetadata,
+            ContentProvider, ContentProviderRejection, ContentSource, ContentType,
+            ContentVersionFile, ContentVersionMetadata, FileSide, InstallTarget, InstanceError,
+            InstanceGame, InstanceId, OverrideLocation, OverrideSource, PackInfo, PackMetadata,
+            PackSource, ResolveInstallPlanParams, ResolveTarget, infra::ModrinthContentProvider,
         },
         minecraft::{LoaderVersionPreference, ModLoader},
         settings::LocationInfo,
@@ -442,7 +442,9 @@ async fn should_refuse_a_mod_when_the_target_is_a_new_instance() {
 
     assert!(matches!(
         result,
-        Err(InstanceError::ContentProviderError { .. })
+        Err(InstanceError::ContentProviderError {
+            reason: ContentProviderRejection::NotAModpack { .. }
+        })
     ));
 }
 
@@ -525,7 +527,14 @@ async fn should_refuse_a_modpack_when_its_mrpack_is_larger_than_the_limit() {
         .unwrap_err();
 
     assert!(
-        matches!(&err, InstanceError::ContentDownloadError(reason) if reason.contains(&limit.to_string())),
+        matches!(
+            &err,
+            InstanceError::ContentDownloadError(ContentDownloadFailure::Download { source, .. })
+                if matches!(
+                    source.downcast_ref::<RequestError>(),
+                    Some(RequestError::TooLarge { limit: l }) if *l == limit
+                )
+        ),
         "{err:?}"
     );
     let cache = fixture.location_info.cache_dir().join("modrinth/mrpack");
@@ -869,7 +878,9 @@ async fn should_refuse_a_version_when_it_belongs_to_another_project() {
 
     assert!(matches!(
         result,
-        Err(InstanceError::ContentProviderError { .. })
+        Err(InstanceError::ContentProviderError {
+            reason: ContentProviderRejection::VersionOfAnotherProject { .. }
+        })
     ));
 }
 
@@ -945,7 +956,12 @@ async fn should_fail_to_describe_a_pack_when_none_of_its_game_versions_is_valid(
     let result = describe_pack(&fixture).await;
 
     assert!(
-        matches!(result, Err(InstanceError::ContentProviderError { ref reason }) if reason.contains("no valid game version")),
+        matches!(
+            result,
+            Err(InstanceError::ContentProviderError {
+                reason: ContentProviderRejection::NoGameVersion { .. }
+            })
+        ),
         "{result:?}"
     );
 }

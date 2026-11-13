@@ -11,7 +11,7 @@ use serde::Serialize;
 use specta::Type;
 use uuid::Uuid;
 
-use super::{CauseDto, FrontendError};
+use super::{CauseDto, ContentDownloadReasonDto, ContentProviderReasonDto, FrontendError};
 use crate::features::instance::infra::ContentTypeDto;
 
 #[derive(Debug, Serialize, Type)]
@@ -122,9 +122,11 @@ pub enum InstanceErrorDto {
         size: String,
         limit: String,
     },
-    ContentDownloadError(String),
+    ContentDownloadError {
+        reason: ContentDownloadReasonDto,
+    },
     ContentProviderError {
-        reason: String,
+        reason: ContentProviderReasonDto,
     },
     ContentForGameVersionNotFound {
         game_version: String,
@@ -295,9 +297,11 @@ impl InstanceErrorDto {
             InstanceError::ContentFilename { path } => Self::ContentFilename {
                 path: path.to_string_lossy().to_string(),
             },
-            InstanceError::ContentDownloadError(err) => Self::ContentDownloadError(err.clone()),
+            InstanceError::ContentDownloadError(failure) => Self::ContentDownloadError {
+                reason: failure.into(),
+            },
             InstanceError::ContentProviderError { reason } => Self::ContentProviderError {
-                reason: reason.clone(),
+                reason: reason.into(),
             },
             InstanceError::ContentForGameVersionNotFound { game_version } => {
                 Self::ContentForGameVersionNotFound {

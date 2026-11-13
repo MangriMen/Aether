@@ -235,9 +235,9 @@ fn instance_dto(value: &InstanceError) -> InstanceErrorDto {
             size: *size,
             limit: *limit,
         },
-        InstanceError::ContentDownloadError(err) => Dto::ContentDownloadError(err.clone()),
+        InstanceError::ContentDownloadError(err) => Dto::ContentDownloadError(err.to_string()),
         InstanceError::ContentProviderError { reason } => Dto::ContentProviderError {
-            reason: reason.clone(),
+            reason: reason.to_string(),
         },
         InstanceError::ContentForGameVersionNotFound { game_version } => {
             Dto::ContentForGameVersionNotFound {

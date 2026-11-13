@@ -28,14 +28,14 @@ use crate::{
         instance::{
             CachedContentAuthor, CachedContentMetadata, CachedContentVersionMetadata,
             CapabilityMetadata, ChangeInstanceGameUseCasePort, ContentAuthor,
-            ContentCompatibilityCheckParams, ContentCompatibilityResult, ContentDownloader,
-            ContentItem, ContentMetadata, ContentMetadataCache, ContentPath, ContentProvider,
-            ContentProviderCapabilityMetadata, ContentSearchParams, ContentSearchResult,
-            ContentSource, ContentType, ContentVersion, ContentVersionMetadata,
-            CreateInstanceUseCasePort, InstallFileEntry, InstallPlan, InstallPlanExecutor,
-            InstallTarget, Instance, InstanceBuilder, InstanceError, InstanceGame, InstanceId,
-            InstanceStorage, NewInstance, PlanOrigin, ProviderId, RemoveInstanceUseCasePort,
-            ResolvedFile,
+            ContentCompatibilityCheckParams, ContentCompatibilityResult, ContentDownloadFailure,
+            ContentDownloader, ContentItem, ContentMetadata, ContentMetadataCache, ContentPath,
+            ContentProvider, ContentProviderCapabilityMetadata, ContentSearchParams,
+            ContentSearchResult, ContentSource, ContentType, ContentVersion,
+            ContentVersionMetadata, CreateInstanceUseCasePort, InstallFileEntry, InstallPlan,
+            InstallPlanExecutor, InstallTarget, Instance, InstanceBuilder, InstanceError,
+            InstanceGame, InstanceId, InstanceStorage, NewInstance, PlanOrigin, ProviderId,
+            RemoveInstanceUseCasePort, ResolvedFile,
             infra::{FsContentFileService, NoPlatformProviderSelection, SqlitePackStorage},
         },
         minecraft::ModLoader,
@@ -43,7 +43,7 @@ use crate::{
             ApiConfig, LoadConfig, Plugin, PluginError, PluginManifest, PluginMetadata,
             PluginRegistry, PluginSettings, PluginSettingsStorage, PluginState, RuntimeConfig,
             infra::{
-                ProviderContentDownloader,
+                PluginDownloadError, ProviderContentDownloader,
                 test_server::{TestServer, ok, redirect},
             },
         },
@@ -53,7 +53,7 @@ use crate::{
         capability::{CapabilityRegistry, infra::MemoryCapabilityRegistry},
         fetch::FetchSemaphore,
         hash::{FileHash, HashAlgorithm},
-        request_client::infra::ReqwestClient,
+        request_client::{RequestError, infra::ReqwestClient},
     },
 };
 
@@ -544,10 +544,33 @@ fn serve_body() -> impl Fn(&str) -> Vec<u8> + Send + Sync + 'static {
     |_| ok(BODY)
 }
 
-fn assert_download_error(err: &InstanceError, expected: &str) {
+/// What a refused download failed on: the typed error the request or the plugin's policy gave.
+fn download_source(err: &InstanceError) -> &(dyn std::error::Error + 'static) {
+    match err {
+        InstanceError::ContentDownloadError(ContentDownloadFailure::Download {
+            source, ..
+        }) => source.as_ref(),
+        other => panic!("expected a refused download, got {other:?}"),
+    }
+}
+
+fn assert_refused_by_the_hosts_of_the_plugin(err: &InstanceError) {
     assert!(
-        matches!(err, InstanceError::ContentDownloadError(message) if message.contains(expected)),
-        "expected a download error mentioning {expected:?}, got {err:?}"
+        matches!(
+            download_source(err).downcast_ref::<PluginDownloadError>(),
+            Some(PluginDownloadError::Http(_))
+        ),
+        "expected a refusal by the allowed hosts, got {err:?}"
+    );
+}
+
+fn assert_refused_by_the_hash(err: &InstanceError) {
+    assert!(
+        matches!(
+            download_source(err).downcast_ref::<RequestError>(),
+            Some(RequestError::Hash { .. })
+        ),
+        "expected a hash mismatch, got {err:?}"
     );
 }
 
@@ -569,7 +592,7 @@ async fn should_refuse_a_plugin_url_when_it_is_outside_its_allowed_hosts() {
         .await
         .unwrap_err();
 
-    assert_download_error(&err, "not listed in the plugin's allowed_hosts");
+    assert_refused_by_the_hosts_of_the_plugin(&err);
     assert_eq!(other.connections(), 0, "the host must not be contacted");
     assert!(fixture.instance_is_empty());
     assert!(fixture.staging_is_clean());
@@ -713,7 +736,13 @@ async fn should_refuse_a_url_when_it_is_from_an_unknown_plugin() {
         .await
         .unwrap_err();
 
-    assert_download_error(&err, "No network policy for plugin");
+    assert!(
+        matches!(
+            &err,
+            InstanceError::ContentDownloadError(ContentDownloadFailure::Other(_))
+        ),
+        "{err:?}"
+    );
     assert_eq!(allowed.connections(), 0);
 }
 
@@ -743,7 +772,7 @@ async fn should_hold_a_ref_to_that_plugins_hosts_when_a_plugin_resolved_it() {
     };
     let err = fixture.execute(plan, builtin_origin()).await.unwrap_err();
 
-    assert_download_error(&err, "not listed in the plugin's allowed_hosts");
+    assert_refused_by_the_hosts_of_the_plugin(&err);
     assert_eq!(other.connections(), 0);
     assert!(fixture.instance_is_empty());
 }
@@ -767,7 +796,7 @@ async fn should_write_nothing_when_the_hash_does_not_match() {
             .await
             .unwrap_err();
 
-        assert_download_error(&err, "hash");
+        assert_refused_by_the_hash(&err);
         assert_eq!(allowed.connections(), 1, "{origin}");
         assert!(fixture.instance_is_empty(), "{origin}");
         assert!(fixture.staging_is_clean(), "{origin}");
@@ -806,6 +835,6 @@ async fn should_install_no_file_of_a_plan_when_one_fails() {
     };
     let err = fixture.execute(plan, plugin_origin()).await.unwrap_err();
 
-    assert_download_error(&err, "hash");
+    assert_refused_by_the_hash(&err);
     assert!(fixture.instance_is_empty());
 }

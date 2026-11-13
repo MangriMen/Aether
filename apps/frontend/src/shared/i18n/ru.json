@@ -97,12 +97,12 @@
       "INVALID_RELATIVE_PATH": "Недопустимый путь {{path}}: {{reason}}",
       "INVALID_CONTENT_ID": "Недопустимый идентификатор: {{value}}",
       "INVALID_GAME_VERSION": "Недопустимая версия Minecraft {{value}}: {{reason}}",
-      "INVALID_PAGINATION": "Недопустимое значение страницы {{value}}: {{reason}}",
+      "INVALID_PAGINATION": "Недопустимое значение параметра «{{field}}» ({{value}}): {{reason}}",
       "INVALID_LOADER_VERSION": "Недопустимая версия загрузчика {{value}}: {{reason}}",
       "PATH_ESCAPES_INSTANCE": "Путь {{path}} выходит за пределы инстанса {{instance_id}}",
       "FILE_TOO_LARGE": "Файл {{path}} слишком большой ({{size}} байт, лимит {{limit}})",
-      "CONTENT_DOWNLOAD_ERROR": "Не удалось загрузить содержимое инстанса",
-      "CONTENT_PROVIDER_ERROR": "Ошибка поставщика контента",
+      "CONTENT_DOWNLOAD_ERROR": "Не удалось загрузить содержимое инстанса: {{reason}}",
+      "CONTENT_PROVIDER_ERROR": "Ошибка поставщика контента: {{reason}}",
       "CONTENT_FOR_GAME_VERSION_NOT_FOUND": "Совместимый контент для этой версии игры не найден",
       "UNSUPPORTED_CONTENT_TYPE": "Неподдерживаемый тип контента",
       "UNSUPPORTED_OPERATION": "Провайдер контента не поддерживает эту операцию",
@@ -156,7 +156,43 @@
         "INVALID_PAGINATION": {
           "TOO_SMALL": "значение должно быть не меньше 1",
           "TOO_LARGE": "значение должно быть не больше {{max}}"
+        },
+        "CONTENT_PROVIDER_ERROR": {
+          "WRONG_TARGET": "поставщик {{provider_id}} ответил планом для другой цели, чем запрошена",
+          "FOREIGN_PACK": "поставщик {{provider_id}} ответил сборкой другого поставщика ({{pack_provider_id}})",
+          "TOO_MANY_FILES": "в плане {{count}} файлов, что больше {{max}}",
+          "TOO_MANY_OVERRIDES": "в переопределениях плана больше {{max}} файлов",
+          "INVALID_OVERRIDES_ARCHIVE": "архив с переопределениями не удаётся прочитать",
+          "VERSION_OF_ANOTHER_PROJECT": "версия {{version_id}} принадлежит проекту {{project_id}}, а не {{content_id}}",
+          "NOT_A_MODPACK": "{{title}} не сборка: он устанавливается в существующий инстанс",
+          "NO_GAME_VERSION": "в версии {{version_id}} нет подходящей версии игры",
+          "INVALID_SEARCH_PARAMS": "поисковый запрос недопустим",
+          "INVALID_SEARCH_RESPONSE": "ответ на поисковый запрос недопустим",
+          "UNKNOWN_PROJECT_TYPE": "неизвестный тип проекта {{project_type}}",
+          "MAPPING": "ответ поставщика не удаётся разобрать",
+          "MRPACK_OPEN_FAILED": "не удаётся открыть файл сборки",
+          "MRPACK_INVALID_ARCHIVE": "файл сборки не является корректным архивом",
+          "MRPACK_MISSING_INDEX": "в сборке нет индекса (modrinth.index.json)",
+          "MRPACK_READ_FAILED": "не удаётся прочитать индекс сборки",
+          "MRPACK_INDEX_TOO_LARGE": "индекс сборки больше {{max_bytes}} байт",
+          "MRPACK_MALFORMED_INDEX": "индекс сборки повреждён",
+          "MRPACK_TOO_MANY_FILES": "в сборке {{count}} файлов, что больше {{max}}",
+          "MRPACK_NOT_MINECRAFT": "сборка предназначена для {{game}}, а не для Minecraft",
+          "MRPACK_INVALID_HASH": "в сборке указан файл с неверной контрольной суммой",
+          "MRPACK_NO_ALLOWED_DOWNLOAD": "ни одна ссылка на {{path}} не ведёт на разрешённый форматом сборок сервер",
+          "PROVIDER": "поставщик контента завершился ошибкой"
+        },
+        "CONTENT_DOWNLOAD_ERROR": {
+          "NO_FILES": "у версии {{version_id}} нет файлов",
+          "NO_VERSIONS": "не найдено версий сборки {{project_id}}",
+          "NOT_A_MODPACK_FILE": "файл {{file_name}} не является сборкой",
+          "DOWNLOAD": "не удалось загрузить {{url}}",
+          "OTHER": "источник контента ответил не так, как ожидалось"
         }
+      },
+      "field": {
+        "PAGE": "страница",
+        "PAGE_SIZE": "размер страницы"
       }
     },
     "java": {

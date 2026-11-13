@@ -5,7 +5,8 @@ use std::collections::HashSet;
 use super::super::plan_overrides;
 use super::{InstallPlanExecutor, PlanOverrides, path_key};
 use crate::features::instance::{
-    ContentPath, FileSide, InstallFileEntry, InstanceError, OverrideSource, app::DISABLED_SUFFIX,
+    ContentPath, ContentProviderRejection, FileSide, InstallFileEntry, InstanceError,
+    OverrideSource, app::DISABLED_SUFFIX,
 };
 
 impl InstallPlanExecutor {
@@ -14,10 +15,10 @@ impl InstallPlanExecutor {
     pub(super) fn check_file_count(&self, count: usize) -> Result<(), InstanceError> {
         if count > self.limits.max_plan_files {
             return Err(InstanceError::ContentProviderError {
-                reason: format!(
-                    "The plan lists {count} files, more than {}",
-                    self.limits.max_plan_files
-                ),
+                reason: ContentProviderRejection::TooManyFiles {
+                    count,
+                    max: self.limits.max_plan_files,
+                },
             });
         }
         Ok(())
@@ -76,10 +77,9 @@ impl InstallPlanExecutor {
             listed_count += listed.len();
             if listed_count > limits.max_override_files {
                 return Err(InstanceError::ContentProviderError {
-                    reason: format!(
-                        "The overrides of the plan hold more than {} files",
-                        limits.max_override_files
-                    ),
+                    reason: ContentProviderRejection::TooManyOverrides {
+                        max: limits.max_override_files,
+                    },
                 });
             }
             let mut seen = HashSet::new();

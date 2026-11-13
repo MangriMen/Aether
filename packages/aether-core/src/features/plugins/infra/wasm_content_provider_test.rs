@@ -30,8 +30,8 @@ use crate::{
     features::{
         events::PluginEvent,
         instance::{
-            ContentProvider, ContentSearchParams, ContentType, Importer, InstanceError, InstanceId,
-            PackSource, PageIndex, PageSize, ProviderId, Updater,
+            ContentProvider, ContentProviderRejection, ContentSearchParams, ContentType, Importer,
+            InstanceError, InstanceId, PackSource, PageIndex, PageSize, ProviderId, Updater,
         },
         plugins::{
             ApiConfig, LoadConfig, Plugin, PluginCapabilities, PluginContentProviderCapability,
@@ -303,7 +303,9 @@ fn search_params(plugin_id: &PluginId) -> ContentSearchParams {
 
 fn provider_error(result: Result<impl std::fmt::Debug, InstanceError>) -> String {
     match result {
-        Err(InstanceError::ContentProviderError { reason }) => reason,
+        Err(InstanceError::ContentProviderError {
+            reason: ContentProviderRejection::Provider(text),
+        }) => text,
         other => panic!("expected a content provider error, got {other:?}"),
     }
 }

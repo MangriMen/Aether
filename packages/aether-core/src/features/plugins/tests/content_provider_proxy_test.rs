@@ -27,9 +27,10 @@ use crate::{
         events::PluginEvent,
         instance::{
             AnchoredPath, ContentCompatibilityCheckParams, ContentItem, ContentProvider,
-            ContentSource, ContentType, FileSide, Importer, InstallTarget, InstanceError,
-            InstanceGame, InstanceId, NewInstance, OverrideLocation, OverrideSource, PackSource,
-            ProviderId, ResolveInstallPlanParams, ResolveTarget, Updater,
+            ContentProviderRejection, ContentSource, ContentType, FileSide, Importer,
+            InstallTarget, InstanceError, InstanceGame, InstanceId, NewInstance, OverrideLocation,
+            OverrideSource, PackSource, ProviderId, ResolveInstallPlanParams, ResolveTarget,
+            Updater,
         },
         minecraft::ModLoader,
         plugins::{
@@ -271,7 +272,9 @@ fn assert_invalid_answer(result: Result<impl std::fmt::Debug, InstanceError>) {
 
 fn assert_refused_with(result: Result<impl std::fmt::Debug, InstanceError>, expected: &str) {
     match result {
-        Err(InstanceError::ContentProviderError { reason }) => {
+        Err(InstanceError::ContentProviderError {
+            reason: ContentProviderRejection::Provider(reason),
+        }) => {
             assert!(
                 reason.contains(expected),
                 "expected `{expected}` in: {reason}"
@@ -417,7 +420,12 @@ async fn should_refuse_a_resolved_file_when_its_url_is_not_https() {
         .unwrap_err();
 
     assert!(
-        matches!(&err, InstanceError::ContentProviderError { reason } if reason.contains("https")),
+        matches!(
+            &err,
+            InstanceError::ContentProviderError {
+                reason: ContentProviderRejection::Provider(reason)
+            } if reason.contains("https")
+        ),
         "{err}"
     );
 }

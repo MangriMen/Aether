@@ -9,7 +9,10 @@ use async_trait::async_trait;
 use crate::{
     features::{
         events::ProgressService,
-        instance::{ContentDownloader, InstanceError, PluginId, ProviderId, StorageError},
+        instance::{
+            BoxedSource, ContentDownloadFailure, ContentDownloader, InstanceError, PluginId,
+            ProviderId, StorageError,
+        },
         plugins::{PluginRegistry, PluginSettingsStorage},
     },
     shared::{
@@ -23,8 +26,8 @@ use crate::{
 
 use super::{
     extism::{
-        AddressFilter, PluginNetwork, ProxySource, VettedDownloadClient, download_with,
-        is_blocked_ip, vetted_download_client,
+        AddressFilter, PluginDownloadError, PluginNetwork, ProxySource, VettedDownloadClient,
+        download_with, is_blocked_ip, vetted_download_client,
     },
     plugin_utils::effective_allowed_hosts,
 };
@@ -91,8 +94,17 @@ impl ProviderContentDownloader {
         self
     }
 
-    fn failed(url: &HttpsUrl, err: impl std::fmt::Display) -> InstanceError {
-        InstanceError::ContentDownloadError(format!("{url}: {err}"))
+    fn failed(url: &HttpsUrl, err: impl Into<BoxedSource>) -> InstanceError {
+        InstanceError::ContentDownloadError(ContentDownloadFailure::download(url, err))
+    }
+
+    /// A download of a plugin's network: the typed request error it wraps is what the
+    /// frontend categorizes, the rest is a refusal of the plugin's own policy.
+    fn plugin_failed(url: &HttpsUrl, err: PluginDownloadError) -> InstanceError {
+        match err {
+            PluginDownloadError::Request(err) => Self::failed(url, err),
+            other => Self::failed(url, other),
+        }
     }
 
     /// What the plugin may reach now: its manifest and the user's current settings. A plugin
@@ -102,9 +114,9 @@ impl ProviderContentDownloader {
         plugin_id: &PluginId,
     ) -> Result<Vec<String>, InstanceError> {
         let manifest = self.plugins.get_manifest(plugin_id).map_err(|err| {
-            InstanceError::ContentDownloadError(format!(
+            InstanceError::ContentDownloadError(ContentDownloadFailure::Other(format!(
                 "No network policy for plugin \"{plugin_id}\": {err}"
-            ))
+            )))
         })?;
         let settings = self
             .plugin_settings
@@ -200,7 +212,7 @@ impl ContentDownloader for ProviderContentDownloader {
         .await
         .map_err(|err| {
             tracing::warn!("Download of {url} for provider \"{origin}\" failed: {err}");
-            Self::failed(url, err)
+            Self::plugin_failed(url, err)
         })
     }
 }

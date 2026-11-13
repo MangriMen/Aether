@@ -2,7 +2,7 @@ use aether_core_plugin_api::v0::NewInstanceDto;
 
 use super::pack_info::InvalidPackInfo;
 use crate::features::{
-    instance::{InstanceError, InstanceName, NewInstance},
+    instance::{ContentProviderRejection, InstanceError, InstanceName, NewInstance},
     minecraft::GameVersion,
 };
 
@@ -19,7 +19,7 @@ impl TryFrom<NewInstanceDto> for NewInstance {
             skip_install_instance: value.skip_install_instance,
             pack_info: value.pack_info.map(TryInto::try_into).transpose().map_err(
                 |err: InvalidPackInfo| InstanceError::ContentProviderError {
-                    reason: err.to_string(),
+                    reason: ContentProviderRejection::Provider(err.to_string()),
                 },
             )?,
         })

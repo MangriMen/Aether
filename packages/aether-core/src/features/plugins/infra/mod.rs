@@ -20,6 +20,8 @@ mod zip_plugin_extractor;
 
 pub use extism::ExtismPluginLoader;
 #[cfg(test)]
+pub(crate) use extism::PluginDownloadError;
+#[cfg(test)]
 pub(crate) use extism::test_server;
 pub use fs_plugin_settings_storage::FsPluginSettingsStorage;
 pub use fs_plugin_source_storage::FsPluginSourceStorage;
