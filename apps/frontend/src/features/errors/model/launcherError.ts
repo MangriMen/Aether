@@ -21,33 +21,28 @@ export const isCancelledError = (error: unknown): boolean =>
   (error.type === 'instance' || error.type === 'java') &&
   error.payload.code === 'CANCELLED';
 
+/** Nothing categorized the failure, so its raw text is the only thing there is to show. */
+export const isInternalError = (error: unknown): boolean =>
+  isLauncherError(error) &&
+  error.type === 'application' &&
+  error.payload.code === 'INTERNAL';
+
 /** The provider does not do what was asked of it (an optional operation it lacks). */
 export const isUnsupportedOperationError = (error: unknown): boolean =>
   isLauncherError(error) &&
   error.type === 'instance' &&
   error.payload.code === 'UNSUPPORTED_OPERATION';
 
-type LauncherErrorWithoutGenericErrors = Exclude<
-  LauncherError,
-  { type: 'generic' }
->;
-
-// The I/O message is picked by its kind in `getTranslatedError`, so it has no single key.
 type LauncherErrorTranslateKey<E extends LauncherError> =
-  E extends LauncherErrorWithoutGenericErrors
-    ? Exclude<`${E['type']}.${E['payload']['code']}`, 'application.IO'>
-    : never;
+  E extends LauncherError ? `${E['type']}.${E['payload']['code']}` : never;
 
-type LauncherErrorArgs<E extends LauncherError> =
-  E extends LauncherErrorWithoutGenericErrors
-    ? E['payload'] extends { payload: infer P }
-      ? P
-      : Record<string, never>
-    : never;
+type LauncherErrorArgs<E extends LauncherError> = E extends LauncherError
+  ? E['payload'] extends { payload: infer P }
+    ? P
+    : Record<string, never>
+  : never;
 
-const getLauncherErrorTranslationData = <
-  E extends LauncherErrorWithoutGenericErrors,
->(
+const getLauncherErrorTranslationData = <E extends LauncherError>(
   error: E,
 ): {
   key: LauncherErrorTranslateKey<E>;
@@ -62,39 +57,146 @@ const getLauncherErrorTranslationData = <
   };
 };
 
-type IoErrorKind = 'notFound' | 'permissionDenied' | 'other';
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  value !== null && typeof value === 'object';
 
-const getIoErrorKind = (payload: unknown): IoErrorKind => {
-  if (
-    payload !== null &&
-    typeof payload === 'object' &&
-    'kind' in payload &&
-    (payload.kind === 'notFound' || payload.kind === 'permissionDenied')
-  ) {
-    return payload.kind;
+const getIoCauseText = (kind: unknown, t: TFunction): string | undefined => {
+  switch (kind) {
+    case 'notFound':
+      return t('errors.cause.io.notFound');
+    case 'permissionDenied':
+      return t('errors.cause.io.permissionDenied');
+    case 'alreadyExists':
+      return t('errors.cause.io.alreadyExists');
+    case 'storageFull':
+      return t('errors.cause.io.storageFull');
+    case 'readOnlyFilesystem':
+      return t('errors.cause.io.readOnly');
+    case 'resourceBusy':
+      return t('errors.cause.io.busy');
+    case 'timedOut':
+      return t('errors.cause.io.timedOut');
+    case 'invalidData':
+      return t('errors.cause.io.invalidData');
+    default:
+      return undefined;
+  }
+};
+
+const getNetworkCauseText = (
+  kind: unknown,
+  t: TFunction,
+): string | undefined => {
+  switch (kind) {
+    case 'timeout':
+      return t('errors.cause.network.timeout');
+    case 'connect':
+      return t('errors.cause.network.connect');
+    case 'redirect':
+      return t('errors.cause.network.redirect');
+    case 'body':
+      return t('errors.cause.network.body');
+    default:
+      return undefined;
+  }
+};
+
+/** The translation of the category of a failure, or undefined when it has none to name. */
+const getCauseText = (cause: unknown, t: TFunction): string | undefined => {
+  if (!isRecord(cause)) {
+    return undefined;
   }
 
-  return 'other';
+  switch (cause.type) {
+    case 'io':
+      return getIoCauseText(cause.kind, t);
+    case 'network':
+      return getNetworkCauseText(cause.kind, t);
+    case 'httpStatus':
+      return t('errors.cause.httpStatus', { status: Number(cause.status) });
+    case 'parse':
+      return typeof cause.line === 'number' && typeof cause.column === 'number'
+        ? t('errors.cause.parse', { line: cause.line, column: cause.column })
+        : t('errors.cause.parseNoPosition');
+    case 'database':
+      return t('errors.cause.database');
+    default:
+      return undefined;
+  }
+};
+
+/** A translatable reason (`{ code, payload? }`) replaces the raw argument of the same name. */
+const withTranslatedReason = (
+  key: string,
+  args: unknown,
+  t: TFunction,
+): unknown => {
+  if (!isRecord(args) || !isRecord(args.reason)) {
+    return args;
+  }
+
+  const { code, payload } = args.reason;
+
+  if (typeof code !== 'string') {
+    return args;
+  }
+
+  const reasonKey = `errors.${key.replace('.', '.reason.')}.${code}`;
+
+  return {
+    ...args,
+    reason:
+      t(reasonKey as Parameters<TFunction>[0], payload as never) ?? reasonKey,
+  };
+};
+
+const getCause = (error: LauncherError): unknown => {
+  const payload: unknown = error.payload;
+
+  return isRecord(payload) && isRecord(payload.payload)
+    ? payload.payload.cause
+    : undefined;
 };
 
 export const getTranslatedError = (
   error: LauncherError,
   t: TFunction,
 ): string => {
-  if (error.type === 'generic') {
-    return error.payload;
-  }
-
-  if (error.type === 'application' && error.payload.code === 'IO') {
-    const key =
-      `errors.application.IO.${getIoErrorKind(error.payload.payload)}` as const;
-
-    return t(key, error.payload.payload) ?? key;
-  }
-
   const { key, args } = getLauncherErrorTranslationData(error);
 
-  return t(`errors.${key}`, withFormattedArgs(key, args)) ?? key;
+  const main =
+    t(
+      `errors.${key}`,
+      withFormattedArgs(key, withTranslatedReason(key, args, t)),
+    ) ?? key;
+  const causeText = getCauseText(getCause(error), t);
+
+  return causeText ? `${main}: ${causeText}` : main;
+};
+
+/**
+ * The raw text of a failure nobody could categorize, looked up in the error and in the
+ * errors nested in it. Only `ErrorDetails` may show it.
+ */
+export const getErrorDetails = (error: unknown): string | undefined => {
+  if (!isLauncherError(error)) {
+    return undefined;
+  }
+
+  const payload: unknown = error.payload;
+  const inner = isRecord(payload) ? payload.payload : undefined;
+
+  if (!isRecord(inner)) {
+    return undefined;
+  }
+
+  const cause = inner.cause;
+
+  if (isRecord(cause) && cause.type === 'unknown') {
+    return typeof cause.details === 'string' ? cause.details : undefined;
+  }
+
+  return getErrorDetails(inner.error);
 };
 
 /** Values the core sends as raw numbers, turned into text in the language of the interface. */

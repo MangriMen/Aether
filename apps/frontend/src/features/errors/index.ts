@@ -1,2 +1,3 @@
 export * from './model/launcherError';
-export * from './model/showError';
+export * from './ui/ErrorDetails';
+export * from './ui/showError';

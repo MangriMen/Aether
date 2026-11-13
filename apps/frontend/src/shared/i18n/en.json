@@ -21,13 +21,35 @@
       "STORAGE": "App settings storage failure"
     },
     "application": {
-      "IO": {
-        "notFound": "A file or folder was not found",
-        "permissionDenied": "Access to a file or folder was denied",
-        "other": "File system error: {{details}}"
-      },
+      "IO": "File system error",
+      "INTERNAL": "Unexpected error",
       "DUPLICATE_REQUEST": "This action is already in progress"
     },
+    "cause": {
+      "io": {
+        "notFound": "file or folder not found",
+        "permissionDenied": "access denied",
+        "alreadyExists": "already exists",
+        "storageFull": "not enough disk space",
+        "readOnly": "the disk is read-only",
+        "busy": "the file is in use by another program",
+        "timedOut": "timed out",
+        "invalidData": "the data is damaged"
+      },
+      "network": {
+        "timeout": "the server did not respond in time",
+        "connect": "could not connect, check the internet connection",
+        "redirect": "too many redirects",
+        "body": "the response was interrupted or damaged"
+      },
+      "httpStatus": "the server answered {{status}}",
+      "parse": "the data has an invalid format (line {{line}}, column {{column}})",
+      "parseNoPosition": "the data has an invalid format",
+      "database": "launcher database error"
+    },
+    "copied": "Copied",
+    "copy": "Copy",
+    "details": "Details",
     "auth": {
       "CREDENTIALS_NOT_FOUND": "Credentials with ID {{id}} not found",
       "NO_ACTIVE_CREDENTIALS": "No active credentials found",

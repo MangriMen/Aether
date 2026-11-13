@@ -85,6 +85,7 @@ rfd = { version = "0.17", default-features = false, features = [
 reqwest = { version = "0.13.4", features = ["json", "stream", "deflate", "gzip", "brotli"] }
 reqwest-middleware = "0.5.2"
 reqwest-retry = "0.9.1"
+toml = "1.1.3"
 windows-sys = "0.61.2"
 fontdb = "0.24.0"
 ttf-parser = "0.25.1"

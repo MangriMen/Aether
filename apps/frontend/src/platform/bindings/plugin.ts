@@ -99,8 +99,9 @@ export type AppSettingsErrorDto = { code: "CAN_NOT_SET_EFFECT"; payload: {
 } };
 
 export type ApplicationErrorDto = { code: "IO"; payload: {
-	kind: IoErrorKindDto,
-	details: string,
+	cause: CauseDto,
+} } | { code: "INTERNAL"; payload: {
+	cause: CauseDto,
 } } | { code: "DUPLICATE_REQUEST" };
 
 export type AuthErrorDto = { code: "CREDENTIALS_NOT_FOUND"; payload: {
@@ -120,6 +121,11 @@ export type CapabilityMetadataDto = {
 	/**  Optional icon file name or URL for the UI. */
 	icon: string | null,
 };
+
+/**  Why a command failed, in a form the frontend can translate without seeing raw error text. */
+export type CauseDto = { type: "io"; kind: IoErrorKindDto } | { type: "network"; kind: NetworkErrorKindDto; url: string | null } | { type: "httpStatus"; status: number; url: string } | { type: "parse"; line: number | null; column: number | null } | { type: "database" } | 
+/**  The only place raw error text reaches the frontend. */
+{ type: "unknown"; details: string };
 
 export type ContentProviderCapabilityMetadataDto = {
 	/**
@@ -160,9 +166,7 @@ export type FolderAccessDto =
 /**  The folder was added read-only and the plugin restarted with it. */
 { type: "granted"; folder: string };
 
-export type FrontendError = { type: "appSettings"; payload: AppSettingsErrorDto } | { type: "window"; payload: WindowErrorDto } | { type: "application"; payload: ApplicationErrorDto } | { type: "auth"; payload: AuthErrorDto } | { type: "event"; payload: EventErrorDto } | { type: "fileWatcher"; payload: FileWatcherErrorDto } | { type: "gameLog"; payload: GameLogErrorDto } | { type: "instance"; payload: InstanceErrorDto } | { type: "java"; payload: JavaErrorDto } | { type: "minecraft"; payload: MinecraftErrorDto } | { type: "plugin"; payload: PluginErrorDto } | { type: "process"; payload: ProcessErrorDto } | { type: "request"; payload: RequestErrorDto } | { type: "settings"; payload: SettingsErrorDto } | 
-/**  General errors that are expected and can be shown to the user. */
-{ type: "generic"; payload: string };
+export type FrontendError = { type: "appSettings"; payload: AppSettingsErrorDto } | { type: "window"; payload: WindowErrorDto } | { type: "application"; payload: ApplicationErrorDto } | { type: "auth"; payload: AuthErrorDto } | { type: "event"; payload: EventErrorDto } | { type: "fileWatcher"; payload: FileWatcherErrorDto } | { type: "gameLog"; payload: GameLogErrorDto } | { type: "instance"; payload: InstanceErrorDto } | { type: "java"; payload: JavaErrorDto } | { type: "minecraft"; payload: MinecraftErrorDto } | { type: "plugin"; payload: PluginErrorDto } | { type: "process"; payload: ProcessErrorDto } | { type: "request"; payload: RequestErrorDto } | { type: "settings"; payload: SettingsErrorDto };
 
 export type GameLogErrorDto = { code: "INVALID_SOURCE"; payload: {
 	source_id: string,
@@ -295,7 +299,7 @@ export type InstanceFieldDto = "name";
 
 export type InstanceValidationErrorReasonDto = "cannot_be_empty";
 
-export type IoErrorKindDto = "notFound" | "permissionDenied" | "other";
+export type IoErrorKindDto = "notFound" | "permissionDenied" | "alreadyExists" | "storageFull" | "readOnlyFilesystem" | "resourceBusy" | "timedOut" | "invalidData";
 
 export type JavaErrorDto = { code: "NOT_FOUND"; payload: {
 	version: number,
@@ -363,6 +367,8 @@ export type MinecraftErrorDto = { code: "VERSION_NOT_FOUND"; payload: {
 } } | { code: "STORAGE"; payload: {
 	details: string,
 } };
+
+export type NetworkErrorKindDto = "timeout" | "connect" | "redirect" | "body";
 
 /**
  *  A mapping between a path on the host and a virtual path in the plugin.

@@ -55,6 +55,13 @@ src/
 8. `shared/ui-kit` imports only `shared/utils`. The few texts it renders itself (close,
    pagination, empty table) come from `UiKitLabelsProvider`, which `app/runtime` fills from
    i18n.
+9. A backend error is built for the user only by `getTranslatedError`, from the code, typed
+   arguments (id, path, URL without query, version, status, limit), translatable reasons
+   (`reason`) and the category of the cause (`cause`). Raw backend text may reach the
+   frontend only as `cause: { type: "unknown", details }`, and only `ErrorDetails` shows it:
+   collapsed when a category exists, open (3 lines) when there is none
+   (`application.INTERNAL`). Raw text is never substituted into `errors.*` templates
+   (`{{details}}`, `{{message}}`, `{{error}}` are banned by a test).
 
 ## Inside a feature
 

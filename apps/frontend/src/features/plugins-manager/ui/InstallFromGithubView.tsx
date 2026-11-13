@@ -7,7 +7,13 @@ import {
   type Component,
 } from 'solid-js';
 
-import { getTranslatedError, isLauncherError } from '@/features/errors';
+import {
+  ErrorDetails,
+  getErrorDetails,
+  getTranslatedError,
+  isInternalError,
+  isLauncherError,
+} from '@/features/errors';
 import {
   useInstallPluginFromProvider,
   usePluginPreview,
@@ -162,6 +168,14 @@ export const InstallFromGithubView: Component<InstallFromGithubViewProps> = (
             ? getTranslatedError(previewQuery.error, t)
             : t('plugins.githubPreviewError')}
         </p>
+        <Show when={getErrorDetails(previewQuery.error)}>
+          {(details) => (
+            <ErrorDetails
+              details={details()}
+              defaultOpen={isInternalError(previewQuery.error)}
+            />
+          )}
+        </Show>
       </Show>
 
       {/* Preview card */}

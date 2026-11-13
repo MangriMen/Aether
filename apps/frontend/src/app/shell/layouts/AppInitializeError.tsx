@@ -7,16 +7,18 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
+import { ErrorDetails } from '@/features/errors';
 import { cn } from '@/shared/utils';
 
 export type AppInitializeErrorProps = ComponentProps<'div'> & {
   error?: string;
+  details?: { text: string; open: boolean } | undefined;
 };
 
 export const AppInitializeError: Component<AppInitializeErrorProps> = (
   props,
 ) => {
-  const [local, others] = splitProps(props, ['error', 'class']);
+  const [local, others] = splitProps(props, ['error', 'details', 'class']);
 
   const [errorHasBeenCopied, setErrorHasBeenCopied] = createSignal(false);
 
@@ -102,6 +104,14 @@ export const AppInitializeError: Component<AppInitializeErrorProps> = (
             >
               {error()}
             </p>
+            <Show when={local.details}>
+              {(details) => (
+                <ErrorDetails
+                  details={details().text}
+                  defaultOpen={details().open}
+                />
+              )}
+            </Show>
           </div>
         )}
       </Show>

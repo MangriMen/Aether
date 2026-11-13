@@ -121,7 +121,7 @@ async fn is_cache_busy(container: State<'_, ContainerState>) -> FrontendResult<b
 async fn get_max_ram() -> FrontendResult<RamSettingsDto> {
     Ok(RamSettingsDto {
         total_memory: aether_core::shared::system::infra::get_total_memory()
-            .map_err(|err| FrontendError::Generic(err.to_string()))?,
+            .map_err(FrontendError::internal)?,
     })
 }
 
@@ -132,7 +132,7 @@ async fn list_system_fonts() -> FrontendResult<Vec<String>> {
     list_system_font_families()
         .await
         .map(<[String]>::to_vec)
-        .map_err(|err| FrontendError::Generic(err.to_string()))
+        .map_err(FrontendError::internal)
 }
 
 #[tauri::command]

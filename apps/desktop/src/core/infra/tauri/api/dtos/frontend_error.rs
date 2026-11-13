@@ -2,9 +2,9 @@ use serde::Serialize;
 use specta::Type;
 
 use crate::core::{
-    AppSettingsErrorDto, ApplicationErrorDto, AuthErrorDto, EventErrorDto, FileWatcherErrorDto,
-    GameLogErrorDto, InstanceErrorDto, JavaErrorDto, MinecraftErrorDto, PluginErrorDto,
-    ProcessErrorDto, RequestErrorDto, SettingsErrorDto, WindowErrorDto,
+    AppSettingsErrorDto, ApplicationErrorDto, AuthErrorDto, CauseDto, EventErrorDto,
+    FileWatcherErrorDto, GameLogErrorDto, InstanceErrorDto, JavaErrorDto, MinecraftErrorDto,
+    PluginErrorDto, ProcessErrorDto, RequestErrorDto, SettingsErrorDto, WindowErrorDto,
 };
 
 pub type FrontendResult<T, E = FrontendError> = Result<T, E>;
@@ -39,9 +39,6 @@ pub enum FrontendError {
     Request(RequestErrorDto),
 
     Settings(SettingsErrorDto),
-
-    /// General errors that are expected and can be shown to the user.
-    Generic(String),
 }
 
 impl From<crate::Error> for FrontendError {
@@ -51,10 +48,13 @@ impl From<crate::Error> for FrontendError {
             crate::Error::AppSettingsError(err) => Self::AppSettings(err.into()),
             crate::Error::WindowError(err) => Self::Window(err.into()),
             // Raised while the app starts, before any command can carry it to the UI.
-            crate::Error::LaunchError(details) => Self::Generic(details),
+            crate::Error::LaunchError(details) => {
+                Self::Application(ApplicationErrorDto::Internal {
+                    cause: CauseDto::unknown(details),
+                })
+            }
             crate::Error::IoError(err) => Self::Application(ApplicationErrorDto::Io {
-                kind: err.kind().into(),
-                details: err.to_string(),
+                cause: (&err).into(),
             }),
             crate::Error::IdempotencyManager(err) => Self::Application((&err).into()),
             // Logged by the conversion below.
@@ -74,6 +74,14 @@ impl From<aether_core::Error> for FrontendError {
 }
 
 impl FrontendError {
+    /// For an error with no frontend category: no conversion logs it, so it is logged here.
+    pub fn internal(err: impl std::fmt::Display) -> Self {
+        tracing::warn!(error = %err, "Command failed");
+        Self::Application(ApplicationErrorDto::Internal {
+            cause: CauseDto::unknown(err),
+        })
+    }
+
     fn is_expected(&self) -> bool {
         matches!(
             self,
@@ -106,7 +114,11 @@ impl From<&aether_core::ErrorKind> for FrontendError {
             aether_core::ErrorKind::ProcessError(err) => Self::Process(err.into()),
             aether_core::ErrorKind::SettingsError(err) => Self::Settings(err.into()),
             aether_core::ErrorKind::RequestError(err) => Self::Request(err.into()),
-            aether_core::ErrorKind::CoreError(err) => Self::Generic(err.to_owned()),
+            aether_core::ErrorKind::CoreError(err) => {
+                Self::Application(ApplicationErrorDto::Internal {
+                    cause: CauseDto::unknown(err),
+                })
+            }
         }
     }
 }
@@ -127,7 +139,7 @@ mod tests {
     }
 
     #[test]
-    fn should_not_be_expected_when_error_is_generic() {
-        assert!(!FrontendError::Generic("x".to_owned()).is_expected());
+    fn should_not_be_expected_when_error_is_internal() {
+        assert!(!FrontendError::internal("x").is_expected());
     }
 }

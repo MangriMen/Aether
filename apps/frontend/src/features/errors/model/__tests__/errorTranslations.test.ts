@@ -7,7 +7,7 @@ import { enDictionary, ruDictionary } from '@/shared/i18n';
 
 import type { LauncherError } from '../launcherError';
 
-import { getTranslatedError } from '../launcherError';
+import { getErrorDetails, getTranslatedError } from '../launcherError';
 
 /**
  * Error codes are only types in the generated bindings, so a new Rust error
@@ -44,6 +44,24 @@ const getCodes = (dtoName: string, source = bindings): string[] => {
   return [...body.matchAll(/\{ code: "(\w+)"/g)].map((m) => m[1]!);
 };
 
+const tEn = i18n.translator(
+  () => i18n.flatten(enDictionary),
+  i18n.resolveTemplate,
+);
+const tRu = i18n.translator(
+  () => i18n.flatten(ruDictionary),
+  i18n.resolveTemplate,
+);
+
+const io = (cause: unknown) =>
+  ({
+    type: 'application',
+    payload: { code: 'IO', payload: { cause } },
+  }) as unknown as LauncherError;
+
+/** Texts not yet moved off raw backend text; the list shrinks to empty as DTOs get a `cause`. */
+const PENDING_RAW_TEXT_KEYS = ['errors.plugin.MANIFEST'];
+
 const dictionaries: [string, Dictionary][] = [
   ['en', enDictionary as unknown as Dictionary],
   ['ru', ruDictionary as unknown as Dictionary],
@@ -73,37 +91,128 @@ describe('error translations', () => {
     },
   );
 
-  it('should_pick_the_io_message_by_kind_when_the_error_has_a_kind', () => {
-    const t = i18n.translator(
-      () => i18n.flatten(enDictionary),
-      i18n.resolveTemplate,
-    );
-    const tRu = i18n.translator(
-      () => i18n.flatten(ruDictionary),
-      i18n.resolveTemplate,
-    );
+  it('should_append_the_translated_cause_when_the_error_has_one', () => {
     const cases = [
-      ['notFound', 'A file or folder was not found'],
-      ['permissionDenied', 'Access to a file or folder was denied'],
-      ['other', 'File system error: disk full'],
+      [
+        { type: 'io', kind: 'notFound' },
+        'File system error: file or folder not found',
+      ],
+      [
+        { type: 'io', kind: 'readOnlyFilesystem' },
+        'File system error: the disk is read-only',
+      ],
+      [
+        { type: 'network', kind: 'timeout', url: null },
+        'File system error: the server did not respond in time',
+      ],
+      [
+        { type: 'httpStatus', status: 503, url: 'https://x' },
+        'File system error: the server answered 503',
+      ],
+      [
+        { type: 'parse', line: 3, column: 7 },
+        'File system error: the data has an invalid format (line 3, column 7)',
+      ],
+      [
+        { type: 'parse', line: null, column: null },
+        'File system error: the data has an invalid format',
+      ],
+      [{ type: 'database' }, 'File system error: launcher database error'],
     ] as const;
 
-    for (const [kind, expected] of cases) {
-      const error = {
-        type: 'application',
-        payload: {
-          code: 'IO',
-          payload: { details: 'disk full', kind },
-        },
-      } as unknown as LauncherError;
-
-      expect(getTranslatedError(error, t)).toBe(expected);
-      expect(getTranslatedError(error, tRu)).not.toMatch(
-        /^(errors.)?application.IO/,
-      );
-      expect(getTranslatedError(error, tRu)).not.toBe(expected);
+    for (const [cause, expected] of cases) {
+      expect(getTranslatedError(io(cause), tEn)).toBe(expected);
     }
   });
+
+  it('should_translate_the_cause_into_russian', () => {
+    const text = getTranslatedError(io({ type: 'io', kind: 'notFound' }), tRu);
+
+    expect(text).toBe('Ошибка файловой системы: файл или папка не найдены');
+  });
+
+  it('should_leave_the_main_text_alone_when_the_cause_is_unknown', () => {
+    const text = getTranslatedError(
+      io({ type: 'unknown', details: 'secret raw text' }),
+      tEn,
+    );
+
+    expect(text).toBe('File system error');
+  });
+
+  it('should_translate_an_internal_error_without_its_raw_text', () => {
+    const error = {
+      type: 'application',
+      payload: {
+        code: 'INTERNAL',
+        payload: { cause: { type: 'unknown', details: 'boom' } },
+      },
+    } as unknown as LauncherError;
+
+    expect(getTranslatedError(error, tEn)).toBe('Unexpected error');
+  });
+
+  it('should_replace_the_reason_argument_with_its_translation', () => {
+    const t = (key: string, args?: Record<string, unknown>) =>
+      key === 'errors.instance.reason.INVALID.cannot_be_empty'
+        ? `empty:${String(args?.field)}`
+        : `${key}|${JSON.stringify(args)}`;
+    const error = {
+      type: 'instance',
+      payload: {
+        code: 'INVALID',
+        payload: {
+          reason: { code: 'cannot_be_empty', payload: { field: 'name' } },
+        },
+      },
+    } as unknown as LauncherError;
+
+    expect(getTranslatedError(error, t as never)).toBe(
+      'errors.instance.INVALID|{"reason":"empty:name"}',
+    );
+  });
+});
+
+describe('getErrorDetails', () => {
+  it('should_return_the_raw_text_of_an_unknown_cause', () => {
+    expect(getErrorDetails(io({ type: 'unknown', details: 'raw' }))).toBe(
+      'raw',
+    );
+  });
+
+  it('should_find_the_raw_text_in_a_nested_error', () => {
+    const nested = {
+      type: 'instance',
+      payload: {
+        code: 'FAILED',
+        payload: { error: io({ type: 'unknown', details: 'deep' }) },
+      },
+    };
+
+    expect(getErrorDetails(nested)).toBe('deep');
+  });
+
+  it('should_return_nothing_for_a_categorized_cause_or_a_foreign_value', () => {
+    expect(
+      getErrorDetails(io({ type: 'io', kind: 'notFound' })),
+    ).toBeUndefined();
+    expect(getErrorDetails(new Error('x'))).toBeUndefined();
+  });
+});
+
+describe('error dictionaries', () => {
+  it.each(dictionaries)(
+    'no errors.* text in %s inserts raw backend text',
+    (_lang, dictionary) => {
+      const offenders = Object.entries(i18n.flatten(dictionary.errors as never))
+        .filter(([, text]) =>
+          /\{\{(details|message|error)\}\}/.test(String(text)),
+        )
+        .map(([key]) => `errors.${key}`);
+
+      expect(offenders).toEqual(PENDING_RAW_TEXT_KEYS);
+    },
+  );
 });
 
 describe('plugin state reason translations', () => {
