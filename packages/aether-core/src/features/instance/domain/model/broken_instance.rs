@@ -1,5 +1,7 @@
 use std::path::PathBuf;
 
+use crate::shared::error::SharedSource;
+
 /// Where a broken instance was found.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BrokenInstanceOrigin {
@@ -8,6 +10,20 @@ pub enum BrokenInstanceOrigin {
     /// A folder with a legacy `instance.json` that is not in the table.
     LegacyFile,
 }
+
+/// The error that made a file unreadable. Two are equal when they say the same, which is what
+/// a comparison of reasons wants to know.
+#[derive(Debug, Clone, thiserror::Error)]
+#[error(transparent)]
+pub struct ReadFailure(pub SharedSource);
+
+impl PartialEq for ReadFailure {
+    fn eq(&self, other: &Self) -> bool {
+        self.0.to_string() == other.0.to_string()
+    }
+}
+
+impl Eq for ReadFailure {}
 
 /// Why an instance cannot be read.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
@@ -30,8 +46,11 @@ pub enum BrokenInstanceReason {
     InvalidColumn { column: String },
 
     /// The file of a legacy instance cannot be read or parsed.
-    #[error("unreadable instance file: {details}")]
-    UnreadableFile { details: String },
+    #[error("unreadable instance file")]
+    UnreadableFile {
+        #[source]
+        source: ReadFailure,
+    },
 
     /// A legacy instance file in a folder of another name: whose instance it is, is not clear,
     /// and the launcher does not take it in.

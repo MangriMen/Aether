@@ -6,11 +6,11 @@ use crate::{
     features::{
         instance::{
             BrokenInstance, BrokenInstanceOrigin, BrokenInstanceReason, Instance, InstanceError,
-            InstanceId, folder_key, infra::fs::instance::InstanceV2,
+            InstanceId, ReadFailure, folder_key, infra::fs::instance::InstanceV2,
         },
         settings::LocationInfo,
     },
-    shared::io::infra::read_json_async,
+    shared::{error::shared_source, io::infra::read_json_async},
 };
 
 /// Finds the legacy `instance.json` files that did not make it into the database.
@@ -64,7 +64,7 @@ impl LegacyInstanceScanner {
                 Ok(_) => BrokenInstanceReason::NotMigrated,
                 Err(reason) => reason,
             };
-            debug!("Instance {id} has a legacy file the launcher does not use: {reason}");
+            debug!("Instance {id} has a legacy file the launcher does not use: {reason:?}");
             found.push(BrokenInstance {
                 dir: Some(self.location_info.instance_dir(&id)),
                 id: id.to_string(),
@@ -89,7 +89,7 @@ impl LegacyInstanceScanner {
                 BrokenInstanceReason::InvalidGameVersion { value }
             }
             other => BrokenInstanceReason::UnreadableFile {
-                details: other.to_string(),
+                source: ReadFailure(shared_source(other)),
             },
         })
     }

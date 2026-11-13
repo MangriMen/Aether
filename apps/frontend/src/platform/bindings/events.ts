@@ -60,7 +60,7 @@ export type BrokenInstanceReasonDto = { code: "INVALID_ID" } | { code: "INVALID_
 } } | { code: "INVALID_COLUMN"; payload: {
 	column: string,
 } } | { code: "UNREADABLE_FILE"; payload: {
-	details: string,
+	cause: CauseDto,
 } } | { code: "LEGACY_ID_MISMATCH"; payload: {
 	file_id: string,
 } } | { code: "NOT_MIGRATED" };
