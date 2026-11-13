@@ -46,7 +46,8 @@ pub enum FrontendError {
 
 impl From<crate::Error> for FrontendError {
     fn from(value: crate::Error) -> Self {
-        match value {
+        let cause = aether_core::core::domain::error_chain(&value);
+        let dto = match value {
             crate::Error::AppSettingsError(err) => Self::AppSettings(err.into()),
             crate::Error::WindowError(err) => Self::Window(err.into()),
             // Raised while the app starts, before any command can carry it to the UI.
@@ -56,14 +57,38 @@ impl From<crate::Error> for FrontendError {
                 details: err.to_string(),
             }),
             crate::Error::IdempotencyManager(err) => Self::Application((&err).into()),
-            crate::Error::Core(core_err) => Self::from(core_err.raw.as_ref()),
-        }
+            // Logged by the conversion below.
+            crate::Error::Core(core_err) => return Self::from(core_err),
+        };
+        dto.log(&cause);
+        dto
     }
 }
 
 impl From<aether_core::Error> for FrontendError {
     fn from(value: aether_core::Error) -> Self {
-        Self::from(value.raw.as_ref())
+        let dto = Self::from(value.raw.as_ref());
+        dto.log(&value.raw.display_chain());
+        dto
+    }
+}
+
+impl FrontendError {
+    fn is_expected(&self) -> bool {
+        matches!(
+            self,
+            Self::Instance(InstanceErrorDto::Cancelled)
+                | Self::Java(JavaErrorDto::Cancelled)
+                | Self::Application(ApplicationErrorDto::DuplicateRequest)
+        )
+    }
+
+    fn log(&self, cause: &str) {
+        if self.is_expected() {
+            tracing::debug!(error = %cause, dto = ?self, "Command refused");
+        } else {
+            tracing::warn!(error = %cause, dto = ?self, "Command failed");
+        }
     }
 }
 
@@ -83,5 +108,26 @@ impl From<&aether_core::ErrorKind> for FrontendError {
             aether_core::ErrorKind::RequestError(err) => Self::Request(err.into()),
             aether_core::ErrorKind::CoreError(err) => Self::Generic(err.to_owned()),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn should_be_expected_when_command_was_cancelled() {
+        assert!(FrontendError::Instance(InstanceErrorDto::Cancelled).is_expected());
+        assert!(FrontendError::Java(JavaErrorDto::Cancelled).is_expected());
+    }
+
+    #[test]
+    fn should_be_expected_when_request_is_duplicate() {
+        assert!(FrontendError::Application(ApplicationErrorDto::DuplicateRequest).is_expected());
+    }
+
+    #[test]
+    fn should_not_be_expected_when_error_is_generic() {
+        assert!(!FrontendError::Generic("x".to_owned()).is_expected());
     }
 }

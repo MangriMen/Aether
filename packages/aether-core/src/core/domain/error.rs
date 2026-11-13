@@ -82,6 +82,34 @@ impl ErrorKind {
     pub fn as_error(self) -> Error {
         self.into()
     }
+
+    /// Full cause chain for logs; starts at the kind, since `Error` repeats its text via the span trace.
+    pub fn display_chain(&self) -> String {
+        error_chain(self)
+    }
+}
+
+const MAX_CHAIN_LEN: usize = 4096;
+
+/// Joins an error and its `source()` chain with ": ", skipping links already at the end of the text.
+pub fn error_chain(err: &(dyn std::error::Error + 'static)) -> String {
+    let mut out = String::new();
+    let mut current = Some(err);
+    while let Some(e) = current {
+        let text = e.to_string();
+        // thiserror `{0}` and transparent wrappers repeat the inner message.
+        if !out.ends_with(&text) {
+            if !out.is_empty() {
+                out.push_str(": ");
+            }
+            out.push_str(&text);
+        }
+        current = e.source();
+    }
+    if let Some((idx, _)) = out.char_indices().nth(MAX_CHAIN_LEN) {
+        out.truncate(idx);
+    }
+    out
 }
 
 pub type Result<T> = core::result::Result<T, Error>;
@@ -89,5 +117,35 @@ pub type Result<T> = core::result::Result<T, Error>;
 impl From<plugins::PluginProviderError> for ErrorKind {
     fn from(value: plugins::PluginProviderError) -> Self {
         Self::PluginError(value.into())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[derive(thiserror::Error, Debug)]
+    #[error("{0}")]
+    struct Wrapper(#[source] Inner);
+
+    #[derive(thiserror::Error, Debug)]
+    #[error("disk full")]
+    struct Inner;
+
+    #[test]
+    fn should_not_repeat_link_when_source_has_same_text() {
+        assert_eq!(error_chain(&Wrapper(Inner)), "disk full");
+    }
+
+    #[test]
+    fn should_join_links_when_texts_differ() {
+        let kind = ErrorKind::CoreError("boom".to_owned());
+        assert_eq!(kind.display_chain(), "Core error: boom");
+    }
+
+    #[test]
+    fn should_truncate_to_limit_when_chain_is_too_long() {
+        let kind = ErrorKind::CoreError("я".repeat(10_000));
+        assert_eq!(kind.display_chain().chars().count(), MAX_CHAIN_LEN);
     }
 }
