@@ -224,6 +224,14 @@ export const getTranslatedLoadFailure = (
   return causeText ? `${main}: ${causeText}` : main;
 };
 
+/** The raw text of a cause nobody could categorize; the only kind of cause that carries any. */
+const getUnknownDetails = (cause: unknown): string | undefined =>
+  isRecord(cause) &&
+  cause.type === 'unknown' &&
+  typeof cause.details === 'string'
+    ? cause.details
+    : undefined;
+
 /** The raw text of an unknown cause held by a reason (`{ code, payload: { cause } }`). Only `ErrorDetails` may show it. */
 export const getReasonDetails = (reason: unknown): string | undefined => {
   const cause =
@@ -231,11 +239,7 @@ export const getReasonDetails = (reason: unknown): string | undefined => {
       ? reason.payload.cause
       : undefined;
 
-  return isRecord(cause) &&
-    cause.type === 'unknown' &&
-    typeof cause.details === 'string'
-    ? cause.details
-    : undefined;
+  return getUnknownDetails(cause);
 };
 
 export const getTranslatedError = (
@@ -280,7 +284,7 @@ export const getErrorDetails = (error: unknown): string | undefined => {
   const cause = getCauseOf(inner);
 
   if (isRecord(cause) && cause.type === 'unknown') {
-    return typeof cause.details === 'string' ? cause.details : undefined;
+    return getUnknownDetails(cause);
   }
 
   return getErrorDetails(inner.error);
