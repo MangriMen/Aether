@@ -107,7 +107,10 @@ const getNetworkCauseText = (
 };
 
 /** The translation of the category of a failure, or undefined when it has none to name. */
-const getCauseText = (cause: unknown, t: TFunction): string | undefined => {
+export const getCauseText = (
+  cause: unknown,
+  t: TFunction,
+): string | undefined => {
   if (!isRecord(cause)) {
     return undefined;
   }

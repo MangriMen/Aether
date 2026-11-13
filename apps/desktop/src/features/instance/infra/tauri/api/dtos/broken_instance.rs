@@ -4,6 +4,8 @@ use aether_core::features::instance::{BrokenInstance, BrokenInstanceOrigin, Brok
 use serde::Serialize;
 use specta::Type;
 
+use crate::core::CauseDto;
+
 #[derive(Serialize, Clone, Copy, Debug, Eq, PartialEq, Type)]
 #[serde(rename_all = "snake_case")]
 pub enum BrokenInstanceOriginDto {
@@ -14,7 +16,7 @@ pub enum BrokenInstanceOriginDto {
 }
 
 /// Why an instance cannot be read; the code picks the translation.
-#[derive(Serialize, Clone, Debug, Eq, PartialEq, Type)]
+#[derive(Serialize, Clone, Debug, Type)]
 #[serde(tag = "code", content = "payload", rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum BrokenInstanceReasonDto {
     InvalidId,
@@ -22,13 +24,13 @@ pub enum BrokenInstanceReasonDto {
     InvalidLoader { value: String },
     InvalidInstallStage { value: String },
     InvalidColumn { column: String },
-    UnreadableFile { details: String },
+    UnreadableFile { cause: CauseDto },
     LegacyIdMismatch { file_id: String },
     NotMigrated,
 }
 
 /// An instance the launcher stores but cannot read.
-#[derive(Serialize, Clone, Debug, Eq, PartialEq, Type)]
+#[derive(Serialize, Clone, Debug, Type)]
 #[serde(rename_all = "camelCase")]
 pub struct BrokenInstanceDto {
     /// The id as stored; not necessarily one that names a folder.
@@ -71,7 +73,9 @@ impl From<BrokenInstanceReason> for BrokenInstanceReasonDto {
                 Self::InvalidInstallStage { value }
             }
             BrokenInstanceReason::InvalidColumn { column } => Self::InvalidColumn { column },
-            BrokenInstanceReason::UnreadableFile { details } => Self::UnreadableFile { details },
+            BrokenInstanceReason::UnreadableFile { source } => Self::UnreadableFile {
+                cause: CauseDto::of_source(source.0.as_ref()),
+            },
             BrokenInstanceReason::LegacyIdMismatch { file_id } => {
                 Self::LegacyIdMismatch { file_id }
             }

@@ -24,3 +24,31 @@ describe('getBrokenReasonText', () => {
     );
   });
 });
+
+describe('getBrokenReasonText with a cause', () => {
+  it('should_name_the_category_of_the_cause_when_the_file_is_unreadable', () => {
+    expect(
+      getBrokenReasonText(
+        {
+          code: 'UNREADABLE_FILE',
+          payload: { cause: { type: 'io', kind: 'notFound' } },
+        },
+        t,
+      ),
+    ).toBe(
+      'instance.broken.reasons.UNREADABLE_FILE undefined: errors.cause.io.notFound undefined',
+    );
+  });
+
+  it('should_name_no_cause_when_it_is_unknown', () => {
+    expect(
+      getBrokenReasonText(
+        {
+          code: 'UNREADABLE_FILE',
+          payload: { cause: { type: 'unknown', details: 'raw' } },
+        },
+        t,
+      ),
+    ).toBe('instance.broken.reasons.UNREADABLE_FILE undefined');
+  });
+});

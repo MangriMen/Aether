@@ -22,9 +22,9 @@ pub use domain::{
     NewInstance, OptionalFile, OverrideLocation, OverrideSource, Pack, PackEntry, PackFile,
     PackFileDownload, PackFileOption, PackInfo, PackMetadata, PackSource, PageIndex, PageSize,
     PaginationField, PaginationRejection, PlanOrigin, PlatformId, PluginId, ProviderId,
-    ProviderIdError, ReleaseChannel, RequestedContentVersionStatus, ResolveInstallPlanParams,
-    ResolveTarget, ResolvedFile, StorageError, UpdaterCapabilityMetadata, folder_key, is_valid_id,
-    parse_file_hash, select_version,
+    ProviderIdError, ReadFailure, ReleaseChannel, RequestedContentVersionStatus,
+    ResolveInstallPlanParams, ResolveTarget, ResolvedFile, StorageError, UpdaterCapabilityMetadata,
+    folder_key, is_valid_id, parse_file_hash, select_version,
 };
 
 // ── App layer: Use Cases (Inbound Ports) ──

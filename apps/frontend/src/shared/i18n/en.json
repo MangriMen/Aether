@@ -632,7 +632,7 @@
         "INVALID_LOADER": "Unknown mod loader \"{{value}}\"",
         "INVALID_INSTALL_STAGE": "Unknown install stage \"{{value}}\"",
         "INVALID_COLUMN": "The stored value \"{{column}}\" cannot be read",
-        "UNREADABLE_FILE": "Its file cannot be read: {{details}}",
+        "UNREADABLE_FILE": "Its file cannot be read",
         "LEGACY_ID_MISMATCH": "Its file belongs to the instance \"{{file_id}}\"",
         "NOT_MIGRATED": "The launcher does not use its old file: the instance was not moved into the launcher database"
       },
