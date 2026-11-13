@@ -794,13 +794,18 @@
     "prefersReducedMotionInfo": "В системе отключены анимации – вы можете включить их в приложении, но это может повлиять на плавность интерфейса и заряд батареи",
     "releaseDate": "Дата выпуска",
     "systemColorMode": "Системная цветовая схема",
-    "systemColorModeDescription": "Автоматически адаптируется к цветовому режиму вашей системы.\nЭта опция применяется только в том случае, если цветовая тема установлена ​​на \"System\"",
+    "systemColorModeDescription": "Автоматически адаптируется к цветовому режиму вашей системы.\nЭта опция применяется только в том случае, если цветовая тема установлена на \"Системная\"",
     "themeBackgroundOpacity": "Непрозрачность фона",
     "title": "Настройки",
     "toggleWindowTransparency": "Включить прозрачность окна",
     "toggleWindowTransparencyDescription": "Перезапустите приложение для применения прозрачности",
     "windowEffect": "Эффект окна",
     "windowEffectDisabled": "Невозможно включить эффекты окна без прозрачности окна",
+    "themes": {
+      "light": "Светлая",
+      "dark": "Тёмная",
+      "system": "Системная"
+    },
     "windowEffectVariant": {
       "acrylic": "Acrylic",
       "mica": "Mica",
@@ -862,7 +867,7 @@
     "fetchError": "Не удалось проверить обновления",
     "changelogCopiedToClipboard": "Список изменений скопирован в буфер обмена!",
     "changelogIsTooLong": "Список изменений слишком длинный",
-    "changelogIsTooLongDescription": "Отправлена ​​только первая часть. Вы можете скопировать полный текст и перевести его вручную",
+    "changelogIsTooLongDescription": "Отправлена только первая часть. Вы можете скопировать полный текст и перевести его вручную",
     "failedToOpenBrowserWithChangelogDescription": "Пожалуйста, скопируйте текст, чтобы перевести его вручную",
     "translateChangelogInBrowser": "Перевести журнал изменений в браузере",
     "failedToCopyChangelogToClipboard": "Не удалось скопировать журнал изменений в буфер обмена",
