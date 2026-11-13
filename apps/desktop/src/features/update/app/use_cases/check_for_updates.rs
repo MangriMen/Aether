@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::features::update::{UpdateService, UpdateStatus};
+use crate::features::update::{UpdateError, UpdateService, UpdateStatus};
 
 pub struct CheckForUpdatesUseCase<US: UpdateService> {
     update_service: Arc<US>,
@@ -11,7 +11,7 @@ impl<US: UpdateService> CheckForUpdatesUseCase<US> {
         Self { update_service }
     }
 
-    pub async fn execute(&self) -> Result<Option<UpdateStatus>, String> {
+    pub async fn execute(&self) -> Result<Option<UpdateStatus>, UpdateError> {
         self.update_service.check().await
     }
 }
@@ -22,16 +22,16 @@ mod tests {
     use async_trait::async_trait;
 
     struct MockUpdateService {
-        check_result: Result<Option<UpdateStatus>, String>,
+        check_result: Result<Option<UpdateStatus>, UpdateError>,
     }
 
     #[async_trait]
     impl UpdateService for MockUpdateService {
-        async fn check(&self) -> Result<Option<UpdateStatus>, String> {
+        async fn check(&self) -> Result<Option<UpdateStatus>, UpdateError> {
             self.check_result.clone()
         }
 
-        async fn install(&self) -> Result<(), String> {
+        async fn install(&self) -> Result<(), UpdateError> {
             Ok(())
         }
     }
@@ -64,11 +64,12 @@ mod tests {
     #[tokio::test]
     async fn check_returns_error() {
         let service = Arc::new(MockUpdateService {
-            check_result: Err("network error".to_string()),
+            check_result: Err(UpdateError::Network(std::sync::Arc::new(
+                std::io::Error::from(std::io::ErrorKind::TimedOut),
+            ))),
         });
         let use_case = CheckForUpdatesUseCase::new(service);
         let result = use_case.execute().await;
-        assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), "network error");
+        assert!(matches!(result, Err(UpdateError::Network(_))));
     }
 }

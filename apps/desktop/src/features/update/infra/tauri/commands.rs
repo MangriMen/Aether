@@ -28,10 +28,11 @@ pub fn get_specta_commands<R: tauri::Runtime>() -> tauri_specta::Commands<R> {
 #[specta::specta]
 pub async fn check_for_updates(
     update_service: State<'_, UpdateServiceState<tauri::Wry>>,
-) -> FrontendResult<Option<UpdateStatusDto>, String> {
+) -> FrontendResult<Option<UpdateStatusDto>> {
     Ok(CheckForUpdatesUseCase::new(update_service.inner().clone())
         .execute()
-        .await?
+        .await
+        .map_err(crate::Error::from)?
         .map(Into::into))
 }
 
@@ -41,12 +42,11 @@ pub async fn install_update(
     update_service: State<'_, UpdateServiceState<tauri::Wry>>,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
-) -> FrontendResult<(), String> {
-    let _guard = idempotency
-        .lock_cmd(request_id)
-        .map_err(|e| e.to_string())?;
+) -> FrontendResult<()> {
+    let _guard = idempotency.lock_cmd(request_id)?;
 
-    InstallUpdateUseCase::new(update_service.inner().clone())
+    Ok(InstallUpdateUseCase::new(update_service.inner().clone())
         .execute()
         .await
+        .map_err(crate::Error::from)?)
 }

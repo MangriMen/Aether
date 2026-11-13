@@ -261,7 +261,7 @@ export type FolderAccessDto =
 /**  The folder was added read-only and the plugin restarted with it. */
 { type: "granted"; folder: string };
 
-export type FrontendError = { type: "appSettings"; payload: AppSettingsErrorDto } | { type: "window"; payload: WindowErrorDto } | { type: "application"; payload: ApplicationErrorDto } | { type: "auth"; payload: AuthErrorDto } | { type: "event"; payload: EventErrorDto } | { type: "fileWatcher"; payload: FileWatcherErrorDto } | { type: "gameLog"; payload: GameLogErrorDto } | { type: "instance"; payload: InstanceErrorDto } | { type: "java"; payload: JavaErrorDto } | { type: "minecraft"; payload: MinecraftErrorDto } | { type: "plugin"; payload: PluginErrorDto } | { type: "process"; payload: ProcessErrorDto } | { type: "request"; payload: RequestErrorDto } | { type: "settings"; payload: SettingsErrorDto };
+export type FrontendError = { type: "appSettings"; payload: AppSettingsErrorDto } | { type: "window"; payload: WindowErrorDto } | { type: "application"; payload: ApplicationErrorDto } | { type: "auth"; payload: AuthErrorDto } | { type: "event"; payload: EventErrorDto } | { type: "fileWatcher"; payload: FileWatcherErrorDto } | { type: "gameLog"; payload: GameLogErrorDto } | { type: "instance"; payload: InstanceErrorDto } | { type: "java"; payload: JavaErrorDto } | { type: "minecraft"; payload: MinecraftErrorDto } | { type: "plugin"; payload: PluginErrorDto } | { type: "process"; payload: ProcessErrorDto } | { type: "request"; payload: RequestErrorDto } | { type: "settings"; payload: SettingsErrorDto } | { type: "update"; payload: UpdateErrorDto };
 
 export type GameLogErrorDto = { code: "INVALID_SOURCE"; payload: {
 	source_id: string,
@@ -897,6 +897,17 @@ export type SkippedPluginDirDto = {
 /**  Translated by its `code`; the payload fills in the message. */
 export type SkippedPluginDirReasonDto = { code: "INVALID_NAME" } | { code: "LOAD_FAILED"; payload: {
 	error: FrontendError,
+} };
+
+/**  Why the launcher could not be updated. */
+export type UpdateErrorDto = { code: "NO_PENDING_UPDATE" } | { code: "NETWORK"; payload: {
+	cause: CauseDto,
+} } | { code: "SIGNATURE"; payload: {
+	cause: CauseDto,
+} } | { code: "INSTALL"; payload: {
+	cause: CauseDto,
+} } | { code: "OTHER"; payload: {
+	cause: CauseDto,
 } };
 
 export type UpdaterCapabilityMetadataDto = CapabilityMetadataDto;

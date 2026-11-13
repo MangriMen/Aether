@@ -386,6 +386,13 @@
       "INVALID_MAX_CONCURRENT_DOWNLOADS": "The number of concurrent downloads must be at least 1",
       "INVALID_MEMORY": "The memory amount must be at least 1 MB"
     },
+    "update": {
+      "NO_PENDING_UPDATE": "No update to install. Check for updates again",
+      "NETWORK": "Could not download the update",
+      "SIGNATURE": "The update signature is invalid; it was not installed",
+      "INSTALL": "Could not install the update",
+      "OTHER": "Could not check for updates"
+    },
     "window": {
       "ALREADY_EXISTS": "Window with label {{label}} already exists",
       "NOT_FOUND": "Window not found {{label}}",

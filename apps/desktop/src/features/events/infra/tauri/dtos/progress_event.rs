@@ -8,7 +8,7 @@ use specta::Type;
 use tauri_specta::Event;
 use uuid::Uuid;
 
-use crate::core::{ApplicationErrorDto, CauseDto, FrontendError};
+use crate::core::FrontendError;
 use crate::features::update::{UpdatePhase, UpdateProgress};
 
 #[derive(Debug, Clone, Serialize, Type, Event)]
@@ -267,14 +267,12 @@ const UPDATE_PROGRESS_BAR_UUID: Uuid = Uuid::from_u128(0x1d1d98b5_eb55_4815_9349
 
 impl From<UpdateProgress> for ProgressEventDto {
     fn from(value: UpdateProgress) -> Self {
+        let phase = (&value.phase).into();
         let status = match value.phase {
             UpdatePhase::Started | UpdatePhase::Progress => ProgressStatusDto::Running,
             UpdatePhase::Finished => ProgressStatusDto::Done,
-            // The updater reports no typed error yet: the failure has no category.
-            UpdatePhase::Error => ProgressStatusDto::Failed {
-                error: FrontendError::Application(ApplicationErrorDto::Internal {
-                    cause: CauseDto::unknown("Launcher update failed"),
-                }),
+            UpdatePhase::Error(error) => ProgressStatusDto::Failed {
+                error: FrontendError::Update(error.into()),
             },
         };
         Self {
@@ -282,7 +280,7 @@ impl From<UpdateProgress> for ProgressEventDto {
             event: ProgressEventTypeDto::LauncherUpdate {
                 version: value.version,
                 current_version: value.current_version,
-                phase: value.phase.into(),
+                phase,
             },
             progress_bar_id: UPDATE_PROGRESS_BAR_UUID,
             fraction: value.fraction,
@@ -299,13 +297,13 @@ impl From<UpdateProgress> for ProgressEventDto {
     }
 }
 
-impl From<UpdatePhase> for LauncherUpdatePhaseDto {
-    fn from(value: UpdatePhase) -> Self {
+impl From<&UpdatePhase> for LauncherUpdatePhaseDto {
+    fn from(value: &UpdatePhase) -> Self {
         match value {
             UpdatePhase::Started => Self::Started,
             UpdatePhase::Progress => Self::Progress,
             UpdatePhase::Finished => Self::Finished,
-            UpdatePhase::Error => Self::Error,
+            UpdatePhase::Error(_) => Self::Error,
         }
     }
 }
@@ -334,17 +332,17 @@ mod tests {
     }
 
     #[test]
-    fn should_serialize_a_failed_launcher_update_as_an_internal_error() {
+    fn should_serialize_a_failed_launcher_update_with_its_update_error() {
         let dto = ProgressEventDto::from(UpdateProgress {
             fraction: None,
-            phase: UpdatePhase::Error,
+            phase: UpdatePhase::Error(crate::features::update::UpdateError::NoPendingUpdate),
             version: "2.0.0".to_owned(),
             current_version: "1.0.0".to_owned(),
         });
 
         assert_eq!(
-            serde_json::to_value(dto.status).unwrap()["error"]["payload"]["code"],
-            "INTERNAL"
+            serde_json::to_value(dto.status).unwrap(),
+            json!({"type": "failed", "error": {"type": "update", "payload": {"code": "NO_PENDING_UPDATE"}}})
         );
     }
 }

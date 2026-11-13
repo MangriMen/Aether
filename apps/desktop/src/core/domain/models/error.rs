@@ -1,5 +1,6 @@
 use crate::{
-    core::WindowError, features::settings::AppSettingsError, shared::IdempotencyManagerError,
+    core::WindowError, features::settings::AppSettingsError, features::update::UpdateError,
+    shared::IdempotencyManagerError,
 };
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -21,6 +22,9 @@ pub enum Error {
 
     #[error(transparent)]
     IdempotencyManager(#[from] IdempotencyManagerError),
+
+    #[error(transparent)]
+    Update(#[from] UpdateError),
 
     #[error(transparent)]
     Core(#[from] aether_core::Error),
