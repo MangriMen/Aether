@@ -10,7 +10,12 @@ import { createEffect, createMemo, createSignal } from 'solid-js';
 import type { ThemeConfig } from '@/features/appearance';
 import type { Option } from '@/shared/ui-kit';
 
-import { THEME_BY_MODE, useThemeContext } from '@/features/appearance';
+import {
+  getThemeLabel,
+  THEME_BY_MODE,
+  useThemeContext,
+} from '@/features/appearance';
+import { useTranslation } from '@/shared/i18n';
 import {
   Select,
   SelectContent,
@@ -24,24 +29,19 @@ type SelectThemeByColorModeProps<T extends ValidComponent = 'div'> =
     colorMode: ColorMode;
   };
 
-const THEME_BY_MODE_OPTIONS = Object.fromEntries(
-  Object.entries(THEME_BY_MODE).map(([colorMode, themes]) => [
-    colorMode as ColorMode,
-    themes.map((theme) => ({
-      name: theme.name,
-      value: theme.value,
-    })),
-  ]),
-);
-
 const SelectThemeByColorMode: Component<SelectThemeByColorModeProps> = (
   props,
 ) => {
   const [themeContext, { setThemeByColorMode: setThemeForColorMode }] =
     useThemeContext();
 
-  const options = createMemo(
-    () => THEME_BY_MODE_OPTIONS[props.colorMode] ?? [],
+  const [{ t }] = useTranslation();
+
+  const options = createMemo<Option<ThemeConfig>[]>(() =>
+    (THEME_BY_MODE[props.colorMode] ?? []).map((theme) => ({
+      name: getThemeLabel(theme, t),
+      value: theme.value,
+    })),
   );
 
   const [currentTheme, setCurrentTheme] = createSignal<ThemeConfig>('light');

@@ -5,7 +5,8 @@ import { createEffect, createMemo, createSignal, Show } from 'solid-js';
 import type { ThemeConfig } from '@/features/appearance';
 import type { SelectRootProps, Option } from '@/shared/ui-kit';
 
-import { THEMES, useThemeContext } from '@/features/appearance';
+import { getThemeLabel, THEMES, useThemeContext } from '@/features/appearance';
+import { useTranslation } from '@/shared/i18n';
 import { useSettingsEntryLabel } from '@/shared/settings-layout';
 import {
   Select,
@@ -16,14 +17,6 @@ import {
   Separator,
 } from '@/shared/ui-kit';
 
-const THEME_OPTIONS: Option<ThemeConfig>[] = [
-  ...THEMES.map((theme) => ({
-    name: theme.name,
-    value: theme.value,
-  })),
-  { name: 'System', value: 'system' },
-];
-
 export type SelectThemeProps = Pick<
   SelectRootProps<Option<ThemeConfig>, never>,
   'name' | 'id'
@@ -32,7 +25,16 @@ export type SelectThemeProps = Pick<
 export const SelectTheme: Component<
   Omit<ComponentProps<'div'>, 'onChange'> & SelectThemeProps
 > = (props) => {
+  const [{ t }] = useTranslation();
   const [themeContext, { setTheme }] = useThemeContext();
+
+  const themeOptions = createMemo<Option<ThemeConfig>[]>(() => [
+    ...THEMES.map((theme) => ({
+      name: getThemeLabel(theme, t),
+      value: theme.value,
+    })),
+    { name: t('settings.themes.system') ?? 'system', value: 'system' },
+  ]);
 
   const [currentTheme, setCurrentTheme] = createSignal<ThemeConfig>(
     themeContext.rawTheme,
@@ -42,7 +44,7 @@ export const SelectTheme: Component<
   });
 
   const currentOption = createMemo(() =>
-    THEME_OPTIONS.find((option) => option.value === currentTheme()),
+    themeOptions().find((option) => option.value === currentTheme()),
   );
 
   const handleChangeTheme = (theme: Option<ThemeConfig> | null) => {
@@ -56,7 +58,7 @@ export const SelectTheme: Component<
   return (
     <Select
       class='w-32'
-      options={THEME_OPTIONS}
+      options={themeOptions()}
       optionValue='name'
       optionTextValue='name'
       defaultValue={currentOption()}

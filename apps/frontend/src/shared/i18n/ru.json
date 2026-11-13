@@ -451,7 +451,12 @@
     "fullscreen": "На весь экран",
     "exitFullscreen": "Выйти из полноэкранного режима",
     "moreActions": "Ещё действия",
-    "swapVersion": "Переключиться на эту версию"
+    "swapVersion": "Переключиться на эту версию",
+    "minimize": "Свернуть",
+    "maximize": "Развернуть",
+    "edit": "Изменить",
+    "imageFilter": "Изображение",
+    "allFiles": "Все файлы"
   },
   "content": {
     "backToInstance": "Вернуться к инстансу",
@@ -483,7 +488,11 @@
       "description": "Описание",
       "versions": "Версии"
     },
-    "alreadyInstalled": "Этот контент уже установлен"
+    "alreadyInstalled": "Этот контент уже установлен",
+    "modpackInstallDisabled": "Установка сборок отключена",
+    "providersError": "Не удалось загрузить источники контента",
+    "noProviders": "Нет ни одного источника контента",
+    "openPluginSettings": "Открыть настройки плагинов"
   },
   "generalSettingsError": {
     "name": {
@@ -550,7 +559,8 @@
       "preparing": "Подготовка",
       "verifying": "Проверка"
     },
-    "launcherUpdating": "Обновление лаунчера до {{version}}"
+    "launcherUpdating": "Обновление лаунчера до {{version}}",
+    "pluginDownload": "[Плагин] {{name}}"
   },
   "home": {
     "instances": "Инстансы",
@@ -744,7 +754,9 @@
     "update": "Обновить",
     "checkUpdates": "Проверить обновления",
     "upToDate": "Обновлений нет",
-    "updateCheckError": "Не удалось проверить обновления"
+    "updateCheckError": "Не удалось проверить обновления",
+    "importTitle": "Импорт плагина",
+    "packageFilter": "Пакет плагина"
   },
   "progress": {
     "seeDetails": "Показать детали",
@@ -794,13 +806,18 @@
     "prefersReducedMotionInfo": "В системе отключены анимации – вы можете включить их в приложении, но это может повлиять на плавность интерфейса и заряд батареи",
     "releaseDate": "Дата выпуска",
     "systemColorMode": "Системная цветовая схема",
-    "systemColorModeDescription": "Автоматически адаптируется к цветовому режиму вашей системы.\nЭта опция применяется только в том случае, если цветовая тема установлена ​​на \"System\"",
+    "systemColorModeDescription": "Автоматически адаптируется к цветовому режиму вашей системы.\nЭта опция применяется только в том случае, если цветовая тема установлена на \"Системная\"",
     "themeBackgroundOpacity": "Непрозрачность фона",
     "title": "Настройки",
     "toggleWindowTransparency": "Включить прозрачность окна",
     "toggleWindowTransparencyDescription": "Перезапустите приложение для применения прозрачности",
     "windowEffect": "Эффект окна",
     "windowEffectDisabled": "Невозможно включить эффекты окна без прозрачности окна",
+    "themes": {
+      "light": "Светлая",
+      "dark": "Тёмная",
+      "system": "Системная"
+    },
     "windowEffectVariant": {
       "acrylic": "Acrylic",
       "mica": "Mica",
@@ -862,7 +879,7 @@
     "fetchError": "Не удалось проверить обновления",
     "changelogCopiedToClipboard": "Список изменений скопирован в буфер обмена!",
     "changelogIsTooLong": "Список изменений слишком длинный",
-    "changelogIsTooLongDescription": "Отправлена ​​только первая часть. Вы можете скопировать полный текст и перевести его вручную",
+    "changelogIsTooLongDescription": "Отправлена только первая часть. Вы можете скопировать полный текст и перевести его вручную",
     "failedToOpenBrowserWithChangelogDescription": "Пожалуйста, скопируйте текст, чтобы перевести его вручную",
     "translateChangelogInBrowser": "Перевести журнал изменений в браузере",
     "failedToCopyChangelogToClipboard": "Не удалось скопировать журнал изменений в буфер обмена",
@@ -947,7 +964,8 @@
   "pagination": {
     "morePages": "Больше страниц",
     "next": "Следующая",
-    "previous": "Предыдущая"
+    "previous": "Предыдущая",
+    "label": "Пагинация контента"
   },
   "contentVersion": {
     "downloads": "Загрузки",
@@ -1004,7 +1022,10 @@
     "actionsLabel": "Действия для Java {{majorVersion}}",
     "versionWithNumber": "Java {{majorVersion}}",
     "installing": "Устанавливается",
-    "emptyPath": "Путь не указан"
+    "emptyPath": "Путь не указан",
+    "browseTitleWindows": "Выберите javaw.exe",
+    "browseTitle": "Выберите исполняемый файл Java",
+    "executableFilter": "Исполняемый файл Java"
   },
   "detectJava": {
     "dialogTitle": "Выберите установку Java {{majorVersion}}",
@@ -1017,5 +1038,13 @@
     "INSTANCE_ICON_NOT_IMPORTED": "Не удалось импортировать иконку, инстанс создан без неё",
     "INSTANCE_ICON_TOO_LARGE": "Иконка слишком большая (лимит {{limit}} байт), инстанс создан без неё",
     "INSTANCE_ICON_NOT_SUPPORTED": "Иконка не является изображением PNG, JPEG, GIF, WebP или SVG, инстанс создан без неё"
+  },
+  "appInit": {
+    "title": "Ошибка инициализации",
+    "description": "При запуске приложения возникла проблема.",
+    "hint": "Попробуйте перезапустить приложение. Если проблема не исчезнет, переустановите его или",
+    "hintEmphasis": "отправьте файлы журнала разработчику",
+    "copyError": "Копировать ошибку",
+    "copied": "Скопировано!"
   }
 }

@@ -3,6 +3,7 @@ import type { Component } from 'solid-js';
 import IconMdiClose from '~icons/mdi/close';
 import IconMdiPencil from '~icons/mdi/pencil';
 
+import { useTranslation } from '@/shared/i18n';
 import { CombinedTooltip, IconButton } from '@/shared/ui-kit';
 
 export type AllowedItemActionButtonsProps = {
@@ -13,10 +14,12 @@ export type AllowedItemActionButtonsProps = {
 export const AllowedItemActionButtons: Component<
   AllowedItemActionButtonsProps
 > = (props) => {
+  const [{ t }] = useTranslation();
+
   return (
     <>
       <CombinedTooltip
-        label='Edit'
+        label={t('common.edit')}
         as={IconButton}
         class='p-1 size-max'
         variant='ghost'
@@ -25,7 +28,7 @@ export const AllowedItemActionButtons: Component<
         onClick={props.onEdit}
       />
       <CombinedTooltip
-        label='Remove'
+        label={t('common.remove')}
         as={IconButton}
         class='p-1 size-max'
         variant='ghost'

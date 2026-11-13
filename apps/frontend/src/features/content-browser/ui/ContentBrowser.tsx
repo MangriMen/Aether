@@ -17,7 +17,6 @@ import {
   useSearchContent,
 } from '@/features/content';
 import { isModLoader } from '@/features/minecraft';
-import { logError } from '@/shared/log';
 import { cn, debounce } from '@/shared/utils';
 
 import type { ContentProviderEntry } from '../model/contentProviderMapper';
@@ -42,6 +41,7 @@ export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
   const [local, others] = splitProps(merged, [
     'providers',
     'isProvidersLoading',
+    'isProvidersError',
     'types',
     'class',
   ]);
@@ -69,14 +69,12 @@ export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
       const currentProvider = state.provider()?.value;
 
       if (!currentProvider) {
-        logError('No content provider selected');
         return;
       }
 
       const contentType = state.contentType();
 
       if (!contentType) {
-        logError('No content type selected');
         return;
       }
 
@@ -145,6 +143,10 @@ export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
       <ContentList
         isLoading={content.isFetching || local.isProvidersLoading}
         isError={content.isError}
+        isProvidersError={
+          local.isProvidersError && local.providers.length === 0
+        }
+        hasNoProviders={local.providers.length === 0}
         items={content.data?.items}
       />
     </div>

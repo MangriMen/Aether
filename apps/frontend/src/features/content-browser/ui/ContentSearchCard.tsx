@@ -8,6 +8,7 @@ import {
 } from 'solid-js';
 
 import { type ContentType } from '@/features/content';
+import { useTranslation } from '@/shared/i18n';
 import { CombinedPagination, Skeleton } from '@/shared/ui-kit';
 import { cn } from '@/shared/utils';
 
@@ -29,6 +30,7 @@ export type ContentFiltersProps = ComponentProps<'nav'> & {
 const DEFAULT_PAGINATION_COUNT_ARRAY = Array.from({ length: 6 });
 
 export const ContentSearchCard: Component<ContentFiltersProps> = (props) => {
+  const [{ t }] = useTranslation();
   const [local, others] = splitProps(props, [
     'page',
     'pageCount',
@@ -52,7 +54,7 @@ export const ContentSearchCard: Component<ContentFiltersProps> = (props) => {
   return (
     <nav
       class={cn('gap-2 flex justify-between', local.class)}
-      aria-label='Content pagination'
+      aria-label={t('pagination.label')}
       {...others}
     >
       <ContentSearch

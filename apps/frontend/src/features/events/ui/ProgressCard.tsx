@@ -58,7 +58,9 @@ export const ProgressCard: Component<ProgressCardProps> = (props) => {
       case 'pack_file_download':
         return local.payload.event.pack_name;
       case 'plugin_download':
-        return `[Plugin] ${local.payload.event.plugin_name}`;
+        return t('events.pluginDownload', {
+          name: local.payload.event.plugin_name,
+        });
       case 'launcher_update':
         return t('events.launcherUpdating', {
           version: local.payload.event.version,

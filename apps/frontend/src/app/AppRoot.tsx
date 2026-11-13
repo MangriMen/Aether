@@ -36,9 +36,9 @@ export const AppRoot: Component<RouteSectionProps> = (props) => {
   useSetup();
 
   return (
-    <RootErrorBoundary>
-      <ColorModeProvider>
-        <I18nProvider resources={LOCALE_RESOURCES} fallbackLocale={LOCALES.En}>
+    <I18nProvider resources={LOCALE_RESOURCES} fallbackLocale={LOCALES.En}>
+      <RootErrorBoundary>
+        <ColorModeProvider>
           <UiKitLabelsFromI18n>
             <ThemeProvider
               themeStateKey={THEME_STATE_LS_KEY}
@@ -62,8 +62,8 @@ export const AppRoot: Component<RouteSectionProps> = (props) => {
               </AppInitializeGuard>
             </ThemeProvider>
           </UiKitLabelsFromI18n>
-        </I18nProvider>
-      </ColorModeProvider>
-    </RootErrorBoundary>
+        </ColorModeProvider>
+      </RootErrorBoundary>
+    </I18nProvider>
   );
 };

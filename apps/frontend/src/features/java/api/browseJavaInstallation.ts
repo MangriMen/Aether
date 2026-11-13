@@ -1,11 +1,25 @@
 import { open } from '@tauri-apps/plugin-dialog';
+import { platform as getOsPlatform } from '@tauri-apps/plugin-os';
 
-export const browseJavaInstallation = async () => {
+import type { TFunction } from '@/shared/i18n';
+
+export const browseJavaInstallation = async (t: TFunction) => {
+  const isWindows = getOsPlatform() === 'windows';
+
   return open({
-    title: 'Select javaw.exe',
+    title: isWindows
+      ? t('javaVersion.browseTitleWindows')
+      : t('javaVersion.browseTitle'),
     filters: [
-      { name: 'Java Window Executable', extensions: ['exe'] },
-      { name: 'All', extensions: ['*'] },
+      ...(isWindows
+        ? [
+            {
+              name: t('javaVersion.executableFilter') ?? '',
+              extensions: ['exe'],
+            },
+          ]
+        : []),
+      { name: t('common.allFiles') ?? '', extensions: ['*'] },
     ],
     multiple: false,
   });

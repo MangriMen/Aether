@@ -91,7 +91,7 @@ export const GeneralSettingsForm: Component<GeneralSettingsFormProps> = (
         directory: false,
         filters: [
           {
-            name: 'Image',
+            name: t('common.imageFilter') ?? '',
             extensions: ['png', 'jpg', 'jpeg', 'svg', 'webp', 'gif'],
           },
         ],

@@ -77,10 +77,10 @@ export const useContentBrowserFilters = (
 
   createEffect(() => {
     const currentProviders = providers();
-    const currentProviderId = context.filters?.providerId;
     const firstProvider = currentProviders[0];
 
-    if (firstProvider !== undefined && !currentProviderId) {
+    // No provider chosen yet, or the chosen one is gone (a stale id in the URL).
+    if (firstProvider !== undefined && !currentProvider()) {
       setProvider(firstProvider);
     }
   });

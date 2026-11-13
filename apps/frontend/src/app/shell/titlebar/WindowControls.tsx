@@ -8,6 +8,7 @@ import IconMdiSquareRoundedOutline from '~icons/mdi/square-rounded-outline';
 import { Show, splitProps } from 'solid-js';
 
 import { isMaximized, toggleMaximize } from '@/platform/window';
+import { useTranslation } from '@/shared/i18n';
 import { cn } from '@/shared/utils';
 
 import { TitleBarButton } from './TitleBarButton';
@@ -17,6 +18,7 @@ export type WindowControlsProps = ComponentProps<'div'>;
 const iconClass = 'pointer-events-none fill-current text-sm';
 
 export const WindowControls: Component<WindowControlsProps> = (props) => {
+  const [{ t }] = useTranslation();
   const [local, others] = splitProps(props, ['class']);
 
   const appWindow = getCurrentWebviewWindow();
@@ -36,14 +38,14 @@ export const WindowControls: Component<WindowControlsProps> = (props) => {
       {...others}
     >
       <TitleBarButton
-        title='Minimize'
+        title={t('common.minimize')}
         onClick={handleMinimize}
         data-ignore-outside-click
       >
         <IconMdiMinimize class={iconClass} />
       </TitleBarButton>
       <TitleBarButton
-        title='Maximize'
+        title={t('common.maximize')}
         onClick={toggleMaximize}
         data-ignore-outside-click
       >
@@ -56,7 +58,7 @@ export const WindowControls: Component<WindowControlsProps> = (props) => {
       </TitleBarButton>
       <TitleBarButton
         class='enabled:hover:bg-destructive/75'
-        title='Close'
+        title={t('common.close')}
         onClick={handleClose}
         data-ignore-outside-click
       >

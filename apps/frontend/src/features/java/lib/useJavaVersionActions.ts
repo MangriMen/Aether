@@ -2,6 +2,7 @@ import { type Accessor } from 'solid-js';
 
 import { isCancelledError } from '@/features/errors';
 import { closeDialog, showDialog } from '@/shared/dialogs';
+import { useTranslation } from '@/shared/i18n';
 import { logError } from '@/shared/log';
 
 import type { JavaVersion, StrictJavaVersion } from '../model/javaVersion';
@@ -20,6 +21,7 @@ const DETECT_JAVA_DIALOG_ID = 'detect-java';
 export const useJavaVersionActions = (
   javaVersions: Accessor<JavaVersion[]>,
 ) => {
+  const [{ t }] = useTranslation();
   const installJava = useInstallJava();
   const editJava = useEditJava();
   const discoverJava = useDiscoverJava();
@@ -84,7 +86,7 @@ export const useJavaVersionActions = (
     }
 
     try {
-      const path = await browseJavaInstallation();
+      const path = await browseJavaInstallation(t);
 
       if (typeof path === 'string') {
         await updateJavaPath(majorVersion, path);

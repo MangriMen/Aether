@@ -451,7 +451,12 @@
     "fullscreen": "Fullscreen",
     "exitFullscreen": "Exit fullscreen",
     "moreActions": "More actions",
-    "swapVersion": "Switch to this version"
+    "swapVersion": "Switch to this version",
+    "minimize": "Minimize",
+    "maximize": "Maximize",
+    "edit": "Edit",
+    "imageFilter": "Image",
+    "allFiles": "All files"
   },
   "content": {
     "backToInstance": "Back to instance",
@@ -483,7 +488,11 @@
       "description": "Description",
       "versions": "Versions"
     },
-    "alreadyInstalled": "This content is already installed"
+    "alreadyInstalled": "This content is already installed",
+    "modpackInstallDisabled": "Installing modpacks is disabled",
+    "providersError": "Failed to load content providers",
+    "noProviders": "No content providers are installed",
+    "openPluginSettings": "Open plugin settings"
   },
   "generalSettingsError": {
     "name": {
@@ -550,7 +559,8 @@
       "preparing": "Preparing",
       "verifying": "Verifying"
     },
-    "launcherUpdating": "Updating launcher to {{version}}"
+    "launcherUpdating": "Updating launcher to {{version}}",
+    "pluginDownload": "[Plugin] {{name}}"
   },
   "home": {
     "instances": "Instances",
@@ -744,7 +754,9 @@
     "update": "Update",
     "checkUpdates": "Check for updates",
     "upToDate": "Up to date",
-    "updateCheckError": "Failed to check for updates"
+    "updateCheckError": "Failed to check for updates",
+    "importTitle": "Import plugin",
+    "packageFilter": "Plugin package"
   },
   "progress": {
     "seeDetails": "See details",
@@ -801,6 +813,11 @@
     "toggleWindowTransparencyDescription": "Restart the app to apply transparency",
     "windowEffect": "Window effect",
     "windowEffectDisabled": "It is not possible to enable window effects without window transparency",
+    "themes": {
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System"
+    },
     "windowEffectVariant": {
       "acrylic": "Acrylic",
       "mica": "Mica",
@@ -947,7 +964,8 @@
   "pagination": {
     "morePages": "More pages",
     "previous": "Previous",
-    "next": "Next"
+    "next": "Next",
+    "label": "Content pagination"
   },
   "contentVersion": {
     "gameVersion": "Game version",
@@ -1004,7 +1022,10 @@
     "actionsLabel": "Actions for Java {{majorVersion}}",
     "versionWithNumber": "Java {{majorVersion}}",
     "installing": "Installing",
-    "emptyPath": "Path is empty"
+    "emptyPath": "Path is empty",
+    "browseTitleWindows": "Select javaw.exe",
+    "browseTitle": "Select the Java executable",
+    "executableFilter": "Java Window Executable"
   },
   "detectJava": {
     "dialogTitle": "Select java {{majorVersion}} installation",
@@ -1017,5 +1038,13 @@
     "INSTANCE_ICON_NOT_IMPORTED": "The icon could not be imported; the instance was created without it",
     "INSTANCE_ICON_TOO_LARGE": "The icon is too large (limit {{limit}} bytes); the instance was created without it",
     "INSTANCE_ICON_NOT_SUPPORTED": "The icon is not a PNG, JPEG, GIF, WebP or SVG image; the instance was created without it"
+  },
+  "appInit": {
+    "title": "Initialization Error",
+    "description": "The app encountered a problem during startup.",
+    "hint": "Try restarting the app. If the issue persists, please reinstall it or",
+    "hintEmphasis": "send the log files to the developer",
+    "copyError": "Copy error",
+    "copied": "Copied!"
   }
 }
