@@ -1,6 +1,6 @@
-import { createSignal, onCleanup, type Component } from 'solid-js';
+import { createSignal, onCleanup, untrack, type Component } from 'solid-js';
 
-import { useTranslation } from '@/shared/i18n';
+import { useTranslation, type TFunction } from '@/shared/i18n';
 import {
   Button,
   Collapsible,
@@ -11,11 +11,14 @@ import {
 export interface ErrorDetailsProps {
   details: string;
   defaultOpen?: boolean;
+  /** Needed when the component is created outside the i18n provider, as a toast action is. */
+  t?: TFunction;
 }
 
 /** The raw text of an error nobody could categorize: selectable, copyable, folded away by default. */
 export const ErrorDetails: Component<ErrorDetailsProps> = (props) => {
-  const [{ t }] = useTranslation();
+  // The translator is fixed for the life of the toast or notice that holds this.
+  const t = untrack(() => props.t) ?? useTranslation()[0].t;
   const [copied, setCopied] = createSignal(false);
 
   let timer: ReturnType<typeof setTimeout> | undefined;
