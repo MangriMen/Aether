@@ -189,7 +189,11 @@ fn build_processor_command(
     args: &[String],
 ) -> Command {
     let mut command = Command::new(java_path);
-    command.args(["-cp", class_path, main_class]).args(args);
+    // A cancelled install drops the run; the process must not outlive the version lock.
+    command
+        .args(["-cp", class_path, main_class])
+        .args(args)
+        .kill_on_drop(true);
     command
 }
 

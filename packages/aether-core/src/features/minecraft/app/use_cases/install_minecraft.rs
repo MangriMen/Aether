@@ -47,7 +47,8 @@ struct GameFiles {
     java: crate::features::java::Java,
     version_jar: String,
     /// Held while the loader's processors run: they write the version's shared files, which no
-    /// other install may download or process meanwhile.
+    /// other install of the same version may download or process meanwhile. Other builds of the
+    /// same Minecraft version hold their own lock and can still share some processor outputs.
     version_lock: KeyedLockGuard,
 }
 

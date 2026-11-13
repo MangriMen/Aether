@@ -349,7 +349,7 @@ fn download(
 /// An install keeps the version for its processors: one more of it waits until it is let go,
 /// while another version goes ahead.
 #[tokio::test]
-async fn should_make_an_install_of_the_version_wait_until_the_lock_it_returned_is_dropped() {
+async fn should_make_an_install_wait_when_the_lock_it_returned_is_not_dropped() {
     let fixture = fixture();
     let other = version(&fixture.client, "1.20.2", "cd0123456789");
     let version = version(&fixture.client, "1.20.1", ASSET_HASH);
