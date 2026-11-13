@@ -368,7 +368,7 @@ export type PaginationReasonDto = { code: "TOO_SMALL" } | { code: "TOO_LARGE"; p
 } };
 
 /**  Why a path is not a path inside an instance. */
-export type PathRejectionDto = { code: "EMPTY" } | { code: "NUL_BYTE" } | { code: "BACKSLASH" } | { code: "ABSOLUTE" } | { code: "EMPTY_SEGMENT" } | { code: "DOT_SEGMENT" } | { code: "COLON" } | { code: "TRAILING_DOT_OR_SPACE" } | { code: "RESERVED_NAME" } | { code: "NOT_PLAIN" } | { code: "ESCAPES_ROOT" } | { code: "NOT_UTF8" } | { code: "NOT_SINGLE_SEGMENT" } | { code: "NOT_REGULAR_FILE" } | { code: "LAUNCHER_FOLDER" };
+export type PathRejectionDto = { code: "EMPTY" } | { code: "NUL_BYTE" } | { code: "BACKSLASH" } | { code: "ABSOLUTE" } | { code: "EMPTY_SEGMENT" } | { code: "DOT_SEGMENT" } | { code: "COLON" } | { code: "TRAILING_DOT_OR_SPACE" } | { code: "RESERVED_NAME" } | { code: "NOT_PLAIN" } | { code: "ESCAPES_ROOT" } | { code: "NOT_UTF8" } | { code: "NOT_SINGLE_SEGMENT" } | { code: "NOT_REGULAR_FILE" } | { code: "LAUNCHER_FOLDER" } | { code: "LAUNCHER_FOLDER_ALIAS" } | { code: "PLUGIN_OWN_FOLDER_ONLY" };
 
 export type PluginErrorDto = { code: "NOT_FOUND"; payload: {
 	plugin_id: string,

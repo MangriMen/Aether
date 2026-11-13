@@ -33,13 +33,15 @@ export const showError = ({
 
   showToast({
     description,
-    action: details ? (
-      <ErrorDetails
-        details={details}
-        defaultOpen={isInternalError(err)}
-        t={t}
-      />
-    ) : undefined,
+    action: details
+      ? () => (
+          <ErrorDetails
+            details={details}
+            defaultOpen={isInternalError(err)}
+            t={t}
+          />
+        )
+      : undefined,
     variant,
     ...params,
   });

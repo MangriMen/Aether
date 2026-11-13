@@ -376,6 +376,8 @@ pub enum PathRejectionDto {
     NotSingleSegment,
     NotRegularFile,
     LauncherFolder,
+    LauncherFolderAlias,
+    PluginOwnFolderOnly,
 }
 
 impl From<PathRejection> for PathRejectionDto {
@@ -396,6 +398,8 @@ impl From<PathRejection> for PathRejectionDto {
             PathRejection::NotSingleSegment => Self::NotSingleSegment,
             PathRejection::NotRegularFile => Self::NotRegularFile,
             PathRejection::LauncherFolder => Self::LauncherFolder,
+            PathRejection::LauncherFolderAlias => Self::LauncherFolderAlias,
+            PathRejection::PluginOwnFolderOnly => Self::PluginOwnFolderOnly,
         }
     }
 }

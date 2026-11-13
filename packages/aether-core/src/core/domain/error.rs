@@ -91,14 +91,14 @@ impl ErrorKind {
 
 const MAX_CHAIN_LEN: usize = 4096;
 
-/// Joins an error and its `source()` chain with ": ", skipping links already at the end of the text.
+/// Joins an error and its `source()` chain with ": ", skipping links whose text is already in it.
 pub fn error_chain(err: &(dyn std::error::Error + 'static)) -> String {
     let mut out = String::new();
     let mut current = Some(err);
     while let Some(e) = current {
         let text = e.to_string();
-        // thiserror `{0}` and transparent wrappers repeat the inner message.
-        if !out.ends_with(&text) {
+        // thiserror `{0}`, transparent wrappers and `{source}, path: ..` repeat the inner message.
+        if !out.contains(&text) {
             if !out.is_empty() {
                 out.push_str(": ");
             }
@@ -137,10 +137,28 @@ mod tests {
         assert_eq!(error_chain(&Wrapper(Inner)), "disk full");
     }
 
+    #[derive(thiserror::Error, Debug)]
+    #[error("save failed")]
+    struct Outer(#[source] Inner);
+
+    #[derive(thiserror::Error, Debug)]
+    #[error("{source}, path: /x")]
+    struct WithPath {
+        #[source]
+        source: Inner,
+    }
+
     #[test]
     fn should_join_links_when_texts_differ() {
-        let kind = ErrorKind::CoreError("boom".to_owned());
-        assert_eq!(kind.display_chain(), "Core error: boom");
+        assert_eq!(error_chain(&Outer(Inner)), "save failed: disk full");
+    }
+
+    #[test]
+    fn should_not_repeat_source_when_text_embeds_it() {
+        assert_eq!(
+            error_chain(&WithPath { source: Inner }),
+            "disk full, path: /x"
+        );
     }
 
     #[test]

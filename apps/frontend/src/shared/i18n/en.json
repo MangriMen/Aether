@@ -136,7 +136,9 @@
           "NOT_UTF8": "a name in it is not valid text",
           "NOT_SINGLE_SEGMENT": "the file name must not contain separators",
           "NOT_REGULAR_FILE": "it is not a regular file",
-          "LAUNCHER_FOLDER": "it belongs to the launcher"
+          "LAUNCHER_FOLDER": "it belongs to the launcher",
+          "LAUNCHER_FOLDER_ALIAS": "it reaches the launcher folder under another name",
+          "PLUGIN_OWN_FOLDER_ONLY": "a plugin may only write under its own folder inside the launcher folder"
         },
         "INVALID_GAME_VERSION": {
           "EMPTY": "it is empty",
@@ -302,9 +304,9 @@
       "JSON": "Failed to parse JSON",
       "TOML": "Failed to parse TOML",
       "PARSE": "Failed to process response data",
-      "STATUS": "The server returned an unexpected HTTP status",
+      "STATUS": "The server returned an unexpected HTTP status: {{status}}",
       "TOO_LARGE": "The server response exceeds the size limit",
-      "IO": "Failed to save the downloaded file"
+      "IO": "Failed to save the downloaded file: {{path}}"
     },
     "settings": {
       "NOT_FOUND": "Settings file not found",

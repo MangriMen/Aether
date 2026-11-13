@@ -84,7 +84,7 @@ pub fn resolve_instance_file_path(
     if reaches_metadata_by_alias(relative_path.as_str(), &canonical_root, &canonical_existing) {
         return Err(invalid(
             relative_path.as_str(),
-            PathRejection::LauncherFolder,
+            PathRejection::LauncherFolderAlias,
         ));
     }
 
@@ -157,7 +157,7 @@ pub fn check_plugin_write_allowed(
 
     Err(invalid(
         relative_path.as_str(),
-        PathRejection::LauncherFolder,
+        PathRejection::PluginOwnFolderOnly,
     ))
 }
 

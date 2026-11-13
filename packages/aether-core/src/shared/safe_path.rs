@@ -50,6 +50,10 @@ pub enum PathRejection {
     NotRegularFile,
     #[error("path belongs to the launcher, not to content")]
     LauncherFolder,
+    #[error("path reaches the launcher folder under another name")]
+    LauncherFolderAlias,
+    #[error("a plugin may only write under `.aether/plugins/<its id>/`")]
+    PluginOwnFolderOnly,
 }
 
 /// What separates the segments of a path.

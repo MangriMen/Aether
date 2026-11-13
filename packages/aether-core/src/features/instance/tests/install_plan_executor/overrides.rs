@@ -241,7 +241,8 @@ async fn should_refuse_an_archive_when_it_unpacks_to_more_than_it_declares() {
     assert!(
         matches!(
             &err,
-            InstanceError::Storage(crate::features::instance::StorageError::Io(_))
+            InstanceError::Storage(crate::features::instance::StorageError::Io(io))
+                if io.kind() == std::io::ErrorKind::InvalidData
         ),
         "{err:?}"
     );
