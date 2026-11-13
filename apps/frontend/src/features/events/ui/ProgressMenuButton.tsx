@@ -5,6 +5,7 @@ import { createMemo, createSignal, splitProps } from 'solid-js';
 
 import type { IconButtonProps } from '@/shared/ui-kit';
 
+import { useTranslation } from '@/shared/i18n';
 import {
   IconButton,
   Popover,
@@ -29,6 +30,7 @@ export const ProgressMenuButton: Component<ProgressMenuButtonProps> = (
 ) => {
   const [local, others] = splitProps(props, ['popoverComponent', 'class']);
 
+  const [{ t }] = useTranslation();
   const index = useProgressIndex();
   const payloadValues = createMemo(() => index().roots);
 
@@ -48,6 +50,7 @@ export const ProgressMenuButton: Component<ProgressMenuButtonProps> = (
           invisible: !payloadValues().length,
         })}
         variant='ghost'
+        aria-label={t('progress.ongoingTasks')}
         {...others}
       >
         <ProgressBadge class='pointer-events-none' />

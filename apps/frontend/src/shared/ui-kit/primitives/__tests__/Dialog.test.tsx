@@ -1,3 +1,4 @@
+import { createSignal } from 'solid-js';
 import { render } from 'solid-js/web';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
@@ -100,5 +101,56 @@ describe('resizable DialogContent', () => {
     );
 
     expect(edges()).toHaveLength(0);
+  });
+});
+
+const tick = () => new Promise((resolve) => setTimeout(resolve, 50));
+
+describe('DialogContent focus', () => {
+  const mountControlled = (onCloseAutoFocus?: (e: Event) => void) => {
+    const [open, setOpen] = createSignal(false);
+
+    dispose = render(
+      () => (
+        <>
+          <button id='opener'>open</button>
+          <Dialog open={open()} onOpenChange={setOpen}>
+            <DialogContent onCloseAutoFocus={onCloseAutoFocus}>
+              body
+            </DialogContent>
+          </Dialog>
+        </>
+      ),
+      document.body,
+    );
+
+    const opener = document.getElementById('opener') as HTMLButtonElement;
+    opener.focus();
+
+    return { opener, setOpen };
+  };
+
+  it('should_return_focus_to_the_opener_when_the_dialog_is_closed', async () => {
+    const { opener, setOpen } = mountControlled();
+
+    setOpen(true);
+    await tick();
+    expect(document.activeElement).not.toBe(opener);
+
+    setOpen(false);
+    await tick();
+
+    expect(document.activeElement).toBe(opener);
+  });
+
+  it('should_leave_focus_alone_when_the_caller_prevents_close_autofocus', async () => {
+    const { opener, setOpen } = mountControlled((e) => e.preventDefault());
+
+    setOpen(true);
+    await tick();
+    setOpen(false);
+    await tick();
+
+    expect(document.activeElement).not.toBe(opener);
   });
 });
