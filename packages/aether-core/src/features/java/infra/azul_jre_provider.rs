@@ -332,7 +332,7 @@ fn get_version_get_failed(version: u32) -> JavaDomainError {
 
 const STAGING_PREFIX: &str = ".jre-new-";
 const ASIDE_PREFIX: &str = ".jre-old-";
-/// Inside the set-aside directory, apart from the previous entries: the names cannot meet.
+/// Inside the set-aside directory, where the new entries wait while the previous ones return.
 const DISCARDED_DIR: &str = ".discarded";
 
 type Rename<'a> = &'a dyn Fn(&Path, &Path) -> std::io::Result<()>;
