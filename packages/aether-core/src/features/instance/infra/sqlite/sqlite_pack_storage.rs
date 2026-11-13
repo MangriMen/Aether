@@ -207,12 +207,14 @@ impl SqlitePackStorage {
     /// Whether the instance has a pack row. The row is created with the first file and stays
     /// when the last one is removed, so it tells a pack that was emptied from one never stored.
     pub async fn has_pack(&self, instance_id: &InstanceId) -> Result<bool, InstanceError> {
-        sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM packs WHERE instance_id = ?")
-            .bind(instance_id.as_str())
-            .fetch_one(&self.pool)
-            .await
-            .map(|count| count > 0)
-            .map_err(InstanceError::storage)
+        sqlx::query_scalar!(
+            "SELECT COUNT(*) FROM packs WHERE instance_id = ?",
+            instance_id.as_str()
+        )
+        .fetch_one(&self.pool)
+        .await
+        .map(|count| count > 0)
+        .map_err(InstanceError::storage)
     }
 
     /// Writes the file only when there is no row for the path; a row that is there, with its
@@ -224,38 +226,43 @@ impl SqlitePackStorage {
         pack_file: &PackFile,
     ) -> Result<(), InstanceError> {
         let content_path = content_path.as_str();
-        sqlx::query("INSERT OR IGNORE INTO packs (instance_id) VALUES (?)")
-            .bind(instance_id.as_str())
-            .execute(&mut **tx)
-            .await
-            .map_err(InstanceError::storage)?;
+        sqlx::query!(
+            "INSERT OR IGNORE INTO packs (instance_id) VALUES (?)",
+            instance_id.as_str()
+        )
+        .execute(&mut **tx)
+        .await
+        .map_err(InstanceError::storage)?;
 
-        let inserted = sqlx::query(
-            "INSERT INTO pack_files (instance_id, content_path, file_name, name, hash, side, update_provider_id, installed_by_provider_id, installed_by_content_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(instance_id, content_path) DO NOTHING",
-        )
-        .bind(instance_id.as_str())
-        .bind(content_path)
-        .bind(&pack_file.file_name)
-        .bind(&pack_file.name)
-        .bind(pack_file.hash.to_string())
-        .bind(pack_file.side.map(FileSide::as_str))
-        .bind(
-            pack_file
-                .update_provider_id
-                .as_ref()
-                .map(std::string::ToString::to_string),
-        )
-        .bind(
-            pack_file
-                .installed_by
-                .as_ref()
-                .map(|origin| origin.provider_id.to_string()),
-        )
-        .bind(
-            pack_file
-                .installed_by
-                .as_ref()
-                .map(|origin| origin.content_id.as_str()),
+        let hash = pack_file.hash.to_string();
+        let update_provider_id = pack_file
+            .update_provider_id
+            .as_ref()
+            .map(std::string::ToString::to_string);
+        let installed_by_provider_id = pack_file
+            .installed_by
+            .as_ref()
+            .map(|origin| origin.provider_id.to_string());
+        let installed_by_content_id = pack_file
+            .installed_by
+            .as_ref()
+            .map(|origin| origin.content_id.as_str());
+
+        let inserted = sqlx::query!(
+            r#"
+            INSERT INTO pack_files (instance_id, content_path, file_name, name, hash, side, update_provider_id, installed_by_provider_id, installed_by_content_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(instance_id, content_path) DO NOTHING
+            "#,
+            instance_id.as_str(),
+            content_path,
+            pack_file.file_name,
+            pack_file.name,
+            hash,
+            pack_file.side.map(FileSide::as_str),
+            update_provider_id,
+            installed_by_provider_id,
+            installed_by_content_id
         )
         .execute(&mut **tx)
         .await
@@ -266,14 +273,15 @@ impl SqlitePackStorage {
         }
 
         for (pid, info) in pack_file.update.iter().flatten() {
-            sqlx::query(
+            let provider_id = pid.to_string();
+            sqlx::query!(
                 "INSERT INTO pack_file_updates (instance_id, content_path, provider_id, content_id, version_id) VALUES (?, ?, ?, ?, ?)",
+                instance_id.as_str(),
+                content_path,
+                provider_id,
+                info.content_id.as_str(),
+                info.version.as_ref().map_or("", |v| v.as_str())
             )
-            .bind(instance_id.as_str())
-            .bind(content_path)
-            .bind(pid.to_string())
-            .bind(info.content_id.as_str())
-            .bind(info.version.as_ref().map_or("", |v| v.as_str()))
             .execute(&mut **tx)
             .await
             .map_err(InstanceError::storage)?;

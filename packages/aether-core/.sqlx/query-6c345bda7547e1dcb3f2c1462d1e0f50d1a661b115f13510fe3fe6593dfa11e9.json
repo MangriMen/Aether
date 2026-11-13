@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            INSERT INTO pack_files (instance_id, content_path, file_name, name, hash, side, update_provider_id, installed_by_provider_id, installed_by_content_id)\n            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)\n            ON CONFLICT(instance_id, content_path) DO NOTHING\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 9
+    },
+    "nullable": []
+  },
+  "hash": "6c345bda7547e1dcb3f2c1462d1e0f50d1a661b115f13510fe3fe6593dfa11e9"
+}
