@@ -13,6 +13,8 @@ const SwitchErrorMessage = SwitchPrimitive.ErrorMessage;
 type SwitchControlProps = SwitchPrimitive.SwitchControlProps & {
   class?: string | undefined;
   children?: JSX.Element;
+  /** Names the focusable input, not the wrapping control. */
+  'aria-labelledby'?: string | undefined;
 };
 
 const SwitchControl = <T extends ValidComponent = 'input'>(
@@ -21,10 +23,12 @@ const SwitchControl = <T extends ValidComponent = 'input'>(
   const [local, others] = splitProps(props as SwitchControlProps, [
     'class',
     'children',
+    'aria-labelledby',
   ]);
   return (
     <>
       <SwitchPrimitive.Input
+        aria-labelledby={local['aria-labelledby']}
         class={cn(
           `
             [&:focus-visible+div]:ring-ring

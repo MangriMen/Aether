@@ -5,6 +5,7 @@ import IconMdiMore from '~icons/mdi/dots-vertical';
 import { createSignal, splitProps } from 'solid-js';
 
 import {
+  getContentFileTitle,
   useDisableContents,
   useEnableContents,
   useRemoveContents,
@@ -83,7 +84,13 @@ export const ContentActions: Component<ContentActionsProps> = (props) => {
 
   return (
     <div class={cn('gap-2 flex items-center', local.class)} {...others}>
-      <Switch checked={!local.content.disabled} onChange={handleToggleDisable}>
+      <Switch
+        checked={!local.content.disabled}
+        onChange={handleToggleDisable}
+        aria-label={
+          getContentFileTitle(local.content) ?? local.content.contentPath
+        }
+      >
         <SwitchControl>
           <SwitchThumb />
         </SwitchControl>
@@ -112,10 +119,11 @@ export const ContentActions: Component<ContentActionsProps> = (props) => {
           variant='ghost'
           class='p-0'
           icon={IconMdiMore}
+          aria-label={t('common.moreActions')}
         />
         <DropdownMenuContent>
           <DropdownMenuItem
-            onClick={handleShowFile}
+            onSelect={handleShowFile}
             disabled={!local.instancePath}
           >
             {t('instance.showFile')}

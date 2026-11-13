@@ -447,7 +447,11 @@
     "retry": "Retry",
     "clear": "Clear",
     "current": "Current",
-    "updating": "Updating..."
+    "updating": "Updating...",
+    "fullscreen": "Fullscreen",
+    "exitFullscreen": "Exit fullscreen",
+    "moreActions": "More actions",
+    "swapVersion": "Switch to this version"
   },
   "content": {
     "backToInstance": "Back to instance",
@@ -665,7 +669,11 @@
     "environmentVariables": "Environment variables",
     "javaArguments": "Java arguments",
     "memoryAllocation": "Memory allocation",
+    "memoryMb": "{{value}} Mb",
     "resolution": "Resolution",
+    "resolutionWidth": "Window width",
+    "resolutionHeight": "Window height",
+    "chooseResolution": "Choose a resolution",
     "windowError": {
       "resolution": {
         "emptyValue": "Resolution part must be non empty value",
@@ -992,6 +1000,8 @@
     "installRecommended": "Install recommended",
     "browse": "Browse",
     "detect": "Detect",
+    "pathLabel": "Java {{majorVersion}} path",
+    "actionsLabel": "Actions for Java {{majorVersion}}",
     "versionWithNumber": "Java {{majorVersion}}",
     "installing": "Installing",
     "emptyPath": "Path is empty"

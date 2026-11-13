@@ -92,12 +92,13 @@ export const InstallContentButton: Component<InstallContentButtonProps> = (
           as={IconButton}
           class='rounded-l-none'
           icon={IconMdiChevronDown}
+          aria-label={t('common.add')}
           disabled={local.disabled}
         />
         <DropdownMenuContent>
           <For each={contentTypes()}>
             {(contentType) => (
-              <DropdownMenuItem onClick={() => handleAddContents(contentType)}>
+              <DropdownMenuItem onSelect={() => handleAddContents(contentType)}>
                 <span>
                   {t('common.add')}
                   &nbsp;

@@ -4,7 +4,7 @@ import type { FeatureFlagsStore } from '@/features/settings';
 import type { SettingsEntryProps } from '@/shared/settings-layout';
 
 import { featureFlagsActions, useFeatureFlagsStore } from '@/features/settings';
-import { SettingsEntry } from '@/shared/settings-layout';
+import { SettingsEntry, useSettingsEntryLabel } from '@/shared/settings-layout';
 import { Switch, SwitchControl, SwitchThumb } from '@/shared/ui-kit';
 
 export type FeatureFlagsEntryProps = ComponentProps<'div'> & SettingsEntryProps;
@@ -29,6 +29,7 @@ const BooleanFlagSwitch: Component<BooleanFlagSwitchProps> = (props) => {
   const [local, others] = splitProps(props, ['name']);
 
   const [ff, setFf] = useFeatureFlagsStore();
+  const labelProps = useSettingsEntryLabel();
 
   const value = () => ff[local.name] ?? false;
 
@@ -38,7 +39,7 @@ const BooleanFlagSwitch: Component<BooleanFlagSwitchProps> = (props) => {
 
   return (
     <Switch checked={value()} onChange={handleChange} {...others}>
-      <SwitchControl>
+      <SwitchControl {...labelProps}>
         <SwitchThumb />
       </SwitchControl>
     </Switch>

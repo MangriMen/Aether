@@ -122,7 +122,7 @@ export const PluginVersionDropdown: Component<PluginVersionDropdownProps> = (
                       as={Button}
                       variant='ghost'
                       class='w-full justify-start'
-                      onClick={() => handleSwitchVersion(release.tag_name)}
+                      onSelect={() => handleSwitchVersion(release.tag_name)}
                       disabled={
                         isDisabled() ||
                         release.tag_name === updates.data?.current_tag

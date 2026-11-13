@@ -76,6 +76,7 @@ export const OverridableEnvVarsField: Component<
         errorMessage={local.errorMessage}
         inputProps={{
           type: 'text',
+          'aria-label': t('instanceSettings.environmentVariables'),
           placeholder: t('instanceSettings.enterVariables'),
           ...local.inputProps,
         }}

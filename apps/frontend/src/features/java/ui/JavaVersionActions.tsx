@@ -19,6 +19,7 @@ import {
   IconButton,
 } from '@/shared/ui-kit';
 export type JavaVersionActionsProps = ComponentProps<'div'> & {
+  majorVersion: number;
   isInstalling?: boolean;
   onInstallRecommended?: () => void;
   onDetect?: () => void;
@@ -29,6 +30,7 @@ export const JavaVersionActions: Component<JavaVersionActionsProps> = (
   props,
 ) => {
   const [local, others] = splitProps(props, [
+    'majorVersion',
     'isInstalling',
     'onInstallRecommended',
     'onDetect',
@@ -44,6 +46,9 @@ export const JavaVersionActions: Component<JavaVersionActionsProps> = (
         variant='ghost'
         class='p-0'
         icon={IconMdiMore}
+        aria-label={t('javaVersion.actionsLabel', {
+          majorVersion: local.majorVersion,
+        })}
       />
       <DropdownMenuContent>
         <Show when={local.onDetect}>
@@ -52,7 +57,7 @@ export const JavaVersionActions: Component<JavaVersionActionsProps> = (
             class='w-full justify-start'
             variant='ghost'
             leadingIcon={IconMdiMagnify}
-            onClick={local.onDetect}
+            onSelect={local.onDetect}
             disabled={local.isInstalling}
           >
             {t('javaVersion.detect')}
@@ -65,7 +70,7 @@ export const JavaVersionActions: Component<JavaVersionActionsProps> = (
             class='w-full justify-start'
             variant='ghost'
             leadingIcon={IconMdiFileFindOutline}
-            onClick={local.onBrowse}
+            onSelect={local.onBrowse}
             disabled={local.isInstalling}
           >
             {t('javaVersion.browse')}
@@ -77,7 +82,7 @@ export const JavaVersionActions: Component<JavaVersionActionsProps> = (
           class='w-full justify-start'
           variant='ghost'
           leadingIcon={IconMdiDownload}
-          onClick={local.onInstallRecommended}
+          onSelect={local.onInstallRecommended}
           disabled={local.isInstalling}
           loading={local.isInstalling}
         >

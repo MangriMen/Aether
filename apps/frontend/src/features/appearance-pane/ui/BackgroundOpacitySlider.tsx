@@ -6,6 +6,7 @@ import {
 } from 'solid-js';
 
 import { useThemeContext } from '@/features/appearance';
+import { useSettingsEntryLabel } from '@/shared/settings-layout';
 import { CombinedSlider, CombinedTextField } from '@/shared/ui-kit';
 import { cn } from '@/shared/utils';
 
@@ -63,12 +64,18 @@ export const BackgroundOpacitySlider: Component<
         maxValue={SCALE_FACTOR}
         value={[currentTransparency()]}
         onChange={handleSliderChange}
+        thumbProps={useSettingsEntryLabel()}
       />
       <CombinedTextField
         class='w-[8ch]'
         value={currentTransparency().toString()}
         onChange={handleTextChange}
-        inputProps={{ type: 'number', min: MIN_PERCENT, max: MAX_PERCENT }}
+        inputProps={{
+          type: 'number',
+          min: MIN_PERCENT,
+          max: MAX_PERCENT,
+          ...useSettingsEntryLabel(),
+        }}
       />
     </div>
   );

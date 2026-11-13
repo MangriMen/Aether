@@ -11,6 +11,7 @@ import {
 
 import type { CombinedTextFieldProps } from '@/shared/ui-kit';
 
+import { useTranslation } from '@/shared/i18n';
 import { CombinedTextField } from '@/shared/ui-kit';
 
 import { useEditJava, useRemoveJava } from '../api/javaQueries';
@@ -27,6 +28,7 @@ const JAVA_PATH_EXAMPLES = {
 export const JavaVersionPath: Component<JavaVersionPathProps> = (props) => {
   const [local, others] = splitProps(props, ['value', 'majorVersion']);
 
+  const [{ t }] = useTranslation();
   const editJava = useEditJava();
   const removeJava = useRemoveJava();
 
@@ -95,6 +97,9 @@ export const JavaVersionPath: Component<JavaVersionPathProps> = (props) => {
       onChange={setValue}
       inputProps={{
         type: 'text',
+        'aria-label': t('javaVersion.pathLabel', {
+          majorVersion: local.majorVersion,
+        }),
         placeholder: pathPlaceholder(),
         onKeyDown: handleKeyDown,
         onBlur: handleBlur,

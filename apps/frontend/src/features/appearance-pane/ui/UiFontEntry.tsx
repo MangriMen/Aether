@@ -13,7 +13,7 @@ import {
 } from '@/features/appearance';
 import { useSystemFonts } from '@/features/settings';
 import { useTranslation } from '@/shared/i18n';
-import { SettingsEntry } from '@/shared/settings-layout';
+import { SettingsEntry, useSettingsEntryLabel } from '@/shared/settings-layout';
 import {
   Combobox,
   ComboboxContent,
@@ -208,6 +208,7 @@ export const UiFontEntry: Component<UiFontEntryProps> = (props) => {
       >
         <ComboboxControl<FontOption>>
           <ComboboxInput
+            {...useSettingsEntryLabel()}
             maxLength={MAX_CUSTOM_FONT_FAMILY_LENGTH}
             onKeyDown={(
               e: KeyboardEvent & { currentTarget: HTMLInputElement },

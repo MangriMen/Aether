@@ -83,6 +83,7 @@ export const createJavaVersionsColumns = ({
 
         return (
           <JavaVersionActions
+            majorVersion={majorVersion()}
             isInstalling={isInstalling?.(cellProps.row.original.majorVersion)}
             onInstallRecommended={() => onInstallRecommended?.(majorVersion())}
             onDetect={() => onDetect?.(majorVersion())}

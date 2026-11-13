@@ -46,10 +46,14 @@ const DropdownMenuContent = <T extends ValidComponent = 'div'>(
   );
 };
 
-type DropdownMenuItemProps<T extends ValidComponent = 'div'> =
-  DropdownMenuPrimitive.DropdownMenuItemProps<T> & {
-    class?: string | undefined;
-  };
+type DropdownMenuItemProps<T extends ValidComponent = 'div'> = Omit<
+  DropdownMenuPrimitive.DropdownMenuItemProps<T>,
+  'onClick'
+> & {
+  /** Menu items are activated by `onSelect`: `onClick` misses the keyboard. */
+  onClick?: never;
+  class?: string | undefined;
+};
 
 const DropdownMenuItem = <T extends ValidComponent = 'div'>(
   props: PolymorphicProps<T, DropdownMenuItemProps<T>>,
@@ -182,11 +186,15 @@ const DropdownMenuSubContent = <T extends ValidComponent = 'div'>(
   );
 };
 
-type DropdownMenuCheckboxItemProps<T extends ValidComponent = 'div'> =
-  DropdownMenuPrimitive.DropdownMenuCheckboxItemProps<T> & {
-    class?: string | undefined;
-    children?: JSX.Element;
-  };
+type DropdownMenuCheckboxItemProps<T extends ValidComponent = 'div'> = Omit<
+  DropdownMenuPrimitive.DropdownMenuCheckboxItemProps<T>,
+  'onClick'
+> & {
+  /** Menu items are activated by `onSelect`: `onClick` misses the keyboard. */
+  onClick?: never;
+  class?: string | undefined;
+  children?: JSX.Element;
+};
 
 const DropdownMenuCheckboxItem = <T extends ValidComponent = 'div'>(
   props: PolymorphicProps<T, DropdownMenuCheckboxItemProps<T>>,
@@ -247,11 +255,15 @@ const DropdownMenuGroupLabel = <T extends ValidComponent = 'span'>(
   );
 };
 
-type DropdownMenuRadioItemProps<T extends ValidComponent = 'div'> =
-  DropdownMenuPrimitive.DropdownMenuRadioItemProps<T> & {
-    class?: string | undefined;
-    children?: JSX.Element;
-  };
+type DropdownMenuRadioItemProps<T extends ValidComponent = 'div'> = Omit<
+  DropdownMenuPrimitive.DropdownMenuRadioItemProps<T>,
+  'onClick'
+> & {
+  /** Menu items are activated by `onSelect`: `onClick` misses the keyboard. */
+  onClick?: never;
+  class?: string | undefined;
+  children?: JSX.Element;
+};
 
 const DropdownMenuRadioItem = <T extends ValidComponent = 'div'>(
   props: PolymorphicProps<T, DropdownMenuRadioItemProps<T>>,

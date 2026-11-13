@@ -9,6 +9,7 @@ import {
 } from '@/features/settings';
 import { useTranslation } from '@/shared/i18n';
 import { logError } from '@/shared/log';
+import { useSettingsEntryLabel } from '@/shared/settings-layout';
 import { CombinedSelect, type Option } from '@/shared/ui-kit';
 
 type GeneralizedWindowEffect = 'off' | 'mica' | 'acrylic';
@@ -91,6 +92,7 @@ export const SelectWindowEffect = () => {
       value={currentOption()}
       options={translatedOptions()}
       onChange={handleSetWindowEffect}
+      triggerProps={useSettingsEntryLabel()}
     />
   );
 };

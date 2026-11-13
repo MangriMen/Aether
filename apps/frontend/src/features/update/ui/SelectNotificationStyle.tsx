@@ -8,6 +8,7 @@ import {
 import type { Option } from '@/shared/ui-kit';
 
 import { useTranslation } from '@/shared/i18n';
+import { useSettingsEntryLabel } from '@/shared/settings-layout';
 import {
   Select,
   SelectContent,
@@ -82,7 +83,7 @@ export const SelectNotificationStyle: Component<
       )}
       {...others}
     >
-      <SelectTrigger>
+      <SelectTrigger {...useSettingsEntryLabel()}>
         <SelectValue<UpdateNotificationStyleOption>>
           {(state) => t(`update.${state.selectedOption().name}`)}
         </SelectValue>

@@ -6,6 +6,7 @@ import type { ThemeConfig } from '@/features/appearance';
 import type { SelectRootProps, Option } from '@/shared/ui-kit';
 
 import { THEMES, useThemeContext } from '@/features/appearance';
+import { useSettingsEntryLabel } from '@/shared/settings-layout';
 import {
   Select,
   SelectContent,
@@ -71,7 +72,7 @@ export const SelectTheme: Component<
       )}
       {...props}
     >
-      <SelectTrigger>
+      <SelectTrigger {...useSettingsEntryLabel()}>
         <SelectValue<Option<ThemeConfig>>>
           {(state) => state.selectedOption().name}
         </SelectValue>

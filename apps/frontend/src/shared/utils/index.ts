@@ -1,7 +1,6 @@
 export * from './cn';
 export * from './createDelayedFlag';
 export * from './debounce';
-export * from './event';
 export * from './isNil';
 export * from './jsonify';
 export * from './mergeDefined';

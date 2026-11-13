@@ -71,6 +71,7 @@ export const OverridableLaunchArgsField: Component<
         onChange={local.onChange}
         inputProps={{
           type: 'text',
+          'aria-label': t('instanceSettings.javaArguments'),
           placeholder: t('instanceSettings.enterArguments'),
           ...local.inputProps,
         }}

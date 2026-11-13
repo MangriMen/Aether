@@ -47,6 +47,33 @@ describe('CombinedTooltip', () => {
     expect(trigger().textContent).toBe('trigger');
   });
 
+  it('should_name_the_trigger_after_a_string_label_when_no_aria_label_is_given', () => {
+    mount(() => (
+      <CombinedTooltip label='Close'>
+        <svg />
+      </CombinedTooltip>
+    ));
+
+    expect(trigger().getAttribute('aria-label')).toBe('Close');
+  });
+
+  it('should_keep_the_visible_text_as_the_name_when_the_trigger_has_text', () => {
+    mount(() => (
+      <CombinedTooltip label='Game version'>
+        <svg />
+        fabric 1.20.1
+      </CombinedTooltip>
+    ));
+
+    expect(trigger().hasAttribute('aria-label')).toBe(false);
+  });
+
+  it('should_not_name_the_trigger_when_the_label_is_not_a_string', () => {
+    mount(() => <CombinedTooltip label={<b>Close</b>}>x</CombinedTooltip>);
+
+    expect(trigger().hasAttribute('aria-label')).toBe(false);
+  });
+
   it('shows the label after hovering the trigger', () => {
     mount(() => (
       <CombinedTooltip label='Tooltip text'>trigger</CombinedTooltip>

@@ -8,6 +8,7 @@ import {
 
 import type { ContentType, ContentVersion } from '@/features/content';
 
+import { useTranslation } from '@/shared/i18n';
 import { IconButton } from '@/shared/ui-kit';
 import { cn } from '@/shared/utils';
 
@@ -27,11 +28,21 @@ export const ContentVersionActions: Component<ContentVersionActionsProps> = (
     'class',
   ]);
 
-  const { install, icon, isCurrentVersionInstalled, isInstalling } =
+  const [{ t }] = useTranslation();
+
+  const { install, icon, isCurrentVersionInstalled, isSwap, isInstalling } =
     useContentVersionInstall(
       () => local.version,
       () => local.contentType,
     );
+
+  const installLabel = () => {
+    if (isCurrentVersionInstalled()) {
+      return t('common.installed');
+    }
+
+    return isSwap() ? t('common.swapVersion') : t('common.install');
+  };
 
   return (
     <div class={cn('gap-1 flex', local.class)} {...others}>
@@ -42,6 +53,7 @@ export const ContentVersionActions: Component<ContentVersionActionsProps> = (
           bg-transparent
         '
         icon={icon()}
+        aria-label={installLabel()}
         onClick={install}
         loading={isInstalling()}
         disabled={isCurrentVersionInstalled()}
@@ -56,6 +68,7 @@ export const ContentVersionActions: Component<ContentVersionActionsProps> = (
             '
             variant='secondary'
             icon={IconMdiOpenInNew}
+            aria-label={t('content.openInBrowser')}
             href={href()}
             target='_blank'
             rel='noreferrer'

@@ -3,6 +3,7 @@ import { createSignal, type ComponentProps } from 'solid-js';
 import { useAppSettings, useEditAppSettings } from '@/features/settings';
 import { useTranslation } from '@/shared/i18n';
 import { logError } from '@/shared/log';
+import { useSettingsEntryLabel } from '@/shared/settings-layout';
 import {
   CombinedDialog,
   Switch,
@@ -59,7 +60,7 @@ export const WindowTransparencySwitch = (
         onChange={handleSetTransparency}
         {...props}
       >
-        <SwitchControl>
+        <SwitchControl {...useSettingsEntryLabel()}>
           <SwitchThumb />
         </SwitchControl>
       </Switch>

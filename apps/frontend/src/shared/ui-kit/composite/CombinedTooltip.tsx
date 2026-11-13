@@ -1,7 +1,7 @@
 import type { PolymorphicProps } from '@kobalte/core';
 import type { ValidComponent, JSX } from 'solid-js';
 
-import { splitProps } from 'solid-js';
+import { children, splitProps } from 'solid-js';
 
 import type {
   TooltipTriggerProps,
@@ -52,6 +52,13 @@ export const CombinedTooltip = <T extends ValidComponent = 'button'>(
     ['label', 'disableTooltip'],
     TOOLTIP_ROOT_KEYS,
   );
+  const [content, rest] = splitProps(others, ['children']);
+  const resolved = children(() => content.children);
+  // A trigger with its own text already has a name; overriding it would hide that text from screen readers.
+  const hasText = () =>
+    resolved
+      .toArray()
+      .some((node) => typeof node === 'string' || typeof node === 'number');
   return (
     <Tooltip
       {...tooltipRoot}
@@ -61,7 +68,17 @@ export const CombinedTooltip = <T extends ValidComponent = 'button'>(
     >
       {/* // TODO: find a way to make this work
       //@ts-expect-error no declaration */}
-      <TooltipTrigger {...(others as TooltipTriggerProps<T>)} />
+      <TooltipTrigger
+        // Kobalte sets aria-describedby only while the tooltip is open, so an icon-only trigger needs its own name.
+        aria-label={
+          typeof local.label === 'string' && !hasText()
+            ? local.label
+            : undefined
+        }
+        {...(rest as TooltipTriggerProps<T>)}
+      >
+        {resolved()}
+      </TooltipTrigger>
       <TooltipContent class='max-w-[90vw]'>{local.label}</TooltipContent>
     </Tooltip>
   );

@@ -447,7 +447,11 @@
     "retry": "Повторить",
     "clear": "Очистить",
     "current": "Текущая",
-    "updating": "Обновление..."
+    "updating": "Обновление...",
+    "fullscreen": "На весь экран",
+    "exitFullscreen": "Выйти из полноэкранного режима",
+    "moreActions": "Ещё действия",
+    "swapVersion": "Переключиться на эту версию"
   },
   "content": {
     "backToInstance": "Вернуться к инстансу",
@@ -665,7 +669,11 @@
     "environmentVariables": "Переменные окружения",
     "javaArguments": "Аргументы Java",
     "memoryAllocation": "Выделение памяти",
+    "memoryMb": "{{value}} МБ",
     "resolution": "Разрешение",
+    "resolutionWidth": "Ширина окна",
+    "resolutionHeight": "Высота окна",
+    "chooseResolution": "Выбрать разрешение",
     "windowError": {
       "resolution": {
         "emptyValue": "Элемент разрешения должен быть не пустым",
@@ -992,6 +1000,8 @@
     "installRecommended": "Установить рекомендуемую",
     "browse": "Выбрать файл",
     "detect": "Найти автоматически",
+    "pathLabel": "Путь к Java {{majorVersion}}",
+    "actionsLabel": "Действия для Java {{majorVersion}}",
     "versionWithNumber": "Java {{majorVersion}}",
     "installing": "Устанавливается",
     "emptyPath": "Путь не указан"

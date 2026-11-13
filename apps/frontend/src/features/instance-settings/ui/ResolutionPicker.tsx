@@ -145,6 +145,7 @@ export const ResolutionPicker: Component<ResolutionFieldProps> = (props) => {
                   )}
                   disabled={local.disabled}
                   inputProps={{
+                    'aria-label': t('instanceSettings.resolutionWidth'),
                     ...field.props,
                     onBlur: () => {
                       field.props.onBlur?.();
@@ -167,6 +168,7 @@ export const ResolutionPicker: Component<ResolutionFieldProps> = (props) => {
                   )}
                   disabled={local.disabled}
                   inputProps={{
+                    'aria-label': t('instanceSettings.resolutionHeight'),
                     ...field.props,
                     onBlur: () => {
                       field.props.onBlur?.();
