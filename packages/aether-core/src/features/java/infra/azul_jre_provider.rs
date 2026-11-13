@@ -3,6 +3,7 @@ use std::{
     path::{Path, PathBuf},
     sync::Arc,
 };
+use tempfile::TempDir;
 
 use async_trait::async_trait;
 use bytes::Bytes;
@@ -17,7 +18,6 @@ use crate::{
         java::{JavaDomainError, JreProvider},
     },
     shared::hash::{FileHash, HashAlgorithm},
-    shared::io::infra::remove_dir_all,
     shared::request_client::{Request, RequestClient, RequestClientExt, RequestError},
 };
 
@@ -114,18 +114,6 @@ impl<PS: ProgressService, RC: RequestClient> AzulJreProvider<PS, RC> {
         }
     }
 
-    async fn remove_old_jre_installation(path: &Path) -> Result<(), JavaDomainError> {
-        if !path.exists() {
-            return Ok(());
-        }
-
-        remove_dir_all(&path)
-            .await
-            .map_err(|_| JavaDomainError::RemoveOldInstallationError {
-                path: path.to_path_buf(),
-            })
-    }
-
     async fn unpack_jre(
         &self,
         path: &Path,
@@ -135,33 +123,28 @@ impl<PS: ProgressService, RC: RequestClient> AzulJreProvider<PS, RC> {
         progress_bar_id: Option<&ProgressBarId>,
         cancel: &CancellationToken,
     ) -> Result<PathBuf, JavaDomainError> {
-        use zip::ZipArchive;
-
-        let mut archive =
-            ZipArchive::new(Cursor::new(file)).map_err(|_| get_failed_to_install(version))?;
-
-        if archive.is_empty() {
-            return Err(get_failed_to_install(version));
-        }
-
         // Unpacked beside the install first, and only then put in place of the old one: an
         // archive that fails half-way leaves the JRE that was there.
         tokio::fs::create_dir_all(path)
             .await
-            .map_err(|_| get_failed_to_install(version))?;
+            .map_err(|err| get_failed_to_install(version, err))?;
         let staging = tempfile::Builder::new()
-            .prefix(".jre-")
+            .prefix(STAGING_PREFIX)
             .tempdir_in(path)
-            .map_err(|_| get_failed_to_install(version))?;
+            .map_err(|err| get_failed_to_install(version, err))?;
 
         self.emit_progress(progress_bar_id, 0.0, "Extracting java")
             .await;
-        archive
-            .extract(staging.path())
-            .map_err(|_| get_failed_to_install(version))?;
-        self.pass_point_of_no_return(progress_bar_id, cancel)
-            .await?;
-        Self::replace_installed(staging.path(), path, version).await?;
+        let staging = Self::extract(file, staging)
+            .await
+            .map_err(|err| get_failed_to_install(version, err))?;
+        // A future dropped while it waits here deletes the staging on the runtime: rare, and
+        // nothing is lost by it.
+        if let Err(err) = self.pass_point_of_no_return(progress_bar_id, cancel).await {
+            Self::discard(staging).await;
+            return Err(err);
+        }
+        Self::replace_installed(staging, path.to_path_buf(), version).await?;
         self.emit_progress(progress_bar_id, 10.0, "Done extracting java")
             .await;
 
@@ -185,29 +168,51 @@ impl<PS: ProgressService, RC: RequestClient> AzulJreProvider<PS, RC> {
         Ok(())
     }
 
-    /// Move what `staging` holds into `path`, each entry in place of the one of its name.
+    /// Off the runtime: unzipping a JRE takes seconds of blocking disk work. The blocking task
+    /// owns the staging directory, so a future dropped meanwhile (the install was called off)
+    /// does not delete it under the extraction: the task ends first and removes it itself.
+    async fn extract(file: Bytes, staging: TempDir) -> Result<TempDir, std::io::Error> {
+        tokio::task::spawn_blocking(move || {
+            let mut archive = zip::ZipArchive::new(Cursor::new(file))?;
+            if archive.is_empty() {
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::InvalidData,
+                    "the archive is empty",
+                ));
+            }
+            archive.extract(staging.path())?;
+            Ok(staging)
+        })
+        .await
+        .map_err(std::io::Error::other)?
+    }
+
+    /// Deleting a half-extracted JRE is many file operations: not on the runtime.
+    async fn discard(staging: TempDir) {
+        let _ = tokio::task::spawn_blocking(move || drop(staging)).await;
+    }
+
+    /// The swap is one blocking task that nothing can drop halfway: a future dropped meanwhile
+    /// (the install was called off) leaves it running to the end, so the installation is never
+    /// left with neither the old JRE nor the new one.
     async fn replace_installed(
-        staging: &Path,
-        path: &Path,
+        staging: TempDir,
+        path: PathBuf,
         version: u32,
     ) -> Result<(), JavaDomainError> {
-        let mut entries = tokio::fs::read_dir(staging)
+        Self::replace_installed_with(staging, path, version, |from, to| std::fs::rename(from, to))
             .await
-            .map_err(|_| get_failed_to_install(version))?;
+    }
 
-        while let Some(entry) = entries
-            .next_entry()
+    async fn replace_installed_with(
+        staging: TempDir,
+        path: PathBuf,
+        version: u32,
+        rename: impl Fn(&Path, &Path) -> std::io::Result<()> + Send + 'static,
+    ) -> Result<(), JavaDomainError> {
+        tokio::task::spawn_blocking(move || swap_in(staging.path(), &path, version, &rename))
             .await
-            .map_err(|_| get_failed_to_install(version))?
-        {
-            let target = path.join(entry.file_name());
-            Self::remove_old_jre_installation(&target).await?;
-            tokio::fs::rename(entry.path(), &target)
-                .await
-                .map_err(|_| get_failed_to_install(version))?;
-        }
-
-        Ok(())
+            .map_err(|err| get_failed_to_install(version, std::io::Error::other(err)))?
     }
 
     async fn download_package(
@@ -325,11 +330,161 @@ fn get_version_get_failed(version: u32) -> JavaDomainError {
     }
 }
 
-fn get_failed_to_install(version: u32) -> JavaDomainError {
+const STAGING_PREFIX: &str = ".jre-new-";
+const ASIDE_PREFIX: &str = ".jre-old-";
+/// Inside the set-aside directory, where the new entries wait while the previous ones return.
+const DISCARDED_DIR: &str = ".discarded";
+
+type Rename<'a> = &'a dyn Fn(&Path, &Path) -> std::io::Result<()>;
+
+/// An entry of the installation that was set aside for the new one.
+struct Moved {
+    target: PathBuf,
+    /// Where the previous entry waits; `None` when there was none.
+    set_aside: Option<PathBuf>,
+}
+
+/// Move what `staging` holds into `path`, each entry in place of the one of its name.
+/// What was there is set aside first and put back if any step fails: a JRE the game holds
+/// open can refuse to move, and the installation must not be left with neither version.
+fn swap_in(
+    staging: &Path,
+    path: &Path,
+    version: u32,
+    rename: Rename<'_>,
+) -> Result<(), JavaDomainError> {
+    let aside = tempfile::Builder::new()
+        .prefix(ASIDE_PREFIX)
+        .tempdir_in(path)
+        .map_err(|err| get_failed_to_install(version, err))?;
+
+    let mut moved = Vec::new();
+    let result = move_entries(staging, path, aside.path(), &mut moved, version, rename);
+    let put_back = result.is_ok() || roll_back(&moved, aside.path(), rename);
+
+    if put_back {
+        // Nothing but a leftover can fail here; no later install removes it.
+        if let Err(err) = aside.close() {
+            tracing::warn!("Could not remove the set-aside JRE directory: {err}");
+        }
+    } else {
+        // The previous entries that could not be put back live on only in here.
+        let kept = aside.keep();
+        tracing::error!("The previous JRE entries are kept in {kept:?}");
+    }
+    result
+}
+
+fn move_entries(
+    staging: &Path,
+    path: &Path,
+    aside: &Path,
+    moved: &mut Vec<Moved>,
+    version: u32,
+    rename: Rename<'_>,
+) -> Result<(), JavaDomainError> {
+    for entry in std::fs::read_dir(staging).map_err(|err| get_failed_to_install(version, err))? {
+        let entry = entry.map_err(|err| get_failed_to_install(version, err))?;
+        let target = path.join(entry.file_name());
+        let set_aside = aside.join(entry.file_name());
+
+        // Not following a link: one that dangles is still an entry of the installation.
+        let had_old = exists(&target).map_err(|err| get_failed_to_install(version, err))?;
+        if had_old {
+            rename(&target, &set_aside).map_err(|err| {
+                JavaDomainError::RemoveOldInstallationError {
+                    path: target.clone(),
+                    source: Arc::new(err),
+                }
+            })?;
+        }
+        moved.push(Moved {
+            target: target.clone(),
+            set_aside: had_old.then_some(set_aside),
+        });
+
+        rename(&entry.path(), &target).map_err(|err| get_failed_to_install(version, err))?;
+    }
+
+    Ok(())
+}
+
+/// Best effort; `false` when a previous entry could not be put back.
+fn roll_back(moved: &[Moved], aside: &Path, rename: Rename<'_>) -> bool {
+    let mut all_back = true;
+    for step in moved.iter().rev() {
+        let target_exists = exists(&step.target).unwrap_or(true);
+        let Some(set_aside) = &step.set_aside else {
+            // New where nothing was before: removing it loses no JRE.
+            if target_exists && let Err(err) = remove_entry(&step.target) {
+                tracing::error!(
+                    "Could not remove the new JRE entry {:?}: {err}",
+                    step.target
+                );
+            }
+            continue;
+        };
+
+        // Moved out of the way, not deleted: a deletion that fails halfway would leave the
+        // target occupied and the previous entry unable to return.
+        let mut discarded = None;
+        if target_exists {
+            let name = step.target.file_name().unwrap_or_default();
+            let place = aside.join(DISCARDED_DIR).join(name);
+            let moved_away = std::fs::create_dir_all(aside.join(DISCARDED_DIR))
+                .and_then(|()| rename(&step.target, &place));
+            if let Err(err) = moved_away {
+                tracing::error!(
+                    "Could not move the new JRE entry {:?} out of the way: {err}",
+                    step.target
+                );
+                all_back = false;
+                continue;
+            }
+            discarded = Some(place);
+        }
+        if let Err(err) = rename(set_aside, &step.target) {
+            tracing::error!(
+                "Could not put back the previous JRE entry {:?}: {err}",
+                step.target
+            );
+            all_back = false;
+            // At least one JRE stays where the game looks for it.
+            if let Some(place) = discarded
+                && let Err(err) = rename(&place, &step.target)
+            {
+                tracing::error!(
+                    "Could not restore the new JRE entry {:?}: {err}",
+                    step.target
+                );
+            }
+        }
+    }
+    all_back
+}
+
+fn exists(path: &Path) -> std::io::Result<bool> {
+    match std::fs::symlink_metadata(path) {
+        Ok(_) => Ok(true),
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => Ok(false),
+        Err(err) => Err(err),
+    }
+}
+
+fn remove_entry(path: &Path) -> std::io::Result<()> {
+    if std::fs::symlink_metadata(path)?.is_dir() {
+        std::fs::remove_dir_all(path)
+    } else {
+        std::fs::remove_file(path)
+    }
+}
+
+fn get_failed_to_install(version: u32, source: impl Into<std::io::Error>) -> JavaDomainError {
     JavaDomainError::FailedToInstall {
         version,
         os: std::env::consts::OS.to_owned(),
         arch: std::env::consts::ARCH.to_owned(),
+        source: Arc::new(source.into()),
     }
 }
 
@@ -609,6 +764,206 @@ mod tests {
             matches!(result, Err(JavaDomainError::FailedToInstall { .. })),
             "{result:?}"
         );
+        assert!(
+            std::error::Error::source(&result.unwrap_err()).is_some(),
+            "the cause of the failure is kept"
+        );
+        assert_eq!(
+            std::fs::read(installed_java(&fixture.install_dir)).unwrap(),
+            b"old jre"
+        );
+        let left: Vec<_> = std::fs::read_dir(&fixture.install_dir)
+            .unwrap()
+            .map(|entry| entry.unwrap().file_name())
+            .collect();
+        assert_eq!(left, [PACKAGE_DIR], "no staging directory is left");
+    }
+
+    /// A tree of `entries` (name, content) in a new directory.
+    fn dir_with(parent: &Path, name: &str, entries: &[(&str, &str)]) -> PathBuf {
+        let dir = parent.join(name);
+        std::fs::create_dir_all(&dir).unwrap();
+        for (entry, content) in entries {
+            std::fs::write(dir.join(entry), content).unwrap();
+        }
+        dir
+    }
+
+    fn rename_unless(
+        refused: impl Fn(&Path, &Path) -> bool,
+    ) -> impl Fn(&Path, &Path) -> std::io::Result<()> {
+        move |from, to| {
+            if refused(from, to) {
+                Err(std::io::Error::other("refused"))
+            } else {
+                std::fs::rename(from, to)
+            }
+        }
+    }
+
+    fn names(dir: &Path) -> Vec<String> {
+        let mut names: Vec<_> = std::fs::read_dir(dir)
+            .unwrap()
+            .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
+            .collect();
+        names.sort();
+        names
+    }
+
+    #[test]
+    fn should_put_the_previous_entries_back_when_a_later_entry_cannot_be_moved_in() {
+        let temp = tempfile::TempDir::new().unwrap();
+        let install = dir_with(temp.path(), "install", &[("a", "old a"), ("b", "old b")]);
+        let staging = dir_with(temp.path(), "staging", &[("a", "new a"), ("b", "new b")]);
+        let rename = rename_unless(|from, to| from.starts_with(&staging) && to.ends_with("b"));
+
+        let result = swap_in(&staging, &install, VERSION, &rename);
+
+        assert!(
+            matches!(result, Err(JavaDomainError::FailedToInstall { .. })),
+            "{result:?}"
+        );
+        assert_eq!(std::fs::read(install.join("a")).unwrap(), b"old a");
+        assert_eq!(std::fs::read(install.join("b")).unwrap(), b"old b");
+        assert_eq!(
+            names(&install),
+            ["a", "b"],
+            "no set-aside directory is left"
+        );
+    }
+
+    #[test]
+    fn should_keep_the_set_aside_entries_when_they_cannot_be_put_back() {
+        let temp = tempfile::TempDir::new().unwrap();
+        let install = dir_with(temp.path(), "install", &[("b", "old b")]);
+        let staging = dir_with(temp.path(), "staging", &[("b", "new b")]);
+        // Neither the new entry going in nor the old one returning can take the place.
+        let rename = rename_unless(|_, to| to == install.join("b"));
+
+        let result = swap_in(&staging, &install, VERSION, &rename);
+
+        assert!(result.is_err());
+        let kept: Vec<_> = names(&install)
+            .into_iter()
+            .filter(|name| name.starts_with(ASIDE_PREFIX))
+            .collect();
+        assert_eq!(kept.len(), 1, "{:?}", names(&install));
+        assert_eq!(
+            std::fs::read(install.join(&kept[0]).join("b")).unwrap(),
+            b"old b"
+        );
+    }
+
+    #[test]
+    fn should_restore_the_new_entry_when_the_previous_one_cannot_return() {
+        let temp = tempfile::TempDir::new().unwrap();
+        let install = dir_with(temp.path(), "install", &[("a", "old a"), ("b", "old b")]);
+        let staging = dir_with(temp.path(), "staging", &[("a", "new a"), ("b", "new b")]);
+        // The second entry cannot come in, and no previous entry can return.
+        let moves_in = std::cell::Cell::new(0);
+        let rename = |from: &Path, to: &Path| {
+            if from.starts_with(&staging) {
+                moves_in.set(moves_in.get() + 1);
+                if moves_in.get() == 2 {
+                    return Err(std::io::Error::other("refused"));
+                }
+            }
+            if from.to_string_lossy().contains(ASIDE_PREFIX)
+                && !from.to_string_lossy().contains(DISCARDED_DIR)
+            {
+                return Err(std::io::Error::other("refused"));
+            }
+            std::fs::rename(from, to)
+        };
+
+        let result = swap_in(&staging, &install, VERSION, &rename);
+
+        assert!(result.is_err());
+        let left: Vec<_> = names(&install)
+            .into_iter()
+            .filter(|name| !name.starts_with(".jre-"))
+            .collect();
+        assert_eq!(left.len(), 1, "the entry that came in stays: {left:?}");
+        assert!(
+            std::fs::read_to_string(install.join(&left[0]))
+                .unwrap()
+                .starts_with("new"),
+        );
+    }
+
+    #[tokio::test]
+    async fn should_finish_the_swap_when_the_install_is_dropped_between_its_two_moves() {
+        let temp = tempfile::TempDir::new().unwrap();
+        let install = dir_with(temp.path(), "install", &[("a", "old a")]);
+        let staging = tempfile::Builder::new()
+            .prefix(STAGING_PREFIX)
+            .tempdir_in(&install)
+            .unwrap();
+        std::fs::write(staging.path().join("a"), "new a").unwrap();
+
+        // The old entry is set aside; the swap waits there until the future is dropped.
+        let (set_aside, set_aside_seen) = std::sync::mpsc::channel::<()>();
+        let (release, released) = std::sync::mpsc::channel::<()>();
+        let set_aside_once = Mutex::new(Some(set_aside));
+        let released = Mutex::new(released);
+        let swap = tokio::spawn(Provider::replace_installed_with(
+            staging,
+            install.clone(),
+            VERSION,
+            move |from, to| {
+                std::fs::rename(from, to)?;
+                if let Some(signal) = set_aside_once.lock().unwrap().take() {
+                    signal.send(()).unwrap();
+                    released.lock().unwrap().recv().unwrap();
+                }
+                Ok(())
+            },
+        ));
+        tokio::task::spawn_blocking(move || set_aside_seen.recv().unwrap())
+            .await
+            .unwrap();
+        swap.abort();
+        let _ = swap.await;
+        release.send(()).unwrap();
+
+        // The blocking task is not stopped by the abort; it ends on its own.
+        let deadline = std::time::Instant::now() + Duration::from_secs(10);
+        while names(&install).iter().any(|name| name.starts_with(".jre-"))
+            && std::time::Instant::now() < deadline
+        {
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+        assert_eq!(std::fs::read_to_string(install.join("a")).unwrap(), "new a");
+        assert_eq!(names(&install), ["a"]);
+    }
+
+    /// A directory with a file the game holds open cannot be moved on Windows.
+    #[cfg(windows)]
+    #[tokio::test]
+    async fn should_keep_the_installed_jre_and_name_the_cause_when_the_old_one_cannot_be_moved() {
+        use std::os::windows::fs::OpenOptionsExt;
+
+        let fixture = fixture();
+        std::fs::create_dir_all(installed_java(&fixture.install_dir).parent().unwrap()).unwrap();
+        std::fs::write(installed_java(&fixture.install_dir), b"old jre").unwrap();
+        let _held = std::fs::OpenOptions::new()
+            .read(true)
+            .share_mode(1)
+            .open(installed_java(&fixture.install_dir))
+            .unwrap();
+        serve_archive(&fixture.client, jre_zip(b"new jre")).await;
+
+        let result = fixture
+            .provider
+            .install(VERSION, &fixture.install_dir, false)
+            .await;
+
+        let err = result.unwrap_err();
+        assert!(
+            matches!(err, JavaDomainError::RemoveOldInstallationError { .. }),
+            "{err:?}"
+        );
+        assert!(std::error::Error::source(&err).is_some());
         assert_eq!(
             std::fs::read(installed_java(&fixture.install_dir)).unwrap(),
             b"old jre"

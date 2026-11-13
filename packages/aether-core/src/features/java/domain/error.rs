@@ -48,10 +48,16 @@ pub enum JavaDomainError {
         version: u32,
         os: String,
         arch: String,
+        #[source]
+        source: std::sync::Arc<std::io::Error>,
     },
 
     #[error("Failed to remove old installation at {path:?}")]
-    RemoveOldInstallationError { path: PathBuf },
+    RemoveOldInstallationError {
+        path: PathBuf,
+        #[source]
+        source: std::sync::Arc<std::io::Error>,
+    },
 
     #[error("Storage error: {0}")]
     Storage(#[from] DatabaseError),

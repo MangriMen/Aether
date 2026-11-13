@@ -38,9 +38,11 @@ pub enum JavaErrorDto {
         version: u32,
         os: String,
         arch: String,
+        cause: CauseDto,
     },
     RemoveOldInstallationError {
         path: String,
+        cause: CauseDto,
     },
     StorageError {
         cause: CauseDto,
@@ -89,14 +91,21 @@ impl From<&JavaDomainError> for JavaErrorDto {
                 os: os.clone(),
                 arch: arch.clone(),
             },
-            JavaDomainError::FailedToInstall { version, os, arch } => Self::FailedToInstall {
+            JavaDomainError::FailedToInstall {
+                version,
+                os,
+                arch,
+                source,
+            } => Self::FailedToInstall {
                 version: *version,
                 os: os.clone(),
                 arch: arch.clone(),
+                cause: source.into(),
             },
-            JavaDomainError::RemoveOldInstallationError { path } => {
+            JavaDomainError::RemoveOldInstallationError { path, source } => {
                 Self::RemoveOldInstallationError {
                     path: path.to_string_lossy().to_string(),
+                    cause: source.into(),
                 }
             }
             JavaDomainError::Cancelled => Self::Cancelled,
@@ -132,6 +141,29 @@ mod tests {
                 "payload": {
                     "path": path.to_string_lossy(),
                     "cause": {"type": "io", "kind": "permissionDenied"}
+                }
+            })
+        );
+    }
+
+    #[test]
+    fn should_serialize_the_io_cause_when_the_install_failed() {
+        let out = domain(&JavaDomainError::FailedToInstall {
+            version: 21,
+            os: "linux".into(),
+            arch: "x86_64".into(),
+            source: std::io::Error::from(std::io::ErrorKind::StorageFull).into(),
+        });
+
+        assert_eq!(
+            out,
+            json!({
+                "code": "FAILED_TO_INSTALL",
+                "payload": {
+                    "version": 21,
+                    "os": "linux",
+                    "arch": "x86_64",
+                    "cause": {"type": "io", "kind": "storageFull"}
                 }
             })
         );
