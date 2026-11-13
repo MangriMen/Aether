@@ -1,6 +1,7 @@
 use serde::Serialize;
 use specta::Type;
 
+use super::CauseDto;
 use crate::core::{WindowError, WindowLabel};
 
 #[derive(Debug, Serialize, Type)]
@@ -10,9 +11,9 @@ pub enum WindowErrorDto {
 
     NotFound { label: WindowLabelDto },
 
-    PlatformNotSupported { details: String },
+    PlatformNotSupported,
 
-    Other { details: String },
+    Other { cause: CauseDto },
 }
 
 impl From<WindowError> for WindowErrorDto {
@@ -24,14 +25,13 @@ impl From<WindowError> for WindowErrorDto {
             WindowError::NotFound { label } => WindowErrorDto::NotFound {
                 label: label.into(),
             },
-            WindowError::PlatformNotSupported(err) => {
-                WindowErrorDto::PlatformNotSupported { details: err }
-            }
+            // The core text is free-form and nothing constructs this variant; the log keeps it.
+            WindowError::PlatformNotSupported(_) => WindowErrorDto::PlatformNotSupported,
             WindowError::Tauri(err) => WindowErrorDto::Other {
-                details: err.to_string(),
+                cause: CauseDto::unknown(err),
             },
             WindowError::Other(err) => WindowErrorDto::Other {
-                details: err.clone(),
+                cause: CauseDto::unknown(err),
             },
         }
     }
@@ -48,5 +48,31 @@ impl From<WindowLabel> for WindowLabelDto {
         match value {
             WindowLabel::Main => WindowLabelDto::Main,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn should_serialize_other_with_an_unknown_cause() {
+        let dto = WindowErrorDto::from(WindowError::Other("boom".to_owned()));
+
+        assert_eq!(
+            serde_json::to_value(&dto).unwrap(),
+            json!({"code": "OTHER", "payload": {"cause": {"type": "unknown", "details": "boom"}}})
+        );
+    }
+
+    #[test]
+    fn should_serialize_platform_not_supported_without_payload() {
+        let dto = WindowErrorDto::from(WindowError::PlatformNotSupported("x".to_owned()));
+
+        assert_eq!(
+            serde_json::to_value(&dto).unwrap(),
+            json!({"code": "PLATFORM_NOT_SUPPORTED"})
+        );
     }
 }

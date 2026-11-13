@@ -7,6 +7,7 @@ pub use domain::ActionOnInstanceLaunch;
 pub use domain::AppSettings;
 pub use domain::AppSettingsError;
 pub use domain::AppSettingsStorage;
+pub use domain::AppSettingsStorageError;
 pub use domain::WindowEffect;
 
 // App layer use cases (inbound ports)

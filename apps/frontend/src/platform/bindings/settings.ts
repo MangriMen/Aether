@@ -36,11 +36,11 @@ export type AppSettingsDto = {
 };
 
 export type AppSettingsErrorDto = { code: "CAN_NOT_SET_EFFECT"; payload: {
-	details: string,
+	cause: CauseDto,
 } } | { code: "CAN_NOT_RECREATE_WINDOW"; payload: {
-	details: string,
+	cause: CauseDto,
 } } | { code: "STORAGE"; payload: {
-	details: string,
+	cause: CauseDto,
 } };
 
 export type ApplicationErrorDto = { code: "IO"; payload: {
@@ -120,15 +120,15 @@ export type EditSettingsDto = {
 export type EventErrorDto = { code: "NOT_INITIALIZED" } | { code: "NO_LOADING_BAR"; payload: {
 	id: string,
 } } | { code: "SERIALIZE_ERROR"; payload: {
-	details: string,
+	cause: CauseDto,
 } } | { code: "STORAGE_ERROR"; payload: {
-	details: string,
+	cause: CauseDto,
 } };
 
 export type FileWatcherErrorDto = { code: "PATH_NOT_FOUND"; payload: {
 	path: string,
 } } | { code: "WATCH_NOT_FOUND" } | { code: "NOTIFY_ERROR"; payload: {
-	details: string,
+	cause: CauseDto,
 } };
 
 export type FrontendError = { type: "appSettings"; payload: AppSettingsErrorDto } | { type: "window"; payload: WindowErrorDto } | { type: "application"; payload: ApplicationErrorDto } | { type: "auth"; payload: AuthErrorDto } | { type: "event"; payload: EventErrorDto } | { type: "fileWatcher"; payload: FileWatcherErrorDto } | { type: "gameLog"; payload: GameLogErrorDto } | { type: "instance"; payload: InstanceErrorDto } | { type: "java"; payload: JavaErrorDto } | { type: "minecraft"; payload: MinecraftErrorDto } | { type: "plugin"; payload: PluginErrorDto } | { type: "process"; payload: ProcessErrorDto } | { type: "request"; payload: RequestErrorDto } | { type: "settings"; payload: SettingsErrorDto };
@@ -141,7 +141,7 @@ export type GameLogErrorDto = { code: "INVALID_SOURCE"; payload: {
 	source_id: string,
 	limit: number,
 } } | { code: "IO"; payload: {
-	details: string,
+	cause: CauseDto,
 } };
 
 export type HooksDto = {
@@ -400,7 +400,7 @@ export type ProcessErrorDto = { code: "KILL_ERROR"; payload: {
 } } | { code: "WAIT_ERROR"; payload: {
 	id: string,
 } } | { code: "IO"; payload: {
-	details: string,
+	cause: CauseDto,
 } };
 
 export type RamSettingsDto = {
@@ -408,16 +408,16 @@ export type RamSettingsDto = {
 };
 
 export type RequestErrorDto = { code: "ACQUIRE" } | { code: "REQUEST_SEND"; payload: {
-	details: string,
+	cause: CauseDto,
 } } | { code: "MIDDLEWARE"; payload: {
-	details: string,
+	cause: CauseDto,
 } } | { code: "HASH"; payload: {
 	actual: string,
 	expected: string,
 } } | { code: "JSON"; payload: {
-	details: string,
+	cause: CauseDto,
 } } | { code: "TOML"; payload: {
-	details: string,
+	cause: CauseDto,
 } } | { code: "PARSE" } | { code: "STATUS"; payload: {
 	status: number,
 	url: string,
@@ -425,7 +425,7 @@ export type RequestErrorDto = { code: "ACQUIRE" } | { code: "REQUEST_SEND"; payl
 	limit: string,
 } } | { code: "IO"; payload: {
 	path: string,
-	details: string,
+	cause: CauseDto,
 } };
 
 export type SettingsDto = {
@@ -457,10 +457,8 @@ export type WindowErrorDto = { code: "ALREADY_EXISTS"; payload: {
 	label: WindowLabelDto,
 } } | { code: "NOT_FOUND"; payload: {
 	label: WindowLabelDto,
-} } | { code: "PLATFORM_NOT_SUPPORTED"; payload: {
-	details: string,
-} } | { code: "OTHER"; payload: {
-	details: string,
+} } | { code: "PLATFORM_NOT_SUPPORTED" } | { code: "OTHER"; payload: {
+	cause: CauseDto,
 } };
 
 export type WindowLabelDto = "main";

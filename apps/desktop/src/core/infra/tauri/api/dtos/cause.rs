@@ -32,10 +32,6 @@ pub enum CauseDto {
         line: Option<u32>,
         column: Option<u32>,
     },
-    #[expect(
-        dead_code,
-        reason = "constructed by the database error conversion added later"
-    )]
     Database,
     /// The only place raw error text reaches the frontend.
     Unknown {
@@ -57,6 +53,12 @@ impl From<&std::io::Error> for CauseDto {
             Some(kind) => Self::Io { kind },
             None => Self::unknown(value),
         }
+    }
+}
+
+impl From<&sqlx::Error> for CauseDto {
+    fn from(_: &sqlx::Error) -> Self {
+        Self::Database
     }
 }
 
