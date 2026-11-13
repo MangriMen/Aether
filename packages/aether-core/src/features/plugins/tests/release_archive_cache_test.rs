@@ -9,8 +9,8 @@ use std::{
 use async_trait::async_trait;
 
 use crate::features::plugins::{
-    PluginError, PluginProvider, PluginProviderError, PluginSourceType, ProviderPluginPreview,
-    ProviderUpdateInfo, ReleaseArchiveCache, download_to_temp_file,
+    PluginError, PluginProvider, PluginProviderError, PluginSourceType, ProviderFailure,
+    ProviderPluginPreview, ProviderUpdateInfo, ReleaseArchiveCache, download_to_temp_file,
 };
 
 /// A provider that counts its downloads, and can be told to fail.
@@ -58,7 +58,7 @@ impl PluginProvider for Counting {
         if self.fails.swap(false, Ordering::SeqCst) {
             return Err(PluginProviderError::ProviderFetchError {
                 source_type: PluginSourceType::GitHub,
-                details: "connection dropped".into(),
+                cause: ProviderFailure::Other("connection dropped".into()),
             });
         }
         dest.write_all(url.as_bytes()).await.unwrap();

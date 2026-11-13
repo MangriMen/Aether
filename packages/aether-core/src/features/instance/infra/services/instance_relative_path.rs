@@ -20,11 +20,12 @@ use std::path::{Path, PathBuf};
 
 use crate::features::instance::domain::{InstanceError, InstanceId, InstanceRelativePath};
 use crate::features::settings::{INSTANCE_METADATA_FOLDER_NAME, PLUGINS_FOLDER_NAME};
+use crate::shared::safe_path::PathRejection;
 
-fn invalid(path: &str, reason: &str) -> InstanceError {
+fn invalid(path: &str, reason: PathRejection) -> InstanceError {
     InstanceError::InvalidRelativePath {
         path: path.to_owned(),
-        reason: reason.to_owned(),
+        reason,
     }
 }
 
@@ -65,11 +66,8 @@ pub fn resolve_instance_file_path(
 
     // An instance directory that is missing is not a directory we create here: the caller is
     // expected to have checked the instance exists.
-    let canonical_root = crate::shared::io::infra::canonicalize(instance_dir).map_err(|err| {
-        InstanceError::Storage(format!(
-            "Failed to resolve directory of instance \"{instance_id}\": {err}"
-        ))
-    })?;
+    let canonical_root =
+        crate::shared::io::infra::canonicalize(instance_dir).map_err(InstanceError::storage)?;
 
     let candidate = canonical_root.join(&relative);
 
@@ -86,7 +84,7 @@ pub fn resolve_instance_file_path(
     if reaches_metadata_by_alias(relative_path.as_str(), &canonical_root, &canonical_existing) {
         return Err(invalid(
             relative_path.as_str(),
-            &format!("path reaches `{INSTANCE_METADATA_FOLDER_NAME}` under another name"),
+            PathRejection::LauncherFolderAlias,
         ));
     }
 
@@ -159,10 +157,7 @@ pub fn check_plugin_write_allowed(
 
     Err(invalid(
         relative_path.as_str(),
-        &format!(
-            "`{INSTANCE_METADATA_FOLDER_NAME}` belongs to the launcher; a plugin may only write \
-             under `{INSTANCE_METADATA_FOLDER_NAME}/{PLUGINS_FOLDER_NAME}/{plugin_id}/`"
-        ),
+        PathRejection::PluginOwnFolderOnly,
     ))
 }
 

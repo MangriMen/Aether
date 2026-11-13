@@ -65,8 +65,8 @@ impl<RC: RequestClient> LoggingService<RC> {
         let path = self
             .location_info
             .log_config_path(&file.id)
-            .ok_or_else(|| MinecraftDomainError::StorageFailure {
-                reason: format!("Invalid log config name: {}", file.id),
+            .ok_or_else(|| MinecraftDomainError::InvalidLogConfigName {
+                name: file.id.clone(),
             })?;
         debug!("Downloading log config \"{}\"", file.id);
 

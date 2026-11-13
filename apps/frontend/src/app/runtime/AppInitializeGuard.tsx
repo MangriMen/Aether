@@ -3,7 +3,12 @@ import type { Component, JSX } from 'solid-js';
 import { createSignal, onMount, Show } from 'solid-js';
 
 import { AppInitializeError, AppLayout, BaseTitleBar } from '@/app/shell';
-import { getTranslatedError, isLauncherError } from '@/features/errors';
+import {
+  getErrorDetails,
+  getTranslatedError,
+  isInternalError,
+  isLauncherError,
+} from '@/features/errors';
 import { useTranslation } from '@/shared/i18n';
 
 import { setupApp } from './initialize';
@@ -15,16 +20,23 @@ export const AppInitializeGuard: Component<AppInitializeGuardProps> = (
 ) => {
   const [isReady, setIsReady] = createSignal(false);
   const [error, setError] = createSignal<string | undefined>();
+  const [details, setDetails] = createSignal<
+    { text: string; open: boolean } | undefined
+  >();
 
   const [{ t }] = useTranslation();
 
   const handleSetup = async () => {
     setIsReady(false);
     setError(undefined);
+    setDetails(undefined);
 
     try {
       await setupApp();
     } catch (err) {
+      const text = getErrorDetails(err);
+
+      setDetails(text ? { text, open: isInternalError(err) } : undefined);
       setError(() => {
         if (err instanceof Error) {
           return err.message;
@@ -49,7 +61,7 @@ export const AppInitializeGuard: Component<AppInitializeGuardProps> = (
         when={!error()}
         fallback={
           <AppLayout titleBar={BaseTitleBar}>
-            <AppInitializeError error={error()} />
+            <AppInitializeError error={error()} details={details()} />
           </AppLayout>
         }
       >

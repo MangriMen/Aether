@@ -84,6 +84,7 @@ Improper re-exports break architectural boundaries and ruin automated linting.
 2. **Respect Encapsulation**: Never reference `infra` types inside `domain` or `app` (except when writing the actual adapter implementations inside `infra/`). Cross-feature communication must happen exclusively by invoking another feature's public Use Cases or accessing explicitly exposed safe domain models.
 3. **UI Boundary DTOs**: DTO conversion for presentation layers (e.g., Tauri Commands delivering data to the frontend) must live at the boundary interface (the Tauri/API layer itself), separating presentation serializability from internal Rust core communication.
 4. **Code Comments**: Follow the rules in [section 8](#8-code-comments).
+5. **Backend errors (6.3)**: A DTO carries the error code, typed arguments (id, path, URL without query, version, status, limit), translatable `reason` codes and a `cause` category. Raw error text may cross the boundary only as `cause: { type: "unknown", details }`, which the frontend shows only in a collapsible details block. Never put `to_string()` into any other field. The cause of every failed command is logged.
 
 ## 7. Testing Strategy & Guidelines
 

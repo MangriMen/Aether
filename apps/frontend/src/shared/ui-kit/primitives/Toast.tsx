@@ -170,8 +170,11 @@ interface ShowToastParams {
   variant?: ToastVariant;
   duration?: number;
   persistent?: boolean;
-  /** Something the user can do about the toast, shown under the description. */
-  action?: JSX.Element;
+  /**
+   * Something the user can do about the toast, shown under the description. A function is
+   * called while the toast renders, so what it creates is owned by the toast and cleaned up with it.
+   */
+  action?: JSX.Element | (() => JSX.Element);
 }
 
 function showToast(props: ShowToastParams) {
@@ -187,7 +190,7 @@ function showToast(props: ShowToastParams) {
         {props.description && (
           <ToastDescription>{props.description}</ToastDescription>
         )}
-        {props.action}
+        {typeof props.action === 'function' ? props.action() : props.action}
       </div>
       <ToastClose />
     </Toast>

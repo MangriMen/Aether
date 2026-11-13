@@ -4,7 +4,9 @@ use std::sync::{Arc, atomic::Ordering};
 
 use crate::features::{
     instance::{InstanceError, InstanceId},
-    plugins::{EnablePluginUseCase, PluginError, PluginState, PluginStateReason},
+    plugins::{
+        EnablePluginUseCase, PluginError, PluginLoadFailure, PluginState, PluginStateReason,
+    },
 };
 
 use super::common::*;
@@ -154,7 +156,7 @@ async fn should_leave_the_plugin_failed_and_enabled_when_a_restart_fails_to_load
     assert_eq!(
         reason,
         PluginStateReason::LoadFailed {
-            details: "the wasm does not compile".into(),
+            reason: PluginLoadFailure::Build("the wasm does not compile".into()),
         }
     );
     assert!(harness.is_enabled());

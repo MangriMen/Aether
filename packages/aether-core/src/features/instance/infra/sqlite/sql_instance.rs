@@ -4,7 +4,7 @@ use crate::{
     features::{
         instance::{
             BrokenInstanceReason, Instance, InstanceError, InstanceId, InstanceInstallStage,
-            InstanceName, InstanceSnapshot,
+            InstanceName, InstanceSnapshot, StorageError,
         },
         minecraft::{GameVersion, LoaderVersionPreference, ModLoader},
         settings::{Hooks, MemoryMb, MemorySettings, WindowSettings, WindowSize},
@@ -172,7 +172,9 @@ fn enum_to_column<T: serde::Serialize>(value: &T) -> Result<String, serde_json::
 
 fn storage_err(column: &str, id: &str, e: &dyn std::fmt::Display) -> InstanceError {
     tracing::warn!(instance_id = id, column, error = %e, "Invalid instance column");
-    InstanceError::Storage(format!("Invalid {column} for instance {id}: {e}"))
+    InstanceError::storage(StorageError::other(format!(
+        "Invalid {column} for instance {id}: {e}"
+    )))
 }
 
 impl TryFrom<Instance> for SqlInstance {
@@ -245,7 +247,9 @@ impl TryFrom<SqlInstance> for Instance {
         let id = row.id.clone();
         row.into_instance().map_err(|reason| match reason {
             BrokenInstanceReason::InvalidId => InstanceError::NotFound { instance_id: id },
-            reason => InstanceError::Storage(format!("Invalid instance {id}: {reason}")),
+            reason => InstanceError::storage(StorageError::other(format!(
+                "Invalid instance {id}: {reason}"
+            ))),
         })
     }
 }

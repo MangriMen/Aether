@@ -10,10 +10,10 @@ use crate::features::instance::app::ports::{InstallPlanExecutorPort, UpdateInsta
 use crate::{
     features::{
         instance::{
-            ContentPath, ContentProvider, ContentVersionId, InstallPlan, Instance, InstanceError,
-            InstanceId, InstanceInstallStage, InstanceLocks, InstanceStorage, InstanceStorageExt,
-            PackFile, PackInfo, PackSource, PackStorage, PlanOrigin, ResolveInstallPlanParams,
-            ResolveTarget, Updater,
+            ContentPath, ContentProvider, ContentProviderRejection, ContentVersionId, InstallPlan,
+            Instance, InstanceError, InstanceId, InstanceInstallStage, InstanceLocks,
+            InstanceStorage, InstanceStorageExt, PackFile, PackInfo, PackSource, PackStorage,
+            PlanOrigin, ResolveInstallPlanParams, ResolveTarget, Updater,
         },
         minecraft::ModLoader,
     },
@@ -169,10 +169,9 @@ impl UpdateInstanceUseCase {
         // A built-in provider is not behind the plugin proxy that checks this.
         if !requested.is_answered_by(&plan.target) {
             return Err(InstanceError::ContentProviderError {
-                reason: format!(
-                    "{} answered with a plan for another target than the one asked for",
-                    provider.provider_id()
-                ),
+                reason: ContentProviderRejection::WrongTarget {
+                    provider_id: provider.provider_id(),
+                },
             });
         }
 

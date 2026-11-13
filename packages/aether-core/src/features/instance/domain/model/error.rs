@@ -2,20 +2,180 @@ use std::path::PathBuf;
 
 use uuid::Uuid;
 
-use super::InvalidPagination;
+use super::{InvalidPagination, PaginationField, PaginationRejection};
 use crate::features::{
     auth::AuthApplicationError,
     instance::{ContentType, PlatformId, ProviderId},
-    minecraft::{InvalidGameVersion, InvalidLoaderVersionId, MinecraftApplicationError},
+    minecraft::{
+        GameVersionRejection, InvalidGameVersion, InvalidLoaderVersionId, LoaderVersionIdRejection,
+        MinecraftApplicationError,
+    },
     process::ProcessError,
     settings::SettingsError,
 };
 use crate::shared::cache::AssetError;
+use crate::shared::io::IoError;
+use crate::shared::safe_path::PathRejection;
+use crate::shared::serializable_command::CommandParseError;
+
+/// What the storage of instances failed on.
+#[derive(Debug, thiserror::Error)]
+pub enum StorageError {
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
+
+    #[error(transparent)]
+    SharedIo(#[from] IoError),
+
+    #[error(transparent)]
+    Database(#[from] sqlx::Error),
+
+    /// A failure with no typed source: a message of the core's own, or the text of a library
+    /// that does not expose a category.
+    #[error("{0}")]
+    Other(String),
+}
+
+impl From<crate::shared::hash::InvalidFileHash> for StorageError {
+    fn from(err: crate::shared::hash::InvalidFileHash) -> Self {
+        Self::other(err)
+    }
+}
+
+impl StorageError {
+    pub fn other(err: impl std::fmt::Display) -> Self {
+        Self::Other(err.to_string())
+    }
+}
+
+/// A source error of a kind the instance feature only passes on.
+pub type BoxedSource = Box<dyn std::error::Error + Send + Sync>;
+
+/// Why a content provider's answer, or the request made to it, is refused.
+#[derive(Debug, thiserror::Error)]
+pub enum ContentProviderRejection {
+    #[error("{provider_id} answered with a plan for another target than the one asked for")]
+    WrongTarget { provider_id: ProviderId },
+
+    /// The new instance is recorded as the pack of that provider, but its files are owned by
+    /// the answering one: updates would look for them under the wrong one.
+    #[error("{provider_id} answered with a pack of another provider ({pack_provider_id})")]
+    ForeignPack {
+        provider_id: ProviderId,
+        pack_provider_id: ProviderId,
+    },
+
+    #[error("The plan lists {count} files, more than {max}")]
+    TooManyFiles { count: usize, max: usize },
+
+    #[error("The overrides of the plan hold more than {max} files")]
+    TooManyOverrides { max: usize },
+
+    /// `zip` errors that are not an I/O failure arrive as `InvalidData`.
+    #[error("Invalid overrides archive: {0}")]
+    InvalidOverridesArchive(#[source] std::io::Error),
+
+    #[error("Modrinth version {version_id} belongs to project {project_id}, not {content_id}")]
+    VersionOfAnotherProject {
+        version_id: String,
+        project_id: String,
+        content_id: String,
+    },
+
+    #[error("{title} is a {}, not a modpack: it installs into an existing instance", content_type.get_name())]
+    NotAModpack {
+        title: String,
+        content_type: ContentType,
+    },
+
+    #[error("Modrinth version {version_id} names no valid game version")]
+    NoGameVersion { version_id: String },
+
+    #[error("Invalid search params: {0}")]
+    InvalidSearchParams(#[source] BoxedSource),
+
+    #[error("Invalid search response: {0}")]
+    InvalidSearchResponse(#[source] BoxedSource),
+
+    #[error("Unknown Modrinth project type: {project_type}")]
+    UnknownProjectType { project_type: String },
+
+    #[error("{0}")]
+    Mapping(#[source] BoxedSource),
+
+    #[error("Failed to open .mrpack file: {0}")]
+    MrpackOpenFailed(#[source] std::io::Error),
+
+    #[error("Invalid .mrpack archive: {0}")]
+    MrpackInvalidArchive(#[source] std::io::Error),
+
+    #[error("Critical: modrinth.index.json missing in modpack")]
+    MrpackMissingIndex,
+
+    #[error("Failed to read modrinth.index.json: {0}")]
+    MrpackReadFailed(#[source] std::io::Error),
+
+    #[error("modrinth.index.json is larger than {max_bytes} bytes")]
+    MrpackIndexTooLarge { max_bytes: u64 },
+
+    #[error("Malformed modpack index: {0}")]
+    MrpackMalformedIndex(#[source] serde_json::Error),
+
+    #[error("modrinth.index.json lists {count} files, more than {max}")]
+    MrpackTooManyFiles { count: usize, max: usize },
+
+    #[error("Modpack is for \"{game}\", not Minecraft")]
+    MrpackNotMinecraft { game: String },
+
+    #[error("Invalid SHA-512 from Modrinth: {0}")]
+    MrpackInvalidHash(#[source] crate::shared::hash::InvalidFileHash),
+
+    #[error("No download of \"{path}\" is on a host the .mrpack format allows")]
+    MrpackNoAllowedDownload { path: String },
+
+    /// A provider is a plugin: what it says is not ours to categorize.
+    #[error("{0}")]
+    Provider(String),
+}
+
+/// Why content could not be downloaded.
+#[derive(Debug, thiserror::Error)]
+pub enum ContentDownloadFailure {
+    #[error("No files found for Modrinth version {version_id}")]
+    NoFiles { version_id: String },
+
+    #[error("No versions found for modpack {project_id}")]
+    NoVersions { project_id: String },
+
+    #[error("File {file_name} is not a modpack")]
+    NotAModpackFile { file_name: String },
+
+    /// `url` is as the provider gave it; the query is dropped where it is shown.
+    #[error("{url}: {source}")]
+    Download {
+        url: String,
+        #[source]
+        source: BoxedSource,
+    },
+
+    /// A failure with no typed source: the text a provider's API client or a plugin gave.
+    #[error("{0}")]
+    Other(String),
+}
+
+impl ContentDownloadFailure {
+    pub fn download(url: impl std::fmt::Display, source: impl Into<BoxedSource>) -> Self {
+        Self::Download {
+            url: url.to_string(),
+            source: source.into(),
+        }
+    }
+}
 
 #[derive(Debug, thiserror::Error)]
 pub enum InstanceError {
     #[error("Storage error: {0}")]
-    Storage(String),
+    Storage(#[from] StorageError),
 
     #[error("The icon is larger than {limit_bytes} bytes")]
     IconTooLarge { limit_bytes: u64 },
@@ -50,10 +210,14 @@ pub enum InstanceError {
     PrelaunchCommandError { code: i32 },
 
     #[error("The pre-launch command is invalid: {reason}")]
-    PrelaunchCommandInvalid { reason: String },
+    PrelaunchCommandInvalid { reason: CommandParseError },
 
-    #[error("The pre-launch command could not be started: {reason}")]
-    PrelaunchCommandSpawnFailed { reason: String },
+    #[error("The pre-launch command \"{program}\" could not be started: {source}")]
+    PrelaunchCommandSpawnFailed {
+        program: String,
+        #[source]
+        source: std::io::Error,
+    },
 
     #[error("The pre-launch command did not finish in {seconds} seconds")]
     PrelaunchCommandTimeout { seconds: u64 },
@@ -115,22 +279,29 @@ pub enum InstanceError {
 
     // Instance files
     #[error("Path \"{path}\" is not a valid path inside an instance: {reason}")]
-    InvalidRelativePath { path: String, reason: String },
+    InvalidRelativePath { path: String, reason: PathRejection },
 
     #[error("Invalid {kind} {value:?}")]
     InvalidContentId { kind: String, value: String },
 
     #[error("Invalid Minecraft version {value:?}: {reason}")]
-    InvalidGameVersion { value: String, reason: String },
+    InvalidGameVersion {
+        value: String,
+        reason: GameVersionRejection,
+    },
 
     #[error("Invalid {field} {value}: {reason}")]
     InvalidPagination {
-        field: String,
-        value: String,
-        reason: String,
+        field: PaginationField,
+        value: i64,
+        reason: PaginationRejection,
     },
+
     #[error("Invalid loader version {value:?}: {reason}")]
-    InvalidLoaderVersion { value: String, reason: String },
+    InvalidLoaderVersion {
+        value: String,
+        reason: LoaderVersionIdRejection,
+    },
 
     #[error("Path \"{path}\" resolves outside instance \"{instance_id}\"")]
     PathEscapesInstance { path: String, instance_id: String },
@@ -139,10 +310,10 @@ pub enum InstanceError {
     FileTooLarge { path: String, size: u64, limit: u64 },
 
     #[error("Error when downloading content {0}")]
-    ContentDownloadError(String),
+    ContentDownloadError(ContentDownloadFailure),
 
     #[error("Content provider error {reason}")]
-    ContentProviderError { reason: String },
+    ContentProviderError { reason: ContentProviderRejection },
 
     #[error("Not found content for minecraft version \"{game_version}\"")]
     ContentForGameVersionNotFound { game_version: String },
@@ -200,7 +371,7 @@ impl From<InvalidGameVersion> for InstanceError {
     fn from(err: InvalidGameVersion) -> Self {
         InstanceError::InvalidGameVersion {
             value: err.value,
-            reason: err.reason.to_string(),
+            reason: err.reason,
         }
     }
 }
@@ -208,9 +379,9 @@ impl From<InvalidGameVersion> for InstanceError {
 impl From<InvalidPagination> for InstanceError {
     fn from(err: InvalidPagination) -> Self {
         InstanceError::InvalidPagination {
-            field: err.field.to_string(),
-            value: err.value.to_string(),
-            reason: err.reason.to_string(),
+            field: err.field,
+            value: err.value,
+            reason: err.reason,
         }
     }
 }
@@ -219,8 +390,14 @@ impl From<InvalidLoaderVersionId> for InstanceError {
     fn from(err: InvalidLoaderVersionId) -> Self {
         InstanceError::InvalidLoaderVersion {
             value: err.value,
-            reason: err.reason.to_string(),
+            reason: err.reason,
         }
+    }
+}
+
+impl InstanceError {
+    pub fn storage(err: impl Into<StorageError>) -> Self {
+        Self::Storage(err.into())
     }
 }
 
@@ -337,7 +514,7 @@ impl From<AssetError> for InstanceError {
         match value {
             AssetError::TooLarge { limit } => Self::IconTooLarge { limit_bytes: limit },
             AssetError::NotAnImage => Self::IconNotSupported,
-            other => Self::Storage(other.to_string()),
+            other => Self::Storage(StorageError::other(other)),
         }
     }
 }
@@ -359,6 +536,46 @@ mod icon_error_tests {
         assert!(matches!(
             InstanceError::from(AssetError::ReadSource("x".into())),
             InstanceError::Storage(_)
+        ));
+    }
+}
+
+#[cfg(test)]
+mod storage_error_tests {
+    use super::*;
+
+    #[test]
+    fn should_keep_the_io_error_as_the_source_of_a_storage_failure() {
+        let err = InstanceError::storage(std::io::Error::from(std::io::ErrorKind::NotFound));
+
+        assert!(matches!(
+            err,
+            InstanceError::Storage(StorageError::Io(ref io))
+                if io.kind() == std::io::ErrorKind::NotFound
+        ));
+    }
+
+    #[test]
+    fn should_keep_the_database_error_as_the_source_of_a_storage_failure() {
+        let err = InstanceError::storage(sqlx::Error::RowNotFound);
+
+        assert!(matches!(
+            err,
+            InstanceError::Storage(StorageError::Database(sqlx::Error::RowNotFound))
+        ));
+    }
+
+    #[test]
+    fn should_keep_the_rejection_when_a_pagination_value_is_refused() {
+        let err = InstanceError::from(crate::features::instance::PageSize::parse(0).unwrap_err());
+
+        assert!(matches!(
+            err,
+            InstanceError::InvalidPagination {
+                field: PaginationField::PageSize,
+                value: 0,
+                reason: PaginationRejection::TooSmall,
+            }
         ));
     }
 }

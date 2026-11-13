@@ -32,7 +32,7 @@ impl FsInstanceStorage {
         let path = self.location_info.instance_metadata_file(instance.id());
         write_json_async(&path, InstanceV2::from(instance))
             .await
-            .map_err(|err| InstanceError::Storage(err.to_string()))?;
+            .map_err(InstanceError::storage)?;
         Ok(())
     }
 
@@ -45,9 +45,7 @@ impl FsInstanceStorage {
         }
         let mut renamed = path.clone().into_os_string();
         renamed.push(".migrated");
-        rename(&path, renamed)
-            .await
-            .map_err(|err| InstanceError::Storage(err.to_string()))
+        rename(&path, renamed).await.map_err(InstanceError::storage)
     }
 
     async fn load_instance_internal(&self, path: &Path) -> Result<Instance, InstanceError> {
@@ -65,7 +63,7 @@ impl FsInstanceStorage {
 
                     Ok(migrated)
                 }
-                Err(_) => Err(InstanceError::Storage(original_err.to_string())),
+                Err(_) => Err(InstanceError::storage(original_err)),
             },
         }
     }
@@ -142,7 +140,7 @@ impl InstanceStorage for FsInstanceStorage {
         let path = self.location_info.instance_dir(id);
         remove_dir_all(&path)
             .await
-            .map_err(|err| InstanceError::Storage(err.to_string()))?;
+            .map_err(InstanceError::storage)?;
         Ok(())
     }
 }

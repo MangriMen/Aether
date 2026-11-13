@@ -13,8 +13,8 @@ use crate::{
         instance::PluginId,
         plugins::{
             CoreMount, FolderMounts, LoadConfig, ManifestError, PathMapping, PluginError,
-            PluginHandle, PluginInternalEvent, PluginLoader, PluginManifest, PluginSettings,
-            PluginVerificationStorage, core_folders, partition_mountable,
+            PluginHandle, PluginInternalEvent, PluginLoadFailure, PluginLoader, PluginManifest,
+            PluginSettings, PluginVerificationStorage, core_folders, partition_mountable,
         },
         settings::LocationInfo,
     },
@@ -123,15 +123,12 @@ impl ExtismPluginLoader {
             .map_err(|err| hash_failed(&err))?;
 
         if actual_sha256 != verification.wasm_sha256 {
-            let reason = format!(
-                "wasm integrity check failed: '{}' hashes to {} but {} was recorded when the \
-                 plugin was installed from {}. The plugin binary changed on disk — reinstall \
-                 the plugin from its source before enabling it.",
-                wasm_path.display(),
+            let reason = PluginLoadFailure::HashMismatch {
+                path: wasm_path.display().to_string(),
                 actual_sha256,
-                verification.wasm_sha256,
-                verification.source_type,
-            );
+                recorded_sha256: verification.wasm_sha256,
+                source_type: verification.source_type,
+            };
             tracing::error!("Refusing to load plugin '{plugin_id}': {reason}");
 
             return Err(PluginError::LoadFailed {
@@ -189,7 +186,7 @@ impl ExtismPluginLoader {
             tracing::debug!("Load failed for plugin {}: {:#}", plugin_id, e);
             PluginError::LoadFailed {
                 plugin_id: plugin_id.clone(),
-                reason: describe_build_error(&e),
+                reason: PluginLoadFailure::Build(describe_build_error(&e)),
             }
         })
     }
@@ -227,7 +224,7 @@ impl PluginLoader for ExtismPluginLoader {
             .and_then(Weak::upgrade)
             .ok_or_else(|| PluginError::LoadFailed {
                 plugin_id: plugin_id.clone(),
-                reason: "the application container is not available".to_owned(),
+                reason: PluginLoadFailure::ContainerUnavailable,
             })?;
 
         let core_folders = core_folders(&self.location_info, plugin_id);
@@ -808,12 +805,18 @@ mod tests {
             .expect_err("a tampered wasm file must not load");
 
         match error {
-            PluginError::LoadFailed { plugin_id, reason } => {
+            PluginError::LoadFailed {
+                plugin_id,
+                reason:
+                    PluginLoadFailure::HashMismatch {
+                        recorded_sha256,
+                        actual_sha256,
+                        ..
+                    },
+            } => {
                 assert_eq!(plugin_id, PluginId::from_static("test"));
-                assert!(
-                    reason.contains(&recorded),
-                    "the error should name the recorded digest, got: {reason}"
-                );
+                assert_eq!(recorded_sha256, recorded);
+                assert_ne!(actual_sha256, recorded);
             }
             other => panic!("expected LoadFailed, got: {other:?}"),
         }
@@ -906,7 +909,10 @@ mod tests {
 
     fn load_failure(result: Result<Plugin, PluginError>) -> String {
         match result {
-            Err(PluginError::LoadFailed { reason, .. }) => reason,
+            Err(PluginError::LoadFailed {
+                reason: PluginLoadFailure::Build(text),
+                ..
+            }) => text,
             Err(other) => panic!("expected LoadFailed, got: {other:?}"),
             Ok(_) => panic!("the plugin must not load"),
         }

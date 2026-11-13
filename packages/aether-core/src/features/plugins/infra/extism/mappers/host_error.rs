@@ -128,7 +128,7 @@ fn instance_dto(value: &InstanceError) -> InstanceErrorDto {
     use InstanceErrorDto as Dto;
 
     match value {
-        InstanceError::Storage(err) => Dto::Storage(err.clone()),
+        InstanceError::Storage(err) => Dto::Storage(err.to_string()),
         InstanceError::NotFound { instance_id } => Dto::NotFound {
             instance_id: instance_id.clone(),
         },
@@ -203,7 +203,7 @@ fn instance_dto(value: &InstanceError) -> InstanceErrorDto {
         },
         InstanceError::InvalidRelativePath { path, reason } => Dto::InvalidRelativePath {
             path: path.clone(),
-            reason: reason.clone(),
+            reason: reason.to_string(),
         },
         InstanceError::InvalidContentId { kind, value } => Dto::InvalidContentId {
             kind: kind.clone(),
@@ -211,20 +211,20 @@ fn instance_dto(value: &InstanceError) -> InstanceErrorDto {
         },
         InstanceError::InvalidGameVersion { value, reason } => Dto::InvalidGameVersion {
             value: value.clone(),
-            reason: reason.clone(),
+            reason: reason.to_string(),
         },
         InstanceError::InvalidPagination {
             field,
             value,
             reason,
         } => Dto::InvalidPagination {
-            field: field.clone(),
-            value: value.clone(),
-            reason: reason.clone(),
+            field: field.to_string(),
+            value: value.to_string(),
+            reason: reason.to_string(),
         },
         InstanceError::InvalidLoaderVersion { value, reason } => Dto::InvalidLoaderVersion {
             value: value.clone(),
-            reason: reason.clone(),
+            reason: reason.to_string(),
         },
         InstanceError::PathEscapesInstance { path, instance_id } => Dto::PathEscapesInstance {
             path: path.clone(),
@@ -235,9 +235,9 @@ fn instance_dto(value: &InstanceError) -> InstanceErrorDto {
             size: *size,
             limit: *limit,
         },
-        InstanceError::ContentDownloadError(err) => Dto::ContentDownloadError(err.clone()),
+        InstanceError::ContentDownloadError(err) => Dto::ContentDownloadError(err.to_string()),
         InstanceError::ContentProviderError { reason } => Dto::ContentProviderError {
-            reason: reason.clone(),
+            reason: reason.to_string(),
         },
         InstanceError::ContentForGameVersionNotFound { game_version } => {
             Dto::ContentForGameVersionNotFound {
@@ -302,8 +302,8 @@ impl From<&JavaDomainError> for JavaErrorDto {
             JavaDomainError::InvalidVersion { version } => Self::InvalidVersion {
                 version: version.clone(),
             },
-            JavaDomainError::FailedToGetProperties { reason } => Self::FailedToGetProperties {
-                reason: reason.clone(),
+            JavaDomainError::FailedToGetProperties { .. } => Self::FailedToGetProperties {
+                reason: value.to_string(),
             },
             JavaDomainError::VersionNotAvailable { version, os, arch } => {
                 Self::VersionNotAvailable {
@@ -327,7 +327,7 @@ impl From<&JavaDomainError> for JavaErrorDto {
                     path: path.to_string_lossy().into_owned(),
                 }
             }
-            JavaDomainError::Storage(err) => Self::Storage(err.clone()),
+            JavaDomainError::Storage(err) => Self::Storage(err.to_string()),
             JavaDomainError::Cancelled => Self::Cancelled,
         }
     }
@@ -368,7 +368,7 @@ impl From<&MinecraftDomainError> for MinecraftErrorDto {
             MinecraftDomainError::LoaderVersionRequired => Self::LoaderVersionRequired,
             MinecraftDomainError::DefaultLoaderNotFound => Self::DefaultLoaderNotFound,
             MinecraftDomainError::ProcessorFailed { reason } => Self::ProcessorFailed {
-                reason: reason.clone(),
+                reason: reason.to_string(),
             },
             MinecraftDomainError::PreLaunchFailed { code } => Self::PreLaunchFailed { code: *code },
             MinecraftDomainError::PostLaunchFailed { code } => {
@@ -381,8 +381,11 @@ impl From<&MinecraftDomainError> for MinecraftErrorDto {
             MinecraftDomainError::ParseFailed { reason } => Self::ParseFailed {
                 reason: reason.clone(),
             },
-            MinecraftDomainError::StorageFailure { reason } => Self::StorageFailure {
-                reason: reason.clone(),
+            MinecraftDomainError::StorageFailure(err) => Self::StorageFailure {
+                reason: err.to_string(),
+            },
+            MinecraftDomainError::InvalidLogConfigName { .. } => Self::StorageFailure {
+                reason: value.to_string(),
             },
         }
     }
@@ -428,11 +431,15 @@ fn plugin_dto(value: &PluginError) -> PluginErrorDto {
         }
         PluginError::LoadFailed { plugin_id, reason } => Dto::LoadFailed {
             plugin_id: plugin_id.to_string(),
-            reason: reason.clone(),
+            reason: reason.to_string(),
         },
-        PluginError::IncompatibleApiVersion { plugin_id, reason } => Dto::IncompatibleApiVersion {
+        PluginError::IncompatibleApiVersion {
+            plugin_id,
+            required,
+            host,
+        } => Dto::IncompatibleApiVersion {
             plugin_id: plugin_id.to_string(),
-            reason: reason.clone(),
+            reason: format!("Plugin requires API {required}, host API version is {host}"),
         },
         PluginError::FunctionCallFailed {
             function_name,
@@ -504,7 +511,7 @@ impl From<&PluginProviderError> for PluginErrorDto {
                 Self::ManifestNotFound { path: path.clone() }
             }
             PluginProviderError::InvalidManifestFormat { error } => Self::InvalidManifestFormat {
-                error: error.clone(),
+                error: error.to_string(),
             },
             PluginProviderError::ExtractionFailed { from } => {
                 Self::ExtractionFailed { from: from.clone() }
@@ -515,13 +522,12 @@ impl From<&PluginProviderError> for PluginErrorDto {
             }
             PluginProviderError::Manifest(err) => Self::Manifest(err.into()),
             PluginProviderError::Storage(err) => Self::Storage(err.to_string()),
-            PluginProviderError::ProviderFetchError {
-                source_type,
-                details,
-            } => Self::ProviderFetchError {
-                source_type: source_type.into(),
-                details: details.clone(),
-            },
+            PluginProviderError::ProviderFetchError { source_type, cause } => {
+                Self::ProviderFetchError {
+                    source_type: source_type.into(),
+                    details: cause.to_string(),
+                }
+            }
             PluginProviderError::ProviderNoAssets { source_type } => Self::ProviderNoAssets {
                 source_type: source_type.into(),
             },
@@ -532,9 +538,9 @@ impl From<&PluginProviderError> for PluginErrorDto {
             PluginProviderError::NoRemoteSource { plugin_id } => Self::NoRemoteSource {
                 plugin_id: plugin_id.to_string(),
             },
-            PluginProviderError::DownloadFailed { url, details } => Self::DownloadFailed {
+            PluginProviderError::DownloadFailed { url, cause } => Self::DownloadFailed {
                 url: url.clone(),
-                details: details.clone(),
+                details: cause.to_string(),
             },
             PluginProviderError::ProviderRateLimited {
                 source_type,

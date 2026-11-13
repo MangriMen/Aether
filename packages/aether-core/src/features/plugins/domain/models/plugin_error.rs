@@ -3,7 +3,7 @@ use crate::{
         instance::{CapabilityId, PluginId},
         plugins::{
             AllowedHostEntryRejection, AllowedHostRejection, AllowedPathRejection, LoadConfigType,
-            ManifestError, PluginCallError, PluginProviderError,
+            ManifestError, PluginCallError, PluginLoadFailure, PluginProviderError,
         },
         settings::SettingsError,
     },
@@ -50,11 +50,20 @@ pub enum PluginError {
     },
 
     #[error("Failed to load plugin \"{plugin_id}\": {reason}")]
-    LoadFailed { plugin_id: PluginId, reason: String },
+    LoadFailed {
+        plugin_id: PluginId,
+        reason: PluginLoadFailure,
+    },
 
     // API version compatibility errors
-    #[error("Plugin \"{plugin_id}\" requires an incompatible API version: {reason}")]
-    IncompatibleApiVersion { plugin_id: PluginId, reason: String },
+    #[error(
+        "Plugin \"{plugin_id}\" requires an incompatible API version: it requires API {required}, host API version is {host}"
+    )]
+    IncompatibleApiVersion {
+        plugin_id: PluginId,
+        required: semver::VersionReq,
+        host: semver::Version,
+    },
 
     // Plugin execution errors
     #[error("Function \"{function_name}\" call failed in plugin \"{plugin_id}\": {error}")]

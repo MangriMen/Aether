@@ -6,6 +6,7 @@ use crate::features::instance::PluginId;
 use crate::features::plugins::{
     PluginError, PluginExtractor, PluginProviderError, PluginRegistry, PluginSettingsStorage,
     PluginSource, PluginSourceStorage, PluginStorage, PluginSyncService, PluginVerificationStorage,
+    ProviderFailure,
 };
 
 use super::ports::UpdatePluginUseCasePort;
@@ -95,7 +96,7 @@ impl UpdatePluginUseCase {
                     .latest_tag
                     .ok_or_else(|| PluginProviderError::ProviderFetchError {
                         source_type: source_type.clone(),
-                        details: "No releases found".to_string(),
+                        cause: ProviderFailure::Other("No releases found".to_string()),
                     })?;
             // The update check listed the releases already.
             (latest_tag, Some(updates.all_releases))

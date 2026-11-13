@@ -20,8 +20,12 @@ pub enum JavaDomainError {
     #[error("The installation of the JRE was called off")]
     Cancelled,
 
-    #[error("Failed to get java properties: {reason}")]
-    FailedToGetProperties { reason: String },
+    #[error("Failed to get java properties of {path:?}: {source}")]
+    FailedToGetProperties {
+        path: PathBuf,
+        #[source]
+        source: std::io::Error,
+    },
 
     #[error("No JRE version found to download: version {version}, os {os}, architecture {arch}")]
     VersionNotAvailable {
@@ -48,7 +52,7 @@ pub enum JavaDomainError {
     RemoveOldInstallationError { path: PathBuf },
 
     #[error("Storage error: {0}")]
-    Storage(String),
+    Storage(#[from] sqlx::Error),
 }
 
 #[cfg(test)]
@@ -71,8 +75,8 @@ mod tests {
 
     #[test]
     fn should_format_storage_error_when_displayed() {
-        let err = JavaDomainError::Storage("db error".into());
-        assert_eq!(err.to_string(), "Storage error: db error");
+        let err = JavaDomainError::Storage(sqlx::Error::RowNotFound);
+        assert!(err.to_string().starts_with("Storage error: "));
     }
 
     #[test]

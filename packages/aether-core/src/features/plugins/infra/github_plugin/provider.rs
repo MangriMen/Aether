@@ -6,8 +6,8 @@ use reqwest_middleware::ClientWithMiddleware;
 use super::fetcher::GitHubPluginFetcher;
 use crate::features::plugins::app::PluginProvider;
 use crate::features::plugins::domain::{
-    PluginProviderError, PluginSourceType, ProviderPluginPreview, ProviderReleaseInfo,
-    ProviderUpdateInfo,
+    PluginProviderError, PluginSourceType, ProviderFailure, ProviderPluginPreview,
+    ProviderReleaseInfo, ProviderUpdateInfo,
 };
 
 /// Concrete provider for GitHub-sourced plugins.
@@ -40,7 +40,7 @@ impl PluginProvider for GithubProvider {
         let (owner, repo) = GitHubPluginFetcher::parse_github_url(raw).ok_or_else(|| {
             PluginProviderError::ProviderFetchError {
                 source_type: PluginSourceType::GitHub,
-                details: format!("Cannot parse GitHub URL: {raw}"),
+                cause: ProviderFailure::Other(format!("Cannot parse GitHub URL: {raw}")),
             }
         })?;
         Ok(format!("{owner}/{repo}"))

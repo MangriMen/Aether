@@ -276,8 +276,9 @@ async fn run_hook_command(
         .to_tokio_command()
         .kill_on_drop(true)
         .spawn()
-        .map_err(|err| InstanceError::PrelaunchCommandSpawnFailed {
-            reason: format!("{}: {err}", command.program),
+        .map_err(|source| InstanceError::PrelaunchCommandSpawnFailed {
+            program: command.program.clone(),
+            source,
         })?;
 
     let Ok(status) = tokio::time::timeout(timeout, child.wait()).await else {
@@ -288,7 +289,7 @@ async fn run_hook_command(
             seconds: timeout.as_secs(),
         });
     };
-    let status = status.map_err(|err| InstanceError::Storage(err.to_string()))?;
+    let status = status.map_err(InstanceError::storage)?;
 
     if status.success() {
         Ok(())

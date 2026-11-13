@@ -1,6 +1,6 @@
 use crate::features::plugins::{PluginCapabilities, PluginHandle};
 
-use super::PluginManifest;
+use super::{ManifestError, PluginLoadFailure, PluginManifest};
 
 #[derive(Clone)]
 pub enum PluginState {
@@ -27,7 +27,7 @@ impl PluginState {
 }
 
 /// Why the core refused to run a plugin. The variant is what the user is told in their own
-/// language; `details` is technical text from the core, kept as it is for a bug report.
+/// language. Held in memory only: it is neither stored nor sent to plugins.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PluginStateReason {
     IncompatibleApiVersion {
@@ -35,10 +35,10 @@ pub enum PluginStateReason {
         host: semver::Version,
     },
     InvalidManifest {
-        details: String,
+        error: ManifestError,
     },
     LoadFailed {
-        details: String,
+        reason: PluginLoadFailure,
     },
 }
 
@@ -51,10 +51,10 @@ impl std::fmt::Display for PluginStateReason {
                     "Plugin requires API {required}, host API version is {host}"
                 )
             }
-            Self::InvalidManifest { details } => {
-                write!(f, "Plugin manifest failed validation: {details}")
+            Self::InvalidManifest { error } => {
+                write!(f, "Plugin manifest failed validation: {error}")
             }
-            Self::LoadFailed { details } => write!(f, "Plugin failed to load: {details}"),
+            Self::LoadFailed { reason } => write!(f, "Plugin failed to load: {reason}"),
         }
     }
 }
@@ -78,7 +78,7 @@ mod tests {
     #[test]
     fn should_keep_the_details_when_a_load_failure_is_written_out() {
         let reason = PluginStateReason::LoadFailed {
-            details: "the wasm does not compile".to_owned(),
+            reason: PluginLoadFailure::Build("the wasm does not compile".to_owned()),
         };
 
         assert!(

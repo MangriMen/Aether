@@ -108,9 +108,3 @@ impl TryFrom<SqlAppSettings> for AppSettings {
         })
     }
 }
-
-impl From<sqlx::Error> for AppSettingsError {
-    fn from(err: sqlx::Error) -> Self {
-        AppSettingsError::Storage(err.to_string())
-    }
-}

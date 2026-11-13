@@ -91,8 +91,8 @@ pub fn get_logging_argument(
         return Ok(None);
     };
     let path = location_info.log_config_path(&file.id).ok_or_else(|| {
-        MinecraftDomainError::StorageFailure {
-            reason: format!("Invalid log config name: {}", file.id),
+        MinecraftDomainError::InvalidLogConfigName {
+            name: file.id.clone(),
         }
     })?;
 
@@ -847,6 +847,9 @@ mod tests {
 
         let err = get_logging_argument(&version, &location_info).unwrap_err();
 
-        assert!(matches!(err, MinecraftDomainError::StorageFailure { .. }));
+        assert!(matches!(
+            err,
+            MinecraftDomainError::InvalidLogConfigName { ref name } if name == "../x.xml"
+        ));
     }
 }

@@ -4,7 +4,13 @@ import type { ShowToastParams } from '@/shared/ui-kit';
 import { logError } from '@/shared/log';
 import { showToast } from '@/shared/ui-kit';
 
-import { getTranslatedError, isLauncherError } from './launcherError';
+import {
+  getErrorDetails,
+  getTranslatedError,
+  isInternalError,
+  isLauncherError,
+} from '../model/launcherError';
+import { ErrorDetails } from './ErrorDetails';
 
 export interface ShowErrorParams extends Omit<ShowToastParams, 'description'> {
   err: Error;
@@ -23,8 +29,19 @@ export const showError = ({
     ? getTranslatedError(err, t)
     : undefined;
 
+  const details = getErrorDetails(err);
+
   showToast({
     description,
+    action: details
+      ? () => (
+          <ErrorDetails
+            details={details}
+            defaultOpen={isInternalError(err)}
+            t={t}
+          />
+        )
+      : undefined,
     variant,
     ...params,
   });

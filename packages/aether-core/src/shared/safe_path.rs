@@ -38,6 +38,22 @@ pub enum PathRejection {
     ReservedName,
     #[error("path does not consist of plain name segments")]
     NotPlain,
+    // The rules below are not about the spelling of a path but about where it leads or what it
+    // names; they are raised by the callers that know that, not by `parse_relative`.
+    #[error("path leads out of the folder it belongs to")]
+    EscapesRoot,
+    #[error("path segment is not valid UTF-8")]
+    NotUtf8,
+    #[error("path is more than one segment")]
+    NotSingleSegment,
+    #[error("path is not a regular file")]
+    NotRegularFile,
+    #[error("path belongs to the launcher, not to content")]
+    LauncherFolder,
+    #[error("path reaches the launcher folder under another name")]
+    LauncherFolderAlias,
+    #[error("a plugin may only write under `.aether/plugins/<its id>/`")]
+    PluginOwnFolderOnly,
 }
 
 /// What separates the segments of a path.

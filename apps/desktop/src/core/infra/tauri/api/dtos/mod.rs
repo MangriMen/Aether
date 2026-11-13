@@ -1,6 +1,8 @@
 mod app_settings_error;
 mod application_error;
 mod auth_error;
+mod cause;
+mod content_error;
 mod event_error;
 mod file_watcher_error;
 mod frontend_error;
@@ -17,6 +19,8 @@ mod window_error;
 pub use app_settings_error::*;
 pub use application_error::*;
 pub use auth_error::*;
+pub use cause::*;
+pub use content_error::*;
 pub use event_error::*;
 pub use file_watcher_error::*;
 pub use frontend_error::*;

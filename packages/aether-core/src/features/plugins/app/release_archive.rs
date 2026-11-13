@@ -1,5 +1,6 @@
 use crate::features::plugins::{
-    PluginError, PluginProviderError, PluginSourceType, ProviderPluginPreview, ProviderReleaseInfo,
+    PluginError, PluginProviderError, PluginSourceType, ProviderFailure, ProviderPluginPreview,
+    ProviderReleaseInfo,
 };
 
 use std::sync::Arc;
@@ -40,7 +41,7 @@ pub(super) async fn download_release_archive(
     let provider = factory.get_provider(source_type).ok_or_else(|| {
         PluginProviderError::ProviderFetchError {
             source_type: source_type.clone(),
-            details: "No provider is registered for it".to_string(),
+            cause: ProviderFailure::Other("No provider is registered for it".to_string()),
         }
     })?;
     let identifier = provider.parse_identifier(identifier)?;

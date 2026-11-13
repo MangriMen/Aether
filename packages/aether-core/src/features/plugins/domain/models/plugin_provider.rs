@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use super::PluginManifestPreview;
 
 /// Identifies the source type for a plugin provider.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum PluginSourceType {
     GitHub,

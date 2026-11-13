@@ -90,7 +90,8 @@ mod tests {
     use async_trait::async_trait;
 
     use crate::features::plugins::domain::{
-        PluginProviderError, PluginSourceType, ProviderPluginPreview, ProviderUpdateInfo,
+        PluginProviderError, PluginSourceType, ProviderFailure, ProviderPluginPreview,
+        ProviderUpdateInfo,
     };
 
     use super::*;
@@ -128,7 +129,7 @@ mod tests {
             if self.fails {
                 return Err(PluginProviderError::DownloadFailed {
                     url: url.to_string(),
-                    details: "connection reset".to_string(),
+                    cause: ProviderFailure::Other("connection reset".to_string()),
                 });
             }
             Ok(self.body.len() as u64)

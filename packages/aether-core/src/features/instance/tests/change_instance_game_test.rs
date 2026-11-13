@@ -134,7 +134,9 @@ impl InstanceInstallService for RecordingInstall {
         self.storage.upsert(&instance).await?;
 
         if self.fail {
-            Err(InstanceError::Storage("install failed".into()))
+            Err(InstanceError::storage(
+                crate::features::instance::StorageError::other("install failed"),
+            ))
         } else {
             Ok(())
         }

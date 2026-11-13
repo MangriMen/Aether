@@ -22,15 +22,16 @@ use crate::{
         instance::{
             AnchoredPath, CachedContentAuthor, CachedContentMetadata, CachedContentVersionMetadata,
             CapabilityMetadata, ChangeInstanceGameUseCasePort, ContentAuthor,
-            ContentCompatibilityCheckParams, ContentCompatibilityResult, ContentDownloader,
-            ContentFileUpdateInfo, ContentIdentity, ContentItem, ContentMetadata,
-            ContentMetadataCache, ContentPath, ContentProvider, ContentProviderCapabilityMetadata,
-            ContentSearchParams, ContentSearchResult, ContentSource, ContentType, ContentVersion,
-            ContentVersionMetadata, CreateInstanceUseCasePort, FileSide, InstallFileEntry,
-            InstallPlan, InstallPlanExecutor, InstallTarget, Instance, InstanceBuilder,
-            InstanceError, InstanceGame, InstanceId, InstanceStorage, NewInstance,
-            OverrideLocation, OverrideSource, PackFile, PackInfo, PackStorage, PlanOrigin,
-            PlatformProviderSelection, ProviderId, RemoveInstanceUseCasePort, ResolvedFile,
+            ContentCompatibilityCheckParams, ContentCompatibilityResult, ContentDownloadFailure,
+            ContentDownloader, ContentFileUpdateInfo, ContentIdentity, ContentItem,
+            ContentMetadata, ContentMetadataCache, ContentPath, ContentProvider,
+            ContentProviderCapabilityMetadata, ContentSearchParams, ContentSearchResult,
+            ContentSource, ContentType, ContentVersion, ContentVersionMetadata,
+            CreateInstanceUseCasePort, FileSide, InstallFileEntry, InstallPlan,
+            InstallPlanExecutor, InstallTarget, Instance, InstanceBuilder, InstanceError,
+            InstanceGame, InstanceId, InstanceStorage, NewInstance, OverrideLocation,
+            OverrideSource, PackFile, PackInfo, PackStorage, PlanOrigin, PlatformProviderSelection,
+            ProviderId, RemoveInstanceUseCasePort, ResolvedFile,
             app::{ContentFileService, LocatedContentFile},
             infra::{FsContentFileService, SqlitePackStorage},
         },
@@ -218,7 +219,9 @@ impl ContentDownloader for RecordingDownloader {
         });
 
         if url.contains("fail") {
-            return Err(InstanceError::ContentDownloadError(url.into()));
+            return Err(InstanceError::ContentDownloadError(
+                ContentDownloadFailure::Other(url.into()),
+            ));
         }
         if url.contains("hang") {
             tokio::fs::write(destination, "part").await.unwrap();
@@ -339,7 +342,9 @@ impl ChangeInstanceGameUseCasePort for RecordingChangeGame {
             .push((instance_id.into(), game));
 
         if fail {
-            Err(InstanceError::Storage("install failed".into()))
+            Err(InstanceError::storage(
+                crate::features::instance::StorageError::other("install failed"),
+            ))
         } else {
             Ok(())
         }
@@ -612,7 +617,9 @@ impl ContentFileService for FailingRestore {
             .and_then(|name| name.to_str())
             .is_some_and(|name| name.ends_with("-backup"));
         if from_backup {
-            return Err(InstanceError::Storage("cannot put the file back".into()));
+            return Err(InstanceError::storage(
+                crate::features::instance::StorageError::other("cannot put the file back"),
+            ));
         }
         self.0
             .install_content_file(instance_id, content_path, temp_path)

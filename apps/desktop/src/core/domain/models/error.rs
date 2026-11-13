@@ -38,8 +38,8 @@ mod tests {
         "Launch critical error: port in use"
     )]
     #[case::from_app_settings_error(
-        AppSettingsError::Storage("db error".to_string()).into(),
-        "Storage error: db error"
+        AppSettingsError::from(sqlx::Error::PoolTimedOut).into(),
+        "Storage error: pool timed out while waiting for an open connection"
     )]
     #[case::from_window_error(
         WindowError::Other("oops".to_string()).into(),

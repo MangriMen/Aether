@@ -27,7 +27,10 @@ use std::{
 use cap_fs_ext::{DirExt, FollowSymlinks, OpenOptionsFollowExt};
 use cap_std::{ambient_authority, fs::Dir};
 
-use crate::features::instance::{AnchoredPath, InstanceError, OverrideLocation};
+use crate::features::instance::{
+    AnchoredPath, ContentProviderRejection, InstanceError, OverrideLocation, StorageError,
+};
+use crate::shared::io::IoError;
 
 /// One file of the overrides, by the path it gets in the instance.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -83,7 +86,8 @@ pub(super) async fn stage_overrides(
     let staging = staging.to_owned();
 
     blocking(move || {
-        std::fs::create_dir_all(&staging).map_err(|err| storage(&err))?;
+        std::fs::create_dir_all(&staging)
+            .map_err(|err| InstanceError::storage(IoError::with_path(err, &staging)))?;
 
         let mut staged = Vec::new();
         let mut copied: u64 = 0;
@@ -103,10 +107,10 @@ pub(super) async fn stage_overrides(
 
                 let written = match (&file.source, archive.as_mut(), &root) {
                     (OverrideFileSource::ArchiveEntry(entry), Some(archive), _) => {
-                        let mut entry = archive
-                            .by_index(*entry)
-                            .map_err(|err| invalid_archive(&err))?;
-                        let mut out = File::create(&path).map_err(|err| storage(&err))?;
+                        let mut entry = archive.by_index(*entry).map_err(invalid_archive)?;
+                        let mut out = File::create(&path).map_err(|err| {
+                            InstanceError::storage(IoError::with_path(err, &path))
+                        })?;
                         copy(
                             &mut (&mut entry).take(remaining.saturating_add(1)),
                             &mut out,
@@ -116,13 +120,12 @@ pub(super) async fn stage_overrides(
                         // Reached again from the root: the directory may have changed since it
                         // was listed, and no symlink put in since is followed out of it.
                         let input = open_in(root, &file.relative_path).map_err(|err| {
-                            InstanceError::Storage(format!(
-                                "Override \"{}\" is no longer a file of its directory: {err}",
-                                file.relative_path
-                            ))
+                            InstanceError::storage(IoError::with_path(err, &file.relative_path))
                         })?;
                         // Counted as it is read: the file may have grown since it was listed.
-                        let mut out = File::create(&path).map_err(|err| storage(&err))?;
+                        let mut out = File::create(&path).map_err(|err| {
+                            InstanceError::storage(IoError::with_path(err, &path))
+                        })?;
                         copy(&mut input.take(remaining.saturating_add(1)), &mut out)
                     }
                     (OverrideFileSource::ArchiveEntry(_), None, _) => {
@@ -132,7 +135,7 @@ pub(super) async fn stage_overrides(
                         unreachable!("a directory file is listed from a directory")
                     }
                 }
-                .map_err(|err| storage(&err))?;
+                .map_err(InstanceError::storage)?;
 
                 if written > remaining {
                     return Err(InstanceError::FileTooLarge {
@@ -174,10 +177,8 @@ fn list_archive(
 
     for index in 0..archive.len() {
         // Raw: only the header is read here, nothing is decompressed.
-        let entry = archive
-            .by_index_raw(index)
-            .map_err(|err| invalid_archive(&err))?;
-        let name = entry.name().map_err(|err| invalid_archive(&err))?;
+        let entry = archive.by_index_raw(index).map_err(invalid_archive)?;
+        let name = entry.name().map_err(invalid_archive)?;
         let name = name.as_ref();
 
         // `enclosed_name` refuses a name that climbs out of the root, but takes an absolute
@@ -185,7 +186,7 @@ fn list_archive(
         if entry.enclosed_name().is_none() || is_absolute(name) {
             return Err(InstanceError::InvalidRelativePath {
                 path: name.to_owned(),
-                reason: format!("the entry of \"{archive_path}\" escapes the archive"),
+                reason: crate::shared::safe_path::PathRejection::EscapesRoot,
             });
         }
 
@@ -222,9 +223,9 @@ fn list_directory(
     ) -> Result<(), InstanceError> {
         let mut entries = dir
             .entries()
-            .map_err(|err| storage(&err))?
+            .map_err(InstanceError::storage)?
             .collect::<Result<Vec<_>, _>>()
-            .map_err(|err| storage(&err))?;
+            .map_err(InstanceError::storage)?;
         entries.sort_by_key(cap_std::fs::DirEntry::file_name);
 
         for entry in entries {
@@ -237,17 +238,19 @@ fn list_directory(
                 .to_str()
                 .ok_or_else(|| InstanceError::InvalidRelativePath {
                     path: format!("{prefix}{}", name.to_string_lossy()),
-                    reason: "override file name is not valid UTF-8".to_owned(),
+                    reason: crate::shared::safe_path::PathRejection::NotUtf8,
                 })?;
             let relative_path = format!("{prefix}{name}");
 
             // `DirEntry::file_type` does not follow symlinks.
-            let file_type = entry.file_type().map_err(|err| storage(&err))?;
+            let file_type = entry.file_type().map_err(InstanceError::storage)?;
             if file_type.is_dir() {
-                let subdir = dir.open_dir_nofollow(name).map_err(|err| storage(&err))?;
+                let subdir = dir
+                    .open_dir_nofollow(name)
+                    .map_err(InstanceError::storage)?;
                 walk(&subdir, &format!("{relative_path}/"), max_files, files)?;
             } else if file_type.is_file() {
-                let declared_size = entry.metadata().map_err(|err| storage(&err))?.len();
+                let declared_size = entry.metadata().map_err(InstanceError::storage)?.len();
                 files.push(OverrideFile {
                     relative_path,
                     declared_size,
@@ -275,9 +278,7 @@ fn open_source_dir(path: &AnchoredPath) -> Result<Dir, InstanceError> {
     });
 
     opened.map_err(|err| {
-        InstanceError::Storage(format!(
-            "Failed to open overrides directory \"{path}\": {err}"
-        ))
+        InstanceError::storage(IoError::with_path(err, path.root().join(path.relative())))
     })
 }
 
@@ -286,12 +287,13 @@ fn open_archive(archive_path: &AnchoredPath) -> Result<zip::ZipArchive<File>, In
     let file = open_root(archive_path.root())
         .and_then(|root| open_file_nofollow_in(&root, archive_path.relative()))
         .map_err(|err| {
-            InstanceError::Storage(format!(
-                "Failed to open overrides archive \"{archive_path}\": {err}"
+            InstanceError::storage(IoError::with_path(
+                err,
+                archive_path.root().join(archive_path.relative()),
             ))
         })?;
 
-    zip::ZipArchive::new(file).map_err(|err| invalid_archive(&err))
+    zip::ZipArchive::new(file).map_err(invalid_archive)
 }
 
 /// The root of an [`AnchoredPath`], opened by its path: the core trusts it, links and all.
@@ -366,14 +368,10 @@ fn is_absolute(name: &str) -> bool {
             .is_some_and(|first| first.contains(':'))
 }
 
-fn invalid_archive(err: &zip::result::ZipError) -> InstanceError {
+fn invalid_archive(err: zip::result::ZipError) -> InstanceError {
     InstanceError::ContentProviderError {
-        reason: format!("Invalid overrides archive: {err}"),
+        reason: ContentProviderRejection::InvalidOverridesArchive(err.into()),
     }
-}
-
-fn storage(err: &std::io::Error) -> InstanceError {
-    InstanceError::Storage(err.to_string())
 }
 
 async fn blocking<T: Send + 'static>(
@@ -381,7 +379,7 @@ async fn blocking<T: Send + 'static>(
 ) -> Result<T, InstanceError> {
     tokio::task::spawn_blocking(f)
         .await
-        .map_err(|err| InstanceError::Storage(err.to_string()))?
+        .map_err(|err| InstanceError::storage(StorageError::other(err)))?
 }
 
 #[cfg(test)]

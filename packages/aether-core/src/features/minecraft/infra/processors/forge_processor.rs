@@ -13,8 +13,8 @@ use crate::{
         events::{ProgressBarId, ProgressService, ProgressServiceExt},
         java::Java,
         minecraft::{
-            GameVersion, MinecraftDomainError, ModLoaderProcessor, get_class_paths_jar,
-            get_lib_path, modded, vanilla::VersionInfo,
+            GameVersion, MinecraftDomainError, ModLoaderProcessor, ProcessorFailure,
+            get_class_paths_jar, get_lib_path, modded, vanilla::VersionInfo,
         },
         settings::LocationInfo,
     },
@@ -145,7 +145,9 @@ async fn execute_processor(
     let jar_path = get_lib_path(libraries_dir, &processor.jar, false)?;
     let Some(main_class) = get_processor_main_class(jar_path).await? else {
         return Err(MinecraftDomainError::ProcessorFailed {
-            reason: format!("Could not find processor main class for {}", processor.jar),
+            reason: ProcessorFailure::MainClassNotFound {
+                jar: processor.jar.clone(),
+            },
         });
     };
 
@@ -155,20 +157,17 @@ async fn execute_processor(
         .output()
         .await
         .map_err(|err| MinecraftDomainError::ProcessorFailed {
-            reason: format!(
-                "Error running processor: {}",
-                IoError::with_path(err, java_version.path())
-            ),
+            reason: ProcessorFailure::SpawnFailed(IoError::with_path(err, java_version.path())),
         })?;
 
     if output.status.success() {
         return Ok(());
     }
     Err(MinecraftDomainError::ProcessorFailed {
-        reason: format!(
-            "Processor error: {}",
-            String::from_utf8_lossy(&output.stderr)
-        ),
+        reason: ProcessorFailure::Exited {
+            code: output.status.code(),
+            stderr: String::from_utf8_lossy(&output.stderr).into_owned(),
+        },
     })
 }
 
@@ -245,7 +244,7 @@ fn process_argument(
 
     if result.contains('{') && result.contains('}') {
         return Err(MinecraftDomainError::ProcessorFailed {
-            reason: format!("Argument contains unresolved placeholders: {result}"),
+            reason: ProcessorFailure::UnresolvedPlaceholder { argument: result },
         });
     }
 
@@ -269,7 +268,7 @@ pub(super) async fn get_processor_main_class(
     tokio::task::spawn_blocking(move || read_main_class(&path))
         .await
         .map_err(|err| MinecraftDomainError::ProcessorFailed {
-            reason: err.to_string(),
+            reason: ProcessorFailure::TaskFailed(err),
         })?
 }
 
@@ -277,11 +276,15 @@ fn read_main_class(path: &str) -> Result<Option<String>, MinecraftDomainError> {
     let file = std::fs::File::open(path).map_err(|err| IoError::with_path(err, path))?;
     let mut archive =
         zip::ZipArchive::new(file).map_err(|_| MinecraftDomainError::ProcessorFailed {
-            reason: format!("Cannot read processor at {path}"),
+            reason: ProcessorFailure::CannotReadProcessor {
+                path: path.to_owned(),
+            },
         })?;
     let manifest = archive.by_name("META-INF/MANIFEST.MF").map_err(|_| {
         MinecraftDomainError::ProcessorFailed {
-            reason: format!("Cannot read processor manifest at {path}"),
+            reason: ProcessorFailure::CannotReadManifest {
+                path: path.to_owned(),
+            },
         }
     })?;
 
@@ -338,8 +341,9 @@ mod tests {
     fn unresolved(err: &MinecraftDomainError) -> bool {
         matches!(
             err,
-            MinecraftDomainError::ProcessorFailed { reason }
-                if reason.contains("unresolved placeholders")
+            MinecraftDomainError::ProcessorFailed {
+                reason: ProcessorFailure::UnresolvedPlaceholder { .. }
+            }
         )
     }
 
@@ -529,7 +533,9 @@ mod tests {
         let err = get_processor_arguments(&libs, &["{A}/{B}"], &data(&[("A", "x")])).unwrap_err();
         assert!(matches!(
             err,
-            MinecraftDomainError::ProcessorFailed { ref reason } if reason.ends_with("x/{B}")
+            MinecraftDomainError::ProcessorFailed {
+                reason: ProcessorFailure::UnresolvedPlaceholder { ref argument }
+            } if argument.ends_with("x/{B}")
         ));
     }
 
@@ -594,8 +600,9 @@ mod tests {
         let err = get_processor_main_class(jar).await.unwrap_err();
         assert!(matches!(
             err,
-            MinecraftDomainError::ProcessorFailed { ref reason }
-                if reason.contains("Cannot read processor manifest")
+            MinecraftDomainError::ProcessorFailed {
+                reason: ProcessorFailure::CannotReadManifest { .. }
+            }
         ));
     }
 
@@ -609,8 +616,9 @@ mod tests {
             .unwrap_err();
         assert!(matches!(
             err,
-            MinecraftDomainError::ProcessorFailed { ref reason }
-                if reason.contains("Cannot read processor at")
+            MinecraftDomainError::ProcessorFailed {
+                reason: ProcessorFailure::CannotReadProcessor { .. }
+            }
         ));
     }
 

@@ -3,18 +3,53 @@ use std::path::Path;
 
 // --- IoErrorKind ---
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum IoErrorKind {
     NotFound,
     PermissionDenied,
+    AlreadyExists,
+    StorageFull,
+    ReadOnlyFilesystem,
+    ResourceBusy,
+    TimedOut,
+    InvalidData,
     Other,
 }
 
+impl IoErrorKind {
+    /// Classifies an OS error, including Windows sharing/lock violations that std leaves uncategorized.
+    pub fn of(error: &std::io::Error) -> Self {
+        let kind = Self::from(error.kind());
+        #[cfg(windows)]
+        if kind == Self::Other
+            && matches!(
+                error.raw_os_error(),
+                Some(ERROR_SHARING_VIOLATION | ERROR_LOCK_VIOLATION)
+            )
+        {
+            return Self::ResourceBusy;
+        }
+        kind
+    }
+}
+
+#[cfg(windows)]
+const ERROR_SHARING_VIOLATION: i32 = 32;
+#[cfg(windows)]
+const ERROR_LOCK_VIOLATION: i32 = 33;
+
 impl From<std::io::ErrorKind> for IoErrorKind {
     fn from(value: std::io::ErrorKind) -> Self {
+        use std::io::ErrorKind as K;
         match value {
-            std::io::ErrorKind::NotFound => Self::NotFound,
-            std::io::ErrorKind::PermissionDenied => Self::PermissionDenied,
+            K::NotFound => Self::NotFound,
+            K::PermissionDenied => Self::PermissionDenied,
+            K::AlreadyExists => Self::AlreadyExists,
+            K::StorageFull | K::QuotaExceeded => Self::StorageFull,
+            K::ReadOnlyFilesystem => Self::ReadOnlyFilesystem,
+            K::ResourceBusy => Self::ResourceBusy,
+            K::TimedOut => Self::TimedOut,
+            K::InvalidData => Self::InvalidData,
             _ => Self::Other,
         }
     }
@@ -25,6 +60,12 @@ impl From<IoErrorKind> for std::io::ErrorKind {
         match value {
             IoErrorKind::NotFound => Self::NotFound,
             IoErrorKind::PermissionDenied => Self::PermissionDenied,
+            IoErrorKind::AlreadyExists => Self::AlreadyExists,
+            IoErrorKind::StorageFull => Self::StorageFull,
+            IoErrorKind::ReadOnlyFilesystem => Self::ReadOnlyFilesystem,
+            IoErrorKind::ResourceBusy => Self::ResourceBusy,
+            IoErrorKind::TimedOut => Self::TimedOut,
+            IoErrorKind::InvalidData => Self::InvalidData,
             IoErrorKind::Other => Self::Other,
         }
     }
@@ -88,12 +129,12 @@ impl From<&IoError> for IoErrorRepr {
     fn from(value: &IoError) -> Self {
         match value {
             IoError::IoPathError { source, path } => Self::IoPathError {
-                kind: source.kind().into(),
+                kind: IoErrorKind::of(source),
                 path: path.clone(),
                 message: source.to_string(),
             },
             IoError::IoError(source) => Self::IoError {
-                kind: source.kind().into(),
+                kind: IoErrorKind::of(source),
                 message: source.to_string(),
             },
             IoError::SerializationError(msg) => Self::SerializationError(msg.to_owned()),
@@ -175,11 +216,41 @@ mod tests {
 
     #[test]
     fn unknown_kinds_collapse_to_other() {
-        let err = IoError::from(std::io::Error::new(std::io::ErrorKind::TimedOut, "slow"));
+        let err = IoError::from(std::io::Error::new(std::io::ErrorKind::Interrupted, "slow"));
         let json = serde_json::to_string(&err).unwrap();
         let IoError::IoError(source) = serde_json::from_str::<IoError>(&json).unwrap() else {
             panic!("variant changed");
         };
         assert_eq!(source.kind(), std::io::ErrorKind::Other);
+    }
+
+    #[rstest::rstest]
+    #[case::not_found(std::io::ErrorKind::NotFound, IoErrorKind::NotFound)]
+    #[case::already_exists(std::io::ErrorKind::AlreadyExists, IoErrorKind::AlreadyExists)]
+    #[case::storage_full(std::io::ErrorKind::StorageFull, IoErrorKind::StorageFull)]
+    #[case::quota(std::io::ErrorKind::QuotaExceeded, IoErrorKind::StorageFull)]
+    #[case::read_only(
+        std::io::ErrorKind::ReadOnlyFilesystem,
+        IoErrorKind::ReadOnlyFilesystem
+    )]
+    #[case::busy(std::io::ErrorKind::ResourceBusy, IoErrorKind::ResourceBusy)]
+    #[case::timed_out(std::io::ErrorKind::TimedOut, IoErrorKind::TimedOut)]
+    #[case::invalid_data(std::io::ErrorKind::InvalidData, IoErrorKind::InvalidData)]
+    #[case::other(std::io::ErrorKind::Interrupted, IoErrorKind::Other)]
+    fn maps_std_kind(#[case] std_kind: std::io::ErrorKind, #[case] expected: IoErrorKind) {
+        assert_eq!(IoErrorKind::from(std_kind), expected);
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn windows_sharing_violation_is_resource_busy() {
+        assert_eq!(
+            IoErrorKind::of(&std::io::Error::from_raw_os_error(32)),
+            IoErrorKind::ResourceBusy
+        );
+        assert_eq!(
+            IoErrorKind::of(&std::io::Error::from_raw_os_error(33)),
+            IoErrorKind::ResourceBusy
+        );
     }
 }

@@ -1,6 +1,6 @@
 use crate::features::instance::{CapabilityId, ProviderId};
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum ManifestError {
     #[error("Unsupported API version")]
     UnsupportedApi,

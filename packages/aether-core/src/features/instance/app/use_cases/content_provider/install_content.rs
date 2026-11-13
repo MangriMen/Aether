@@ -6,11 +6,11 @@ use crate::features::instance::app::ports::{InstallContentUseCasePort, InstallPl
 use crate::features::minecraft::ModLoader;
 use crate::{
     features::instance::{
-        AtomicInstallParams, ContentId, ContentInstallParams, ContentProvider, ContentSource,
-        ContentType, ContentVersionId, InstallFileEntry, InstallPlan, InstallTarget, InstanceError,
-        InstanceId, InstanceInstallStage, InstanceLocks, InstanceStorage, ModpackInstallParams,
-        PackStorage, PlanOrigin, ProviderId, ResolveInstallPlanParams, ResolveTarget,
-        app::extensions::InstanceStorageExt,
+        AtomicInstallParams, ContentId, ContentInstallParams, ContentProvider,
+        ContentProviderRejection, ContentSource, ContentType, ContentVersionId, InstallFileEntry,
+        InstallPlan, InstallTarget, InstanceError, InstanceId, InstanceInstallStage, InstanceLocks,
+        InstanceStorage, ModpackInstallParams, PackStorage, PlanOrigin, ProviderId,
+        ResolveInstallPlanParams, ResolveTarget, app::extensions::InstanceStorageExt,
     },
     shared::capability::domain::CapabilityRegistry,
 };
@@ -121,10 +121,9 @@ impl InstallContentUseCase {
         // a plan for another instance than the one asked about would install into it.
         if !requested.is_answered_by(&plan.target) {
             return Err(InstanceError::ContentProviderError {
-                reason: format!(
-                    "{} answered with a plan for another target than the one asked for",
-                    provider.provider_id()
-                ),
+                reason: ContentProviderRejection::WrongTarget {
+                    provider_id: provider.provider_id(),
+                },
             });
         }
 
@@ -140,10 +139,10 @@ impl InstallContentUseCase {
                     // are owned by this one: updates would look for them under the wrong one.
                     if pack_info.provider_id != provider_id {
                         return Err(InstanceError::ContentProviderError {
-                            reason: format!(
-                                "{provider_id} answered with a pack of another provider ({})",
-                                pack_info.provider_id
-                            ),
+                            reason: ContentProviderRejection::ForeignPack {
+                                provider_id,
+                                pack_provider_id: pack_info.provider_id.clone(),
+                            },
                         });
                     }
                     pack_info.modpack_id.clone()

@@ -1,6 +1,12 @@
 import { Show, untrack, type Component } from 'solid-js';
 
-import { getTranslatedError, isLauncherError } from '@/features/errors';
+import {
+  ErrorDetails,
+  getErrorDetails,
+  getTranslatedError,
+  isInternalError,
+  isLauncherError,
+} from '@/features/errors';
 import { useLastPluginReload, type Plugin } from '@/features/plugins';
 import { useTranslation } from '@/shared/i18n';
 import { cn } from '@/shared/utils';
@@ -69,6 +75,14 @@ const RestartNotice: Component<PluginRestartNoticeProps> = (props) => {
           <span role='alert' class='text-sm text-destructive'>
             {text()}
           </span>
+        )}
+      </Show>
+      <Show when={refusal() ? getErrorDetails(lastReload()?.error) : undefined}>
+        {(details) => (
+          <ErrorDetails
+            details={details()}
+            defaultOpen={isInternalError(lastReload()?.error)}
+          />
         )}
       </Show>
     </div>

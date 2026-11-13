@@ -150,7 +150,7 @@ async fn should_refuse_an_archive_when_it_unpacks_to_more_than_it_declares() {
         .err()
         .unwrap();
     assert!(
-        matches!(&err, InstanceError::Storage(reason) if reason.contains("larger than its declared")),
+        matches!(&err, InstanceError::Storage(StorageError::Io(io)) if io.kind() == std::io::ErrorKind::InvalidData),
         "{err:?}"
     );
 }
@@ -363,7 +363,10 @@ async fn should_refuse_an_archive_when_it_became_a_link() {
         .unwrap();
 
     assert!(
-        matches!(&err, InstanceError::Storage(reason) if reason.contains("Failed to open overrides archive")),
+        matches!(
+            &err,
+            InstanceError::Storage(StorageError::SharedIo(IoError::IoPathError { .. }))
+        ),
         "{err:?}"
     );
 }
@@ -382,7 +385,12 @@ async fn should_refuse_an_archive_when_it_is_a_directory() {
     std::fs::write(archive_path.join("overrides").join("a.txt"), "x").unwrap();
     assert!(std::fs::symlink_metadata(&archive_path).unwrap().is_dir());
 
-    let is_refused_open = |err: &InstanceError| matches!(err, InstanceError::Storage(reason) if reason.contains("Failed to open overrides archive"));
+    let is_refused_open = |err: &InstanceError| {
+        matches!(
+            err,
+            InstanceError::Storage(StorageError::SharedIo(IoError::IoPathError { .. }))
+        )
+    };
     let err = list_overrides(&source, 10).await.err().unwrap();
     assert!(is_refused_open(&err), "{err:?}");
     let err = stage_overrides(vec![(source, files)], &dir.path().join("staging"), 1000)

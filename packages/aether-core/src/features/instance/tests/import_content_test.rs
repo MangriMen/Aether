@@ -288,7 +288,9 @@ impl PackStorage for FailingRecord {
         _: &[ContentPath],
         _: &[PackFile],
     ) -> Result<(), InstanceError> {
-        Err(InstanceError::Storage("disk full".into()))
+        Err(InstanceError::storage(
+            crate::features::instance::StorageError::other("disk full"),
+        ))
     }
     async fn remove_pack_file(
         &self,

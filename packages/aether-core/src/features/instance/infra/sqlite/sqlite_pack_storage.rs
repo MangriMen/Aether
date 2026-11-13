@@ -1,6 +1,6 @@
 use crate::features::instance::{
     ContentFileUpdateInfo, ContentId, ContentPath, FileSide, InstanceError, InstanceId, Pack,
-    PackEntry, PackFile, PackStorage, PlanOrigin, ProviderId,
+    PackEntry, PackFile, PackStorage, PlanOrigin, ProviderId, StorageError,
     infra::{
         legacy_provider_id::{legacy_provider_id_string, parse_stored_provider_id},
         stored_content_id::{parse_stored_content_id, parse_stored_version},
@@ -146,7 +146,7 @@ impl SqlitePackStorage {
         )
         .fetch_optional(&self.pool)
         .await
-        .map_err(|e| InstanceError::Storage(e.to_string()))?;
+        .map_err(InstanceError::storage)?;
         let Some(row) = row else {
             return Ok(None);
         };
@@ -159,7 +159,7 @@ impl SqlitePackStorage {
         )
         .fetch_all(&self.pool)
         .await
-        .map_err(|e| InstanceError::Storage(e.to_string()))?;
+        .map_err(InstanceError::storage)?;
 
         Ok(Some((row, updates)))
     }
@@ -212,7 +212,7 @@ impl SqlitePackStorage {
             .fetch_one(&self.pool)
             .await
             .map(|count| count > 0)
-            .map_err(|e| InstanceError::Storage(e.to_string()))
+            .map_err(InstanceError::storage)
     }
 
     // Helper to internalize update logic for reuse in transactions
@@ -230,7 +230,7 @@ impl SqlitePackStorage {
         )
         .execute(&mut **tx)
         .await
-        .map_err(|e| InstanceError::Storage(e.to_string()))?;
+        .map_err(InstanceError::storage)?;
 
         let hash = pack_file.hash.to_string();
         let update_provider_id = pack_file
@@ -272,7 +272,7 @@ impl SqlitePackStorage {
         )
         .execute(&mut **tx)
         .await
-        .map_err(|e| InstanceError::Storage(e.to_string()))?;
+        .map_err(InstanceError::storage)?;
 
         // Cleanup old updates
         sqlx::query!(
@@ -282,7 +282,7 @@ impl SqlitePackStorage {
         )
         .execute(&mut **tx)
         .await
-        .map_err(|e| InstanceError::Storage(e.to_string()))?;
+        .map_err(InstanceError::storage)?;
 
         // Insert new updates
         if let Some(updates) = &pack_file.update {
@@ -299,7 +299,7 @@ impl SqlitePackStorage {
                 )
                 .execute(&mut **tx)
                 .await
-                .map_err(|e| InstanceError::Storage(e.to_string()))?;
+                .map_err(InstanceError::storage)?;
             }
         }
         Ok(())
@@ -315,7 +315,7 @@ impl PackStorage for SqlitePackStorage {
         )
         .fetch_all(&self.pool)
         .await
-        .map_err(|e| InstanceError::Storage(e.to_string()))?;
+        .map_err(InstanceError::storage)?;
 
         Ok(Pack {
             files: files
@@ -345,8 +345,12 @@ impl PackStorage for SqlitePackStorage {
     ) -> Result<PackFile, InstanceError> {
         self.load_pack_file(instance_id, content_path)
             .await?
-            .ok_or_else(|| InstanceError::Storage(format!("Pack file not found: {content_path}")))?
-            .map_err(|err| InstanceError::Storage(err.to_string()))
+            .ok_or_else(|| {
+                InstanceError::storage(StorageError::other(format!(
+                    "Pack file not found: {content_path}"
+                )))
+            })?
+            .map_err(InstanceError::storage)
     }
 
     async fn rehash_pack_file(
@@ -366,7 +370,7 @@ impl PackStorage for SqlitePackStorage {
         )
         .execute(&self.pool)
         .await
-        .map_err(|e| InstanceError::Storage(e.to_string()))?
+        .map_err(InstanceError::storage)?
         .rows_affected();
         if changed == 0 {
             return Ok(None);
@@ -400,7 +404,7 @@ impl PackStorage for SqlitePackStorage {
         )
         .fetch_all(&self.pool)
         .await
-        .map_err(|e| InstanceError::Storage(e.to_string()))?;
+        .map_err(InstanceError::storage)?;
 
         let all_updates = sqlx::query_as!(
             PackFileUpdateRow,
@@ -409,7 +413,7 @@ impl PackStorage for SqlitePackStorage {
         )
         .fetch_all(&self.pool)
         .await
-        .map_err(|e| InstanceError::Storage(e.to_string()))?;
+        .map_err(InstanceError::storage)?;
 
         let mut updates: HashMap<String, Vec<PackFileUpdateRow>> = HashMap::new();
         for update in all_updates {
@@ -449,7 +453,7 @@ impl PackStorage for SqlitePackStorage {
         )
         .fetch_all(&self.pool)
         .await
-        .map_err(|e| InstanceError::Storage(e.to_string()))?;
+        .map_err(InstanceError::storage)?;
 
         // A row whose path cannot be a content path matches nothing; the first one that can wins.
         if let Some(content_path) = rows
@@ -468,15 +472,9 @@ impl PackStorage for SqlitePackStorage {
         content_path: &ContentPath,
         pack_file: &PackFile,
     ) -> Result<(), InstanceError> {
-        let mut tx = self
-            .pool
-            .begin()
-            .await
-            .map_err(|e| InstanceError::Storage(e.to_string()))?;
+        let mut tx = self.pool.begin().await.map_err(InstanceError::storage)?;
         Self::upsert_file_internal(&mut tx, instance_id, content_path, pack_file).await?;
-        tx.commit()
-            .await
-            .map_err(|e| InstanceError::Storage(e.to_string()))
+        tx.commit().await.map_err(InstanceError::storage)
     }
 
     async fn update_pack_file_many(
@@ -485,19 +483,13 @@ impl PackStorage for SqlitePackStorage {
         content_paths: &[ContentPath],
         pack_files: &[PackFile],
     ) -> Result<(), InstanceError> {
-        let mut tx = self
-            .pool
-            .begin()
-            .await
-            .map_err(|e| InstanceError::Storage(e.to_string()))?;
+        let mut tx = self.pool.begin().await.map_err(InstanceError::storage)?;
 
         for (path, file) in content_paths.iter().zip(pack_files) {
             Self::upsert_file_internal(&mut tx, instance_id, path, file).await?;
         }
 
-        tx.commit()
-            .await
-            .map_err(|e| InstanceError::Storage(e.to_string()))
+        tx.commit().await.map_err(InstanceError::storage)
     }
 
     async fn remove_pack_file(
@@ -513,7 +505,7 @@ impl PackStorage for SqlitePackStorage {
         )
         .execute(&self.pool)
         .await
-        .map_err(|e| InstanceError::Storage(e.to_string()))?;
+        .map_err(InstanceError::storage)?;
         Ok(())
     }
 
@@ -522,11 +514,7 @@ impl PackStorage for SqlitePackStorage {
         instance_id: &InstanceId,
         content_paths: &[ContentPath],
     ) -> Result<(), InstanceError> {
-        let mut tx = self
-            .pool
-            .begin()
-            .await
-            .map_err(|e| InstanceError::Storage(e.to_string()))?;
+        let mut tx = self.pool.begin().await.map_err(InstanceError::storage)?;
 
         for path in content_paths {
             sqlx::query!(
@@ -536,20 +524,14 @@ impl PackStorage for SqlitePackStorage {
             )
             .execute(&mut *tx)
             .await
-            .map_err(|e| InstanceError::Storage(e.to_string()))?;
+            .map_err(InstanceError::storage)?;
         }
 
-        tx.commit()
-            .await
-            .map_err(|e| InstanceError::Storage(e.to_string()))
+        tx.commit().await.map_err(InstanceError::storage)
     }
 
     async fn remove_all_for_instance(&self, instance_id: &InstanceId) -> Result<(), InstanceError> {
-        let mut tx = self
-            .pool
-            .begin()
-            .await
-            .map_err(|e| InstanceError::Storage(e.to_string()))?;
+        let mut tx = self.pool.begin().await.map_err(InstanceError::storage)?;
 
         sqlx::query!(
             "DELETE FROM pack_file_updates WHERE instance_id = ?",
@@ -557,7 +539,7 @@ impl PackStorage for SqlitePackStorage {
         )
         .execute(&mut *tx)
         .await
-        .map_err(|e| InstanceError::Storage(e.to_string()))?;
+        .map_err(InstanceError::storage)?;
 
         sqlx::query!(
             "DELETE FROM pack_files WHERE instance_id = ?",
@@ -565,7 +547,7 @@ impl PackStorage for SqlitePackStorage {
         )
         .execute(&mut *tx)
         .await
-        .map_err(|e| InstanceError::Storage(e.to_string()))?;
+        .map_err(InstanceError::storage)?;
 
         sqlx::query!(
             "DELETE FROM packs WHERE instance_id = ?",
@@ -573,11 +555,9 @@ impl PackStorage for SqlitePackStorage {
         )
         .execute(&mut *tx)
         .await
-        .map_err(|e| InstanceError::Storage(e.to_string()))?;
+        .map_err(InstanceError::storage)?;
 
-        tx.commit()
-            .await
-            .map_err(|e| InstanceError::Storage(e.to_string()))
+        tx.commit().await.map_err(InstanceError::storage)
     }
 }
 

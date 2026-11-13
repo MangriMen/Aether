@@ -2,6 +2,11 @@ import IconMdiAlertOutline from '~icons/mdi/alert-outline';
 import { For, Show, type Component } from 'solid-js';
 
 import {
+  ErrorDetails,
+  getErrorDetails,
+  getTranslatedError,
+} from '@/features/errors';
+import {
   useSkippedPluginDirs,
   type SkippedPluginDir,
 } from '@/features/plugins';
@@ -16,9 +21,12 @@ export const SkippedPluginDirsNotice: Component = () => {
   const reason = (dir: SkippedPluginDir) =>
     dir.reason.code === 'INVALID_NAME'
       ? t('plugins.skippedDirs.invalidName')
-      : t('plugins.skippedDirs.loadFailed', {
-          details: dir.reason.payload.details,
-        });
+      : `${t('plugins.skippedDirs.loadFailed')}: ${getTranslatedError(dir.reason.payload.error, t)}`;
+
+  const details = (dir: SkippedPluginDir) =>
+    dir.reason.code === 'LOAD_FAILED'
+      ? getErrorDetails(dir.reason.payload.error)
+      : undefined;
 
   return (
     <Show when={dirs.data?.length ? dirs.data : undefined}>
@@ -38,6 +46,9 @@ export const SkippedPluginDirsNotice: Component = () => {
                 {(dir) => (
                   <li>
                     <b>{dir.dir_name}</b>: {reason(dir)}
+                    <Show when={details(dir)}>
+                      {(text) => <ErrorDetails details={text()} />}
+                    </Show>
                   </li>
                 )}
               </For>

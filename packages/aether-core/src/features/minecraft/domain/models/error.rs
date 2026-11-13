@@ -1,6 +1,34 @@
 use std::path::PathBuf;
 
 use super::LoaderVersionPreference;
+use crate::shared::io::domain::IoError;
+
+/// Why a modloader processor did not finish.
+#[derive(Debug, thiserror::Error)]
+pub enum ProcessorFailure {
+    #[error("Could not find processor main class for {jar}")]
+    MainClassNotFound { jar: String },
+
+    #[error("Argument contains unresolved placeholders: {argument}")]
+    UnresolvedPlaceholder { argument: String },
+
+    #[error("Cannot read processor at {path}")]
+    CannotReadProcessor { path: String },
+
+    #[error("Cannot read processor manifest at {path}")]
+    CannotReadManifest { path: String },
+
+    #[error("Error running processor: {0}")]
+    SpawnFailed(#[source] IoError),
+
+    /// `code` is empty when the OS ended the process by a signal. `stderr` is the text of the
+    /// processor, not ours.
+    #[error("Processor error: {stderr}")]
+    Exited { code: Option<i32>, stderr: String },
+
+    #[error("Processor task failed: {0}")]
+    TaskFailed(#[source] tokio::task::JoinError),
+}
 
 #[derive(Debug, thiserror::Error)]
 pub enum MinecraftDomainError {
@@ -24,7 +52,7 @@ pub enum MinecraftDomainError {
     DefaultLoaderNotFound,
 
     #[error("Modloader processor failed: {reason}")]
-    ProcessorFailed { reason: String },
+    ProcessorFailed { reason: ProcessorFailure },
 
     #[error("Failed to execute pre-launch command: exit code {code}")]
     PreLaunchFailed { code: i32 },
@@ -35,9 +63,14 @@ pub enum MinecraftDomainError {
     #[error("Path not found: {path:?} ({entity_type})")]
     PathNotFound { path: PathBuf, entity_type: String },
 
+    /// `reason` is the text of the parser (daedalus), not ours.
     #[error("Error while parsing libraries: {reason}")]
     ParseFailed { reason: String },
 
-    #[error("Storage failure: {reason}")]
-    StorageFailure { reason: String },
+    #[error("Storage failure: {0}")]
+    StorageFailure(#[source] IoError),
+
+    /// The log config of a version is named so that it would leave its directory.
+    #[error("Invalid log config name: {name}")]
+    InvalidLogConfigName { name: String },
 }

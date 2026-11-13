@@ -987,7 +987,7 @@ impl InstallPlanExecutor {
             let filled = async {
                 crate::shared::io::infra::create_dir_all(&undo.backup_dir)
                     .await
-                    .map_err(|err| InstanceError::Storage(err.to_string()))?;
+                    .map_err(InstanceError::storage)?;
 
                 let mut installed_files = self
                     .install_all(&instance_id, staged, progress, &mut undo)
@@ -1268,7 +1268,7 @@ impl InstallPlanExecutor {
             Some(hash) => hash.matches(
                 &hash_file_hex_async(hash.algorithm(), &located.path)
                     .await
-                    .map_err(|err| InstanceError::Storage(err.to_string()))?,
+                    .map_err(InstanceError::storage)?,
             ),
             None => false,
         };
@@ -1330,7 +1330,7 @@ impl InstallPlanExecutor {
 
         crate::shared::io::infra::create_dir_all(staging)
             .await
-            .map_err(|err| InstanceError::Storage(err.to_string()))?;
+            .map_err(InstanceError::storage)?;
 
         try_join_all(files.into_iter().enumerate().map(|(index, file)| {
             // Named by position: the plan's paths are not flat file names, and two of them may
@@ -1573,9 +1573,8 @@ async fn sha1_of(path: &Path, known: Option<&FileHash>) -> Result<FileHash, Inst
         _ => {
             let hex = hash_file_hex_async(HashAlgorithm::Sha1, path)
                 .await
-                .map_err(|err| InstanceError::Storage(err.to_string()))?;
-            FileHash::new(HashAlgorithm::Sha1, hex)
-                .map_err(|err| InstanceError::Storage(err.to_string()))
+                .map_err(InstanceError::storage)?;
+            FileHash::new(HashAlgorithm::Sha1, hex).map_err(InstanceError::storage)
         }
     }
 }

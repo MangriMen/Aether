@@ -401,7 +401,9 @@ struct UnlistableStorage;
 #[async_trait]
 impl InstanceStorage for UnlistableStorage {
     async fn list(&self) -> Result<Vec<Instance>, InstanceError> {
-        Err(InstanceError::Storage("boom".to_owned()))
+        Err(InstanceError::storage(
+            crate::features::instance::StorageError::other("boom"),
+        ))
     }
 
     async fn get(&self, id: &InstanceId) -> Result<Instance, InstanceError> {

@@ -7,7 +7,7 @@ import { enDictionary, ruDictionary } from '@/shared/i18n';
 
 import type { LauncherError } from '../launcherError';
 
-import { getTranslatedError } from '../launcherError';
+import { getErrorDetails, getTranslatedError } from '../launcherError';
 
 /**
  * Error codes are only types in the generated bindings, so a new Rust error
@@ -44,6 +44,21 @@ const getCodes = (dtoName: string, source = bindings): string[] => {
   return [...body.matchAll(/\{ code: "(\w+)"/g)].map((m) => m[1]!);
 };
 
+const tEn = i18n.translator(
+  () => i18n.flatten(enDictionary),
+  i18n.resolveTemplate,
+);
+const tRu = i18n.translator(
+  () => i18n.flatten(ruDictionary),
+  i18n.resolveTemplate,
+);
+
+const io = (cause: unknown) =>
+  ({
+    type: 'application',
+    payload: { code: 'IO', payload: { cause } },
+  }) as unknown as LauncherError;
+
 const dictionaries: [string, Dictionary][] = [
   ['en', enDictionary as unknown as Dictionary],
   ['ru', ruDictionary as unknown as Dictionary],
@@ -73,37 +88,189 @@ describe('error translations', () => {
     },
   );
 
-  it('should_pick_the_io_message_by_kind_when_the_error_has_a_kind', () => {
-    const t = i18n.translator(
-      () => i18n.flatten(enDictionary),
-      i18n.resolveTemplate,
-    );
-    const tRu = i18n.translator(
-      () => i18n.flatten(ruDictionary),
-      i18n.resolveTemplate,
-    );
+  it('should_append_the_translated_cause_when_the_error_has_one', () => {
     const cases = [
-      ['notFound', 'A file or folder was not found'],
-      ['permissionDenied', 'Access to a file or folder was denied'],
-      ['other', 'File system error: disk full'],
+      [
+        { type: 'io', kind: 'notFound' },
+        'File system error: file or folder not found',
+      ],
+      [
+        { type: 'io', kind: 'readOnlyFilesystem' },
+        'File system error: the disk is read-only',
+      ],
+      [
+        { type: 'network', kind: 'timeout', url: null },
+        'File system error: the server did not respond in time',
+      ],
+      [
+        { type: 'httpStatus', status: 503, url: 'https://x' },
+        'File system error: the server answered 503',
+      ],
+      [
+        { type: 'parse', line: 3, column: 7 },
+        'File system error: the data has an invalid format (line 3, column 7)',
+      ],
+      [
+        { type: 'parse', line: null, column: null },
+        'File system error: the data has an invalid format',
+      ],
+      [{ type: 'database' }, 'File system error: launcher database error'],
     ] as const;
 
-    for (const [kind, expected] of cases) {
-      const error = {
-        type: 'application',
-        payload: {
-          code: 'IO',
-          payload: { details: 'disk full', kind },
-        },
-      } as unknown as LauncherError;
-
-      expect(getTranslatedError(error, t)).toBe(expected);
-      expect(getTranslatedError(error, tRu)).not.toMatch(
-        /^(errors.)?application.IO/,
-      );
-      expect(getTranslatedError(error, tRu)).not.toBe(expected);
+    for (const [cause, expected] of cases) {
+      expect(getTranslatedError(io(cause), tEn)).toBe(expected);
     }
   });
+
+  it('should_translate_the_cause_into_russian', () => {
+    const text = getTranslatedError(io({ type: 'io', kind: 'notFound' }), tRu);
+
+    expect(text).toBe('Ошибка файловой системы: файл или папка не найдены');
+  });
+
+  it('should_leave_the_main_text_alone_when_the_cause_is_unknown', () => {
+    const text = getTranslatedError(
+      io({ type: 'unknown', details: 'secret raw text' }),
+      tEn,
+    );
+
+    expect(text).toBe('File system error');
+  });
+
+  it('should_translate_an_internal_error_without_its_raw_text', () => {
+    const error = {
+      type: 'application',
+      payload: {
+        code: 'INTERNAL',
+        payload: { cause: { type: 'unknown', details: 'boom' } },
+      },
+    } as unknown as LauncherError;
+
+    expect(getTranslatedError(error, tEn)).toBe('Unexpected error');
+  });
+
+  it('should_replace_the_reason_argument_with_its_translation', () => {
+    const t = (key: string, args?: Record<string, unknown>) =>
+      key === 'errors.instance.reason.INVALID.cannot_be_empty'
+        ? `empty:${String(args?.field)}`
+        : `${key}|${JSON.stringify(args)}`;
+    const error = {
+      type: 'instance',
+      payload: {
+        code: 'INVALID',
+        payload: {
+          reason: { code: 'cannot_be_empty', payload: { field: 'name' } },
+        },
+      },
+    } as unknown as LauncherError;
+
+    expect(getTranslatedError(error, t as never)).toBe(
+      'errors.instance.INVALID|{"reason":"empty:name"}',
+    );
+  });
+});
+
+describe('field names', () => {
+  const pagination = (field: string): LauncherError =>
+    ({
+      type: 'instance',
+      payload: {
+        code: 'INVALID_PAGINATION',
+        payload: {
+          field,
+          value: '5000',
+          reason: { code: 'TOO_LARGE', payload: { max: 1000 } },
+        },
+      },
+    }) as unknown as LauncherError;
+
+  it('should_name_the_field_in_the_text_when_it_has_a_translation', () => {
+    expect(getTranslatedError(pagination('PAGE_SIZE'), tEn)).toBe(
+      'Invalid page size value 5000: it must be at most 1000',
+    );
+    expect(getTranslatedError(pagination('PAGE'), tRu)).toContain('страница');
+  });
+
+  it('should_keep_the_raw_name_when_the_field_has_no_translation', () => {
+    expect(getTranslatedError(pagination('OTHER'), tEn)).toContain(
+      'Invalid OTHER value',
+    );
+  });
+});
+
+describe('the cause of a reason', () => {
+  const download = (cause: unknown): LauncherError =>
+    ({
+      type: 'instance',
+      payload: {
+        code: 'CONTENT_DOWNLOAD_ERROR',
+        payload: {
+          reason: {
+            code: 'DOWNLOAD',
+            payload: { url: 'https://x.test/a.jar', cause },
+          },
+        },
+      },
+    }) as unknown as LauncherError;
+
+  it('should_append_the_category_of_the_cause_of_the_reason', () => {
+    expect(
+      getTranslatedError(
+        download({ type: 'httpStatus', status: 404, url: 'https://x.test' }),
+        tEn,
+      ),
+    ).toBe(
+      'Failed to download instance content: could not download https://x.test/a.jar: the server answered 404',
+    );
+  });
+
+  it('should_find_the_raw_text_of_an_unknown_cause_of_the_reason', () => {
+    expect(
+      getErrorDetails(download({ type: 'unknown', details: 'denied' })),
+    ).toBe('denied');
+  });
+});
+
+describe('getErrorDetails', () => {
+  it('should_return_the_raw_text_of_an_unknown_cause', () => {
+    expect(getErrorDetails(io({ type: 'unknown', details: 'raw' }))).toBe(
+      'raw',
+    );
+  });
+
+  it('should_find_the_raw_text_in_a_nested_error', () => {
+    const nested = {
+      type: 'instance',
+      payload: {
+        code: 'FAILED',
+        payload: { error: io({ type: 'unknown', details: 'deep' }) },
+      },
+    };
+
+    expect(getErrorDetails(nested)).toBe('deep');
+  });
+
+  it('should_return_nothing_for_a_categorized_cause_or_a_foreign_value', () => {
+    expect(
+      getErrorDetails(io({ type: 'io', kind: 'notFound' })),
+    ).toBeUndefined();
+    expect(getErrorDetails(new Error('x'))).toBeUndefined();
+  });
+});
+
+describe('error dictionaries', () => {
+  it.each(dictionaries)(
+    'no errors.* text in %s inserts raw backend text',
+    (_lang, dictionary) => {
+      const offenders = Object.entries(i18n.flatten(dictionary.errors as never))
+        .filter(([, text]) =>
+          /\{\{(details|message|error)\}\}/.test(String(text)),
+        )
+        .map(([key]) => `errors.${key}`);
+
+      expect(offenders).toEqual([]);
+    },
+  );
 });
 
 describe('plugin state reason translations', () => {
@@ -112,6 +279,17 @@ describe('plugin state reason translations', () => {
   it('finds the reason codes in the bindings', () => {
     expect(codes.length).toBeGreaterThan(0);
   });
+
+  it.each(dictionaries)(
+    'no plugin state reason text in %s inserts raw backend text',
+    (_lang, dictionary) => {
+      const offenders = Object.entries(dictionary.plugin.stateReason ?? {})
+        .filter(([, text]) => /\{\{(details|message|error)\}\}/.test(text))
+        .map(([key]) => `plugin.stateReason.${key}`);
+
+      expect(offenders).toEqual([]);
+    },
+  );
 
   it.each(dictionaries)(
     'every plugin state reason code is translated in %s',
@@ -123,4 +301,190 @@ describe('plugin state reason translations', () => {
       expect(missing).toEqual([]);
     },
   );
+});
+
+describe.each([
+  ['instance', 'InstanceErrorDto', 'CONTENT_PROVIDER_ERROR'],
+  ['minecraft', 'MinecraftErrorDto', 'PROCESSOR_FAILED'],
+  ['plugin', 'PluginErrorDto', 'LOAD_FAILED'],
+  ['settings', 'SettingsErrorDto', 'INVALID_PLATFORM_PROVIDER'],
+] as const)('%s reason translations', (group, errorDtoName, sampleCode) => {
+  /** `{ code: "X"; payload: { ..., reason: SomeReasonDto } }` → `{ X: 'SomeReasonDto' }` */
+  const getReasonDtos = (): Record<string, string> => {
+    const start = bindings.indexOf(`export type ${errorDtoName} =`);
+    const rest = bindings.slice(start + 1);
+    const end = rest.search(/\nexport type /);
+    const body = rest.slice(0, end === -1 ? undefined : end);
+    const result: Record<string, string> = {};
+
+    for (const m of body.matchAll(
+      /\{ code: "(\w+)"; payload: \{[^}]*?reason: (\w+Dto)\b/gs,
+    )) {
+      result[m[1]!] = m[2]!;
+    }
+
+    return result;
+  };
+
+  const reasonDtos = getReasonDtos();
+
+  it('finds the errors with a reason in the bindings', () => {
+    expect(Object.keys(reasonDtos)).toContain(sampleCode);
+  });
+
+  it.each(dictionaries)(
+    `every ${group} reason code is translated in %s`,
+    (_lang, dictionary) => {
+      const reasons = dictionary.errors[group]?.reason as unknown as
+        | Record<string, Record<string, string>>
+        | undefined;
+      const missing: string[] = [];
+
+      for (const [code, dtoName] of Object.entries(reasonDtos)) {
+        for (const reasonCode of getCodes(dtoName)) {
+          if (!reasons?.[code]?.[reasonCode]) {
+            missing.push(`errors.${group}.reason.${code}.${reasonCode}`);
+          }
+        }
+      }
+
+      expect(missing).toEqual([]);
+    },
+  );
+});
+
+describe('minecraft processor failure', () => {
+  const failed = (reason: unknown) =>
+    ({
+      type: 'minecraft',
+      payload: { code: 'PROCESSOR_FAILED', payload: { reason } },
+    }) as unknown as LauncherError;
+
+  it('should_translate_the_reason_and_the_category_of_its_cause', () => {
+    const error = failed({
+      code: 'SPAWN_FAILED',
+      payload: { cause: { type: 'io', kind: 'notFound' } },
+    });
+
+    expect(getTranslatedError(error, tEn)).toBe(
+      'Version processing failed: the processor could not be started: file or folder not found',
+    );
+  });
+
+  it('should_keep_the_output_of_the_processor_out_of_the_text', () => {
+    const error = failed({
+      code: 'EXITED',
+      payload: { code: 1, cause: { type: 'unknown', details: 'stack trace' } },
+    });
+
+    expect(getTranslatedError(error, tRu)).toBe(
+      'Ошибка обработки версии: процессор завершился с кодом 1',
+    );
+    expect(getErrorDetails(error)).toBe('stack trace');
+  });
+});
+
+describe('plugin manifest errors', () => {
+  const codes = getCodes('ManifestErrorDto');
+
+  it('finds the manifest error codes in the bindings', () => {
+    expect(codes).toContain('UNKNOWN_HOST_FUNCTIONS');
+  });
+
+  it.each(dictionaries)(
+    'every manifest error code is translated in %s',
+    (_lang, dictionary) => {
+      const manifest = dictionary.errors.plugin?.manifest as unknown as
+        | Record<string, string>
+        | undefined;
+
+      expect(
+        codes
+          .filter((code) => !manifest?.[code])
+          .map((code) => `errors.plugin.manifest.${code}`),
+      ).toEqual([]);
+    },
+  );
+
+  const manifestError = (error: unknown) =>
+    ({
+      type: 'plugin',
+      payload: { code: 'MANIFEST', payload: { error } },
+    }) as unknown as LauncherError;
+
+  it('should_build_the_text_of_a_manifest_error_from_its_code_and_arguments', () => {
+    expect(
+      getTranslatedError(
+        manifestError({
+          code: 'INVALID_ID',
+          payload: { field: 'metadata.id', value: 'Bad Id' },
+        }),
+        tEn,
+      ),
+    ).toBe(
+      'The plugin manifest has an invalid id in metadata.id: "Bad Id". An id may contain only lowercase Latin letters, digits, "_" and "-", and must start with a letter or digit',
+    );
+  });
+
+  it('should_quote_every_unknown_host_function_in_the_text', () => {
+    expect(
+      getTranslatedError(
+        manifestError({
+          code: 'UNKNOWN_HOST_FUNCTIONS',
+          payload: { names: ['a', 'b'] },
+        }),
+        tEn,
+      ),
+    ).toContain('`a`, `b`');
+  });
+});
+
+describe('plugin load failure', () => {
+  const loadFailed = (reason: unknown) =>
+    ({
+      type: 'plugin',
+      payload: {
+        code: 'LOAD_FAILED',
+        payload: { plugin_id: 'my-plugin', reason },
+      },
+    }) as unknown as LauncherError;
+
+  it('should_translate_the_reason_and_keep_the_raw_text_of_a_build_failure_out_of_the_message', () => {
+    const error = loadFailed({
+      code: 'BUILD',
+      payload: { cause: { type: 'unknown', details: 'wasmtime trap' } },
+    });
+
+    expect(getTranslatedError(error, tEn)).toBe(
+      'Failed to load plugin my-plugin: the plugin could not be built',
+    );
+    expect(getErrorDetails(error)).toBe('wasmtime trap');
+  });
+
+  it('should_translate_a_load_failure_without_arguments', () => {
+    expect(
+      getTranslatedError(loadFailed({ code: 'CONTAINER_UNAVAILABLE' }), tRu),
+    ).toBe(
+      'Не удалось загрузить плагин my-plugin: лаунчер ещё не готов запускать плагины',
+    );
+  });
+});
+
+describe('settings errors', () => {
+  it('should_translate_the_reason_why_a_provider_choice_is_invalid', () => {
+    const error = {
+      type: 'settings',
+      payload: {
+        code: 'INVALID_PLATFORM_PROVIDER',
+        payload: {
+          platform: 'modrinth',
+          reason: { code: 'FORMAT', payload: { value: 'nope' } },
+        },
+      },
+    } as unknown as LauncherError;
+
+    expect(getTranslatedError(error, tEn)).toBe(
+      'Invalid content provider choice for platform "modrinth": "nope" is not a provider id: write it as plugin#capability',
+    );
+  });
 });
