@@ -447,7 +447,11 @@
     "retry": "Повторить",
     "clear": "Очистить",
     "current": "Текущая",
-    "updating": "Обновление..."
+    "updating": "Обновление...",
+    "fullscreen": "На весь экран",
+    "exitFullscreen": "Выйти из полноэкранного режима",
+    "moreActions": "Ещё действия",
+    "swapVersion": "Переключиться на эту версию"
   },
   "content": {
     "backToInstance": "Вернуться к инстансу",

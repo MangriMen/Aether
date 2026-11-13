@@ -447,7 +447,11 @@
     "retry": "Retry",
     "clear": "Clear",
     "current": "Current",
-    "updating": "Updating..."
+    "updating": "Updating...",
+    "fullscreen": "Fullscreen",
+    "exitFullscreen": "Exit fullscreen",
+    "moreActions": "More actions",
+    "swapVersion": "Switch to this version"
   },
   "content": {
     "backToInstance": "Back to instance",

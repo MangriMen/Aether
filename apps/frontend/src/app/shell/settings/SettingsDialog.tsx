@@ -58,6 +58,11 @@ export const SettingsDialog: Component<SettingsDialogProps> = (props) => {
               hover:opacity-100
             '
             icon={isFullScreen() ? IconMdiFullscreenExit : IconMdiFullscreen}
+            aria-label={
+              isFullScreen()
+                ? t('common.exitFullscreen')
+                : t('common.fullscreen')
+            }
             onClick={toggleFullscreen}
           />
         }
