@@ -669,6 +669,7 @@
     "environmentVariables": "Переменные окружения",
     "javaArguments": "Аргументы Java",
     "memoryAllocation": "Выделение памяти",
+    "memoryMb": "{{value}} МБ",
     "resolution": "Разрешение",
     "resolutionWidth": "Ширина окна",
     "resolutionHeight": "Высота окна",

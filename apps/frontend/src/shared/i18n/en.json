@@ -669,6 +669,7 @@
     "environmentVariables": "Environment variables",
     "javaArguments": "Java arguments",
     "memoryAllocation": "Memory allocation",
+    "memoryMb": "{{value}} Mb",
     "resolution": "Resolution",
     "resolutionWidth": "Window width",
     "resolutionHeight": "Window height",
