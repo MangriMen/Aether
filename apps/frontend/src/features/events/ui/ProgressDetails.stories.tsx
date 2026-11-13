@@ -3,12 +3,23 @@ import type { Meta, StoryObj } from 'storybook-solidjs-vite';
 import { batch, createMemo, onCleanup } from 'solid-js';
 import { createStore } from 'solid-js/store';
 
+import type { LauncherError } from '@/features/errors';
+
 import type { ProgressEvent } from '../model/progressEvent';
 
 import { buildProgressIndex } from '../model/progressTree';
 import { ProgressDetails } from './ProgressDetails';
 
 const MB = 1024 * 1024;
+
+/** A failure with no category, as the backend sends one. */
+const failure = (details: string): LauncherError => ({
+  type: 'application',
+  payload: {
+    code: 'INTERNAL',
+    payload: { cause: { type: 'unknown', details } },
+  },
+});
 
 const make = (
   id: string,
@@ -67,7 +78,7 @@ export const Tree: Story = {
         make('sodium.jar', 'pack', { fraction: 0.2, speed: 3 * MB }),
         make('lithium.jar', 'pack', { fraction: 0.7, speed: 512 * 1024 }),
         make('broken.jar', 'pack', {
-          status: { type: 'failed', message: 'Connection lost' },
+          status: { type: 'failed', error: failure('Connection lost') },
         }),
         done('create.jar', 'pack'),
         done('jei.jar', 'pack'),

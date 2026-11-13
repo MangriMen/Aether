@@ -1,8 +1,19 @@
 import type { Meta, StoryObj } from 'storybook-solidjs-vite';
 
+import type { LauncherError } from '@/features/errors';
+
 import type { ProgressEvent } from '../model/progressEvent';
 
 import { ProgressCard } from './ProgressCard';
+
+/** A failure with no category, as the backend sends one. */
+const failure = (details: string): LauncherError => ({
+  type: 'application',
+  payload: {
+    code: 'INTERNAL',
+    payload: { cause: { type: 'unknown', details } },
+  },
+});
 
 const base: ProgressEvent = {
   event: { type: 'file_download', file_name: 'client.jar' },
@@ -29,7 +40,7 @@ const unknownSize: ProgressEvent = {
 
 const failed: ProgressEvent = {
   ...base,
-  status: { type: 'failed', message: 'Connection lost' },
+  status: { type: 'failed', error: failure('Connection lost') },
 };
 
 const cancelled: ProgressEvent = { ...base, status: { type: 'cancelled' } };

@@ -114,9 +114,10 @@ impl ProviderContentDownloader {
         plugin_id: &PluginId,
     ) -> Result<Vec<String>, InstanceError> {
         let manifest = self.plugins.get_manifest(plugin_id).map_err(|err| {
-            InstanceError::ContentDownloadError(ContentDownloadFailure::Other(format!(
-                "No network policy for plugin \"{plugin_id}\": {err}"
-            )))
+            tracing::warn!(%plugin_id, error = %err, "No network policy for the plugin");
+            InstanceError::ContentDownloadError(ContentDownloadFailure::NoNetworkPolicy {
+                plugin_id: plugin_id.to_string(),
+            })
         })?;
         let settings = self
             .plugin_settings

@@ -16,7 +16,7 @@ export const useInstallInstance = () => {
       }
 
       showError({
-        title: t('instance.removeError', { id }),
+        title: t('instance.installError', { id }),
         err,
         t,
       });

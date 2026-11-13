@@ -41,7 +41,7 @@ pub(super) async fn download_release_archive(
     let provider = factory.get_provider(source_type).ok_or_else(|| {
         PluginProviderError::ProviderFetchError {
             source_type: source_type.clone(),
-            cause: ProviderFailure::Other("No provider is registered for it".to_string()),
+            reason: ProviderFailure::NotRegistered,
         }
     })?;
     let identifier = provider.parse_identifier(identifier)?;

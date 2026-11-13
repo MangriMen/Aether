@@ -1,3 +1,4 @@
+use crate::features::instance::ContentProviderRejection;
 use crate::shared::request_client::{Request, RequestClient, RequestClientExt};
 use std::sync::Arc;
 
@@ -50,23 +51,29 @@ impl<RC: RequestClient> ModrinthApiClient<RC> {
         request
     }
 
-    async fn fetch<T: serde::de::DeserializeOwned>(&self, request: Request) -> Result<T, String> {
+    async fn fetch<T: serde::de::DeserializeOwned>(
+        &self,
+        request: Request,
+    ) -> Result<T, ContentProviderRejection> {
         self.request_client
             .fetch_json_with_progress(request, None)
             .await
-            .map_err(|err| err.to_string())
+            .map_err(|err| ContentProviderRejection::Request(Arc::new(err)))
     }
 
     pub(crate) async fn search(
         &self,
         params: &ProjectSearchParams,
-    ) -> Result<ProjectSearchResponse, String> {
-        let query = serde_qs::to_string(params).map_err(|e| e.to_string())?;
+    ) -> Result<ProjectSearchResponse, ContentProviderRejection> {
+        let query = serde_qs::to_string(params).map_err(invalid_request)?;
         let request = self.prepare_request("search", Some(query));
         self.fetch(request).await
     }
 
-    pub(crate) async fn get_project(&self, id: &str) -> Result<ProjectResponse, String> {
+    pub(crate) async fn get_project(
+        &self,
+        id: &str,
+    ) -> Result<ProjectResponse, ContentProviderRejection> {
         let path = format!("project/{id}");
         let request = self.prepare_request(&path, None);
         self.fetch(request).await
@@ -77,7 +84,7 @@ impl<RC: RequestClient> ModrinthApiClient<RC> {
     pub(crate) async fn get_projects_metadata(
         &self,
         ids: &[String],
-    ) -> Result<Vec<ProjectMetadataResponse>, String> {
+    ) -> Result<Vec<ProjectMetadataResponse>, ContentProviderRejection> {
         let request = self.prepare_request("projects", Some(ids_query(ids)?));
         let entries: Vec<Lenient<ProjectMetadataResponse>> = self.fetch(request).await?;
         Ok(entries.into_iter().filter_map(Lenient::parsed).collect())
@@ -91,7 +98,7 @@ impl<RC: RequestClient> ModrinthApiClient<RC> {
     pub(crate) async fn get_teams(
         &self,
         ids: &[String],
-    ) -> Result<Vec<Vec<TeamMemberResponse>>, String> {
+    ) -> Result<Vec<Vec<TeamMemberResponse>>, ContentProviderRejection> {
         let request = self.prepare_request_at(&self.v3_base_url, "teams", Some(ids_query(ids)?));
         self.fetch(request).await
     }
@@ -101,7 +108,7 @@ impl<RC: RequestClient> ModrinthApiClient<RC> {
     pub(crate) async fn get_organizations(
         &self,
         ids: &[String],
-    ) -> Result<Vec<OrganizationResponse>, String> {
+    ) -> Result<Vec<OrganizationResponse>, ContentProviderRejection> {
         let request =
             self.prepare_request_at(&self.v3_base_url, "organizations", Some(ids_query(ids)?));
         self.fetch(request).await
@@ -112,7 +119,7 @@ impl<RC: RequestClient> ModrinthApiClient<RC> {
     pub(crate) async fn get_versions_metadata(
         &self,
         ids: &[String],
-    ) -> Result<Vec<VersionMetadataResponse>, String> {
+    ) -> Result<Vec<VersionMetadataResponse>, ContentProviderRejection> {
         let request = self.prepare_request("versions", Some(ids_query(ids)?));
         let entries: Vec<Lenient<VersionMetadataResponse>> = self.fetch(request).await?;
         Ok(entries.into_iter().filter_map(Lenient::parsed).collect())
@@ -121,7 +128,7 @@ impl<RC: RequestClient> ModrinthApiClient<RC> {
     pub(crate) async fn get_project_version(
         &self,
         id: &str,
-    ) -> Result<ProjectVersionResponse, String> {
+    ) -> Result<ProjectVersionResponse, ContentProviderRejection> {
         let path = format!("version/{id}");
         let request = self.prepare_request(&path, None);
         self.fetch(request).await
@@ -131,17 +138,23 @@ impl<RC: RequestClient> ModrinthApiClient<RC> {
         &self,
         id: &str,
         params: &ProjectVersionsRequest,
-    ) -> Result<Vec<ProjectVersionResponse>, String> {
-        let query = serde_qs::to_string(params).map_err(|e| e.to_string())?;
+    ) -> Result<Vec<ProjectVersionResponse>, ContentProviderRejection> {
+        let query = serde_qs::to_string(params).map_err(invalid_request)?;
         let path = format!("project/{id}/version");
         let request = self.prepare_request(&path, Some(query));
         self.fetch(request).await
     }
 }
 
+fn invalid_request(
+    err: impl std::error::Error + Send + Sync + 'static,
+) -> ContentProviderRejection {
+    ContentProviderRejection::InvalidRequest(Arc::new(err))
+}
+
 /// The `ids=[...]` query of the routes that take many ids at once.
-fn ids_query(ids: &[String]) -> Result<String, String> {
-    let ids = serde_json::to_string(ids).map_err(|e| e.to_string())?;
+fn ids_query(ids: &[String]) -> Result<String, ContentProviderRejection> {
+    let ids = serde_json::to_string(ids).map_err(invalid_request)?;
     Ok(url::form_urlencoded::Serializer::new(String::new())
         .append_pair("ids", &ids)
         .finish())

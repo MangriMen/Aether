@@ -43,15 +43,15 @@ use crate::{
 use super::{
     super::{super::mappers::to_extism_res, PluginContext, block_on},
     http::{
-        AddressFilter, PluginHttpError, ProxySource, check_target, is_blocked_ip, policy_error,
-        system_lookup, vetted_client,
+        AddressFilter, PluginHttpError, ProxySource, check_target, find_policy_refusal,
+        is_blocked_ip, system_lookup, vetted_client,
     },
 };
 
 /// Subdirectory of the plugin cache the host downloads into.
 const DOWNLOADS_DIR: &str = "downloads";
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Clone, Debug, thiserror::Error)]
 pub enum PluginDownloadError {
     #[error("Invalid hash: {0}")]
     InvalidHash(#[from] InvalidFileHash),
@@ -321,9 +321,9 @@ pub(crate) async fn download_with(
         .await
         .map_err(|err| match err {
             // A refused hop surfaces as the same error as a refused first request.
-            RequestError::Middleware(err) => match policy_error(err) {
-                Ok(policy) => PluginDownloadError::Http(policy),
-                Err(err) => PluginDownloadError::Request(RequestError::Middleware(err)),
+            RequestError::Middleware(err) => match find_policy_refusal(err.inner()) {
+                Some(policy) => PluginDownloadError::Http(policy),
+                None => PluginDownloadError::Request(RequestError::Middleware(err)),
             },
             err => PluginDownloadError::Request(err),
         })

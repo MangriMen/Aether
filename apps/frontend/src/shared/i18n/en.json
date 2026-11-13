@@ -16,9 +16,23 @@
   "errors": {
     "appSettings": {
       "TRANSPARENT_EFFECT_REQUIRED": "Transparency effect is required for this action",
-      "CAN_NOT_SET_EFFECT": "Unable to apply the requested effect",
-      "CAN_NOT_RECREATE_WINDOW": "Unable to recreate window",
-      "STORAGE": "App settings storage failure"
+      "CAN_NOT_SET_EFFECT": "Unable to apply the requested effect: {{reason}}",
+      "CAN_NOT_RECREATE_WINDOW": "Unable to recreate window: {{reason}}",
+      "STORAGE": "App settings storage failure",
+      "reason": {
+        "CAN_NOT_SET_EFFECT": {
+          "ALREADY_EXISTS": "the window {{label}} already exists",
+          "NOT_FOUND": "the window {{label}} was not found",
+          "PLATFORM_NOT_SUPPORTED": "the platform does not support it",
+          "OTHER": "the window system failed"
+        },
+        "CAN_NOT_RECREATE_WINDOW": {
+          "ALREADY_EXISTS": "the window {{label}} already exists",
+          "NOT_FOUND": "the window {{label}} was not found",
+          "PLATFORM_NOT_SUPPORTED": "the platform does not support it",
+          "OTHER": "the window system failed"
+        }
+      }
     },
     "application": {
       "IO": "File system error",
@@ -94,6 +108,8 @@
       "UNMANAGED_INSTANCE": "Action unavailable for unmanaged instance",
       "CONTENT_DUPLICATION": "Duplicate content detected",
       "CONTENT_FILENAME": "Invalid content filename",
+      "PACK_FILE_NOT_FOUND": "Content file {{content_path}} is not recorded for instance {{instance_id}}",
+      "NOT_A_CONTENT_FILE": "{{content_path}} in instance {{instance_id}} is a folder, not a content file",
       "INVALID_RELATIVE_PATH": "Invalid path {{path}}: {{reason}}",
       "INVALID_CONTENT_ID": "Invalid {{kind}}: {{value}}",
       "INVALID_GAME_VERSION": "Invalid Minecraft version {{value}}: {{reason}}",
@@ -116,6 +132,7 @@
       "UPDATER_NOT_FOUND": "Updater for modpack {{modpack_id}} not found",
       "UPDATE_FAILED": "Failed to update instance with modpack {{modpack_id}}",
       "NOT_FOUND": "Instance with id {{instance_id}} not found",
+      "INVALID_RECORD": "The stored data of instance {{instance_id}} is invalid: {{reason}}",
       "STORAGE": "Instance storage error",
       "reason": {
         "PRELAUNCH_COMMAND_INVALID": {
@@ -162,34 +179,46 @@
         "CONTENT_PROVIDER_ERROR": {
           "WRONG_TARGET": "the provider {{provider_id}} answered with a plan for another target than the one asked for",
           "FOREIGN_PACK": "the provider {{provider_id}} answered with a pack of another provider ({{pack_provider_id}})",
-          "TOO_MANY_FILES": "the plan lists {{count}} files, more than {{max}}",
+          "TOO_MANY_FILES": "{{count}} files are listed, more than {{max}}",
           "TOO_MANY_OVERRIDES": "the overrides of the plan hold more than {{max}} files",
           "INVALID_OVERRIDES_ARCHIVE": "the archive with the overrides cannot be read",
-          "VERSION_OF_ANOTHER_PROJECT": "version {{version_id}} belongs to project {{project_id}}, not {{content_id}}",
+          "VERSION_OF_ANOTHER_CONTENT": "version {{version_id}} belongs to {{owner_id}}, not {{content_id}}",
           "NOT_A_MODPACK": "{{title}} is not a modpack: it installs into an existing instance",
           "NO_GAME_VERSION": "version {{version_id}} names no valid game version",
-          "INVALID_SEARCH_PARAMS": "the search request is invalid",
-          "INVALID_SEARCH_RESPONSE": "the search response is invalid",
-          "UNKNOWN_PROJECT_TYPE": "unknown project type {{project_type}}",
-          "MAPPING": "the answer of the provider cannot be understood",
-          "MRPACK_OPEN_FAILED": "the modpack file cannot be opened",
-          "MRPACK_INVALID_ARCHIVE": "the modpack file is not a valid archive",
-          "MRPACK_MISSING_INDEX": "the modpack has no index (modrinth.index.json)",
-          "MRPACK_READ_FAILED": "the index of the modpack cannot be read",
-          "MRPACK_INDEX_TOO_LARGE": "the index of the modpack is larger than {{max_bytes}} bytes",
-          "MRPACK_MALFORMED_INDEX": "the index of the modpack is malformed",
-          "MRPACK_TOO_MANY_FILES": "the modpack lists {{count}} files, more than {{max}}",
-          "MRPACK_NOT_MINECRAFT": "the modpack is for {{game}}, not Minecraft",
-          "MRPACK_INVALID_HASH": "the modpack lists a file with an invalid checksum",
-          "MRPACK_NO_ALLOWED_DOWNLOAD": "no download of {{path}} is on a host the modpack format allows",
+          "UNKNOWN_CONTENT_TYPE": "unknown content type {{content_type}}",
+          "INVALID_REQUEST": "the request to the provider could not be built",
+          "REQUEST": "the request to the provider failed",
+          "RESPONSE_INVALID_ID": "the provider answered with an invalid id {{value}}",
+          "RESPONSE_INVALID_URL": "the provider answered with an invalid address {{url}}",
+          "RESPONSE_INVALID_PAGINATION": "the provider answered with an invalid {{field}} {{value}}",
+          "PACK_UNREADABLE": "the pack file cannot be read",
+          "PACK_INVALID_ARCHIVE": "the pack file is not a valid archive",
+          "PACK_NO_INDEX": "the pack has no index ({{index}})",
+          "PACK_INDEX_TOO_LARGE": "the index of the pack is larger than {{max_bytes}} bytes",
+          "PACK_INDEX_MALFORMED": "the index of the pack is malformed",
+          "PACK_WRONG_GAME": "the pack is for {{game}}, not Minecraft",
+          "PACK_OUTSIDE_PROVIDER_REACH": "the provider cannot read the pack file {{path}}: it has to be in the cache of the plugin or in an instance",
+          "INVALID_HASH": "the provider lists a file with an invalid checksum",
+          "NO_ALLOWED_DOWNLOAD": "no download of {{path}} is on an allowed host",
+          "INVALID_ANSWER": "the plugin answered {{handler}} with data the launcher cannot accept",
           "PROVIDER": "the content provider failed"
         },
         "CONTENT_DOWNLOAD_ERROR": {
           "NO_FILES": "version {{version_id}} has no files",
-          "NO_VERSIONS": "no versions found for modpack {{project_id}}",
+          "NO_VERSIONS": "no versions found for modpack {{content_id}}",
           "NOT_A_MODPACK_FILE": "the file {{file_name}} is not a modpack",
           "DOWNLOAD": "could not download {{url}}",
-          "OTHER": "the content source did not answer as expected"
+          "NO_NETWORK_POLICY": "plugin {{plugin_id}} is not loaded, so where it may connect is unknown"
+        },
+        "INVALID_RECORD": {
+          "INVALID_ID": "the id is not a valid folder name",
+          "INVALID_GAME_VERSION": "the game version {{value}} is unknown",
+          "INVALID_LOADER": "the mod loader {{value}} is unknown",
+          "INVALID_INSTALL_STAGE": "the install stage {{value}} is unknown",
+          "INVALID_COLUMN": "the stored value {{column}} cannot be read",
+          "UNREADABLE_FILE": "the instance file cannot be read",
+          "LEGACY_ID_MISMATCH": "the instance file belongs to instance {{file_id}}",
+          "NOT_MIGRATED": "the instance was not moved into the launcher database"
         }
       },
       "field": {
@@ -220,11 +249,20 @@
       "PROCESSOR_FAILED": "Version processing failed: {{reason}}",
       "PRE_LAUNCH_FAILED": "Pre-launch checks failed",
       "POST_LAUNCH_FAILED": "Post-launch cleanup failed",
-      "PATH_NOT_FOUND": "Game path not found",
+      "PATH_NOT_FOUND": "Not found: {{entity_type}} {{path}}",
       "PARSE_FAILED": "Failed to parse Minecraft configuration",
       "STORAGE_FAILURE": "Minecraft storage failure",
       "INVALID_LOG_CONFIG_NAME": "The game log config has an unsafe name: {{name}}",
       "STORAGE": "General storage error",
+      "entityType": {
+        "GAME": "game folder",
+        "ASSETS": "assets folder",
+        "LIBRARY": "library",
+        "LIBRARIES_DIR": "libraries folder",
+        "NATIVE_LIBRARY": "native libraries folder",
+        "LOG_CONFIG": "game log config",
+        "CLASSPATH": "game client file"
+      },
       "reason": {
         "PROCESSOR_FAILED": {
           "MAIN_CLASS_NOT_FOUND": "the main class of {{jar}} was not found",
@@ -249,10 +287,11 @@
       "ID_MISMATCH": "The update is for another plugin (\"{{archive_id}}\"), so it was not installed",
       "ARCHIVE_CHANGED_SINCE_PREVIEW": "The release changed after the preview. Refresh the preview and try again",
       "LOAD_FAILED": "Failed to load plugin {{plugin_id}}: {{reason}}",
-      "FUNCTION_CALL_FAILED": "Failed to call function {{function_name}} of plugin {{plugin_id}}",
+      "FUNCTION_CALL_FAILED": "Failed to call function {{function_name}} of plugin {{plugin_id}}: {{reason}}",
       "MANIFEST_NOT_FOUND": "Plugin manifest not found",
       "INCOMPATIBLE_API_VERSION": "Plugin {{plugin_id}} requires API {{required}}, this launcher provides {{host}}. Enable at your own risk",
       "INVALID_MANIFEST_FORMAT": "Invalid manifest format",
+      "MANIFEST_TOO_LARGE": "The file {{name}} of the plugin is larger than {{limit}} bytes",
       "MANIFEST": "Plugin manifest error",
       "LOADER_NOT_FOUND": "Plugin loader not found",
       "EXTRACTION_FAILED": "Plugin extraction failed",
@@ -266,11 +305,11 @@
       "INVALID_ALLOWED_HOST_ENTRY": "Host {{entry}} cannot be saved: write a host name or a pattern such as *.example.com, without a scheme, port or path",
       "HASH_COMPUTATION_FAILED": "Failed to compute plugin hash",
       "STORAGE": "Plugin storage error",
-      "PROVIDER_FETCH_ERROR": "Failed to fetch plugin info from provider {{source_type}}",
+      "PROVIDER_FETCH_ERROR": "Failed to fetch plugin info from provider {{source_type}}: {{reason}}",
       "PROVIDER_NO_ASSETS": "No suitable release assets found",
       "NO_REMOTE_SOURCE": "Plugin has no remote source configured",
       "PROVIDER_RATE_LIMITED": "Provider rate limit exceeded. Please wait {retry_after, plural, one {1 second} other {{retry_after} seconds}} before trying again.",
-      "DOWNLOAD_FAILED": "Failed to download plugin from {{url}}",
+      "DOWNLOAD_FAILED": "Failed to download plugin from {{url}}: {{reason}}",
       "manifest": {
         "UNSUPPORTED_API": "The plugin manifest asks for an unsupported API version",
         "INVALID_SEMVER": "The plugin manifest has an invalid version in {{field}}: \"{{value}}\"",
@@ -288,6 +327,33 @@
           "BUILD": "the plugin could not be built",
           "CONTAINER_UNAVAILABLE": "the launcher is not ready to run plugins",
           "OTHER": "an unexpected error occurred while loading it"
+        },
+        "FUNCTION_CALL_FAILED": {
+          "MISSING_FUNCTION": "the plugin does not have this function",
+          "TIMEOUT": "the plugin exceeded its time limit",
+          "OUT_OF_FUEL": "the plugin exceeded its instruction limit",
+          "OUT_OF_MEMORY": "the plugin exceeded its memory limit",
+          "TRAP": "the plugin crashed",
+          "NON_ZERO_EXIT": "the plugin exited with code {{code}}",
+          "PLUGIN": "the plugin reported an error",
+          "CODEC": "the plugin exchanged malformed data",
+          "REENTRANT": "the plugin was called again from inside its own call"
+        },
+        "PROVIDER_FETCH_ERROR": {
+          "REQUEST": "the request failed",
+          "TOO_LARGE": "the archive is larger than {{limit}} bytes",
+          "URL_NOT_ALLOWED": "the address is not served by the provider over https",
+          "NO_RELEASES": "there are no releases",
+          "INVALID_URL": "{{url}} is not an address of a plugin on this provider",
+          "NOT_REGISTERED": "this provider is not supported"
+        },
+        "DOWNLOAD_FAILED": {
+          "REQUEST": "the request failed",
+          "TOO_LARGE": "the archive is larger than {{limit}} bytes",
+          "URL_NOT_ALLOWED": "the address is not served by the provider over https",
+          "NO_RELEASES": "there are no releases",
+          "INVALID_URL": "{{url}} is not an address of a plugin on this provider",
+          "NOT_REGISTERED": "this provider is not supported"
         }
       }
     },
@@ -320,6 +386,13 @@
       },
       "INVALID_MAX_CONCURRENT_DOWNLOADS": "The number of concurrent downloads must be at least 1",
       "INVALID_MEMORY": "The memory amount must be at least 1 MB"
+    },
+    "update": {
+      "NO_PENDING_UPDATE": "No update to install. Check for updates again",
+      "NETWORK": "Could not download the update",
+      "SIGNATURE": "The update signature is invalid; it was not installed",
+      "INSTALL": "Could not install the update",
+      "OTHER": "Could not check for updates"
     },
     "window": {
       "ALREADY_EXISTS": "Window with label {{label}} already exists",
@@ -454,7 +527,6 @@
     "gameCrashed": "The game exited with an error",
     "gameCrashedCode": "The game exited with an error (code {{code}})",
     "gameInstalling": "Installing game files",
-    "installFailed": "Installation failed",
     "installing": "Installing {{name}}",
     "javaDownloading": "Downloading Java {{version}}",
     "minecraftAssets": "Assets ({{count}} files)",
@@ -528,6 +600,7 @@
     "selectAllContents": "Select all ({{total}})",
     "selectedContents": "Selected: {{selected}} of {{total}}",
     "clearSelection": "Clear selection",
+    "installError": "Failed to install instance {{id}}",
     "removeError": "Failed to remove instance {{id}}",
     "removeTitle": "Are you sure you want to delete instance {{name}}?",
     "settings": "Settings",
@@ -928,5 +1001,11 @@
     "select": "Select",
     "selected": "Selected",
     "installationsNotFound": "Could not detect any Java installations"
+  },
+  "warnings": {
+    "title": "Warning",
+    "INSTANCE_ICON_NOT_IMPORTED": "The icon could not be imported; the instance was created without it",
+    "INSTANCE_ICON_TOO_LARGE": "The icon is too large (limit {{limit}} bytes); the instance was created without it",
+    "INSTANCE_ICON_NOT_SUPPORTED": "The icon is not a PNG, JPEG, GIF, WebP or SVG image; the instance was created without it"
   }
 }

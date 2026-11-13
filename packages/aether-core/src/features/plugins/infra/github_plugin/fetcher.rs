@@ -34,15 +34,11 @@ async fn copy_capped<W: AsyncWrite + Unpin>(
     limit: u64,
     dest: &mut W,
 ) -> Result<u64, PluginProviderError> {
-    let failed = |cause: ProviderFailure| PluginProviderError::DownloadFailed {
+    let failed = |reason: ProviderFailure| PluginProviderError::DownloadFailed {
         url: url.to_string(),
-        cause,
+        reason,
     };
-    let too_large = || {
-        failed(ProviderFailure::Other(format!(
-            "asset exceeds {limit} bytes"
-        )))
-    };
+    let too_large = || failed(ProviderFailure::TooLarge { limit });
     if response.content_length().is_some_and(|len| len > limit) {
         return Err(too_large());
     }
@@ -120,7 +116,7 @@ impl GitHubPluginFetcher {
             .await
             .map_err(|e| PluginProviderError::ProviderFetchError {
                 source_type: PluginSourceType::GitHub,
-                cause: e.into(),
+                reason: e.into(),
             })?;
 
         #[derive(serde::Deserialize)]
@@ -147,7 +143,7 @@ impl GitHubPluginFetcher {
                 &headers,
                 PluginProviderError::ProviderFetchError {
                     source_type: PluginSourceType::GitHub,
-                    cause: ProviderFailure::Status {
+                    reason: ProviderFailure::Status {
                         status: status.as_u16(),
                         url,
                     },
@@ -161,7 +157,7 @@ impl GitHubPluginFetcher {
                 .await
                 .map_err(|e| PluginProviderError::ProviderFetchError {
                     source_type: PluginSourceType::GitHub,
-                    cause: e.into(),
+                    reason: e.into(),
                 })?;
 
         Ok(releases
@@ -258,9 +254,7 @@ impl GitHubPluginFetcher {
         if !is_allowed_asset_url(url) {
             return Err(PluginProviderError::DownloadFailed {
                 url: url.to_string(),
-                cause: ProviderFailure::Other(
-                    "asset URL is not served by GitHub over https".to_string(),
-                ),
+                reason: ProviderFailure::UrlNotAllowed,
             });
         }
         let response = self
@@ -271,7 +265,7 @@ impl GitHubPluginFetcher {
             .await
             .map_err(|e| PluginProviderError::DownloadFailed {
                 url: url.to_string(),
-                cause: e.into(),
+                reason: e.into(),
             })?;
 
         if !response.status().is_success() {
@@ -282,7 +276,7 @@ impl GitHubPluginFetcher {
                 &headers,
                 PluginProviderError::DownloadFailed {
                     url: url.to_string(),
-                    cause: ProviderFailure::Status {
+                    reason: ProviderFailure::Status {
                         status: status.as_u16(),
                         url: url.to_string(),
                     },

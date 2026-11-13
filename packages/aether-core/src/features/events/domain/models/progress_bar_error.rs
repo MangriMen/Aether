@@ -1,6 +1,6 @@
 use uuid::Uuid;
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Clone, Debug, thiserror::Error)]
 pub enum ProgressBarStorageError {
     #[error("Progress bar {progress_bar_id} already exists")]
     AlreadyExists { progress_bar_id: Uuid },

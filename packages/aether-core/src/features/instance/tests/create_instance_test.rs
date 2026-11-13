@@ -7,7 +7,7 @@ use async_trait::async_trait;
 use tempfile::TempDir;
 
 use crate::features::{
-    events::{Event, ProgressBarId, SharedEventEmitter},
+    events::{Event, ProgressBarId, SharedEventEmitter, WarningEvent},
     instance::IconAssetReaper,
     instance::{
         CreateInstanceUseCase, Instance, InstanceError, InstanceFileService, InstanceId,
@@ -268,7 +268,9 @@ struct FakeAssets {
 impl AssetsStorage for FakeAssets {
     async fn import_file(&self, source: &Path) -> Result<String, AssetError> {
         if !source.is_file() {
-            return Err(AssetError::ReadSource("no such file".to_owned()));
+            return Err(AssetError::ReadSource(Arc::new(std::io::Error::from(
+                std::io::ErrorKind::NotFound,
+            ))));
         }
         let name = source.file_name().unwrap().to_string_lossy();
         Ok(format!("asset-{name}"))
@@ -779,6 +781,7 @@ async fn should_create_the_instance_without_an_icon_when_the_icon_cannot_be_impo
     let (temp, location_info) = setup_temp_location();
 
     let storage = Arc::new(MemInstanceStorage::new());
+    let (tx, mut events) = tokio::sync::mpsc::unbounded_channel();
     let use_case = make_use_case(
         storage.clone(),
         Arc::new(MockLoaderService {
@@ -787,7 +790,7 @@ async fn should_create_the_instance_without_an_icon_when_the_icon_cannot_be_impo
         Arc::new(NoOpInstallService),
         Arc::new(MemInstanceFileService::new(location_info.instances_dir())),
         Arc::new(NoOpWatcher),
-        Arc::new(NoOpEmitter),
+        Arc::new(crate::features::events::test_support::ChannelEmitter(tx)),
     );
 
     let instance_id = use_case
@@ -819,6 +822,20 @@ async fn should_create_the_instance_without_an_icon_when_the_icon_cannot_be_impo
         stored.icon_path(),
         None,
         "a host path must never be kept as the icon"
+    );
+    let warning = std::iter::from_fn(|| events.try_recv().ok())
+        .find_map(|event| match event {
+            Event::Warning(warning) => Some(warning),
+            _ => None,
+        })
+        .expect("the user is told the icon was not imported");
+    assert!(
+        matches!(
+            warning,
+            WarningEvent::InstanceIconNotImported { ref cause }
+                if matches!(**cause, AssetError::ReadSource(_))
+        ),
+        "{warning:?}"
     );
 }
 
@@ -919,14 +936,15 @@ async fn warnings_when_the_install_ends_in(error: InstanceError) -> (usize, bool
     (warnings, storage.list().await.unwrap().is_empty())
 }
 
+/// The command that created the instance reports the failure itself: no warning repeats it.
 #[tokio::test]
-async fn should_warn_and_remove_the_instance_when_its_install_fails() {
+async fn should_remove_the_instance_without_a_warning_when_its_install_fails() {
     let (warnings, removed) = warnings_when_the_install_ends_in(InstanceError::storage(
         crate::features::instance::StorageError::other("boom"),
     ))
     .await;
 
-    assert_eq!((warnings, removed), (1, true));
+    assert_eq!((warnings, removed), (0, true));
 }
 
 #[tokio::test]

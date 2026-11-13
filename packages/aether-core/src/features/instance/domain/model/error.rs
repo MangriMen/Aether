@@ -1,8 +1,11 @@
 use std::path::PathBuf;
+use std::sync::Arc;
 
 use uuid::Uuid;
 
-use super::{InvalidPagination, PaginationField, PaginationRejection};
+use super::{
+    BrokenInstanceReason, InvalidContentId, InvalidPagination, PaginationField, PaginationRejection,
+};
 use crate::features::{
     auth::AuthApplicationError,
     instance::{ContentType, PlatformId, ProviderId},
@@ -14,26 +17,35 @@ use crate::features::{
     settings::SettingsError,
 };
 use crate::shared::cache::AssetError;
+use crate::shared::capability::InvalidId;
+use crate::shared::error::DatabaseError;
+pub use crate::shared::error::{BoxedSource, SharedSource, shared_source};
 use crate::shared::io::IoError;
 use crate::shared::safe_path::PathRejection;
 use crate::shared::serializable_command::CommandParseError;
+use crate::shared::web_url::InvalidUrl;
 
 /// What the storage of instances failed on.
-#[derive(Debug, thiserror::Error)]
+#[derive(Clone, Debug, thiserror::Error)]
 pub enum StorageError {
     #[error(transparent)]
-    Io(#[from] std::io::Error),
+    Io(Arc<std::io::Error>),
 
     #[error(transparent)]
     SharedIo(#[from] IoError),
 
     #[error(transparent)]
-    Database(#[from] sqlx::Error),
+    Database(#[from] DatabaseError),
 
-    /// A failure with no typed source: a message of the core's own, or the text of a library
-    /// that does not expose a category.
+    /// A failure with no category; its error is kept as the source.
     #[error("{0}")]
-    Other(String),
+    Other(#[source] SharedSource),
+}
+
+impl From<std::io::Error> for StorageError {
+    fn from(err: std::io::Error) -> Self {
+        Self::Io(Arc::new(err))
+    }
 }
 
 impl From<crate::shared::hash::InvalidFileHash> for StorageError {
@@ -43,16 +55,15 @@ impl From<crate::shared::hash::InvalidFileHash> for StorageError {
 }
 
 impl StorageError {
-    pub fn other(err: impl std::fmt::Display) -> Self {
-        Self::Other(err.to_string())
+    pub fn other(err: impl Into<BoxedSource>) -> Self {
+        Self::Other(shared_source(err))
     }
 }
 
-/// A source error of a kind the instance feature only passes on.
-pub type BoxedSource = Box<dyn std::error::Error + Send + Sync>;
-
-/// Why a content provider's answer, or the request made to it, is refused.
-#[derive(Debug, thiserror::Error)]
+/// Why a content provider's answer, or the request made to it, is refused. The reasons are the
+/// same for every provider: what a provider calls a project, a pack index or a file list is
+/// named here as content, a pack and its files.
+#[derive(Clone, Debug, thiserror::Error)]
 pub enum ContentProviderRejection {
     #[error("{provider_id} answered with a plan for another target than the one asked for")]
     WrongTarget { provider_id: ProviderId },
@@ -65,7 +76,8 @@ pub enum ContentProviderRejection {
         pack_provider_id: ProviderId,
     },
 
-    #[error("The plan lists {count} files, more than {max}")]
+    /// A plan, or the index of a pack, lists more files than the launcher installs at once.
+    #[error("{count} files are listed, more than {max}")]
     TooManyFiles { count: usize, max: usize },
 
     #[error("The overrides of the plan hold more than {max} files")]
@@ -73,12 +85,12 @@ pub enum ContentProviderRejection {
 
     /// `zip` errors that are not an I/O failure arrive as `InvalidData`.
     #[error("Invalid overrides archive: {0}")]
-    InvalidOverridesArchive(#[source] std::io::Error),
+    InvalidOverridesArchive(#[source] Arc<std::io::Error>),
 
-    #[error("Modrinth version {version_id} belongs to project {project_id}, not {content_id}")]
-    VersionOfAnotherProject {
+    #[error("Version {version_id} belongs to content {owner_id}, not {content_id}")]
+    VersionOfAnotherContent {
         version_id: String,
-        project_id: String,
+        owner_id: String,
         content_id: String,
     },
 
@@ -88,64 +100,114 @@ pub enum ContentProviderRejection {
         content_type: ContentType,
     },
 
-    #[error("Modrinth version {version_id} names no valid game version")]
+    #[error("Version {version_id} names no valid game version")]
     NoGameVersion { version_id: String },
 
-    #[error("Invalid search params: {0}")]
-    InvalidSearchParams(#[source] BoxedSource),
+    #[error("Unknown content type: {content_type}")]
+    UnknownContentType { content_type: String },
 
-    #[error("Invalid search response: {0}")]
-    InvalidSearchResponse(#[source] BoxedSource),
+    /// The request to the provider could not be built from what was asked.
+    #[error("Invalid request: {0}")]
+    InvalidRequest(#[source] SharedSource),
 
-    #[error("Unknown Modrinth project type: {project_type}")]
-    UnknownProjectType { project_type: String },
+    /// The request to the provider failed; the client's error is the source.
+    #[error("Request failed: {0}")]
+    Request(#[source] SharedSource),
 
-    #[error("{0}")]
-    Mapping(#[source] BoxedSource),
+    #[error("The response names an invalid {kind} {value:?}")]
+    ResponseInvalidId { kind: &'static str, value: String },
 
-    #[error("Failed to open .mrpack file: {0}")]
-    MrpackOpenFailed(#[source] std::io::Error),
+    #[error("The response names an invalid URL: {0}")]
+    ResponseInvalidUrl(#[source] InvalidUrl),
 
-    #[error("Invalid .mrpack archive: {0}")]
-    MrpackInvalidArchive(#[source] std::io::Error),
+    #[error("The response has an invalid pagination: {0}")]
+    ResponseInvalidPagination(#[source] InvalidPagination),
 
-    #[error("Critical: modrinth.index.json missing in modpack")]
-    MrpackMissingIndex,
+    #[error("Failed to read the pack file: {0}")]
+    PackUnreadable(#[source] Arc<std::io::Error>),
 
-    #[error("Failed to read modrinth.index.json: {0}")]
-    MrpackReadFailed(#[source] std::io::Error),
+    #[error("The pack file is not a valid archive: {0}")]
+    PackInvalidArchive(#[source] Arc<std::io::Error>),
 
-    #[error("modrinth.index.json is larger than {max_bytes} bytes")]
-    MrpackIndexTooLarge { max_bytes: u64 },
+    #[error("The pack has no index ({index})")]
+    PackNoIndex { index: &'static str },
 
-    #[error("Malformed modpack index: {0}")]
-    MrpackMalformedIndex(#[source] serde_json::Error),
+    #[error("The index of the pack is larger than {max_bytes} bytes")]
+    PackIndexTooLarge { max_bytes: u64 },
 
-    #[error("modrinth.index.json lists {count} files, more than {max}")]
-    MrpackTooManyFiles { count: usize, max: usize },
+    #[error("Malformed pack index: {0}")]
+    PackIndexMalformed(#[source] SharedSource),
 
-    #[error("Modpack is for \"{game}\", not Minecraft")]
-    MrpackNotMinecraft { game: String },
+    #[error("The pack is for \"{game}\", not Minecraft")]
+    PackWrongGame { game: String },
 
-    #[error("Invalid SHA-512 from Modrinth: {0}")]
-    MrpackInvalidHash(#[source] crate::shared::hash::InvalidFileHash),
+    /// A pack file is handed to a plugin as a path it can read: one elsewhere is not passed on.
+    #[error("The pack file {} is outside what the provider can read", path.display())]
+    PackOutsideProviderReach { path: PathBuf },
 
-    #[error("No download of \"{path}\" is on a host the .mrpack format allows")]
-    MrpackNoAllowedDownload { path: String },
+    #[error("Invalid file hash from the provider: {0}")]
+    InvalidHash(#[source] crate::shared::hash::InvalidFileHash),
+
+    #[error("No download of \"{path}\" is on an allowed host")]
+    NoAllowedDownload { path: String },
+
+    /// A plugin answered with data that decoded but cannot be accepted; why is the source.
+    #[error("The plugin answered {handler} with data that cannot be accepted: {source}")]
+    InvalidAnswer {
+        handler: String,
+        #[source]
+        source: SharedSource,
+    },
 
     /// A provider is a plugin: what it says is not ours to categorize.
     #[error("{0}")]
     Provider(String),
 }
 
+impl From<InvalidContentId> for ContentProviderRejection {
+    fn from(err: InvalidContentId) -> Self {
+        Self::ResponseInvalidId {
+            kind: err.kind,
+            value: err.value,
+        }
+    }
+}
+
+impl From<InvalidId> for ContentProviderRejection {
+    fn from(err: InvalidId) -> Self {
+        Self::ResponseInvalidId {
+            kind: err.kind,
+            value: err.value,
+        }
+    }
+}
+
+impl From<InvalidUrl> for ContentProviderRejection {
+    fn from(err: InvalidUrl) -> Self {
+        Self::ResponseInvalidUrl(err)
+    }
+}
+
+impl From<InvalidPagination> for ContentProviderRejection {
+    fn from(err: InvalidPagination) -> Self {
+        Self::ResponseInvalidPagination(err)
+    }
+}
+
+impl From<ContentProviderRejection> for InstanceError {
+    fn from(reason: ContentProviderRejection) -> Self {
+        Self::ContentProviderError { reason }
+    }
+}
+
 /// Why content could not be downloaded.
-#[derive(Debug, thiserror::Error)]
+#[derive(Clone, Debug, thiserror::Error)]
 pub enum ContentDownloadFailure {
-    #[error("No files found for Modrinth version {version_id}")]
+    #[error("No files found for version {version_id}")]
     NoFiles { version_id: String },
 
-    #[error("No versions found for modpack {project_id}")]
-    NoVersions { project_id: String },
+    #[error("No versions found for modpack {content_id}")]
+    NoVersions { content_id: String },
 
     #[error("File {file_name} is not a modpack")]
     NotAModpackFile { file_name: String },
@@ -155,24 +217,24 @@ pub enum ContentDownloadFailure {
     Download {
         url: String,
         #[source]
-        source: BoxedSource,
+        source: SharedSource,
     },
 
-    /// A failure with no typed source: the text a provider's API client or a plugin gave.
-    #[error("{0}")]
-    Other(String),
+    /// The plugin behind a download is not loaded, so there is no telling where it may connect.
+    #[error("Plugin \"{plugin_id}\" has no network policy: it is not loaded")]
+    NoNetworkPolicy { plugin_id: String },
 }
 
 impl ContentDownloadFailure {
     pub fn download(url: impl std::fmt::Display, source: impl Into<BoxedSource>) -> Self {
         Self::Download {
             url: url.to_string(),
-            source: source.into(),
+            source: shared_source(source),
         }
     }
 }
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Clone, Debug, thiserror::Error)]
 pub enum InstanceError {
     #[error("Storage error: {0}")]
     Storage(#[from] StorageError),
@@ -185,6 +247,13 @@ pub enum InstanceError {
 
     #[error("Instance with id \"{instance_id}\" not found")]
     NotFound { instance_id: String },
+
+    /// The stored record of an instance cannot be read back, or a value of it written.
+    #[error("The stored record of instance \"{instance_id}\" is invalid: {reason}")]
+    InvalidRecord {
+        instance_id: String,
+        reason: BrokenInstanceReason,
+    },
 
     #[error(
         "Content provider not found for plugin \"{plugin_id}\" and capability \"{capability_id}\""
@@ -216,7 +285,7 @@ pub enum InstanceError {
     PrelaunchCommandSpawnFailed {
         program: String,
         #[source]
-        source: std::io::Error,
+        source: Arc<std::io::Error>,
     },
 
     #[error("The pre-launch command did not finish in {seconds} seconds")]
@@ -276,6 +345,18 @@ pub enum InstanceError {
 
     #[error("Can't get content file_name at path: {path}")]
     ContentFilename { path: PathBuf },
+
+    #[error("No content file \"{content_path}\" is recorded for instance \"{instance_id}\"")]
+    PackFileNotFound {
+        instance_id: String,
+        content_path: String,
+    },
+
+    #[error("\"{content_path}\" of instance \"{instance_id}\" is a directory, not a content file")]
+    NotAContentFile {
+        instance_id: String,
+        content_path: String,
+    },
 
     // Instance files
     #[error("Path \"{path}\" is not a valid path inside an instance: {reason}")]
@@ -514,7 +595,9 @@ impl From<AssetError> for InstanceError {
         match value {
             AssetError::TooLarge { limit } => Self::IconTooLarge { limit_bytes: limit },
             AssetError::NotAnImage => Self::IconNotSupported,
-            other => Self::Storage(StorageError::other(other)),
+            AssetError::ReadSource(err) | AssetError::Write(err) | AssetError::Remove(err) => {
+                Self::Storage(StorageError::Io(err))
+            }
         }
     }
 }
@@ -534,8 +617,10 @@ mod icon_error_tests {
             InstanceError::IconNotSupported
         ));
         assert!(matches!(
-            InstanceError::from(AssetError::ReadSource("x".into())),
-            InstanceError::Storage(_)
+            InstanceError::from(AssetError::ReadSource(Arc::new(std::io::Error::from(
+                std::io::ErrorKind::NotFound
+            )))),
+            InstanceError::Storage(StorageError::Io(_))
         ));
     }
 }
@@ -552,16 +637,6 @@ mod storage_error_tests {
             err,
             InstanceError::Storage(StorageError::Io(ref io))
                 if io.kind() == std::io::ErrorKind::NotFound
-        ));
-    }
-
-    #[test]
-    fn should_keep_the_database_error_as_the_source_of_a_storage_failure() {
-        let err = InstanceError::storage(sqlx::Error::RowNotFound);
-
-        assert!(matches!(
-            err,
-            InstanceError::Storage(StorageError::Database(sqlx::Error::RowNotFound))
         ));
     }
 

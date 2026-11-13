@@ -62,6 +62,16 @@ pub enum InvalidResolvedFile {
     Url(#[from] InvalidUrl),
 }
 
+impl InvalidResolvedFile {
+    /// The URL refused, when that is what is wrong with the file.
+    pub(crate) fn invalid_url(&self) -> Option<&InvalidUrl> {
+        match self {
+            Self::Url(err) => Some(err),
+            _ => None,
+        }
+    }
+}
+
 impl TryFrom<ResolvedFileDto> for ResolvedFile {
     type Error = InvalidResolvedFile;
 

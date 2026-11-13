@@ -21,10 +21,16 @@ export const showUpdateAvailable = (update: UpdateStatus) => {
   createRoot((dispose) => {
     const { open } = useSettingsSearchParams();
 
+    // The toast is gone: another one may come up for the next update.
+    const cleanup = () => {
+      isAlreadyOpened = false;
+      dispose();
+    };
+
     const goToUpdatePage = () => {
       closeToast(number);
       open(SettingsTab.Update);
-      dispose();
+      cleanup();
     };
 
     const [{ t }] = useTranslation();
@@ -37,11 +43,14 @@ export const showUpdateAvailable = (update: UpdateStatus) => {
       setIsDialogOpen(true);
     };
 
-    const handleInstallUpdate = () => {
+    // A failed install leaves the toast up, to try again from it; the error has been shown.
+    const handleInstallUpdate = async () => {
       setIsDialogOpen(false);
-      updateAndRestart(update);
-      closeToast(number);
-      dispose();
+
+      if (await updateAndRestart(update)) {
+        closeToast(number);
+        cleanup();
+      }
     };
 
     const handleCancel = () => {
@@ -85,6 +94,7 @@ export const showUpdateAvailable = (update: UpdateStatus) => {
         </div>
       ),
       persistent: true,
+      onDismiss: cleanup,
     });
   });
 };

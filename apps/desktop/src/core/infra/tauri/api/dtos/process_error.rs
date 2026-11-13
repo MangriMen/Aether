@@ -4,7 +4,7 @@ use specta::Type;
 
 use super::CauseDto;
 
-#[derive(Debug, Serialize, Type)]
+#[derive(Clone, Debug, Serialize, Type)]
 #[serde(tag = "code", content = "payload", rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum ProcessErrorDto {
     KillError { id: String },
@@ -30,7 +30,7 @@ mod tests {
 
     #[test]
     fn should_serialize_io_with_an_io_cause() {
-        let err = ProcessError::Io(IoError::IoError(std::io::Error::from(
+        let err = ProcessError::Io(IoError::from(std::io::Error::from(
             std::io::ErrorKind::PermissionDenied,
         )));
 

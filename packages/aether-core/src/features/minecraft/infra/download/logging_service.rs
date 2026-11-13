@@ -82,7 +82,7 @@ impl<RC: RequestClient> LoggingService<RC> {
                 )
                 .await
                 .map_err(|err| {
-                    IoError::IoError(std::io::Error::new(
+                    IoError::from(std::io::Error::new(
                         std::io::ErrorKind::NetworkUnreachable,
                         err,
                     ))

@@ -8,7 +8,7 @@ use crate::{
 };
 
 /// Failure categories of the core; most variants transparently wrap a feature error.
-#[derive(thiserror::Error, Debug)]
+#[derive(thiserror::Error, Debug, Clone)]
 pub enum ErrorKind {
     #[error(transparent)]
     AuthError(#[from] auth::AuthApplicationError),
@@ -114,6 +114,18 @@ pub fn error_chain(err: &(dyn std::error::Error + 'static)) -> String {
 
 pub type Result<T> = core::result::Result<T, Error>;
 
+impl From<minecraft::MinecraftDomainError> for ErrorKind {
+    fn from(value: minecraft::MinecraftDomainError) -> Self {
+        Self::MinecraftError(value.into())
+    }
+}
+
+impl From<java::JavaDomainError> for ErrorKind {
+    fn from(value: java::JavaDomainError) -> Self {
+        Self::JavaError(value.into())
+    }
+}
+
 impl From<plugins::PluginProviderError> for ErrorKind {
     fn from(value: plugins::PluginProviderError) -> Self {
         Self::PluginError(value.into())
@@ -131,6 +143,28 @@ mod tests {
     #[derive(thiserror::Error, Debug)]
     #[error("disk full")]
     struct Inner;
+
+    #[test]
+    fn should_keep_the_typed_source_and_the_text_when_an_error_is_cloned() {
+        let original = ErrorKind::from(crate::features::instance::InstanceError::storage(
+            crate::shared::io::IoError::with_path(
+                std::io::Error::from(std::io::ErrorKind::StorageFull),
+                "/data/instances/a",
+            ),
+        ));
+
+        let clone = original.clone();
+
+        assert_eq!(clone.display_chain(), original.display_chain());
+        assert!(matches!(
+            clone,
+            ErrorKind::InstanceError(crate::features::instance::InstanceError::Storage(
+                crate::features::instance::StorageError::SharedIo(
+                    crate::shared::io::IoError::IoPathError { ref source, .. }
+                )
+            )) if source.kind() == std::io::ErrorKind::StorageFull
+        ));
+    }
 
     #[test]
     fn should_not_repeat_link_when_source_has_same_text() {

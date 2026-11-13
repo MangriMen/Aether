@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
+import type { LauncherError } from '@/features/errors';
+
 import type { ProgressEvent } from '../progressEvent';
 
 import {
@@ -7,9 +9,17 @@ import {
   findFailedDescendant,
   getFinishedIds,
   getFinishedRoots,
-  isPartOfContentInstall,
   splitChildren,
 } from '../progressTree';
+
+/** A failure with no category, as the backend sends one. */
+const failure = (details: string): LauncherError => ({
+  type: 'application',
+  payload: {
+    code: 'INTERNAL',
+    payload: { cause: { type: 'unknown', details } },
+  },
+});
 
 const make = (
   id: string,
@@ -31,7 +41,7 @@ describe('progress tree', () => {
     make('root', null),
     make('a', 'root'),
     make('b', 'root'),
-    make('a1', 'a', { status: { type: 'failed', message: 'x' } }),
+    make('a1', 'a', { status: { type: 'failed', error: failure('x') } }),
     make('mirror', 'other', { mirrorOf: 'a' }),
     make('orphan', 'missing'),
   ];
@@ -96,7 +106,7 @@ describe('progress tree', () => {
 describe('finished bars', () => {
   const st = (type: ProgressEvent['status']['type']) =>
     (type === 'failed'
-      ? { type, message: 'x' }
+      ? { type, error: failure('x') }
       : { type }) as ProgressEvent['status'];
 
   it('keeps the order of the children and moves finished ones aside', () => {
@@ -152,57 +162,5 @@ describe('finished bars', () => {
     const list = [make('a', 'b'), make('b', 'a')];
 
     expect(ids(buildProgressIndex(list).descendantsOf('a'))).toEqual(['b']);
-  });
-});
-
-describe('isPartOfContentInstall', () => {
-  const install = make('plan', null, {
-    event: {
-      type: 'pack_download',
-      instance_path: '',
-      pack_name: 'Pack',
-      icon: null,
-      pack_id: null,
-      pack_version: null,
-    },
-  });
-  const file = make('file', 'plan', {
-    event: { type: 'file_download', file_name: 'a.jar' },
-  });
-  const game = make('game', 'file', {
-    event: { type: 'minecraft_download', instance_id: 'i', instance_name: 'I' },
-  });
-  const java = make('java', null, {
-    event: { type: 'java_download', version: 21 },
-  });
-  const payloads = { plan: install, file, game, java };
-
-  it('takes in the bar of an install and every bar under it', () => {
-    expect(isPartOfContentInstall(install, payloads)).toBe(true);
-    expect(isPartOfContentInstall(file, payloads)).toBe(true);
-    expect(isPartOfContentInstall(game, payloads)).toBe(true);
-  });
-
-  it('leaves out a bar of other work and an orphan', () => {
-    expect(isPartOfContentInstall(java, payloads)).toBe(false);
-    expect(
-      isPartOfContentInstall(
-        make('orphan', 'missing', {
-          event: { type: 'java_download', version: 21 },
-        }),
-        payloads,
-      ),
-    ).toBe(false);
-  });
-
-  it('does not hang on a cycle in parent ids', () => {
-    const a = make('a', 'b', {
-      event: { type: 'file_download', file_name: 'a' },
-    });
-    const b = make('b', 'a', {
-      event: { type: 'file_download', file_name: 'b' },
-    });
-
-    expect(isPartOfContentInstall(a, { a, b })).toBe(false);
   });
 });

@@ -96,7 +96,7 @@ impl UpdatePluginUseCase {
                     .latest_tag
                     .ok_or_else(|| PluginProviderError::ProviderFetchError {
                         source_type: source_type.clone(),
-                        cause: ProviderFailure::Other("No releases found".to_string()),
+                        reason: ProviderFailure::NoReleases,
                     })?;
             // The update check listed the releases already.
             (latest_tag, Some(updates.all_releases))

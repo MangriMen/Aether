@@ -1,5 +1,5 @@
 use aether_core::features::minecraft::{
-    MinecraftApplicationError, MinecraftDomainError, ProcessorFailure,
+    GamePathKind, MinecraftApplicationError, MinecraftDomainError, ProcessorFailure,
 };
 use serde::Serialize;
 use specta::Type;
@@ -7,7 +7,7 @@ use specta::Type;
 use super::{CauseDto, FrontendError};
 use crate::features::minecraft::LoaderVersionPreferenceDto;
 
-#[derive(Debug, Serialize, Type)]
+#[derive(Clone, Debug, Serialize, Type)]
 #[serde(tag = "code", content = "payload", rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum MinecraftErrorDto {
     VersionNotFound {
@@ -32,7 +32,7 @@ pub enum MinecraftErrorDto {
     },
     PathNotFound {
         path: String,
-        entity_type: String,
+        entity_type: GamePathKindDto,
     },
     ParseFailed {
         cause: CauseDto,
@@ -46,6 +46,33 @@ pub enum MinecraftErrorDto {
     Storage {
         cause: CauseDto,
     },
+}
+
+/// What a path the launch needs is the path of.
+#[derive(Debug, Clone, Copy, Serialize, Type)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum GamePathKindDto {
+    Game,
+    Assets,
+    Library,
+    LibrariesDir,
+    NativeLibrary,
+    LogConfig,
+    Classpath,
+}
+
+impl From<GamePathKind> for GamePathKindDto {
+    fn from(value: GamePathKind) -> Self {
+        match value {
+            GamePathKind::Game => Self::Game,
+            GamePathKind::Assets => Self::Assets,
+            GamePathKind::Library => Self::Library,
+            GamePathKind::LibrariesDir => Self::LibrariesDir,
+            GamePathKind::NativeLibrary => Self::NativeLibrary,
+            GamePathKind::LogConfig => Self::LogConfig,
+            GamePathKind::Classpath => Self::Classpath,
+        }
+    }
 }
 
 /// Why a modloader processor did not finish.
@@ -154,7 +181,7 @@ impl From<&MinecraftDomainError> for MinecraftErrorDto {
             }
             MinecraftDomainError::PathNotFound { path, entity_type } => Self::PathNotFound {
                 path: path.to_string_lossy().to_string(),
-                entity_type: entity_type.clone(),
+                entity_type: (*entity_type).into(),
             },
             // The text of the parser (daedalus): no category to name.
             MinecraftDomainError::ParseFailed { reason } => Self::ParseFailed {
@@ -188,6 +215,19 @@ mod tests {
 
     fn io(kind: std::io::ErrorKind) -> std::io::Error {
         std::io::Error::from(kind)
+    }
+
+    #[test]
+    fn should_serialize_a_missing_path_with_what_it_is_the_path_of() {
+        let out = domain(&MinecraftDomainError::PathNotFound {
+            path: "libraries".into(),
+            entity_type: GamePathKind::NativeLibrary,
+        });
+
+        assert_eq!(
+            out,
+            json!({"code": "PATH_NOT_FOUND", "payload": {"path": "libraries", "entity_type": "NATIVE_LIBRARY"}})
+        );
     }
 
     #[test]
@@ -292,7 +332,7 @@ mod tests {
             .await
             .unwrap_err();
 
-        let out = reason(ProcessorFailure::TaskFailed(join));
+        let out = reason(ProcessorFailure::TaskFailed(join.into()));
 
         assert_eq!(out["code"], "TASK_FAILED");
         assert_eq!(out["payload"]["cause"]["type"], "unknown");

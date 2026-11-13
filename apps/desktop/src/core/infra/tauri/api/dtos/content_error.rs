@@ -1,14 +1,12 @@
-use aether_core::features::instance::{
-    BoxedSource, ContentDownloadFailure, ContentProviderRejection,
-};
-use aether_core::shared::request_client::RequestError;
+use aether_core::features::instance::{ContentDownloadFailure, ContentProviderRejection};
 use serde::Serialize;
 use specta::Type;
 
-use super::{CauseDto, without_query};
+use super::{CauseDto, PaginationFieldDto, without_query};
 use crate::features::instance::infra::ContentTypeDto;
 
-/// Why a content provider's answer, or the request made to it, was refused.
+/// Why a content provider's answer, or the request made to it, was refused. The codes are the
+/// same for every provider.
 #[derive(Debug, Clone, Serialize, Type)]
 #[serde(tag = "code", content = "payload", rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum ContentProviderReasonDto {
@@ -30,9 +28,9 @@ pub enum ContentProviderReasonDto {
     InvalidOverridesArchive {
         cause: CauseDto,
     },
-    VersionOfAnotherProject {
+    VersionOfAnotherContent {
         version_id: String,
-        project_id: String,
+        owner_id: String,
         content_id: String,
     },
     NotAModpack {
@@ -42,60 +40,57 @@ pub enum ContentProviderReasonDto {
     NoGameVersion {
         version_id: String,
     },
-    InvalidSearchParams {
+    UnknownContentType {
+        content_type: String,
+    },
+    InvalidRequest {
         cause: CauseDto,
     },
-    InvalidSearchResponse {
+    Request {
         cause: CauseDto,
     },
-    UnknownProjectType {
-        project_type: String,
+    ResponseInvalidId {
+        value: String,
     },
-    Mapping {
+    ResponseInvalidUrl {
+        url: String,
+    },
+    ResponseInvalidPagination {
+        field: PaginationFieldDto,
+        value: String,
+    },
+    PackUnreadable {
         cause: CauseDto,
     },
-    MrpackOpenFailed {
+    PackInvalidArchive {
         cause: CauseDto,
     },
-    MrpackInvalidArchive {
-        cause: CauseDto,
+    PackNoIndex {
+        index: String,
     },
-    MrpackMissingIndex,
-    MrpackReadFailed {
-        cause: CauseDto,
-    },
-    MrpackIndexTooLarge {
+    PackIndexTooLarge {
         max_bytes: String,
     },
-    MrpackMalformedIndex {
+    PackIndexMalformed {
         cause: CauseDto,
     },
-    MrpackTooManyFiles {
-        count: String,
-        max: String,
-    },
-    MrpackNotMinecraft {
+    PackWrongGame {
         game: String,
     },
-    MrpackInvalidHash,
-    MrpackNoAllowedDownload {
+    PackOutsideProviderReach {
         path: String,
+    },
+    InvalidHash,
+    NoAllowedDownload {
+        path: String,
+    },
+    InvalidAnswer {
+        handler: String,
+        cause: CauseDto,
     },
     Provider {
         cause: CauseDto,
     },
-}
-
-/// The category of an error a provider passes on: the typed ones the core keeps, else its text.
-fn source_cause(source: &BoxedSource) -> CauseDto {
-    let source: &(dyn std::error::Error + 'static) = source.as_ref();
-    if let Some(err) = source.downcast_ref::<RequestError>() {
-        return err.into();
-    }
-    if let Some(err) = source.downcast_ref::<std::io::Error>() {
-        return err.into();
-    }
-    CauseDto::unknown(source)
 }
 
 impl From<&ContentProviderRejection> for ContentProviderReasonDto {
@@ -121,13 +116,13 @@ impl From<&ContentProviderRejection> for ContentProviderReasonDto {
                 max: max.to_string(),
             },
             R::InvalidOverridesArchive(err) => Self::InvalidOverridesArchive { cause: err.into() },
-            R::VersionOfAnotherProject {
+            R::VersionOfAnotherContent {
                 version_id,
-                project_id,
+                owner_id,
                 content_id,
-            } => Self::VersionOfAnotherProject {
+            } => Self::VersionOfAnotherContent {
                 version_id: version_id.clone(),
-                project_id: project_id.clone(),
+                owner_id: owner_id.clone(),
                 content_id: content_id.clone(),
             },
             R::NotAModpack {
@@ -140,35 +135,46 @@ impl From<&ContentProviderRejection> for ContentProviderReasonDto {
             R::NoGameVersion { version_id } => Self::NoGameVersion {
                 version_id: version_id.clone(),
             },
-            R::InvalidSearchParams(source) => Self::InvalidSearchParams {
-                cause: source_cause(source),
+            R::UnknownContentType { content_type } => Self::UnknownContentType {
+                content_type: content_type.clone(),
             },
-            R::InvalidSearchResponse(source) => Self::InvalidSearchResponse {
-                cause: source_cause(source),
+            R::InvalidRequest(source) => Self::InvalidRequest {
+                cause: CauseDto::of_source(source.as_ref()),
             },
-            R::UnknownProjectType { project_type } => Self::UnknownProjectType {
-                project_type: project_type.clone(),
+            R::Request(source) => Self::Request {
+                cause: CauseDto::of_source(source.as_ref()),
             },
-            R::Mapping(source) => Self::Mapping {
-                cause: source_cause(source),
+            R::ResponseInvalidId { value, .. } => Self::ResponseInvalidId {
+                value: value.clone(),
             },
-            R::MrpackOpenFailed(err) => Self::MrpackOpenFailed { cause: err.into() },
-            R::MrpackInvalidArchive(err) => Self::MrpackInvalidArchive { cause: err.into() },
-            R::MrpackMissingIndex => Self::MrpackMissingIndex,
-            R::MrpackReadFailed(err) => Self::MrpackReadFailed { cause: err.into() },
-            R::MrpackIndexTooLarge { max_bytes } => Self::MrpackIndexTooLarge {
+            R::ResponseInvalidUrl(err) => Self::ResponseInvalidUrl {
+                url: without_query(&err.value),
+            },
+            R::ResponseInvalidPagination(err) => Self::ResponseInvalidPagination {
+                field: err.field.into(),
+                value: err.value.to_string(),
+            },
+            R::PackUnreadable(err) => Self::PackUnreadable { cause: err.into() },
+            R::PackInvalidArchive(err) => Self::PackInvalidArchive { cause: err.into() },
+            R::PackNoIndex { index } => Self::PackNoIndex {
+                index: (*index).to_owned(),
+            },
+            R::PackIndexTooLarge { max_bytes } => Self::PackIndexTooLarge {
                 max_bytes: max_bytes.to_string(),
             },
-            R::MrpackMalformedIndex(err) => Self::MrpackMalformedIndex { cause: err.into() },
-            R::MrpackTooManyFiles { count, max } => Self::MrpackTooManyFiles {
-                count: count.to_string(),
-                max: max.to_string(),
+            R::PackIndexMalformed(source) => Self::PackIndexMalformed {
+                cause: CauseDto::of_source(source.as_ref()),
             },
-            R::MrpackNotMinecraft { game } => Self::MrpackNotMinecraft { game: game.clone() },
-            R::MrpackInvalidHash(_) => Self::MrpackInvalidHash,
-            R::MrpackNoAllowedDownload { path } => {
-                Self::MrpackNoAllowedDownload { path: path.clone() }
-            }
+            R::PackWrongGame { game } => Self::PackWrongGame { game: game.clone() },
+            R::PackOutsideProviderReach { path } => Self::PackOutsideProviderReach {
+                path: path.display().to_string(),
+            },
+            R::InvalidHash(_) => Self::InvalidHash,
+            R::NoAllowedDownload { path } => Self::NoAllowedDownload { path: path.clone() },
+            R::InvalidAnswer { handler, source } => Self::InvalidAnswer {
+                handler: handler.clone(),
+                cause: CauseDto::of_source(source.as_ref()),
+            },
             R::Provider(text) => Self::Provider {
                 cause: CauseDto::unknown(text),
             },
@@ -181,10 +187,10 @@ impl From<&ContentProviderRejection> for ContentProviderReasonDto {
 #[serde(tag = "code", content = "payload", rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum ContentDownloadReasonDto {
     NoFiles { version_id: String },
-    NoVersions { project_id: String },
+    NoVersions { content_id: String },
     NotAModpackFile { file_name: String },
     Download { url: String, cause: CauseDto },
-    Other { cause: CauseDto },
+    NoNetworkPolicy { plugin_id: String },
 }
 
 impl From<&ContentDownloadFailure> for ContentDownloadReasonDto {
@@ -193,18 +199,18 @@ impl From<&ContentDownloadFailure> for ContentDownloadReasonDto {
             ContentDownloadFailure::NoFiles { version_id } => Self::NoFiles {
                 version_id: version_id.clone(),
             },
-            ContentDownloadFailure::NoVersions { project_id } => Self::NoVersions {
-                project_id: project_id.clone(),
+            ContentDownloadFailure::NoVersions { content_id } => Self::NoVersions {
+                content_id: content_id.clone(),
             },
             ContentDownloadFailure::NotAModpackFile { file_name } => Self::NotAModpackFile {
                 file_name: file_name.clone(),
             },
             ContentDownloadFailure::Download { url, source } => Self::Download {
                 url: without_query(url),
-                cause: source_cause(source),
+                cause: CauseDto::of_source(source.as_ref()),
             },
-            ContentDownloadFailure::Other(text) => Self::Other {
-                cause: CauseDto::unknown(text),
+            ContentDownloadFailure::NoNetworkPolicy { plugin_id } => Self::NoNetworkPolicy {
+                plugin_id: plugin_id.clone(),
             },
         }
     }
@@ -213,7 +219,10 @@ impl From<&ContentDownloadFailure> for ContentDownloadReasonDto {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use aether_core::features::instance::InstanceError;
+    use aether_core::features::instance::{BoxedSource, InstanceError, InvalidContentId, PageSize};
+    use aether_core::shared::error::shared_source;
+    use aether_core::shared::request_client::RequestError;
+    use aether_core::shared::web_url::HttpsUrl;
     use serde_json::{Value, json};
 
     use crate::core::infra::tauri::api::dtos::FrontendError;
@@ -279,20 +288,22 @@ mod tests {
         let err = std::io::Error::from(std::io::ErrorKind::InvalidData);
 
         assert_eq!(
-            provider(ContentProviderRejection::InvalidOverridesArchive(err))["payload"]["reason"],
+            provider(ContentProviderRejection::InvalidOverridesArchive(
+                err.into()
+            ))["payload"]["reason"],
             json!({"code": "INVALID_OVERRIDES_ARCHIVE", "payload": {"cause": {"type": "io", "kind": "invalidData"}}})
         );
     }
 
     #[test]
-    fn should_serialize_a_version_of_another_project() {
+    fn should_serialize_a_version_of_another_content() {
         assert_eq!(
-            provider(ContentProviderRejection::VersionOfAnotherProject {
+            provider(ContentProviderRejection::VersionOfAnotherContent {
                 version_id: "v".into(),
-                project_id: "p".into(),
+                owner_id: "p".into(),
                 content_id: "c".into(),
             })["payload"]["reason"],
-            json!({"code": "VERSION_OF_ANOTHER_PROJECT", "payload": {"version_id": "v", "project_id": "p", "content_id": "c"}})
+            json!({"code": "VERSION_OF_ANOTHER_CONTENT", "payload": {"version_id": "v", "owner_id": "p", "content_id": "c"}})
         );
     }
 
@@ -318,41 +329,75 @@ mod tests {
     }
 
     #[test]
-    fn should_serialize_an_unknown_project_type() {
+    fn should_serialize_an_unknown_content_type() {
         assert_eq!(
-            provider(ContentProviderRejection::UnknownProjectType {
-                project_type: "x".into()
+            provider(ContentProviderRejection::UnknownContentType {
+                content_type: "x".into()
             })["payload"]["reason"],
-            json!({"code": "UNKNOWN_PROJECT_TYPE", "payload": {"project_type": "x"}})
+            json!({"code": "UNKNOWN_CONTENT_TYPE", "payload": {"content_type": "x"}})
         );
     }
 
     #[test]
-    fn should_serialize_a_bad_search_with_the_text_of_the_mapper_as_unknown() {
+    fn should_serialize_a_request_that_cannot_be_built_with_its_text_as_unknown() {
         let source: BoxedSource = "bad page".into();
 
         assert_eq!(
-            provider(ContentProviderRejection::InvalidSearchParams(source))["payload"]["reason"],
-            json!({"code": "INVALID_SEARCH_PARAMS", "payload": {"cause": {"type": "unknown", "details": "bad page"}}})
-        );
-        assert_eq!(
-            provider(ContentProviderRejection::InvalidSearchResponse("x".into()))["payload"]["reason"]
-                ["code"],
-            "INVALID_SEARCH_RESPONSE"
-        );
-        assert_eq!(
-            provider(ContentProviderRejection::Mapping("x".into()))["payload"]["reason"]["code"],
-            "MAPPING"
+            provider(ContentProviderRejection::InvalidRequest(source.into()))["payload"]["reason"],
+            json!({"code": "INVALID_REQUEST", "payload": {"cause": {"type": "unknown", "details": "bad page"}}})
         );
     }
 
     #[test]
-    fn should_serialize_a_mrpack_that_cannot_be_parsed_with_a_parse_cause() {
+    fn should_serialize_a_failed_request_with_the_category_of_the_client_error() {
+        let source = RequestError::Status {
+            status: 503,
+            url: "https://api.example.com/v2/project/x?key=secret".into(),
+        };
+
+        assert_eq!(
+            provider(ContentProviderRejection::Request(std::sync::Arc::new(
+                source
+            )))["payload"]["reason"],
+            json!({"code": "REQUEST", "payload": {"cause": {"type": "httpStatus", "status": 503, "url": "https://api.example.com/v2/project/x"}}})
+        );
+    }
+
+    #[test]
+    fn should_serialize_the_invalid_values_of_a_response() {
+        assert_eq!(
+            provider(
+                InvalidContentId {
+                    kind: "content id",
+                    value: "a/b".into(),
+                }
+                .into()
+            )["payload"]["reason"],
+            json!({"code": "RESPONSE_INVALID_ID", "payload": {"value": "a/b"}})
+        );
+        assert_eq!(
+            provider(
+                HttpsUrl::parse("http://cdn.example.com/a.jar?token=1")
+                    .unwrap_err()
+                    .into()
+            )["payload"]["reason"],
+            json!({"code": "RESPONSE_INVALID_URL", "payload": {"url": "http://cdn.example.com/a.jar"}})
+        );
+        assert_eq!(
+            provider(PageSize::parse(0).unwrap_err().into())["payload"]["reason"],
+            json!({"code": "RESPONSE_INVALID_PAGINATION", "payload": {"field": "PAGE_SIZE", "value": "0"}})
+        );
+    }
+
+    #[test]
+    fn should_serialize_a_pack_index_that_cannot_be_parsed_with_a_parse_cause() {
         let err = serde_json::from_str::<u8>("x").unwrap_err();
 
-        let value = provider(ContentProviderRejection::MrpackMalformedIndex(err));
+        let value = provider(ContentProviderRejection::PackIndexMalformed(
+            std::sync::Arc::new(err),
+        ));
 
-        assert_eq!(value["payload"]["reason"]["code"], "MRPACK_MALFORMED_INDEX");
+        assert_eq!(value["payload"]["reason"]["code"], "PACK_INDEX_MALFORMED");
         assert_eq!(
             value["payload"]["reason"]["payload"]["cause"]["type"],
             "parse"
@@ -360,22 +405,18 @@ mod tests {
     }
 
     #[test]
-    fn should_serialize_the_io_failures_of_a_mrpack() {
+    fn should_serialize_the_io_failures_of_a_pack() {
         let io = || std::io::Error::from(std::io::ErrorKind::NotFound);
         let cause = json!({"cause": {"type": "io", "kind": "notFound"}});
 
         for (reason, code) in [
             (
-                ContentProviderRejection::MrpackOpenFailed(io()),
-                "MRPACK_OPEN_FAILED",
+                ContentProviderRejection::PackUnreadable(io().into()),
+                "PACK_UNREADABLE",
             ),
             (
-                ContentProviderRejection::MrpackInvalidArchive(io()),
-                "MRPACK_INVALID_ARCHIVE",
-            ),
-            (
-                ContentProviderRejection::MrpackReadFailed(io()),
-                "MRPACK_READ_FAILED",
+                ContentProviderRejection::PackInvalidArchive(io().into()),
+                "PACK_INVALID_ARCHIVE",
             ),
         ] {
             assert_eq!(
@@ -386,30 +427,50 @@ mod tests {
     }
 
     #[test]
-    fn should_serialize_the_refusals_of_a_mrpack_index() {
+    fn should_serialize_the_refusals_of_a_pack_index() {
         assert_eq!(
-            provider(ContentProviderRejection::MrpackMissingIndex)["payload"]["reason"],
-            json!({"code": "MRPACK_MISSING_INDEX"})
+            provider(ContentProviderRejection::PackNoIndex {
+                index: "modrinth.index.json"
+            })["payload"]["reason"],
+            json!({"code": "PACK_NO_INDEX", "payload": {"index": "modrinth.index.json"}})
         );
         assert_eq!(
-            provider(ContentProviderRejection::MrpackIndexTooLarge { max_bytes: 10 })["payload"]["reason"],
-            json!({"code": "MRPACK_INDEX_TOO_LARGE", "payload": {"max_bytes": "10"}})
+            provider(ContentProviderRejection::PackIndexTooLarge { max_bytes: 10 })["payload"]["reason"],
+            json!({"code": "PACK_INDEX_TOO_LARGE", "payload": {"max_bytes": "10"}})
         );
         assert_eq!(
-            provider(ContentProviderRejection::MrpackTooManyFiles { count: 3, max: 2 })["payload"]
-                ["reason"],
-            json!({"code": "MRPACK_TOO_MANY_FILES", "payload": {"count": "3", "max": "2"}})
+            provider(ContentProviderRejection::PackWrongGame { game: "x".into() })["payload"]["reason"],
+            json!({"code": "PACK_WRONG_GAME", "payload": {"game": "x"}})
         );
         assert_eq!(
-            provider(ContentProviderRejection::MrpackNotMinecraft { game: "x".into() })["payload"]
-                ["reason"],
-            json!({"code": "MRPACK_NOT_MINECRAFT", "payload": {"game": "x"}})
-        );
-        assert_eq!(
-            provider(ContentProviderRejection::MrpackNoAllowedDownload {
+            provider(ContentProviderRejection::NoAllowedDownload {
                 path: "mods/a.jar".into()
             })["payload"]["reason"],
-            json!({"code": "MRPACK_NO_ALLOWED_DOWNLOAD", "payload": {"path": "mods/a.jar"}})
+            json!({"code": "NO_ALLOWED_DOWNLOAD", "payload": {"path": "mods/a.jar"}})
+        );
+    }
+
+    #[test]
+    fn should_serialize_a_pack_a_plugin_cannot_read_with_its_path() {
+        let path = std::path::PathBuf::from("pack.mrpack");
+
+        assert_eq!(
+            provider(ContentProviderRejection::PackOutsideProviderReach { path })["payload"]["reason"],
+            json!({"code": "PACK_OUTSIDE_PROVIDER_REACH", "payload": {"path": "pack.mrpack"}})
+        );
+    }
+
+    #[test]
+    fn should_serialize_an_invalid_answer_of_a_plugin_with_the_handler_and_its_cause() {
+        assert_eq!(
+            provider(ContentProviderRejection::InvalidAnswer {
+                handler: "cf_resolve_file".into(),
+                source: shared_source("url is not https"),
+            })["payload"]["reason"],
+            json!({"code": "INVALID_ANSWER", "payload": {
+                "handler": "cf_resolve_file",
+                "cause": {"type": "unknown", "details": "url is not https"},
+            }})
         );
     }
 
@@ -431,9 +492,9 @@ mod tests {
         );
         assert_eq!(
             download(ContentDownloadFailure::NoVersions {
-                project_id: "p".into()
+                content_id: "p".into()
             })["payload"]["reason"],
-            json!({"code": "NO_VERSIONS", "payload": {"project_id": "p"}})
+            json!({"code": "NO_VERSIONS", "payload": {"content_id": "p"}})
         );
     }
 
@@ -479,10 +540,12 @@ mod tests {
     }
 
     #[test]
-    fn should_serialize_the_text_of_an_api_client_as_unknown() {
+    fn should_serialize_a_download_of_a_plugin_without_a_network_policy() {
         assert_eq!(
-            download(ContentDownloadFailure::Other("offline".into()))["payload"]["reason"],
-            json!({"code": "OTHER", "payload": {"cause": {"type": "unknown", "details": "offline"}}})
+            download(ContentDownloadFailure::NoNetworkPolicy {
+                plugin_id: "p".into()
+            })["payload"]["reason"],
+            json!({"code": "NO_NETWORK_POLICY", "payload": {"plugin_id": "p"}})
         );
     }
 }

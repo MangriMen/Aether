@@ -566,7 +566,7 @@ mod tests {
         let result = storage.get(&InstanceId::try_from("a").unwrap()).await;
 
         assert!(
-            matches!(result, Err(InstanceError::Storage(crate::features::instance::StorageError::Other(ref m))) if m.contains("launch_args_json"))
+            matches!(result, Err(InstanceError::InvalidRecord { reason: crate::features::instance::BrokenInstanceReason::InvalidColumn { ref column }, .. }) if column == "launch_args_json")
         );
     }
 
@@ -582,7 +582,7 @@ mod tests {
         let result = storage.get(&InstanceId::try_from("a").unwrap()).await;
 
         assert!(
-            matches!(result, Err(InstanceError::Storage(crate::features::instance::StorageError::Other(ref m))) if m.contains("env_vars_json"))
+            matches!(result, Err(InstanceError::InvalidRecord { reason: crate::features::instance::BrokenInstanceReason::InvalidColumn { ref column }, .. }) if column == "env_vars_json")
         );
     }
 
@@ -692,7 +692,13 @@ mod tests {
         let listed = storage.list().await.unwrap();
 
         assert!(
-            matches!(result, Err(InstanceError::Storage(crate::features::instance::StorageError::Other(ref m))) if m.contains("game_version")),
+            matches!(
+                result,
+                Err(InstanceError::InvalidRecord {
+                    reason: BrokenInstanceReason::InvalidGameVersion { .. },
+                    ..
+                })
+            ),
             "{result:?}"
         );
         assert!(

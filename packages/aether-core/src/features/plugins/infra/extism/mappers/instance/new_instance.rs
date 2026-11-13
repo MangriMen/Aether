@@ -6,6 +6,15 @@ use crate::features::{
     minecraft::GameVersion,
 };
 
+impl From<InvalidPackInfo> for ContentProviderRejection {
+    fn from(err: InvalidPackInfo) -> Self {
+        match err {
+            InvalidPackInfo::Provider(err) => err.into(),
+            InvalidPackInfo::ContentId(err) => err.into(),
+        }
+    }
+}
+
 impl TryFrom<NewInstanceDto> for NewInstance {
     type Error = InstanceError;
 
@@ -17,11 +26,34 @@ impl TryFrom<NewInstanceDto> for NewInstance {
             loader_version: value.loader_version.map(TryInto::try_into).transpose()?,
             icon_path: value.icon_path,
             skip_install_instance: value.skip_install_instance,
-            pack_info: value.pack_info.map(TryInto::try_into).transpose().map_err(
-                |err: InvalidPackInfo| InstanceError::ContentProviderError {
-                    reason: ContentProviderRejection::Provider(err.to_string()),
-                },
-            )?,
+            pack_info: value
+                .pack_info
+                .map(TryInto::try_into)
+                .transpose()
+                .map_err(|err: InvalidPackInfo| ContentProviderRejection::from(err))?,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::shared::capability::InvalidId;
+
+    #[test]
+    fn should_refuse_a_pack_info_with_an_invalid_provider_id_as_an_invalid_id_of_the_answer() {
+        let reason = ContentProviderRejection::from(InvalidPackInfo::Provider(InvalidId {
+            kind: "plugin",
+            value: "Bad".to_owned(),
+        }));
+
+        assert!(
+            matches!(
+                reason,
+                ContentProviderRejection::ResponseInvalidId { kind: "plugin", ref value }
+                    if value == "Bad"
+            ),
+            "{reason:?}"
+        );
     }
 }

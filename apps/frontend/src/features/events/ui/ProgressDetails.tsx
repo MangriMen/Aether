@@ -4,6 +4,12 @@ import IconChevronDown from '~icons/mdi/chevron-down';
 import IconDownloadOutline from '~icons/mdi/download-outline';
 import { createMemo, createSignal, For, Show, splitProps } from 'solid-js';
 
+import {
+  ErrorDetails,
+  getErrorDetails,
+  getTranslatedError,
+  isInternalError,
+} from '@/features/errors';
 import { useTranslation } from '@/shared/i18n';
 import {
   Collapsible,
@@ -66,17 +72,45 @@ const ProgressNode: Component<ProgressNodeProps> = (props) => {
       ? props.index().othersWaitingOn(props.payload.progressBarId)
       : 0,
   );
-  const failedMessage = createMemo(() => {
+  // The raw text of the bar's own failure; an INTERNAL one has nothing else to tell, so it
+  // is shown open.
+  const ownFailure = createMemo(() => {
+    const { status } = props.payload;
+    const details =
+      status.type === 'failed' ? getErrorDetails(status.error) : undefined;
+
+    return status.type === 'failed' && details
+      ? { details, isOpen: isInternalError(status.error) }
+      : undefined;
+  });
+  const failure = createMemo(() => {
     const status = findFailedDescendant(
       props.index(),
       props.payload.progressBarId,
     )?.status;
-    return status?.type === 'failed' ? status.message : undefined;
+
+    if (status?.type !== 'failed') {
+      return undefined;
+    }
+
+    const details = getErrorDetails(status.error);
+
+    return {
+      text: getTranslatedError(status.error, t),
+      // The bar's own failure shows the same text already.
+      details: details === ownFailure()?.details ? undefined : details,
+      isOpen: isInternalError(status.error),
+    };
   });
 
   const card = () => (
     <div class='min-w-0 gap-1 flex flex-1 flex-col'>
       <ProgressCard payload={props.payload} size={props.size} />
+      <Show when={ownFailure()}>
+        {(own) => (
+          <ErrorDetails details={own().details} defaultOpen={own().isOpen} />
+        )}
+      </Show>
       <Show when={mirrors() > 0}>
         <span class='text-sm text-muted-foreground'>
           {t('events.neededFor', { count: mirrors() })}
@@ -114,10 +148,22 @@ const ProgressNode: Component<ProgressNodeProps> = (props) => {
           </CollapsibleTrigger>
           {card()}
         </div>
-        <Show when={!isOpen() && failedMessage()}>
-          <span class='text-sm text-destructive pl-4.5 truncate'>
-            {failedMessage()}
-          </span>
+        <Show when={!isOpen() && failure()}>
+          {(failed) => (
+            <div class='gap-1 pl-4.5 flex flex-col'>
+              <span class='text-sm text-destructive truncate'>
+                {failed().text}
+              </span>
+              <Show when={failed().details}>
+                {(details) => (
+                  <ErrorDetails
+                    details={details()}
+                    defaultOpen={failed().isOpen}
+                  />
+                )}
+              </Show>
+            </div>
+          )}
         </Show>
         <CollapsibleContent>
           <div class='gap-2 pl-4.5 flex flex-col'>

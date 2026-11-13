@@ -14,7 +14,7 @@ use crate::features::{
         Event, ProgressBarStorage, ProgressEvent, ProgressEventType, ProgressServiceImpl,
         ProgressStatus, infra::InMemoryProgressBarStorage, test_support::ChannelEmitter,
     },
-    instance::{InstallPlan, InstallTarget, NewInstance},
+    instance::{ContentDownloadFailure, InstallPlan, InstallTarget, InstanceError, NewInstance},
     minecraft::ModLoader,
 };
 
@@ -175,9 +175,18 @@ async fn should_leave_no_bars_and_fail_the_packs_when_a_download_fails() {
 
     let bars = bars.once_all_ended().await;
     let pack = root(&bars).last().unwrap();
+    // The bar keeps the error itself, the one the caller gets too, not its text.
+    let ProgressStatus::Failed(failure) = &pack.status else {
+        panic!("the pack should have failed: {pack:?}");
+    };
     assert!(
-        matches!(pack.status, ProgressStatus::Failed { .. }),
-        "{pack:?}"
+        matches!(
+            failure.error(),
+            crate::ErrorKind::InstanceError(InstanceError::ContentDownloadError(
+                ContentDownloadFailure::Download { .. }
+            ))
+        ),
+        "{failure:?}"
     );
     assert_eq!(pack.fraction, None);
 

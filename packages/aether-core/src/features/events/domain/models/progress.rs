@@ -1,8 +1,9 @@
 use std::path::PathBuf;
+use std::sync::Arc;
 
 use uuid::Uuid;
 
-use crate::features::instance::InstanceId;
+use crate::{ErrorKind, features::instance::InstanceId};
 
 #[derive(Clone, Debug)]
 pub struct ProgressEvent {
@@ -53,14 +54,35 @@ pub enum ProgressStage {
     ByPlugin,
 }
 
+/// Why a progress bar failed: the error itself, shared with whoever else reports it.
+#[derive(Debug, Clone)]
+pub struct ProgressFailure(Arc<ErrorKind>);
+
+impl ProgressFailure {
+    pub fn new(error: impl Into<ErrorKind>) -> Self {
+        Self(Arc::new(error.into()))
+    }
+
+    pub fn error(&self) -> &ErrorKind {
+        &self.0
+    }
+}
+
+/// Two failures are the same when they tell the same: errors are not comparable themselves.
+impl PartialEq for ProgressFailure {
+    fn eq(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.0, &other.0) || self.0.display_chain() == other.0.display_chain()
+    }
+}
+
+impl Eq for ProgressFailure {}
+
 /// Where a progress bar is in its life.
-#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ProgressStatus {
     Running,
     Done,
-    Failed {
-        message: String,
-    },
+    Failed(ProgressFailure),
     /// Stopped before it was through, by no fault of its own: another part of the same work
     /// failed, or the work was called off.
     Cancelled,

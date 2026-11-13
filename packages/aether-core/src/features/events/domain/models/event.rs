@@ -190,8 +190,8 @@ mod tests {
     }
 
     fn make_warning_event() -> WarningEvent {
-        WarningEvent {
-            message: "warning msg".into(),
+        WarningEvent::InstanceIconNotImported {
+            cause: std::sync::Arc::new(crate::shared::cache::AssetError::NotAnImage),
         }
     }
 
@@ -232,7 +232,11 @@ mod tests {
         let original = make_warning_event();
         let event: Event = original.clone().into();
         let recovered: WarningEvent = event.try_into().unwrap();
-        assert_eq!(recovered.message, original.message);
+        let (
+            WarningEvent::InstanceIconNotImported { cause: recovered },
+            WarningEvent::InstanceIconNotImported { cause: original },
+        ) = (recovered, original);
+        assert!(std::sync::Arc::ptr_eq(&recovered, &original));
     }
 
     #[test]

@@ -1,8 +1,9 @@
 use uuid::Uuid;
 
 use super::progress_bar_error::ProgressBarStorageError;
+use crate::shared::error::AnyhowSource;
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Clone, Debug, thiserror::Error)]
 pub enum EventError {
     #[error("Event state was not properly initialized")]
     NotInitialized,
@@ -11,7 +12,7 @@ pub enum EventError {
     NoLoadingBar(Uuid),
 
     #[error("Failed to sent event")]
-    SerializeError(anyhow::Error),
+    SerializeError(#[source] AnyhowSource),
 
     #[error("Storage error: {0}")]
     StorageError(#[from] ProgressBarStorageError),

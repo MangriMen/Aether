@@ -370,7 +370,7 @@ fn is_absolute(name: &str) -> bool {
 
 fn invalid_archive(err: zip::result::ZipError) -> InstanceError {
     InstanceError::ContentProviderError {
-        reason: ContentProviderRejection::InvalidOverridesArchive(err.into()),
+        reason: ContentProviderRejection::InvalidOverridesArchive(std::sync::Arc::new(err.into())),
     }
 }
 

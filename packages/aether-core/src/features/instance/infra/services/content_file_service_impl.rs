@@ -7,7 +7,7 @@ use crate::{
     features::{
         instance::{
             app::{ContentFileService, DISABLED_SUFFIX, LocatedContentFile},
-            domain::{ContentPath, InstanceError, InstanceId, StorageError},
+            domain::{ContentPath, InstanceError, InstanceId},
         },
         settings::LocationInfo,
     },
@@ -197,9 +197,10 @@ impl ContentFileService for FsContentFileService {
         match tokio::fs::symlink_metadata(&path).await {
             // Whatever the user keeps in a directory at a content path is not a content file.
             Ok(metadata) if metadata.is_dir() => {
-                return Err(InstanceError::storage(StorageError::other(format!(
-                    "\"{content_path}\" of \"{instance_id}\" is a directory, not a content file"
-                ))));
+                return Err(InstanceError::NotAContentFile {
+                    instance_id: instance_id.to_string(),
+                    content_path: content_path.to_string(),
+                });
             }
             Ok(_) => {}
             Err(err) if err.kind() == std::io::ErrorKind::NotFound => return Ok(false),

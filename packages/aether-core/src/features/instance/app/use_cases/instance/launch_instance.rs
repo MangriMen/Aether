@@ -278,7 +278,7 @@ async fn run_hook_command(
         .spawn()
         .map_err(|source| InstanceError::PrelaunchCommandSpawnFailed {
             program: command.program.clone(),
-            source,
+            source: std::sync::Arc::new(source),
         })?;
 
     let Ok(status) = tokio::time::timeout(timeout, child.wait()).await else {

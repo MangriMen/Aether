@@ -12,9 +12,9 @@ use specta::Type;
 use uuid::Uuid;
 
 use super::{CauseDto, ContentDownloadReasonDto, ContentProviderReasonDto, FrontendError};
-use crate::features::instance::infra::ContentTypeDto;
+use crate::features::instance::infra::{BrokenInstanceReasonDto, ContentTypeDto};
 
-#[derive(Debug, Serialize, Type)]
+#[derive(Clone, Debug, Serialize, Type)]
 #[serde(tag = "code", content = "payload", rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum InstanceErrorDto {
     Storage {
@@ -22,6 +22,10 @@ pub enum InstanceErrorDto {
     },
     NotFound {
         instance_id: String,
+    },
+    InvalidRecord {
+        instance_id: String,
+        reason: BrokenInstanceReasonDto,
     },
     ContentProviderNotFound {
         plugin_id: String,
@@ -89,6 +93,14 @@ pub enum InstanceErrorDto {
     },
     ContentFilename {
         path: String,
+    },
+    PackFileNotFound {
+        instance_id: String,
+        content_path: String,
+    },
+    NotAContentFile {
+        instance_id: String,
+        content_path: String,
     },
     InvalidRelativePath {
         path: String,
@@ -169,7 +181,7 @@ impl From<&StorageError> for CauseDto {
             StorageError::Io(err) => err.into(),
             StorageError::SharedIo(err) => err.into(),
             StorageError::Database(err) => err.into(),
-            StorageError::Other(details) => Self::unknown(details),
+            StorageError::Other(source) => Self::of_source(source.as_ref()),
         }
     }
 }
@@ -184,6 +196,13 @@ impl InstanceErrorDto {
             InstanceError::Storage(err) => Self::Storage { cause: err.into() },
             InstanceError::NotFound { instance_id } => Self::NotFound {
                 instance_id: instance_id.clone(),
+            },
+            InstanceError::InvalidRecord {
+                instance_id,
+                reason,
+            } => Self::InvalidRecord {
+                instance_id: instance_id.clone(),
+                reason: reason.clone().into(),
             },
             InstanceError::ContentProviderNotFound {
                 plugin_id,
@@ -298,6 +317,20 @@ impl InstanceErrorDto {
             },
             InstanceError::ContentFilename { path } => Self::ContentFilename {
                 path: path.to_string_lossy().to_string(),
+            },
+            InstanceError::PackFileNotFound {
+                instance_id,
+                content_path,
+            } => Self::PackFileNotFound {
+                instance_id: instance_id.clone(),
+                content_path: content_path.clone(),
+            },
+            InstanceError::NotAContentFile {
+                instance_id,
+                content_path,
+            } => Self::NotAContentFile {
+                instance_id: instance_id.clone(),
+                content_path: content_path.clone(),
             },
             InstanceError::ContentDownloadError(failure) => Self::ContentDownloadError {
                 reason: failure.into(),
@@ -535,9 +568,11 @@ impl From<InstanceValidationErrorReason> for InstanceValidationErrorReasonDto {
 mod tests {
     use super::*;
     use aether_core::features::auth::{AuthApplicationError, AuthDomainError};
+    use aether_core::features::instance::BrokenInstanceReason;
     use aether_core::features::minecraft::MinecraftApplicationError;
     use aether_core::features::process::ProcessError;
     use aether_core::features::settings::SettingsError;
+    use aether_core::shared::error::DatabaseError;
     use aether_core::shared::io::IoError;
     use serde_json::{Value, json};
 
@@ -560,9 +595,9 @@ mod tests {
 
     #[test]
     fn should_report_a_wrapped_minecraft_error_as_a_minecraft_error() {
-        let err = InstanceError::MinecraftError(MinecraftApplicationError::Storage(
-            IoError::IoError(std::io::Error::from(std::io::ErrorKind::NotFound)),
-        ));
+        let err = InstanceError::MinecraftError(MinecraftApplicationError::Storage(IoError::from(
+            std::io::Error::from(std::io::ErrorKind::NotFound),
+        )));
 
         assert!(matches!(
             FrontendError::from(&err),
@@ -613,11 +648,56 @@ mod tests {
 
     #[test]
     fn should_serialize_storage_with_a_database_cause() {
-        let err = InstanceError::storage(sqlx::Error::RowNotFound);
+        let err = InstanceError::storage(StorageError::Database(DatabaseError::new("locked")));
 
         assert_eq!(
             to_json(&err),
             json!({"code": "STORAGE", "payload": {"cause": {"type": "database"}}})
+        );
+    }
+
+    #[test]
+    fn should_categorize_the_source_of_an_uncategorized_storage_failure() {
+        let err = InstanceError::storage(StorageError::other(std::io::Error::from(
+            std::io::ErrorKind::StorageFull,
+        )));
+
+        assert_eq!(
+            to_json(&err),
+            json!({"code": "STORAGE", "payload": {"cause": {"type": "io", "kind": "storageFull"}}})
+        );
+    }
+
+    #[test]
+    fn should_serialize_an_invalid_record_with_the_reason_it_cannot_be_read() {
+        let err = InstanceError::InvalidRecord {
+            instance_id: "i".into(),
+            reason: BrokenInstanceReason::InvalidColumn {
+                column: "launch_args_json".into(),
+            },
+        };
+
+        assert_eq!(
+            to_json(&err),
+            json!({"code": "INVALID_RECORD", "payload": {"instance_id": "i", "reason": {"code": "INVALID_COLUMN", "payload": {"column": "launch_args_json"}}}})
+        );
+    }
+
+    #[test]
+    fn should_serialize_the_content_path_of_a_missing_or_wrong_content_file() {
+        assert_eq!(
+            to_json(&InstanceError::PackFileNotFound {
+                instance_id: "i".into(),
+                content_path: "mods/a.jar".into(),
+            }),
+            json!({"code": "PACK_FILE_NOT_FOUND", "payload": {"instance_id": "i", "content_path": "mods/a.jar"}})
+        );
+        assert_eq!(
+            to_json(&InstanceError::NotAContentFile {
+                instance_id: "i".into(),
+                content_path: "mods/a.jar".into(),
+            })["code"],
+            "NOT_A_CONTENT_FILE"
         );
     }
 
@@ -647,7 +727,7 @@ mod tests {
     fn should_serialize_a_prelaunch_command_that_cannot_start_with_an_io_cause() {
         let err = InstanceError::PrelaunchCommandSpawnFailed {
             program: "x".into(),
-            source: std::io::Error::from(std::io::ErrorKind::PermissionDenied),
+            source: std::io::Error::from(std::io::ErrorKind::PermissionDenied).into(),
         };
 
         assert_eq!(

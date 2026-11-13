@@ -264,10 +264,12 @@ fn assert_unsupported(err: InstanceError, expected_operation: &str) {
 }
 
 fn assert_invalid_answer(result: Result<impl std::fmt::Debug, InstanceError>) {
-    assert_refused_with(
-        result,
-        &format!("Plugin '{PLUGIN_ID}' returned an invalid answer from"),
-    );
+    match result {
+        Err(InstanceError::ContentProviderError {
+            reason: ContentProviderRejection::InvalidAnswer { .. },
+        }) => {}
+        other => panic!("expected the answer to be refused as invalid, got {other:?}"),
+    }
 }
 
 fn assert_refused_with(result: Result<impl std::fmt::Debug, InstanceError>, expected: &str) {
@@ -391,6 +393,8 @@ async fn should_call_the_resolve_file_handler_the_file_names_when_resolving_a_fi
     assert_eq!(resolved.name.as_deref(), Some("JEI 15.2.0"));
 }
 
+/// The query of a refused URL can hold a token: the error keeps the URL whole only for the
+/// log, and the DTO drops the query.
 #[tokio::test]
 async fn should_refuse_a_resolved_file_when_its_url_is_not_https() {
     let fixture = Fixture::new(
@@ -399,7 +403,7 @@ async fn should_refuse_a_resolved_file_when_its_url_is_not_https() {
             "cf_resolve_file",
             encode(ResolvedFileDto {
                 version: "4512345".into(),
-                url: "http://edge.forgecdn.net/files/4512/345/jei.jar".into(),
+                url: "http://edge.forgecdn.net/files/4512/345/jei.jar?token=SECRET".into(),
                 hash: None,
                 file_name: "jei.jar".into(),
                 size: None,
@@ -423,8 +427,8 @@ async fn should_refuse_a_resolved_file_when_its_url_is_not_https() {
         matches!(
             &err,
             InstanceError::ContentProviderError {
-                reason: ContentProviderRejection::Provider(reason)
-            } if reason.contains("https")
+                reason: ContentProviderRejection::ResponseInvalidUrl(url)
+            } if url.value.starts_with("http://edge.forgecdn.net/")
         ),
         "{err}"
     );
@@ -1195,11 +1199,19 @@ async fn should_refuse_a_plan_when_it_is_for_another_instance() {
             )],
         );
 
-        assert_invalid_answer(
-            fixture
-                .proxy
-                .resolve_install_plan(plan_params(requested), &|_| {})
-                .await,
+        let result = fixture
+            .proxy
+            .resolve_install_plan(plan_params(requested), &|_| {})
+            .await;
+
+        assert!(
+            matches!(
+                result,
+                Err(InstanceError::ContentProviderError {
+                    reason: ContentProviderRejection::WrongTarget { ref provider_id },
+                }) if provider_id.to_string() == format!("{PLUGIN_ID}#curseforge")
+            ),
+            "{result:?}"
         );
     }
 }
@@ -1580,12 +1592,19 @@ async fn should_refuse_a_pack_file_when_the_plugin_cannot_read_it() {
     std::fs::create_dir_all(outside.parent().unwrap()).unwrap();
     std::fs::write(&outside, b"zip").unwrap();
 
-    assert_refused_with(
-        fixture
-            .proxy
-            .resolve_pack_metadata(PackSource::File(outside))
-            .await,
-        "a pack file has to be in the plugin's cache or in an instance",
+    let result = fixture
+        .proxy
+        .resolve_pack_metadata(PackSource::File(outside.clone()))
+        .await;
+
+    assert!(
+        matches!(
+            result,
+            Err(InstanceError::ContentProviderError {
+                reason: ContentProviderRejection::PackOutsideProviderReach { ref path },
+            }) if *path == outside
+        ),
+        "{result:?}"
     );
     assert!(fixture.called().is_empty());
 }

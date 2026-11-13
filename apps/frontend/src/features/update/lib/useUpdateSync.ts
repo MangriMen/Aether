@@ -19,11 +19,15 @@ export const useUpdateSync = () => {
     () => updateNotificationStyle() === UpdateNotificationStyle.Toast,
   );
 
+  // Switching the toast on while an update waits shows it too.
   createEffect(
-    on(isUpdateAvailable, (isAvailable) => {
-      if (isUpdateToastEnabled() && isAvailable && update.data) {
-        showUpdateAvailable(update.data);
-      }
-    }),
+    on(
+      [isUpdateAvailable, isUpdateToastEnabled],
+      ([isAvailable, isToastEnabled]) => {
+        if (isToastEnabled && isAvailable && update.data) {
+          showUpdateAvailable(update.data);
+        }
+      },
+    ),
   );
 };

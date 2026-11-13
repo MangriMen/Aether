@@ -68,7 +68,7 @@ impl<RC: RequestClient, PS: ProgressService, C: Cache, FS: FileStore>
             .fetch_json(Request::get(url))
             .await
             .map_err(|err| {
-                IoError::IoError(std::io::Error::new(
+                IoError::from(std::io::Error::new(
                     std::io::ErrorKind::NetworkUnreachable,
                     err,
                 ))

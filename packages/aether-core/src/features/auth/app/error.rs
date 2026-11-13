@@ -1,6 +1,6 @@
 use crate::features::auth::domain::AuthDomainError;
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Clone, Debug, thiserror::Error)]
 pub enum AuthApplicationError {
     #[error(transparent)]
     Domain(#[from] AuthDomainError),

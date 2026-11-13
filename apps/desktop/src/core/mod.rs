@@ -21,7 +21,7 @@ pub(crate) use infra::{
     AppSettingsErrorDto, ApplicationErrorDto, AuthErrorDto, CauseDto, EventErrorDto,
     FileWatcherErrorDto, FrontendError, GameLogErrorDto, InstanceErrorDto, JavaErrorDto,
     ManifestErrorDto, MinecraftErrorDto, PluginErrorDto, PluginLoadFailureDto, ProcessErrorDto,
-    RequestErrorDto, SettingsErrorDto, WindowErrorDto,
+    RequestErrorDto, SettingsErrorDto, UpdateErrorDto, WindowErrorDto,
 };
 pub(crate) use infra::{
     AppSettingsStorageState, ContainerState, EventEmitterState, LocationInfoState,

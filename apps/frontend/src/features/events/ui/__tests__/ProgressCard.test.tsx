@@ -106,4 +106,23 @@ describe('ProgressCard', () => {
     await expect.poll(() => over.textContent).toContain('Cancelled');
     expect(button(over)).toBeNull();
   });
+
+  it('shows a failure in the language of the interface, not its raw text', async () => {
+    const container = mount(
+      make({
+        fraction: null,
+        status: {
+          type: 'failed',
+          error: {
+            type: 'instance',
+            payload: { code: 'NOT_FOUND', payload: { instance_id: 'abc' } },
+          },
+        },
+      }),
+    );
+
+    await expect
+      .poll(() => container.textContent)
+      .toContain('Instance with id abc not found');
+  });
 });

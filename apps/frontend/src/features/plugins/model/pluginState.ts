@@ -45,10 +45,16 @@ export const getTranslatedStateReason = (
 /** The raw text of the failure behind a reason, if nobody could categorize it. Only `ErrorDetails` may show it. */
 export const getStateReasonDetails = (
   reason: PluginStateReasonDto | null,
-): string | undefined =>
-  reason?.code === 'LOAD_FAILED'
-    ? getReasonDetails(reason.payload.reason)
-    : undefined;
+): string | undefined => {
+  switch (reason?.code) {
+    case 'LOAD_FAILED':
+      return getReasonDetails(reason.payload.reason);
+    case 'INVALID_MANIFEST':
+      return getReasonDetails(reason.payload.error);
+    default:
+      return undefined;
+  }
+};
 
 /** Short label for a plugin the core refused to run; `undefined` for any other state. */
 export const getTranslatedStateLabel = (

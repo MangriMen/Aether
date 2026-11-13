@@ -4,7 +4,7 @@ use specta::Type;
 
 use super::{CauseDto, FrontendError};
 
-#[derive(Debug, Serialize, Type)]
+#[derive(Clone, Debug, Serialize, Type)]
 #[serde(tag = "code", content = "payload", rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum JavaErrorDto {
     NotFound {
@@ -108,6 +108,7 @@ impl From<&JavaDomainError> for JavaErrorDto {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use aether_core::shared::error::DatabaseError;
     use aether_core::shared::request_client::RequestError;
     use serde_json::{Value, json};
     use std::path::PathBuf;
@@ -121,7 +122,7 @@ mod tests {
         let path = PathBuf::from("jre").join("java");
         let out = domain(&JavaDomainError::FailedToGetProperties {
             path: path.clone(),
-            source: std::io::Error::from(std::io::ErrorKind::PermissionDenied),
+            source: std::io::Error::from(std::io::ErrorKind::PermissionDenied).into(),
         });
 
         assert_eq!(
@@ -138,7 +139,7 @@ mod tests {
 
     #[test]
     fn should_serialize_a_storage_error_with_a_database_cause() {
-        let out = domain(&JavaDomainError::Storage(sqlx::Error::RowNotFound));
+        let out = domain(&JavaDomainError::Storage(DatabaseError::new("locked")));
 
         assert_eq!(
             out,

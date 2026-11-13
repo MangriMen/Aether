@@ -11,9 +11,6 @@ pub enum WindowError {
     #[error("Tauri internal error: {0}")]
     Tauri(#[from] tauri::Error),
 
-    #[error("Platform error: {0}")]
-    PlatformNotSupported(String),
-
-    #[error("Unexpected error: {0}")]
-    Other(String),
+    #[error("The platform does not support this")]
+    PlatformNotSupported,
 }

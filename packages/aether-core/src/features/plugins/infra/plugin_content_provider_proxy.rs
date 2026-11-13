@@ -18,8 +18,8 @@ use serde::{Serialize, de::DeserializeOwned};
 
 use crate::features::{
     instance::{
-        AnchoredPath, ContentAuthor, ContentCompatibilityCheckParams, ContentCompatibilityResult,
-        ContentId, ContentItem, ContentMetadata, ContentProvider,
+        AnchoredPath, BoxedSource, ContentAuthor, ContentCompatibilityCheckParams,
+        ContentCompatibilityResult, ContentId, ContentItem, ContentMetadata, ContentProvider,
         ContentProviderCapabilityMetadata, ContentProviderRejection, ContentSearchParams,
         ContentSearchResult, ContentVersion, ContentVersionId, ContentVersionMetadata,
         InstallFileEntry, InstallPlan, InstallTarget, Instance, InstanceError, InstanceId,
@@ -34,6 +34,7 @@ use crate::features::{
 };
 
 use crate::features::plugins::infra::extism::models::PluginInstanceExt;
+use crate::features::plugins::infra::extism::{InvalidPlanFile, InvalidResolvedFile};
 use crate::features::plugins::infra::pack_instances::deploying_packs;
 use crate::features::plugins::infra::plugin_utils::{
     MountSet, host_path_to_plugin, parse_plugin_path, resolve_plugin_path,
@@ -87,20 +88,34 @@ impl PluginContentProviderProxy {
 
     /// The error for an answer that decoded but cannot be accepted; a wrong shape already fails
     /// while decoding.
-    fn invalid_answer(&self, handler_name: &str, reason: impl std::fmt::Display) -> InstanceError {
+    fn invalid_answer(&self, handler_name: &str, source: impl Into<BoxedSource>) -> InstanceError {
+        let source = source.into();
         tracing::error!(
             "Plugin '{}' returned an invalid answer from '{}': {}",
             self.plugin_id,
             handler_name,
-            reason
+            source
         );
 
-        InstanceError::ContentProviderError {
-            reason: ContentProviderRejection::Provider(format!(
-                "Plugin '{}' returned an invalid answer from '{handler_name}': {reason}",
-                self.plugin_id
-            )),
+        // A refused URL is told as such: its text would carry the query, tokens included, to
+        // the user, where the URL is shown without it.
+        let invalid_url = source
+            .downcast_ref::<InvalidPlanFile>()
+            .and_then(InvalidPlanFile::invalid_url)
+            .or_else(|| {
+                source
+                    .downcast_ref::<InvalidResolvedFile>()
+                    .and_then(InvalidResolvedFile::invalid_url)
+            });
+        if let Some(url) = invalid_url {
+            return ContentProviderRejection::ResponseInvalidUrl(url.clone()).into();
         }
+
+        ContentProviderRejection::InvalidAnswer {
+            handler: handler_name.to_owned(),
+            source: source.into(),
+        }
+        .into()
     }
 
     /// An answer's items without what was not asked for, what is described too poorly to show
@@ -140,14 +155,16 @@ impl PluginContentProviderProxy {
     ) -> Result<InstallPlan, InstanceError> {
         let mut target = InstallTarget::try_from(dto.target)?;
         if !requested.is_answered_by(&target) {
-            return Err(self.invalid_answer(
-                handler_name,
-                format!(
-                    "the plan is for {}, but {} was asked for",
-                    describe_install_target(&target),
-                    describe_resolve_target(requested)
-                ),
-            ));
+            tracing::error!(
+                "Plugin '{}' answered '{handler_name}' with a plan for {}, but {} was asked for",
+                self.plugin_id,
+                describe_install_target(&target),
+                describe_resolve_target(requested)
+            );
+            return Err(ContentProviderRejection::WrongTarget {
+                provider_id: self.provider_id.clone(),
+            }
+            .into());
         }
 
         // Held to the plugin's cache like the overrides: a host path would let the plugin show
@@ -254,12 +271,9 @@ impl PluginContentProviderProxy {
             PackSource::File(path) => PackSourceDto::File(
                 host_path_to_plugin(&self.location_info, &self.plugin_id, &path).ok_or_else(
                     || InstanceError::ContentProviderError {
-                        reason: ContentProviderRejection::Provider(format!(
-                            "Plugin '{}' cannot read {}: a pack file has to be in the plugin's \
-                             cache or in an instance",
-                            self.plugin_id,
-                            path.display()
-                        )),
+                        reason: ContentProviderRejection::PackOutsideProviderReach {
+                            path: path.clone(),
+                        },
                     },
                 )?,
             ),

@@ -1,8 +1,6 @@
-use serde::{Deserialize, Serialize};
-
 use crate::features::update::UpdateProgress;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub enum AppEvent {
     Update(UpdateProgress),
 }
@@ -55,15 +53,5 @@ mod tests {
         let result: Result<UpdateProgress, _> = event.try_into();
         assert!(result.is_ok());
         assert_eq!(result.unwrap().version, "1.0.0");
-    }
-
-    #[test]
-    fn app_event_serialize_deserialize_roundtrip() {
-        let event: AppEvent = make_progress().into();
-        let json = serde_json::to_string(&event).unwrap();
-        let deserialized: AppEvent = serde_json::from_str(&json).unwrap();
-        match deserialized {
-            AppEvent::Update(p) => assert_eq!(p.fraction, Some(0.5)),
-        }
     }
 }

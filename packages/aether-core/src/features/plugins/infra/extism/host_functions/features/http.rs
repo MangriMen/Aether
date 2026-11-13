@@ -40,8 +40,8 @@ use reqwest_middleware::{ClientWithMiddleware, Middleware};
 use url::Url;
 
 use super::super::{super::mappers::to_extism_res, PluginContext, block_on};
-pub(super) use policy::policy_error;
 use policy::{PinnedResolver, VettedHops};
+pub(super) use policy::{find_policy_refusal, policy_error};
 // The allowlist match and the address policy are the domain's: giving a host to a plugin
 // (`GrantPluginHostAccessUseCase`) is decided by the same rules its requests are held to.
 use crate::features::instance::PluginId;

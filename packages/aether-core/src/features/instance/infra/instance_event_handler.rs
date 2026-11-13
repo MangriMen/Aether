@@ -1,28 +1,23 @@
-use std::{collections::HashSet, path::Path, sync::Arc};
+use std::{collections::HashSet, path::Path};
 
 use async_trait::async_trait;
 
 use crate::features::{
-    events::{EventEmitterExt, InstanceEvent, InstanceEventType, SharedEventEmitter, WarningEvent},
+    events::{EventEmitterExt, InstanceEvent, InstanceEventType, SharedEventEmitter},
     file_watcher::{FileEvent, FileEventHandler, FileWatcherError},
-    instance::{GetInstanceUseCasePort, InstanceId, InstanceInstallStage},
+    instance::InstanceId,
     settings::INSTANCES_FOLDER_NAME,
 };
 
+/// Tells the frontend which instances changed on disk. A crash of the game is not looked for
+/// here: the frontend shows it from the process that ended.
 pub struct InstanceEventHandler {
     event_emitter: SharedEventEmitter,
-    get_instance_uc: Arc<dyn GetInstanceUseCasePort>,
 }
 
 impl InstanceEventHandler {
-    pub fn new(
-        event_emitter: SharedEventEmitter,
-        get_instance_uc: Arc<dyn GetInstanceUseCasePort>,
-    ) -> Self {
-        Self {
-            event_emitter,
-            get_instance_uc,
-        }
+    pub fn new(event_emitter: SharedEventEmitter) -> Self {
+        Self { event_emitter }
     }
 
     fn extract_instance_path(path: &Path) -> Option<InstanceId> {
@@ -37,34 +32,6 @@ impl InstanceEventHandler {
             }
         }
         None
-    }
-
-    fn is_crash_report(path: &Path) -> bool {
-        path.components().any(|x| x.as_os_str() == "crash-reports")
-            && path.extension().is_some_and(|x| x == "txt")
-    }
-
-    /// Looks the instance up in the background and, when it is fully installed, tells the
-    /// frontend that a new crash report appeared. Half-installed instances stay silent,
-    /// because a failed install is reported through its own channel.
-    fn crash_task(&self, id: InstanceId) {
-        let get_instance_uc = self.get_instance_uc.clone();
-        let event_emitter = self.event_emitter.clone();
-
-        tokio::spawn(async move {
-            let Ok(instance) = get_instance_uc.execute(id).await else {
-                return;
-            };
-            if instance.install_stage != InstanceInstallStage::Installed {
-                return;
-            }
-
-            let message = format!(
-                "Instance {} has crashed! Visit the logs page to see a crash report.",
-                instance.name()
-            );
-            event_emitter.emit_safe(WarningEvent { message }).await;
-        });
     }
 }
 
@@ -90,9 +57,7 @@ impl FileEventHandler for InstanceEventHandler {
                 continue;
             };
 
-            if Self::is_crash_report(&event.path) {
-                self.crash_task(instance_id);
-            } else if synced.insert(instance_id.clone()) {
+            if synced.insert(instance_id.clone()) {
                 let event_emitter = self.event_emitter.clone();
                 tokio::spawn(async move {
                     event_emitter
@@ -111,19 +76,16 @@ impl FileEventHandler for InstanceEventHandler {
 
 #[cfg(test)]
 mod tests {
-    use crate::features::minecraft::GameVersion;
     use std::path::PathBuf;
+    use std::sync::Arc;
     use std::time::Duration;
 
     use tokio::sync::mpsc;
 
     use crate::features::events::{Event, EventEmitter, EventError};
     use crate::features::file_watcher::FileEventKind;
-    use crate::features::instance::{Instance, InstanceBuilder, InstanceError, InstanceId};
-    use crate::features::minecraft::ModLoader;
 
     use super::*;
-    use crate::features::instance::InstanceName;
 
     struct ChannelEmitter(mpsc::UnboundedSender<Event>);
 
@@ -137,37 +99,9 @@ mod tests {
         fn listen(&self, _handler: Box<dyn Fn(Event) + Send + Sync + 'static>) {}
     }
 
-    struct FixedInstance(Option<Instance>);
-
-    #[async_trait]
-    impl GetInstanceUseCasePort for FixedInstance {
-        async fn execute(&self, instance_id: InstanceId) -> Result<Instance, InstanceError> {
-            self.0.clone().ok_or(InstanceError::NotFound {
-                instance_id: instance_id.into(),
-            })
-        }
-    }
-
-    fn instance(stage: InstanceInstallStage) -> Instance {
-        let mut instance = InstanceBuilder::new(
-            InstanceId::try_from("abc").unwrap(),
-            InstanceName::parse("My Pack").unwrap(),
-            GameVersion::from_static("1.20.1"),
-            ModLoader::Vanilla,
-        )
-        .build();
-        instance.install_stage = stage;
-        instance
-    }
-
-    fn handler(
-        instance: Option<Instance>,
-    ) -> (InstanceEventHandler, mpsc::UnboundedReceiver<Event>) {
+    fn handler() -> (InstanceEventHandler, mpsc::UnboundedReceiver<Event>) {
         let (tx, rx) = mpsc::unbounded_channel();
-        let handler = InstanceEventHandler::new(
-            Arc::new(ChannelEmitter(tx)),
-            Arc::new(FixedInstance(instance)),
-        );
+        let handler = InstanceEventHandler::new(Arc::new(ChannelEmitter(tx)));
         (handler, rx)
     }
 
@@ -195,7 +129,7 @@ mod tests {
 
     #[tokio::test]
     async fn emits_one_synced_event_per_instance_in_a_batch() {
-        let (handler, mut rx) = handler(None);
+        let (handler, mut rx) = handler();
 
         handler
             .handle_events(Ok(vec![
@@ -227,7 +161,7 @@ mod tests {
 
     #[tokio::test]
     async fn ignores_paths_outside_instances_folder() {
-        let (handler, mut rx) = handler(None);
+        let (handler, mut rx) = handler();
 
         handler
             .handle_events(Ok(vec![modified("/data/other/abc/file.txt")]))
@@ -238,8 +172,8 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn crash_report_of_installed_instance_emits_warning() {
-        let (handler, mut rx) = handler(Some(instance(InstanceInstallStage::Installed)));
+    async fn should_only_sync_the_instance_when_a_crash_report_appears() {
+        let (handler, mut rx) = handler();
 
         handler
             .handle_events(Ok(vec![modified(
@@ -248,47 +182,16 @@ mod tests {
             .await
             .unwrap();
 
-        let Event::Warning(warning) = next_event(&mut rx).await else {
-            panic!("expected warning");
+        let Event::Instance(event) = next_event(&mut rx).await else {
+            panic!("expected instance event");
         };
-        assert_eq!(
-            warning.message,
-            "Instance My Pack has crashed! Visit the logs page to see a crash report."
-        );
+        assert!(matches!(event.event, InstanceEventType::Synced));
         assert_silent(&mut rx).await;
-    }
-
-    #[tokio::test]
-    async fn crash_report_of_not_installed_instance_is_silent() {
-        let (handler, mut rx) = handler(Some(instance(InstanceInstallStage::NotInstalled)));
-
-        handler
-            .handle_events(Ok(vec![modified(
-                "/data/instances/abc/crash-reports/crash-1.txt",
-            )]))
-            .await
-            .unwrap();
-
-        assert_silent(&mut rx).await;
-    }
-
-    #[tokio::test]
-    async fn non_txt_file_in_crash_reports_is_a_regular_sync() {
-        let (handler, mut rx) = handler(Some(instance(InstanceInstallStage::Installed)));
-
-        handler
-            .handle_events(Ok(vec![modified(
-                "/data/instances/abc/crash-reports/readme.md",
-            )]))
-            .await
-            .unwrap();
-
-        assert!(matches!(next_event(&mut rx).await, Event::Instance(_)));
     }
 
     #[tokio::test]
     async fn watcher_error_is_swallowed() {
-        let (handler, mut rx) = handler(None);
+        let (handler, mut rx) = handler();
 
         let result = handler
             .handle_events(Err(FileWatcherError::WatchNotFound))

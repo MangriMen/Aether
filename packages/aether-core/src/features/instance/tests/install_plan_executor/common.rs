@@ -220,7 +220,7 @@ impl ContentDownloader for RecordingDownloader {
 
         if url.contains("fail") {
             return Err(InstanceError::ContentDownloadError(
-                ContentDownloadFailure::Other(url.into()),
+                ContentDownloadFailure::download(url, "connection refused"),
             ));
         }
         if url.contains("hang") {

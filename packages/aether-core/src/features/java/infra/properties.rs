@@ -16,7 +16,7 @@ pub fn get_java_properties(path: &Path) -> Result<JavaProperties, JavaDomainErro
         .output()
         .map_err(|source| JavaDomainError::FailedToGetProperties {
             path: path.to_path_buf(),
-            source,
+            source: std::sync::Arc::new(source),
         })?;
 
     let mut combined_output = String::new();

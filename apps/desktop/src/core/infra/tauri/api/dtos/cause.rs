@@ -1,4 +1,8 @@
+use std::sync::Arc;
+
+use aether_core::shared::error::{AnyhowSource, DatabaseError};
 use aether_core::shared::io::{IoError, IoErrorKind};
+use aether_core::shared::request_client::RequestError;
 use serde::Serialize;
 use specta::Type;
 
@@ -45,6 +49,50 @@ impl CauseDto {
             details: details.to_string(),
         }
     }
+
+    /// The category of an error the core passes on untyped: the first error in its chain of a
+    /// kind with a category, else its text.
+    pub fn of_source(source: &(dyn std::error::Error + 'static)) -> Self {
+        let mut current = Some(source);
+        while let Some(err) = current {
+            if let Some(err) = err.downcast_ref::<RequestError>() {
+                return err.into();
+            }
+            if let Some(err) = err.downcast_ref::<reqwest::Error>() {
+                return err.into();
+            }
+            if let Some(err) = err.downcast_ref::<std::io::Error>() {
+                return err.into();
+            }
+            // The library errors an error shares between its clones.
+            if let Some(err) = err.downcast_ref::<Arc<std::io::Error>>() {
+                return err.into();
+            }
+            if let Some(err) = err.downcast_ref::<Arc<reqwest::Error>>() {
+                return err.into();
+            }
+            if let Some(err) = err.downcast_ref::<Arc<serde_json::Error>>() {
+                return err.into();
+            }
+            if let Some(err) = err.downcast_ref::<AnyhowSource>() {
+                return super::request_error::middleware_cause(err.inner());
+            }
+            if let Some(err) = err.downcast_ref::<IoError>() {
+                return err.into();
+            }
+            if let Some(err) = err.downcast_ref::<serde_json::Error>() {
+                return err.into();
+            }
+            if let Some(err) = err.downcast_ref::<toml::de::Error>() {
+                return err.into();
+            }
+            if err.downcast_ref::<DatabaseError>().is_some() {
+                return Self::Database;
+            }
+            current = err.source();
+        }
+        Self::unknown(source)
+    }
 }
 
 impl From<&std::io::Error> for CauseDto {
@@ -56,8 +104,27 @@ impl From<&std::io::Error> for CauseDto {
     }
 }
 
-impl From<&sqlx::Error> for CauseDto {
-    fn from(_: &sqlx::Error) -> Self {
+// The library errors the core shares between the clones of an error.
+impl From<&Arc<std::io::Error>> for CauseDto {
+    fn from(value: &Arc<std::io::Error>) -> Self {
+        value.as_ref().into()
+    }
+}
+
+impl From<&Arc<reqwest::Error>> for CauseDto {
+    fn from(value: &Arc<reqwest::Error>) -> Self {
+        value.as_ref().into()
+    }
+}
+
+impl From<&Arc<serde_json::Error>> for CauseDto {
+    fn from(value: &Arc<serde_json::Error>) -> Self {
+        value.as_ref().into()
+    }
+}
+
+impl From<&DatabaseError> for CauseDto {
+    fn from(_: &DatabaseError) -> Self {
         Self::Database
     }
 }
@@ -232,6 +299,44 @@ mod tests {
         assert_eq!(
             to_json(&(&err).into()),
             json!({"type": "unknown", "details": "weird"})
+        );
+    }
+
+    #[test]
+    fn should_categorize_a_typed_error_found_in_the_chain_of_a_source() {
+        #[derive(Debug, thiserror::Error)]
+        #[error("retry budget spent")]
+        struct Retry(#[source] std::io::Error);
+
+        let source: aether_core::shared::error::BoxedSource =
+            Box::new(Retry(std::io::Error::from(std::io::ErrorKind::TimedOut)));
+
+        assert_eq!(
+            to_json(&CauseDto::of_source(source.as_ref())),
+            json!({"type": "io", "kind": "timedOut"})
+        );
+    }
+
+    #[test]
+    fn should_categorize_the_error_inside_a_shared_anyhow_source() {
+        let source: aether_core::shared::error::SharedSource =
+            std::sync::Arc::new(aether_core::shared::error::AnyhowSource::new(
+                anyhow::Error::new(std::io::Error::from(std::io::ErrorKind::TimedOut)),
+            ));
+
+        assert_eq!(
+            to_json(&CauseDto::of_source(source.as_ref())),
+            json!({"type": "io", "kind": "timedOut"})
+        );
+    }
+
+    #[test]
+    fn should_keep_the_text_of_a_source_without_a_category_as_unknown() {
+        let source: aether_core::shared::error::BoxedSource = "denied".into();
+
+        assert_eq!(
+            to_json(&CauseDto::of_source(source.as_ref())),
+            json!({"type": "unknown", "details": "denied"})
         );
     }
 

@@ -14,10 +14,12 @@ export type AllowedHostRejectionDto = "invalid_url" | "unsupported_scheme" | "mi
 
 export type AllowedPathRejectionDto = "host_not_absolute" | "host_not_a_folder" | "host_is_root" | "plugin_not_absolute" | "plugin_not_normalized" | "plugin_is_root" | "plugin_reserved" | "host_overlaps_core";
 
-export type AppSettingsErrorDto = { code: "CAN_NOT_SET_EFFECT"; payload: {
-	cause: CauseDto,
+export type AppSettingsErrorDto = 
+/**  `reason` is what the window manager refused with, translated as a reason. */
+{ code: "CAN_NOT_SET_EFFECT"; payload: {
+	reason: WindowErrorDto,
 } } | { code: "CAN_NOT_RECREATE_WINDOW"; payload: {
-	cause: CauseDto,
+	reason: WindowErrorDto,
 } } | { code: "STORAGE"; payload: {
 	cause: CauseDto,
 } };
@@ -35,6 +37,21 @@ export type AuthErrorDto = { code: "CREDENTIALS_NOT_FOUND"; payload: {
 	max: number,
 } } | { code: "INVALID_USERNAME_CHARS" } | { code: "INVALID_ACCOUNT_TYPE" } | { code: "TOKEN_EXPIRED" } | { code: "STORAGE_ERROR" };
 
+/**  Why an instance cannot be read; the code picks the translation. */
+export type BrokenInstanceReasonDto = { code: "INVALID_ID" } | { code: "INVALID_GAME_VERSION"; payload: {
+	value: string,
+} } | { code: "INVALID_LOADER"; payload: {
+	value: string,
+} } | { code: "INVALID_INSTALL_STAGE"; payload: {
+	value: string,
+} } | { code: "INVALID_COLUMN"; payload: {
+	column: string,
+} } | { code: "UNREADABLE_FILE"; payload: {
+	details: string,
+} } | { code: "LEGACY_ID_MISMATCH"; payload: {
+	file_id: string,
+} } | { code: "NOT_MIGRATED" };
+
 /**  Why a command failed, in a form the frontend can translate without seeing raw error text. */
 export type CauseDto = { type: "io"; kind: IoErrorKindDto } | { type: "network"; kind: NetworkErrorKindDto; url: string | null } | { type: "httpStatus"; status: number; url: string } | { type: "parse"; line: number | null; column: number | null } | { type: "database" } | 
 /**  The only place raw error text reaches the frontend. */
@@ -47,17 +64,20 @@ export type CommandParseReasonDto = { code: "EMPTY" };
 export type ContentDownloadReasonDto = { code: "NO_FILES"; payload: {
 	version_id: string,
 } } | { code: "NO_VERSIONS"; payload: {
-	project_id: string,
+	content_id: string,
 } } | { code: "NOT_A_MODPACK_FILE"; payload: {
 	file_name: string,
 } } | { code: "DOWNLOAD"; payload: {
 	url: string,
 	cause: CauseDto,
-} } | { code: "OTHER"; payload: {
-	cause: CauseDto,
+} } | { code: "NO_NETWORK_POLICY"; payload: {
+	plugin_id: string,
 } };
 
-/**  Why a content provider's answer, or the request made to it, was refused. */
+/**
+ *  Why a content provider's answer, or the request made to it, was refused. The codes are the
+ *  same for every provider.
+ */
 export type ContentProviderReasonDto = { code: "WRONG_TARGET"; payload: {
 	provider_id: string,
 } } | { code: "FOREIGN_PACK"; payload: {
@@ -70,40 +90,47 @@ export type ContentProviderReasonDto = { code: "WRONG_TARGET"; payload: {
 	max: string,
 } } | { code: "INVALID_OVERRIDES_ARCHIVE"; payload: {
 	cause: CauseDto,
-} } | { code: "VERSION_OF_ANOTHER_PROJECT"; payload: {
+} } | { code: "VERSION_OF_ANOTHER_CONTENT"; payload: {
 	version_id: string,
-	project_id: string,
+	owner_id: string,
 	content_id: string,
 } } | { code: "NOT_A_MODPACK"; payload: {
 	title: string,
 	content_type: ContentTypeDto,
 } } | { code: "NO_GAME_VERSION"; payload: {
 	version_id: string,
-} } | { code: "INVALID_SEARCH_PARAMS"; payload: {
+} } | { code: "UNKNOWN_CONTENT_TYPE"; payload: {
+	content_type: string,
+} } | { code: "INVALID_REQUEST"; payload: {
 	cause: CauseDto,
-} } | { code: "INVALID_SEARCH_RESPONSE"; payload: {
+} } | { code: "REQUEST"; payload: {
 	cause: CauseDto,
-} } | { code: "UNKNOWN_PROJECT_TYPE"; payload: {
-	project_type: string,
-} } | { code: "MAPPING"; payload: {
+} } | { code: "RESPONSE_INVALID_ID"; payload: {
+	value: string,
+} } | { code: "RESPONSE_INVALID_URL"; payload: {
+	url: string,
+} } | { code: "RESPONSE_INVALID_PAGINATION"; payload: {
+	field: PaginationFieldDto,
+	value: string,
+} } | { code: "PACK_UNREADABLE"; payload: {
 	cause: CauseDto,
-} } | { code: "MRPACK_OPEN_FAILED"; payload: {
+} } | { code: "PACK_INVALID_ARCHIVE"; payload: {
 	cause: CauseDto,
-} } | { code: "MRPACK_INVALID_ARCHIVE"; payload: {
-	cause: CauseDto,
-} } | { code: "MRPACK_MISSING_INDEX" } | { code: "MRPACK_READ_FAILED"; payload: {
-	cause: CauseDto,
-} } | { code: "MRPACK_INDEX_TOO_LARGE"; payload: {
+} } | { code: "PACK_NO_INDEX"; payload: {
+	index: string,
+} } | { code: "PACK_INDEX_TOO_LARGE"; payload: {
 	max_bytes: string,
-} } | { code: "MRPACK_MALFORMED_INDEX"; payload: {
+} } | { code: "PACK_INDEX_MALFORMED"; payload: {
 	cause: CauseDto,
-} } | { code: "MRPACK_TOO_MANY_FILES"; payload: {
-	count: string,
-	max: string,
-} } | { code: "MRPACK_NOT_MINECRAFT"; payload: {
+} } | { code: "PACK_WRONG_GAME"; payload: {
 	game: string,
-} } | { code: "MRPACK_INVALID_HASH" } | { code: "MRPACK_NO_ALLOWED_DOWNLOAD"; payload: {
+} } | { code: "PACK_OUTSIDE_PROVIDER_REACH"; payload: {
 	path: string,
+} } | { code: "INVALID_HASH" } | { code: "NO_ALLOWED_DOWNLOAD"; payload: {
+	path: string,
+} } | { code: "INVALID_ANSWER"; payload: {
+	handler: string,
+	cause: CauseDto,
 } } | { code: "PROVIDER"; payload: {
 	cause: CauseDto,
 } };
@@ -124,7 +151,7 @@ export type FileWatcherErrorDto = { code: "PATH_NOT_FOUND"; payload: {
 	cause: CauseDto,
 } };
 
-export type FrontendError = { type: "appSettings"; payload: AppSettingsErrorDto } | { type: "window"; payload: WindowErrorDto } | { type: "application"; payload: ApplicationErrorDto } | { type: "auth"; payload: AuthErrorDto } | { type: "event"; payload: EventErrorDto } | { type: "fileWatcher"; payload: FileWatcherErrorDto } | { type: "gameLog"; payload: GameLogErrorDto } | { type: "instance"; payload: InstanceErrorDto } | { type: "java"; payload: JavaErrorDto } | { type: "minecraft"; payload: MinecraftErrorDto } | { type: "plugin"; payload: PluginErrorDto } | { type: "process"; payload: ProcessErrorDto } | { type: "request"; payload: RequestErrorDto } | { type: "settings"; payload: SettingsErrorDto };
+export type FrontendError = { type: "appSettings"; payload: AppSettingsErrorDto } | { type: "window"; payload: WindowErrorDto } | { type: "application"; payload: ApplicationErrorDto } | { type: "auth"; payload: AuthErrorDto } | { type: "event"; payload: EventErrorDto } | { type: "fileWatcher"; payload: FileWatcherErrorDto } | { type: "gameLog"; payload: GameLogErrorDto } | { type: "instance"; payload: InstanceErrorDto } | { type: "java"; payload: JavaErrorDto } | { type: "minecraft"; payload: MinecraftErrorDto } | { type: "plugin"; payload: PluginErrorDto } | { type: "process"; payload: ProcessErrorDto } | { type: "request"; payload: RequestErrorDto } | { type: "settings"; payload: SettingsErrorDto } | { type: "update"; payload: UpdateErrorDto };
 
 export type GameLogErrorDto = { code: "INVALID_SOURCE"; payload: {
 	source_id: string,
@@ -137,6 +164,9 @@ export type GameLogErrorDto = { code: "INVALID_SOURCE"; payload: {
 	cause: CauseDto,
 } };
 
+/**  What a path the launch needs is the path of. */
+export type GamePathKindDto = "GAME" | "ASSETS" | "LIBRARY" | "LIBRARIES_DIR" | "NATIVE_LIBRARY" | "LOG_CONFIG" | "CLASSPATH";
+
 /**  Why a text is not a Minecraft version. */
 export type GameVersionReasonDto = { code: "EMPTY" } | { code: "TOO_LONG" } | { code: "SURROUNDING_WHITESPACE" } | { code: "CONTROL_CHARACTER" } | { code: "FORBIDDEN_CHARACTER"; payload: {
 	char: string,
@@ -146,6 +176,9 @@ export type InstanceErrorDto = { code: "STORAGE"; payload: {
 	cause: CauseDto,
 } } | { code: "NOT_FOUND"; payload: {
 	instance_id: string,
+} } | { code: "INVALID_RECORD"; payload: {
+	instance_id: string,
+	reason: BrokenInstanceReasonDto,
 } } | { code: "CONTENT_PROVIDER_NOT_FOUND"; payload: {
 	plugin_id: string,
 	capability_id: string,
@@ -188,6 +221,12 @@ export type InstanceErrorDto = { code: "STORAGE"; payload: {
 	content_path: string,
 } } | { code: "CONTENT_FILENAME"; payload: {
 	path: string,
+} } | { code: "PACK_FILE_NOT_FOUND"; payload: {
+	instance_id: string,
+	content_path: string,
+} } | { code: "NOT_A_CONTENT_FILE"; payload: {
+	instance_id: string,
+	content_path: string,
 } } | { code: "INVALID_RELATIVE_PATH"; payload: {
 	path: string,
 	reason: PathRejectionDto,
@@ -278,6 +317,7 @@ export type LoaderVersionReasonDto = { code: "EMPTY" } | { code: "TOO_LONG" } | 
 export type ManifestErrorDto = { code: "UNSUPPORTED_API" } | { code: "INVALID_SEMVER"; payload: {
 	field: string,
 	value: string,
+	cause: CauseDto,
 } } | { code: "INVALID_PATH_MAPPING" } | { code: "INVALID_LOAD_FILE"; payload: {
 	path: string,
 } } | { code: "UNKNOWN_HOST_FUNCTIONS"; payload: {
@@ -303,7 +343,7 @@ export type MinecraftErrorDto = { code: "VERSION_NOT_FOUND"; payload: {
 	code: number,
 } } | { code: "PATH_NOT_FOUND"; payload: {
 	path: string,
-	entity_type: string,
+	entity_type: GamePathKindDto,
 } } | { code: "PARSE_FAILED"; payload: {
 	cause: CauseDto,
 } } | { code: "STORAGE_FAILURE"; payload: {
@@ -326,6 +366,17 @@ export type PaginationReasonDto = { code: "TOO_SMALL" } | { code: "TOO_LARGE"; p
 
 /**  Why a path is not a path inside an instance. */
 export type PathRejectionDto = { code: "EMPTY" } | { code: "NUL_BYTE" } | { code: "BACKSLASH" } | { code: "ABSOLUTE" } | { code: "EMPTY_SEGMENT" } | { code: "DOT_SEGMENT" } | { code: "COLON" } | { code: "TRAILING_DOT_OR_SPACE" } | { code: "RESERVED_NAME" } | { code: "NOT_PLAIN" } | { code: "ESCAPES_ROOT" } | { code: "NOT_UTF8" } | { code: "NOT_SINGLE_SEGMENT" } | { code: "NOT_REGULAR_FILE" } | { code: "LAUNCHER_FOLDER" } | { code: "LAUNCHER_FOLDER_ALIAS" } | { code: "PLUGIN_OWN_FOLDER_ONLY" };
+
+/**  Why a call into a plugin failed. */
+export type PluginCallReasonDto = { code: "MISSING_FUNCTION" } | { code: "TIMEOUT" } | { code: "OUT_OF_FUEL" } | { code: "OUT_OF_MEMORY" } | { code: "TRAP"; payload: {
+	cause: CauseDto,
+} } | { code: "NON_ZERO_EXIT"; payload: {
+	code: number,
+} } | { code: "PLUGIN"; payload: {
+	cause: CauseDto,
+} } | { code: "CODEC"; payload: {
+	cause: CauseDto,
+} } | { code: "REENTRANT" };
 
 export type PluginErrorDto = { code: "NOT_FOUND"; payload: {
 	plugin_id: string,
@@ -354,11 +405,14 @@ export type PluginErrorDto = { code: "NOT_FOUND"; payload: {
 } } | { code: "FUNCTION_CALL_FAILED"; payload: {
 	function_name: string,
 	plugin_id: string,
-	cause: CauseDto,
+	reason: PluginCallReasonDto,
 } } | { code: "MANIFEST_NOT_FOUND"; payload: {
 	path: string,
 } } | { code: "INVALID_MANIFEST_FORMAT"; payload: {
 	cause: CauseDto,
+} } | { code: "MANIFEST_TOO_LARGE"; payload: {
+	name: string,
+	limit: string,
 } } | { code: "MANIFEST"; payload: {
 	error: ManifestErrorDto,
 } } | { code: "LOADER_NOT_FOUND"; payload: {
@@ -392,14 +446,14 @@ export type PluginErrorDto = { code: "NOT_FOUND"; payload: {
 	cause: CauseDto,
 } } | { code: "PROVIDER_FETCH_ERROR"; payload: {
 	source_type: string,
-	cause: CauseDto,
+	reason: ProviderFailureDto,
 } } | { code: "PROVIDER_NO_ASSETS"; payload: {
 	source_type: string,
 } } | { code: "ARCHIVE_CHANGED_SINCE_PREVIEW" } | { code: "NO_REMOTE_SOURCE"; payload: {
 	plugin_id: string,
 } } | { code: "DOWNLOAD_FAILED"; payload: {
 	url: string,
-	cause: CauseDto,
+	reason: ProviderFailureDto,
 } } | { code: "PROVIDER_RATE_LIMITED"; payload: {
 	source_type: string,
 	retry_after: number | null,
@@ -449,6 +503,15 @@ export type ProcessorFailureDto = { code: "MAIN_CLASS_NOT_FOUND"; payload: {
 	cause: CauseDto,
 } };
 
+/**  What went wrong talking to a plugin source. */
+export type ProviderFailureDto = { code: "REQUEST"; payload: {
+	cause: CauseDto,
+} } | { code: "TOO_LARGE"; payload: {
+	limit: string,
+} } | { code: "URL_NOT_ALLOWED" } | { code: "NO_RELEASES" } | { code: "INVALID_URL"; payload: {
+	url: string,
+} } | { code: "NOT_REGISTERED" };
+
 /**  Why a text is not a `plugin#capability` provider id. */
 export type ProviderIdReasonDto = 
 /**  The text is not two parts around the separator. */
@@ -485,6 +548,17 @@ export type SettingsErrorDto = { code: "NOT_FOUND" } | { code: "STORAGE_FAILURE"
 	platform: string,
 	reason: ProviderIdReasonDto,
 } } | { code: "INVALID_MAX_CONCURRENT_DOWNLOADS" } | { code: "INVALID_MEMORY" };
+
+/**  Why the launcher could not be updated. */
+export type UpdateErrorDto = { code: "NO_PENDING_UPDATE" } | { code: "NETWORK"; payload: {
+	cause: CauseDto,
+} } | { code: "SIGNATURE"; payload: {
+	cause: CauseDto,
+} } | { code: "INSTALL"; payload: {
+	cause: CauseDto,
+} } | { code: "OTHER"; payload: {
+	cause: CauseDto,
+} };
 
 export type WindowErrorDto = { code: "ALREADY_EXISTS"; payload: {
 	label: WindowLabelDto,

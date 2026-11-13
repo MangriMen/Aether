@@ -228,7 +228,10 @@ async fn should_refuse_to_move_out_a_directory_when_it_sits_at_a_content_path() 
         .await
         .unwrap_err();
 
-    assert!(matches!(err, InstanceError::Storage(_)), "{err:?}");
+    assert!(
+        matches!(err, InstanceError::NotAContentFile { ref content_path, .. } if content_path == "mods/a.jar"),
+        "{err:?}"
+    );
     assert!(dir.join("mods/a.jar").is_dir());
 }
 

@@ -4,7 +4,7 @@ use specta::Type;
 
 use super::CauseDto;
 
-#[derive(Debug, Serialize, Type)]
+#[derive(Clone, Debug, Serialize, Type)]
 #[serde(tag = "code", content = "payload", rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum RequestErrorDto {
     Acquire,
@@ -37,7 +37,7 @@ impl From<&RequestError> for CauseDto {
     fn from(value: &RequestError) -> Self {
         match value {
             RequestError::RequestSend(err) => err.into(),
-            RequestError::Middleware(err) => middleware_cause(err),
+            RequestError::Middleware(err) => middleware_cause(err.inner()),
             RequestError::Json(err) => err.into(),
             RequestError::Toml(err) => err.into(),
             RequestError::Status { status, url } => Self::HttpStatus {
@@ -59,7 +59,7 @@ impl From<&RequestError> for RequestErrorDto {
             RequestError::Acquire(_) => Self::Acquire,
             RequestError::RequestSend(err) => Self::RequestSend { cause: err.into() },
             RequestError::Middleware(err) => Self::Middleware {
-                cause: middleware_cause(err),
+                cause: middleware_cause(err.inner()),
             },
             RequestError::Hash { actual, expected } => Self::Hash {
                 actual: actual.clone(),
@@ -130,7 +130,7 @@ mod tests {
     fn should_map_io_error_to_path_and_io_cause() {
         let err = RequestError::Io {
             path: PathBuf::from("a.jar"),
-            source: std::io::Error::from(std::io::ErrorKind::NotFound),
+            source: std::io::Error::from(std::io::ErrorKind::NotFound).into(),
         };
 
         assert_eq!(
@@ -141,7 +141,7 @@ mod tests {
 
     #[test]
     fn should_map_serde_json_error_to_parse_cause() {
-        let err = RequestError::Json(serde_json::from_str::<u8>("x").unwrap_err());
+        let err = RequestError::from(serde_json::from_str::<u8>("x").unwrap_err());
 
         let value = to_json(&err);
 
@@ -162,7 +162,7 @@ mod tests {
     #[test]
     fn should_map_a_reqwest_error_built_without_network() {
         let reqwest_err = reqwest::Client::new().get("http://").build().unwrap_err();
-        let err = RequestError::RequestSend(reqwest_err);
+        let err = RequestError::from(reqwest_err);
 
         let value = to_json(&err);
 
@@ -173,7 +173,7 @@ mod tests {
     #[test]
     fn should_find_a_typed_cause_in_the_middleware_chain() {
         let io = std::io::Error::from(std::io::ErrorKind::PermissionDenied);
-        let err = RequestError::Middleware(anyhow::Error::new(io).context("wrapped"));
+        let err = RequestError::from(anyhow::Error::new(io).context("wrapped"));
 
         assert_eq!(
             to_json(&err),

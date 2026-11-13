@@ -69,6 +69,16 @@ pub enum InvalidPlanFile {
     Url(#[from] InvalidUrl),
 }
 
+impl InvalidPlanFile {
+    /// The URL refused, when that is what is wrong with the file.
+    pub(crate) fn invalid_url(&self) -> Option<&InvalidUrl> {
+        match self {
+            Self::Url(err) => Some(err),
+            _ => None,
+        }
+    }
+}
+
 /// A hash from a plugin is validated and lowercased here, as `download_to_cache` does: the
 /// core relies on a [`FileHash`] being a well-formed digest. A URL to download has to be `https`.
 impl TryFrom<ContentSourceDto> for ContentSource {

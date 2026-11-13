@@ -24,7 +24,7 @@ pub enum CachedContentIcon {
     },
 }
 
-#[derive(thiserror::Error, Debug)]
+#[derive(Clone, thiserror::Error, Debug)]
 pub enum ContentIconError {
     #[error("Not an icon URL: {0}")]
     InvalidUrl(String),

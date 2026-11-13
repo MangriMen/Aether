@@ -1,11 +1,10 @@
 use aether_core::features::plugins::{
-    ManifestError, ManifestFormatError, PluginError, PluginLoadFailure, PluginProviderError,
-    ProviderFailure,
+    ManifestError, ManifestFormatError, PluginCallError, PluginError, PluginLoadFailure,
+    PluginProviderError, ProviderFailure,
 };
 use serde::Serialize;
 use specta::Type;
 
-use super::request_error::middleware_cause;
 use super::{CauseDto, FrontendError, without_query};
 use crate::features::plugins::{
     AllowedHostEntryRejectionDto, AllowedHostRejectionDto, AllowedPathRejectionDto,
@@ -17,24 +16,42 @@ use crate::features::plugins::{
 #[serde(tag = "code", content = "payload", rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum ManifestErrorDto {
     UnsupportedApi,
-    InvalidSemver { field: String, value: String },
+    InvalidSemver {
+        field: String,
+        value: String,
+        cause: CauseDto,
+    },
     InvalidPathMapping,
-    InvalidLoadFile { path: String },
-    UnknownHostFunctions { names: Vec<String> },
+    InvalidLoadFile {
+        path: String,
+    },
+    UnknownHostFunctions {
+        names: Vec<String>,
+    },
     HostFunctionsNotDeclared,
-    InvalidId { field: String, value: String },
+    InvalidId {
+        field: String,
+        value: String,
+    },
     ReservedPluginId,
-    PlatformWithoutResolveFile { capability_id: String },
+    PlatformWithoutResolveFile {
+        capability_id: String,
+    },
 }
 
 impl From<&ManifestError> for ManifestErrorDto {
     fn from(value: &ManifestError) -> Self {
         match value {
             ManifestError::UnsupportedApi => Self::UnsupportedApi,
-            // The semver parser's own text is not shown: the field and the value say what is wrong.
-            ManifestError::InvalidSemver { field, value, .. } => Self::InvalidSemver {
+            // The semver parser's own text is shown only among the details.
+            ManifestError::InvalidSemver {
+                field,
+                value,
+                error,
+            } => Self::InvalidSemver {
                 field: field.clone(),
                 value: value.clone(),
+                cause: CauseDto::unknown(error),
             },
             ManifestError::InvalidPathMapping => Self::InvalidPathMapping,
             ManifestError::InvalidLoadFile(path) => Self::InvalidLoadFile { path: path.clone() },
@@ -101,34 +118,89 @@ impl From<&PluginLoadFailure> for PluginLoadFailureDto {
     }
 }
 
-impl From<&ProviderFailure> for CauseDto {
+/// Why a call into a plugin failed.
+#[derive(Debug, Clone, Serialize, Type)]
+#[serde(tag = "code", content = "payload", rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum PluginCallReasonDto {
+    MissingFunction,
+    Timeout,
+    OutOfFuel,
+    OutOfMemory,
+    Trap { cause: CauseDto },
+    NonZeroExit { code: i32 },
+    Plugin { cause: CauseDto },
+    Codec { cause: CauseDto },
+    Reentrant,
+}
+
+impl From<&PluginCallError> for PluginCallReasonDto {
+    fn from(value: &PluginCallError) -> Self {
+        match value {
+            PluginCallError::MissingFunction => Self::MissingFunction,
+            PluginCallError::Timeout => Self::Timeout,
+            PluginCallError::OutOfFuel => Self::OutOfFuel,
+            PluginCallError::OutOfMemory => Self::OutOfMemory,
+            // The texts of the runtime and of the plugin itself: not ours to categorize.
+            PluginCallError::Trap(details) => Self::Trap {
+                cause: CauseDto::unknown(details),
+            },
+            PluginCallError::NonZeroExit(code) => Self::NonZeroExit { code: *code },
+            PluginCallError::Plugin(details) => Self::Plugin {
+                cause: CauseDto::unknown(details),
+            },
+            PluginCallError::Codec(details) => Self::Codec {
+                cause: CauseDto::unknown(details),
+            },
+            PluginCallError::Reentrant => Self::Reentrant,
+        }
+    }
+}
+
+/// What went wrong talking to a plugin source.
+#[derive(Debug, Clone, Serialize, Type)]
+#[serde(tag = "code", content = "payload", rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum ProviderFailureDto {
+    Request {
+        cause: CauseDto,
+    },
+    TooLarge {
+        // Formatted before it crosses the boundary: no `u64` in bindings.
+        limit: String,
+    },
+    UrlNotAllowed,
+    NoReleases,
+    InvalidUrl {
+        url: String,
+    },
+    NotRegistered,
+}
+
+impl From<&ProviderFailure> for ProviderFailureDto {
     fn from(value: &ProviderFailure) -> Self {
         match value {
-            ProviderFailure::Request(err) => err.into(),
-            ProviderFailure::Middleware(err) => middleware_cause(err),
-            ProviderFailure::Status { status, url } => Self::HttpStatus {
-                status: *status,
+            ProviderFailure::Request(source) => Self::Request {
+                cause: CauseDto::of_source(source.as_ref()),
+            },
+            ProviderFailure::Status { status, url } => Self::Request {
+                cause: CauseDto::HttpStatus {
+                    status: *status,
+                    url: without_query(url),
+                },
+            },
+            ProviderFailure::TooLarge { limit } => Self::TooLarge {
+                limit: limit.to_string(),
+            },
+            ProviderFailure::UrlNotAllowed => Self::UrlNotAllowed,
+            ProviderFailure::NoReleases => Self::NoReleases,
+            ProviderFailure::InvalidUrl { url } => Self::InvalidUrl {
                 url: without_query(url),
             },
-            ProviderFailure::Other(details) => Self::unknown(details),
+            ProviderFailure::NotRegistered => Self::NotRegistered,
         }
     }
 }
 
-impl From<&ManifestFormatError> for CauseDto {
-    fn from(value: &ManifestFormatError) -> Self {
-        match value {
-            ManifestFormatError::Json(err) => err.into(),
-            ManifestFormatError::Utf8(_) => Self::Parse {
-                line: None,
-                column: None,
-            },
-            ManifestFormatError::TooLarge { .. } => Self::unknown(value),
-        }
-    }
-}
-
-#[derive(Debug, Serialize, Type)]
+#[derive(Clone, Debug, Serialize, Type)]
 #[serde(tag = "code", content = "payload", rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum PluginErrorDto {
     NotFound {
@@ -168,13 +240,18 @@ pub enum PluginErrorDto {
     FunctionCallFailed {
         function_name: String,
         plugin_id: String,
-        cause: CauseDto,
+        reason: PluginCallReasonDto,
     },
     ManifestNotFound {
         path: String,
     },
     InvalidManifestFormat {
         cause: CauseDto,
+    },
+    ManifestTooLarge {
+        name: String,
+        // Formatted before it crosses the boundary: no `u64` in bindings.
+        limit: String,
     },
     Manifest {
         error: ManifestErrorDto,
@@ -223,7 +300,7 @@ pub enum PluginErrorDto {
     // ── Provider errors (provider-agnostic) ──
     ProviderFetchError {
         source_type: String,
-        cause: CauseDto,
+        reason: ProviderFailureDto,
     },
     ProviderNoAssets {
         source_type: String,
@@ -234,7 +311,7 @@ pub enum PluginErrorDto {
     },
     DownloadFailed {
         url: String,
-        cause: CauseDto,
+        reason: ProviderFailureDto,
     },
     // ── Rate limiting ──
     ProviderRateLimited {
@@ -309,8 +386,7 @@ impl PluginErrorDto {
             } => Self::FunctionCallFailed {
                 function_name: function_name.clone(),
                 plugin_id: plugin_id.to_string(),
-                // The text of the plugin's own failure: not ours to categorize.
-                cause: CauseDto::unknown(error),
+                reason: error.into(),
             },
             PluginError::Manifest(err) => Self::Manifest { error: err.into() },
             PluginError::LoaderNotFound { config_type } => Self::LoaderNotFound {
@@ -377,8 +453,22 @@ impl From<&PluginProviderError> for PluginErrorDto {
             PluginProviderError::ManifestNotFound { path } => {
                 Self::ManifestNotFound { path: path.clone() }
             }
-            PluginProviderError::InvalidManifestFormat { error } => Self::InvalidManifestFormat {
-                cause: error.into(),
+            PluginProviderError::InvalidManifestFormat {
+                error: ManifestFormatError::TooLarge { name, limit },
+            } => Self::ManifestTooLarge {
+                name: name.clone(),
+                limit: limit.to_string(),
+            },
+            PluginProviderError::InvalidManifestFormat {
+                error: ManifestFormatError::Json(err),
+            } => Self::InvalidManifestFormat { cause: err.into() },
+            PluginProviderError::InvalidManifestFormat {
+                error: ManifestFormatError::Utf8(_),
+            } => Self::InvalidManifestFormat {
+                cause: CauseDto::Parse {
+                    line: None,
+                    column: None,
+                },
             },
             PluginProviderError::ExtractionFailed { from } => {
                 Self::ExtractionFailed { from: from.clone() }
@@ -387,12 +477,13 @@ impl From<&PluginProviderError> for PluginErrorDto {
             PluginProviderError::FileExtractionFailed { from } => {
                 Self::FileExtractionFailed { from: from.clone() }
             }
-            PluginProviderError::ProviderFetchError { source_type, cause } => {
-                Self::ProviderFetchError {
-                    source_type: source_type.to_string(),
-                    cause: cause.into(),
-                }
-            }
+            PluginProviderError::ProviderFetchError {
+                source_type,
+                reason,
+            } => Self::ProviderFetchError {
+                source_type: source_type.to_string(),
+                reason: reason.into(),
+            },
             PluginProviderError::ProviderNoAssets { source_type } => Self::ProviderNoAssets {
                 source_type: source_type.to_string(),
             },
@@ -400,9 +491,9 @@ impl From<&PluginProviderError> for PluginErrorDto {
             PluginProviderError::NoRemoteSource { plugin_id } => Self::NoRemoteSource {
                 plugin_id: plugin_id.to_string(),
             },
-            PluginProviderError::DownloadFailed { url, cause } => Self::DownloadFailed {
+            PluginProviderError::DownloadFailed { url, reason } => Self::DownloadFailed {
                 url: without_query(url),
-                cause: cause.into(),
+                reason: reason.into(),
             },
             PluginProviderError::ProviderRateLimited {
                 source_type,
@@ -453,7 +544,11 @@ mod tests {
                 value: "1.x".to_owned(),
                 error: "unexpected character".to_owned(),
             }),
-            json!({"code": "INVALID_SEMVER", "payload": {"field": "version", "value": "1.x"}})
+            json!({"code": "INVALID_SEMVER", "payload": {
+                "field": "version",
+                "value": "1.x",
+                "cause": {"type": "unknown", "details": "unexpected character"},
+            }})
         );
         assert_eq!(
             manifest(&ManifestError::InvalidPathMapping),
@@ -565,21 +660,47 @@ mod tests {
         );
     }
 
-    #[test]
-    fn should_keep_the_text_of_a_failed_plugin_call_as_an_unknown_cause() {
-        let err = PluginError::FunctionCallFailed {
+    fn call_failed(error: PluginCallError) -> serde_json::Value {
+        plugin(&PluginError::FunctionCallFailed {
             function_name: "list".to_owned(),
             plugin_id: PluginId::from_static("p"),
-            error: PluginCallError::Plugin("denied".to_owned()),
-        };
+            error,
+        })
+    }
 
+    #[test]
+    fn should_keep_the_text_of_a_failed_plugin_call_as_an_unknown_cause_of_its_reason() {
         assert_eq!(
-            plugin(&err),
+            call_failed(PluginCallError::Plugin("denied".to_owned())),
             json!({"code": "FUNCTION_CALL_FAILED", "payload": {
                 "function_name": "list",
                 "plugin_id": "p",
-                "cause": {"type": "unknown", "details": "denied"},
+                "reason": {"code": "PLUGIN", "payload": {"cause": {"type": "unknown", "details": "denied"}}},
             }})
+        );
+    }
+
+    #[test]
+    fn should_name_the_limit_a_plugin_call_hit_as_its_reason() {
+        for (error, code) in [
+            (PluginCallError::MissingFunction, "MISSING_FUNCTION"),
+            (PluginCallError::Timeout, "TIMEOUT"),
+            (PluginCallError::OutOfFuel, "OUT_OF_FUEL"),
+            (PluginCallError::OutOfMemory, "OUT_OF_MEMORY"),
+            (PluginCallError::Reentrant, "REENTRANT"),
+        ] {
+            assert_eq!(
+                call_failed(error)["payload"]["reason"],
+                json!({"code": code})
+            );
+        }
+        assert_eq!(
+            call_failed(PluginCallError::NonZeroExit(3))["payload"]["reason"],
+            json!({"code": "NON_ZERO_EXIT", "payload": {"code": 3}})
+        );
+        assert_eq!(
+            call_failed(PluginCallError::Trap("unreachable".to_owned()))["payload"]["reason"]["code"],
+            "TRAP"
         );
     }
 
@@ -595,7 +716,7 @@ mod tests {
 
     #[test]
     fn should_categorize_the_io_error_of_plugin_storage() {
-        let err = PluginError::Storage(IoError::IoError(std::io::Error::from(
+        let err = PluginError::Storage(IoError::from(std::io::Error::from(
             std::io::ErrorKind::NotFound,
         )));
 
@@ -607,10 +728,10 @@ mod tests {
 
     #[test]
     fn should_categorize_the_typed_source_of_a_provider_failure() {
-        let fetch = |cause| {
+        let fetch = |reason| {
             PluginError::Provider(PluginProviderError::ProviderFetchError {
                 source_type: PluginSourceType::GitHub,
-                cause,
+                reason,
             })
         };
 
@@ -621,37 +742,77 @@ mod tests {
             })),
             json!({"code": "PROVIDER_FETCH_ERROR", "payload": {
                 "source_type": "github",
-                "cause": {
+                "reason": {"code": "REQUEST", "payload": {"cause": {
                     "type": "httpStatus",
                     "status": 403,
                     "url": "https://api.github.com/repos/o/r/releases",
-                },
+                }}},
             }})
         );
         assert_eq!(
-            plugin(&fetch(ProviderFailure::Middleware(anyhow::Error::new(
+            plugin(&fetch(ProviderFailure::Request(std::sync::Arc::new(
                 std::io::Error::from(std::io::ErrorKind::TimedOut)
-            )))),
-            json!({"code": "PROVIDER_FETCH_ERROR", "payload": {
-                "source_type": "github",
-                "cause": {"type": "io", "kind": "timedOut"},
-            }})
+            ))))["payload"]["reason"],
+            json!({"code": "REQUEST", "payload": {"cause": {"type": "io", "kind": "timedOut"}}})
         );
     }
 
     #[test]
-    fn should_keep_our_own_text_of_a_provider_failure_as_an_unknown_cause() {
+    fn should_serialize_each_own_reason_of_a_provider_failure_with_its_arguments() {
+        let fetch = |reason| {
+            plugin(&PluginError::Provider(
+                PluginProviderError::ProviderFetchError {
+                    source_type: PluginSourceType::GitHub,
+                    reason,
+                },
+            ))["payload"]["reason"]
+                .clone()
+        };
+
+        assert_eq!(
+            fetch(ProviderFailure::NoReleases),
+            json!({"code": "NO_RELEASES"})
+        );
+        assert_eq!(
+            fetch(ProviderFailure::NotRegistered),
+            json!({"code": "NOT_REGISTERED"})
+        );
+        assert_eq!(
+            fetch(ProviderFailure::InvalidUrl {
+                url: "https://example.com/x?y=1".to_owned()
+            }),
+            json!({"code": "INVALID_URL", "payload": {"url": "https://example.com/x"}})
+        );
+    }
+
+    #[test]
+    fn should_serialize_a_download_over_the_size_limit_with_the_limit_as_text() {
         let err = PluginError::Provider(PluginProviderError::DownloadFailed {
             url: "https://github.com/o/r/a.zip?token=secret".to_owned(),
-            cause: ProviderFailure::Other("asset exceeds 5 bytes".to_owned()),
+            reason: ProviderFailure::TooLarge { limit: 5 },
         });
 
         assert_eq!(
             plugin(&err),
             json!({"code": "DOWNLOAD_FAILED", "payload": {
                 "url": "https://github.com/o/r/a.zip",
-                "cause": {"type": "unknown", "details": "asset exceeds 5 bytes"},
+                "reason": {"code": "TOO_LARGE", "payload": {"limit": "5"}},
             }})
+        );
+    }
+
+    #[test]
+    fn should_serialize_a_manifest_over_the_size_limit_with_its_name_and_limit() {
+        let err = PluginError::Provider(PluginProviderError::InvalidManifestFormat {
+            error: ManifestFormatError::TooLarge {
+                name: "manifest.json".to_owned(),
+                limit: 64,
+            },
+        });
+
+        assert_eq!(
+            plugin(&err),
+            json!({"code": "MANIFEST_TOO_LARGE", "payload": {"name": "manifest.json", "limit": "64"}})
         );
     }
 
@@ -659,7 +820,7 @@ mod tests {
     fn should_serialize_an_invalid_manifest_format_as_a_parse_cause() {
         let parse = serde_json::from_slice::<serde_json::Value>(b"{ not json").unwrap_err();
         let err = PluginError::Provider(PluginProviderError::InvalidManifestFormat {
-            error: ManifestFormatError::Json(parse),
+            error: parse.into(),
         });
 
         assert_eq!(
@@ -672,7 +833,7 @@ mod tests {
 
     #[test]
     fn should_categorize_the_io_error_of_provider_storage() {
-        let err = PluginError::Provider(PluginProviderError::Storage(IoError::IoError(
+        let err = PluginError::Provider(PluginProviderError::Storage(IoError::from(
             std::io::Error::from(std::io::ErrorKind::PermissionDenied),
         )));
 

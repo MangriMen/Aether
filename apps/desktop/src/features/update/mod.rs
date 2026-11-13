@@ -3,6 +3,7 @@ mod domain;
 pub(crate) mod infra;
 
 // Domain models may be re-exported explicitly (Rule 4.4)
+pub use domain::UpdateError;
 pub use domain::UpdatePhase;
 pub use domain::UpdateProgress;
 pub use domain::UpdateService;

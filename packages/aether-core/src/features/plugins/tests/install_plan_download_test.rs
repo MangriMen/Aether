@@ -739,7 +739,7 @@ async fn should_refuse_a_url_when_it_is_from_an_unknown_plugin() {
     assert!(
         matches!(
             &err,
-            InstanceError::ContentDownloadError(ContentDownloadFailure::Other(_))
+            InstanceError::ContentDownloadError(ContentDownloadFailure::NoNetworkPolicy { .. })
         ),
         "{err:?}"
     );

@@ -1,5 +1,6 @@
 use crate::{
-    core::WindowError, features::settings::AppSettingsError, shared::IdempotencyManagerError,
+    core::WindowError, features::settings::AppSettingsError, features::update::UpdateError,
+    shared::IdempotencyManagerError,
 };
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -23,12 +24,16 @@ pub enum Error {
     IdempotencyManager(#[from] IdempotencyManagerError),
 
     #[error(transparent)]
+    Update(#[from] UpdateError),
+
+    #[error(transparent)]
     Core(#[from] aether_core::Error),
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::core::WindowLabel;
     use crate::shared::RequestId;
     use rstest::rstest;
 
@@ -38,12 +43,13 @@ mod tests {
         "Launch critical error: port in use"
     )]
     #[case::from_app_settings_error(
-        AppSettingsError::from(sqlx::Error::PoolTimedOut).into(),
-        "Storage error: pool timed out while waiting for an open connection"
+        AppSettingsError::from(aether_core::shared::error::DatabaseError::new("pool timed out"))
+            .into(),
+        "Storage error: Database error: pool timed out"
     )]
     #[case::from_window_error(
-        WindowError::Other("oops".to_string()).into(),
-        "Unexpected error: oops"
+        WindowError::NotFound { label: WindowLabel::Main }.into(),
+        "Window with label 'main' was not found"
     )]
     fn error_display(#[case] err: Error, #[case] expected: &str) {
         assert_eq!(err.to_string(), expected);

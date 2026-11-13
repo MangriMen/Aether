@@ -58,7 +58,7 @@ impl<ASS: AppSettingsStorage, WM: WindowManager> EditAppSettingsUseCase<ASS, WM>
             self.window_manager
                 .apply_visual_effect(WindowLabel::Main, new_settings.window_effect)
                 .await
-                .map_err(|err| AppSettingsError::CanNotSetEffect(err.to_string()))?;
+                .map_err(AppSettingsError::CanNotSetEffect)?;
         }
 
         Ok(())
@@ -136,7 +136,7 @@ mod tests {
             *self.apply_effect_label.lock().unwrap() = Some(label);
             *self.apply_effect_effect.lock().unwrap() = Some(effect);
             if self.should_fail {
-                Err(WindowError::Other("mock failure".to_string()))
+                Err(WindowError::PlatformNotSupported)
             } else {
                 Ok(())
             }
@@ -298,8 +298,11 @@ mod tests {
         let result = use_case.execute(request).await;
         assert!(result.is_err());
         match result.unwrap_err() {
-            AppSettingsError::CanNotSetEffect(msg) => {
-                assert!(msg.contains("mock failure"), "Got: {msg}");
+            AppSettingsError::CanNotSetEffect(err) => {
+                assert!(
+                    matches!(err, WindowError::PlatformNotSupported),
+                    "Got: {err:?}"
+                );
             }
             other => panic!("Expected CanNotSetEffect, got: {other:?}"),
         }

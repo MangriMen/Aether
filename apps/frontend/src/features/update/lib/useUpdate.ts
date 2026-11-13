@@ -11,17 +11,21 @@ export const useUpdate = () => {
 
   const { mutateAsync: installUpdate } = useInstallUpdate();
 
-  const updateAndRestart = async (update: UpdateStatus | null) => {
+  /** Whether the update was installed; a failure is shown by the mutation itself. */
+  const updateAndRestart = async (
+    update: UpdateStatus | null,
+  ): Promise<boolean> => {
     if (!checkIsUpdateAvailable(update)) {
-      return;
+      return false;
     }
 
     setStore('isUpdating', true);
 
     try {
       await installUpdate();
+      return true;
     } catch {
-      /* empty */
+      return false;
     } finally {
       setStore('isUpdating', false);
     }

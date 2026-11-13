@@ -65,7 +65,7 @@ async fn download_to_temp_file_in(
     provider: &dyn PluginProvider,
     download_url: &str,
 ) -> Result<DownloadedArchive, PluginError> {
-    let io = |e| PluginError::Storage(IoError::IoError(e));
+    let io = |e: std::io::Error| PluginError::Storage(IoError::from(e));
 
     let temp_file = tempfile::NamedTempFile::new_in(dir).map_err(io)?;
     let mut file = tokio::fs::File::from_std(temp_file.reopen().map_err(io)?);
@@ -129,7 +129,9 @@ mod tests {
             if self.fails {
                 return Err(PluginProviderError::DownloadFailed {
                     url: url.to_string(),
-                    cause: ProviderFailure::Other("connection reset".to_string()),
+                    reason: ProviderFailure::Request(crate::shared::error::shared_source(
+                        "connection reset",
+                    )),
                 });
             }
             Ok(self.body.len() as u64)
