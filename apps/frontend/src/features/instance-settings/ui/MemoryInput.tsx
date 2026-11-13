@@ -8,6 +8,7 @@ import {
   splitProps,
 } from 'solid-js';
 
+import { useTranslation } from '@/shared/i18n';
 import { CombinedTextField } from '@/shared/ui-kit';
 import { cn, isNil } from '@/shared/utils';
 
@@ -44,6 +45,7 @@ export const MemoryInput: Component<MemoryInputProps> = (props) => {
     ['minValue', 'maxValue', 'defaultValue', 'value', 'disabled', 'class'],
     ['warningValue', 'onChange'],
   );
+  const [{ t }] = useTranslation();
   const merged = mergeProps(DEFAULT_PROPS, local);
 
   const minValue = createMemo(() =>
@@ -105,6 +107,7 @@ export const MemoryInput: Component<MemoryInputProps> = (props) => {
         onChange={setTextFieldValue}
         inputProps={{
           type: 'text',
+          'aria-label': t('instanceSettings.memoryAllocation'),
           onBlur: handleChangeTextField,
           onKeyPress: handleChangeTextField,
         }}

@@ -11,7 +11,7 @@ import {
 } from '@/features/settings';
 import { useTranslation } from '@/shared/i18n';
 import { logError } from '@/shared/log';
-import { SettingsEntry } from '@/shared/settings-layout';
+import { SettingsEntry, useSettingsEntryLabel } from '@/shared/settings-layout';
 import {
   Select,
   SelectContent,
@@ -80,6 +80,7 @@ export const SelectActionOnInstanceLaunchEntry: Component<
         optionTextValue='name'
         value={currentOption()}
         onChange={handleChangeActionOnInstanceLaunch}
+        {...useSettingsEntryLabel()}
         itemComponent={(props) => (
           <SelectItem item={props.item}>
             {t(

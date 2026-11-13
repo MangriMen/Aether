@@ -4,7 +4,7 @@ import type { SettingsEntryProps } from '@/shared/settings-layout';
 
 import { useThemeContext } from '@/features/appearance';
 import { useTranslation } from '@/shared/i18n';
-import { SettingsEntry } from '@/shared/settings-layout';
+import { SettingsEntry, useSettingsEntryLabel } from '@/shared/settings-layout';
 import { Switch, SwitchControl, SwitchThumb } from '@/shared/ui-kit';
 
 export type DisableAnimationsEntryProps = SettingsEntryProps;
@@ -38,6 +38,7 @@ export const DisableAnimationsEntry: Component<DisableAnimationsEntryProps> = (
       <Switch
         checked={!themeContext.disableAnimations}
         onChange={handleSetDisableAnimations}
+        {...useSettingsEntryLabel()}
       >
         <SwitchControl>
           <SwitchThumb />

@@ -670,6 +670,9 @@
     "javaArguments": "Java arguments",
     "memoryAllocation": "Memory allocation",
     "resolution": "Resolution",
+    "resolutionWidth": "Window width",
+    "resolutionHeight": "Window height",
+    "chooseResolution": "Choose a resolution",
     "windowError": {
       "resolution": {
         "emptyValue": "Resolution part must be non empty value",

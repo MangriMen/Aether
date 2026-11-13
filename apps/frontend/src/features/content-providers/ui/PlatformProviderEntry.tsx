@@ -5,7 +5,7 @@ import type { Option } from '@/shared/ui-kit';
 
 import { useSetPlatformProvider } from '@/features/settings';
 import { useTranslation } from '@/shared/i18n';
-import { SettingsEntry } from '@/shared/settings-layout';
+import { SettingsEntry, useSettingsEntryLabel } from '@/shared/settings-layout';
 import {
   Select,
   SelectContent,
@@ -103,6 +103,7 @@ export const PlatformProviderEntry: Component<PlatformProviderEntryProps> = (
         options={options()}
         value={current()}
         onChange={handleChange}
+        {...useSettingsEntryLabel()}
         optionValue='value'
         optionTextValue='name'
         disallowEmptySelection

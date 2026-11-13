@@ -13,7 +13,7 @@ import {
 } from '@/features/appearance';
 import { useSystemFonts } from '@/features/settings';
 import { useTranslation } from '@/shared/i18n';
-import { SettingsEntry } from '@/shared/settings-layout';
+import { SettingsEntry, useSettingsEntryLabel } from '@/shared/settings-layout';
 import {
   Combobox,
   ComboboxContent,
@@ -202,6 +202,7 @@ export const UiFontEntry: Component<UiFontEntryProps> = (props) => {
         optionLabel='label'
         value={currentOption()}
         onChange={handleChange}
+        {...useSettingsEntryLabel()}
         open={isOpen()}
         onOpenChange={setIsOpen}
         itemComponent={(itemProps) => <FontItem item={itemProps.item} />}

@@ -6,6 +6,7 @@ import type { ThemeConfig } from '@/features/appearance';
 import type { SelectRootProps, Option } from '@/shared/ui-kit';
 
 import { THEMES, useThemeContext } from '@/features/appearance';
+import { useSettingsEntryLabel } from '@/shared/settings-layout';
 import {
   Select,
   SelectContent,
@@ -69,6 +70,7 @@ export const SelectTheme: Component<
           <SelectItem item={props.item}>{props.item.rawValue.name}</SelectItem>
         </>
       )}
+      {...useSettingsEntryLabel()}
       {...props}
     >
       <SelectTrigger>

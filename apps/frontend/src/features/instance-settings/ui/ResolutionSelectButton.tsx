@@ -12,6 +12,7 @@ import {
   splitProps,
 } from 'solid-js';
 
+import { useTranslation } from '@/shared/i18n';
 import {
   Badge,
   DropdownMenu,
@@ -32,6 +33,7 @@ export const ResolutionSelectButton: Component<ResolutionSelectButtonProps> = (
   props,
 ) => {
   const [local, _] = splitProps(props, ['disabled', 'onResolutionChange']);
+  const [{ t }] = useTranslation();
 
   const [maxResolution, setMaxResolution] = createSignal<
     PhysicalSize | undefined
@@ -77,6 +79,7 @@ export const ResolutionSelectButton: Component<ResolutionSelectButtonProps> = (
         size='sm'
         disabled={local.disabled}
         icon={IconMdiMonitor}
+        aria-label={t('instanceSettings.chooseResolution')}
       />
       <DropdownMenuContent class='max-h-57.5 overflow-auto'>
         <For each={filteredResolutions()}>

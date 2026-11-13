@@ -670,6 +670,9 @@
     "javaArguments": "Аргументы Java",
     "memoryAllocation": "Выделение памяти",
     "resolution": "Разрешение",
+    "resolutionWidth": "Ширина окна",
+    "resolutionHeight": "Высота окна",
+    "chooseResolution": "Выбрать разрешение",
     "windowError": {
       "resolution": {
         "emptyValue": "Элемент разрешения должен быть не пустым",

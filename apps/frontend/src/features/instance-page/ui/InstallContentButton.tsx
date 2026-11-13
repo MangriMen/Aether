@@ -92,6 +92,7 @@ export const InstallContentButton: Component<InstallContentButtonProps> = (
           as={IconButton}
           class='rounded-l-none'
           icon={IconMdiChevronDown}
+          aria-label={t('common.add')}
           disabled={local.disabled}
         />
         <DropdownMenuContent>

@@ -5,7 +5,7 @@ import type { SettingsEntryProps } from '@/shared/settings-layout';
 import type { Option } from '@/shared/ui-kit';
 
 import { useTranslation } from '@/shared/i18n';
-import { SettingsEntry } from '@/shared/settings-layout';
+import { SettingsEntry, useSettingsEntryLabel } from '@/shared/settings-layout';
 
 import { LOCALE_OPTIONS } from '../model/localeOptions';
 import SelectLanguage from './SelectLanguage';
@@ -40,6 +40,7 @@ export const ChangeLanguageEntry: Component<ChangeLanguageEntryProps> = (
         options={LOCALE_OPTIONS}
         value={currentOption()}
         onChange={handleChangeLocale}
+        {...useSettingsEntryLabel()}
       />
     </SettingsEntry>
   );
