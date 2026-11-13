@@ -147,7 +147,7 @@ mod tests {
     }
 
     #[test]
-    fn should_serialize_a_failed_install_with_an_io_cause() {
+    fn should_serialize_the_io_cause_when_the_install_failed() {
         let out = domain(&JavaDomainError::FailedToInstall {
             version: 21,
             os: "linux".into(),
