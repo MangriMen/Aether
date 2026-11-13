@@ -175,6 +175,11 @@ interface ShowToastParams {
    * called while the toast renders, so what it creates is owned by the toast and cleaned up with it.
    */
   action?: JSX.Element | (() => JSX.Element);
+  /**
+   * Called when the user closes the toast: the close button, a swipe or Escape. Not called when
+   * it times out or is closed by `closeToast`.
+   */
+  onDismiss?: () => void;
 }
 
 function showToast(props: ShowToastParams) {
@@ -184,6 +189,8 @@ function showToast(props: ShowToastParams) {
       variant={props.variant}
       duration={props.duration}
       persistent={props.persistent}
+      onSwipeEnd={() => props.onDismiss?.()}
+      onEscapeKeyDown={() => props.onDismiss?.()}
     >
       <div class='gap-1 grid w-full'>
         {props.title && <ToastTitle>{props.title}</ToastTitle>}
@@ -192,7 +199,7 @@ function showToast(props: ShowToastParams) {
         )}
         {typeof props.action === 'function' ? props.action() : props.action}
       </div>
-      <ToastClose />
+      <ToastClose onClick={() => props.onDismiss?.()} />
     </Toast>
   ));
 }

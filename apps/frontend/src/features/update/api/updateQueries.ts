@@ -1,8 +1,8 @@
 import { useMutation, useQuery } from '@tanstack/solid-query';
 
+import { showError } from '@/features/errors';
 import { updateCommands } from '@/platform/ipc';
 import { useTranslation } from '@/shared/i18n';
-import { showToast } from '@/shared/ui-kit';
 
 import { updateKeys } from './updateQueryKeys';
 
@@ -17,11 +17,9 @@ export const useInstallUpdate = () => {
 
   return useMutation(() => ({
     mutationFn: updateCommands.installUpdate,
-    onError: () => {
-      showToast({
-        title: t('update.updateError'),
-        variant: 'destructive',
-      });
+    // `showError` logs what the backend did not (an error that is not a launcher one).
+    onError: (err) => {
+      showError({ title: t('update.updateError'), err, t });
     },
   }));
 };
