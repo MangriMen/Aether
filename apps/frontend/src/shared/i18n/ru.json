@@ -489,7 +489,10 @@
       "versions": "Версии"
     },
     "alreadyInstalled": "Этот контент уже установлен",
-    "modpackInstallDisabled": "Установка сборок отключена"
+    "modpackInstallDisabled": "Установка сборок отключена",
+    "providersError": "Не удалось загрузить источники контента",
+    "noProviders": "Нет ни одного источника контента",
+    "openPluginSettings": "Открыть настройки плагинов"
   },
   "generalSettingsError": {
     "name": {

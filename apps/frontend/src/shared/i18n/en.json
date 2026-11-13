@@ -489,7 +489,10 @@
       "versions": "Versions"
     },
     "alreadyInstalled": "This content is already installed",
-    "modpackInstallDisabled": "Installing modpacks is disabled"
+    "modpackInstallDisabled": "Installing modpacks is disabled",
+    "providersError": "Failed to load content providers",
+    "noProviders": "No content providers are installed",
+    "openPluginSettings": "Open plugin settings"
   },
   "generalSettingsError": {
     "name": {

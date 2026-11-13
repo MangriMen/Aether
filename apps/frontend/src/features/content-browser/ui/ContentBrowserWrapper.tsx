@@ -30,6 +30,7 @@ export const ContentBrowserWrapper: Component<ComponentProps<'div'>> = (
     <ContentBrowser
       providers={contentProvidersOptions()}
       isProvidersLoading={contentProviders.isLoading}
+      isProvidersError={contentProviders.isError}
       types={availableContentTypes()}
       {...props}
     />

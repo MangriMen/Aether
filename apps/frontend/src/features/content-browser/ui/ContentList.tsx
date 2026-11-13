@@ -9,7 +9,9 @@ import {
 
 import type { ContentItem } from '@/features/content';
 
+import { useSettingsSearchParams, SettingsTab } from '@/features/settings';
 import { useTranslation } from '@/shared/i18n';
+import { Button } from '@/shared/ui-kit';
 import { cn } from '@/shared/utils';
 
 import { ContentListItem } from './ContentListItem';
@@ -19,6 +21,8 @@ export type ContentListProps = ComponentProps<'div'> & {
   items?: ContentItem[];
   isLoading?: boolean;
   isError?: boolean;
+  isProvidersError?: boolean;
+  hasNoProviders?: boolean;
 };
 
 export const ContentList: Component<ContentListProps> = (props) => {
@@ -26,10 +30,13 @@ export const ContentList: Component<ContentListProps> = (props) => {
     'items',
     'isLoading',
     'isError',
+    'isProvidersError',
+    'hasNoProviders',
     'class',
   ]);
 
   const [{ t }] = useTranslation();
+  const settingsParams = useSettingsSearchParams();
 
   return (
     <div
@@ -39,6 +46,31 @@ export const ContentList: Component<ContentListProps> = (props) => {
       <Switch>
         <Match when={local.isLoading}>
           <ContentListSkeleton />
+        </Match>
+
+        <Match when={local.isProvidersError}>
+          <span
+            class='
+              text-xl font-medium text-muted-foreground flex grow items-center
+              justify-center
+            '
+          >
+            {t('content.providersError')}
+          </span>
+        </Match>
+
+        <Match when={local.hasNoProviders}>
+          <div class='gap-3 flex grow flex-col items-center justify-center'>
+            <span class='text-lg text-muted-foreground'>
+              {t('content.noProviders')}
+            </span>
+            <Button
+              variant='secondary'
+              onClick={() => settingsParams.open(SettingsTab.Plugins)}
+            >
+              {t('content.openPluginSettings')}
+            </Button>
+          </div>
         </Match>
 
         <Match when={local.isError}>
@@ -52,7 +84,7 @@ export const ContentList: Component<ContentListProps> = (props) => {
           </span>
         </Match>
 
-        <Match when={local.items?.length === 0}>
+        <Match when={!local.items || local.items.length === 0}>
           <span
             class='
               text-lg text-muted-foreground flex grow items-center
@@ -63,7 +95,7 @@ export const ContentList: Component<ContentListProps> = (props) => {
           </span>
         </Match>
 
-        <Match when={local?.items}>
+        <Match when={local.items}>
           {(items) => (
             <For each={items()}>
               {(item) => <ContentListItem item={item} />}
