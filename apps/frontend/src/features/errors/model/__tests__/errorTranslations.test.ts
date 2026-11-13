@@ -150,10 +150,16 @@ describe('error translations', () => {
   });
 
   it('should_replace_the_reason_argument_with_its_translation', () => {
-    const t = (key: string, args?: Record<string, unknown>) =>
-      key === 'errors.instance.reason.INVALID.cannot_be_empty'
-        ? `empty:${String(args?.field)}`
+    const t = (key: string, args?: Record<string, unknown>) => {
+      if (key === 'errors.instance.reason.INVALID.cannot_be_empty') {
+        return `empty:${String(args?.field)}`;
+      }
+
+      return key.startsWith('errors.instance.field.')
+        ? undefined
         : `${key}|${JSON.stringify(args)}`;
+    };
+
     const error = {
       type: 'instance',
       payload: {
@@ -194,6 +200,42 @@ describe('field names', () => {
   it('should_keep_the_raw_name_when_the_field_has_no_translation', () => {
     expect(getTranslatedError(pagination('OTHER'), tEn)).toContain(
       'Invalid OTHER value',
+    );
+  });
+
+  it('should_name_the_field_in_the_text_of_a_reason', () => {
+    const error = {
+      type: 'instance',
+      payload: {
+        code: 'CONTENT_PROVIDER_ERROR',
+        payload: {
+          reason: {
+            code: 'RESPONSE_INVALID_PAGINATION',
+            payload: { field: 'PAGE_SIZE', value: '0' },
+          },
+        },
+      },
+    } as unknown as LauncherError;
+
+    expect(getTranslatedError(error, tEn)).toBe(
+      'Content provider error: the provider answered with an invalid page size 0',
+    );
+  });
+
+  it('should_name_what_a_missing_path_is_the_path_of', () => {
+    const error = {
+      type: 'minecraft',
+      payload: {
+        code: 'PATH_NOT_FOUND',
+        payload: { path: '/game/natives', entity_type: 'NATIVE_LIBRARY' },
+      },
+    } as unknown as LauncherError;
+
+    expect(getTranslatedError(error, tEn)).toBe(
+      'Not found: native libraries folder /game/natives',
+    );
+    expect(getTranslatedError(error, tRu)).toBe(
+      'Не найдено: папка нативных библиотек /game/natives',
     );
   });
 });
@@ -304,6 +346,7 @@ describe('plugin state reason translations', () => {
 });
 
 describe.each([
+  ['appSettings', 'AppSettingsErrorDto', 'CAN_NOT_SET_EFFECT'],
   ['instance', 'InstanceErrorDto', 'CONTENT_PROVIDER_ERROR'],
   ['minecraft', 'MinecraftErrorDto', 'PROCESSOR_FAILED'],
   ['plugin', 'PluginErrorDto', 'LOAD_FAILED'],
@@ -461,11 +504,104 @@ describe('plugin load failure', () => {
     expect(getErrorDetails(error)).toBe('wasmtime trap');
   });
 
+  it('should_find_the_raw_text_of_a_manifest_error_nested_in_a_plugin_error', () => {
+    const error = {
+      type: 'plugin',
+      payload: {
+        code: 'MANIFEST',
+        payload: {
+          error: {
+            code: 'INVALID_SEMVER',
+            payload: {
+              field: 'version',
+              value: '1.x',
+              cause: { type: 'unknown', details: 'unexpected character' },
+            },
+          },
+        },
+      },
+    } as unknown as LauncherError;
+
+    expect(getTranslatedError(error, tEn)).toBe(
+      'The plugin manifest has an invalid version in version: "1.x"',
+    );
+    expect(getErrorDetails(error)).toBe('unexpected character');
+  });
+
   it('should_translate_a_load_failure_without_arguments', () => {
     expect(
       getTranslatedError(loadFailed({ code: 'CONTAINER_UNAVAILABLE' }), tRu),
     ).toBe(
       'Не удалось загрузить плагин my-plugin: лаунчер ещё не готов запускать плагины',
+    );
+  });
+});
+
+describe('plugin call failure', () => {
+  const callFailed = (reason: unknown) =>
+    ({
+      type: 'plugin',
+      payload: {
+        code: 'FUNCTION_CALL_FAILED',
+        payload: { function_name: 'search', plugin_id: 'my-plugin', reason },
+      },
+    }) as unknown as LauncherError;
+
+  it('should_name_the_limit_the_plugin_hit', () => {
+    expect(getTranslatedError(callFailed({ code: 'TIMEOUT' }), tEn)).toBe(
+      'Failed to call function search of plugin my-plugin: the plugin exceeded its time limit',
+    );
+  });
+
+  it('should_keep_the_text_of_the_plugin_out_of_the_message', () => {
+    const error = callFailed({
+      code: 'PLUGIN',
+      payload: { cause: { type: 'unknown', details: 'mod not found' } },
+    });
+
+    expect(getTranslatedError(error, tRu)).toBe(
+      'Ошибка вызова функции search плагина my-plugin: плагин сообщил об ошибке',
+    );
+    expect(getErrorDetails(error)).toBe('mod not found');
+  });
+});
+
+describe('plugin provider failure', () => {
+  it('should_translate_the_reason_and_the_category_of_its_cause', () => {
+    const error = {
+      type: 'plugin',
+      payload: {
+        code: 'PROVIDER_FETCH_ERROR',
+        payload: {
+          source_type: 'github',
+          reason: {
+            code: 'REQUEST',
+            payload: {
+              cause: { type: 'httpStatus', status: 403, url: 'https://x' },
+            },
+          },
+        },
+      },
+    } as unknown as LauncherError;
+
+    expect(getTranslatedError(error, tEn)).toBe(
+      'Failed to fetch plugin info from provider github: the request failed: the server answered 403',
+    );
+  });
+});
+
+describe('app settings errors', () => {
+  it('should_translate_the_window_error_behind_a_failed_effect', () => {
+    const error = {
+      type: 'appSettings',
+      payload: {
+        code: 'CAN_NOT_SET_EFFECT',
+        payload: { reason: { code: 'PLATFORM_NOT_SUPPORTED' } },
+      },
+    } as unknown as LauncherError;
+
+    expect(getTranslatedError(error, tEn)).toBe(
+      'Unable to apply the requested effect: the platform does not support it',
     );
   });
 });

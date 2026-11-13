@@ -129,7 +129,7 @@ mod tests {
             if self.fails {
                 return Err(PluginProviderError::DownloadFailed {
                     url: url.to_string(),
-                    cause: ProviderFailure::Other("connection reset".to_string()),
+                    reason: ProviderFailure::Request("connection reset".into()),
                 });
             }
             Ok(self.body.len() as u64)

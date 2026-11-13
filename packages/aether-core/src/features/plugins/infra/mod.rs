@@ -12,6 +12,7 @@ mod plugin_importer_proxy;
 mod plugin_infrastructure_listener;
 mod plugin_updater_proxy;
 pub(crate) mod plugin_utils;
+mod provider_failure;
 #[cfg(test)]
 mod reload_plugin_test;
 #[cfg(test)]

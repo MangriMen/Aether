@@ -2,19 +2,23 @@ use std::{collections::HashSet, path::Path};
 
 use crate::features::{
     minecraft::{
-        MinecraftDomainError, TEMPORARY_REPLACE_CHAR, parse_arguments, parse_rules, vanilla,
+        GamePathKind, MinecraftDomainError, TEMPORARY_REPLACE_CHAR, parse_arguments, parse_rules,
+        vanilla,
     },
     settings::LocationInfo,
 };
 use crate::shared::{io::infra::canonicalize, java::domain::get_classpath_separator};
 
 /// Canonicalizes `path` as a string, reporting a missing path as `entity_type`.
-fn canonical_string(path: &Path, entity_type: &str) -> Result<String, MinecraftDomainError> {
+fn canonical_string(
+    path: &Path,
+    entity_type: GamePathKind,
+) -> Result<String, MinecraftDomainError> {
     canonicalize(path)
         .map(|canonical| canonical.to_string_lossy().into_owned())
         .map_err(|_| MinecraftDomainError::PathNotFound {
             path: path.to_path_buf(),
-            entity_type: entity_type.to_owned(),
+            entity_type,
         })
 }
 
@@ -65,7 +69,7 @@ pub fn get_jvm_arguments(
     } else {
         result.push(format!(
             "-Djava.library.path={}",
-            canonical_string(natives_path, "native_library")?
+            canonical_string(natives_path, GamePathKind::NativeLibrary)?
         ));
         result.push("-cp".to_owned());
         result.push(class_paths.to_owned());
@@ -98,7 +102,7 @@ pub fn get_logging_argument(
 
     Ok(Some(template.replace(
         "${path}",
-        &canonical_string(&path, "log_config")?,
+        &canonical_string(&path, GamePathKind::LogConfig)?,
     )))
 }
 
@@ -110,8 +114,8 @@ fn parse_jvm_argument(
     version_name: &str,
     java_arch: &str,
 ) -> Result<String, MinecraftDomainError> {
-    let natives = canonical_string(natives_path, "native_library")?;
-    let libraries = canonical_string(libraries_path, "library")?;
+    let natives = canonical_string(natives_path, GamePathKind::NativeLibrary)?;
+    let libraries = canonical_string(libraries_path, GamePathKind::Library)?;
 
     let placeholders = [
         ("${natives_directory}", natives.as_str()),
@@ -156,7 +160,7 @@ pub fn get_class_paths(
         }
     }
 
-    let client = canonical_string(client_path, "classpath")?;
+    let client = canonical_string(client_path, GamePathKind::Classpath)?;
     if seen.insert(client.clone()) {
         entries.push(client);
     }
@@ -188,7 +192,7 @@ pub fn get_lib_path(
         return Ok(full_path.to_string_lossy().into_owned());
     }
 
-    canonical_string(&full_path, "library")
+    canonical_string(&full_path, GamePathKind::Library)
 }
 
 impl From<daedalus::Error> for MinecraftDomainError {
@@ -338,7 +342,7 @@ mod tests {
         let err = get_lib_path(&e.libs, "g:a:1", false).unwrap_err();
         assert!(matches!(
             err,
-            MinecraftDomainError::PathNotFound { ref entity_type, .. } if entity_type == "library"
+            MinecraftDomainError::PathNotFound { ref entity_type, .. } if *entity_type == GamePathKind::Library
         ));
     }
 
@@ -549,7 +553,7 @@ mod tests {
         let err = get_class_paths(&e.libs, &[lib("g:a:1")], &e.client, "x64", true).unwrap_err();
         assert!(matches!(
             err,
-            MinecraftDomainError::PathNotFound { ref entity_type, .. } if entity_type == "library"
+            MinecraftDomainError::PathNotFound { ref entity_type, .. } if *entity_type == GamePathKind::Library
         ));
     }
 
@@ -561,7 +565,7 @@ mod tests {
         assert!(matches!(
             err,
             MinecraftDomainError::PathNotFound { ref entity_type, ref path }
-                if entity_type == "classpath" && path == &missing
+                if *entity_type == GamePathKind::Classpath && path == &missing
         ));
     }
 
@@ -726,7 +730,7 @@ mod tests {
         assert!(matches!(
             err,
             MinecraftDomainError::PathNotFound { ref entity_type, .. }
-                if entity_type == "native_library"
+                if *entity_type == GamePathKind::NativeLibrary
         ));
     }
 
@@ -747,7 +751,7 @@ mod tests {
         .unwrap_err();
         assert!(matches!(
             err,
-            MinecraftDomainError::PathNotFound { ref entity_type, .. } if entity_type == "library"
+            MinecraftDomainError::PathNotFound { ref entity_type, .. } if *entity_type == GamePathKind::Library
         ));
     }
 
@@ -835,7 +839,7 @@ mod tests {
 
         assert!(matches!(
             err,
-            MinecraftDomainError::PathNotFound { ref entity_type, .. } if entity_type == "log_config"
+            MinecraftDomainError::PathNotFound { ref entity_type, .. } if *entity_type == GamePathKind::LogConfig
         ));
     }
 

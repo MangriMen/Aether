@@ -1,6 +1,7 @@
 pub mod archive;
 pub mod cache;
 pub mod capability;
+pub mod error;
 pub mod fetch;
 pub mod hash;
 pub mod housekeeping;
@@ -16,6 +17,7 @@ pub mod request_client;
 pub mod safe_path;
 pub mod serde_semver;
 pub mod serializable_command;
+mod sqlite_error;
 pub mod system;
 pub mod update_action;
 pub mod web_url;

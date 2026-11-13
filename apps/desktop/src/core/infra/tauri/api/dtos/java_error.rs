@@ -108,6 +108,7 @@ impl From<&JavaDomainError> for JavaErrorDto {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use aether_core::shared::error::DatabaseError;
     use aether_core::shared::request_client::RequestError;
     use serde_json::{Value, json};
     use std::path::PathBuf;
@@ -138,7 +139,7 @@ mod tests {
 
     #[test]
     fn should_serialize_a_storage_error_with_a_database_cause() {
-        let out = domain(&JavaDomainError::Storage(sqlx::Error::RowNotFound));
+        let out = domain(&JavaDomainError::Storage(DatabaseError::new("locked")));
 
         assert_eq!(
             out,

@@ -115,7 +115,10 @@ async fn should_roll_back_an_update_when_removing_a_dropped_file_fails() {
         .await
         .unwrap_err();
 
-    assert!(matches!(err, InstanceError::Storage(_)), "{err:?}");
+    assert!(
+        matches!(err, InstanceError::NotAContentFile { .. }),
+        "{err:?}"
+    );
     assert!(held.join("inner").is_dir());
     std::fs::remove_dir_all(&held).unwrap();
     assert_as_installed(&fixture, &records_before).await;

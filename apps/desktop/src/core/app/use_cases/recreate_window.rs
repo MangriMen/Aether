@@ -131,7 +131,9 @@ mod tests {
             self.close_and_wait_called.store(true, Ordering::SeqCst);
             assert_eq!(label, WindowLabel::Main, "Should close Main window");
             if self.close_should_fail {
-                Err(WindowError::Other("close failed".to_string()))
+                Err(WindowError::NotFound {
+                    label: WindowLabel::Main,
+                })
             } else {
                 Ok(())
             }
@@ -148,7 +150,9 @@ mod tests {
             *self.last_transparent.lock().unwrap() = Some(transparent);
             *self.last_effect.lock().unwrap() = Some(window_effect);
             if self.create_should_fail {
-                Err(WindowError::Other("create failed".to_string()))
+                Err(WindowError::AlreadyExists {
+                    label: WindowLabel::Main,
+                })
             } else {
                 Ok(())
             }

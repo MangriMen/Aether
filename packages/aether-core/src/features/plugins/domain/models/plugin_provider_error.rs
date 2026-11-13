@@ -3,34 +3,35 @@ use crate::{
         instance::PluginId,
         plugins::{ManifestError, PluginSourceType},
     },
-    shared::io::domain::IoError,
+    shared::{error::BoxedSource, io::domain::IoError},
 };
 
-/// What went wrong talking to a plugin source, as far as the core knows it: a typed error when
-/// there is one, our own text when there is not.
+/// What went wrong talking to a plugin source. The client's errors are kept as the source; the
+/// conversion from them lives with the client.
 #[derive(thiserror::Error, Debug)]
 pub enum ProviderFailure {
+    /// The request did not get an answer, or the answer could not be read.
     #[error("{0}")]
-    Request(#[from] reqwest::Error),
-
-    /// The middleware error is an opaque `anyhow::Error`; the typed causes it wraps are in its chain.
-    #[error("{0}")]
-    Middleware(anyhow::Error),
+    Request(#[source] BoxedSource),
 
     #[error("HTTP {status}")]
     Status { status: u16, url: String },
 
-    #[error("{0}")]
-    Other(String),
-}
+    #[error("the asset is larger than {limit} bytes")]
+    TooLarge { limit: u64 },
 
-impl From<reqwest_middleware::Error> for ProviderFailure {
-    fn from(value: reqwest_middleware::Error) -> Self {
-        match value {
-            reqwest_middleware::Error::Reqwest(err) => Self::Request(err),
-            reqwest_middleware::Error::Middleware(err) => Self::Middleware(err),
-        }
-    }
+    /// Only the source itself may serve plugin assets, over https.
+    #[error("the asset URL is not one the provider serves over https")]
+    UrlNotAllowed,
+
+    #[error("the source has no releases")]
+    NoReleases,
+
+    #[error("\"{url}\" is not an address of a plugin on this source")]
+    InvalidUrl { url: String },
+
+    #[error("no provider is registered for this source")]
+    NotRegistered,
 }
 
 /// Why a file of a plugin archive that must be JSON is not.
@@ -73,11 +74,10 @@ pub enum PluginProviderError {
     #[error("Storage operation failed: {0}")]
     Storage(#[from] IoError),
 
-    #[error("Failed to fetch plugin info from provider {source_type}: {cause}")]
+    #[error("Failed to fetch plugin info from provider {source_type}: {reason}")]
     ProviderFetchError {
         source_type: PluginSourceType,
-        // Not `source`: that name is `thiserror`'s own for the error source.
-        cause: ProviderFailure,
+        reason: ProviderFailure,
     },
 
     #[error("No release assets found for plugin from provider {source_type}")]
@@ -90,8 +90,11 @@ pub enum PluginProviderError {
     #[error("Plugin \"{plugin_id}\" has no remote source configured")]
     NoRemoteSource { plugin_id: PluginId },
 
-    #[error("Failed to download plugin from {url}: {cause}")]
-    DownloadFailed { url: String, cause: ProviderFailure },
+    #[error("Failed to download plugin from {url}: {reason}")]
+    DownloadFailed {
+        url: String,
+        reason: ProviderFailure,
+    },
 
     // ── Rate limiting ──
     #[error("Provider {source_type} rate limit exceeded. Retry after {retry_after:?}")]
@@ -99,33 +102,4 @@ pub enum PluginProviderError {
         source_type: PluginSourceType,
         retry_after: Option<u32>,
     },
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn should_keep_the_middleware_error_when_a_middleware_error_becomes_a_failure() {
-        let failure = ProviderFailure::from(reqwest_middleware::Error::Middleware(
-            anyhow::anyhow!("retry budget spent"),
-        ));
-
-        assert!(
-            matches!(failure, ProviderFailure::Middleware(ref err) if err.to_string() == "retry budget spent"),
-            "{failure:?}"
-        );
-    }
-
-    #[test]
-    fn should_keep_the_typed_error_when_a_reqwest_error_becomes_a_failure() {
-        let err = reqwest::Client::new().get("not a url").build().unwrap_err();
-
-        let failure = ProviderFailure::from(reqwest_middleware::Error::Reqwest(err));
-
-        assert!(
-            matches!(failure, ProviderFailure::Request(_)),
-            "{failure:?}"
-        );
-    }
 }

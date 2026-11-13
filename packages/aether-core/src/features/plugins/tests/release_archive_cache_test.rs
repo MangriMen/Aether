@@ -58,7 +58,7 @@ impl PluginProvider for Counting {
         if self.fails.swap(false, Ordering::SeqCst) {
             return Err(PluginProviderError::ProviderFetchError {
                 source_type: PluginSourceType::GitHub,
-                cause: ProviderFailure::Other("connection dropped".into()),
+                reason: ProviderFailure::Request("connection dropped".into()),
             });
         }
         dest.write_all(url.as_bytes()).await.unwrap();

@@ -1,6 +1,6 @@
 use crate::features::instance::{
     ContentFileUpdateInfo, ContentId, ContentPath, FileSide, InstanceError, InstanceId, Pack,
-    PackEntry, PackFile, PackStorage, PlanOrigin, ProviderId, StorageError,
+    PackEntry, PackFile, PackStorage, PlanOrigin, ProviderId,
     infra::{
         legacy_provider_id::{legacy_provider_id_string, parse_stored_provider_id},
         stored_content_id::{parse_stored_content_id, parse_stored_version},
@@ -345,10 +345,9 @@ impl PackStorage for SqlitePackStorage {
     ) -> Result<PackFile, InstanceError> {
         self.load_pack_file(instance_id, content_path)
             .await?
-            .ok_or_else(|| {
-                InstanceError::storage(StorageError::other(format!(
-                    "Pack file not found: {content_path}"
-                )))
+            .ok_or_else(|| InstanceError::PackFileNotFound {
+                instance_id: instance_id.to_string(),
+                content_path: content_path.to_string(),
             })?
             .map_err(InstanceError::storage)
     }

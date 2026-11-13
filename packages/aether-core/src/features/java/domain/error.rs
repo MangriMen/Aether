@@ -1,5 +1,7 @@
 use std::path::PathBuf;
 
+use crate::shared::error::DatabaseError;
+
 #[derive(Debug, thiserror::Error)]
 pub enum JavaDomainError {
     #[error("No JRE found for version {version}")]
@@ -52,7 +54,7 @@ pub enum JavaDomainError {
     RemoveOldInstallationError { path: PathBuf },
 
     #[error("Storage error: {0}")]
-    Storage(#[from] sqlx::Error),
+    Storage(#[from] DatabaseError),
 }
 
 #[cfg(test)]
@@ -75,7 +77,7 @@ mod tests {
 
     #[test]
     fn should_format_storage_error_when_displayed() {
-        let err = JavaDomainError::Storage(sqlx::Error::RowNotFound);
+        let err = JavaDomainError::Storage(DatabaseError::new("locked"));
         assert!(err.to_string().starts_with("Storage error: "));
     }
 

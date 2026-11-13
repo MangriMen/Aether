@@ -1,18 +1,15 @@
 use crate::features::{
     instance::{
-        ContentId, ContentItem, ContentMetadata, ContentSearchParams, ContentSearchResult,
-        ContentType, ContentVersion, ContentVersionDependency, ContentVersionDependencyType,
-        ContentVersionFile, ContentVersionId, ContentVersionMetadata, ContentVersionStatus,
-        ContentVersionType, PageIndex, PageSize, ProviderId, RequestedContentVersionStatus,
-        infra::content_providers::modrinth::{
-            ModrinthMapperError,
-            api_client::{
-                Hit, MODRINTH_WEB_URL, ModrinthDependencyResponse, ModrinthDependencyType,
-                ModrinthRequestedStatus, ModrinthVersionStatus, ModrinthVersionType,
-                ProjectMetadataResponse, ProjectResponse, ProjectSearchParams,
-                ProjectSearchResponse, ProjectVersionResponse, SearchIndex,
-                VersionMetadataResponse,
-            },
+        ContentId, ContentItem, ContentMetadata, ContentProviderRejection, ContentSearchParams,
+        ContentSearchResult, ContentType, ContentVersion, ContentVersionDependency,
+        ContentVersionDependencyType, ContentVersionFile, ContentVersionId, ContentVersionMetadata,
+        ContentVersionStatus, ContentVersionType, PageIndex, PageSize, ProviderId,
+        RequestedContentVersionStatus,
+        infra::content_providers::modrinth::api_client::{
+            Hit, MODRINTH_WEB_URL, ModrinthDependencyResponse, ModrinthDependencyType,
+            ModrinthRequestedStatus, ModrinthVersionStatus, ModrinthVersionType,
+            ProjectMetadataResponse, ProjectResponse, ProjectSearchParams, ProjectSearchResponse,
+            ProjectVersionResponse, SearchIndex, VersionMetadataResponse,
         },
     },
     minecraft::{GameVersion, ModLoader},
@@ -81,7 +78,7 @@ fn get_facet_vector<T: AsRef<str>>(facet: &str, values: &[T]) -> Vec<String> {
 }
 
 impl TryFrom<ContentSearchParams> for ProjectSearchParams {
-    type Error = String;
+    type Error = ContentProviderRejection;
 
     fn try_from(value: ContentSearchParams) -> Result<Self, Self::Error> {
         let mut facets = Vec::with_capacity(3);
@@ -107,7 +104,8 @@ impl TryFrom<ContentSearchParams> for ProjectSearchParams {
         // Modrinth refuses a larger `limit`; the offset follows the size actually asked for, so the
         // pages stay adjacent.
         let page_size = value.page_size.at_most(MODRINTH_MAX_PAGE_SIZE);
-        let offset = i64::try_from(value.page.offset(page_size)).map_err(|err| err.to_string())?;
+        let offset = i64::try_from(value.page.offset(page_size))
+            .map_err(|err| ContentProviderRejection::InvalidRequest(err.into()))?;
 
         Ok(Self {
             index: SearchIndex::Relevance,
@@ -123,7 +121,7 @@ impl ProjectSearchResponse {
     pub(crate) fn into_content_search(
         self,
         provider_id: ProviderId,
-    ) -> Result<ContentSearchResult, ModrinthMapperError> {
+    ) -> Result<ContentSearchResult, ContentProviderRejection> {
         let page_size = PageSize::parse(i64::from(self.limit))?;
         let (page, page_count) = calculate_pagination(self.offset, self.limit, self.total_hits);
 
@@ -149,7 +147,7 @@ fn calculate_pagination(offset: u32, limit: u32, total_hits: u32) -> (u32, u32) 
 }
 
 impl TryFrom<Hit> for ContentItem {
-    type Error = ModrinthMapperError;
+    type Error = ContentProviderRejection;
 
     fn try_from(value: Hit) -> Result<Self, Self::Error> {
         let Hit {
@@ -165,7 +163,9 @@ impl TryFrom<Hit> for ContentItem {
         } = value;
 
         let content_type = ContentType::from_string(&project_type).ok_or(
-            ModrinthMapperError::UnknownProjectType(project_type.clone()),
+            ContentProviderRejection::UnknownContentType {
+                content_type: project_type.clone(),
+            },
         )?;
 
         let url = page_url(
@@ -189,7 +189,7 @@ impl TryFrom<Hit> for ContentItem {
 }
 
 impl TryFrom<ProjectResponse> for ContentItem {
-    type Error = ModrinthMapperError;
+    type Error = ContentProviderRejection;
 
     fn try_from(value: ProjectResponse) -> Result<Self, Self::Error> {
         let ProjectResponse {
@@ -206,7 +206,9 @@ impl TryFrom<ProjectResponse> for ContentItem {
         } = value;
 
         let content_type = ContentType::from_string(&project_type).ok_or(
-            ModrinthMapperError::UnknownProjectType(project_type.clone()),
+            ContentProviderRejection::UnknownContentType {
+                content_type: project_type.clone(),
+            },
         )?;
 
         let url = page_url(
@@ -249,7 +251,7 @@ impl From<&ProjectResponse> for ProjectMetadataResponse {
 }
 
 impl TryFrom<ProjectMetadataResponse> for ContentMetadata {
-    type Error = ModrinthMapperError;
+    type Error = ContentProviderRejection;
 
     /// No author: a project names only its team or organization by id, which its
     /// [`ContentMetadata::author_ref`] carries for the core to look up apart.
@@ -266,7 +268,7 @@ impl TryFrom<ProjectMetadataResponse> for ContentMetadata {
 }
 
 impl TryFrom<VersionMetadataResponse> for ContentVersionMetadata {
-    type Error = ModrinthMapperError;
+    type Error = ContentProviderRejection;
 
     fn try_from(value: VersionMetadataResponse) -> Result<Self, Self::Error> {
         Ok(Self {
@@ -311,7 +313,7 @@ impl From<ModrinthRequestedStatus> for RequestedContentVersionStatus {
 }
 
 impl TryFrom<ModrinthDependencyResponse> for ContentVersionDependency {
-    type Error = ModrinthMapperError;
+    type Error = ContentProviderRejection;
 
     fn try_from(value: ModrinthDependencyResponse) -> Result<Self, Self::Error> {
         Ok(Self {
@@ -332,7 +334,7 @@ impl TryFrom<ModrinthDependencyResponse> for ContentVersionDependency {
 }
 
 impl TryFrom<ProjectVersionResponse> for ContentVersion {
-    type Error = ModrinthMapperError;
+    type Error = ContentProviderRejection;
 
     fn try_from(value: ProjectVersionResponse) -> Result<Self, Self::Error> {
         let ProjectVersionResponse {
@@ -442,7 +444,10 @@ mod tests {
             .into_content_search(provider())
             .unwrap_err();
 
-        assert!(matches!(err, ModrinthMapperError::InvalidPagination(_)));
+        assert!(matches!(
+            err,
+            ContentProviderRejection::ResponseInvalidPagination(_)
+        ));
     }
 
     fn params(page: i64, page_size: i64) -> ContentSearchParams {

@@ -40,7 +40,9 @@ impl PluginProvider for GithubProvider {
         let (owner, repo) = GitHubPluginFetcher::parse_github_url(raw).ok_or_else(|| {
             PluginProviderError::ProviderFetchError {
                 source_type: PluginSourceType::GitHub,
-                cause: ProviderFailure::Other(format!("Cannot parse GitHub URL: {raw}")),
+                reason: ProviderFailure::InvalidUrl {
+                    url: raw.to_owned(),
+                },
             }
         })?;
         Ok(format!("{owner}/{repo}"))

@@ -129,6 +129,10 @@ fn instance_dto(value: &InstanceError) -> InstanceErrorDto {
 
     match value {
         InstanceError::Storage(err) => Dto::Storage(err.to_string()),
+        // Storage failures until they had kinds of their own; the wire keeps them so.
+        InstanceError::InvalidRecord { .. }
+        | InstanceError::PackFileNotFound { .. }
+        | InstanceError::NotAContentFile { .. } => Dto::Storage(value.to_string()),
         InstanceError::NotFound { instance_id } => Dto::NotFound {
             instance_id: instance_id.clone(),
         },
@@ -376,7 +380,7 @@ impl From<&MinecraftDomainError> for MinecraftErrorDto {
             }
             MinecraftDomainError::PathNotFound { path, entity_type } => Self::PathNotFound {
                 path: path.to_string_lossy().into_owned(),
-                entity_type: entity_type.clone(),
+                entity_type: entity_type.as_str().to_owned(),
             },
             MinecraftDomainError::ParseFailed { reason } => Self::ParseFailed {
                 reason: reason.clone(),
@@ -522,12 +526,13 @@ impl From<&PluginProviderError> for PluginErrorDto {
             }
             PluginProviderError::Manifest(err) => Self::Manifest(err.into()),
             PluginProviderError::Storage(err) => Self::Storage(err.to_string()),
-            PluginProviderError::ProviderFetchError { source_type, cause } => {
-                Self::ProviderFetchError {
-                    source_type: source_type.into(),
-                    details: cause.to_string(),
-                }
-            }
+            PluginProviderError::ProviderFetchError {
+                source_type,
+                reason,
+            } => Self::ProviderFetchError {
+                source_type: source_type.into(),
+                details: reason.to_string(),
+            },
             PluginProviderError::ProviderNoAssets { source_type } => Self::ProviderNoAssets {
                 source_type: source_type.into(),
             },
@@ -538,9 +543,9 @@ impl From<&PluginProviderError> for PluginErrorDto {
             PluginProviderError::NoRemoteSource { plugin_id } => Self::NoRemoteSource {
                 plugin_id: plugin_id.to_string(),
             },
-            PluginProviderError::DownloadFailed { url, cause } => Self::DownloadFailed {
+            PluginProviderError::DownloadFailed { url, reason } => Self::DownloadFailed {
                 url: url.clone(),
-                details: cause.to_string(),
+                details: reason.to_string(),
             },
             PluginProviderError::ProviderRateLimited {
                 source_type,

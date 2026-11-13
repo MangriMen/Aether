@@ -22,13 +22,10 @@ use crate::{
                 ContentCompatibilityCheckParams, ContentCompatibilityResult, DownloadEvent,
                 DownloadReport,
             },
-            infra::content_providers::modrinth::{
-                ModrinthMapperError,
-                api_client::{
-                    File, MODRINTH_API_URL, MODRINTH_API_V3_URL, ModrinthApiClient,
-                    ProjectMetadataResponse, ProjectResponse, ProjectSearchParams,
-                    ProjectVersionResponse, ProjectVersionsRequest,
-                },
+            infra::content_providers::modrinth::api_client::{
+                File, MODRINTH_API_URL, MODRINTH_API_V3_URL, ModrinthApiClient,
+                ProjectMetadataResponse, ProjectResponse, ProjectSearchParams,
+                ProjectVersionResponse, ProjectVersionsRequest,
             },
             select_version,
         },
@@ -66,7 +63,7 @@ fn unique(ids: impl Iterator<Item = String>) -> Vec<String> {
 async fn fetch_batched<'a, T, F, Fut>(ids: &'a [String], fetch: F) -> Result<Vec<T>, InstanceError>
 where
     F: Fn(&'a [String]) -> Fut,
-    Fut: Future<Output = Result<Vec<T>, String>>,
+    Fut: Future<Output = Result<Vec<T>, ContentProviderRejection>>,
 {
     // The requests are made up front: a stream mapping borrowed batches into futures is not
     // `Send` enough for `async_trait`.
@@ -194,13 +191,12 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
                 .id
                 != version.project_id
         {
-            return Err(InstanceError::ContentProviderError {
-                reason: ContentProviderRejection::VersionOfAnotherProject {
-                    version_id: version_id.to_owned(),
-                    project_id: version.project_id,
-                    content_id: content_id.to_owned(),
-                },
-            });
+            return Err(ContentProviderRejection::VersionOfAnotherContent {
+                version_id: version_id.to_owned(),
+                owner_id: version.project_id,
+                content_id: content_id.to_owned(),
+            }
+            .into());
         }
 
         Ok(version)
@@ -417,7 +413,7 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
     fn project_metadata(project: &ProjectResponse) -> Result<ContentMetadata, InstanceError> {
         ProjectMetadataResponse::from(project)
             .try_into()
-            .map_err(mapper_failure)
+            .map_err(InstanceError::from)
     }
 
     async fn resolve_pack_plan(
@@ -488,10 +484,8 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
         let game_version = GameVersion::parse_list(version.game_versions.clone(), "Modrinth pack")
             .into_iter()
             .next()
-            .ok_or_else(|| InstanceError::ContentProviderError {
-                reason: ContentProviderRejection::NoGameVersion {
-                    version_id: version.id.clone(),
-                },
+            .ok_or_else(|| ContentProviderRejection::NoGameVersion {
+                version_id: version.id.clone(),
             })?;
         let mod_loader = [
             ModLoader::Fabric,
@@ -561,12 +555,7 @@ impl<RC: RequestClient> ContentProvider for ModrinthContentProvider<RC> {
     ) -> Result<ContentSearchResult, InstanceError> {
         let provider_id = search_params.provider_id.clone();
 
-        let modrinth_search_params =
-            ProjectSearchParams::try_from(search_params).map_err(|err| {
-                InstanceError::ContentProviderError {
-                    reason: ContentProviderRejection::InvalidSearchParams(err.into()),
-                }
-            })?;
+        let modrinth_search_params = ProjectSearchParams::try_from(search_params)?;
 
         let response = self
             .api
@@ -574,11 +563,7 @@ impl<RC: RequestClient> ContentProvider for ModrinthContentProvider<RC> {
             .await
             .map_err(api_failure)?;
 
-        response.into_content_search(provider_id).map_err(|err| {
-            InstanceError::ContentProviderError {
-                reason: ContentProviderRejection::InvalidSearchResponse(err.into()),
-            }
-        })
+        Ok(response.into_content_search(provider_id)?)
     }
 
     async fn resolve_file(
@@ -624,10 +609,8 @@ impl<RC: RequestClient> ContentProvider for ModrinthContentProvider<RC> {
             .await
             .map_err(api_failure)?;
         let content_type = ContentType::from_string(&project.project_type).ok_or_else(|| {
-            InstanceError::ContentProviderError {
-                reason: ContentProviderRejection::UnknownProjectType {
-                    project_type: project.project_type.clone(),
-                },
+            ContentProviderRejection::UnknownContentType {
+                content_type: project.project_type.clone(),
             }
         })?;
 
@@ -783,7 +766,7 @@ impl<RC: RequestClient> ContentProvider for ModrinthContentProvider<RC> {
             .await
             .map_err(api_failure)?
             .try_into()
-            .map_err(mapper_failure)
+            .map_err(InstanceError::from)
     }
 
     async fn get_version(
@@ -795,7 +778,7 @@ impl<RC: RequestClient> ContentProvider for ModrinthContentProvider<RC> {
             .await
             .map_err(api_failure)?
             .try_into()
-            .map_err(mapper_failure)
+            .map_err(InstanceError::from)
     }
 
     async fn list_versions(
@@ -819,7 +802,7 @@ impl<RC: RequestClient> ContentProvider for ModrinthContentProvider<RC> {
 /// rest of the answer down, the same way for every list the provider reads.
 fn map_or_skip<T, U>(kind: &str, id: &str, raw: T) -> Option<U>
 where
-    U: TryFrom<T, Error = ModrinthMapperError>,
+    U: TryFrom<T, Error = ContentProviderRejection>,
 {
     U::try_from(raw)
         .inspect_err(|err| {
@@ -828,32 +811,25 @@ where
         .ok()
 }
 
-fn mapper_failure(err: ModrinthMapperError) -> InstanceError {
-    InstanceError::ContentProviderError {
-        reason: ContentProviderRejection::Mapping(err.into()),
-    }
-}
-
-/// The text of an error of the Modrinth API client, which does not keep its category.
-fn api_failure(err: String) -> InstanceError {
-    InstanceError::ContentDownloadError(ContentDownloadFailure::Other(err))
+fn api_failure(reason: ContentProviderRejection) -> InstanceError {
+    reason.into()
 }
 
 fn response_id<T>(id: &str) -> Result<T, InstanceError>
 where
     T: TryFrom<String, Error = InvalidContentId>,
 {
-    T::try_from(id.to_owned()).map_err(|err| mapper_failure(err.into()))
+    T::try_from(id.to_owned()).map_err(|err| ContentProviderRejection::from(err).into())
 }
 
 /// A URL Modrinth answered with, to fetch.
 fn response_url(url: &str) -> Result<HttpsUrl, InstanceError> {
-    HttpsUrl::parse(url).map_err(|err| mapper_failure(err.into()))
+    HttpsUrl::parse(url).map_err(|err| ContentProviderRejection::from(err).into())
 }
 
 fn no_pack_versions(project_id: &str) -> InstanceError {
     InstanceError::ContentDownloadError(ContentDownloadFailure::NoVersions {
-        project_id: project_id.to_owned(),
+        content_id: project_id.to_owned(),
     })
 }
 
@@ -864,12 +840,14 @@ mod tests {
     struct Number(u32);
 
     impl TryFrom<&str> for Number {
-        type Error = ModrinthMapperError;
+        type Error = ContentProviderRejection;
 
         fn try_from(raw: &str) -> Result<Self, Self::Error> {
             raw.parse()
                 .map(Self)
-                .map_err(|_| ModrinthMapperError::MissingField(raw.to_owned()))
+                .map_err(|_| ContentProviderRejection::UnknownContentType {
+                    content_type: raw.to_owned(),
+                })
         }
     }
 

@@ -46,6 +46,24 @@ describe('getTranslatedStateReason', () => {
     );
   });
 
+  it('should_keep_the_text_of_the_semver_parser_for_the_details_of_an_invalid_manifest', () => {
+    const reason = stateReason('INVALID_MANIFEST', {
+      error: {
+        code: 'INVALID_SEMVER',
+        payload: {
+          field: 'version',
+          value: '1.x',
+          cause: { type: 'unknown', details: 'unexpected character' },
+        },
+      },
+    });
+
+    expect(getTranslatedStateReason(reason, tEn)).not.toContain(
+      'unexpected character',
+    );
+    expect(getStateReasonDetails(reason)).toBe('unexpected character');
+  });
+
   it('should_translate_a_load_failed_reason_and_keep_its_raw_text_out_of_the_message', () => {
     const reason = stateReason('LOAD_FAILED', {
       reason: {

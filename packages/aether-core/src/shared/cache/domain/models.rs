@@ -70,14 +70,14 @@ impl<T> CachedValue<T> {
 
 #[derive(Debug, thiserror::Error)]
 pub enum AssetError {
-    #[error("Source read error: {0}")]
-    ReadSource(String),
+    #[error("Failed to read the icon: {0}")]
+    ReadSource(#[source] std::io::Error),
     #[error("Icon is larger than {limit} bytes")]
     TooLarge { limit: u64 },
     #[error("Icon is not a PNG, JPEG, GIF or WebP image")]
     NotAnImage,
-    #[error("Remove error: {0}")]
-    Remove(String),
-    #[error("Write error: {0}")]
-    Write(String),
+    #[error("Failed to remove the icon: {0}")]
+    Remove(#[source] std::io::Error),
+    #[error("Failed to write the icon: {0}")]
+    Write(#[source] std::io::Error),
 }

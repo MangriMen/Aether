@@ -11,6 +11,7 @@ pub use acl::models::vanilla;
 pub use acl::services::parse_arguments;
 pub use acl::services::parse_rules;
 pub use domain::GAME_VERSION_MAX_LEN;
+pub use domain::GamePathKind;
 pub use domain::GameVersion;
 pub use domain::GameVersionRejection;
 pub use domain::InvalidGameVersion;

@@ -321,7 +321,7 @@ impl ContentDownloader for UrlDownloader {
         let url = url.as_str();
         if url.contains("fail") {
             return Err(InstanceError::ContentDownloadError(
-                ContentDownloadFailure::Other(url.into()),
+                ContentDownloadFailure::download(url, "connection refused"),
             ));
         }
         tokio::fs::write(destination, url).await.unwrap();

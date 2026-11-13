@@ -150,24 +150,52 @@ const withTranslatedReason = (
   return {
     ...args,
     reason:
-      t(reasonKey as Parameters<TFunction>[0], payload as never) ?? reasonKey,
+      t(
+        reasonKey as Parameters<TFunction>[0],
+        withTranslatedNames(key, payload, t) as never,
+      ) ?? reasonKey,
   };
 };
 
-/** An argument named `field` is a raw name of a field, translated by `errors.<type>.field.<NAME>` when there is one. */
-const withTranslatedField = (
+/** Arguments that hold a raw name, and the group of `errors.<type>` that translates it. */
+const TRANSLATED_NAMES = {
+  field: 'field',
+  entity_type: 'entityType',
+} as const;
+
+/**
+ * An argument that holds a raw name (of a field, of what a path is the path of) is translated
+ * by `errors.<type>.<group>.<NAME>` when there is one, and kept as it is otherwise.
+ */
+const withTranslatedNames = (
   key: string,
   args: unknown,
   t: TFunction,
 ): unknown => {
-  if (!isRecord(args) || typeof args.field !== 'string') {
+  if (!isRecord(args)) {
     return args;
   }
 
-  const fieldKey = `errors.${key.split('.')[0]}.field.${args.field}`;
-  const translated = t(fieldKey as Parameters<TFunction>[0]);
+  const type = key.split('.')[0];
+  const translated: Record<string, unknown> = { ...args };
 
-  return typeof translated === 'string' ? { ...args, field: translated } : args;
+  for (const [arg, group] of Object.entries(TRANSLATED_NAMES)) {
+    const name = args[arg];
+
+    if (typeof name !== 'string') {
+      continue;
+    }
+
+    const text = t(
+      `errors.${type}.${group}.${name}` as Parameters<TFunction>[0],
+    );
+
+    if (typeof text === 'string') {
+      translated[arg] = text;
+    }
+  }
+
+  return translated;
 };
 
 /** The arguments of an error: its own payload, or that of its reason when the cause is the reason's. */
@@ -257,7 +285,7 @@ export const getTranslatedError = (
       `errors.${key}`,
       withFormattedArgs(
         key,
-        withTranslatedReason(key, withTranslatedField(key, args, t), t),
+        withTranslatedReason(key, withTranslatedNames(key, args, t), t),
       ),
     ) ?? key;
   const causeText = getCauseText(getCause(error), t);
@@ -267,7 +295,8 @@ export const getTranslatedError = (
 
 /**
  * The raw text of a failure nobody could categorize, looked up in the error and in the
- * errors nested in it. Only `ErrorDetails` may show it.
+ * errors nested in it (a whole error, or one of a feature such as a manifest error).
+ * Only `ErrorDetails` may show it.
  */
 export const getErrorDetails = (error: unknown): string | undefined => {
   if (!isLauncherError(error)) {
@@ -287,7 +316,7 @@ export const getErrorDetails = (error: unknown): string | undefined => {
     return getUnknownDetails(cause);
   }
 
-  return getErrorDetails(inner.error);
+  return getErrorDetails(inner.error) ?? getReasonDetails(inner.error);
 };
 
 /** Values the core sends as raw numbers, turned into text in the language of the interface. */

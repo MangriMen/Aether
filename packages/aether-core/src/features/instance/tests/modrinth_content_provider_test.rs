@@ -879,7 +879,7 @@ async fn should_refuse_a_version_when_it_belongs_to_another_project() {
     assert!(matches!(
         result,
         Err(InstanceError::ContentProviderError {
-            reason: ContentProviderRejection::VersionOfAnotherProject { .. }
+            reason: ContentProviderRejection::VersionOfAnotherContent { .. }
         })
     ));
 }
@@ -1100,7 +1100,9 @@ async fn should_fail_the_authors_when_a_team_member_is_malformed() {
 
     assert!(matches!(
         result,
-        Err(InstanceError::ContentDownloadError(_))
+        Err(InstanceError::ContentProviderError {
+            reason: ContentProviderRejection::Request(_)
+        })
     ));
 }
 
@@ -1123,7 +1125,9 @@ async fn should_fail_the_authors_when_an_organization_is_malformed() {
 
     assert!(matches!(
         result,
-        Err(InstanceError::ContentDownloadError(_))
+        Err(InstanceError::ContentProviderError {
+            reason: ContentProviderRejection::Request(_)
+        })
     ));
 }
 
@@ -1178,7 +1182,9 @@ async fn should_fail_when_a_batch_cannot_be_fetched() {
 
     assert!(matches!(
         result,
-        Err(InstanceError::ContentDownloadError(_))
+        Err(InstanceError::ContentProviderError {
+            reason: ContentProviderRejection::Request(_)
+        })
     ));
 }
 
@@ -1324,7 +1330,9 @@ async fn should_describe_the_projects_when_their_owners_cannot_be_fetched() {
     assert_eq!(metadata[0].name, "SODIUM");
     assert!(matches!(
         authors,
-        Err(InstanceError::ContentDownloadError(_))
+        Err(InstanceError::ContentProviderError {
+            reason: ContentProviderRejection::Request(_)
+        })
     ));
 }
 
@@ -1433,7 +1441,9 @@ async fn should_fail_when_a_batch_of_versions_cannot_be_fetched() {
     assert!(empty.is_empty());
     assert!(matches!(
         result,
-        Err(InstanceError::ContentDownloadError(_))
+        Err(InstanceError::ContentProviderError {
+            reason: ContentProviderRejection::Request(_)
+        })
     ));
 }
 

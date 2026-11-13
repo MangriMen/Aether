@@ -5,7 +5,7 @@ use uuid::Uuid;
 use crate::{
     features::{
         auth::Credential,
-        minecraft::{MinecraftDomainError, parse_arguments, vanilla},
+        minecraft::{GamePathKind, MinecraftDomainError, parse_arguments, vanilla},
         settings::WindowSize,
     },
     shared::io::infra::canonicalize,
@@ -50,12 +50,12 @@ pub(super) fn get_minecraft_arguments(
     }
 }
 
-fn canonical_dir(path: &Path, entity_type: &str) -> Result<String, MinecraftDomainError> {
+fn canonical_dir(path: &Path, entity_type: GamePathKind) -> Result<String, MinecraftDomainError> {
     canonicalize(path)
         .map(|canonical| canonical.to_string_lossy().into_owned())
         .map_err(|_| MinecraftDomainError::PathNotFound {
             path: path.to_path_buf(),
-            entity_type: entity_type.to_owned(),
+            entity_type,
         })
 }
 
@@ -72,8 +72,8 @@ fn replace_placeholders_in_argument_string(
     version_type: &vanilla::VersionType,
     resolution: WindowSize,
 ) -> Result<String, MinecraftDomainError> {
-    let game = canonical_dir(game_directory, "game")?;
-    let assets = canonical_dir(assets_directory, "assets")?;
+    let game = canonical_dir(game_directory, GamePathKind::Game)?;
+    let assets = canonical_dir(assets_directory, GamePathKind::Assets)?;
     let uuid = uuid.simple().to_string();
     let width = resolution.width().to_string();
     let height = resolution.height().to_string();
@@ -411,7 +411,7 @@ mod tests {
             let err = call(&e, args.as_deref(), legacy).unwrap_err();
             assert!(matches!(
                 err,
-                MinecraftDomainError::PathNotFound { ref entity_type, .. } if entity_type == "game"
+                MinecraftDomainError::PathNotFound { ref entity_type, .. } if *entity_type == GamePathKind::Game
             ));
         }
     }
@@ -423,7 +423,7 @@ mod tests {
         let err = call(&e, Some(&[normal("x")]), None).unwrap_err();
         assert!(matches!(
             err,
-            MinecraftDomainError::PathNotFound { ref entity_type, .. } if entity_type == "assets"
+            MinecraftDomainError::PathNotFound { ref entity_type, .. } if *entity_type == GamePathKind::Assets
         ));
     }
 

@@ -25,12 +25,9 @@ impl From<WindowError> for WindowErrorDto {
             WindowError::NotFound { label } => WindowErrorDto::NotFound {
                 label: label.into(),
             },
-            // The core text is free-form and nothing constructs this variant; the log keeps it.
-            WindowError::PlatformNotSupported(_) => WindowErrorDto::PlatformNotSupported,
+            WindowError::PlatformNotSupported => WindowErrorDto::PlatformNotSupported,
+            // Tauri's own text: not ours to categorize.
             WindowError::Tauri(err) => WindowErrorDto::Other {
-                cause: CauseDto::unknown(err),
-            },
-            WindowError::Other(err) => WindowErrorDto::Other {
                 cause: CauseDto::unknown(err),
             },
         }
@@ -57,18 +54,18 @@ mod tests {
     use serde_json::json;
 
     #[test]
-    fn should_serialize_other_with_an_unknown_cause() {
-        let dto = WindowErrorDto::from(WindowError::Other("boom".to_owned()));
+    fn should_serialize_a_tauri_error_as_other_with_an_unknown_cause() {
+        let dto = WindowErrorDto::from(WindowError::Tauri(tauri::Error::WebviewNotFound));
 
         assert_eq!(
             serde_json::to_value(&dto).unwrap(),
-            json!({"code": "OTHER", "payload": {"cause": {"type": "unknown", "details": "boom"}}})
+            json!({"code": "OTHER", "payload": {"cause": {"type": "unknown", "details": tauri::Error::WebviewNotFound.to_string()}}})
         );
     }
 
     #[test]
     fn should_serialize_platform_not_supported_without_payload() {
-        let dto = WindowErrorDto::from(WindowError::PlatformNotSupported("x".to_owned()));
+        let dto = WindowErrorDto::from(WindowError::PlatformNotSupported);
 
         assert_eq!(
             serde_json::to_value(&dto).unwrap(),

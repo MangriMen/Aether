@@ -23,10 +23,10 @@ use crate::{
             CONTENT_AUTHOR_TTL, CONTENT_METADATA_TTL, CONTENT_VERSION_METADATA_TTL,
             CachedContentAuthor, CachedContentIcon, CachedContentMetadata,
             CachedContentVersionMetadata, CapabilityMetadata, ContentAuthor,
-            ContentCompatibilityCheckParams, ContentCompatibilityResult, ContentDownloadFailure,
-            ContentFileUpdateInfo, ContentFileView, ContentIconCache, ContentIconError,
-            ContentItem, ContentMetadata, ContentMetadataCache, ContentMetadataService,
-            ContentProvider, ContentProviderCapabilityMetadata, ContentSearchParams,
+            ContentCompatibilityCheckParams, ContentCompatibilityResult, ContentFileUpdateInfo,
+            ContentFileView, ContentIconCache, ContentIconError, ContentItem, ContentMetadata,
+            ContentMetadataCache, ContentMetadataService, ContentProvider,
+            ContentProviderCapabilityMetadata, ContentProviderRejection, ContentSearchParams,
             ContentSearchResult, ContentVersion, ContentVersionMetadata, FileSide, Instance,
             InstanceError, InstanceId, ListContentUseCase, PackFile, PackStorage, ProviderId,
             infra::SqlitePackStorage,
@@ -345,9 +345,9 @@ impl<T: Clone> Answer<T> {
     ) -> Result<Vec<T>, InstanceError> {
         match self {
             Answer::Items(items) => Ok(items.clone()),
-            Answer::Fail => Err(InstanceError::ContentDownloadError(
-                ContentDownloadFailure::Other("offline".into()),
-            )),
+            Answer::Fail => Err(InstanceError::ContentProviderError {
+                reason: ContentProviderRejection::Request("offline".into()),
+            }),
             Answer::Unsupported => Err(provider.unsupported(operation)),
         }
     }

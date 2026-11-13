@@ -61,39 +61,39 @@ fn read_index_within(
     max_files: usize,
 ) -> Result<ModrinthIndex, InstanceError> {
     let file = std::fs::File::open(mrpack_path)
-        .map_err(|e| rejected(ContentProviderRejection::MrpackOpenFailed(e)))?;
+        .map_err(|e| rejected(ContentProviderRejection::PackUnreadable(e)))?;
 
     let mut archive = zip::ZipArchive::new(file)
-        .map_err(|e| rejected(ContentProviderRejection::MrpackInvalidArchive(e.into())))?;
+        .map_err(|e| rejected(ContentProviderRejection::PackInvalidArchive(e.into())))?;
 
     let index_file = archive
         .by_name(INDEX_PATH)
-        .map_err(|_| rejected(ContentProviderRejection::MrpackMissingIndex))?;
+        .map_err(|_| rejected(ContentProviderRejection::PackNoIndex { index: INDEX_PATH }))?;
 
     // One byte past the limit tells an index that is too large from one that fits exactly.
     let mut bytes = Vec::new();
     index_file
         .take(max_bytes + 1)
         .read_to_end(&mut bytes)
-        .map_err(|e| rejected(ContentProviderRejection::MrpackReadFailed(e)))?;
+        .map_err(|e| rejected(ContentProviderRejection::PackUnreadable(e)))?;
     if bytes.len() as u64 > max_bytes {
-        return Err(rejected(ContentProviderRejection::MrpackIndexTooLarge {
+        return Err(rejected(ContentProviderRejection::PackIndexTooLarge {
             max_bytes,
         }));
     }
 
     let index: ModrinthIndex = serde_json::from_slice(&bytes)
-        .map_err(|e| rejected(ContentProviderRejection::MrpackMalformedIndex(e)))?;
+        .map_err(|e| rejected(ContentProviderRejection::PackIndexMalformed(e.into())))?;
 
     if index.files.len() > max_files {
-        return Err(rejected(ContentProviderRejection::MrpackTooManyFiles {
+        return Err(rejected(ContentProviderRejection::TooManyFiles {
             count: index.files.len(),
             max: max_files,
         }));
     }
 
     if index.game != "minecraft" {
-        return Err(rejected(ContentProviderRejection::MrpackNotMinecraft {
+        return Err(rejected(ContentProviderRejection::PackWrongGame {
             game: index.game,
         }));
     }
@@ -141,7 +141,7 @@ pub(super) fn cdn_identity(url: &HttpsUrl) -> Option<ContentIdentity> {
 /// The file's SHA-512, the stronger of the two hashes Modrinth gives, validated.
 pub(super) fn sha512_of(hashes: &Hashes) -> Result<FileHash, InstanceError> {
     FileHash::new(HashAlgorithm::Sha512, hashes.sha512.clone())
-        .map_err(|e| rejected(ContentProviderRejection::MrpackInvalidHash(e)))
+        .map_err(|e| rejected(ContentProviderRejection::InvalidHash(e)))
 }
 
 /// Every file of the index as a plan entry — optional and server-only ones too: leaving files
@@ -174,7 +174,7 @@ fn plan_file(file: &ModrinthIndexFile) -> Result<InstallFileEntry, InstanceError
         .iter()
         .find_map(|url| allowed_download(url))
         .ok_or_else(|| {
-            rejected(ContentProviderRejection::MrpackNoAllowedDownload {
+            rejected(ContentProviderRejection::NoAllowedDownload {
                 path: file.path.clone(),
             })
         })?;
@@ -377,7 +377,7 @@ mod tests {
             matches!(
                 err,
                 InstanceError::ContentProviderError {
-                    reason: ContentProviderRejection::MrpackIndexTooLarge { .. }
+                    reason: ContentProviderRejection::PackIndexTooLarge { .. }
                 }
             ),
             "{err}"
@@ -398,7 +398,7 @@ mod tests {
             matches!(
                 err,
                 InstanceError::ContentProviderError {
-                    reason: ContentProviderRejection::MrpackTooManyFiles { count: 3, max: 2 }
+                    reason: ContentProviderRejection::TooManyFiles { count: 3, max: 2 }
                 }
             ),
             "{err}"
@@ -511,7 +511,7 @@ mod tests {
         assert!(matches!(
             result,
             Err(InstanceError::ContentProviderError {
-                reason: ContentProviderRejection::MrpackNoAllowedDownload { .. }
+                reason: ContentProviderRejection::NoAllowedDownload { .. }
             })
         ));
     }
@@ -526,7 +526,7 @@ mod tests {
         assert!(matches!(
             err,
             InstanceError::ContentProviderError {
-                reason: ContentProviderRejection::MrpackMalformedIndex(_)
+                reason: ContentProviderRejection::PackIndexMalformed(_)
             }
         ));
     }
@@ -543,7 +543,7 @@ mod tests {
         assert!(matches!(
             err,
             InstanceError::ContentProviderError {
-                reason: ContentProviderRejection::MrpackNotMinecraft { ref game }
+                reason: ContentProviderRejection::PackWrongGame { ref game }
             } if game == "hytale"
         ));
     }
@@ -559,13 +559,13 @@ mod tests {
         assert!(matches!(
             missing,
             InstanceError::ContentProviderError {
-                reason: ContentProviderRejection::MrpackOpenFailed(_)
+                reason: ContentProviderRejection::PackUnreadable(_)
             }
         ));
         assert!(matches!(
             damaged,
             InstanceError::ContentProviderError {
-                reason: ContentProviderRejection::MrpackInvalidArchive(_)
+                reason: ContentProviderRejection::PackInvalidArchive(_)
             }
         ));
     }

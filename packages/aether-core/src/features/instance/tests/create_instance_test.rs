@@ -268,7 +268,9 @@ struct FakeAssets {
 impl AssetsStorage for FakeAssets {
     async fn import_file(&self, source: &Path) -> Result<String, AssetError> {
         if !source.is_file() {
-            return Err(AssetError::ReadSource("no such file".to_owned()));
+            return Err(AssetError::ReadSource(std::io::Error::from(
+                std::io::ErrorKind::NotFound,
+            )));
         }
         let name = source.file_name().unwrap().to_string_lossy();
         Ok(format!("asset-{name}"))
