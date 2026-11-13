@@ -143,7 +143,9 @@ export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
       <ContentList
         isLoading={content.isFetching || local.isProvidersLoading}
         isError={content.isError}
-        isProvidersError={local.isProvidersError}
+        isProvidersError={
+          local.isProvidersError && local.providers.length === 0
+        }
         hasNoProviders={local.providers.length === 0}
         items={content.data?.items}
       />
