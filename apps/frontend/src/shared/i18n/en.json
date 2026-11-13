@@ -993,5 +993,9 @@
     "select": "Select",
     "selected": "Selected",
     "installationsNotFound": "Could not detect any Java installations"
+  },
+  "warnings": {
+    "title": "Warning",
+    "INSTANCE_ICON_NOT_IMPORTED": "The icon could not be imported; the instance was created without it"
   }
 }

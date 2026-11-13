@@ -17,7 +17,7 @@ use aether_core::features::instance::infra::{
     SqlitePackStorage, UniversalContentMetadataCache, mrpack_dir,
 };
 use aether_core::features::instance::{
-    ContentIconHousekeeping, ContentProvider, GetInstanceUseCase, Importer, PluginId, Updater,
+    ContentIconHousekeeping, ContentProvider, Importer, PluginId, Updater,
 };
 use aether_core::features::java::infra::{
     AzulJreProvider, FsJavaInstallationService, MemoryJavaInstallationTracker, SqliteJavaStorage,
@@ -399,10 +399,7 @@ pub async fn build_container(
 
     // ── Instance watcher ────────────────────────────────────────────
     let instance_watcher_service: Arc<dyn aether_core::features::instance::InstanceWatcherService> = {
-        let event_handler = Arc::new(InstanceEventHandler::new(
-            event_emitter.clone(),
-            Arc::new(GetInstanceUseCase::new(instance_storage.clone())),
-        ));
+        let event_handler = Arc::new(InstanceEventHandler::new(event_emitter.clone()));
         let watcher = NotifyFileWatcher::new(event_handler)
             .map_err(|e| anyhow::anyhow!("File watcher: {e}"))?;
         Arc::new(InstanceWatcherServiceImpl::new(

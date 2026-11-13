@@ -639,13 +639,18 @@ export type SettingsErrorDto = { code: "NOT_FOUND" } | { code: "STORAGE_FAILURE"
 	reason: ProviderIdReasonDto,
 } } | { code: "INVALID_MAX_CONCURRENT_DOWNLOADS" } | { code: "INVALID_MEMORY" };
 
+/**  What the user is warned of: a code the frontend translates, with its arguments. */
+export type WarningDto = { code: "INSTANCE_ICON_NOT_IMPORTED"; payload: {
+	cause: CauseDto,
+} };
+
 export type WarningEventDto = {
 	/**
 	 *  The number of the event, from one counter for all the events the backend sends: the
 	 *  frontend drops what it has seen already.
 	 */
 	seq: number,
-	message: string,
+	warning: WarningDto,
 };
 
 export type WindowErrorDto = { code: "ALREADY_EXISTS"; payload: {

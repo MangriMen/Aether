@@ -2,12 +2,18 @@ import * as i18n from '@solid-primitives/i18n';
 import { describe, expect, it } from 'vitest';
 
 import bindings from '@/platform/bindings/application.ts?raw';
+import eventBindings from '@/platform/bindings/events.ts?raw';
 import pluginBindings from '@/platform/bindings/plugin.ts?raw';
 import { enDictionary, ruDictionary } from '@/shared/i18n';
 
 import type { LauncherError } from '../launcherError';
 
-import { getErrorDetails, getTranslatedError } from '../launcherError';
+import {
+  getErrorDetails,
+  getReasonDetails,
+  getTranslatedError,
+  getTranslatedWarning,
+} from '../launcherError';
 
 /**
  * Error codes are only types in the generated bindings, so a new Rust error
@@ -603,6 +609,49 @@ describe('app settings errors', () => {
     expect(getTranslatedError(error, tEn)).toBe(
       'Unable to apply the requested effect: the platform does not support it',
     );
+  });
+});
+
+describe('warnings', () => {
+  const codes = getCodes('WarningDto', eventBindings);
+
+  it('finds the warning codes in the bindings', () => {
+    expect(codes).toContain('INSTANCE_ICON_NOT_IMPORTED');
+  });
+
+  it.each(dictionaries)(
+    'every warning code is translated in %s',
+    (_lang, dictionary) => {
+      const warnings = (
+        dictionary as unknown as { warnings?: Record<string, string> }
+      ).warnings;
+
+      expect(codes.filter((code) => !warnings?.[code])).toEqual([]);
+    },
+  );
+
+  it('should_translate_a_warning_with_the_category_of_its_cause', () => {
+    const warning = {
+      code: 'INSTANCE_ICON_NOT_IMPORTED',
+      payload: { cause: { type: 'io', kind: 'permissionDenied' } },
+    } as const;
+
+    expect(getTranslatedWarning(warning, tEn)).toBe(
+      'The icon could not be imported; the instance was created without it: access denied',
+    );
+    expect(getReasonDetails(warning)).toBeUndefined();
+  });
+
+  it('should_keep_the_raw_text_of_an_uncategorized_cause_for_the_details', () => {
+    const warning = {
+      code: 'INSTANCE_ICON_NOT_IMPORTED',
+      payload: { cause: { type: 'unknown', details: 'Icon is not an image' } },
+    } as const;
+
+    expect(getTranslatedWarning(warning, tRu)).toBe(
+      'Не удалось импортировать иконку, инстанс создан без неё',
+    );
+    expect(getReasonDetails(warning)).toBe('Icon is not an image');
   });
 });
 

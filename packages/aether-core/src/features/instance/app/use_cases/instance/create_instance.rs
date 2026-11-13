@@ -66,10 +66,10 @@ impl CreateInstanceUseCase {
         {
             Ok(asset_id) => Some(asset_id),
             Err(err) => {
-                error!("Failed to import the instance icon: {err}");
+                tracing::warn!(error = %err, "Failed to import the instance icon");
                 self.event_emitter
-                    .emit_safe(WarningEvent {
-                        message: format!("The instance icon was not imported: {err}"),
+                    .emit_safe(WarningEvent::InstanceIconNotImported {
+                        cause: Arc::new(err),
                     })
                     .await;
                 None
@@ -223,18 +223,15 @@ impl CreateInstanceUseCase {
 
         // Full rollback on any failure: unwatch, remove from storage, delete directory
         if let Err(err) = &result {
-            info!(
-                "Failed to create instance \"{}\". Rolling back",
-                instance.name()
-            );
-
-            // Called off by the user: not something to warn about.
-            if !matches!(err, InstanceError::Cancelled) {
-                self.event_emitter
-                    .emit_safe(WarningEvent {
-                        message: format!("Error creating instance {err}"),
-                    })
-                    .await;
+            // The command that created the instance reports the failure; called off by the
+            // user, it is no failure at all.
+            if matches!(err, InstanceError::Cancelled) {
+                info!(
+                    "Creation of instance \"{}\" was called off. Rolling back",
+                    instance.name()
+                );
+            } else {
+                tracing::warn!(error = %err, "Failed to create instance, rolling back");
             }
 
             if let Err(unwatch_err) = self

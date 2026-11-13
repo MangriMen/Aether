@@ -1,3 +1,4 @@
+use aether_core::shared::cache::AssetError;
 use aether_core::shared::error::DatabaseError;
 use aether_core::shared::io::{IoError, IoErrorKind};
 use aether_core::shared::request_client::RequestError;
@@ -85,6 +86,18 @@ impl From<&std::io::Error> for CauseDto {
         match IoErrorKindDto::from_kind(IoErrorKind::of(value)) {
             Some(kind) => Self::Io { kind },
             None => Self::unknown(value),
+        }
+    }
+}
+
+impl From<&AssetError> for CauseDto {
+    /// An icon refused for its size or format has no category of its own: its text is kept.
+    fn from(value: &AssetError) -> Self {
+        match value {
+            AssetError::ReadSource(err) | AssetError::Write(err) | AssetError::Remove(err) => {
+                err.into()
+            }
+            AssetError::TooLarge { .. } | AssetError::NotAnImage => Self::unknown(value),
         }
     }
 }

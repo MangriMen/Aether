@@ -993,5 +993,9 @@
     "select": "Выбрать",
     "selected": "Выбрана",
     "installationsNotFound": "Не удалось обнаружить установленные версии Java"
+  },
+  "warnings": {
+    "title": "Предупреждение",
+    "INSTANCE_ICON_NOT_IMPORTED": "Не удалось импортировать иконку, инстанс создан без неё"
   }
 }

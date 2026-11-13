@@ -1,4 +1,5 @@
 import type { FrontendError } from '@/platform/bindings/application';
+import type { WarningDto } from '@/platform/bindings/events';
 import type {
   ManifestErrorDto,
   PluginLoadFailureDto,
@@ -289,6 +290,21 @@ export const getTranslatedError = (
       ),
     ) ?? key;
   const causeText = getCauseText(getCause(error), t);
+
+  return causeText ? `${main}: ${causeText}` : main;
+};
+
+/** What the user is warned of, in their language, with the category of its cause when it has one. */
+export const getTranslatedWarning = (
+  warning: WarningDto,
+  t: TFunction,
+): string => {
+  const payload: unknown = 'payload' in warning ? warning.payload : undefined;
+  const main = t(`warnings.${warning.code}`, payload as never) ?? warning.code;
+  const causeText = getCauseText(
+    isRecord(payload) ? payload.cause : undefined,
+    t,
+  );
 
   return causeText ? `${main}: ${causeText}` : main;
 };
