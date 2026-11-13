@@ -40,6 +40,7 @@ import {
   contentVersionDtoToContentVersion,
 } from '../model/contentItemMappers';
 import { ContentType } from '../model/contentType';
+import { ModpackInstallDisabledError } from '../model/modpackInstallDisabledError';
 import { CONTENT_QUERY_KEYS } from './contentQueryKeys';
 
 export const useContentProviders = () => {
@@ -151,7 +152,7 @@ export const useInstallContent = () => {
   return useMutation(() => ({
     mutationFn: (payload: ContentInstallParamsDto) => {
       if (!ff.isAllowInstallModpacks && payload.type === 'modpack') {
-        throw new Error('Installing modpacks is prohibited');
+        throw new ModpackInstallDisabledError();
       }
 
       return instanceCommands.installContent(payload);
@@ -174,8 +175,14 @@ export const useInstallContent = () => {
       });
     },
     onError: (err) => {
-      // Called off by the user: nothing failed.
-      if (!isCancelledError(err)) {
+      if (err instanceof ModpackInstallDisabledError) {
+        showToast({
+          title: t('content.failedToInstall'),
+          description: t('content.modpackInstallDisabled'),
+          variant: 'destructive',
+        });
+      } else if (!isCancelledError(err)) {
+        // Not called off by the user: report it.
         showError({
           title: t('content.failedToInstall'),
           err,

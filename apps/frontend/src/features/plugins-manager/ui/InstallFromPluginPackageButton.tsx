@@ -18,8 +18,10 @@ export const InstallFromPluginPackageButton: Component<
 
   const handleSelectPackage = async () => {
     const path = await open({
-      title: 'Import plugin',
-      filters: [{ name: 'Plugin package', extensions: ['zip'] }],
+      title: t('plugins.importTitle'),
+      filters: [
+        { name: t('plugins.packageFilter') ?? '', extensions: ['zip'] },
+      ],
       multiple: true,
     });
 

@@ -8,6 +8,7 @@ import {
 } from 'solid-js';
 
 import { ErrorDetails } from '@/features/errors';
+import { useTranslation } from '@/shared/i18n';
 import { cn } from '@/shared/utils';
 
 export type AppInitializeErrorProps = ComponentProps<'div'> & {
@@ -18,6 +19,7 @@ export type AppInitializeErrorProps = ComponentProps<'div'> & {
 export const AppInitializeError: Component<AppInitializeErrorProps> = (
   props,
 ) => {
+  const [{ t }] = useTranslation();
   const [local, others] = splitProps(props, ['error', 'details', 'class']);
 
   const [errorHasBeenCopied, setErrorHasBeenCopied] = createSignal(false);
@@ -56,14 +58,13 @@ export const AppInitializeError: Component<AppInitializeErrorProps> = (
     >
       <div class='gap-2 flex flex-col items-center justify-center'>
         <h1 class='text-4xl font-bold text-destructive'>
-          Initialization Error
+          {t('appInit.title')}
         </h1>
 
         <div class='gap-0.5 flex flex-col items-center'>
-          <p class='text-xl'>The app encountered a problem during startup.</p>
+          <p class='text-xl'>{t('appInit.description')}</p>
           <p class='text-lg text-muted-foreground'>
-            Try restarting the app. If the issue persists, please <br />
-            reinstall it or <b>send the log files to the developer</b>.
+            {t('appInit.hint')} <b>{t('appInit.hintEmphasis')}</b>.
           </p>
         </div>
       </div>
@@ -92,8 +93,11 @@ export const AppInitializeError: Component<AppInitializeErrorProps> = (
               )}
               onClick={handleCopyError}
             >
-              <Show when={errorHasBeenCopied()} fallback='Copy error'>
-                Copied!
+              <Show
+                when={errorHasBeenCopied()}
+                fallback={t('appInit.copyError')}
+              >
+                {t('appInit.copied')}
               </Show>
             </button>
             <p
