@@ -393,6 +393,8 @@ async fn should_call_the_resolve_file_handler_the_file_names_when_resolving_a_fi
     assert_eq!(resolved.name.as_deref(), Some("JEI 15.2.0"));
 }
 
+/// The query of a refused URL can hold a token: the error keeps the URL whole only for the
+/// log, and the DTO drops the query.
 #[tokio::test]
 async fn should_refuse_a_resolved_file_when_its_url_is_not_https() {
     let fixture = Fixture::new(
@@ -401,7 +403,7 @@ async fn should_refuse_a_resolved_file_when_its_url_is_not_https() {
             "cf_resolve_file",
             encode(ResolvedFileDto {
                 version: "4512345".into(),
-                url: "http://edge.forgecdn.net/files/4512/345/jei.jar".into(),
+                url: "http://edge.forgecdn.net/files/4512/345/jei.jar?token=SECRET".into(),
                 hash: None,
                 file_name: "jei.jar".into(),
                 size: None,
@@ -425,8 +427,8 @@ async fn should_refuse_a_resolved_file_when_its_url_is_not_https() {
         matches!(
             &err,
             InstanceError::ContentProviderError {
-                reason: ContentProviderRejection::InvalidAnswer { source, .. }
-            } if source.to_string().contains("https")
+                reason: ContentProviderRejection::ResponseInvalidUrl(url)
+            } if url.value.starts_with("http://edge.forgecdn.net/")
         ),
         "{err}"
     );

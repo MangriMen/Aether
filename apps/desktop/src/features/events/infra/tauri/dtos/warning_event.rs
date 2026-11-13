@@ -3,6 +3,8 @@ use serde::Serialize;
 use specta::Type;
 use tauri_specta::Event;
 
+use aether_core::shared::cache::AssetError;
+
 use crate::core::CauseDto;
 
 #[derive(Debug, Serialize, Clone, Type, Event)]
@@ -16,8 +18,17 @@ pub struct WarningEventDto {
 /// What the user is warned of: a code the frontend translates, with its arguments.
 #[derive(Debug, Serialize, Clone, Type)]
 #[serde(tag = "code", content = "payload", rename_all = "SCREAMING_SNAKE_CASE")]
+// The codes are the translation keys; the warnings of other kinds will not share the prefix.
+#[allow(clippy::enum_variant_names)]
 pub enum WarningDto {
-    InstanceIconNotImported { cause: CauseDto },
+    InstanceIconNotImported {
+        cause: CauseDto,
+    },
+    InstanceIconTooLarge {
+        // Formatted before it crosses the boundary: no `u64` in bindings.
+        limit: String,
+    },
+    InstanceIconNotSupported,
 }
 
 impl From<WarningEvent> for WarningEventDto {
@@ -32,8 +43,14 @@ impl From<WarningEvent> for WarningEventDto {
 impl From<WarningEvent> for WarningDto {
     fn from(value: WarningEvent) -> Self {
         match value {
-            WarningEvent::InstanceIconNotImported { cause } => Self::InstanceIconNotImported {
-                cause: cause.as_ref().into(),
+            WarningEvent::InstanceIconNotImported { cause } => match cause.as_ref() {
+                AssetError::TooLarge { limit } => Self::InstanceIconTooLarge {
+                    limit: limit.to_string(),
+                },
+                AssetError::NotAnImage => Self::InstanceIconNotSupported,
+                AssetError::ReadSource(err) | AssetError::Write(err) | AssetError::Remove(err) => {
+                    Self::InstanceIconNotImported { cause: err.into() }
+                }
             },
         }
     }
@@ -43,7 +60,6 @@ impl From<WarningEvent> for WarningDto {
 mod tests {
     use std::sync::Arc;
 
-    use aether_core::shared::cache::AssetError;
     use serde_json::json;
 
     use super::*;
@@ -70,14 +86,21 @@ mod tests {
     }
 
     #[test]
-    fn should_keep_the_text_of_an_icon_refusal_without_a_category_as_unknown() {
-        let event = WarningEvent::InstanceIconNotImported {
+    fn should_name_why_the_icon_was_refused_by_a_code_of_its_own() {
+        let too_large = WarningEvent::InstanceIconNotImported {
+            cause: Arc::new(AssetError::TooLarge { limit: 4096 }),
+        };
+        let not_an_image = WarningEvent::InstanceIconNotImported {
             cause: Arc::new(AssetError::NotAnImage),
         };
 
         assert_eq!(
-            to_json(event)["warning"]["payload"]["cause"]["type"],
-            "unknown"
+            to_json(too_large)["warning"],
+            json!({"code": "INSTANCE_ICON_TOO_LARGE", "payload": {"limit": "4096"}})
+        );
+        assert_eq!(
+            to_json(not_an_image)["warning"],
+            json!({"code": "INSTANCE_ICON_NOT_SUPPORTED"})
         );
     }
 }

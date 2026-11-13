@@ -1,4 +1,3 @@
-use aether_core::shared::cache::AssetError;
 use std::sync::Arc;
 
 use aether_core::shared::error::{AnyhowSource, DatabaseError};
@@ -121,18 +120,6 @@ impl From<&Arc<reqwest::Error>> for CauseDto {
 impl From<&Arc<serde_json::Error>> for CauseDto {
     fn from(value: &Arc<serde_json::Error>) -> Self {
         value.as_ref().into()
-    }
-}
-
-impl From<&AssetError> for CauseDto {
-    /// An icon refused for its size or format has no category of its own: its text is kept.
-    fn from(value: &AssetError) -> Self {
-        match value {
-            AssetError::ReadSource(err) | AssetError::Write(err) | AssetError::Remove(err) => {
-                err.into()
-            }
-            AssetError::TooLarge { .. } | AssetError::NotAnImage => Self::unknown(value),
-        }
     }
 }
 

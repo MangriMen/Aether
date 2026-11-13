@@ -258,6 +258,7 @@
         "GAME": "game folder",
         "ASSETS": "assets folder",
         "LIBRARY": "library",
+        "LIBRARIES_DIR": "libraries folder",
         "NATIVE_LIBRARY": "native libraries folder",
         "LOG_CONFIG": "game log config",
         "CLASSPATH": "game client file"
@@ -1003,6 +1004,8 @@
   },
   "warnings": {
     "title": "Warning",
-    "INSTANCE_ICON_NOT_IMPORTED": "The icon could not be imported; the instance was created without it"
+    "INSTANCE_ICON_NOT_IMPORTED": "The icon could not be imported; the instance was created without it",
+    "INSTANCE_ICON_TOO_LARGE": "The icon is too large (limit {{limit}} bytes); the instance was created without it",
+    "INSTANCE_ICON_NOT_SUPPORTED": "The icon is not a PNG, JPEG, GIF, WebP or SVG image; the instance was created without it"
   }
 }

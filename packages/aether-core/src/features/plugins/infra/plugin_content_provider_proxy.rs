@@ -34,6 +34,7 @@ use crate::features::{
 };
 
 use crate::features::plugins::infra::extism::models::PluginInstanceExt;
+use crate::features::plugins::infra::extism::{InvalidPlanFile, InvalidResolvedFile};
 use crate::features::plugins::infra::pack_instances::deploying_packs;
 use crate::features::plugins::infra::plugin_utils::{
     MountSet, host_path_to_plugin, parse_plugin_path, resolve_plugin_path,
@@ -95,6 +96,20 @@ impl PluginContentProviderProxy {
             handler_name,
             source
         );
+
+        // A refused URL is told as such: its text would carry the query, tokens included, to
+        // the user, where the URL is shown without it.
+        let invalid_url = source
+            .downcast_ref::<InvalidPlanFile>()
+            .and_then(InvalidPlanFile::invalid_url)
+            .or_else(|| {
+                source
+                    .downcast_ref::<InvalidResolvedFile>()
+                    .and_then(InvalidResolvedFile::invalid_url)
+            });
+        if let Some(url) = invalid_url {
+            return ContentProviderRejection::ResponseInvalidUrl(url.clone()).into();
+        }
 
         ContentProviderRejection::InvalidAnswer {
             handler: handler_name.to_owned(),

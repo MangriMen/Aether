@@ -8,6 +8,7 @@ import {
   ErrorDetails,
   getErrorDetails,
   getTranslatedError,
+  isInternalError,
 } from '@/features/errors';
 import { useTranslation } from '@/shared/i18n';
 import {
@@ -71,22 +72,45 @@ const ProgressNode: Component<ProgressNodeProps> = (props) => {
       ? props.index().othersWaitingOn(props.payload.progressBarId)
       : 0,
   );
+  // The raw text of the bar's own failure; an INTERNAL one has nothing else to tell, so it
+  // is shown open.
+  const ownFailure = createMemo(() => {
+    const { status } = props.payload;
+    const details =
+      status.type === 'failed' ? getErrorDetails(status.error) : undefined;
+
+    return status.type === 'failed' && details
+      ? { details, isOpen: isInternalError(status.error) }
+      : undefined;
+  });
   const failure = createMemo(() => {
     const status = findFailedDescendant(
       props.index(),
       props.payload.progressBarId,
     )?.status;
-    return status?.type === 'failed'
-      ? {
-          text: getTranslatedError(status.error, t),
-          details: getErrorDetails(status.error),
-        }
-      : undefined;
+
+    if (status?.type !== 'failed') {
+      return undefined;
+    }
+
+    const details = getErrorDetails(status.error);
+
+    return {
+      text: getTranslatedError(status.error, t),
+      // The bar's own failure shows the same text already.
+      details: details === ownFailure()?.details ? undefined : details,
+      isOpen: isInternalError(status.error),
+    };
   });
 
   const card = () => (
     <div class='min-w-0 gap-1 flex flex-1 flex-col'>
       <ProgressCard payload={props.payload} size={props.size} />
+      <Show when={ownFailure()}>
+        {(own) => (
+          <ErrorDetails details={own().details} defaultOpen={own().isOpen} />
+        )}
+      </Show>
       <Show when={mirrors() > 0}>
         <span class='text-sm text-muted-foreground'>
           {t('events.neededFor', { count: mirrors() })}
@@ -131,7 +155,12 @@ const ProgressNode: Component<ProgressNodeProps> = (props) => {
                 {failed().text}
               </span>
               <Show when={failed().details}>
-                {(details) => <ErrorDetails details={details()} />}
+                {(details) => (
+                  <ErrorDetails
+                    details={details()}
+                    defaultOpen={failed().isOpen}
+                  />
+                )}
               </Show>
             </div>
           )}

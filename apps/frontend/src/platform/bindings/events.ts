@@ -196,7 +196,7 @@ export type GameLogErrorDto = { code: "INVALID_SOURCE"; payload: {
 } };
 
 /**  What a path the launch needs is the path of. */
-export type GamePathKindDto = "GAME" | "ASSETS" | "LIBRARY" | "NATIVE_LIBRARY" | "LOG_CONFIG" | "CLASSPATH";
+export type GamePathKindDto = "GAME" | "ASSETS" | "LIBRARY" | "LIBRARIES_DIR" | "NATIVE_LIBRARY" | "LOG_CONFIG" | "CLASSPATH";
 
 /**  Why a text is not a Minecraft version. */
 export type GameVersionReasonDto = { code: "EMPTY" } | { code: "TOO_LONG" } | { code: "SURROUNDING_WHITESPACE" } | { code: "CONTROL_CHARACTER" } | { code: "FORBIDDEN_CHARACTER"; payload: {
@@ -655,7 +655,9 @@ export type UpdateErrorDto = { code: "NO_PENDING_UPDATE" } | { code: "NETWORK"; 
 /**  What the user is warned of: a code the frontend translates, with its arguments. */
 export type WarningDto = { code: "INSTANCE_ICON_NOT_IMPORTED"; payload: {
 	cause: CauseDto,
-} };
+} } | { code: "INSTANCE_ICON_TOO_LARGE"; payload: {
+	limit: string,
+} } | { code: "INSTANCE_ICON_NOT_SUPPORTED" };
 
 export type WarningEventDto = {
 	/**

@@ -4,9 +4,10 @@ import { createMemo, Show } from 'solid-js';
 
 import type { SettingsEntryProps } from '@/shared/settings-layout';
 
+import { showError } from '@/features/errors';
 import { useTranslation } from '@/shared/i18n';
 import { SettingsEntry } from '@/shared/settings-layout';
-import { Button, showToast } from '@/shared/ui-kit';
+import { Button } from '@/shared/ui-kit';
 
 import { useCheckUpdate } from '../api/updateQueries';
 import { useUpdate } from '../lib/useUpdate';
@@ -29,10 +30,7 @@ export const UpdateAppEntry: Component<UpdateAppEntryProps> = (props) => {
     const result = await update.refetch();
 
     if (result.isError) {
-      showToast({
-        title: t('update.fetchError'),
-        variant: 'destructive',
-      });
+      showError({ title: t('update.fetchError'), err: result.error, t });
     }
   };
 

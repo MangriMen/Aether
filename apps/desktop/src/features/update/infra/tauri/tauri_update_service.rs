@@ -118,10 +118,12 @@ impl<R: tauri::Runtime> UpdateService for TauriUpdateService<R> {
                 .emit_safe(UpdateProgress {
                     fraction: None,
                     phase: UpdatePhase::Error(error.clone()),
-                    version: update.version,
-                    current_version: update.current_version,
+                    version: update.version.clone(),
+                    current_version: update.current_version.clone(),
                 })
                 .await;
+            // The install can be tried again without checking for the update first.
+            put_back(&mut *self.pending_update.lock().await, update);
 
             return Err(error);
         }
@@ -167,9 +169,18 @@ fn categorize(
     }
 }
 
-/// An error of looking for an update, or of getting the updater at all.
+/// Puts an update whose install failed back as the pending one, unless a check since found
+/// another.
+fn put_back<T>(pending: &mut Option<T>, update: T) {
+    if pending.is_none() {
+        *pending = Some(update);
+    }
+}
+
+/// An error of looking for an update, or of getting the updater at all. A check downloads no
+/// update: whatever failed, network included, the check did, and its cause tells why.
 fn check_error(err: tauri_plugin_updater::Error) -> UpdateError {
-    categorize(err, UpdateError::Other)
+    UpdateError::Other(source_of(err))
 }
 
 /// An error of downloading and installing an update.
@@ -226,11 +237,33 @@ mod tests {
     }
 
     #[test]
-    fn should_report_a_failed_check_that_is_not_the_network_as_other() {
+    fn should_report_any_failed_check_as_a_failed_check() {
         assert!(matches!(
             check_error(tauri_plugin_updater::Error::ReleaseNotFound),
             UpdateError::Other(_)
         ));
+        assert!(matches!(
+            check_error(tauri_plugin_updater::Error::Network("reset".to_owned())),
+            UpdateError::Other(_)
+        ));
+    }
+
+    #[test]
+    fn should_keep_the_update_pending_when_its_install_fails() {
+        let mut pending = None;
+
+        put_back(&mut pending, "2.0.0");
+
+        assert_eq!(pending, Some("2.0.0"));
+    }
+
+    #[test]
+    fn should_keep_an_update_found_since_when_an_older_install_fails() {
+        let mut pending = Some("2.1.0");
+
+        put_back(&mut pending, "2.0.0");
+
+        assert_eq!(pending, Some("2.1.0"));
     }
 
     #[test]

@@ -11,3 +11,6 @@ mod mod_loader;
 mod new_instance;
 mod pack_info;
 mod resolve;
+
+pub(crate) use install_plan::InvalidPlanFile;
+pub(crate) use resolve::InvalidResolvedFile;

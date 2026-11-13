@@ -9,6 +9,8 @@ pub enum GamePathKind {
     Game,
     Assets,
     Library,
+    /// The folder the libraries are in.
+    LibrariesDir,
     NativeLibrary,
     LogConfig,
     /// The client jar, put on the classpath.
@@ -21,6 +23,7 @@ impl GamePathKind {
             Self::Game => "game",
             Self::Assets => "assets",
             Self::Library => "library",
+            Self::LibrariesDir => "libraries_dir",
             Self::NativeLibrary => "native_library",
             Self::LogConfig => "log_config",
             Self::Classpath => "classpath",

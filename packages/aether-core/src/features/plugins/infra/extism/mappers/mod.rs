@@ -14,4 +14,5 @@ mod result;
 mod settings;
 
 pub(crate) use command::*;
+pub(crate) use instance::{InvalidPlanFile, InvalidResolvedFile};
 pub(crate) use result::*;

@@ -115,7 +115,7 @@ fn parse_jvm_argument(
     java_arch: &str,
 ) -> Result<String, MinecraftDomainError> {
     let natives = canonical_string(natives_path, GamePathKind::NativeLibrary)?;
-    let libraries = canonical_string(libraries_path, GamePathKind::Library)?;
+    let libraries = canonical_string(libraries_path, GamePathKind::LibrariesDir)?;
 
     let placeholders = [
         ("${natives_directory}", natives.as_str()),
@@ -751,7 +751,7 @@ mod tests {
         .unwrap_err();
         assert!(matches!(
             err,
-            MinecraftDomainError::PathNotFound { ref entity_type, .. } if *entity_type == GamePathKind::Library
+            MinecraftDomainError::PathNotFound { ref entity_type, .. } if *entity_type == GamePathKind::LibrariesDir
         ));
     }
 
