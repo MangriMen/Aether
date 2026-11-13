@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO pack_files (instance_id, content_path, file_name, name, hash, installed_by_provider_id, installed_by_content_id) VALUES ('inst', 'mods/a.jar', 'a.jar', 'Sodium', 'garbage', 'plugin#cap', 'pack')",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "481fc446ed049fcd3be28b11af5b2d6c153d67ef339c29b052191a9ca81af97c"
+}

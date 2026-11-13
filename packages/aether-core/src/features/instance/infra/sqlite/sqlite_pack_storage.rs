@@ -691,9 +691,7 @@ mod tests {
             .update_pack_file(&id, &cp("mods/a.jar"), &file)
             .await
             .unwrap();
-        sqlx::query(
-            "INSERT INTO pack_file_updates (instance_id, content_path, provider_id, content_id, version_id) VALUES ('inst', 'mods/a.jar', 'malformed', 'c2', 'v2')",
-        )
+        sqlx::query!("INSERT INTO pack_file_updates (instance_id, content_path, provider_id, content_id, version_id) VALUES ('inst', 'mods/a.jar', 'malformed', 'c2', 'v2')")
         .execute(&storage.pool)
         .await
         .unwrap();
@@ -750,10 +748,7 @@ mod tests {
             .await
             .unwrap();
         for bad in ["../x.jar", ".metadata/instance.json", "mods//b.jar"] {
-            sqlx::query(
-                "INSERT INTO pack_files (instance_id, content_path, file_name, hash) VALUES ('inst', ?, 'x.jar', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')",
-            )
-            .bind(bad)
+            sqlx::query!("INSERT INTO pack_files (instance_id, content_path, file_name, hash) VALUES ('inst', ?, 'x.jar', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')", bad)
             .execute(&storage.pool)
             .await
             .unwrap();
@@ -788,13 +783,11 @@ mod tests {
             .await
             .unwrap();
         for bad in [".metadata/old.jar", "../old.jar"] {
-            sqlx::query("INSERT INTO pack_files (instance_id, content_path, file_name, hash) VALUES ('inst', ?, 'old.jar', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')")
-                .bind(bad)
+            sqlx::query!("INSERT INTO pack_files (instance_id, content_path, file_name, hash) VALUES ('inst', ?, 'old.jar', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')", bad)
                 .execute(&storage.pool)
                 .await
                 .unwrap();
-            sqlx::query("INSERT INTO pack_file_updates (instance_id, content_path, provider_id, content_id, version_id) VALUES ('inst', ?, 'plugin#cap', 'c1', 'v0')")
-                .bind(bad)
+            sqlx::query!("INSERT INTO pack_file_updates (instance_id, content_path, provider_id, content_id, version_id) VALUES ('inst', ?, 'plugin#cap', 'c1', 'v0')", bad)
                 .execute(&storage.pool)
                 .await
                 .unwrap();
@@ -812,7 +805,7 @@ mod tests {
     async fn should_drop_a_stored_path_that_changes_when_normalized() {
         let storage = SqlitePackStorage::in_memory().await;
         let id = InstanceId::try_from("inst").unwrap();
-        sqlx::query(r"INSERT INTO pack_files (instance_id, content_path, file_name, hash) VALUES ('inst', 'mods\a.jar', 'a.jar', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')")
+        sqlx::query!(r"INSERT INTO pack_files (instance_id, content_path, file_name, hash) VALUES ('inst', 'mods\a.jar', 'a.jar', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')")
             .execute(&storage.pool)
             .await
             .unwrap();
@@ -826,11 +819,11 @@ mod tests {
         let storage = SqlitePackStorage::in_memory().await;
         let id = InstanceId::try_from("inst").unwrap();
         let path = ContentPath::parse("mods/a.jar").unwrap();
-        sqlx::query("INSERT INTO pack_files (instance_id, content_path, file_name, name, side, hash) VALUES ('inst', 'mods/a.jar', 'a.jar', 'Sodium', 'client', 'bad')")
+        sqlx::query!("INSERT INTO pack_files (instance_id, content_path, file_name, name, side, hash) VALUES ('inst', 'mods/a.jar', 'a.jar', 'Sodium', 'client', 'bad')")
             .execute(&storage.pool)
             .await
             .unwrap();
-        sqlx::query("INSERT INTO pack_file_updates (instance_id, content_path, provider_id, content_id, version_id) VALUES ('inst', 'mods/a.jar', 'malformed', 'c2', 'v2')")
+        sqlx::query!("INSERT INTO pack_file_updates (instance_id, content_path, provider_id, content_id, version_id) VALUES ('inst', 'mods/a.jar', 'malformed', 'c2', 'v2')")
             .execute(&storage.pool)
             .await
             .unwrap();
@@ -844,9 +837,7 @@ mod tests {
         assert_eq!(rehashed.hash, sha1_hash('c'));
         assert_eq!(rehashed.name.as_deref(), Some("Sodium"));
         assert_eq!(rehashed.side, Some(FileSide::Client));
-        let kept: i64 = sqlx::query_scalar(
-            "SELECT COUNT(*) FROM pack_file_updates WHERE content_path = 'mods/a.jar' AND provider_id = 'malformed'",
-        )
+        let kept = sqlx::query_scalar!("SELECT COUNT(*) FROM pack_file_updates WHERE content_path = 'mods/a.jar' AND provider_id = 'malformed'")
         .fetch_one(&storage.pool)
         .await
         .unwrap();
@@ -930,11 +921,11 @@ mod tests {
         let storage = SqlitePackStorage::in_memory().await;
         let id = InstanceId::try_from("inst").unwrap();
         let path = cp("mods/a.jar");
-        sqlx::query("INSERT INTO packs (instance_id) VALUES ('inst')")
+        sqlx::query!("INSERT INTO packs (instance_id) VALUES ('inst')")
             .execute(&storage.pool)
             .await
             .unwrap();
-        sqlx::query("INSERT INTO pack_files (instance_id, content_path, file_name, name, hash, installed_by_provider_id, installed_by_content_id) VALUES ('inst', 'mods/a.jar', 'a.jar', 'Sodium', 'garbage', 'plugin#cap', 'pack')")
+        sqlx::query!("INSERT INTO pack_files (instance_id, content_path, file_name, name, hash, installed_by_provider_id, installed_by_content_id) VALUES ('inst', 'mods/a.jar', 'a.jar', 'Sodium', 'garbage', 'plugin#cap', 'pack')")
             .execute(&storage.pool)
             .await
             .unwrap();
