@@ -92,7 +92,7 @@ export const SelectWindowEffect = () => {
       value={currentOption()}
       options={translatedOptions()}
       onChange={handleSetWindowEffect}
-      {...useSettingsEntryLabel()}
+      triggerProps={useSettingsEntryLabel()}
     />
   );
 };

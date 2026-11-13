@@ -81,10 +81,9 @@ export const SelectNotificationStyle: Component<
           {t(`update.${props.item.textValue as UpdateNotificationStyle}`)}
         </SelectItem>
       )}
-      {...useSettingsEntryLabel()}
       {...others}
     >
-      <SelectTrigger>
+      <SelectTrigger {...useSettingsEntryLabel()}>
         <SelectValue<UpdateNotificationStyleOption>>
           {(state) => t(`update.${state.selectedOption().name}`)}
         </SelectValue>

@@ -103,7 +103,6 @@ export const PlatformProviderEntry: Component<PlatformProviderEntryProps> = (
         options={options()}
         value={current()}
         onChange={handleChange}
-        {...useSettingsEntryLabel()}
         optionValue='value'
         optionTextValue='name'
         disallowEmptySelection
@@ -114,7 +113,7 @@ export const PlatformProviderEntry: Component<PlatformProviderEntryProps> = (
           </SelectItem>
         )}
       >
-        <SelectTrigger>
+        <SelectTrigger {...useSettingsEntryLabel()}>
           <SelectValue<Option<string>>>
             {(state) => state.selectedOption()?.name}
           </SelectValue>

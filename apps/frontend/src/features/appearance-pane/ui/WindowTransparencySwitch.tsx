@@ -58,10 +58,9 @@ export const WindowTransparencySwitch = (
       <Switch
         checked={appSettings.data?.transparent ?? false}
         onChange={handleSetTransparency}
-        {...useSettingsEntryLabel()}
         {...props}
       >
-        <SwitchControl>
+        <SwitchControl {...useSettingsEntryLabel()}>
           <SwitchThumb />
         </SwitchControl>
       </Switch>

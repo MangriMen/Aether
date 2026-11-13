@@ -38,13 +38,8 @@ const BooleanFlagSwitch: Component<BooleanFlagSwitchProps> = (props) => {
   };
 
   return (
-    <Switch
-      checked={value()}
-      onChange={handleChange}
-      {...labelProps}
-      {...others}
-    >
-      <SwitchControl>
+    <Switch checked={value()} onChange={handleChange} {...others}>
+      <SwitchControl {...labelProps}>
         <SwitchThumb />
       </SwitchControl>
     </Switch>

@@ -80,7 +80,6 @@ export const SelectActionOnInstanceLaunchEntry: Component<
         optionTextValue='name'
         value={currentOption()}
         onChange={handleChangeActionOnInstanceLaunch}
-        {...useSettingsEntryLabel()}
         itemComponent={(props) => (
           <SelectItem item={props.item}>
             {t(
@@ -89,7 +88,7 @@ export const SelectActionOnInstanceLaunchEntry: Component<
           </SelectItem>
         )}
       >
-        <SelectTrigger>
+        <SelectTrigger {...useSettingsEntryLabel()}>
           <SelectValue<ActionOnInstanceLaunchOption>>
             {(state) => t(`settings.${state.selectedOption().name}`)}
           </SelectValue>

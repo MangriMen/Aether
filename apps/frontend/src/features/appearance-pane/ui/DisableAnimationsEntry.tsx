@@ -38,9 +38,8 @@ export const DisableAnimationsEntry: Component<DisableAnimationsEntryProps> = (
       <Switch
         checked={!themeContext.disableAnimations}
         onChange={handleSetDisableAnimations}
-        {...useSettingsEntryLabel()}
       >
-        <SwitchControl>
+        <SwitchControl {...useSettingsEntryLabel()}>
           <SwitchThumb />
         </SwitchControl>
       </Switch>

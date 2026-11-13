@@ -70,10 +70,9 @@ export const SelectTheme: Component<
           <SelectItem item={props.item}>{props.item.rawValue.name}</SelectItem>
         </>
       )}
-      {...useSettingsEntryLabel()}
       {...props}
     >
-      <SelectTrigger>
+      <SelectTrigger {...useSettingsEntryLabel()}>
         <SelectValue<Option<ThemeConfig>>>
           {(state) => state.selectedOption().name}
         </SelectValue>

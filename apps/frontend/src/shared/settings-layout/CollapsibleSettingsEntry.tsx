@@ -1,6 +1,12 @@
 import type { JSX } from 'solid-js';
 
-import { createSignal, splitProps, type Component } from 'solid-js';
+import {
+  createMemo,
+  createSignal,
+  createUniqueId,
+  splitProps,
+  type Component,
+} from 'solid-js';
 
 import {
   Collapsible,
@@ -10,7 +16,11 @@ import {
 } from '@/shared/ui-kit';
 import { cn } from '@/shared/utils';
 
-import { SettingsEntry, type SettingsEntryProps } from './SettingsEntry';
+import {
+  SettingsEntry,
+  SettingsEntryTitleContext,
+  type SettingsEntryProps,
+} from './SettingsEntry';
 
 export type CollapsibleSettingsEntryProps = SettingsEntryProps & {
   collapsibleContent?: JSX.Element;
@@ -27,6 +37,9 @@ export const CollapsibleSettingsEntry: Component<
   ]);
 
   const [isOpened, setIsOpened] = createSignal(false);
+  // The trigger renders its children outside the entry's own context, so provide it here.
+  const titleId = createUniqueId();
+  const labelId = createMemo(() => (props.title ? titleId : undefined));
 
   return (
     <Collapsible
@@ -42,10 +55,13 @@ export const CollapsibleSettingsEntry: Component<
         class='p-4'
         as={SettingsEntry}
         tabIndex={-1}
+        titleId={titleId}
         {...others}
       >
         <div class='gap-1 flex items-center'>
-          {local.children}
+          <SettingsEntryTitleContext.Provider value={labelId}>
+            {local.children}
+          </SettingsEntryTitleContext.Provider>
 
           <CollapsibleIcon open={isOpened()} />
         </div>

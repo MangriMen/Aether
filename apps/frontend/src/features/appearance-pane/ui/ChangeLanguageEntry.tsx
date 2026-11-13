@@ -40,7 +40,7 @@ export const ChangeLanguageEntry: Component<ChangeLanguageEntryProps> = (
         options={LOCALE_OPTIONS}
         value={currentOption()}
         onChange={handleChangeLocale}
-        {...useSettingsEntryLabel()}
+        triggerProps={useSettingsEntryLabel()}
       />
     </SettingsEntry>
   );

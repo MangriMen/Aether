@@ -15,12 +15,14 @@ import {
 export type CombinedSliderProps<T extends ValidComponent = 'div'> =
   SliderRootProps<T> & {
     withLabel?: boolean;
+    /** Attributes of the focusable thumb, e.g. its accessible name. */
+    thumbProps?: { 'aria-labelledby'?: string; 'aria-label'?: string };
   };
 
 export const CombinedSlider = <T extends ValidComponent = 'div'>(
   props: PolymorphicProps<T, CombinedSliderProps<T>>,
 ) => {
-  const [local, others] = splitProps(props, ['withLabel']);
+  const [local, others] = splitProps(props, ['withLabel', 'thumbProps']);
 
   return (
     <Slider {...(others as PolymorphicProps<T, SliderRootProps<T>>)}>
@@ -29,7 +31,7 @@ export const CombinedSlider = <T extends ValidComponent = 'div'>(
       </Show>
       <SliderTrack>
         <SliderFill />
-        <SliderThumb />
+        <SliderThumb {...local.thumbProps} />
       </SliderTrack>
     </Slider>
   );

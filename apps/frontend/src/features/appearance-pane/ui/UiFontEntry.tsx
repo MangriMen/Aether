@@ -202,13 +202,13 @@ export const UiFontEntry: Component<UiFontEntryProps> = (props) => {
         optionLabel='label'
         value={currentOption()}
         onChange={handleChange}
-        {...useSettingsEntryLabel()}
         open={isOpen()}
         onOpenChange={setIsOpen}
         itemComponent={(itemProps) => <FontItem item={itemProps.item} />}
       >
         <ComboboxControl<FontOption>>
           <ComboboxInput
+            {...useSettingsEntryLabel()}
             maxLength={MAX_CUSTOM_FONT_FAMILY_LENGTH}
             onKeyDown={(
               e: KeyboardEvent & { currentTarget: HTMLInputElement },

@@ -64,7 +64,7 @@ export const BackgroundOpacitySlider: Component<
         maxValue={SCALE_FACTOR}
         value={[currentTransparency()]}
         onChange={handleSliderChange}
-        {...useSettingsEntryLabel()}
+        thumbProps={useSettingsEntryLabel()}
       />
       <CombinedTextField
         class='w-[8ch]'

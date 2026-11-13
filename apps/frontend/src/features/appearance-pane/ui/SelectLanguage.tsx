@@ -17,12 +17,17 @@ type SelectLanguageProps<Opt extends Option<Locale> = Option<Locale>> =
   SelectRootProps<Opt, never, 'div'> & {
     multiple?: false;
     errorMessage?: string;
+    triggerProps?: { 'aria-labelledby'?: string };
   };
 
 const SelectLanguage = <T extends Option<Locale> = Option<Locale>>(
   props: SelectLanguageProps<T>,
 ) => {
-  const [local, others] = splitProps(props, ['errorMessage', 'class']);
+  const [local, others] = splitProps(props, [
+    'errorMessage',
+    'class',
+    'triggerProps',
+  ]);
 
   return (
     <Select
@@ -35,7 +40,7 @@ const SelectLanguage = <T extends Option<Locale> = Option<Locale>>(
       )}
       {...others}
     >
-      <SelectTrigger>
+      <SelectTrigger {...local.triggerProps}>
         <SelectValue<T>>{(state) => state.selectedOption()?.name}</SelectValue>
       </SelectTrigger>
       <SelectContent />

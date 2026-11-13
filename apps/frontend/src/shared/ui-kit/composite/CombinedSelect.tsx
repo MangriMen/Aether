@@ -25,6 +25,8 @@ export type CombinedSelectProps<
   'itemComponent'
 > & {
   selectValueComponent?: JSX.Element | Component<SelectValueOptions<Option>>;
+  /** Attributes of the default trigger, e.g. its accessible name. */
+  triggerProps?: { 'aria-labelledby'?: string; 'aria-label'?: string };
 };
 
 type SelectValueState<Option> = Parameters<
@@ -46,6 +48,7 @@ export const CombinedSelect = <
     'itemComponent',
     'class',
     'children',
+    'triggerProps',
   ]);
 
   const getSelectedValue = (state: SelectValueState<Option>): string | null => {
@@ -91,7 +94,10 @@ export const CombinedSelect = <
       <Show
         when={local.children}
         fallback={
-          <SelectTrigger class='gap-1.5 whitespace-nowrap'>
+          <SelectTrigger
+            class='gap-1.5 whitespace-nowrap'
+            {...local.triggerProps}
+          >
             <SelectValue<Option>>
               {(state) => getSelectedValue(state)}
             </SelectValue>

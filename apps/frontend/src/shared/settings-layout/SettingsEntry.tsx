@@ -16,9 +16,12 @@ export type SettingsEntryProps = ComponentProps<'div'> & {
   title?: string | JSX.Element;
   description?: string | JSX.Element;
   variant?: 'card';
+  /** Id for the title element, when the caller has to provide the label context itself. */
+  titleId?: string;
 };
 
-const SettingsEntryTitleContext = createContext<() => string | undefined>();
+export const SettingsEntryTitleContext =
+  createContext<() => string | undefined>();
 
 /** Props naming a control after the title of the settings entry it sits in. */
 export const useSettingsEntryLabel = (): { 'aria-labelledby'?: string } => {
@@ -36,12 +39,14 @@ export const SettingsEntry: Component<SettingsEntryProps> = (props) => {
     'title',
     'description',
     'variant',
+    'titleId',
     'class',
     'children',
   ]);
 
-  const titleId = createUniqueId();
-  const labelId = createMemo(() => (local.title ? titleId : undefined));
+  const generatedTitleId = createUniqueId();
+  const titleId = createMemo(() => local.titleId ?? generatedTitleId);
+  const labelId = createMemo(() => (local.title ? titleId() : undefined));
 
   return (
     <SettingsEntryTitleContext.Provider value={labelId}>
@@ -61,7 +66,7 @@ export const SettingsEntry: Component<SettingsEntryProps> = (props) => {
       >
         <div class='text-pretty'>
           <Show when={local.title}>
-            <FieldLabel id={titleId} class='text-lg font-medium'>
+            <FieldLabel id={titleId()} class='text-lg font-medium'>
               {local.title}
             </FieldLabel>
           </Show>
