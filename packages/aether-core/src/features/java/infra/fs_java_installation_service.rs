@@ -113,7 +113,7 @@ impl JavaInstallationService for FsJavaInstallationService {
         let JavaProperties {
             version,
             architecture,
-        } = get_java_properties(&java_bin_path)?;
+        } = get_java_properties(&java_bin_path).await?;
 
         // Extract version and architecture information
         if let (Some(version), Some(architecture)) = (version, architecture) {

@@ -233,6 +233,7 @@
       "RELATIVE_PATH": "Путь к Java должен быть абсолютным: {{path}}",
       "INVALID_VERSION": "Неподдерживаемая версия Java",
       "FAILED_TO_GET_PROPERTIES": "Не удалось запустить Java по пути {{path}}",
+      "PROPERTIES_TIMEOUT": "Java по пути {{path}} не ответила за {{duration}}",
       "VERSION_NOT_AVAILABLE": "Запрошенная версия Java недоступна",
       "VERSION_GET_FAILED": "Не удалось проверить версию Java",
       "FAILED_TO_INSTALL": "Ошибка установки Java",

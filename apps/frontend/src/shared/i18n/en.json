@@ -233,6 +233,7 @@
       "RELATIVE_PATH": "Java path must be absolute: {{path}}",
       "INVALID_VERSION": "Unsupported Java version",
       "FAILED_TO_GET_PROPERTIES": "Failed to run Java at {{path}}",
+      "PROPERTIES_TIMEOUT": "Java at {{path}} did not respond in {{duration}}",
       "VERSION_NOT_AVAILABLE": "Requested Java version is not available",
       "VERSION_GET_FAILED": "Failed to check Java version",
       "FAILED_TO_INSTALL": "Java installation failed",

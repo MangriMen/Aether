@@ -134,6 +134,24 @@ describe('error translations', () => {
     expect(text).toBe('Ошибка файловой системы: файл или папка не найдены');
   });
 
+  it('should_name_the_path_and_the_duration_when_the_java_probe_timed_out', () => {
+    const error = {
+      type: 'java',
+      payload: {
+        code: 'PROPERTIES_TIMEOUT',
+        payload: { path: '/jre/bin/java', seconds: 15 },
+      },
+    } as unknown as LauncherError;
+
+    for (const t of [tEn, tRu]) {
+      const text = getTranslatedError(error, t);
+
+      expect(text).toContain('/jre/bin/java');
+      expect(text).toContain('15');
+      expect(text).not.toContain('{{');
+    }
+  });
+
   it('should_leave_the_main_text_alone_when_the_cause_is_unknown', () => {
     const text = getTranslatedError(
       io({ type: 'unknown', details: 'secret raw text' }),

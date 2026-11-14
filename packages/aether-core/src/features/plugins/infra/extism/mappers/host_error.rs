@@ -306,7 +306,8 @@ impl From<&JavaDomainError> for JavaErrorDto {
             JavaDomainError::InvalidVersion { version } => Self::InvalidVersion {
                 version: version.clone(),
             },
-            JavaDomainError::FailedToGetProperties { .. } => Self::FailedToGetProperties {
+            JavaDomainError::FailedToGetProperties { .. }
+            | JavaDomainError::PropertiesTimeout { .. } => Self::FailedToGetProperties {
                 reason: value.to_string(),
             },
             JavaDomainError::VersionNotAvailable { version, os, arch } => {

@@ -105,6 +105,10 @@ pub(crate) const DEFAULT_TIMEOUT: Duration = Duration::from_mins(30);
 /// whole modpack within it: it stops a wedged child, not useful work.
 pub(crate) const COMMAND_TIMEOUT: Duration = Duration::from_mins(15);
 
+/// Time budget for one probe of a Java runtime (`java -version`), which only prints its
+/// properties: a runtime that has not answered by then is wedged, and must not hold a worker.
+pub(crate) const JAVA_PROBE_TIMEOUT: Duration = Duration::from_secs(15);
+
 /// Total time budget for one attempt, every redirect hop and the body included. A stalled
 /// transfer is cut much earlier by the client's read timeout.
 pub(crate) const DOWNLOAD_TIMEOUT: Duration = Duration::from_mins(30);

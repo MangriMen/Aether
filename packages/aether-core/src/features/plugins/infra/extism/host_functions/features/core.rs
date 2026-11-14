@@ -110,6 +110,12 @@ impl ProcessTree {
             .stderr(Stdio::piped());
 
         let mut wrapped = CommandWrap::from(cmd);
+        // Through the wrapper, not `cmd.creation_flags`: the job object would overwrite the latter.
+        // No console window may flash for a plugin's command.
+        #[cfg(windows)]
+        wrapped.wrap(process_wrap::tokio::CreationFlags(
+            windows::Win32::System::Threading::CREATE_NO_WINDOW,
+        ));
         #[cfg(windows)]
         wrapped.wrap(process_wrap::tokio::JobObject);
         #[cfg(unix)]
