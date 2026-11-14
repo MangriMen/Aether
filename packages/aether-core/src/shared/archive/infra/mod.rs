@@ -65,6 +65,16 @@ pub async fn quarantine_unreadable_legacy_file(
     }
 }
 
+/// Deletes a legacy file that must not stay on disk. A missing file is fine; any other failure is
+/// only logged, because the caller has nothing better to do about it.
+pub async fn remove_legacy_file(path: &Path, legacy_name: &str) {
+    match tokio::fs::remove_file(path).await {
+        Ok(()) => info!("Legacy {legacy_name} file removed: {path:?}"),
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => {}
+        Err(err) => warn!("Failed to remove legacy {legacy_name} file {path:?}: {err}"),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
