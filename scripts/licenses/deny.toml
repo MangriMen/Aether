@@ -1,5 +1,5 @@
-# cargo-deny configuration: license and source checks only.
-# Run with: cargo deny --config scripts/licenses/deny.toml check licenses
+# cargo-deny configuration: licenses and bans (advisories are checked by `cargo audit` against the same RustSec database).
+# Run with: cargo deny --config scripts/licenses/deny.toml check licenses bans
 
 [graph]
 all-features = true

@@ -12,8 +12,6 @@ on:
 jobs:
   bun-audit:
     runs-on: ubuntu-22.04
-    # non-blocking at first
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v7
 
