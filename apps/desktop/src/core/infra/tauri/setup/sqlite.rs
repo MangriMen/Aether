@@ -45,13 +45,13 @@ mod restrict {
     const FILE_MODE: u32 = 0o600;
 
     pub fn prepare(db_path: &Path) {
-        if let Some(parent) = db_path.parent().filter(|p| !p.as_os_str().is_empty()) {
-            if let Err(err) = prepare_dir(parent) {
-                tracing::warn!(
-                    "Failed to restrict permissions of {}: {err}",
-                    parent.display()
-                );
-            }
+        if let Some(parent) = db_path.parent().filter(|p| !p.as_os_str().is_empty())
+            && let Err(err) = prepare_dir(parent)
+        {
+            tracing::warn!(
+                "Failed to restrict permissions of {}: {err}",
+                parent.display()
+            );
         }
 
         match OpenOptions::new()
