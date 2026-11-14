@@ -20,9 +20,9 @@ jobs:
       frontend: ${{ steps.filter.outputs.frontend }}
       rust: ${{ steps.filter.outputs.rust }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: dorny/paths-filter@v4.0.3
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         id: filter
         with:
           filters: |
@@ -46,16 +46,16 @@ jobs:
     if: needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
 
-      - uses: oven-sh/setup-bun@v2
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
 
       - name: Cache bun packages
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.bun/install/cache
           key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
@@ -104,7 +104,7 @@ jobs:
     env:
       SQLX_OFFLINE: "true"
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # version and components come from rust-toolchain.toml
       - name: Install Rust
@@ -115,7 +115,7 @@ jobs:
         run: .github/scripts/install-linux-deps.sh --no-install-recommends
 
       - name: Rust cache
-        uses: swatinem/rust-cache@v2
+        uses: swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
         with:
           shared-key: "aether-ci-cache"
           workspaces: "./ -> target"
