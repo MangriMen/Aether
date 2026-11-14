@@ -1,5 +1,5 @@
-# cargo-deny configuration: license and source checks only.
-# Run with: cargo deny --config scripts/licenses/deny.toml check licenses
+# cargo-deny configuration: license, ban (wildcard version requirements) and source checks.
+# Run with: cargo deny --config scripts/licenses/deny.toml check licenses bans sources
 
 [graph]
 all-features = true
@@ -34,3 +34,8 @@ unknown-registry = "deny"
 unknown-git = "deny"
 allow-registry = ["https://github.com/rust-lang/crates.io-index"]
 allow-git = ["https://github.com/modrinth/code"]
+
+[bans]
+multiple-versions = "allow"
+wildcards = "deny"
+allow-wildcard-paths = true
