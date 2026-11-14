@@ -51,6 +51,7 @@ process-wrap = { version = "10.0.1", default-features = false, features = [
     "job-object",
     "process-group",
     "kill-on-drop",
+    "creation-flags",
 ] }
 sys-info = "0.9.1"
 sysinfo = "0.40.1"
@@ -105,6 +106,8 @@ uuid.workspace = true
 svg-hush = "0.9.7"
 
 [target.'cfg(windows)'.dependencies]
+# `CREATE_NO_WINDOW` for child processes; the same major as `process-wrap`'s, whose `CreationFlags` takes its type
+windows = { version = "0.62.2", features = ["Win32_System_Threading"] }
 # `sys-info` reads the Windows version with `GetVersionEx`, which is capped at 6.2 without a manifest
 windows-sys = { version = "0.61.2", features = ["Wdk_System_SystemServices", "Win32_System_SystemInformation"] }
 

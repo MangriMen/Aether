@@ -634,6 +634,9 @@ export type JavaErrorDto = { code: "NOT_FOUND"; payload: {
 } } | { code: "FAILED_TO_GET_PROPERTIES"; payload: {
 	path: string,
 	cause: CauseDto,
+} } | { code: "PROPERTIES_TIMEOUT"; payload: {
+	path: string,
+	seconds: string,
 } } | { code: "VERSION_NOT_AVAILABLE"; payload: {
 	version: number,
 	os: string,

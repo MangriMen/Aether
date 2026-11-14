@@ -338,18 +338,25 @@ export const getErrorDetails = (error: unknown): string | undefined => {
   return getErrorDetails(inner.error) ?? getReasonDetails(inner.error);
 };
 
+/** Errors whose `seconds` is shown as a `duration`. */
+const DURATION_KEYS: ReadonlySet<string> = new Set([
+  'instance.PRELAUNCH_COMMAND_TIMEOUT',
+  'java.PROPERTIES_TIMEOUT',
+]);
+
 /** Values the core sends as raw numbers, turned into text in the language of the interface. */
 const withFormattedArgs = (
   key: string,
   args: unknown,
 ): Parameters<TFunction>[1] => {
   if (
-    key === 'instance.PRELAUNCH_COMMAND_TIMEOUT' &&
+    DURATION_KEYS.has(key) &&
     args !== null &&
     typeof args === 'object' &&
     'seconds' in args
   ) {
     return {
+      ...(args as Record<string, string | number | boolean>),
       duration: formatDuration(Number(args.seconds), dayjs.locale()),
     };
   }

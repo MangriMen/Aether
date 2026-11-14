@@ -24,6 +24,11 @@ pub enum JavaErrorDto {
         path: String,
         cause: CauseDto,
     },
+    PropertiesTimeout {
+        path: String,
+        // Formatted before it crosses the boundary: no `u64` in bindings.
+        seconds: String,
+    },
     VersionNotAvailable {
         version: u32,
         os: String,
@@ -79,6 +84,10 @@ impl From<&JavaDomainError> for JavaErrorDto {
                     cause: source.into(),
                 }
             }
+            JavaDomainError::PropertiesTimeout { path, seconds } => Self::PropertiesTimeout {
+                path: path.to_string_lossy().to_string(),
+                seconds: seconds.to_string(),
+            },
             JavaDomainError::VersionNotAvailable { version, os, arch } => {
                 Self::VersionNotAvailable {
                     version: *version,
@@ -142,6 +151,23 @@ mod tests {
                     "path": path.to_string_lossy(),
                     "cause": {"type": "io", "kind": "permissionDenied"}
                 }
+            })
+        );
+    }
+
+    #[test]
+    fn should_serialize_a_properties_timeout_with_the_path_and_the_seconds() {
+        let path = PathBuf::from("jre").join("java");
+        let out = domain(&JavaDomainError::PropertiesTimeout {
+            path: path.clone(),
+            seconds: 15,
+        });
+
+        assert_eq!(
+            out,
+            json!({
+                "code": "PROPERTIES_TIMEOUT",
+                "payload": {"path": path.to_string_lossy(), "seconds": "15"}
             })
         );
     }

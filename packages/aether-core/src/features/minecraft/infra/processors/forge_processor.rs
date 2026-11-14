@@ -194,6 +194,9 @@ fn build_processor_command(
         .args(["-cp", class_path, main_class])
         .args(args)
         .kill_on_drop(true);
+    // No console window may flash for a processor.
+    #[cfg(windows)]
+    command.creation_flags(windows::Win32::System::Threading::CREATE_NO_WINDOW.0);
     command
 }
 

@@ -29,6 +29,9 @@ pub enum JavaDomainError {
         source: std::sync::Arc<std::io::Error>,
     },
 
+    #[error("Java at {path:?} did not report its properties within {seconds} s")]
+    PropertiesTimeout { path: PathBuf, seconds: u64 },
+
     #[error("No JRE version found to download: version {version}, os {os}, architecture {arch}")]
     VersionNotAvailable {
         version: u32,
