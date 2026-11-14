@@ -32,4 +32,4 @@ jobs:
           tool: cargo-deny
 
       - name: cargo deny
-        run: cargo deny --config scripts/licenses/deny.toml check licenses bans
+        run: cargo deny --config scripts/licenses/deny.toml check licenses bans sources
