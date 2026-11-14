@@ -29,7 +29,7 @@ jobs:
     runs-on: ${{ matrix.platform }}
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Extract version
         id: get_version
@@ -50,17 +50,17 @@ jobs:
       - name: Extract changelog
         if: github.ref_type == 'tag'
         id: changelog_reader
-        uses: mindsers/changelog-reader-action@v2
+        uses: mindsers/changelog-reader-action@1faaf50aa09d5793d9a100819973df801febfb31 # v2.4.0
         with:
           version: ${{ steps.get_version.outputs.APP_VERSION }}
           path: ./apps/frontend/CHANGELOG.md
 
       - name: setup node
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
 
-      - uses: oven-sh/setup-bun@v2
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
 
       # version comes from rust-toolchain.toml
       - name: install Rust
@@ -72,7 +72,7 @@ jobs:
         run: .github/scripts/install-linux-deps.sh
 
       - name: Rust cache
-        uses: swatinem/rust-cache@v2
+        uses: swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
         with:
           shared-key: "aether-tauri-cache"
           workspaces: "./ -> target"
@@ -81,7 +81,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: install cargo-about
-        uses: taiki-e/install-action@v2
+        uses: taiki-e/install-action@4a76afe23f9e08d2d9550fb56e556444e8611d21 # v2.90.4
         with:
           tool: cargo-about
 
@@ -89,7 +89,7 @@ jobs:
         run: node scripts/licenses/generate-third-party-licenses.mjs
 
       - name: build and publish tauri app
-        uses: tauri-apps/tauri-action@v1
+        uses: tauri-apps/tauri-action@1deb371b0cd8bd54025b384f1cd735e725c4060f # v1.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
