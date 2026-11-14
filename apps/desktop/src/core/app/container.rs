@@ -92,13 +92,13 @@ async fn notify_credentials_outcome(outcome: &LegacyCredentialsOutcome) {
     let message = match outcome {
         LegacyCredentialsOutcome::Done => return,
         LegacyCredentialsOutcome::UnreadableRemoved => {
-            "Aether could not read your old accounts file, so it was removed. Your accounts              were not moved to the new storage; sign in again."
+            "Aether could not read your old accounts file, so it was removed. Your accounts were not moved to the new storage; sign in again."
                 .to_owned()
         }
         LegacyCredentialsOutcome::PlaintextNotRemoved(path) => {
             tracing::warn!("Legacy credentials file could not be removed: {path:?}");
             format!(
-                "Your accounts were moved to the new storage, but Aether could not delete the                  old credentials file, which holds your account tokens in plain text: {}. Please                  delete it manually.",
+                "Your accounts were moved to the new storage, but Aether could not delete the old credentials file, which holds your account tokens in plain text: {}. Please delete it manually.",
                 path.display()
             )
         }
