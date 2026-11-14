@@ -22,7 +22,7 @@ pub async fn create_pool(db_path: PathBuf) -> crate::Result<sqlx::SqlitePool> {
         .create_if_missing(true)
         .foreign_keys(true)
         .journal_mode(sqlx::sqlite::SqliteJournalMode::Wal)
-        // Overwrite freed pages so logout does not leave token bytes in the file.
+        // Overwrite pages freed from now on, so a logout does not leave token bytes in new free space.
         .pragma("secure_delete", "on");
 
     let pool = sqlx::SqlitePool::connect_with(connection_options)
@@ -119,7 +119,7 @@ mod restrict {
         }
 
         #[test]
-        fn creates_private_dir_and_file() {
+        fn should_create_a_private_dir_and_file_when_none_exist() {
             let tmp = tempfile::tempdir().unwrap();
             let db = tmp.path().join("data").join("app.db");
             prepare(&db);
@@ -129,7 +129,7 @@ mod restrict {
         }
 
         #[test]
-        fn tightens_existing_and_keeps_content() {
+        fn should_tighten_existing_files_and_keep_their_content_when_they_are_open_to_others() {
             let tmp = tempfile::tempdir().unwrap();
             let dir = tmp.path().join("data");
             fs::create_dir(&dir).unwrap();
@@ -150,18 +150,23 @@ mod restrict {
         }
 
         #[test]
-        fn ancestors_are_not_made_private() {
+        fn should_leave_ancestor_dirs_alone_when_creating_the_data_dir() {
             let tmp = tempfile::tempdir().unwrap();
-            let db = tmp.path().join("a").join("b").join("data").join("app.db");
+            let outer = tmp.path().join("a");
+            let inner = outer.join("b");
+            fs::create_dir_all(&inner).unwrap();
+            // Explicit modes, so the test does not depend on the process umask.
+            fs::set_permissions(&outer, fs::Permissions::from_mode(0o755)).unwrap();
+            fs::set_permissions(&inner, fs::Permissions::from_mode(0o755)).unwrap();
+            let db = inner.join("data").join("app.db");
             prepare(&db);
-            let data = db.parent().unwrap();
-            assert_eq!(mode(data), 0o700);
-            assert_ne!(mode(data.parent().unwrap()), 0o700);
-            assert_ne!(mode(data.parent().unwrap().parent().unwrap()), 0o700);
+            assert_eq!(mode(db.parent().unwrap()), 0o700);
+            assert_eq!(mode(&inner), 0o755);
+            assert_eq!(mode(&outer), 0o755);
         }
 
         #[test]
-        fn failure_does_not_panic() {
+        fn should_not_panic_when_the_parent_is_not_a_directory() {
             let tmp = tempfile::tempdir().unwrap();
             // The "directory" is a regular file, so every step fails.
             let blocker = tmp.path().join("blocker");
@@ -179,7 +184,7 @@ mod tests {
     use super::*;
 
     #[tokio::test]
-    async fn create_pool_on_fresh_path_works() {
+    async fn should_open_a_private_db_when_the_path_is_fresh() {
         let tmp = tempfile::tempdir().unwrap();
         let db = tmp.path().join("data").join("app.db");
         let pool = create_pool(db.clone()).await.unwrap();
