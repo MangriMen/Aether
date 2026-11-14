@@ -32,6 +32,18 @@ impl FsCredentialsStorage {
     pub fn get_file_path(&self) -> PathBuf {
         self.path.clone()
     }
+
+    /// Reads the legacy file keeping the IO error, so a migration can tell an unparsable file
+    /// from a transient read failure (`list` flattens the error into a string).
+    pub async fn read_legacy(&self) -> Result<Vec<Credential>, IoError> {
+        Ok(self
+            .store
+            .read_all()
+            .await?
+            .into_iter()
+            .map(Into::into)
+            .collect())
+    }
 }
 
 #[async_trait]

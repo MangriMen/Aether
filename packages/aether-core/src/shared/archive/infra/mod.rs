@@ -65,6 +65,22 @@ pub async fn quarantine_unreadable_legacy_file(
     }
 }
 
+/// Deletes a legacy file that must not stay on disk. Returns `true` when the file is gone (a
+/// missing file counts), `false` when removal failed; the failure is logged either way.
+pub async fn remove_legacy_file(path: &Path, legacy_name: &str) -> bool {
+    match tokio::fs::remove_file(path).await {
+        Ok(()) => {
+            info!("Legacy {legacy_name} file removed: {path:?}");
+            true
+        }
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => true,
+        Err(err) => {
+            warn!("Failed to remove legacy {legacy_name} file {path:?}: {err}");
+            false
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -80,5 +96,19 @@ mod tests {
         assert!(!old_path.exists());
         let kept = dir.path().join("migrated").join("settings.json.corrupt");
         assert_eq!(std::fs::read_to_string(kept).unwrap(), "{ not json");
+    }
+
+    #[tokio::test]
+    async fn should_return_false_when_the_file_cannot_be_removed() {
+        let dir = tempfile::tempdir().unwrap();
+        // A directory in place of the file makes the removal fail with a non-NotFound error.
+        let path = dir.path().join("credentials.json");
+        std::fs::create_dir(&path).unwrap();
+
+        let removed = remove_legacy_file(&path, "credentials").await;
+
+        assert!(!removed);
+        assert!(path.exists());
+        assert!(remove_legacy_file(&dir.path().join("missing.json"), "credentials").await);
     }
 }
