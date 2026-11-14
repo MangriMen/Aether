@@ -78,7 +78,10 @@ fn log_legacy_failure<E: std::fmt::Display>(what: &str, result: Result<(), E>) -
 /// message is not missed; the launcher starts after that.
 async fn notify_legacy_failure(lost: &str) {
     let message = format!(
-        "Aether could not move your old {lost} to the new storage. Old files are kept and retried          on the next start, except an old accounts file that cannot be read: it is deleted, so          you will need to sign in again. Until then your {lost} may be missing. See the log for          details."
+        "Aether could not move your old {lost} to the new storage. Old files are kept and retried \
+         on the next start, except an old accounts file that cannot be read: it is deleted, so \
+         you will need to sign in again. Until then your {lost} may be missing. See the log for \
+         details."
     );
     let _ = tauri::async_runtime::spawn_blocking(move || show_warning(&message)).await;
 }
