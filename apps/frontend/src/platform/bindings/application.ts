@@ -572,3 +572,4 @@ export type WindowErrorDto = { code: "ALREADY_EXISTS"; payload: {
 
 export type WindowLabelDto = "main";
 
+// stale
