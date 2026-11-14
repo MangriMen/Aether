@@ -133,6 +133,16 @@ jobs:
       - name: cargo test
         run: cargo test --locked --workspace
 
+      # a DTO change without regenerated bindings would pass here and break the frontend at runtime
+      - name: Check TS bindings are up to date
+        run: |
+          cargo bindgen
+          if [ -n "$(git status --porcelain -- apps/frontend/src/platform/bindings)" ]; then
+            git status --short -- apps/frontend/src/platform/bindings
+            echo "::error::TS bindings are out of date, run 'cargo bindgen' and commit the result"
+            exit 1
+          fi
+
       - name: Install sqlx-cli
         run: cargo install sqlx-cli --version 0.9.0 --locked --no-default-features --features sqlite,rustls,sqlx-toml
 
