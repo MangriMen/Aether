@@ -1,0 +1,33 @@
+name: Windows tests
+
+# Manual only: the Windows build is slow, so it is run on demand instead of on every PR.
+on:
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  SQLX_OFFLINE: "true"
+
+jobs:
+  rust:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # version and components come from rust-toolchain.toml
+      - name: Install Rust
+        run: rustup toolchain install
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          shared-key: "aether-windows-test-cache"
+          workspaces: "./ -> target"
+
+      # tauri's build script only needs the frontend dist directory to exist, not a real build
+      - name: Stub frontend dist
+        shell: bash
+        run: mkdir -p apps/frontend/dist
+
+      - name: cargo test
+        run: cargo test --locked --workspace

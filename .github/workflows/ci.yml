@@ -97,6 +97,11 @@ jobs:
         working-directory: apps/frontend
         run: bun x vitest run
 
+      # the rust job only stubs dist, so this is the only place `vite build` runs before a release
+      - name: Build
+        working-directory: apps/frontend
+        run: bun run build
+
   rust:
     needs: changes
     if: needs.changes.outputs.rust == 'true'
