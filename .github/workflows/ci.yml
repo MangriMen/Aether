@@ -134,9 +134,10 @@ jobs:
         run: cargo test --locked --workspace
 
       # a DTO change without regenerated bindings would pass here and break the frontend at runtime
+      # dev profile on purpose: the `cargo bindgen` alias is a release build, which would recompile the whole tree here
       - name: Check TS bindings are up to date
         run: |
-          cargo bindgen
+          cargo run --locked --bin generate-bindings --features generate-bindings
           if [ -n "$(git status --porcelain -- apps/frontend/src/platform/bindings)" ]; then
             git status --short -- apps/frontend/src/platform/bindings
             echo "::error::TS bindings are out of date, run 'cargo bindgen' and commit the result"
