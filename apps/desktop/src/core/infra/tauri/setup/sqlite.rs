@@ -188,9 +188,18 @@ mod tests {
         let tmp = tempfile::tempdir().unwrap();
         let db = tmp.path().join("data").join("app.db");
         let pool = create_pool(db.clone()).await.unwrap();
-        drop(pool.acquire().await.unwrap());
+        // The migrations write, so SQLite creates `-wal` and `-shm`; they exist while the pool is open.
+        aether_core::core::migrations::run_migrations(&pool)
+            .await
+            .unwrap();
+        let mode =
+            |path: &std::path::Path| std::fs::metadata(path).unwrap().permissions().mode() & 0o777;
+        let wal = db.with_file_name("app.db-wal");
+        let shm = db.with_file_name("app.db-shm");
+        assert_eq!(mode(&db), 0o600);
+        assert_eq!(mode(&wal), 0o600);
+        assert_eq!(mode(&shm), 0o600);
+        assert_eq!(mode(db.parent().unwrap()), 0o700);
         pool.close().await;
-        let mode = std::fs::metadata(&db).unwrap().permissions().mode() & 0o777;
-        assert_eq!(mode, 0o600);
     }
 }
