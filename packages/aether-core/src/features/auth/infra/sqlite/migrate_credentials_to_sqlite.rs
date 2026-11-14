@@ -1,6 +1,6 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
-use tracing::{info, warn};
+use tracing::info;
 
 use crate::{
     features::auth::domain::Credential,
@@ -11,55 +11,67 @@ use crate::{
     shared::{archive::infra::remove_legacy_file, io::domain::IoError},
 };
 
+/// How a migration that did not fail ended.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum LegacyCredentialsOutcome {
+    /// Nothing left to report.
+    Done,
+    /// The file could not be parsed, so no accounts were taken from it; it was deleted.
+    UnreadableRemoved,
+    /// Accounts are in the database, but a plaintext file could not be deleted.
+    PlaintextNotRemoved(PathBuf),
+}
+
 /// Moves legacy `credentials.json` into `SQLite`. The file holds plaintext tokens, so it is
-/// deleted once the database is the source of truth, or when it cannot be read.
+/// deleted once the database is the source of truth, or when it cannot be parsed. A parse error is
+/// never returned: its text can quote a token.
 pub async fn migrate_credentials_to_sqlite(
     fs_storage: &FsCredentialsStorage,
     sqlite_storage: &SqliteCredentialsStorage,
     migrated_dir_name: &str,
-) -> crate::Result<()> {
+) -> crate::Result<LegacyCredentialsOutcome> {
     let old_path = fs_storage.get_file_path();
-    let mut all_removed = true;
+    let mut not_removed: Option<PathBuf> = None;
 
     // Earlier versions archived the file (or set it aside as `.corrupt`); drop those copies.
     let migrated_path = old_path
         .parent()
         .unwrap_or_else(|| Path::new("."))
         .join(migrated_dir_name);
-    all_removed &= remove_legacy_file(&migrated_path.join("credentials.json"), "credentials").await;
-    all_removed &= remove_legacy_file(
+    remove(&migrated_path.join("credentials.json"), &mut not_removed).await;
+    remove(
         &migrated_path.join("credentials.json.corrupt"),
-        "credentials",
+        &mut not_removed,
     )
     .await;
 
     // No need to migrate
     if !old_path.exists() {
-        return finish(all_removed, &migrated_path);
+        return Ok(finish(not_removed, LegacyCredentialsOutcome::Done));
     }
 
     if !sqlite_storage.list().await?.is_empty() {
-        all_removed &= remove_legacy_file(&old_path, "credentials").await;
-        return finish(all_removed, &old_path);
+        remove(&old_path, &mut not_removed).await;
+        return Ok(finish(not_removed, LegacyCredentialsOutcome::Done));
     }
 
     let old_credentials = match fs_storage.read_legacy().await {
         Ok(value) => value,
-        Err(err @ IoError::DeserializationError(_)) => {
+        Err(IoError::DeserializationError(_)) => {
             // Unparsable: it would fail the same way on every start, and it holds plaintext tokens.
-            let removed = remove_legacy_file(&old_path, "credentials").await;
-            if !removed {
-                warn!("Unreadable legacy credentials file could not be removed: {old_path:?}");
-            }
-            return Err(AuthApplicationError::from(err).into());
+            remove(&old_path, &mut not_removed).await;
+            return Ok(finish(
+                not_removed,
+                LegacyCredentialsOutcome::UnreadableRemoved,
+            ));
         }
         // Busy, permission, timeout...: may succeed next start, so keep the file.
         Err(err) => return Err(AuthApplicationError::from(err).into()),
     };
 
     if old_credentials.is_empty() {
-        all_removed &= remove_legacy_file(&old_path, "credentials").await;
-        return finish(all_removed, &old_path);
+        remove(&old_path, &mut not_removed).await;
+        return Ok(finish(not_removed, LegacyCredentialsOutcome::Done));
     }
 
     info!("Legacy credentials found. Starting migration to SQLite...");
@@ -68,21 +80,27 @@ pub async fn migrate_credentials_to_sqlite(
         .upsert_all(keep_first_active(old_credentials))
         .await?;
 
-    all_removed &= remove_legacy_file(&old_path, "credentials").await;
+    remove(&old_path, &mut not_removed).await;
 
-    finish(all_removed, &old_path)
+    Ok(finish(not_removed, LegacyCredentialsOutcome::Done))
+}
+
+/// Remembers the first plaintext file that could not be deleted.
+async fn remove(path: &Path, not_removed: &mut Option<PathBuf>) {
+    if !remove_legacy_file(path, "credentials").await && not_removed.is_none() {
+        *not_removed = Some(path.to_path_buf());
+    }
 }
 
 /// A plaintext file that could not be deleted must reach the user, not only the log.
-fn finish(all_removed: bool, path: &Path) -> crate::Result<()> {
-    if all_removed {
-        return Ok(());
+fn finish(
+    not_removed: Option<PathBuf>,
+    outcome: LegacyCredentialsOutcome,
+) -> LegacyCredentialsOutcome {
+    match not_removed {
+        Some(path) => LegacyCredentialsOutcome::PlaintextNotRemoved(path),
+        None => outcome,
     }
-    Err(crate::ErrorKind::CoreError(format!(
-        "Could not remove the legacy credentials file near {}",
-        path.display()
-    ))
-    .as_error())
 }
 
 /// The database holds one active account, but an old file may list several.
@@ -217,14 +235,14 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn should_delete_an_unreadable_file_and_return_an_error() {
+    async fn should_delete_an_unparsable_file_and_report_it() {
         let dir = tempfile::tempdir().unwrap();
         let fs = FsCredentialsStorage::new(dir.path());
         std::fs::write(fs.get_file_path(), "{ not json").unwrap();
 
         let result = migrate_credentials_to_sqlite(&fs, &sqlite().await, "migrated").await;
 
-        assert!(result.is_err());
+        assert_eq!(result.unwrap(), LegacyCredentialsOutcome::UnreadableRemoved);
         assert!(!fs.get_file_path().exists());
         assert!(
             !dir.path()
@@ -235,21 +253,39 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn should_not_fail_when_the_file_cannot_be_removed() {
+    async fn should_delete_the_file_without_leaking_a_token_when_a_field_has_the_wrong_type() {
         let dir = tempfile::tempdir().unwrap();
-        // A directory in place of the file makes the removal fail with a non-NotFound error.
-        let path = dir.path().join("credentials.json");
-        std::fs::create_dir(&path).unwrap();
+        let fs = FsCredentialsStorage::new(dir.path());
+        std::fs::write(
+            fs.get_file_path(),
+            r#"[{"expires": "SECRET-TOKEN", "username": "Alice"}]"#,
+        )
+        .unwrap();
 
-        let removed = remove_legacy_file(&path, "credentials").await;
+        let result = migrate_credentials_to_sqlite(&fs, &sqlite().await, "migrated").await;
 
-        assert!(!removed);
-        assert!(path.exists());
-        assert!(remove_legacy_file(&dir.path().join("missing.json"), "credentials").await);
+        assert!(!fs.get_file_path().exists());
+        assert!(!format!("{result:?}").contains("SECRET-TOKEN"));
+        if let Err(err) = &result {
+            assert!(!err.to_string().contains("SECRET-TOKEN"));
+        }
+        assert_eq!(result.unwrap(), LegacyCredentialsOutcome::UnreadableRemoved);
     }
 
     #[tokio::test]
-    async fn should_return_an_error_when_a_leftover_in_migrated_cannot_be_removed() {
+    async fn should_delete_a_valid_json_file_with_the_wrong_schema() {
+        let dir = tempfile::tempdir().unwrap();
+        let fs = FsCredentialsStorage::new(dir.path());
+        std::fs::write(fs.get_file_path(), r#"[{"username": "Alice"}]"#).unwrap();
+
+        let result = migrate_credentials_to_sqlite(&fs, &sqlite().await, "migrated").await;
+
+        assert_eq!(result.unwrap(), LegacyCredentialsOutcome::UnreadableRemoved);
+        assert!(!fs.get_file_path().exists());
+    }
+
+    #[tokio::test]
+    async fn should_report_the_path_when_a_leftover_in_migrated_cannot_be_removed() {
         let dir = tempfile::tempdir().unwrap();
         let account = CredentialsBuilder::new("Alice").with_active(true).build();
         let fs = legacy_file(dir.path(), std::slice::from_ref(&account)).await;
@@ -259,7 +295,10 @@ mod tests {
 
         let result = migrate_credentials_to_sqlite(&fs, &sqlite, "migrated").await;
 
-        assert!(result.is_err());
+        assert_eq!(
+            result.unwrap(),
+            LegacyCredentialsOutcome::PlaintextNotRemoved(leftover)
+        );
         // The other steps still ran.
         assert!(!fs.get_file_path().exists());
         assert_eq!(sqlite.list().await.unwrap().len(), 1);

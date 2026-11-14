@@ -4,7 +4,7 @@ use std::sync::Arc;
 use aether_core::core::app::{
     AetherContainer, AetherContainerParams, MinecraftParams, PluginParams, StorageParams,
 };
-use aether_core::features::auth::infra::SqliteCredentialsStorage;
+use aether_core::features::auth::infra::{LegacyCredentialsOutcome, SqliteCredentialsStorage};
 use aether_core::features::events::ProgressServiceImpl;
 use aether_core::features::events::SharedEventEmitter;
 use aether_core::features::events::infra::InMemoryProgressBarStorage;
@@ -86,6 +86,26 @@ async fn notify_legacy_failure(lost: &str) {
     let _ = tauri::async_runtime::spawn_blocking(move || show_warning(&message)).await;
 }
 
+/// Tell the user about a credentials migration that did not fail but left something to know.
+/// The messages carry no text from the file, only its path.
+async fn notify_credentials_outcome(outcome: &LegacyCredentialsOutcome) {
+    let message = match outcome {
+        LegacyCredentialsOutcome::Done => return,
+        LegacyCredentialsOutcome::UnreadableRemoved => {
+            "Aether could not read your old accounts file, so it was removed. Your accounts              were not moved to the new storage; sign in again."
+                .to_owned()
+        }
+        LegacyCredentialsOutcome::PlaintextNotRemoved(path) => {
+            tracing::warn!("Legacy credentials file could not be removed: {path:?}");
+            format!(
+                "Your accounts were moved to the new storage, but Aether could not delete the                  old credentials file, which holds your account tokens in plain text: {}. Please                  delete it manually.",
+                path.display()
+            )
+        }
+    };
+    let _ = tauri::async_runtime::spawn_blocking(move || show_warning(&message)).await;
+}
+
 /// Build the complete `AetherContainer` with all concrete dependencies wired up.
 ///
 /// This is the Composition Root for the desktop application. It creates every
@@ -125,15 +145,20 @@ pub async fn build_container(
         .await,
     );
 
-    let credentials_failed = log_legacy_failure(
-        "credentials",
-        auth::infra::migrate_credentials_to_sqlite(
-            &aether_core::features::auth::infra::FsCredentialsStorage::new(config_dir),
-            &SqliteCredentialsStorage::new(pool.clone()),
-            migrated_dir_name,
-        )
-        .await,
-    );
+    let credentials_outcome = auth::infra::migrate_credentials_to_sqlite(
+        &aether_core::features::auth::infra::FsCredentialsStorage::new(config_dir),
+        &SqliteCredentialsStorage::new(pool.clone()),
+        migrated_dir_name,
+    )
+    .await;
+    let credentials_failed = credentials_outcome.is_err();
+    let credentials_notice = match credentials_outcome {
+        Ok(outcome) => outcome,
+        Err(err) => {
+            tracing::error!("Legacy credentials were not migrated, {err}");
+            LegacyCredentialsOutcome::Done
+        }
+    };
 
     // A write that fails as a whole stores nothing and a skipped instance keeps its file, so the
     // user can still recover them.
@@ -178,6 +203,7 @@ pub async fn build_container(
     if !lost.is_empty() {
         notify_legacy_failure(&lost.join(" and ")).await;
     }
+    notify_credentials_outcome(&credentials_notice).await;
 
     minecraft::infra::migrate_minecraft_metadata_to_sqlite(&location_info).await;
 
