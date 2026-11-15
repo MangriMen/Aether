@@ -60,23 +60,23 @@ describe('PluginAllowedHostsSection', () => {
 });
 
 describe('PluginHostFunctionsSection', () => {
-  it('should warn about running commands when run_command is declared', () => {
+  it('should say a plugin asks before running a program when run_command is declared', () => {
     const container = mount(() => (
       <PluginHostFunctionsSection hostFunctions={['run_command', 'log']} />
     ));
 
     expect(container.textContent).toContain(
-      'can run commands on your computer',
+      'can ask to run a program on your computer',
     );
   });
 
-  it('should not warn about running commands when it is not declared', () => {
+  it('should not say a plugin asks to run a program when it is not declared', () => {
     const container = mount(() => (
       <PluginHostFunctionsSection hostFunctions={['log']} />
     ));
 
     expect(container.textContent).not.toContain(
-      'can run commands on your computer',
+      'can ask to run a program on your computer',
     );
   });
 });
