@@ -5,7 +5,7 @@ mod track_process_service;
 use std::process::ExitStatus;
 
 use async_trait::async_trait;
-use tokio::process::Child;
+use process_wrap::tokio::ChildWrapper;
 use uuid::Uuid;
 
 use crate::features::process::domain::{MinecraftProcessMetadata, ProcessError};
@@ -19,7 +19,7 @@ pub trait ProcessStorage: Send + Sync {
     async fn insert(
         &self,
         process: MinecraftProcessMetadata,
-        child: Child,
+        child: Box<dyn ChildWrapper>,
     ) -> Result<(), ProcessError>;
     async fn remove(&self, id: Uuid) -> Result<(), ProcessError>;
 

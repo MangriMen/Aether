@@ -2,7 +2,7 @@ use std::process::ExitStatus;
 
 use async_trait::async_trait;
 use dashmap::DashMap;
-use tokio::process::Child;
+use process_wrap::tokio::ChildWrapper;
 use uuid::Uuid;
 
 use super::super::app::ProcessStorage;
@@ -11,7 +11,7 @@ use super::super::domain::{MinecraftProcessMetadata, ProcessError};
 #[derive(Debug)]
 struct ActiveProcess {
     metadata: MinecraftProcessMetadata,
-    child: Child,
+    child: Box<dyn ChildWrapper>,
     killed: bool,
 }
 
@@ -25,7 +25,7 @@ impl ProcessStorage for InMemoryProcessStorage {
     async fn insert(
         &self,
         metadata: MinecraftProcessMetadata,
-        child: Child,
+        child: Box<dyn ChildWrapper>,
     ) -> Result<(), ProcessError> {
         self.processes.insert(
             metadata.uuid(),
@@ -71,7 +71,7 @@ impl ProcessStorage for InMemoryProcessStorage {
         if let Some(mut process) = self.processes.get_mut(&id) {
             // Set before the kill: the tracker can see the exit while `kill` is still awaiting.
             process.killed = true;
-            if process.child.kill().await.is_err() {
+            if Box::into_pin(process.child.kill()).await.is_err() {
                 // The process was not stopped, so a later failure is still a crash.
                 process.killed = false;
                 return Err(ProcessError::KillError { id: id.to_string() });

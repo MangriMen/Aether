@@ -1,6 +1,7 @@
 use std::{process::Stdio, sync::Arc};
 
 use async_trait::async_trait;
+use process_wrap::tokio::{ChildWrapper, CommandWrap};
 use tokio::process::Command;
 
 use crate::{
@@ -9,8 +10,8 @@ use crate::{
         game_log::{CaptureGameOutputParams, GameOutputCaptureService},
         instance::InstanceId,
         process::{
-            ManageProcessService, MinecraftProcessMetadata, ProcessError, ProcessStartService,
-            ProcessStorage,
+            KillScope, ManageProcessService, MinecraftProcessMetadata, ProcessError,
+            ProcessStartService, ProcessStorage,
         },
     },
     shared::io::domain::IoError,
@@ -44,6 +45,7 @@ impl StartProcessUseCase {
         &self,
         instance_id: InstanceId,
         mut command: Command,
+        kill_scope: KillScope,
         post_exit_command: String,
         secrets: Vec<String>,
     ) -> Result<MinecraftProcessMetadata, ProcessError> {
@@ -52,14 +54,14 @@ impl StartProcessUseCase {
             .stdout(Stdio::piped())
             .stderr(Stdio::piped());
 
-        let mut process = command.spawn().map_err(IoError::from)?;
+        let mut process = spawn(command, kill_scope).map_err(IoError::from)?;
         let metadata = MinecraftProcessMetadata::new(instance_id.clone());
 
         let capture = self.game_output_capture.start(CaptureGameOutputParams {
             instance_id: instance_id.clone(),
             process_id: metadata.uuid(),
-            stdout: process.stdout.take(),
-            stderr: process.stderr.take(),
+            stdout: process.stdout().take(),
+            stderr: process.stderr().take(),
             secrets,
         });
 
@@ -103,10 +105,153 @@ impl ProcessStartService for StartProcessUseCase {
         &self,
         instance_id: InstanceId,
         command: Command,
+        kill_scope: KillScope,
         post_exit_command: String,
         secrets: Vec<String>,
     ) -> Result<MinecraftProcessMetadata, ProcessError> {
-        self.execute(instance_id, command, post_exit_command, secrets)
+        self.execute(instance_id, command, kill_scope, post_exit_command, secrets)
             .await
+    }
+}
+
+/// Start `command`, in a job object or process group of its own when a [`KillScope::Tree`] is
+/// asked for. The game is never stopped on drop: it must outlive the launcher. Its end is still
+/// the exit of the started process alone, so a descendant that outlives it is not waited for.
+fn spawn(command: Command, kill_scope: KillScope) -> std::io::Result<Box<dyn ChildWrapper>> {
+    let mut command = CommandWrap::from(command);
+    if kill_scope == KillScope::Tree {
+        // The job object replaces creation flags set on the command: any the game needs must be
+        // given through `CreationFlags`.
+        #[cfg(windows)]
+        command.wrap(process_wrap::tokio::JobObject);
+        #[cfg(unix)]
+        command.wrap(process_wrap::tokio::ProcessGroup::leader());
+    }
+    command.spawn()
+}
+
+// Process liveness is read from /proc on Linux; there is no such check for other Unixes.
+#[cfg(all(test, any(target_os = "linux", windows)))]
+mod tests {
+    use std::time::{Duration, Instant};
+
+    use tokio::io::{AsyncBufReadExt, BufReader};
+
+    use super::*;
+
+    /// Read the pid that the started process prints on a line `pid:<pid>`.
+    async fn printed_pid(child: &mut dyn ChildWrapper) -> u32 {
+        let stdout = child.stdout().take().expect("stdout is piped");
+        let mut lines = BufReader::new(stdout).lines();
+        let read = async {
+            while let Some(line) = lines.next_line().await.unwrap() {
+                if let Some(pid) = line.trim().strip_prefix("pid:") {
+                    return pid.parse().unwrap();
+                }
+            }
+            panic!("the process ended without printing a pid");
+        };
+        tokio::time::timeout(Duration::from_secs(30), read)
+            .await
+            .expect("no pid was printed")
+    }
+
+    async fn wait_until_gone(pid: u32) {
+        let deadline = Instant::now() + Duration::from_secs(30);
+        while is_running(pid).await {
+            assert!(Instant::now() < deadline, "process {pid} is still running");
+            tokio::time::sleep(Duration::from_millis(20)).await;
+        }
+    }
+
+    fn piped(mut command: Command) -> Command {
+        command.stdin(Stdio::null()).stdout(Stdio::piped());
+        command
+    }
+
+    /// The `(state, process group)` of a process; a reaped process has none.
+    #[cfg(target_os = "linux")]
+    fn proc_stat(pid: &str) -> Option<(char, i32)> {
+        let stat = std::fs::read_to_string(format!("/proc/{pid}/stat")).ok()?;
+        // The name in parentheses may hold spaces; the fields after it do not.
+        let mut fields = stat[stat.rfind(')')? + 1..].split_whitespace();
+        let state = fields.next()?.chars().next()?;
+        let group = fields.nth(1)?.parse().ok()?;
+        Some((state, group))
+    }
+
+    /// A zombie is gone too: its parent may not have reaped it yet.
+    #[cfg(target_os = "linux")]
+    async fn is_running(pid: u32) -> bool {
+        proc_stat(&pid.to_string()).is_some_and(|(state, _)| state != 'Z')
+    }
+
+    #[cfg(target_os = "linux")]
+    #[tokio::test]
+    async fn should_stop_the_grandchild_when_the_tree_is_killed() {
+        let mut command = Command::new("sh");
+        command.args(["-c", "sleep 60 & echo pid:$!; wait"]);
+        let mut child = spawn(piped(command), KillScope::Tree).unwrap();
+        let grandchild = printed_pid(child.as_mut()).await;
+
+        child.start_kill().unwrap();
+
+        wait_until_gone(grandchild).await;
+    }
+
+    #[cfg(target_os = "linux")]
+    #[tokio::test]
+    async fn should_keep_the_process_in_the_launcher_group_when_only_it_is_to_be_killed() {
+        let mut child = spawn(
+            piped(Command::new("sleep").arg("60").into()),
+            KillScope::Process,
+        )
+        .unwrap();
+        let pid = child.id().unwrap();
+
+        let group = proc_stat(&pid.to_string()).map(|(_, group)| group);
+        child.start_kill().unwrap();
+
+        assert_eq!(group, proc_stat("self").map(|(_, group)| group));
+    }
+
+    /// Not a test: the grandchild the Windows tree test starts, which never ends.
+    #[cfg(windows)]
+    #[test]
+    #[ignore = "started by the process tree test as a grandchild that hangs"]
+    fn print_pid_and_hang() {
+        use std::io::Write;
+
+        println!("pid:{}", std::process::id());
+        std::io::stdout().flush().unwrap();
+        std::thread::sleep(Duration::from_secs(600));
+    }
+
+    #[cfg(windows)]
+    async fn is_running(pid: u32) -> bool {
+        let output = Command::new("tasklist")
+            .args(["/FI", &format!("PID eq {pid}"), "/NH", "/FO", "CSV"])
+            .output()
+            .await
+            .unwrap();
+        String::from_utf8_lossy(&output.stdout).contains(&format!("\"{pid}\""))
+    }
+
+    #[cfg(windows)]
+    #[tokio::test]
+    async fn should_stop_the_grandchild_when_the_tree_is_killed() {
+        let module = module_path!().trim_start_matches("aether_core::");
+        let mut command = Command::new("cmd");
+        command
+            .arg("/c")
+            .arg(std::env::current_exe().unwrap())
+            .args(["--ignored", "--exact", "--nocapture"])
+            .arg(format!("{module}::print_pid_and_hang"));
+        let mut child = spawn(piped(command), KillScope::Tree).unwrap();
+        let grandchild = printed_pid(child.as_mut()).await;
+
+        child.start_kill().unwrap();
+
+        wait_until_gone(grandchild).await;
     }
 }

@@ -8,4 +8,4 @@ pub use app::{
     ProcessStartService, ProcessStorage, StartProcessUseCase, TrackProcessService,
     TrackProcessUseCase,
 };
-pub use domain::{MinecraftProcessMetadata, ProcessError};
+pub use domain::{KillScope, MinecraftProcessMetadata, ProcessError};
