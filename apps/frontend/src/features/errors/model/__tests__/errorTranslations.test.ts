@@ -590,6 +590,22 @@ describe('plugin call failure', () => {
   });
 });
 
+describe('plugin command not approved', () => {
+  it('should_translate_why_the_command_did_not_run', () => {
+    const error = {
+      type: 'plugin',
+      payload: {
+        code: 'COMMAND_NOT_APPROVED',
+        payload: { plugin_id: 'packwiz', reason: { code: 'DENIED' } },
+      },
+    } as unknown as LauncherError;
+
+    expect(getTranslatedError(error, tEn)).toBe(
+      'The command of plugin packwiz did not run: it was not allowed',
+    );
+  });
+});
+
 describe('plugin provider failure', () => {
   it('should_translate_the_reason_and_the_category_of_its_cause', () => {
     const error = {

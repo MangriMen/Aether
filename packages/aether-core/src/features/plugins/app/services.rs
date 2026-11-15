@@ -15,13 +15,18 @@ use crate::features::{
     plugins::{Plugin, PluginCapabilities, PluginError, PluginHandle, PluginManifest, PluginState},
 };
 
-use super::ports::PluginLoader;
+use super::ports::{CommandApprover, PluginLoader};
 
 pub struct PluginRegistry {
     plugins: DashMap<PluginId, Plugin>,
     settings_locks: DashMap<PluginId, Arc<Mutex<()>>>,
     event_emitter: SharedEventEmitter,
+    /// Told when a plugin is stopped, so a question it left unanswered does not hold it.
+    command_approver: Option<Arc<dyn CommandApprover>>,
 }
+
+/// How long a stop waits for a plugin to leave a command question it was cancelled out of.
+const CANCEL_SETTLE: std::time::Duration = std::time::Duration::from_secs(5);
 
 impl PluginRegistry {
     pub fn new(event_emitter: SharedEventEmitter) -> Self {
@@ -29,6 +34,36 @@ impl PluginRegistry {
             plugins: DashMap::default(),
             settings_locks: DashMap::default(),
             event_emitter,
+            command_approver: None,
+        }
+    }
+
+    #[must_use]
+    pub fn with_command_approver(mut self, approver: Arc<dyn CommandApprover>) -> Self {
+        self.command_approver = Some(approver);
+        self
+    }
+
+    /// Cancels the command questions of `plugin_id` and waits for the call that asked them to
+    /// end. A plugin waiting for the user is in a call, and a stop refuses a busy plugin; the
+    /// cancelled question ends the call within moments. Plugins without a question pass at
+    /// once.
+    async fn cancel_command_questions(&self, plugin_id: &PluginId) {
+        let Some(approver) = &self.command_approver else {
+            return;
+        };
+        if !approver.cancel_plugin(plugin_id) {
+            return;
+        }
+        let deadline = tokio::time::Instant::now() + CANCEL_SETTLE;
+        while tokio::time::Instant::now() < deadline {
+            let busy = self.plugins.get(plugin_id).is_some_and(
+                |plugin| matches!(&plugin.state, PluginState::Loaded(handle) if handle.is_busy()),
+            );
+            if !busy {
+                return;
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(25)).await;
         }
     }
 
@@ -180,6 +215,7 @@ impl PluginRegistry {
     /// restart and a disable, cannot both take the same instance. A busy plugin is refused
     /// without passing through `Unloading`.
     pub async fn begin_unloading(&self, plugin_id: &PluginId) -> Result<PluginHandle, PluginError> {
+        self.cancel_command_questions(plugin_id).await;
         let mut taken = None;
         self.upsert_with(plugin_id, |plugin| {
             let plugin_id = plugin_id.clone();

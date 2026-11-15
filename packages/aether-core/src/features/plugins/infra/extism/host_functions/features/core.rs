@@ -261,6 +261,10 @@ pub(crate) async fn handle_run_command(
         &allowed_program_dirs,
     )?;
 
+    // The user's say on this command, after the fences above so only a command that could run is asked about.
+    super::command_approval::authorize_command(plugin_id, &command, &host_command, container)
+        .await?;
+
     // Arguments and environment can hold a token or a pack URL with one: in full only at trace.
     tracing::trace!(target: "plugin", "[{plugin_id}]: running {host_command:?}");
     let max_output_bytes = container.sandbox_limits().max_output_bytes;

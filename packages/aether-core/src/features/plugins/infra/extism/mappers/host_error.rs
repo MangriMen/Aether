@@ -503,6 +503,15 @@ fn plugin_dto(value: &PluginError) -> PluginErrorDto {
             plugin_id: plugin_id.to_string(),
             path: path.clone(),
         },
+        // A refusal reaches a plugin as the word the host function returns, never through this
+        // type; the closest kind keeps it decodable if it ever does.
+        PluginError::CommandNotApproved { plugin_id, reason } => Dto::AccessViolation {
+            plugin_id: plugin_id.to_string(),
+            path: reason.as_wire().to_owned(),
+        },
+        // Only the launcher's own UI answers a question; a plugin never sees these.
+        PluginError::CommandApprovalNotFound { .. }
+        | PluginError::CommandApprovalOnceOnly { .. } => Dto::Storage(value.to_string()),
         PluginError::HashComputationFailed => Dto::HashComputationFailed,
         PluginError::Storage(err) => Dto::Storage(err.to_string()),
         PluginError::Settings(_) | PluginError::Provider(_) => {

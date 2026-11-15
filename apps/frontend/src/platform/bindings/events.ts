@@ -91,6 +91,9 @@ export type CauseDto = { type: "io"; kind: IoErrorKindDto } | { type: "network";
 /**  Why a text is not a command. */
 export type CommandParseReasonDto = { code: "EMPTY" };
 
+/**  Why a plugin's command was not run. */
+export type CommandRefusalDto = { code: "DENIED" } | { code: "TIMED_OUT" } | { code: "CANCELLED" } | { code: "JAR_CHANGED" };
+
 /**  Why content could not be downloaded. */
 export type ContentDownloadReasonDto = { code: "NO_FILES"; payload: {
 	version_id: string,
@@ -480,6 +483,19 @@ export type PluginErrorDto = { code: "NOT_FOUND"; payload: {
 	plugin_id: string,
 	entry: string,
 	reason: AllowedHostEntryRejectionDto,
+} } | 
+/**  The user did not allow the plugin's command, or was not there to. */
+{ code: "COMMAND_NOT_APPROVED"; payload: {
+	plugin_id: string,
+	reason: CommandRefusalDto,
+} } | 
+/**  The question was answered or ended before this answer came. */
+{ code: "COMMAND_APPROVAL_NOT_FOUND"; payload: {
+	request_id: string,
+} } | 
+/**  "Always" was answered for a command that can be allowed once only. */
+{ code: "COMMAND_APPROVAL_ONCE_ONLY"; payload: {
+	request_id: string,
 } } | { code: "HASH_COMPUTATION_FAILED" } | { code: "STORAGE"; payload: {
 	cause: CauseDto,
 } } | { code: "PROVIDER_FETCH_ERROR"; payload: {

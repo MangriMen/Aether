@@ -1,4 +1,4 @@
-use super::{AllowedPath, IgnoredAllowedPath};
+use super::{AllowedPath, CommandApproval, IgnoredAllowedPath};
 
 #[derive(Debug, Default, Clone)]
 pub struct PluginSettings {
@@ -13,4 +13,8 @@ pub struct PluginSettings {
     /// When the launcher updates to a different API version, this is cleared
     /// and the user must re-confirm.
     pub force_enabled_at_api_version: Option<String>,
+
+    /// Commands the user approved for good. Never edited from the settings form: an approval is
+    /// added by answering the question a plugin's command raises, and only taken back.
+    pub command_approvals: Vec<CommandApproval>,
 }

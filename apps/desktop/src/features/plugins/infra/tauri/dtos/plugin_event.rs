@@ -15,8 +15,20 @@ pub struct PluginEventDto {
 #[derive(Debug, Serialize, Deserialize, Clone, Type)]
 #[serde(rename_all = "camelCase", tag = "type")]
 pub enum PluginEventKindDto {
-    Edit { plugin_id: String },
+    Edit {
+        plugin_id: String,
+    },
     Sync,
+    /// A command of the plugin waits for the user. The arguments are not here: the frontend asks
+    /// for the question.
+    CommandApprovalRequested {
+        plugin_id: String,
+        request_id: String,
+    },
+    CommandApprovalResolved {
+        plugin_id: String,
+        request_id: String,
+    },
 }
 
 impl From<PluginEvent> for PluginEventDto {
@@ -28,6 +40,20 @@ impl From<PluginEvent> for PluginEventDto {
                     plugin_id: plugin_id.into(),
                 },
                 PluginEvent::Sync => PluginEventKindDto::Sync,
+                PluginEvent::CommandApprovalRequested {
+                    plugin_id,
+                    request_id,
+                } => PluginEventKindDto::CommandApprovalRequested {
+                    plugin_id: plugin_id.into(),
+                    request_id: request_id.to_string(),
+                },
+                PluginEvent::CommandApprovalResolved {
+                    plugin_id,
+                    request_id,
+                } => PluginEventKindDto::CommandApprovalResolved {
+                    plugin_id: plugin_id.into(),
+                    request_id: request_id.to_string(),
+                },
             },
         }
     }

@@ -1,5 +1,6 @@
 mod allowed_host;
 mod allowed_path;
+mod command_approval;
 mod constants;
 mod extracted_plugin;
 mod manifest_error;
@@ -31,6 +32,11 @@ pub use allowed_path::{
 pub(crate) use allowed_path::{
     CoreMount, PLUGIN_CACHE_MOUNT, core_folders, is_filesystem_root, partition_mountable,
     to_wasi_path,
+};
+pub use command_approval::{
+    CommandApproval, CommandApprovalAnswer, CommandApprovalRefusal, CommandApprovalRequest,
+    CommandGrant, CommandIdentity, CommandJar, JarLaunch, MAX_APPROVED_JAR_BYTES, OnceOnlyReason,
+    PendingCommandApproval, manifest_has_class_path, parse_jar_launch,
 };
 pub(crate) use constants::PLUGIN_API_VERSION;
 pub use extracted_plugin::{ArchiveMetadata, ExtractedPlugin, PluginContent};

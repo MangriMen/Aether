@@ -5,11 +5,34 @@ use aether_core::features::plugins::{
 use serde::Serialize;
 use specta::Type;
 
+use aether_core::features::plugins::CommandApprovalRefusal;
+
 use super::{CauseDto, FrontendError, without_query};
 use crate::features::plugins::{
     AllowedHostEntryRejectionDto, AllowedHostRejectionDto, AllowedPathRejectionDto,
     LoadConfigTypeDto,
 };
+
+/// Why a plugin's command was not run.
+#[derive(Debug, Clone, Copy, Serialize, Type)]
+#[serde(tag = "code", rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum CommandRefusalDto {
+    Denied,
+    TimedOut,
+    Cancelled,
+    JarChanged,
+}
+
+impl From<CommandApprovalRefusal> for CommandRefusalDto {
+    fn from(value: CommandApprovalRefusal) -> Self {
+        match value {
+            CommandApprovalRefusal::Denied => Self::Denied,
+            CommandApprovalRefusal::TimedOut => Self::TimedOut,
+            CommandApprovalRefusal::Cancelled => Self::Cancelled,
+            CommandApprovalRefusal::JarChanged => Self::JarChanged,
+        }
+    }
+}
 
 /// Why a plugin manifest is refused.
 #[derive(Debug, Clone, Serialize, Type)]
@@ -293,6 +316,19 @@ pub enum PluginErrorDto {
         entry: String,
         reason: AllowedHostEntryRejectionDto,
     },
+    /// The user did not allow the plugin's command, or was not there to.
+    CommandNotApproved {
+        plugin_id: String,
+        reason: CommandRefusalDto,
+    },
+    /// The question was answered or ended before this answer came.
+    CommandApprovalNotFound {
+        request_id: String,
+    },
+    /// "Always" was answered for a command that can be allowed once only.
+    CommandApprovalOnceOnly {
+        request_id: String,
+    },
     HashComputationFailed,
     Storage {
         cause: CauseDto,
@@ -436,6 +472,16 @@ impl PluginErrorDto {
                 plugin_id: plugin_id.to_string(),
                 entry: entry.clone(),
                 reason: (*reason).into(),
+            },
+            PluginError::CommandNotApproved { plugin_id, reason } => Self::CommandNotApproved {
+                plugin_id: plugin_id.to_string(),
+                reason: (*reason).into(),
+            },
+            PluginError::CommandApprovalNotFound { request_id } => Self::CommandApprovalNotFound {
+                request_id: request_id.clone(),
+            },
+            PluginError::CommandApprovalOnceOnly { request_id } => Self::CommandApprovalOnceOnly {
+                request_id: request_id.clone(),
             },
             PluginError::HashComputationFailed => Self::HashComputationFailed,
             PluginError::Storage(err) => Self::Storage { cause: err.into() },

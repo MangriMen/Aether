@@ -2,8 +2,9 @@ use crate::{
     features::{
         instance::{CapabilityId, PluginId},
         plugins::{
-            AllowedHostEntryRejection, AllowedHostRejection, AllowedPathRejection, LoadConfigType,
-            ManifestError, PluginCallError, PluginLoadFailure, PluginProviderError,
+            AllowedHostEntryRejection, AllowedHostRejection, AllowedPathRejection,
+            CommandApprovalRefusal, LoadConfigType, ManifestError, PluginCallError,
+            PluginLoadFailure, PluginProviderError,
         },
         settings::SettingsError,
     },
@@ -119,6 +120,18 @@ pub enum PluginError {
         entry: String,
         reason: AllowedHostEntryRejection,
     },
+
+    #[error("The command of plugin \"{plugin_id}\" was not approved: {}", reason.as_wire())]
+    CommandNotApproved {
+        plugin_id: PluginId,
+        reason: CommandApprovalRefusal,
+    },
+
+    #[error("No command waits for an answer under id {request_id}")]
+    CommandApprovalNotFound { request_id: String },
+
+    #[error("The command waiting under id {request_id} can be approved once only")]
+    CommandApprovalOnceOnly { request_id: String },
 
     // Infrastructure errors
     #[error("Failed to compute hash")]
