@@ -23,6 +23,7 @@ use crate::{
     features::{
         instance::PluginId,
         java::{Java, JavaFeature},
+        plugins::PluginsFeature,
     },
     shared::{limits::COMMAND_TIMEOUT, serializable_command::domain::SerializableCommand},
 };
@@ -268,7 +269,12 @@ pub(crate) async fn handle_run_command(
         wasm_sha256,
         &command,
         &host_command,
-        container,
+        &super::command_approval::CommandAuthority {
+            approver: container.command_approver().as_ref(),
+            settings: container.plugin_settings_storage().as_ref(),
+            registry: container.plugin_registry().as_ref(),
+            location_info: container.location_info().as_ref(),
+        },
     )
     .await?;
 

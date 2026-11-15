@@ -342,3 +342,215 @@ impl PluginLoaderRegistry {
         self.loaders.remove(load_config_type);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::time::Duration;
+
+    use tokio::runtime::Handle;
+
+    use super::*;
+    use crate::features::{
+        events::test_support::NoOpEmitter,
+        plugins::{
+            ApiConfig, CommandApprovalAnswer, CommandApprovalRefusal, CommandApprovalRequest,
+            CommandGrant, LoadConfig, PluginInstance, PluginInternalEvent, PluginMetadata,
+            RuntimeConfig,
+        },
+    };
+
+    use crate::features::plugins::app::pending_command_approvals::PendingCommandApprovals;
+
+    struct Stub;
+
+    impl PluginInstance for Stub {
+        fn get_id(&self) -> PluginId {
+            id()
+        }
+
+        fn supports(&self, _name: &str) -> bool {
+            true
+        }
+
+        fn call_bytes<'b>(
+            &'b mut self,
+            _name: &str,
+            _args: &[u8],
+        ) -> Result<&'b [u8], PluginError> {
+            Ok(&[])
+        }
+
+        fn handle_event(&mut self, _event: &PluginInternalEvent) -> Result<(), PluginError> {
+            Ok(())
+        }
+    }
+
+    fn id() -> PluginId {
+        PluginId::try_from("packwiz").unwrap()
+    }
+
+    fn manifest() -> PluginManifest {
+        PluginManifest {
+            metadata: PluginMetadata {
+                id: id(),
+                name: "Packwiz".into(),
+                version: semver::Version::new(0, 1, 0),
+                description: None,
+                authors: vec![],
+                license: None,
+            },
+            runtime: RuntimeConfig {
+                allowed_hosts: vec![],
+                allowed_paths: vec![],
+            },
+            load: LoadConfig::Extism {
+                file: "plugin.wasm".try_into().unwrap(),
+                memory_limit: None,
+            },
+            api: ApiConfig {
+                version: semver::VersionReq::STAR,
+                features: vec![],
+                host_functions: Some(vec![]),
+            },
+        }
+    }
+
+    fn request(plugin: &PluginId) -> CommandApprovalRequest {
+        CommandApprovalRequest {
+            id: uuid::Uuid::new_v4(),
+            plugin_id: plugin.clone(),
+            java: "java".into(),
+            current_dir: "/cache".into(),
+            arguments: vec!["-jar".into(), "#/cache/a.jar".into()],
+            jar: None,
+            always: Ok(()),
+        }
+    }
+
+    struct Setup {
+        registry: Arc<PluginRegistry>,
+        approvals: Arc<PendingCommandApprovals>,
+        handle: PluginHandle,
+    }
+
+    fn setup() -> Setup {
+        let approvals = Arc::new(PendingCommandApprovals::new(Arc::new(NoOpEmitter)));
+        let registry = Arc::new(
+            PluginRegistry::new(Arc::new(NoOpEmitter))
+                .with_command_approver(approvals.clone() as Arc<dyn CommandApprover>),
+        );
+        let handle = PluginHandle::new(Stub);
+        registry.insert(
+            id(),
+            Plugin {
+                manifest: manifest(),
+                capabilities: None,
+                hash: "hash".into(),
+                verified: false,
+                state: PluginState::Loaded(handle.clone()),
+            },
+        );
+        Setup {
+            registry,
+            approvals,
+            handle,
+        }
+    }
+
+    /// A call into the plugin that asks the user, the way the `run_command` host function does:
+    /// on the blocking pool, waiting on the approver.
+    fn call_that_asks(
+        setup: &Setup,
+    ) -> tokio::task::JoinHandle<Result<Result<CommandGrant, CommandApprovalRefusal>, PluginError>>
+    {
+        let handle = setup.handle.clone();
+        let approvals = setup.approvals.clone();
+        tokio::spawn(async move {
+            handle
+                .run("import", move |_| {
+                    Handle::current().block_on(approvals.request(request(&id())))
+                })
+                .await
+        })
+    }
+
+    async fn wait_until_asked(approvals: &PendingCommandApprovals) {
+        for _ in 0..500 {
+            if !approvals.pending().is_empty() {
+                return;
+            }
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+        panic!("the plugin never asked");
+    }
+
+    #[tokio::test]
+    async fn should_stop_a_plugin_that_waits_for_the_user_by_cancelling_its_question() {
+        let setup = setup();
+        let call = call_that_asks(&setup);
+        wait_until_asked(&setup.approvals).await;
+
+        let taken = setup.registry.begin_unloading(&id()).await;
+
+        assert!(taken.is_ok(), "the stop should go through");
+        let outcome = call.await.unwrap().expect("the call ended on its own");
+        assert_eq!(outcome, Err(CommandApprovalRefusal::Cancelled));
+        assert!(setup.approvals.pending().is_empty());
+    }
+
+    #[tokio::test]
+    async fn should_refuse_to_stop_a_busy_plugin_that_waits_for_nobody_without_delay() {
+        let setup = setup();
+        let (release, gate) = std::sync::mpsc::channel::<()>();
+        let handle = setup.handle.clone();
+        let call = tokio::spawn(async move {
+            handle
+                .run("work", move |_| {
+                    let _ = gate.recv();
+                })
+                .await
+        });
+        while !setup.handle.is_busy() {
+            tokio::time::sleep(Duration::from_millis(5)).await;
+        }
+
+        let started = std::time::Instant::now();
+        let result = setup.registry.begin_unloading(&id()).await;
+
+        assert!(matches!(result, Err(PluginError::Busy { .. })));
+        assert!(
+            started.elapsed() < Duration::from_secs(2),
+            "with no question to cancel there is nothing to wait for"
+        );
+        release.send(()).unwrap();
+        call.await.unwrap().unwrap();
+    }
+
+    #[tokio::test]
+    async fn should_refuse_a_denied_command_until_the_registry_forgets_the_denial() {
+        let setup = setup();
+        let first = call_that_asks(&setup);
+        wait_until_asked(&setup.approvals).await;
+        let waiting = setup.approvals.pending()[0].request.id;
+        setup
+            .approvals
+            .answer(waiting, CommandApprovalAnswer::Deny)
+            .unwrap();
+        assert_eq!(
+            first.await.unwrap().unwrap(),
+            Err(CommandApprovalRefusal::Denied)
+        );
+
+        let again = call_that_asks(&setup).await.unwrap().unwrap();
+        assert_eq!(again, Err(CommandApprovalRefusal::Denied));
+
+        setup.registry.forget_command_denials(&id());
+        let asked_anew = call_that_asks(&setup);
+        wait_until_asked(&setup.approvals).await;
+        setup.approvals.cancel_plugin(&id());
+        assert_eq!(
+            asked_anew.await.unwrap().unwrap(),
+            Err(CommandApprovalRefusal::Cancelled)
+        );
+    }
+}

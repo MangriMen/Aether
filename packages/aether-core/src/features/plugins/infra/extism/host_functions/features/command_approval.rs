@@ -10,14 +10,15 @@ use aether_core_plugin_api::v0::CommandDto;
 use uuid::Uuid;
 
 use crate::{
-    core::app::AetherContainer,
     features::{
         instance::PluginId,
         plugins::{
-            CommandApproval, CommandApprovalRefusal, CommandApprovalRequest, CommandGrant,
-            CommandIdentity, CommandJar, MAX_APPROVED_JAR_BYTES, OnceOnlyReason, PluginError,
-            PluginPath, PluginSettings, PluginsFeature, manifest_has_class_path, parse_jar_launch,
+            CommandApproval, CommandApprovalRefusal, CommandApprovalRequest, CommandApprover,
+            CommandGrant, CommandIdentity, CommandJar, MAX_APPROVED_JAR_BYTES, OnceOnlyReason,
+            PluginError, PluginPath, PluginRegistry, PluginSettings, PluginSettingsStorage,
+            manifest_has_class_path, parse_jar_launch,
         },
+        settings::LocationInfo,
     },
     shared::{
         hash::{HashAlgorithm, infra::hash_file_hex_async},
@@ -29,6 +30,14 @@ use super::super::super::super::plugin_utils::{self, MountSet};
 
 /// The largest manifest read from a jar; a real one is a few lines.
 const MAX_MANIFEST_BYTES: u64 = 1024 * 1024;
+
+/// What `authorize_command` works with, so that it can be driven without the whole container.
+pub(crate) struct CommandAuthority<'a> {
+    pub approver: &'a dyn CommandApprover,
+    pub settings: &'a dyn PluginSettingsStorage,
+    pub registry: &'a PluginRegistry,
+    pub location_info: &'a LocationInfo,
+}
 
 /// What the core could tell about the jar a command starts.
 struct Inspected {
@@ -46,17 +55,17 @@ pub(crate) async fn authorize_command(
     plugin_sha256: &str,
     command: &CommandDto,
     host_command: &SerializableCommand,
-    container: &AetherContainer,
+    authority: &CommandAuthority<'_>,
 ) -> Result<(), PluginError> {
     let refused = |reason| PluginError::CommandNotApproved {
         plugin_id: plugin_id.clone(),
         reason,
     };
 
-    let inspected = inspect(plugin_id, command, container).await;
+    let inspected = inspect(plugin_id, command, authority.location_info).await;
 
     if let (Some(identity), Ok(())) = (&inspected.identity, &inspected.always)
-        && is_approved(container, plugin_id, identity, plugin_sha256).await
+        && is_approved(authority.settings, plugin_id, identity, plugin_sha256).await
     {
         return still_the_same_jar(&inspected).await.map_err(refused);
     }
@@ -75,21 +84,20 @@ pub(crate) async fn authorize_command(
         always: inspected.always.clone(),
     };
 
-    let grant = container
-        .command_approver()
-        .request(request)
-        .await
-        .map_err(refused)?;
+    let grant = authority.approver.request(request).await.map_err(refused)?;
 
     // What the user saw is what runs: a jar swapped while the question was open is refused.
     still_the_same_jar(&inspected).await.map_err(refused)?;
 
+    // The approver refuses "always" for a command that allows "once" only; the core does not
+    // rely on it, since an approval is trust that outlives the question.
     if grant == CommandGrant::Always
+        && inspected.always.is_ok()
         && let Some(identity) = inspected.identity
         && let Some(jar) = inspected.jar
     {
         remember(
-            container,
+            authority,
             plugin_id,
             identity,
             plugin_sha256.to_owned(),
@@ -102,12 +110,12 @@ pub(crate) async fn authorize_command(
 }
 
 async fn is_approved(
-    container: &AetherContainer,
+    settings: &dyn PluginSettingsStorage,
     plugin_id: &PluginId,
     identity: &CommandIdentity,
     plugin_sha256: &str,
 ) -> bool {
-    match container.plugin_settings_storage().get(plugin_id).await {
+    match settings.get(plugin_id).await {
         Ok(Some(settings)) => settings
             .command_approvals
             .iter()
@@ -125,15 +133,14 @@ async fn is_approved(
 /// Saves "always". A failed save is not a failed command: the user said yes, so it runs, and
 /// they are asked again next time.
 async fn remember(
-    container: &AetherContainer,
+    authority: &CommandAuthority<'_>,
     plugin_id: &PluginId,
     identity: CommandIdentity,
     plugin_sha256: String,
     jar: String,
 ) {
-    let registry = container.plugin_registry();
-    let _lock = registry.lock_settings(plugin_id).await;
-    let storage = container.plugin_settings_storage();
+    let _lock = authority.registry.lock_settings(plugin_id).await;
+    let storage = authority.settings;
 
     let mut settings: PluginSettings = match storage.get(plugin_id).await {
         Ok(settings) => settings.unwrap_or_default(),
@@ -174,7 +181,7 @@ async fn still_the_same_jar(inspected: &Inspected) -> Result<(), CommandApproval
 async fn inspect(
     plugin_id: &PluginId,
     command: &CommandDto,
-    container: &AetherContainer,
+    location_info: &LocationInfo,
 ) -> Inspected {
     let once_only = |reason| Inspected {
         identity: None,
@@ -196,12 +203,9 @@ async fn inspect(
     let Some(plugin_path) = in_cache else {
         return once_only(OnceOnlyReason::TargetNotInCache);
     };
-    let Ok(host_path) = plugin_utils::resolve_plugin_path(
-        &container.location_info(),
-        plugin_id,
-        &plugin_path,
-        MountSet::CACHE,
-    ) else {
+    let Ok(host_path) =
+        plugin_utils::resolve_plugin_path(location_info, plugin_id, &plugin_path, MountSet::CACHE)
+    else {
         return once_only(OnceOnlyReason::TargetNotInCache);
     };
 
@@ -269,6 +273,9 @@ fn jar_has_class_path(path: &Path) -> Result<bool, ()> {
     }
     Ok(manifest_has_class_path(&manifest))
 }
+
+#[cfg(test)]
+mod authorize_tests;
 
 #[cfg(test)]
 mod tests {
