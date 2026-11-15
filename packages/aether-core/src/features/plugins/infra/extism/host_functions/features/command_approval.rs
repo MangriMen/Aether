@@ -50,7 +50,35 @@ struct Inspected {
 }
 
 /// Lets the command run, or says why it may not. Returns once the command may be started.
+///
+/// A refusal is logged, with the reason only: the user is told in the app, but the log is what
+/// they attach to a bug report, and it must say why a command did not run.
 pub(crate) async fn authorize_command(
+    plugin_id: &PluginId,
+    plugin_sha256: &str,
+    command: &CommandDto,
+    host_command: &SerializableCommand,
+    authority: &CommandAuthority<'_>,
+) -> Result<(), PluginError> {
+    let result = authorize(plugin_id, plugin_sha256, command, host_command, authority).await;
+    if let Err(PluginError::CommandNotApproved { reason, .. }) = &result {
+        match reason {
+            // Nothing the user did: the file changed under them.
+            CommandApprovalRefusal::JarChanged => tracing::warn!(
+                target: "plugin",
+                "[{plugin_id}]: command not run, its jar changed while the user was asked"
+            ),
+            reason => tracing::info!(
+                target: "plugin",
+                "[{plugin_id}]: command not approved: {}",
+                reason.as_wire()
+            ),
+        }
+    }
+    result
+}
+
+async fn authorize(
     plugin_id: &PluginId,
     plugin_sha256: &str,
     command: &CommandDto,

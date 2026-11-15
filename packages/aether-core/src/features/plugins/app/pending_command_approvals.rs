@@ -86,7 +86,24 @@ struct WaitGuard<'a> {
 
 impl Drop for WaitGuard<'_> {
     fn drop(&mut self) {
-        self.approvals.lock().waiting.remove(&self.id);
+        // The normal end removes the question before it reports; one still here means the wait
+        // was dropped without ending, so the UI is told the question is gone.
+        let Some(left) = self.approvals.lock().waiting.remove(&self.id) else {
+            return;
+        };
+        let events = self.approvals.events.clone();
+        let (plugin_id, request_id) = (left.pending.request.plugin_id, self.id);
+        if let Ok(runtime) = tokio::runtime::Handle::try_current() {
+            runtime.spawn(async move {
+                events
+                    .emit_safe(PluginEvent::CommandApprovalResolved {
+                        plugin_id,
+                        request_id,
+                        outcome: CommandApprovalOutcome::Cancelled,
+                    })
+                    .await;
+            });
+        }
     }
 }
 
@@ -474,5 +491,31 @@ mod tests {
             events.try_recv().is_err(),
             "no event for a refusal nobody was asked about"
         );
+    }
+
+    #[tokio::test]
+    async fn should_report_a_cancel_when_the_wait_is_dropped_before_it_ends() {
+        let (approvals, mut events) = approvals_with_outcomes(Duration::from_secs(60));
+        let waiter = spawn_request(&approvals, request("p", false));
+        wait_for_pending(&approvals).await;
+
+        waiter.abort();
+        let _ = waiter.await;
+
+        let resolved = tokio::time::timeout(Duration::from_secs(2), async {
+            loop {
+                match events.recv().await {
+                    Some(Event::Plugin(PluginEvent::CommandApprovalResolved {
+                        outcome, ..
+                    })) => return outcome,
+                    Some(_) => {}
+                    None => panic!("the channel closed"),
+                }
+            }
+        })
+        .await
+        .expect("the UI was never told the question is gone");
+        assert_eq!(resolved, CommandApprovalOutcome::Cancelled);
+        assert!(approvals.pending().is_empty());
     }
 }
