@@ -175,26 +175,19 @@ mod tests {
     /// started.
     fn behind_a_shell(helper: &str) -> Command {
         let module = module_path!().trim_start_matches("aether_core::");
-        let exe = std::env::current_exe().unwrap();
-        let args = ["--ignored", "--exact", "--nocapture"];
-        let test = format!("{module}::{helper}");
-        #[cfg(windows)]
-        let mut command = {
-            let mut command = Command::new("cmd");
-            command.arg("/c").arg(exe).args(args).arg(test);
-            command
+        let (shell, shell_args): (&str, &[&str]) = if cfg!(windows) {
+            ("cmd", &["/c"])
+        } else {
+            ("sh", &["-c", r#""$0" "$@" & wait"#])
         };
-        #[cfg(target_os = "linux")]
-        let mut command = {
-            let mut command = Command::new("sh");
-            command
-                .args(["-c", r#""$0" "$@" & wait"#])
-                .arg(exe)
-                .args(args)
-                .arg(test);
-            command
-        };
-        command.stdin(Stdio::null()).stdout(Stdio::piped());
+        let mut command = Command::new(shell);
+        command
+            .args(shell_args)
+            .arg(std::env::current_exe().unwrap())
+            .args(["--ignored", "--exact", "--nocapture"])
+            .arg(format!("{module}::{helper}"))
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped());
         command
     }
 
