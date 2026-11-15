@@ -1,3 +1,4 @@
+mod command_approval;
 mod plugin;
 mod plugin_capabilities;
 mod plugin_event;
@@ -8,6 +9,7 @@ mod plugin_source;
 mod provider_preview;
 mod skipped_plugin_dir;
 
+pub use command_approval::*;
 pub use plugin::*;
 pub use plugin_capabilities::*;
 pub use plugin_event::*;

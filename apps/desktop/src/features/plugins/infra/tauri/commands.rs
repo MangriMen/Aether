@@ -10,9 +10,10 @@ use crate::{
     FrontendResult,
     core::ContainerState,
     features::plugins::{
-        EditPluginSettingsDto, FolderAccessDto, HostAccessDto, PluginDto, PluginEventDto,
-        PluginProviderDto, PluginSettingsDto, PluginSourceDto, PluginSourceTypeDto,
-        PluginUpdateInfoDto, ProviderPluginPreviewDto, SkippedPluginDirDto,
+        CommandAnswerDto, EditPluginSettingsDto, FolderAccessDto, HostAccessDto,
+        PendingCommandApprovalDto, PluginDto, PluginEventDto, PluginProviderDto, PluginSettingsDto,
+        PluginSourceDto, PluginSourceTypeDto, PluginUpdateInfoDto, ProviderPluginPreviewDto,
+        SkippedPluginDirDto,
     },
     shared::reveal_in_explorer::infra::reveal_in_explorer,
     shared::{
@@ -464,4 +465,43 @@ async fn install_plugin_from_provider(
         .await
         .map_err(aether_core::Error::from)?
         .into())
+}
+
+/// The commands plugins wait to run, oldest first: the frontend reads them when it starts and
+/// after an event, since the event carries no arguments.
+#[tauri::command]
+#[specta::specta]
+async fn list_pending_command_approvals(
+    container: State<'_, ContainerState>,
+) -> FrontendResult<Vec<PendingCommandApprovalDto>> {
+    Ok(container
+        .0
+        .command_approver()
+        .pending()
+        .into_iter()
+        .map(Into::into)
+        .collect())
+}
+
+/// Answers a waiting command. A question that is gone (answered elsewhere, timed out, its plugin
+/// stopped) is reported as `COMMAND_APPROVAL_NOT_FOUND`, which the caller may ignore.
+#[tauri::command]
+#[specta::specta]
+async fn answer_command_approval(
+    request_id: String,
+    answer: CommandAnswerDto,
+    container: State<'_, ContainerState>,
+) -> FrontendResult<()> {
+    let not_found = || PluginError::CommandApprovalNotFound {
+        request_id: request_id.clone(),
+    };
+    let id = request_id
+        .parse()
+        .map_err(|_| aether_core::Error::from(not_found()))?;
+    container
+        .0
+        .command_approver()
+        .answer(id, answer.into())
+        .map_err(aether_core::Error::from)?;
+    Ok(())
 }

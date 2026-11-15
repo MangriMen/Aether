@@ -12,6 +12,7 @@ export const pluginKeys = {
   preview: (provider: string, identifier: string, tag: string | null) =>
     [...pluginKeys.all, 'preview', provider, identifier, tag] as const,
   providers: () => [...pluginKeys.all, 'providers'] as const,
+  commandApprovals: () => [...pluginKeys.all, 'command-approvals'] as const,
   importers: () => [...pluginKeys.all, 'importer'] as const,
   importerList: () => [...pluginKeys.importers(), 'list'] as const,
   /** Mutation key of every restart: the plugin is the mutation's variable. */

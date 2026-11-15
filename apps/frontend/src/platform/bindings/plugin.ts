@@ -51,6 +51,16 @@ export const commands = {
 	getAvailableProviders: () => __TAURI_INVOKE<PluginProviderDto[]>("plugin:plugin|get_available_providers"),
 	previewPluginFromProvider: (sourceType: PluginSourceTypeDto, identifier: string, tag: string | null) => __TAURI_INVOKE<ProviderPluginPreviewDto>("plugin:plugin|preview_plugin_from_provider", { sourceType, identifier, tag }),
 	installPluginFromProvider: (sourceType: PluginSourceTypeDto, identifier: string, tagName: string, archiveSha256: string, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<string>("plugin:plugin|install_plugin_from_provider", { sourceType, identifier, tagName, archiveSha256, requestId }),
+	/**
+	 *  The commands plugins wait to run, oldest first: the frontend reads them when it starts and
+	 *  after an event, since the event carries no arguments.
+	 */
+	listPendingCommandApprovals: () => __TAURI_INVOKE<PendingCommandApprovalDto[]>("plugin:plugin|list_pending_command_approvals"),
+	/**
+	 *  Answers a waiting command. A question that is gone (answered elsewhere, timed out, its plugin
+	 *  stopped) is reported as `COMMAND_APPROVAL_NOT_FOUND`, which the caller may ignore.
+	 */
+	answerCommandApproval: (requestId: string, answer: CommandAnswerDto) => __TAURI_INVOKE<null>("plugin:plugin|answer_command_approval", { requestId, answer }),
 };
 
 /** Events */
@@ -144,11 +154,23 @@ export type CauseDto = { type: "io"; kind: IoErrorKindDto } | { type: "network";
 /**  The only place raw error text reaches the frontend. */
 { type: "unknown"; details: string };
 
+export type CommandAnswerDto = "once" | "always" | "deny";
+
 /**
  *  How a command question ended. The UI tells the user about a timeout only: an answer is
  *  theirs, and a cancel follows an attempt to stop the plugin, which they started.
  */
 export type CommandApprovalOutcomeDto = "answered" | "timedOut" | "cancelled";
+
+export type CommandJarDto = {
+	plugin_path: string,
+	sha256: string,
+	/**
+	 *  A number, not `u64`: specta refuses to export `u64`, and a jar over 2^53 bytes is refused
+	 *  long before.
+	 */
+	size: number | null,
+};
 
 /**  Why a text is not a command. */
 export type CommandParseReasonDto = { code: "EMPTY" };
@@ -509,6 +531,8 @@ export type MinecraftErrorDto = { code: "VERSION_NOT_FOUND"; payload: {
 
 export type NetworkErrorKindDto = "timeout" | "connect" | "redirect" | "body";
 
+export type OnceOnlyReasonDto = { code: "NOT_JAR_LAUNCH" } | { code: "REPEATED_JAR_FLAG" } | { code: "ARG_FILE" } | { code: "UNLISTED_OPTION"; option: string } | { code: "TARGET_NOT_IN_CACHE" } | { code: "JAR_HAS_CLASS_PATH" } | { code: "JAR_UNREADABLE" } | { code: "JAR_TOO_LARGE" };
+
 /**  Which pagination value was refused. */
 export type PaginationFieldDto = "PAGE" | "PAGE_SIZE";
 
@@ -529,6 +553,21 @@ string];
 
 /**  Why a path is not a path inside an instance. */
 export type PathRejectionDto = { code: "EMPTY" } | { code: "NUL_BYTE" } | { code: "BACKSLASH" } | { code: "ABSOLUTE" } | { code: "EMPTY_SEGMENT" } | { code: "DOT_SEGMENT" } | { code: "COLON" } | { code: "TRAILING_DOT_OR_SPACE" } | { code: "RESERVED_NAME" } | { code: "NOT_PLAIN" } | { code: "ESCAPES_ROOT" } | { code: "NOT_UTF8" } | { code: "NOT_SINGLE_SEGMENT" } | { code: "NOT_REGULAR_FILE" } | { code: "LAUNCHER_FOLDER" } | { code: "LAUNCHER_FOLDER_ALIAS" } | { code: "PLUGIN_OWN_FOLDER_ONLY" };
+
+/**  A command a plugin wants to run, waiting for the user. */
+export type PendingCommandApprovalDto = {
+	request_id: string,
+	plugin_id: string,
+	/**  The Java launcher the command starts. */
+	java: string,
+	current_dir: string,
+	/**  The whole argument list, the JVM options and the jar included. */
+	arguments: string[],
+	jar: CommandJarDto | null,
+	/**  Why "always" is not offered; `None` when it is. */
+	once_only: OnceOnlyReasonDto | null,
+	expires_at: string,
+};
 
 /**  Why a call into a plugin failed. */
 export type PluginCallReasonDto = { code: "MISSING_FUNCTION" } | { code: "TIMEOUT" } | { code: "OUT_OF_FUEL" } | { code: "OUT_OF_MEMORY" } | { code: "TRAP"; payload: {

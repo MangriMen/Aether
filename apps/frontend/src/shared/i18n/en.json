@@ -903,6 +903,36 @@
     }
   },
   "plugin": {
+    "commandApproval": {
+      "title": "{{plugin}} wants to run a program",
+      "description": "The plugin waits for your answer. The program runs on your computer with your rights.",
+      "java": "Java",
+      "folder": "Working folder",
+      "program": "Program",
+      "sha": "SHA-256",
+      "size": "{{size}} MB",
+      "options": "JVM options",
+      "arguments": "Arguments ({{count}})",
+      "argumentsHint": "Open to see them: they may contain an address or a token.",
+      "unknownProgram": "The program could not be identified.",
+      "expires": "Refused automatically in {{seconds}} s",
+      "deny": "Deny",
+      "once": "Allow once",
+      "always": "Always allow",
+      "alwaysHint": "\"Always\" trusts this program and the arguments the plugin chooses for it, until the plugin is updated or you take the permission back.",
+      "queue": "{{count}} more waiting",
+      "answerError": "Could not send the answer",
+      "onceOnly": {
+        "NOT_JAR_LAUNCH": "This is not a plain \"java -jar\" launch.",
+        "REPEATED_JAR_FLAG": "The command repeats -jar.",
+        "ARG_FILE": "The command reads options from a file (@file) the launcher cannot see.",
+        "UNLISTED_OPTION": "The option {{option}} can run extra code.",
+        "TARGET_NOT_IN_CACHE": "The program is not a file in the plugin's own cache.",
+        "JAR_HAS_CLASS_PATH": "The program loads other files the launcher does not check.",
+        "JAR_UNREADABLE": "The program could not be read or checked.",
+        "JAR_TOO_LARGE": "The program file is too large to check."
+      }
+    },
     "description": "Description",
     "settings": "Settings",
     "capabilities": "Capabilities",
