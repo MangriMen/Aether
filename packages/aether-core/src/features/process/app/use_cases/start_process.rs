@@ -202,11 +202,9 @@ mod tests {
     #[cfg(target_os = "linux")]
     #[tokio::test]
     async fn should_keep_the_process_in_the_launcher_group_when_only_it_is_to_be_killed() {
-        let mut child = spawn(
-            piped(Command::new("sleep").arg("60").into()),
-            KillScope::Process,
-        )
-        .unwrap();
+        let mut command = Command::new("sleep");
+        command.arg("60");
+        let mut child = spawn(piped(command), KillScope::Process).unwrap();
         let pid = child.id().unwrap();
 
         let group = proc_stat(&pid.to_string()).map(|(_, group)| group);
