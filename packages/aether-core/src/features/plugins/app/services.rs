@@ -15,13 +15,18 @@ use crate::features::{
     plugins::{Plugin, PluginCapabilities, PluginError, PluginHandle, PluginManifest, PluginState},
 };
 
-use super::ports::PluginLoader;
+use super::ports::{CommandApprover, PluginLoader};
 
 pub struct PluginRegistry {
     plugins: DashMap<PluginId, Plugin>,
     settings_locks: DashMap<PluginId, Arc<Mutex<()>>>,
     event_emitter: SharedEventEmitter,
+    /// Told when a plugin is stopped, so a question it left unanswered does not hold it.
+    command_approver: Option<Arc<dyn CommandApprover>>,
 }
+
+/// How long a stop waits for a plugin to leave a command question it was cancelled out of.
+const CANCEL_SETTLE: std::time::Duration = std::time::Duration::from_secs(5);
 
 impl PluginRegistry {
     pub fn new(event_emitter: SharedEventEmitter) -> Self {
@@ -29,6 +34,44 @@ impl PluginRegistry {
             plugins: DashMap::default(),
             settings_locks: DashMap::default(),
             event_emitter,
+            command_approver: None,
+        }
+    }
+
+    #[must_use]
+    pub fn with_command_approver(mut self, approver: Arc<dyn CommandApprover>) -> Self {
+        self.command_approver = Some(approver);
+        self
+    }
+
+    /// Forgets the commands the user denied `plugin_id`. For a plugin that has really stopped: a
+    /// stop refused, or one that did not retire the instance, leaves them in force.
+    pub fn forget_command_denials(&self, plugin_id: &PluginId) {
+        if let Some(approver) = &self.command_approver {
+            approver.forget_denials(plugin_id);
+        }
+    }
+
+    /// Cancels the command questions of `plugin_id` and waits for the call that asked them to
+    /// end. A plugin waiting for the user is in a call, and a stop refuses a busy plugin; the
+    /// cancelled question ends the call within moments. Plugins without a question pass at
+    /// once.
+    async fn cancel_command_questions(&self, plugin_id: &PluginId) {
+        let Some(approver) = &self.command_approver else {
+            return;
+        };
+        if !approver.cancel_plugin(plugin_id) {
+            return;
+        }
+        let deadline = tokio::time::Instant::now() + CANCEL_SETTLE;
+        while tokio::time::Instant::now() < deadline {
+            let busy = self.plugins.get(plugin_id).is_some_and(
+                |plugin| matches!(&plugin.state, PluginState::Loaded(handle) if handle.is_busy()),
+            );
+            if !busy {
+                return;
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(25)).await;
         }
     }
 
@@ -180,6 +223,7 @@ impl PluginRegistry {
     /// restart and a disable, cannot both take the same instance. A busy plugin is refused
     /// without passing through `Unloading`.
     pub async fn begin_unloading(&self, plugin_id: &PluginId) -> Result<PluginHandle, PluginError> {
+        self.cancel_command_questions(plugin_id).await;
         let mut taken = None;
         self.upsert_with(plugin_id, |plugin| {
             let plugin_id = plugin_id.clone();
@@ -296,5 +340,217 @@ impl PluginLoaderRegistry {
 
     pub fn unregister(&mut self, load_config_type: &LoadConfigType) {
         self.loaders.remove(load_config_type);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::time::Duration;
+
+    use tokio::runtime::Handle;
+
+    use super::*;
+    use crate::features::{
+        events::test_support::NoOpEmitter,
+        plugins::{
+            ApiConfig, CommandApprovalAnswer, CommandApprovalRefusal, CommandApprovalRequest,
+            CommandGrant, LoadConfig, PluginInstance, PluginInternalEvent, PluginMetadata,
+            RuntimeConfig,
+        },
+    };
+
+    use crate::features::plugins::app::pending_command_approvals::PendingCommandApprovals;
+
+    struct Stub;
+
+    impl PluginInstance for Stub {
+        fn get_id(&self) -> PluginId {
+            id()
+        }
+
+        fn supports(&self, _name: &str) -> bool {
+            true
+        }
+
+        fn call_bytes<'b>(
+            &'b mut self,
+            _name: &str,
+            _args: &[u8],
+        ) -> Result<&'b [u8], PluginError> {
+            Ok(&[])
+        }
+
+        fn handle_event(&mut self, _event: &PluginInternalEvent) -> Result<(), PluginError> {
+            Ok(())
+        }
+    }
+
+    fn id() -> PluginId {
+        PluginId::try_from("packwiz").unwrap()
+    }
+
+    fn manifest() -> PluginManifest {
+        PluginManifest {
+            metadata: PluginMetadata {
+                id: id(),
+                name: "Packwiz".into(),
+                version: semver::Version::new(0, 1, 0),
+                description: None,
+                authors: vec![],
+                license: None,
+            },
+            runtime: RuntimeConfig {
+                allowed_hosts: vec![],
+                allowed_paths: vec![],
+            },
+            load: LoadConfig::Extism {
+                file: "plugin.wasm".try_into().unwrap(),
+                memory_limit: None,
+            },
+            api: ApiConfig {
+                version: semver::VersionReq::STAR,
+                features: vec![],
+                host_functions: Some(vec![]),
+            },
+        }
+    }
+
+    fn request(plugin: &PluginId) -> CommandApprovalRequest {
+        CommandApprovalRequest {
+            id: uuid::Uuid::new_v4(),
+            plugin_id: plugin.clone(),
+            java: "java".into(),
+            current_dir: "/cache".into(),
+            arguments: vec!["-jar".into(), "#/cache/a.jar".into()],
+            jar: None,
+            always: Ok(()),
+        }
+    }
+
+    struct Setup {
+        registry: Arc<PluginRegistry>,
+        approvals: Arc<PendingCommandApprovals>,
+        handle: PluginHandle,
+    }
+
+    fn setup() -> Setup {
+        let approvals = Arc::new(PendingCommandApprovals::new(Arc::new(NoOpEmitter)));
+        let registry = Arc::new(
+            PluginRegistry::new(Arc::new(NoOpEmitter))
+                .with_command_approver(approvals.clone() as Arc<dyn CommandApprover>),
+        );
+        let handle = PluginHandle::new(Stub);
+        registry.insert(
+            id(),
+            Plugin {
+                manifest: manifest(),
+                capabilities: None,
+                hash: "hash".into(),
+                verified: false,
+                state: PluginState::Loaded(handle.clone()),
+            },
+        );
+        Setup {
+            registry,
+            approvals,
+            handle,
+        }
+    }
+
+    /// A call into the plugin that asks the user, the way the `run_command` host function does:
+    /// on the blocking pool, waiting on the approver.
+    fn call_that_asks(
+        setup: &Setup,
+    ) -> tokio::task::JoinHandle<Result<Result<CommandGrant, CommandApprovalRefusal>, PluginError>>
+    {
+        let handle = setup.handle.clone();
+        let approvals = setup.approvals.clone();
+        tokio::spawn(async move {
+            handle
+                .run("import", move |_| {
+                    Handle::current().block_on(approvals.request(request(&id())))
+                })
+                .await
+        })
+    }
+
+    async fn wait_until_asked(approvals: &PendingCommandApprovals) {
+        for _ in 0..500 {
+            if !approvals.pending().is_empty() {
+                return;
+            }
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+        panic!("the plugin never asked");
+    }
+
+    #[tokio::test]
+    async fn should_stop_the_plugin_when_it_waits_for_the_user_and_its_question_is_cancelled() {
+        let setup = setup();
+        let call = call_that_asks(&setup);
+        wait_until_asked(&setup.approvals).await;
+
+        let taken = setup.registry.begin_unloading(&id()).await;
+
+        assert!(taken.is_ok(), "the stop should go through");
+        let outcome = call.await.unwrap().expect("the call ended on its own");
+        assert_eq!(outcome, Err(CommandApprovalRefusal::Cancelled));
+        assert!(setup.approvals.pending().is_empty());
+    }
+
+    #[tokio::test]
+    async fn should_refuse_to_stop_without_delay_when_the_busy_plugin_waits_for_nobody() {
+        let setup = setup();
+        let (release, gate) = std::sync::mpsc::channel::<()>();
+        let handle = setup.handle.clone();
+        let call = tokio::spawn(async move {
+            handle
+                .run("work", move |_| {
+                    let _ = gate.recv();
+                })
+                .await
+        });
+        while !setup.handle.is_busy() {
+            tokio::time::sleep(Duration::from_millis(5)).await;
+        }
+
+        let started = std::time::Instant::now();
+        let result = setup.registry.begin_unloading(&id()).await;
+
+        assert!(matches!(result, Err(PluginError::Busy { .. })));
+        assert!(
+            started.elapsed() < Duration::from_secs(2),
+            "with no question to cancel there is nothing to wait for"
+        );
+        release.send(()).unwrap();
+        call.await.unwrap().unwrap();
+    }
+
+    #[tokio::test]
+    async fn should_ask_again_when_the_registry_forgets_a_denial() {
+        let setup = setup();
+        let first = call_that_asks(&setup);
+        wait_until_asked(&setup.approvals).await;
+        let waiting = setup.approvals.pending()[0].request.id;
+        setup
+            .approvals
+            .answer(waiting, CommandApprovalAnswer::Deny)
+            .unwrap();
+        assert_eq!(
+            first.await.unwrap().unwrap(),
+            Err(CommandApprovalRefusal::Denied)
+        );
+
+        let again = call_that_asks(&setup).await.unwrap().unwrap();
+        assert_eq!(again, Err(CommandApprovalRefusal::Denied));
+
+        setup.registry.forget_command_denials(&id());
+        let asked_anew = call_that_asks(&setup);
+        wait_until_asked(&setup.approvals).await;
+        setup.approvals.cancel_plugin(&id());
+        assert_eq!(
+            asked_anew.await.unwrap().unwrap(),
+            Err(CommandApprovalRefusal::Cancelled)
+        );
     }
 }

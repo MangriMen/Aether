@@ -55,10 +55,14 @@ pub(crate) struct PluginContext {
     /// The sandbox limits the container was built with, taken once here so a host function
     /// does not have to reach back into the container for them.
     pub limits: PluginSandboxLimits,
+    /// Sha256 of the wasm this instance was built from. What the user approves for a command is
+    /// bound to it: the file on disk may already be another build (an update waiting for the
+    /// restart a busy plugin refuses).
+    pub wasm_sha256: String,
 }
 
 impl PluginContext {
-    pub(crate) fn new(id: PluginId, container: &Arc<AetherContainer>) -> Self {
+    pub(crate) fn new(id: PluginId, container: &Arc<AetherContainer>, wasm_sha256: String) -> Self {
         let plugins = container.plugins();
 
         Self {
@@ -69,6 +73,7 @@ impl PluginContext {
                 settings: plugins.settings_storage.clone(),
             }),
             limits: container.sandbox_limits(),
+            wasm_sha256,
         }
     }
 
@@ -126,6 +131,7 @@ mod tests {
             container: Weak::new(),
             hosts,
             limits: PluginSandboxLimits::default(),
+            wasm_sha256: String::new(),
         };
         let http_get = Function::new(
             "http_get",

@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
 use crate::features::plugins::app::ports::{
-    CheckForPluginUpdatesUseCasePort, EditPluginSettingsUseCasePort, EnablePluginUseCasePort,
-    ForceEnablePluginUseCasePort, GetPluginApiVersionUseCasePort, GetPluginDtoUseCasePort,
-    GetPluginReadmeUseCasePort, GetPluginSettingsUseCasePort, GrantPluginFolderAccessUseCasePort,
-    GrantPluginHostAccessUseCasePort, ImportPluginsUseCasePort,
+    CheckForPluginUpdatesUseCasePort, CommandApprover, EditPluginSettingsUseCasePort,
+    EnablePluginUseCasePort, ForceEnablePluginUseCasePort, GetPluginApiVersionUseCasePort,
+    GetPluginDtoUseCasePort, GetPluginReadmeUseCasePort, GetPluginSettingsUseCasePort,
+    GrantPluginFolderAccessUseCasePort, GrantPluginHostAccessUseCasePort, ImportPluginsUseCasePort,
     InstallPluginFromProviderUseCasePort, ListPluginsDtoUseCasePort,
     ListSkippedPluginDirsUseCasePort, PluginDisableService, PluginExtractor, PluginLoader,
     PluginSettingsStorage, PluginSourceStorage, PluginStorage, PluginSyncService,
@@ -58,4 +58,5 @@ pub trait PluginsFeature {
     fn plugin_storage(&self) -> Arc<dyn PluginStorage>;
     fn plugin_settings_storage(&self) -> Arc<dyn PluginSettingsStorage>;
     fn plugin_extractor(&self) -> Arc<dyn PluginExtractor>;
+    fn command_approver(&self) -> Arc<dyn CommandApprover>;
 }

@@ -67,6 +67,25 @@ response from an older host (the flags then read `false`), but a plugin built **
 flags cannot decode a `run_command` response from a host that sends them: rebuild it against
 this version.
 
+## `run_command` needs the user's consent
+
+Besides the program and folder checks, the user is asked before a command runs: *allow once*,
+*always*, or *deny*. The question shows the Java launcher, the working directory, the jar and the
+arguments; an unanswered question is refused after 5 minutes. While it waits, the call into the
+plugin is still running, so the plugin is busy for that long (a stop or restart cancels the
+question first).
+
+A refused command fails the call with `HostError::PluginError(AccessViolation { plugin_id, path })`
+where `path` is one of `denied`, `timed_out`, `cancelled` or `jar_changed`. *Deny* is remembered
+until the plugin is stopped or reloaded: the same command is refused again without a new question.
+
+*Always* is offered only for `java [-Xmx/-Xms/-Xss…] -jar #/cache/<file>.jar <args>`: the jar must be
+a file in the plugin's `/cache` whose manifest has no `Class-Path`, and every option before `-jar`
+must be a memory size, `-Dfile.encoding=…` or `-Djava.awt.headless=…`. What is remembered is the jar's
+content (sha256) and those options, not the arguments after the jar, so the user trusts the tool
+and the plugin's choice of arguments; a new build of the plugin starts over. Anything else
+(`@argfile`, `-javaagent`, `-cp`, a jar outside `/cache`) can be allowed once only.
+
 `ContentMetadataDto` no longer has `description`, which sat before `author` in the msgpack layout: a plugin built
 against an older crate cannot decode a `getContentsMetadata` answer correctly. Rebuild it against this
 version.

@@ -6,9 +6,9 @@ use crate::features::{
         ImporterCapabilityMetadata, PlatformId, UpdaterCapabilityMetadata,
     },
     plugins::{
-        AllowedPath, AllowedPathInput, IgnoredAllowedPath, ManifestError, PluginCapabilities,
-        PluginContentProviderCapability, PluginImporterCapability, PluginSettings,
-        PluginUpdaterCapability, ProviderHandlers,
+        AllowedPath, AllowedPathInput, CommandApproval, CommandIdentity, IgnoredAllowedPath,
+        ManifestError, PluginCapabilities, PluginContentProviderCapability,
+        PluginImporterCapability, PluginSettings, PluginUpdaterCapability, ProviderHandlers,
     },
 };
 
@@ -91,6 +91,47 @@ pub struct PluginSettingsV1 {
 
     #[serde(default)]
     pub force_enabled_at_api_version: Option<String>,
+
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub command_approvals: Vec<CommandApprovalV1>,
+}
+
+/// One `[[commandApprovals]]` entry.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct CommandApprovalV1 {
+    pub jar_sha256: String,
+    #[serde(default)]
+    pub jvm_options: Vec<String>,
+    pub plugin_sha256: String,
+    pub jar: String,
+    pub approved_at: chrono::DateTime<chrono::Utc>,
+}
+
+impl From<CommandApprovalV1> for CommandApproval {
+    fn from(v1: CommandApprovalV1) -> Self {
+        Self {
+            identity: CommandIdentity {
+                jar_sha256: v1.jar_sha256,
+                jvm_options: v1.jvm_options,
+            },
+            plugin_sha256: v1.plugin_sha256,
+            jar: v1.jar,
+            approved_at: v1.approved_at,
+        }
+    }
+}
+
+impl From<CommandApproval> for CommandApprovalV1 {
+    fn from(approval: CommandApproval) -> Self {
+        Self {
+            jar_sha256: approval.identity.jar_sha256,
+            jvm_options: approval.identity.jvm_options,
+            plugin_sha256: approval.plugin_sha256,
+            jar: approval.jar,
+            approved_at: approval.approved_at,
+        }
+    }
 }
 
 /// One folder of `PluginSettingsV1::allowed_paths`.
@@ -276,6 +317,7 @@ impl From<PluginSettingsV1> for PluginSettings {
             allowed_paths,
             ignored_paths,
             force_enabled_at_api_version: v1.force_enabled_at_api_version,
+            command_approvals: v1.command_approvals.into_iter().map(Into::into).collect(),
         }
     }
 }
@@ -361,6 +403,7 @@ impl From<PluginSettings> for PluginSettingsV1 {
                 )
                 .collect(),
             force_enabled_at_api_version: v.force_enabled_at_api_version,
+            command_approvals: v.command_approvals.into_iter().map(Into::into).collect(),
         }
     }
 }

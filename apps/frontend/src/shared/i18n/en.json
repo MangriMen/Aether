@@ -304,6 +304,9 @@
       "INVALID_ALLOWED_PATH": "Folder {{path}} cannot be given to the plugin: the host path must be an absolute path to a folder other than a whole drive, and the plugin path must start with / and stay clear of /cache and /instances. The folder itself must not be the plugin's own cache or the instances folder, nor lie inside or contain either",
       "INVALID_ALLOWED_HOST": "The host of {{url}} cannot be given to the plugin: only http and https addresses of public hosts are allowed, without wildcards",
       "INVALID_ALLOWED_HOST_ENTRY": "Host {{entry}} cannot be saved: write a host name or a pattern such as *.example.com, without a scheme, port or path",
+      "COMMAND_NOT_APPROVED": "The command of plugin {{plugin_id}} did not run: {{reason}}",
+      "COMMAND_APPROVAL_NOT_FOUND": "This question is already closed",
+      "COMMAND_APPROVAL_ONCE_ONLY": "This command can be allowed once only",
       "HASH_COMPUTATION_FAILED": "Failed to compute plugin hash",
       "STORAGE": "Plugin storage error",
       "PROVIDER_FETCH_ERROR": "Failed to fetch plugin info from provider {{source_type}}: {{reason}}",
@@ -328,6 +331,12 @@
           "BUILD": "the plugin could not be built",
           "CONTAINER_UNAVAILABLE": "the launcher is not ready to run plugins",
           "OTHER": "an unexpected error occurred while loading it"
+        },
+        "COMMAND_NOT_APPROVED": {
+          "DENIED": "it was not allowed",
+          "TIMED_OUT": "nobody answered in time",
+          "CANCELLED": "the plugin was stopped",
+          "JAR_CHANGED": "the program changed while the question was open"
         },
         "FUNCTION_CALL_FAILED": {
           "MISSING_FUNCTION": "the plugin does not have this function",

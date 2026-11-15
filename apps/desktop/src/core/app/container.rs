@@ -394,7 +394,12 @@ pub async fn build_container(
     );
 
     // ── Plugin infrastructure ───────────────────────────────────────
-    let plugin_registry = Arc::new(PluginRegistry::new(event_emitter.clone()));
+    let command_approver: Arc<dyn aether_core::features::plugins::CommandApprover> = Arc::new(
+        aether_core::features::plugins::PendingCommandApprovals::new(event_emitter.clone()),
+    );
+    let plugin_registry = Arc::new(
+        PluginRegistry::new(event_emitter.clone()).with_command_approver(command_approver.clone()),
+    );
     let plugin_verification_storage: Arc<
         dyn aether_core::features::plugins::PluginVerificationStorage,
     > = Arc::new(FsPluginVerificationStorage::new(location_info.clone()));
@@ -494,6 +499,7 @@ pub async fn build_container(
             settings_storage: plugin_settings_storage,
             provider_factory: plugin_provider_factory,
             extractor: plugin_extractor,
+            command_approver,
         },
         event_emitter: event_emitter.clone(),
         progress_bar_storage,

@@ -4,16 +4,19 @@ mod plugin_instance;
 
 pub use models::{
     AllowedHostEntryRejection, AllowedHostRejection, AllowedPath, AllowedPathInput,
-    AllowedPathRejection, ApiConfig, ArchiveMetadata, Compatibility, ExtractedPlugin, FolderMounts,
-    IgnoredAllowedPath, LoadConfig, LoadConfigType, ManifestError, ManifestFormatError,
-    PathMapping, Plugin, PluginCallError, PluginCapabilities, PluginCheckCompatibilityParams,
-    PluginContent, PluginContentProviderCapability, PluginError, PluginImportInstance,
-    PluginImporterCapability, PluginInternalEvent, PluginLoadFailure, PluginManifest,
-    PluginManifestPreview, PluginMetadata, PluginProviderError, PluginProviderInfo,
+    AllowedPathRejection, ApiConfig, ArchiveMetadata, CommandApproval, CommandApprovalAnswer,
+    CommandApprovalRefusal, CommandApprovalRequest, CommandGrant, CommandIdentity, CommandJar,
+    Compatibility, ExtractedPlugin, FolderMounts, IgnoredAllowedPath, JarLaunch, LoadConfig,
+    LoadConfigType, MAX_APPROVED_JAR_BYTES, ManifestError, ManifestFormatError, OnceOnlyReason,
+    PathMapping, PendingCommandApproval, Plugin, PluginCallError, PluginCapabilities,
+    PluginCheckCompatibilityParams, PluginContent, PluginContentProviderCapability, PluginError,
+    PluginImportInstance, PluginImporterCapability, PluginInternalEvent, PluginLoadFailure,
+    PluginManifest, PluginManifestPreview, PluginMetadata, PluginProviderError, PluginProviderInfo,
     PluginReleasePreview, PluginSettings, PluginSource, PluginSourceType, PluginState,
     PluginStateReason, PluginUpdaterCapability, PluginVerification, ProviderFailure,
     ProviderHandlers, ProviderPluginPreview, ProviderReleaseInfo, ProviderUpdateInfo,
-    RuntimeConfig, SkippedPluginDir, SkippedPluginDirReason,
+    RuntimeConfig, SkippedPluginDir, SkippedPluginDirReason, manifest_has_class_path,
+    parse_jar_launch,
 };
 pub(crate) use models::{
     AsCapabilityMetadata, CoreMount, GrantableHost, PLUGIN_API_VERSION, PLUGIN_CACHE_MOUNT,

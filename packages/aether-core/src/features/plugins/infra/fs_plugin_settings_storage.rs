@@ -74,7 +74,7 @@ impl PluginSettingsStorage for FsPluginSettingsStorage {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::features::plugins::partition_mountable;
+    use crate::features::plugins::{CommandApproval, CommandIdentity, partition_mountable};
 
     #[tokio::test]
     async fn should_keep_a_bad_folder_in_the_file_when_an_unrelated_upsert_is_saved() {
@@ -113,5 +113,50 @@ mod tests {
         let (mountable, _) = partition_mountable(&reread.allowed_paths, &[]);
         assert_eq!(mountable.len(), 1);
         assert_eq!(mountable[0].plugin.as_str(), "/good");
+    }
+
+    #[tokio::test]
+    async fn should_keep_command_approvals_when_the_settings_are_saved_and_read_again() {
+        let root = tempfile::tempdir().unwrap();
+        let storage = FsPluginSettingsStorage::new(Arc::new(LocationInfo::new(
+            root.path().join("settings"),
+            root.path().join("config"),
+        )));
+        let plugin_id = PluginId::from_static("packwiz");
+        let mut settings = PluginSettings::default();
+        settings.command_approvals.push(CommandApproval {
+            identity: CommandIdentity {
+                jar_sha256: "ab".repeat(32),
+                jvm_options: vec!["-Xmx1G".to_owned()],
+            },
+            plugin_sha256: "cd".repeat(32),
+            jar: "/cache/installer.jar".to_owned(),
+            approved_at: chrono::DateTime::from_timestamp(1_700_000_000, 0).unwrap(),
+        });
+
+        storage.upsert(&plugin_id, &settings).await.unwrap();
+        let reread = storage.get(&plugin_id).await.unwrap().unwrap();
+
+        assert_eq!(reread.command_approvals, settings.command_approvals);
+        let text = std::fs::read_to_string(storage.get_plugin_settings_path(&plugin_id)).unwrap();
+        assert!(text.contains("[[commandApprovals]]"), "{text}");
+    }
+
+    #[tokio::test]
+    async fn should_not_write_a_command_approvals_table_when_there_are_none() {
+        let root = tempfile::tempdir().unwrap();
+        let storage = FsPluginSettingsStorage::new(Arc::new(LocationInfo::new(
+            root.path().join("settings"),
+            root.path().join("config"),
+        )));
+        let plugin_id = PluginId::from_static("packwiz");
+
+        storage
+            .upsert(&plugin_id, &PluginSettings::default())
+            .await
+            .unwrap();
+
+        let text = std::fs::read_to_string(storage.get_plugin_settings_path(&plugin_id)).unwrap();
+        assert!(!text.contains("commandApprovals"), "{text}");
     }
 }

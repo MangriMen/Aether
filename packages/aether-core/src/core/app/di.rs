@@ -55,23 +55,23 @@ use crate::features::{
         VersionManifestService,
     },
     plugins::{
-        CheckForPluginUpdatesUseCase, CheckForPluginUpdatesUseCasePort, DisablePluginUseCase,
-        EditPluginSettingsUseCase, EditPluginSettingsUseCasePort, EnablePluginUseCase,
-        EnablePluginUseCasePort, ForceEnablePluginUseCase, ForceEnablePluginUseCasePort,
-        GetPluginApiVersionUseCase, GetPluginApiVersionUseCasePort, GetPluginDtoUseCase,
-        GetPluginDtoUseCasePort, GetPluginReadmeUseCase, GetPluginReadmeUseCasePort,
-        GetPluginSettingsUseCase, GetPluginSettingsUseCasePort, GrantPluginFolderAccessUseCase,
-        GrantPluginFolderAccessUseCasePort, GrantPluginHostAccessUseCase,
-        GrantPluginHostAccessUseCasePort, ImportPluginsUseCase, ImportPluginsUseCasePort,
-        InstallPluginFromProviderUseCase, InstallPluginFromProviderUseCasePort,
-        ListPluginsDtoUseCase, ListPluginsDtoUseCasePort, ListSkippedPluginDirsUseCase,
-        ListSkippedPluginDirsUseCasePort, LoadConfigType, PluginDisableService, PluginExtractor,
-        PluginLoader, PluginLoaderRegistry, PluginProviderFactory, PluginRegistry,
-        PluginSettingsStorage, PluginSourceStorage, PluginStorage, PluginSyncService,
-        PluginVerificationStorage, PluginsFeature, PreviewPluginReleaseUseCase,
-        PreviewPluginReleaseUseCasePort, ReleaseArchiveCache, ReloadPluginUseCase,
-        ReloadPluginUseCasePort, RemovePluginUseCase, RemovePluginUseCasePort, SyncPluginsUseCase,
-        UpdatePluginUseCase, UpdatePluginUseCasePort,
+        CheckForPluginUpdatesUseCase, CheckForPluginUpdatesUseCasePort, CommandApprover,
+        DisablePluginUseCase, EditPluginSettingsUseCase, EditPluginSettingsUseCasePort,
+        EnablePluginUseCase, EnablePluginUseCasePort, ForceEnablePluginUseCase,
+        ForceEnablePluginUseCasePort, GetPluginApiVersionUseCase, GetPluginApiVersionUseCasePort,
+        GetPluginDtoUseCase, GetPluginDtoUseCasePort, GetPluginReadmeUseCase,
+        GetPluginReadmeUseCasePort, GetPluginSettingsUseCase, GetPluginSettingsUseCasePort,
+        GrantPluginFolderAccessUseCase, GrantPluginFolderAccessUseCasePort,
+        GrantPluginHostAccessUseCase, GrantPluginHostAccessUseCasePort, ImportPluginsUseCase,
+        ImportPluginsUseCasePort, InstallPluginFromProviderUseCase,
+        InstallPluginFromProviderUseCasePort, ListPluginsDtoUseCase, ListPluginsDtoUseCasePort,
+        ListSkippedPluginDirsUseCase, ListSkippedPluginDirsUseCasePort, LoadConfigType,
+        PluginDisableService, PluginExtractor, PluginLoader, PluginLoaderRegistry,
+        PluginProviderFactory, PluginRegistry, PluginSettingsStorage, PluginSourceStorage,
+        PluginStorage, PluginSyncService, PluginVerificationStorage, PluginsFeature,
+        PreviewPluginReleaseUseCase, PreviewPluginReleaseUseCasePort, ReleaseArchiveCache,
+        ReloadPluginUseCase, ReloadPluginUseCasePort, RemovePluginUseCase, RemovePluginUseCasePort,
+        SyncPluginsUseCase, UpdatePluginUseCase, UpdatePluginUseCasePort,
     },
     process::{
         KillProcessUseCase, KillProcessUseCasePort, ListProcessMetadataUseCase,
@@ -194,6 +194,8 @@ pub struct PluginParams {
     pub settings_storage: Arc<dyn PluginSettingsStorage>,
     pub provider_factory: Arc<PluginProviderFactory>,
     pub extractor: Arc<dyn PluginExtractor>,
+    /// Asks the user whether a plugin may run a command. The registry holds the same one.
+    pub command_approver: Arc<dyn CommandApprover>,
 }
 
 #[allow(clippy::too_many_lines)]
@@ -254,7 +256,9 @@ impl AetherContainer {
                 PluginEvent::Edit { plugin_id } => {
                     content_metadata.forget_unsupported(&plugin_id);
                 }
-                PluginEvent::Sync => {}
+                PluginEvent::Sync
+                | PluginEvent::CommandApprovalRequested { .. }
+                | PluginEvent::CommandApprovalResolved { .. } => {}
             }
         });
 
@@ -1127,6 +1131,9 @@ impl PluginsFeature for AetherContainer {
     }
     fn plugin_extractor(&self) -> Arc<dyn PluginExtractor> {
         self.plugins().extractor.clone()
+    }
+    fn command_approver(&self) -> Arc<dyn CommandApprover> {
+        self.plugins().command_approver.clone()
     }
     fn sync_plugins_service(&self) -> Arc<dyn PluginSyncService> {
         self.sync_plugins_service()

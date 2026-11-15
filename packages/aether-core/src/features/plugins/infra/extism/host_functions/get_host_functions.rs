@@ -151,8 +151,9 @@ pub(crate) fn get_host_functions(
     plugin_id: &PluginId,
     container: &Arc<AetherContainer>,
     declared: &[String],
+    wasm_sha256: String,
 ) -> Vec<Function> {
-    let context = PluginContext::new(plugin_id.clone(), container);
+    let context = PluginContext::new(plugin_id.clone(), container, wasm_sha256);
 
     select_host_functions(declared)
         .into_iter()

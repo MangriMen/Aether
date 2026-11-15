@@ -76,6 +76,7 @@ impl DisablePluginUseCase {
         let loader = self.plugin_loader_registry.get(&load_config_type)?;
 
         loader.unload(plugin_instance.clone()).await?;
+        self.plugin_registry.forget_command_denials(plugin_id);
 
         self.plugin_registry
             .upsert_with(plugin_id, |plugin| {

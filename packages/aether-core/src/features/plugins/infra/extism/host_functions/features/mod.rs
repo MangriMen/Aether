@@ -1,3 +1,4 @@
+mod command_approval;
 mod core;
 mod download;
 mod http;

@@ -3,14 +3,16 @@ use std::path::{Path, PathBuf};
 
 use async_trait::async_trait;
 use semver;
+use uuid::Uuid;
 
 use crate::features::instance::PluginId;
 use crate::features::plugins::app::{EditPluginSettings, FolderAccess, HostAccess, PluginDto};
 use crate::features::plugins::domain::PluginHandle;
 use crate::features::plugins::{
-    ArchiveMetadata, ExtractedPlugin, Plugin, PluginError, PluginManifest, PluginProviderError,
-    PluginReleasePreview, PluginSettings, PluginSource, PluginSourceType, PluginVerification,
-    ProviderUpdateInfo, SkippedPluginDir,
+    ArchiveMetadata, CommandApprovalAnswer, CommandApprovalRefusal, CommandApprovalRequest,
+    CommandGrant, ExtractedPlugin, PendingCommandApproval, Plugin, PluginError, PluginManifest,
+    PluginProviderError, PluginReleasePreview, PluginSettings, PluginSource, PluginSourceType,
+    PluginVerification, ProviderUpdateInfo, SkippedPluginDir,
 };
 
 #[async_trait]
@@ -79,6 +81,36 @@ pub trait PluginStorage: Send + Sync {
     async fn read_readme(&self, _plugin_id: &PluginId) -> Result<Option<String>, PluginError> {
         Ok(None)
     }
+}
+
+/// Asks the user whether a plugin may run a command, and holds the questions until they answer.
+///
+/// The UI side of the exchange: it learns of a question from the plugin event, reads it with
+/// [`Self::pending`], and answers with [`Self::answer`].
+#[async_trait]
+pub trait CommandApprover: Send + Sync {
+    /// Waits for the answer to `request`: the user's, or a refusal when nobody gives one in
+    /// time or the question is cancelled. A command the user denied is refused again without
+    /// asking until the plugin is reloaded.
+    async fn request(
+        &self,
+        request: CommandApprovalRequest,
+    ) -> Result<CommandGrant, CommandApprovalRefusal>;
+
+    /// The questions waiting, oldest first.
+    fn pending(&self) -> Vec<PendingCommandApproval>;
+
+    /// Gives the answer to a waiting question. "Always" for a question that allowed only "once"
+    /// is refused, and the question keeps waiting.
+    fn answer(&self, request_id: Uuid, answer: CommandApprovalAnswer) -> Result<(), PluginError>;
+
+    /// Refuses what is waiting for `plugin_id` as cancelled, so the call that asked can end.
+    /// Returns whether a question was waiting.
+    fn cancel_plugin(&self, plugin_id: &PluginId) -> bool;
+
+    /// Forgets what `plugin_id` was denied. Called once the plugin has really stopped, so a
+    /// later start is a clean slate; a stop that was refused leaves the denials in force.
+    fn forget_denials(&self, plugin_id: &PluginId);
 }
 
 #[async_trait]

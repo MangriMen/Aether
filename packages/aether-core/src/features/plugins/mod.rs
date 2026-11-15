@@ -10,13 +10,16 @@ pub(crate) mod test_support;
 
 pub use domain::{
     AllowedHostEntryRejection, AllowedHostRejection, AllowedPath, AllowedPathInput,
-    AllowedPathRejection, ApiConfig, IgnoredAllowedPath, LoadConfig, LoadConfigType, ManifestError,
-    ManifestFormatError, PathMapping, PluginCallError, PluginCapabilities,
-    PluginContentProviderCapability, PluginError, PluginImporterCapability, PluginLoadFailure,
-    PluginManifest, PluginManifestPreview, PluginMetadata, PluginProviderError, PluginProviderInfo,
-    PluginReleasePreview, PluginSettings, PluginSource, PluginSourceType, PluginUpdaterCapability,
-    ProviderFailure, ProviderHandlers, ProviderPluginPreview, ProviderReleaseInfo,
-    ProviderUpdateInfo, RuntimeConfig, SkippedPluginDir, SkippedPluginDirReason,
+    AllowedPathRejection, ApiConfig, CommandApproval, CommandApprovalAnswer,
+    CommandApprovalRefusal, CommandApprovalRequest, CommandGrant, CommandIdentity, CommandJar,
+    IgnoredAllowedPath, JarLaunch, LoadConfig, LoadConfigType, MAX_APPROVED_JAR_BYTES,
+    ManifestError, ManifestFormatError, OnceOnlyReason, PathMapping, PendingCommandApproval,
+    PluginCallError, PluginCapabilities, PluginContentProviderCapability, PluginError,
+    PluginImporterCapability, PluginLoadFailure, PluginManifest, PluginManifestPreview,
+    PluginMetadata, PluginProviderError, PluginProviderInfo, PluginReleasePreview, PluginSettings,
+    PluginSource, PluginSourceType, PluginUpdaterCapability, ProviderFailure, ProviderHandlers,
+    ProviderPluginPreview, ProviderReleaseInfo, ProviderUpdateInfo, RuntimeConfig,
+    SkippedPluginDir, SkippedPluginDirReason, manifest_has_class_path, parse_jar_launch,
 };
 pub(crate) use domain::{
     ArchiveMetadata, AsCapabilityMetadata, Compatibility, CoreMount, ExtractedPlugin, FolderMounts,
@@ -28,15 +31,16 @@ pub(crate) use domain::{
 };
 
 pub use app::{
-    ApiConfigDto, CapabilityMetadataDto, ContentProviderCapabilityMetadataDto, DownloadedArchive,
-    EditPluginSettings, FolderAccess, HostAccess, ImporterCapabilityMetadataDto, LoadConfigDto,
-    PathMappingDto, PluginCapabilitiesDto, PluginContentProviderCapabilityDto, PluginDto,
-    PluginDtoState, PluginExtractor, PluginImporterCapabilityDto, PluginLoader,
-    PluginLoaderRegistry, PluginManifestDto, PluginMetadataDto, PluginProvider,
-    PluginProviderFactory, PluginRegistry, PluginSettingsStorage, PluginSourceStorage,
-    PluginStateReasonDto, PluginStorage, PluginUpdaterCapabilityDto, PluginVerificationStorage,
-    PluginsFeature, ProviderHandlersDto, RuntimeConfigDto, UpdaterCapabilityMetadataDto,
-    clean_plugin_archives, download_to_temp_file, record_plugin_verification,
+    ApiConfigDto, CapabilityMetadataDto, CommandApprover, ContentProviderCapabilityMetadataDto,
+    DownloadedArchive, EditPluginSettings, FolderAccess, HostAccess, ImporterCapabilityMetadataDto,
+    LoadConfigDto, PathMappingDto, PendingCommandApprovals, PluginCapabilitiesDto,
+    PluginContentProviderCapabilityDto, PluginDto, PluginDtoState, PluginExtractor,
+    PluginImporterCapabilityDto, PluginLoader, PluginLoaderRegistry, PluginManifestDto,
+    PluginMetadataDto, PluginProvider, PluginProviderFactory, PluginRegistry,
+    PluginSettingsStorage, PluginSourceStorage, PluginStateReasonDto, PluginStorage,
+    PluginUpdaterCapabilityDto, PluginVerificationStorage, PluginsFeature, ProviderHandlersDto,
+    RuntimeConfigDto, UpdaterCapabilityMetadataDto, clean_plugin_archives, download_to_temp_file,
+    record_plugin_verification,
 };
 pub(crate) use app::{
     CheckForPluginUpdatesUseCase, CheckForPluginUpdatesUseCasePort, DisablePluginUseCase,
