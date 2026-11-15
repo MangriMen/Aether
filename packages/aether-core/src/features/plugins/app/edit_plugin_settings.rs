@@ -10,8 +10,8 @@ use crate::{
     features::{
         instance::PluginId,
         plugins::{
-            AllowedPathInput, AllowedPathRejection, PluginError, PluginRegistry, PluginSettings,
-            PluginSettingsStorage, core_folders, validate_allowed_host_entry,
+            AllowedPathInput, AllowedPathRejection, CommandIdentity, PluginError, PluginRegistry,
+            PluginSettings, PluginSettingsStorage, core_folders, validate_allowed_host_entry,
         },
         settings::LocationInfo,
     },
@@ -27,6 +27,10 @@ pub struct EditPluginSettings {
     /// The saved folders that were not read, to keep: any other is deleted from the settings.
     /// An entry here only keeps one that is already saved, it never adds one.
     pub ignored_paths: Option<Vec<AllowedPathInput>>,
+    /// Commands whose "always" the user takes back. Only ever removes: an approval is given by
+    /// answering the question a plugin's command raises, so a form cannot add one, and a stale
+    /// list cannot delete an approval given since it was read.
+    pub revoke_command_approvals: Vec<CommandIdentity>,
 }
 
 /// Saves the user's changes to a plugin's settings, running or not. Hosts take effect on the
@@ -202,6 +206,14 @@ fn apply_edit_changes(
         });
     }
 
+    if !edit_settings.revoke_command_approvals.is_empty() {
+        settings.command_approvals.retain(|approval| {
+            !edit_settings
+                .revoke_command_approvals
+                .contains(&approval.identity)
+        });
+    }
+
     Ok(settings)
 }
 
@@ -221,7 +233,9 @@ mod tests {
     use tempfile::TempDir;
 
     use crate::features::events::test_support::NoOpEmitter;
-    use crate::features::plugins::{AllowedHostEntryRejection, AllowedPath, IgnoredAllowedPath};
+    use crate::features::plugins::{
+        AllowedHostEntryRejection, AllowedPath, CommandApproval, IgnoredAllowedPath,
+    };
 
     use super::*;
 
@@ -640,5 +654,80 @@ mod tests {
             .unwrap();
 
         assert!(settings.is_none());
+    }
+
+    fn approval(jar_sha256: &str, jvm_options: &[&str], plugin_sha256: &str) -> CommandApproval {
+        CommandApproval {
+            identity: CommandIdentity {
+                jar_sha256: jar_sha256.into(),
+                jvm_options: jvm_options.iter().map(ToString::to_string).collect(),
+            },
+            plugin_sha256: plugin_sha256.into(),
+            jar: "/cache/a.jar".into(),
+            approved_at: chrono::Utc::now(),
+        }
+    }
+
+    fn revoke(saved: Vec<CommandApproval>, revoked: Vec<CommandIdentity>) -> Vec<CommandApproval> {
+        apply_edit_changes(
+            &PluginId::from_static("packwiz"),
+            &[],
+            PluginSettings {
+                command_approvals: saved,
+                ..PluginSettings::default()
+            },
+            EditPluginSettings {
+                revoke_command_approvals: revoked,
+                ..EditPluginSettings::default()
+            },
+        )
+        .unwrap()
+        .command_approvals
+    }
+
+    #[test]
+    fn should_take_back_only_the_listed_approvals_when_an_edit_revokes() {
+        let kept = approval("bbb", &[], "w1");
+        let left = revoke(
+            vec![approval("aaa", &[], "w1"), kept.clone()],
+            vec![approval("aaa", &[], "w1").identity],
+        );
+
+        assert_eq!(left, [kept]);
+    }
+
+    #[test]
+    fn should_take_back_the_approval_of_every_plugin_build_when_its_identity_is_revoked() {
+        let left = revoke(
+            vec![approval("aaa", &[], "w1"), approval("aaa", &[], "w2")],
+            vec![approval("aaa", &[], "w1").identity],
+        );
+
+        assert!(left.is_empty());
+    }
+
+    #[test]
+    fn should_keep_an_approval_with_other_jvm_options_when_another_one_is_revoked() {
+        let kept = approval("aaa", &["-Xmx2G"], "w1");
+        let left = revoke(
+            vec![approval("aaa", &[], "w1"), kept.clone()],
+            vec![approval("aaa", &[], "w1").identity],
+        );
+
+        assert_eq!(left, [kept]);
+    }
+
+    #[test]
+    fn should_keep_every_approval_when_an_edit_revokes_nothing() {
+        let saved = vec![approval("aaa", &[], "w1")];
+
+        assert_eq!(revoke(saved.clone(), vec![]), saved);
+    }
+
+    #[test]
+    fn should_not_add_an_approval_when_the_edit_revokes_one_that_is_not_saved() {
+        let left = revoke(vec![], vec![approval("zzz", &[], "w1").identity]);
+
+        assert!(left.is_empty());
     }
 }

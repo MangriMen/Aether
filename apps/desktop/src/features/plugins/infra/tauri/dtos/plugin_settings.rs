@@ -2,8 +2,8 @@ use std::path::PathBuf;
 
 use aether_core::features::plugins::{
     AllowedHostEntryRejection, AllowedHostRejection, AllowedPath, AllowedPathInput,
-    AllowedPathRejection, EditPluginSettings, FolderAccess, HostAccess, IgnoredAllowedPath,
-    PluginSettings,
+    AllowedPathRejection, CommandIdentity, EditPluginSettings, FolderAccess, HostAccess,
+    IgnoredAllowedPath, PluginSettings,
 };
 use serde::{Deserialize, Serialize};
 use specta::Type;
@@ -22,6 +22,10 @@ pub struct PluginSettingsDto {
     /// removes them: send the ones to keep as `ignoredPaths` of an edit.
     #[serde(default)]
     pub ignored_paths: Vec<IgnoredAllowedPathDto>,
+
+    /// Programs the user let the plugin run for good, to take back from the settings screen.
+    #[serde(default)]
+    pub command_approvals: Vec<CommandApprovalDto>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Type)]
@@ -34,6 +38,29 @@ pub struct EditPluginSettingsDto {
     /// The ignored folders to keep; every other one is deleted. Omit to keep them all.
     #[specta(optional)]
     pub ignored_paths: Option<Vec<AllowedPathDto>>,
+    /// The approvals to take back. Never adds one.
+    #[specta(optional)]
+    pub revoke_command_approvals: Option<Vec<CommandApprovalKeyDto>>,
+}
+
+/// A program the user let a plugin run for good.
+#[derive(Serialize, Deserialize, Debug, Clone, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct CommandApprovalDto {
+    #[serde(flatten)]
+    pub key: CommandApprovalKeyDto,
+    /// The program as the plugin names it (`/cache/...`).
+    pub jar: String,
+    /// When the user said yes, RFC 3339.
+    pub approved_at: String,
+}
+
+/// What an approval is told apart by.
+#[derive(Serialize, Deserialize, Debug, Clone, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct CommandApprovalKeyDto {
+    pub jar_sha256: String,
+    pub jvm_options: Vec<String>,
 }
 
 /// A folder of the user's given to a plugin.
@@ -116,6 +143,18 @@ impl From<PluginSettings> for PluginSettingsDto {
             allowed_hosts: value.allowed_hosts,
             allowed_paths: value.allowed_paths.into_iter().map(Into::into).collect(),
             ignored_paths: value.ignored_paths.into_iter().map(Into::into).collect(),
+            command_approvals: value
+                .command_approvals
+                .into_iter()
+                .map(|approval| CommandApprovalDto {
+                    key: CommandApprovalKeyDto {
+                        jar_sha256: approval.identity.jar_sha256,
+                        jvm_options: approval.identity.jvm_options,
+                    },
+                    jar: approval.jar,
+                    approved_at: approval.approved_at.to_rfc3339(),
+                })
+                .collect(),
         }
     }
 }
@@ -130,6 +169,15 @@ impl From<EditPluginSettingsDto> for EditPluginSettings {
             ignored_paths: value
                 .ignored_paths
                 .map(|paths| paths.into_iter().map(Into::into).collect()),
+            revoke_command_approvals: value
+                .revoke_command_approvals
+                .unwrap_or_default()
+                .into_iter()
+                .map(|key| CommandIdentity {
+                    jar_sha256: key.jar_sha256,
+                    jvm_options: key.jvm_options,
+                })
+                .collect(),
         }
     }
 }
@@ -221,5 +269,48 @@ impl From<AllowedPathRejection> for AllowedPathRejectionDto {
             AllowedPathRejection::PluginReserved => Self::PluginReserved,
             AllowedPathRejection::HostOverlapsCore => Self::HostOverlapsCore,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use aether_core::features::plugins::{CommandApproval, CommandIdentity};
+    use serde_json::json;
+
+    use super::*;
+
+    #[test]
+    fn should_list_an_approval_with_its_key_beside_the_program_when_settings_are_sent() {
+        let settings = PluginSettings {
+            command_approvals: vec![CommandApproval {
+                identity: CommandIdentity {
+                    jar_sha256: "abc".into(),
+                    jvm_options: vec!["-Xmx2G".into()],
+                },
+                plugin_sha256: "never-sent".into(),
+                jar: "/cache/a.jar".into(),
+                approved_at: "2026-11-16T10:00:00Z".parse().unwrap(),
+            }],
+            ..PluginSettings::default()
+        };
+
+        let value = serde_json::to_value(PluginSettingsDto::from(settings)).unwrap();
+
+        assert_eq!(
+            value["commandApprovals"],
+            json!([{
+                "jarSha256": "abc",
+                "jvmOptions": ["-Xmx2G"],
+                "jar": "/cache/a.jar",
+                "approvedAt": "2026-11-16T10:00:00+00:00"
+            }])
+        );
+    }
+
+    #[test]
+    fn should_revoke_nothing_when_the_edit_names_no_approvals() {
+        let edit: EditPluginSettings = EditPluginSettingsDto::default().into();
+
+        assert!(edit.revoke_command_approvals.is_empty());
     }
 }

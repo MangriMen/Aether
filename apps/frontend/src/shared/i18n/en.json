@@ -1001,6 +1001,12 @@
       "plugin_is_root": "Not used by the plugin: the plugin path cannot be \"/\" itself",
       "plugin_reserved": "Not used by the plugin: the plugin path is taken by a folder the launcher gives every plugin",
       "host_overlaps_core": "Not used by the plugin: the host folder is, contains or lies inside a launcher folder"
+    },
+    "commandApprovals": {
+      "title": "Allowed programs",
+      "description": "Programs this plugin may run without asking. Take one back and you will be asked again next time.",
+      "details": "SHA-256 {{hash}}… · allowed {{date}}",
+      "revoke": "Take back"
     }
   },
   "pagination": {
