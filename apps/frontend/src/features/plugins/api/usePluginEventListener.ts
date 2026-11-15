@@ -2,7 +2,7 @@ import { useQueryClient } from '@tanstack/solid-query';
 import { getCurrentWindow, UserAttentionType } from '@tauri-apps/api/window';
 
 import { pluginsEvents, useEventListener } from '@/platform/ipc';
-import { logDebug } from '@/shared/log';
+import { logDebug, logError } from '@/shared/log';
 
 import { invalidateCommandApprovals } from './commandApprovalQueries';
 import { pluginsCache } from './pluginsCache';
@@ -29,7 +29,7 @@ export const usePluginEventListener = () => {
         // The window may be behind another or minimised, and the plugin waits for the answer.
         getCurrentWindow()
           .requestUserAttention(UserAttentionType.Informational)
-          .catch(() => undefined);
+          .catch((err) => logError('requestUserAttention failed', err));
         void invalidateCommandApprovals(queryClient);
         break;
       case 'commandApprovalResolved':
