@@ -206,13 +206,11 @@ fn apply_edit_changes(
         });
     }
 
-    if !edit_settings.revoke_command_approvals.is_empty() {
-        settings.command_approvals.retain(|approval| {
-            !edit_settings
-                .revoke_command_approvals
-                .contains(&approval.identity)
-        });
-    }
+    settings.command_approvals.retain(|approval| {
+        !edit_settings
+            .revoke_command_approvals
+            .contains(&approval.identity)
+    });
 
     Ok(settings)
 }

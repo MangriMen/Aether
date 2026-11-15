@@ -28,6 +28,7 @@ export const PluginSettingsTab: Component<PluginSettingsTabProps> = (props) => {
     () => local.plugin.manifest.metadata.id,
   );
   const editPluginSettings = useEditPluginSettings();
+  const commandApprovals = () => pluginSettings.data?.commandApprovals ?? [];
 
   const { initialValues, onChangePartial } = usePluginSettingsHandler({
     pluginId: () => local.plugin.manifest.metadata.id,
@@ -46,9 +47,9 @@ export const PluginSettingsTab: Component<PluginSettingsTabProps> = (props) => {
         initialValues={initialValues}
         onChangePartial={onChangePartial}
       />
-      <Show when={(pluginSettings.data?.commandApprovals ?? []).length > 0}>
+      <Show when={commandApprovals().length > 0}>
         <PluginCommandApprovalsSection
-          approvals={pluginSettings.data?.commandApprovals ?? []}
+          approvals={commandApprovals()}
           disabled={editPluginSettings.isPending}
           onRevoke={(approval) =>
             editPluginSettings.mutate({
