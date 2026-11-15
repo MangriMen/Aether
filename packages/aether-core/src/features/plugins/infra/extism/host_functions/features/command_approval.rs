@@ -237,7 +237,7 @@ async fn inspect(
         return once_only(OnceOnlyReason::TargetNotInCache);
     };
 
-    let size = match std::fs::metadata(&host_path) {
+    let size = match tokio::fs::metadata(&host_path).await {
         Ok(meta) if meta.is_file() => meta.len(),
         _ => return once_only(OnceOnlyReason::JarUnreadable),
     };
@@ -248,7 +248,11 @@ async fn inspect(
         return once_only(OnceOnlyReason::JarUnreadable);
     };
 
-    let always = match jar_has_class_path(&host_path) {
+    let manifest_path = host_path.clone();
+    let manifest = tokio::task::spawn_blocking(move || jar_has_class_path(&manifest_path))
+        .await
+        .unwrap_or(Err(()));
+    let always = match manifest {
         Ok(false) => Ok(()),
         Ok(true) => Err(OnceOnlyReason::JarHasClassPath),
         Err(()) => Err(OnceOnlyReason::JarUnreadable),

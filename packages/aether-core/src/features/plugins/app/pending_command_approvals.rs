@@ -32,8 +32,8 @@ struct Waiting {
 #[derive(Default)]
 struct State {
     waiting: HashMap<Uuid, Waiting>,
-    /// Commands the user denied, by [`denial_key`]; refused again until the plugin is stopped.
-    denied: HashSet<String>,
+    /// Commands the user denied, per plugin; refused again until the plugin is stopped.
+    denied: HashMap<PluginId, HashSet<DenialKey>>,
 }
 
 pub struct PendingCommandApprovals {
@@ -62,20 +62,22 @@ impl PendingCommandApprovals {
     }
 }
 
-fn denial_prefix(plugin_id: &PluginId) -> String {
-    format!("{plugin_id}\0")
+/// The command as the user saw it: the program, its folder and its arguments.
+#[derive(PartialEq, Eq, Hash)]
+struct DenialKey {
+    java: String,
+    current_dir: String,
+    arguments: Vec<String>,
 }
 
-fn denial_key(request: &CommandApprovalRequest) -> String {
-    let mut key = denial_prefix(&request.plugin_id);
-    key.push_str(&request.java);
-    key.push('\0');
-    key.push_str(&request.current_dir);
-    for argument in &request.arguments {
-        key.push('\0');
-        key.push_str(argument);
+impl DenialKey {
+    fn of(request: &CommandApprovalRequest) -> Self {
+        Self {
+            java: request.java.clone(),
+            current_dir: request.current_dir.clone(),
+            arguments: request.arguments.clone(),
+        }
     }
-    key
 }
 
 /// Removes the question from the map however the wait ends, the future being dropped included.
@@ -113,14 +115,18 @@ impl CommandApprover for PendingCommandApprovals {
         &self,
         request: CommandApprovalRequest,
     ) -> Result<CommandGrant, CommandApprovalRefusal> {
-        let key = denial_key(&request);
+        let key = DenialKey::of(&request);
         let id = request.id;
         let plugin_id = request.plugin_id.clone();
         let (sender, receiver) = oneshot::channel();
 
         {
             let mut state = self.lock();
-            if state.denied.contains(&key) {
+            if state
+                .denied
+                .get(&request.plugin_id)
+                .is_some_and(|denied| denied.contains(&key))
+            {
                 return Err(CommandApprovalRefusal::Denied);
             }
             let expires_at: DateTime<Utc> = Utc::now()
@@ -194,21 +200,21 @@ impl CommandApprover for PendingCommandApprovals {
             });
         }
         let sender = waiting.answer.take().ok_or_else(not_found)?;
-        let key = denial_key(&waiting.pending.request);
+        let key = DenialKey::of(&waiting.pending.request);
+        let plugin_id = waiting.pending.request.plugin_id.clone();
         // The waiter may have just given up (its timeout fired before it removed the entry): the
         // answer reached nobody, which the caller is told.
         sender.send(answer).map_err(|_| not_found())?;
         if answer == CommandApprovalAnswer::Deny {
             // Recorded here, under the lock a stop takes too, so a stop that follows cannot be
             // outlived by a denial the waiter writes after waking.
-            state.denied.insert(key);
+            state.denied.entry(plugin_id).or_default().insert(key);
         }
         Ok(())
     }
 
     fn forget_denials(&self, plugin_id: &PluginId) {
-        let prefix = denial_prefix(plugin_id);
-        self.lock().denied.retain(|key| !key.starts_with(&prefix));
+        self.lock().denied.remove(plugin_id);
     }
 
     fn cancel_plugin(&self, plugin_id: &PluginId) -> bool {
