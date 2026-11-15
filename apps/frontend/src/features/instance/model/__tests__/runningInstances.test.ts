@@ -6,6 +6,7 @@ import {
   applyRunningProcessUpdate,
   createRunningInstancesStore,
   getRemovalBlock,
+  getStoppableProcessId,
 } from '../runningInstances';
 
 describe('getRemovalBlock', () => {
@@ -45,6 +46,27 @@ describe('getRemovalBlock', () => {
 
   it('offers force only for an instance that is not installed', () => {
     expect(getRemovalBlock('not_installed', undefined)).toBe('notInstalled');
+  });
+});
+
+describe('getStoppableProcessId', () => {
+  it('gives the process of a running game', () => {
+    expect(
+      getStoppableProcessId({
+        processId: 'p1',
+        isLoading: false,
+      }),
+    ).toBe('p1');
+  });
+
+  it('gives nothing while a launch is in progress or when nothing runs', () => {
+    expect(
+      getStoppableProcessId({ processId: 'p1', isLoading: true }),
+    ).toBeUndefined();
+    expect(
+      getStoppableProcessId({ processId: undefined, isLoading: false }),
+    ).toBeUndefined();
+    expect(getStoppableProcessId(undefined)).toBeUndefined();
   });
 });
 

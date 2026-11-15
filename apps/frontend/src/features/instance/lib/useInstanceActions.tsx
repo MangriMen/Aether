@@ -7,7 +7,11 @@ import type { Instance } from '../model/instance';
 
 import { useLaunchInstance, useStopInstance } from '../api/instanceLaunch';
 import { useRemoveInstance } from '../api/instanceQueries';
-import { getRemovalBlock, type RemovalBlock } from '../model/runningInstances';
+import {
+  getRemovalBlock,
+  getStoppableProcessId,
+  type RemovalBlock,
+} from '../model/runningInstances';
 import { RunningInstancesContext } from '../model/runningInstancesContext';
 
 export const useInstanceActions = () => {
@@ -43,17 +47,9 @@ export const useInstanceActions = () => {
   };
 
   const stop = async (instance: Instance) => {
-    const runningInstance = getRunningInstance(context, instance.id);
-
-    if (
-      instance.installStage !== 'installed' ||
-      !runningInstance ||
-      runningInstance.isLoading
-    ) {
-      return;
-    }
-
-    const uuid = runningInstance.processId;
+    const uuid = getStoppableProcessId(
+      getRunningInstance(context, instance.id),
+    );
 
     if (uuid === undefined) {
       return;

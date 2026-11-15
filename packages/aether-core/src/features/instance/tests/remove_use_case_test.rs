@@ -834,3 +834,83 @@ async fn should_refuse_and_keep_everything_when_the_instance_is_running() {
         .unwrap();
     assert_eq!(instances, 0);
 }
+
+#[tokio::test]
+async fn should_refuse_when_the_game_starts_while_the_removal_waits_for_the_lock() {
+    let (_temp, location_info, pool) = create_test_infrastructure().await;
+    let instance_id = Uuid::new_v4().to_string();
+    let storage = Arc::new(SqliteInstanceStorage::new(pool.clone()));
+    storage
+        .upsert(&create_instance(&instance_id))
+        .await
+        .unwrap();
+    create_instance_dir(&location_info, &instance_id).await;
+    let processes = Arc::new(FakeProcesses::default());
+    let locks = Arc::new(InstanceLocks::new());
+    let use_case = RemoveInstanceUseCase::new(
+        storage.clone(),
+        Arc::new(NoOpWatcher),
+        Arc::new(FsInstanceFileService::new(
+            location_info.clone(),
+            crate::shared::limits::PluginSandboxLimits::default().max_instance_file_bytes,
+        )),
+        Arc::new(SqlitePackStorage::new(pool)),
+        locks.clone(),
+        no_op_reaper(storage.clone()),
+        processes.clone(),
+    );
+    let id = InstanceId::try_from(instance_id.as_str()).unwrap();
+    let held = locks.lock(&id).await;
+
+    // Pending: the quick check found nothing and the removal waits for the lock.
+    let mut remove = std::pin::pin!(use_case.execute(id.clone()));
+    assert!(futures::poll!(&mut remove).is_pending());
+    let process_id = processes.start(&instance_id);
+    drop(held);
+
+    let result = remove.await;
+
+    assert!(matches!(
+        result,
+        Err(InstanceError::InstanceAlreadyRunning { process_id: p, .. }) if p == process_id
+    ));
+    assert!(storage.get(&id).await.is_ok());
+    assert!(location_info.instance_dir(&id).exists());
+}
+
+#[tokio::test]
+async fn should_not_call_off_the_install_when_the_removal_is_refused_for_a_running_game() {
+    let (_temp, location_info, pool) = create_test_infrastructure().await;
+    let instance_id = Uuid::new_v4().to_string();
+    let storage = Arc::new(SqliteInstanceStorage::new(pool.clone()));
+    storage
+        .upsert(&create_instance(&instance_id))
+        .await
+        .unwrap();
+    let installs = Arc::new(crate::features::instance::InstallCancellations::default());
+    let processes = Arc::new(FakeProcesses::default());
+    processes.start(&instance_id);
+    let use_case = RemoveInstanceUseCase::new(
+        storage.clone(),
+        Arc::new(NoOpWatcher),
+        Arc::new(FsInstanceFileService::new(
+            location_info,
+            crate::shared::limits::PluginSandboxLimits::default().max_instance_file_bytes,
+        )),
+        Arc::new(SqlitePackStorage::new(pool)),
+        Arc::new(InstanceLocks::new()),
+        no_op_reaper(storage),
+        processes,
+    )
+    .with_cancellations(installs.clone());
+    let id = InstanceId::try_from(instance_id).unwrap();
+    let install = installs.register(&id);
+
+    let result = use_case.execute(id).await;
+
+    assert!(matches!(
+        result,
+        Err(InstanceError::InstanceAlreadyRunning { .. })
+    ));
+    assert!(!install.token.is_cancelled());
+}

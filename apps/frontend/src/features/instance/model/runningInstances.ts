@@ -68,6 +68,14 @@ export const applyProcessSnapshot = (
   return next;
 };
 
+/**
+ * The process to stop, if there is one: a running game is stopped whatever the install stage
+ * says, a launch in progress has nothing to stop yet.
+ */
+export const getStoppableProcessId = (
+  running: { processId?: string; isLoading: boolean } | undefined,
+): string | undefined => (running?.isLoading ? undefined : running?.processId);
+
 export type RemovalBlock = 'running' | 'launching' | 'notInstalled';
 
 /**
