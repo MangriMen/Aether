@@ -2,6 +2,7 @@ import type { Component } from 'solid-js';
 
 import { createMemo, createSignal, onCleanup, onMount, Show } from 'solid-js';
 
+import { formatBytes } from '@/shared/format';
 import { useTranslation } from '@/shared/i18n';
 import {
   Button,
@@ -24,8 +25,6 @@ import {
 } from '../api/commandApprovalQueries';
 import { secondsLeft, splitCommandLine } from '../model/commandApproval';
 
-const BYTES_PER_MB = 1024 * 1024;
-
 /** How long an allow stays out of reach once a question shows. */
 const ARM_DELAY_MS = 700;
 
@@ -46,14 +45,13 @@ const CommandApprovalBody: Component<{
   busy: boolean;
   onAnswer: (answer: CommandAnswer) => void;
 }> = (props) => {
-  const [{ t }] = useTranslation();
+  const [{ t, locale }] = useTranslation();
 
   const [now, setNow] = createSignal(Date.now());
   const timer = setInterval(() => setNow(Date.now()), 1000);
   onCleanup(() => clearInterval(timer));
 
   const line = createMemo(() => splitCommandLine(props.approval.arguments));
-  const jvmOptions = () => line().options;
 
   // The next question takes the place of this one at once, so a second click meant for the
   // last one must not reach it: an allow waits a moment after a question appears.
@@ -122,7 +120,7 @@ const CommandApprovalBody: Component<{
                   label={t('plugin.commandApproval.program')}
                   value={
                     jar().size
-                      ? `${jar().plugin_path} (${t('plugin.commandApproval.size', { size: ((jar().size ?? 0) / BYTES_PER_MB).toFixed(1) })})`
+                      ? `${jar().plugin_path} (${formatBytes(jar().size!, locale())})`
                       : jar().plugin_path
                   }
                 />
@@ -141,10 +139,10 @@ const CommandApprovalBody: Component<{
             label={t('plugin.commandApproval.folder')}
             value={props.approval.current_dir}
           />
-          <Show when={jvmOptions().length > 0}>
+          <Show when={line().options.length > 0}>
             <Detail
               label={t('plugin.commandApproval.options')}
-              value={jvmOptions().join(' ')}
+              value={line().options.join(' ')}
             />
           </Show>
           <Show when={line().rest.length > 0}>

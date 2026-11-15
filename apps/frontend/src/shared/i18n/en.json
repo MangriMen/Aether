@@ -910,7 +910,6 @@
       "folder": "Working folder",
       "program": "Program",
       "sha": "SHA-256",
-      "size": "{{size}} MB",
       "options": "JVM options",
       "arguments": "Arguments ({{count}}, may contain an address or a token)",
       "unknownProgram": "The program could not be identified.",
