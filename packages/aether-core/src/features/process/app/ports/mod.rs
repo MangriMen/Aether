@@ -30,6 +30,7 @@ pub trait ProcessStorage: Send + Sync {
     ) -> Result<Option<MinecraftProcessMetadata>, ProcessError>;
 
     async fn try_wait(&self, id: Uuid) -> Result<Option<Option<ExitStatus>>, ProcessError>;
+    /// Ask the process to stop and return without waiting for it: the exit is seen by `try_wait`.
     async fn kill(&self, id: Uuid) -> Result<(), ProcessError>;
     /// Whether `kill` was requested for the process (the exit is then not a crash).
     async fn was_killed(&self, id: Uuid) -> bool;
