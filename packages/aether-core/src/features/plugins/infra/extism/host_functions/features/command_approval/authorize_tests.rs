@@ -220,7 +220,7 @@ async fn should_run_the_command_once_without_saving_when_the_user_allows_it_once
 }
 
 #[tokio::test]
-async fn should_not_ask_again_after_always_for_the_same_jar_and_plugin_build() {
+async fn should_not_ask_again_when_always_was_given_for_the_same_jar_and_plugin_build() {
     let fixture = Fixture::new();
     fixture.write_jar("a.jar", PLAIN);
     let approver = ScriptedApprover::new(Ok(CommandGrant::Always));
@@ -378,7 +378,7 @@ async fn should_ask_even_when_settings_hold_an_approval_for_a_jar_that_names_oth
 }
 
 #[tokio::test]
-async fn should_ask_every_time_for_a_program_outside_the_plugin_cache() {
+async fn should_ask_every_time_when_the_program_is_outside_the_plugin_cache() {
     let fixture = Fixture::new();
     let approver = ScriptedApprover::new(Ok(CommandGrant::Always));
     let args = ["-jar", "/somewhere/a.jar"];

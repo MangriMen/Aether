@@ -29,6 +29,7 @@ pub enum CommandApprovalOutcome {
     Answered,
     /// Nobody answered in time: the user may not know the plugin asked.
     TimedOut,
-    /// The plugin was stopped or removed while the question waited.
+    /// The question was withdrawn: a stop of the plugin was attempted (it may still have been
+    /// refused as busy), or the wait was abandoned before it ended.
     Cancelled,
 }

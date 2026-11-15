@@ -485,7 +485,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn should_stop_a_plugin_that_waits_for_the_user_by_cancelling_its_question() {
+    async fn should_stop_the_plugin_when_it_waits_for_the_user_and_its_question_is_cancelled() {
         let setup = setup();
         let call = call_that_asks(&setup);
         wait_until_asked(&setup.approvals).await;
@@ -499,7 +499,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn should_refuse_to_stop_a_busy_plugin_that_waits_for_nobody_without_delay() {
+    async fn should_refuse_to_stop_without_delay_when_the_busy_plugin_waits_for_nobody() {
         let setup = setup();
         let (release, gate) = std::sync::mpsc::channel::<()>();
         let handle = setup.handle.clone();
@@ -527,7 +527,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn should_refuse_a_denied_command_until_the_registry_forgets_the_denial() {
+    async fn should_ask_again_when_the_registry_forgets_a_denial() {
         let setup = setup();
         let first = call_that_asks(&setup);
         wait_until_asked(&setup.approvals).await;

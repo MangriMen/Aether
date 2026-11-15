@@ -451,7 +451,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn should_report_answered_for_an_allow_and_for_a_deny() {
+    async fn should_report_answered_when_the_user_allows_or_denies() {
         let (approvals, mut events) = approvals_with_outcomes(Duration::from_secs(60));
         let first = spawn_request(&approvals, request("p", false));
         let id = wait_for_pending(&approvals).await;

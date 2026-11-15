@@ -32,7 +32,8 @@ pub enum PluginEventKindDto {
     },
 }
 
-/// How a command question ended. Only a timeout is news to the user: the others they caused.
+/// How a command question ended. The UI tells the user about a timeout only: an answer is
+/// theirs, and a cancel follows an attempt to stop the plugin, which they started.
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "camelCase")]
 pub enum CommandApprovalOutcomeDto {
@@ -104,7 +105,7 @@ mod tests {
     }
 
     #[test]
-    fn a_resolved_question_carries_how_it_ended_and_nothing_about_the_command() {
+    fn should_carry_how_it_ended_and_nothing_about_the_command_when_a_question_resolves() {
         let dto = PluginEventDto {
             seq: 1,
             ..PluginEventDto::from(PluginEvent::CommandApprovalResolved {

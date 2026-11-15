@@ -144,7 +144,10 @@ export type CauseDto = { type: "io"; kind: IoErrorKindDto } | { type: "network";
 /**  The only place raw error text reaches the frontend. */
 { type: "unknown"; details: string };
 
-/**  How a command question ended. Only a timeout is news to the user: the others they caused. */
+/**
+ *  How a command question ended. The UI tells the user about a timeout only: an answer is
+ *  theirs, and a cancel follows an attempt to stop the plugin, which they started.
+ */
 export type CommandApprovalOutcomeDto = "answered" | "timedOut" | "cancelled";
 
 /**  Why a text is not a command. */

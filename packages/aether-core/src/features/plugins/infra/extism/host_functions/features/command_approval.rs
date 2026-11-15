@@ -63,10 +63,10 @@ pub(crate) async fn authorize_command(
     let result = authorize(plugin_id, plugin_sha256, command, host_command, authority).await;
     if let Err(PluginError::CommandNotApproved { reason, .. }) = &result {
         match reason {
-            // Nothing the user did: the file changed under them.
+            // Nothing the user did: the file changed under them, before or after they were asked.
             CommandApprovalRefusal::JarChanged => tracing::warn!(
                 target: "plugin",
-                "[{plugin_id}]: command not run, its jar changed while the user was asked"
+                "[{plugin_id}]: command not run, its jar changed before it could start"
             ),
             reason => tracing::info!(
                 target: "plugin",
