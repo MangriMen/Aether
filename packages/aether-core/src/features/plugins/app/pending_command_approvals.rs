@@ -9,7 +9,9 @@ use chrono::{DateTime, Utc};
 use tokio::sync::oneshot;
 use uuid::Uuid;
 
-use crate::features::events::{EventEmitterExt, PluginEvent, SharedEventEmitter};
+use crate::features::events::{
+    CommandApprovalOutcome, EventEmitterExt, PluginEvent, SharedEventEmitter,
+};
 use crate::features::instance::PluginId;
 use crate::features::plugins::{
     CommandApprovalAnswer, CommandApprovalRefusal, CommandApprovalRequest, CommandGrant,
@@ -132,10 +134,17 @@ impl CommandApprover for PendingCommandApprovals {
         let outcome = tokio::time::timeout(self.timeout, receiver).await;
 
         self.lock().waiting.remove(&id);
+        let ended = match &outcome {
+            Err(_) => CommandApprovalOutcome::TimedOut,
+            // The sender went away without an answer: the plugin was cancelled.
+            Ok(Err(_)) => CommandApprovalOutcome::Cancelled,
+            Ok(Ok(_)) => CommandApprovalOutcome::Answered,
+        };
         self.events
             .emit_safe(PluginEvent::CommandApprovalResolved {
                 plugin_id,
                 request_id: id,
+                outcome: ended,
             })
             .await;
 
@@ -203,7 +212,7 @@ mod tests {
     use std::sync::Arc;
 
     use super::*;
-    use crate::features::events::{Event, EventEmitter, EventError};
+    use crate::features::events::{CommandApprovalOutcome, Event, EventEmitter, EventError};
     use crate::features::plugins::OnceOnlyReason;
 
     struct NullEmitter;
@@ -367,5 +376,103 @@ mod tests {
 
         let again = approvals.request(request("p", false)).await;
         assert_eq!(again, Err(CommandApprovalRefusal::Denied));
+    }
+    /// The approvals, and what they say about how each question ended.
+    fn approvals_with_outcomes(
+        timeout: Duration,
+    ) -> (
+        Arc<PendingCommandApprovals>,
+        tokio::sync::mpsc::UnboundedReceiver<Event>,
+    ) {
+        let (sender, receiver) = tokio::sync::mpsc::unbounded_channel();
+        let approvals = Arc::new(PendingCommandApprovals::with_timeout(
+            Arc::new(crate::features::events::test_support::ChannelEmitter(
+                sender,
+            )),
+            timeout,
+        ));
+        (approvals, receiver)
+    }
+
+    fn resolved(
+        receiver: &mut tokio::sync::mpsc::UnboundedReceiver<Event>,
+    ) -> Vec<CommandApprovalOutcome> {
+        let mut outcomes = vec![];
+        while let Ok(event) = receiver.try_recv() {
+            if let Event::Plugin(PluginEvent::CommandApprovalResolved { outcome, .. }) = event {
+                outcomes.push(outcome);
+            }
+        }
+        outcomes
+    }
+
+    #[tokio::test]
+    async fn should_report_a_timeout_when_nobody_answers() {
+        let (approvals, mut events) = approvals_with_outcomes(Duration::from_millis(30));
+
+        let _ = approvals.request(request("p", false)).await;
+
+        assert_eq!(
+            resolved(&mut events),
+            vec![CommandApprovalOutcome::TimedOut]
+        );
+    }
+
+    #[tokio::test]
+    async fn should_report_a_cancel_when_the_plugin_is_stopped() {
+        let (approvals, mut events) = approvals_with_outcomes(Duration::from_secs(60));
+        let waiter = spawn_request(&approvals, request("p", false));
+        wait_for_pending(&approvals).await;
+
+        approvals.cancel_plugin(&PluginId::try_from("p").unwrap());
+        let _ = waiter.await;
+
+        assert_eq!(
+            resolved(&mut events),
+            vec![CommandApprovalOutcome::Cancelled]
+        );
+    }
+
+    #[tokio::test]
+    async fn should_report_answered_for_an_allow_and_for_a_deny() {
+        let (approvals, mut events) = approvals_with_outcomes(Duration::from_secs(60));
+        let first = spawn_request(&approvals, request("p", false));
+        let id = wait_for_pending(&approvals).await;
+        approvals.answer(id, CommandApprovalAnswer::Once).unwrap();
+        let _ = first.await;
+
+        let mut other = request("q", false);
+        other.arguments.push("x".into());
+        let second = spawn_request(&approvals, other);
+        let id = wait_for_pending(&approvals).await;
+        approvals.answer(id, CommandApprovalAnswer::Deny).unwrap();
+        let _ = second.await;
+
+        assert_eq!(
+            resolved(&mut events),
+            vec![
+                CommandApprovalOutcome::Answered,
+                CommandApprovalOutcome::Answered
+            ]
+        );
+    }
+
+    #[tokio::test]
+    async fn should_say_nothing_when_a_remembered_denial_refuses_the_command() {
+        let (approvals, mut events) = approvals_with_outcomes(Duration::from_secs(60));
+        let first = spawn_request(&approvals, request("p", false));
+        let id = wait_for_pending(&approvals).await;
+        approvals.answer(id, CommandApprovalAnswer::Deny).unwrap();
+        let _ = first.await;
+        let before = resolved(&mut events).len();
+
+        let again = approvals.request(request("p", false)).await;
+
+        assert_eq!(again, Err(CommandApprovalRefusal::Denied));
+        assert_eq!(before, 1);
+        assert!(
+            events.try_recv().is_err(),
+            "no event for a refusal nobody was asked about"
+        );
     }
 }

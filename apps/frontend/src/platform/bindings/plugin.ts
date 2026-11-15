@@ -144,6 +144,9 @@ export type CauseDto = { type: "io"; kind: IoErrorKindDto } | { type: "network";
 /**  The only place raw error text reaches the frontend. */
 { type: "unknown"; details: string };
 
+/**  How a command question ended. Only a timeout is news to the user: the others they caused. */
+export type CommandApprovalOutcomeDto = "answered" | "timedOut" | "cancelled";
+
 /**  Why a text is not a command. */
 export type CommandParseReasonDto = { code: "EMPTY" };
 
@@ -672,7 +675,7 @@ export type PluginEventKindDto = { type: "edit"; plugin_id: string } | { type: "
  *  A command of the plugin waits for the user. The arguments are not here: the frontend asks
  *  for the question.
  */
-{ type: "commandApprovalRequested"; plugin_id: string; request_id: string } | { type: "commandApprovalResolved"; plugin_id: string; request_id: string };
+{ type: "commandApprovalRequested"; plugin_id: string; request_id: string } | { type: "commandApprovalResolved"; plugin_id: string; request_id: string; outcome: CommandApprovalOutcomeDto };
 
 export type PluginImporterCapabilityDto = {
 	/**  Plugin function name to handle this capability call. */

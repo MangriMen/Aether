@@ -1,4 +1,4 @@
-use aether_core::features::events::PluginEvent;
+use aether_core::features::events::{CommandApprovalOutcome, PluginEvent};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use tauri_specta::Event;
@@ -28,7 +28,27 @@ pub enum PluginEventKindDto {
     CommandApprovalResolved {
         plugin_id: String,
         request_id: String,
+        outcome: CommandApprovalOutcomeDto,
     },
+}
+
+/// How a command question ended. Only a timeout is news to the user: the others they caused.
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Type)]
+#[serde(rename_all = "camelCase")]
+pub enum CommandApprovalOutcomeDto {
+    Answered,
+    TimedOut,
+    Cancelled,
+}
+
+impl From<CommandApprovalOutcome> for CommandApprovalOutcomeDto {
+    fn from(value: CommandApprovalOutcome) -> Self {
+        match value {
+            CommandApprovalOutcome::Answered => Self::Answered,
+            CommandApprovalOutcome::TimedOut => Self::TimedOut,
+            CommandApprovalOutcome::Cancelled => Self::Cancelled,
+        }
+    }
 }
 
 impl From<PluginEvent> for PluginEventDto {
@@ -50,9 +70,11 @@ impl From<PluginEvent> for PluginEventDto {
                 PluginEvent::CommandApprovalResolved {
                     plugin_id,
                     request_id,
+                    outcome,
                 } => PluginEventKindDto::CommandApprovalResolved {
                     plugin_id: plugin_id.into(),
                     request_id: request_id.to_string(),
+                    outcome: outcome.into(),
                 },
             },
         }
@@ -78,6 +100,29 @@ mod tests {
         assert_eq!(
             serde_json::to_value(dto).unwrap(),
             json!({ "seq": 3, "type": "edit", "plugin_id": "a" })
+        );
+    }
+
+    #[test]
+    fn a_resolved_question_carries_how_it_ended_and_nothing_about_the_command() {
+        let dto = PluginEventDto {
+            seq: 1,
+            ..PluginEventDto::from(PluginEvent::CommandApprovalResolved {
+                plugin_id: PluginId::from_static("a"),
+                request_id: uuid::Uuid::nil(),
+                outcome: CommandApprovalOutcome::TimedOut,
+            })
+        };
+
+        assert_eq!(
+            serde_json::to_value(dto).unwrap(),
+            json!({
+                "seq": 1,
+                "type": "commandApprovalResolved",
+                "plugin_id": "a",
+                "request_id": "00000000-0000-0000-0000-000000000000",
+                "outcome": "timedOut"
+            })
         );
     }
 }

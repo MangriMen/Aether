@@ -14,9 +14,21 @@ pub enum PluginEvent {
         plugin_id: PluginId,
         request_id: Uuid,
     },
-    /// The question is over (answered, timed out or cancelled).
+    /// The question is over.
     CommandApprovalResolved {
         plugin_id: PluginId,
         request_id: Uuid,
+        outcome: CommandApprovalOutcome,
     },
+}
+
+/// How a command question ended.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CommandApprovalOutcome {
+    /// The user said yes or no.
+    Answered,
+    /// Nobody answered in time: the user may not know the plugin asked.
+    TimedOut,
+    /// The plugin was stopped or removed while the question waited.
+    Cancelled,
 }
