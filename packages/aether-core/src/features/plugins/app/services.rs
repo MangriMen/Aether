@@ -44,6 +44,14 @@ impl PluginRegistry {
         self
     }
 
+    /// Forgets the commands the user denied `plugin_id`. For a plugin that has really stopped: a
+    /// stop refused, or one that did not retire the instance, leaves them in force.
+    pub fn forget_command_denials(&self, plugin_id: &PluginId) {
+        if let Some(approver) = &self.command_approver {
+            approver.forget_denials(plugin_id);
+        }
+    }
+
     /// Cancels the command questions of `plugin_id` and waits for the call that asked them to
     /// end. A plugin waiting for the user is in a call, and a stop refuses a busy plugin; the
     /// cancelled question ends the call within moments. Plugins without a question pass at
@@ -216,17 +224,6 @@ impl PluginRegistry {
     /// without passing through `Unloading`.
     pub async fn begin_unloading(&self, plugin_id: &PluginId) -> Result<PluginHandle, PluginError> {
         self.cancel_command_questions(plugin_id).await;
-        let result = self.take_for_unloading(plugin_id).await;
-        // A stop refused as busy leaves the plugin running, and what it was denied in force.
-        if let Some(approver) = &self.command_approver
-            && !matches!(result, Err(PluginError::Busy { .. }))
-        {
-            approver.forget_denials(plugin_id);
-        }
-        result
-    }
-
-    async fn take_for_unloading(&self, plugin_id: &PluginId) -> Result<PluginHandle, PluginError> {
         let mut taken = None;
         self.upsert_with(plugin_id, |plugin| {
             let plugin_id = plugin_id.clone();

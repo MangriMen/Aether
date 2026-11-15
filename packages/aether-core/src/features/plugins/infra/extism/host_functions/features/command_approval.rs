@@ -241,12 +241,23 @@ async fn inspect(
 fn jar_has_class_path(path: &Path) -> Result<bool, ()> {
     let file = File::open(path).map_err(|_| ())?;
     let mut archive = zip::ZipArchive::new(file).map_err(|_| ())?;
-    let entry = match archive.by_name("META-INF/MANIFEST.MF") {
-        Ok(entry) => entry,
-        // A jar without a manifest has no `Class-Path`, and no `Main-Class` either.
-        Err(zip::result::ZipError::FileNotFound) => return Ok(false),
-        Err(_) => return Err(()),
-    };
+    // Parsers disagree about a jar that spells the manifest's name another way or holds two
+    // entries by one name, so only a plain one is vouched for. `java -jar` wants a manifest
+    // anyway (`Main-Class`), so a jar without one loses nothing.
+    if archive.has_duplicate_names() {
+        return Err(());
+    }
+    let mut manifest_names = 0;
+    for name in archive.file_names() {
+        let name = name.map_err(|_| ())?;
+        if name.eq_ignore_ascii_case("META-INF/MANIFEST.MF") {
+            manifest_names += 1;
+        }
+    }
+    if manifest_names != 1 {
+        return Err(());
+    }
+    let entry = archive.by_name("META-INF/MANIFEST.MF").map_err(|_| ())?;
 
     let mut manifest = String::new();
     entry
@@ -299,10 +310,23 @@ mod tests {
     }
 
     #[test]
-    fn should_not_find_a_class_path_when_the_jar_has_no_manifest() {
+    fn should_report_unreadable_when_the_jar_has_no_manifest() {
         let jar = jar_with(&[("a/B.class", "x")]);
 
-        assert_eq!(jar_has_class_path(jar.path()), Ok(false));
+        assert_eq!(jar_has_class_path(jar.path()), Err(()));
+    }
+
+    #[test]
+    fn should_report_unreadable_when_the_manifest_is_spelled_in_another_case() {
+        let jar = jar_with(&[(
+            "META-INF/manifest.mf",
+            "Manifest-Version: 1.0
+Class-Path: evil.jar
+
+",
+        )]);
+
+        assert_eq!(jar_has_class_path(jar.path()), Err(()));
     }
 
     #[test]

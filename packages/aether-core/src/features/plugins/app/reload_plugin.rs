@@ -52,7 +52,7 @@ impl ReloadPluginUseCase {
             .begin_unloading(&plugin_id)
             .await?;
 
-        if let Err(err) = self.unload(&manifest, handle.clone()).await {
+        if let Err(err) = self.unload(&plugin_id, &manifest, handle.clone()).await {
             if !handle.is_retired() {
                 self.enabler
                     .set_state(&plugin_id, PluginState::Loaded(handle))
@@ -79,6 +79,7 @@ impl ReloadPluginUseCase {
 
     async fn unload(
         &self,
+        plugin_id: &PluginId,
         manifest: &PluginManifest,
         handle: PluginHandle,
     ) -> Result<(), PluginError> {
@@ -86,7 +87,11 @@ impl ReloadPluginUseCase {
             .enabler
             .plugin_loader_registry
             .get(&(&manifest.load).into())?;
-        loader.unload(handle).await
+        loader.unload(handle).await?;
+        self.enabler
+            .plugin_registry
+            .forget_command_denials(plugin_id);
+        Ok(())
     }
 }
 

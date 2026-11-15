@@ -251,7 +251,8 @@ impl PluginLoader for ExtismPluginLoader {
             .0,
         );
 
-        let wasm_manifest = self.build_wasm_manifest(manifest, allowed_paths, expected_wasm_sha256);
+        let wasm_manifest =
+            self.build_wasm_manifest(manifest, allowed_paths, Some(wasm_sha256.clone()));
 
         let host_functions =
             get_host_functions(plugin_id, &container, declared_host_functions, wasm_sha256);
