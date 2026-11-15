@@ -932,7 +932,9 @@
         "JAR_TOO_LARGE": "The program file is too large to check."
       },
       "details": "Technical details",
-      "onceOnlyPrefix": "\"Always allow\" is not available here."
+      "onceOnlyPrefix": "\"Always allow\" is not available here.",
+      "notAnsweredTitle": "{{plugin}} got no answer",
+      "notAnswered": "The plugin asked to run a program, but nobody answered in time, so nothing was run. Repeat the action to be asked again."
     },
     "description": "Description",
     "settings": "Settings",
