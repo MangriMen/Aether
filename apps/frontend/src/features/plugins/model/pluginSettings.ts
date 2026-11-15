@@ -1,5 +1,6 @@
 import type {
   AllowedPathRejectionDto,
+  CommandApprovalDto,
   EditPluginSettingsDto,
   PluginSettingsDto,
 } from '@/platform/bindings/plugin';
@@ -7,6 +8,9 @@ import type {
 export type PluginSettings = PluginSettingsDto;
 
 export type EditPluginSettings = EditPluginSettingsDto;
+
+/** A program the user let the plugin run for good. */
+export type CommandApproval = CommandApprovalDto;
 
 /** Why a saved folder was not given to the plugin. */
 export type AllowedPathRejection = AllowedPathRejectionDto;

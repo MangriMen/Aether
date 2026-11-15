@@ -1,4 +1,9 @@
-import { splitProps, type Component, type ComponentProps } from 'solid-js';
+import {
+  Show,
+  splitProps,
+  type Component,
+  type ComponentProps,
+} from 'solid-js';
 
 import {
   useEditPluginSettings,
@@ -8,6 +13,7 @@ import {
 import { cn } from '@/shared/utils';
 
 import { usePluginSettingsHandler } from '../lib/usePluginSettingsHandler';
+import { PluginCommandApprovalsSection } from './PluginCommandApprovalsSection';
 import { PluginRestartNotice } from './PluginRestartNotice';
 import { PluginSettingsForm } from './PluginSettingsForm';
 
@@ -22,6 +28,7 @@ export const PluginSettingsTab: Component<PluginSettingsTabProps> = (props) => {
     () => local.plugin.manifest.metadata.id,
   );
   const editPluginSettings = useEditPluginSettings();
+  const commandApprovals = () => pluginSettings.data?.commandApprovals ?? [];
 
   const { initialValues, onChangePartial } = usePluginSettingsHandler({
     pluginId: () => local.plugin.manifest.metadata.id,
@@ -40,6 +47,25 @@ export const PluginSettingsTab: Component<PluginSettingsTabProps> = (props) => {
         initialValues={initialValues}
         onChangePartial={onChangePartial}
       />
+      <Show when={commandApprovals().length > 0}>
+        <PluginCommandApprovalsSection
+          approvals={commandApprovals()}
+          disabled={editPluginSettings.isPending}
+          onRevoke={(approval) =>
+            editPluginSettings.mutate({
+              id: local.plugin.manifest.metadata.id,
+              editSettings: {
+                revokeCommandApprovals: [
+                  {
+                    jarSha256: approval.jarSha256,
+                    jvmOptions: approval.jvmOptions,
+                  },
+                ],
+              },
+            })
+          }
+        />
+      </Show>
     </div>
   );
 };

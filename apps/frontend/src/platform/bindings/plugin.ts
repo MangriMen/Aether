@@ -28,6 +28,8 @@ export const commands = {
 	 *  removes them: send the ones to keep as `ignoredPaths` of an edit.
 	 */
 	ignoredPaths?: IgnoredAllowedPathDto[],
+	/**  Programs the user let the plugin run for good, to take back from the settings screen. */
+	commandApprovals?: CommandApprovalDto[],
 } | null>("plugin:plugin|get_settings", { id }),
 	getReadme: (id: string) => __TAURI_INVOKE<string | null>("plugin:plugin|get_readme", { id }),
 	editSettings: (id: string, editSettings: EditPluginSettingsDto, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<PluginSettingsDto>("plugin:plugin|edit_settings", { id, editSettings, requestId }),
@@ -156,6 +158,20 @@ export type CauseDto = { type: "io"; kind: IoErrorKindDto } | { type: "network";
 
 export type CommandAnswerDto = "once" | "always" | "deny";
 
+/**  A program the user let a plugin run for good. */
+export type CommandApprovalDto = {
+	/**  The program as the plugin names it (`/cache/...`). */
+	jar: string,
+	/**  When the user said yes, RFC 3339. */
+	approvedAt: string,
+} & CommandApprovalKeyDto;
+
+/**  What an approval is told apart by. */
+export type CommandApprovalKeyDto = {
+	jarSha256: string,
+	jvmOptions: string[],
+};
+
 /**
  *  How a command question ended. The UI tells the user about a timeout only: an answer is
  *  theirs, and a cancel follows an attempt to stop the plugin, which they started.
@@ -268,6 +284,8 @@ export type EditPluginSettingsDto = {
 	allowedPaths?: AllowedPathDto[] | null,
 	/**  The ignored folders to keep; every other one is deleted. Omit to keep them all. */
 	ignoredPaths?: AllowedPathDto[] | null,
+	/**  The approvals to take back. Never adds one. */
+	revokeCommandApprovals?: CommandApprovalKeyDto[] | null,
 };
 
 export type EventErrorDto = { code: "NOT_INITIALIZED" } | { code: "NO_LOADING_BAR"; payload: {
@@ -791,6 +809,8 @@ export type PluginSettingsDto = {
 	 *  removes them: send the ones to keep as `ignoredPaths` of an edit.
 	 */
 	ignoredPaths?: IgnoredAllowedPathDto[],
+	/**  Programs the user let the plugin run for good, to take back from the settings screen. */
+	commandApprovals?: CommandApprovalDto[],
 };
 
 export type PluginSourceDto = { source: "remote"; source_type: PluginSourceTypeDto; identifier: string; current_tag: string; current_version: string } | { source: "local" };
