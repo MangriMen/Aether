@@ -238,6 +238,7 @@ fn stderr_excerpt(stderr: &[u8]) -> String {
 /// Handle `run_command` — execute a command on behalf of a plugin.
 pub(crate) async fn handle_run_command(
     plugin_id: &PluginId,
+    wasm_sha256: &str,
     command: CommandDto,
     container: &AetherContainer,
 ) -> crate::Result<OutputDto> {
@@ -262,8 +263,14 @@ pub(crate) async fn handle_run_command(
     )?;
 
     // The user's say on this command, after the fences above so only a command that could run is asked about.
-    super::command_approval::authorize_command(plugin_id, &command, &host_command, container)
-        .await?;
+    super::command_approval::authorize_command(
+        plugin_id,
+        wasm_sha256,
+        &command,
+        &host_command,
+        container,
+    )
+    .await?;
 
     // Arguments and environment can hold a token or a pack URL with one: in full only at trace.
     tracing::trace!(target: "plugin", "[{plugin_id}]: running {host_command:?}");
@@ -329,11 +336,12 @@ pub run_command(user_data: PluginContext; command: Msgpack<CommandDto>) -> HostR
     let context = user_data.get()?;
     let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
     let id = ctx.id.clone();
+    let wasm_sha256 = ctx.wasm_sha256.clone();
     let container = ctx.upgrade_container().ok_or_else(|| anyhow::Error::msg("AetherContainer dropped before plugin call"))?;
     drop(ctx);
 
     to_extism_res::<OutputDto>(
-        block_on(handle_run_command(&id, command.0, &container))
+        block_on(handle_run_command(&id, &wasm_sha256, command.0, &container))
     )
 });
 

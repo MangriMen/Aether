@@ -141,13 +141,18 @@ fn is_memory_size(size: &str) -> bool {
     !digits.is_empty() && digits.len() <= 10 && digits.chars().all(|c| c.is_ascii_digit())
 }
 
-/// Whether the main section of a jar manifest has a `Class-Path` attribute. A line that starts
-/// with a space continues the one before it, so only the attribute name at a line start counts.
+/// Whether a jar manifest has a `Class-Path` attribute anywhere. Lines are cut the way Java
+/// cuts them (`\r\n`, `\n` or a lone `\r`), and a line that starts with a space continues the one
+/// before it, so only the attribute name at a line start counts. Sections are not told apart:
+/// Java only reads the main one, but a parser that stops early can be fooled by a layout it reads
+/// differently, and a false alarm only costs the "always" answer.
 pub fn manifest_has_class_path(manifest: &str) -> bool {
-    for line in manifest.lines() {
-        // The main section ends at the first empty line; the rest belongs to single entries.
-        if line.trim_end().is_empty() {
-            return false;
+    // Java ends a line at `\r\n`, `\n` or a lone `\r`, and the main section only at a line of
+    // length zero: a line holding a space is a continuation, not the end.
+    for line in manifest.split(['\r', '\n']) {
+        // `\r\n` splits into the line and an empty piece; that piece is not a blank line.
+        if line.is_empty() {
+            continue;
         }
         if line
             .get(..11)
@@ -211,7 +216,7 @@ pub enum CommandApprovalRefusal {
     Denied,
     /// Nobody answered in time.
     TimedOut,
-    /// The plugin was stopped or removed, or the launcher is closing.
+    /// The plugin was stopped or removed.
     Cancelled,
     /// The jar changed while the user was being asked.
     JarChanged,
@@ -309,10 +314,18 @@ mod tests {
     }
 
     #[test]
-    fn should_not_find_a_class_path_when_it_belongs_to_another_section_or_a_continuation() {
-        let manifest = "Manifest-Version: 1.0\r\nMain-Class: a.B\r\nX: y\r\n Class-Path: z\r\n\r\nName: a/B.class\r\nClass-Path: q\r\n";
+    fn should_not_find_a_class_path_when_it_is_only_the_continuation_of_another_line() {
+        let manifest = "Manifest-Version: 1.0\r\nMain-Class: a.B\r\nX: y\r\n Class-Path: z\r\n\r\n";
 
         assert!(!manifest_has_class_path(manifest));
+    }
+
+    #[rstest]
+    #[case::lone_cr("Manifest-Version: 1.0\rMain-Class: a.B\rClass-Path: evil.jar\r\r")]
+    #[case::space_line("Manifest-Version: 1.0\n \nClass-Path: evil.jar\n\n")]
+    #[case::later_section("Manifest-Version: 1.0\n\nName: a/B.class\nClass-Path: q\n")]
+    fn should_find_a_class_path_when_the_manifest_is_laid_out_to_hide_it(#[case] manifest: &str) {
+        assert!(manifest_has_class_path(manifest));
     }
 
     #[rstest]

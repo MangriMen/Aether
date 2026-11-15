@@ -214,6 +214,14 @@ impl PluginLoader for ExtismPluginLoader {
         let expected_wasm_sha256 = self
             .resolve_expected_wasm_sha256(plugin_id, &wasm_path)
             .await?;
+        // A plugin without a record loads unverified; its own digest is still what a command
+        // approval is bound to.
+        let wasm_sha256 = match &expected_wasm_sha256 {
+            Some(sha256) => sha256.clone(),
+            None => sha256_async(read_async(&wasm_path).await?)
+                .await
+                .map_err(|err| hash_failed(&err))?,
+        };
 
         let cache_config = self.ensure_cache_config_file().await?;
         let default_allowed_paths = self.ensure_default_allowed_paths(plugin_id).await?;
@@ -245,7 +253,8 @@ impl PluginLoader for ExtismPluginLoader {
 
         let wasm_manifest = self.build_wasm_manifest(manifest, allowed_paths, expected_wasm_sha256);
 
-        let host_functions = get_host_functions(plugin_id, &container, declared_host_functions);
+        let host_functions =
+            get_host_functions(plugin_id, &container, declared_host_functions, wasm_sha256);
 
         // Compiling the module is seconds of CPU work, kept off the runtime workers just like
         // the calls into the plugin (see `PluginHandle`).

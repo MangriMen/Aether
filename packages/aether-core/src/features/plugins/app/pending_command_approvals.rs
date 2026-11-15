@@ -145,10 +145,7 @@ impl CommandApprover for PendingCommandApprovals {
             Ok(Err(_)) => Err(CommandApprovalRefusal::Cancelled),
             Ok(Ok(CommandApprovalAnswer::Once)) => Ok(CommandGrant::Once),
             Ok(Ok(CommandApprovalAnswer::Always)) => Ok(CommandGrant::Always),
-            Ok(Ok(CommandApprovalAnswer::Deny)) => {
-                self.lock().denied.insert(key);
-                Err(CommandApprovalRefusal::Denied)
-            }
+            Ok(Ok(CommandApprovalAnswer::Deny)) => Err(CommandApprovalRefusal::Denied),
         }
     }
 
@@ -171,15 +168,25 @@ impl CommandApprover for PendingCommandApprovals {
             });
         }
         let sender = waiting.answer.take().ok_or_else(not_found)?;
-        // The waiter may have just given up; its guard removes the entry and the answer is moot.
-        let _ = sender.send(answer);
+        let key = denial_key(&waiting.pending.request);
+        // The waiter may have just given up (its timeout fired before it removed the entry): the
+        // answer reached nobody, which the caller is told.
+        sender.send(answer).map_err(|_| not_found())?;
+        if answer == CommandApprovalAnswer::Deny {
+            // Recorded here, under the lock a stop takes too, so a stop that follows cannot be
+            // outlived by a denial the waiter writes after waking.
+            state.denied.insert(key);
+        }
         Ok(())
     }
 
-    fn cancel_plugin(&self, plugin_id: &PluginId) -> bool {
+    fn forget_denials(&self, plugin_id: &PluginId) {
         let prefix = denial_prefix(plugin_id);
+        self.lock().denied.retain(|key| !key.starts_with(&prefix));
+    }
+
+    fn cancel_plugin(&self, plugin_id: &PluginId) -> bool {
         let mut state = self.lock();
-        state.denied.retain(|key| !key.starts_with(&prefix));
         let mut cancelled = false;
         for waiting in state.waiting.values_mut() {
             if waiting.pending.request.plugin_id == *plugin_id {
@@ -300,7 +307,7 @@ mod tests {
         approvals.answer(id, CommandApprovalAnswer::Deny).unwrap();
         let _ = waiter.await;
 
-        approvals.cancel_plugin(&PluginId::try_from("p").unwrap());
+        approvals.forget_denials(&PluginId::try_from("p").unwrap());
         let waiter = spawn_request(&approvals, request("p", false));
         let id = wait_for_pending(&approvals).await;
         approvals.answer(id, CommandApprovalAnswer::Once).unwrap();
@@ -345,5 +352,20 @@ mod tests {
             result,
             Err(PluginError::CommandApprovalNotFound { .. })
         ));
+    }
+
+    #[tokio::test]
+    async fn should_keep_a_denial_when_the_plugin_was_only_asked_to_cancel() {
+        let approvals = approvals(Duration::from_secs(60));
+        let waiter = spawn_request(&approvals, request("p", false));
+        let id = wait_for_pending(&approvals).await;
+        approvals.answer(id, CommandApprovalAnswer::Deny).unwrap();
+        let _ = waiter.await;
+
+        // A stop that was refused as busy cancels questions but forgets nothing.
+        approvals.cancel_plugin(&PluginId::try_from("p").unwrap());
+
+        let again = approvals.request(request("p", false)).await;
+        assert_eq!(again, Err(CommandApprovalRefusal::Denied));
     }
 }

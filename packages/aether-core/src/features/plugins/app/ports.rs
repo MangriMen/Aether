@@ -104,11 +104,13 @@ pub trait CommandApprover: Send + Sync {
     /// is refused, and the question keeps waiting.
     fn answer(&self, request_id: Uuid, answer: CommandApprovalAnswer) -> Result<(), PluginError>;
 
-    /// Drops what is waiting for `plugin_id` (each is refused as cancelled) and what it was
-    /// denied: the plugin is stopped or removed, so a later start is a clean slate.
-    ///
+    /// Refuses what is waiting for `plugin_id` as cancelled, so the call that asked can end.
     /// Returns whether a question was waiting.
     fn cancel_plugin(&self, plugin_id: &PluginId) -> bool;
+
+    /// Forgets what `plugin_id` was denied. Called once the plugin has really stopped, so a
+    /// later start is a clean slate; a stop that was refused leaves the denials in force.
+    fn forget_denials(&self, plugin_id: &PluginId);
 }
 
 #[async_trait]

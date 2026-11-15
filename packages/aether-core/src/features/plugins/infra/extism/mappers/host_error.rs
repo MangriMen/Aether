@@ -503,8 +503,9 @@ fn plugin_dto(value: &PluginError) -> PluginErrorDto {
             plugin_id: plugin_id.to_string(),
             path: path.clone(),
         },
-        // A refusal reaches a plugin as the word the host function returns, never through this
-        // type; the closest kind keeps it decodable if it ever does.
+        // A refused command reaches the plugin through here: the ABI has no kind of its own, and
+        // a new one would not decode in plugins built before it. `path` holds the word
+        // (`denied`, `timed_out`, `cancelled`, `jar_changed`), never a path.
         PluginError::CommandNotApproved { plugin_id, reason } => Dto::AccessViolation {
             plugin_id: plugin_id.to_string(),
             path: reason.as_wire().to_owned(),

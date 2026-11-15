@@ -43,6 +43,7 @@ struct Inspected {
 /// Lets the command run, or says why it may not. Returns once the command may be started.
 pub(crate) async fn authorize_command(
     plugin_id: &PluginId,
+    plugin_sha256: &str,
     command: &CommandDto,
     host_command: &SerializableCommand,
     container: &AetherContainer,
@@ -53,10 +54,9 @@ pub(crate) async fn authorize_command(
     };
 
     let inspected = inspect(plugin_id, command, container).await;
-    let plugin_sha256 = container.plugin_storage().wasm_sha256(plugin_id).await?;
 
     if let (Some(identity), Ok(())) = (&inspected.identity, &inspected.always)
-        && is_approved(container, plugin_id, identity, &plugin_sha256).await
+        && is_approved(container, plugin_id, identity, plugin_sha256).await
     {
         return still_the_same_jar(&inspected).await.map_err(refused);
     }
@@ -92,7 +92,7 @@ pub(crate) async fn authorize_command(
             container,
             plugin_id,
             identity,
-            plugin_sha256,
+            plugin_sha256.to_owned(),
             jar.plugin_path,
         )
         .await;
