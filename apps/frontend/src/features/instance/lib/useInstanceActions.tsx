@@ -153,12 +153,8 @@ export const useInstanceActions = () => {
   const remove = async (instance: Instance, force: boolean = false) => {
     const block = currentRemovalBlock(instance);
 
-    if (block === 'running' || block === 'launching') {
-      showRemovalBlocked(instance, block);
-      return;
-    }
-
-    if (!force && block !== undefined) {
+    // Force only overrides an incomplete install, never a running or launching game.
+    if (block !== undefined && (block !== 'notInstalled' || !force)) {
       showRemovalBlocked(instance, block);
       return;
     }
