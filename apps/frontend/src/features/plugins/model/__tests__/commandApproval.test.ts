@@ -13,17 +13,35 @@ describe('splitCommandLine', () => {
         'https://x',
       ]),
     ).toEqual({
-      options: ['-Xmx1G', '-jar'],
+      options: ['-Xmx1G'],
       target: '#/cache/a.jar',
       rest: ['--url', 'https://x'],
     });
   });
 
-  it('should_leave_the_target_empty_when_every_token_is_an_option', () => {
-    expect(splitCommandLine(['-version'])).toEqual({
-      options: ['-version'],
+  it('should_show_everything_as_arguments_when_it_is_not_a_jar_launch', () => {
+    expect(splitCommandLine(['-cp', 'lib.jar', 'com.Main'])).toEqual({
+      options: [],
       target: undefined,
+      rest: ['-cp', 'lib.jar', 'com.Main'],
+    });
+  });
+
+  it('should_not_mistake_the_value_of_an_option_for_the_program', () => {
+    expect(
+      splitCommandLine(['--add-opens', 'java.base/x=ALL', '-jar', 'a.jar']),
+    ).toEqual({
+      options: ['--add-opens', 'java.base/x=ALL'],
+      target: 'a.jar',
       rest: [],
+    });
+  });
+
+  it('should_leave_the_target_empty_when_the_jar_flag_ends_the_command', () => {
+    expect(splitCommandLine(['-Xmx1G', '-jar'])).toEqual({
+      options: [],
+      target: undefined,
+      rest: ['-Xmx1G', '-jar'],
     });
   });
 });

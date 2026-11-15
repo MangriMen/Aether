@@ -26,6 +26,9 @@ import { secondsLeft, splitCommandLine } from '../model/commandApproval';
 
 const BYTES_PER_MB = 1024 * 1024;
 
+/** How long an allow stays out of reach once a question shows. */
+const ARM_DELAY_MS = 700;
+
 const Detail: Component<{
   label: string | undefined;
   value: string | undefined;
@@ -39,6 +42,8 @@ const Detail: Component<{
 const CommandApprovalBody: Component<{
   approval: PendingCommandApproval;
   queued: number;
+  /** An answer is on its way. */
+  busy: boolean;
   onAnswer: (answer: CommandAnswer) => void;
 }> = (props) => {
   const [{ t }] = useTranslation();
@@ -48,9 +53,13 @@ const CommandApprovalBody: Component<{
   onCleanup(() => clearInterval(timer));
 
   const line = createMemo(() => splitCommandLine(props.approval.arguments));
-  const jvmOptions = createMemo(() =>
-    line().options.filter((option) => option !== '-jar'),
-  );
+  const jvmOptions = () => line().options;
+
+  // The next question takes the place of this one at once, so a second click meant for the
+  // last one must not reach it: an allow waits a moment after a question appears.
+  const [armed, setArmed] = createSignal(false);
+  const armTimer = setTimeout(() => setArmed(true), ARM_DELAY_MS);
+  onCleanup(() => clearTimeout(armTimer));
 
   const [denyButton, setDenyButton] = createSignal<HTMLButtonElement>();
   // Enter must never land on "always": the safe answer holds the focus.
@@ -63,9 +72,9 @@ const CommandApprovalBody: Component<{
       return undefined;
     }
 
-    return t(`plugin.commandApproval.onceOnly.${reason.code}`, {
-      option: 'option' in reason ? reason.option : '',
-    });
+    // The reason never carries the option itself: it can hold a token, and the open text is
+    // not folded. The option is in the folded details.
+    return t(`plugin.commandApproval.onceOnly.${reason.code}`);
   };
 
   const timeLeft = () => {
@@ -176,18 +185,22 @@ const CommandApprovalBody: Component<{
         <Button
           ref={setDenyButton}
           variant='secondary'
+          disabled={props.busy}
           onClick={() => props.onAnswer('deny')}
         >
           {t('plugin.commandApproval.deny')}
         </Button>
         <Button
           variant='secondary'
-          disabled={props.approval.once_only !== null}
+          disabled={props.busy || !armed() || props.approval.once_only !== null}
           onClick={() => props.onAnswer('always')}
         >
           {t('plugin.commandApproval.always')}
         </Button>
-        <Button onClick={() => props.onAnswer('once')}>
+        <Button
+          disabled={props.busy || !armed()}
+          onClick={() => props.onAnswer('once')}
+        >
           {t('plugin.commandApproval.once')}
         </Button>
       </DialogFooter>
@@ -221,6 +234,7 @@ export const CommandApprovalDialog: Component = () => {
             <CommandApprovalBody
               approval={approval}
               queued={(approvals.data?.length ?? 1) - 1}
+              busy={answer.isPending}
               onAnswer={(value) => send(approval.request_id, value)}
             />
           </DialogContent>

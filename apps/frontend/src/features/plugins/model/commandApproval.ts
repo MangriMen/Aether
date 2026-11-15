@@ -16,18 +16,23 @@ export interface CommandLineParts {
   rest: string[];
 }
 
-/** The Java launcher takes every leading `-` token as an option; the first other token is the target. */
+/**
+ * A `java -jar` launch: what comes before `-jar` is JVM options, the token after it the program,
+ * the rest its arguments. Anything else is not told apart (an option may take its value as a
+ * separate token), so it is all shown as arguments.
+ */
 export const splitCommandLine = (args: readonly string[]): CommandLineParts => {
-  const targetIndex = args.findIndex((arg) => !arg.startsWith('-'));
+  const jarIndex = args.indexOf('-jar');
+  const target = jarIndex === -1 ? undefined : args[jarIndex + 1];
 
-  if (targetIndex === -1) {
-    return { options: [...args], target: undefined, rest: [] };
+  if (target === undefined) {
+    return { options: [], target: undefined, rest: [...args] };
   }
 
   return {
-    options: args.slice(0, targetIndex),
-    target: args[targetIndex],
-    rest: args.slice(targetIndex + 1),
+    options: args.slice(0, jarIndex),
+    target,
+    rest: args.slice(jarIndex + 2),
   };
 };
 

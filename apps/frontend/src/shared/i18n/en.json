@@ -925,7 +925,7 @@
         "NOT_JAR_LAUNCH": "This is not a plain \"java -jar\" launch.",
         "REPEATED_JAR_FLAG": "The command repeats -jar.",
         "ARG_FILE": "The command reads options from a file (@file) the launcher cannot see.",
-        "UNLISTED_OPTION": "The option {{option}} can run extra code.",
+        "UNLISTED_OPTION": "A Java option the launcher does not know can run extra code.",
         "TARGET_NOT_IN_CACHE": "The program is not a file in the plugin's own cache.",
         "JAR_HAS_CLASS_PATH": "The program loads other files the launcher does not check.",
         "JAR_UNREADABLE": "The program could not be read or checked.",
