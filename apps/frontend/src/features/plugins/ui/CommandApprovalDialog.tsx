@@ -1,13 +1,6 @@
 import type { Component } from 'solid-js';
 
-import {
-  createMemo,
-  createSignal,
-  For,
-  onCleanup,
-  onMount,
-  Show,
-} from 'solid-js';
+import { createMemo, createSignal, onCleanup, onMount, Show } from 'solid-js';
 
 import { useTranslation } from '@/shared/i18n';
 import {
@@ -75,6 +68,14 @@ const CommandApprovalBody: Component<{
     });
   };
 
+  const timeLeft = () => {
+    const total = secondsLeft(props.approval.expires_at, now());
+
+    return t('plugin.commandApproval.expires', {
+      time: `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`,
+    });
+  };
+
   return (
     <>
       <DialogHeader>
@@ -84,69 +85,69 @@ const CommandApprovalBody: Component<{
           })}
         </DialogTitle>
         <DialogDescription>
-          {t('plugin.commandApproval.description')}
+          {t('plugin.commandApproval.description', {
+            plugin: props.approval.plugin_id,
+          })}
         </DialogDescription>
       </DialogHeader>
 
-      <dl class='gap-3 flex flex-col'>
-        <Detail
-          label={t('plugin.commandApproval.java')}
-          value={props.approval.java}
-        />
-        <Detail
-          label={t('plugin.commandApproval.folder')}
-          value={props.approval.current_dir}
-        />
-        <Show
-          when={props.approval.jar}
-          fallback={
-            <Detail
-              label={t('plugin.commandApproval.program')}
-              value={
-                line().target ?? t('plugin.commandApproval.unknownProgram')
-              }
-            />
-          }
-        >
-          {(jar) => (
-            <>
+      <details class='text-sm'>
+        <summary class='cursor-pointer text-muted-foreground'>
+          {t('plugin.commandApproval.details')}
+        </summary>
+        <dl class='mt-3 gap-3 flex flex-col'>
+          <Show
+            when={props.approval.jar}
+            fallback={
               <Detail
                 label={t('plugin.commandApproval.program')}
                 value={
-                  jar().size
-                    ? `${jar().plugin_path} (${t('plugin.commandApproval.size', { size: ((jar().size ?? 0) / BYTES_PER_MB).toFixed(1) })})`
-                    : jar().plugin_path
+                  line().target ?? t('plugin.commandApproval.unknownProgram')
                 }
               />
-              <Detail
-                label={t('plugin.commandApproval.sha')}
-                value={jar().sha256}
-              />
-            </>
-          )}
-        </Show>
-        <Show when={jvmOptions().length > 0}>
+            }
+          >
+            {(jar) => (
+              <>
+                <Detail
+                  label={t('plugin.commandApproval.program')}
+                  value={
+                    jar().size
+                      ? `${jar().plugin_path} (${t('plugin.commandApproval.size', { size: ((jar().size ?? 0) / BYTES_PER_MB).toFixed(1) })})`
+                      : jar().plugin_path
+                  }
+                />
+                <Detail
+                  label={t('plugin.commandApproval.sha')}
+                  value={jar().sha256}
+                />
+              </>
+            )}
+          </Show>
           <Detail
-            label={t('plugin.commandApproval.options')}
-            value={jvmOptions().join(' ')}
+            label={t('plugin.commandApproval.java')}
+            value={props.approval.java}
           />
-        </Show>
-        <Show when={line().rest.length > 0}>
-          <details class='text-sm'>
-            <summary class='cursor-pointer text-muted-foreground'>
-              {t('plugin.commandApproval.arguments', {
+          <Detail
+            label={t('plugin.commandApproval.folder')}
+            value={props.approval.current_dir}
+          />
+          <Show when={jvmOptions().length > 0}>
+            <Detail
+              label={t('plugin.commandApproval.options')}
+              value={jvmOptions().join(' ')}
+            />
+          </Show>
+          <Show when={line().rest.length > 0}>
+            <Detail
+              label={t('plugin.commandApproval.arguments', {
                 count: line().rest.length,
               })}
-            </summary>
-            <p class='text-xs text-muted-foreground'>
-              {t('plugin.commandApproval.argumentsHint')}
-            </p>
-            <ul class='font-mono text-sm break-all'>
-              <For each={line().rest}>{(arg) => <li>{arg}</li>}</For>
-            </ul>
-          </details>
-        </Show>
-      </dl>
+              value={line().rest.join(' ')}
+            />
+          </Show>
+        </dl>
+      </details>
 
       <Show
         when={onceOnlyText()}
@@ -156,13 +157,15 @@ const CommandApprovalBody: Component<{
           </p>
         }
       >
-        {(text) => <p class='text-xs text-warning'>{text()}</p>}
+        {(text) => (
+          <p class='text-xs text-muted-foreground'>
+            {t('plugin.commandApproval.onceOnlyPrefix')} {text()}
+          </p>
+        )}
       </Show>
 
       <p class='text-xs text-muted-foreground'>
-        {t('plugin.commandApproval.expires', {
-          seconds: secondsLeft(props.approval.expires_at, now()),
-        })}
+        {timeLeft()}
         <Show when={props.queued > 0}>
           {' · '}
           {t('plugin.commandApproval.queue', { count: props.queued })}
@@ -172,20 +175,20 @@ const CommandApprovalBody: Component<{
       <DialogFooter>
         <Button
           ref={setDenyButton}
-          variant='destructive'
+          variant='secondary'
           onClick={() => props.onAnswer('deny')}
         >
           {t('plugin.commandApproval.deny')}
         </Button>
-        <Button variant='outline' onClick={() => props.onAnswer('once')}>
-          {t('plugin.commandApproval.once')}
-        </Button>
         <Button
-          variant='outline'
+          variant='secondary'
           disabled={props.approval.once_only !== null}
           onClick={() => props.onAnswer('always')}
         >
           {t('plugin.commandApproval.always')}
+        </Button>
+        <Button onClick={() => props.onAnswer('once')}>
+          {t('plugin.commandApproval.once')}
         </Button>
       </DialogFooter>
     </>
@@ -214,7 +217,7 @@ export const CommandApprovalDialog: Component = () => {
             }
           }}
         >
-          <DialogContent variant='warning'>
+          <DialogContent>
             <CommandApprovalBody
               approval={approval}
               queued={(approvals.data?.length ?? 1) - 1}
