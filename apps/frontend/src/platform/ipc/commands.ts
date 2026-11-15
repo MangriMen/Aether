@@ -57,6 +57,9 @@ export const pluginsCommands = {
   grantHostAccess: withIdempotency(pluginsRawCommands.grantHostAccess),
   openPluginsFolder: pluginsRawCommands.openPluginsFolder,
   getApiVersion: pluginsRawCommands.getApiVersion,
+  listPendingCommandApprovals: pluginsRawCommands.listPendingCommandApprovals,
+  // Not behind the idempotency lock: a second answer to a question is a harmless NOT_FOUND.
+  answerCommandApproval: pluginsRawCommands.answerCommandApproval,
   getPluginSource: pluginsRawCommands.getPluginSource,
   checkForUpdates: pluginsRawCommands.checkForUpdates,
   updatePlugin: withIdempotency(pluginsRawCommands.updatePlugin),

@@ -26,5 +26,6 @@ pub use infra::tauri::dtos::ProviderHandlersDto;
 pub use infra::tauri::dtos::ProviderPluginPreviewDto;
 pub use infra::tauri::dtos::RuntimeConfigDto;
 pub use infra::tauri::dtos::{AllowedHostEntryRejectionDto, AllowedHostRejectionDto};
+pub use infra::tauri::dtos::{CommandAnswerDto, PendingCommandApprovalDto};
 pub use infra::tauri::dtos::{PluginDto, SkippedPluginDirDto};
 pub use infra::tauri::dtos::{PluginProviderDto, PluginSourceTypeDto};

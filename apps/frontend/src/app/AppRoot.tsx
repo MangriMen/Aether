@@ -25,6 +25,7 @@ import {
   TRANSPARENCY_PROPERTY,
 } from '@/features/appearance';
 import { RunningInstancesProvider } from '@/features/instance';
+import { CommandApprovalDialog } from '@/features/plugins';
 import { GlobalDialogRenderer } from '@/shared/dialogs';
 import { LOCALE_RESOURCES, LOCALES, I18nProvider } from '@/shared/i18n';
 import { createQueryClient } from '@/shared/query';
@@ -53,6 +54,7 @@ export const AppRoot: Component<RouteSectionProps> = (props) => {
                       <RunningInstancesProvider>
                         <MainLayout>{props.children}</MainLayout>
                         <GlobalDialogRenderer />
+                        <CommandApprovalDialog />
                         <DialogUrlBridge />
                       </RunningInstancesProvider>
                     </AppLayout>

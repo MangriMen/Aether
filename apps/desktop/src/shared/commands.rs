@@ -131,6 +131,8 @@ macro_rules! plugin_commands {
             get_available_providers,
             preview_plugin_from_provider,
             install_plugin_from_provider,
+            list_pending_command_approvals,
+            answer_command_approval,
         ]
     };
 }
