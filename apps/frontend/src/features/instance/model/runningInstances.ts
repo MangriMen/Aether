@@ -42,6 +42,54 @@ export const applyRunningProcessUpdate = (
 };
 
 /**
+ * Replaces what is known of running processes with a fresh list: a game the list does not have
+ * is not running, whatever the events said. A launch that has no process yet is kept.
+ */
+export const applyProcessSnapshot = (
+  instances: RunningInstancesState,
+  processes: { instanceId: string; processId: string }[],
+): RunningInstancesState => {
+  const next: RunningInstancesState = {};
+
+  for (const [id, current] of Object.entries(instances)) {
+    if (current !== undefined && !current.isRunning) {
+      next[id] = current;
+    }
+  }
+
+  for (const { instanceId, processId } of processes) {
+    next[instanceId] = {
+      processId,
+      isLoading: instances[instanceId]?.isLoading ?? false,
+      isRunning: true,
+    };
+  }
+
+  return next;
+};
+
+export type RemovalBlock = 'running' | 'launching' | 'notInstalled';
+
+/**
+ * Why an instance cannot be removed right now. Only a not fully installed one may be removed
+ * by force; removing a game that runs or launches would pull its files from under it.
+ */
+export const getRemovalBlock = (
+  installStage: string,
+  running: { isLoading: boolean; isRunning: boolean } | undefined,
+): RemovalBlock | undefined => {
+  if (running?.isRunning) {
+    return 'running';
+  }
+
+  if (running?.isLoading) {
+    return 'launching';
+  }
+
+  return installStage === 'installed' ? undefined : 'notInstalled';
+};
+
+/**
  * Applies a change of the loading flag. A launch that failed (no process, not running) and a
  * process that is already gone leave no entry behind.
  */
@@ -93,6 +141,9 @@ export const createRunningInstancesStore = () => {
     state,
     applyProcessUpdate: (update: RunningProcessUpdate) =>
       apply((instances) => applyRunningProcessUpdate(instances, update)),
+    applyProcessSnapshot: (
+      processes: { instanceId: string; processId: string }[],
+    ) => apply((instances) => applyProcessSnapshot(instances, processes)),
     applyLoadingChange: (id: string, isLoading: boolean) =>
       apply((instances) => applyLoadingChange(instances, id, isLoading)),
   };

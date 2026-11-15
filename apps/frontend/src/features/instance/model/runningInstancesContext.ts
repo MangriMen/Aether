@@ -18,6 +18,8 @@ export type RunningInstancesContextValue = [
       id: Instance['id'],
     ) => RunningInstancesInstanceData | undefined;
     setIsLoading: (id: Instance['id'], value: boolean) => void;
+    /** Re-reads the running processes, so the state does not rely on events alone. */
+    refresh: () => Promise<void>;
   },
 ];
 
@@ -27,6 +29,7 @@ const DEFAULT_VALUE: RunningInstancesContextValue = [
     get: (_context: RunningInstancesContextValue[0], _id: Instance['id']) =>
       undefined,
     setIsLoading: (_id: Instance['id'], _value: boolean) => undefined,
+    refresh: () => Promise.resolve(),
   },
 ];
 

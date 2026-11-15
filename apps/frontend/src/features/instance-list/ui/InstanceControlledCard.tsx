@@ -38,14 +38,21 @@ export const InstanceControlledCard: Component<InstanceControlledCardProps> = (
 
   const [showRemoveModal, setShowRemoveModal] = createSignal(false);
 
-  const openRemoveModal = () => setShowRemoveModal(true);
-
   const closeRemoveModal = () => {
     setShowRemoveModal(false);
   };
 
-  const { launch: launchInstance, remove: removeInstance } =
-    useInstanceActions();
+  const {
+    launch: launchInstance,
+    remove: removeInstance,
+    notifyRemovalBlocked,
+  } = useInstanceActions();
+
+  const openRemoveModal = () => {
+    if (!notifyRemovalBlocked(props.instance)) {
+      setShowRemoveModal(true);
+    }
+  };
 
   const handleLaunch = () => {
     launchInstance(props.instance);

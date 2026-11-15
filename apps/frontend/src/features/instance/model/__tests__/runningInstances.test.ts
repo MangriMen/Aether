@@ -2,9 +2,74 @@ import { describe, expect, it } from 'vitest';
 
 import {
   applyLoadingChange,
+  applyProcessSnapshot,
   applyRunningProcessUpdate,
   createRunningInstancesStore,
+  getRemovalBlock,
 } from '../runningInstances';
+
+describe('getRemovalBlock', () => {
+  it('blocks removal while the game runs, even when the install is incomplete', () => {
+    const running = { isLoading: false, isRunning: true };
+
+    expect(getRemovalBlock('installed', running)).toBe('running');
+    expect(getRemovalBlock('not_installed', running)).toBe('running');
+  });
+
+  it('blocks removal while the game launches', () => {
+    expect(
+      getRemovalBlock('installed', { isLoading: true, isRunning: false }),
+    ).toBe('launching');
+  });
+
+  it('allows removal of an installed instance that is not running', () => {
+    expect(getRemovalBlock('installed', undefined)).toBeUndefined();
+  });
+
+  it('allows removal again after the process finishes', () => {
+    const running = applyRunningProcessUpdate(
+      {},
+      { instanceId: 'a', processId: 'p1', isRunning: true },
+    );
+
+    expect(getRemovalBlock('installed', running.a)).toBe('running');
+
+    const finished = applyRunningProcessUpdate(running, {
+      instanceId: 'a',
+      processId: 'p1',
+      isRunning: false,
+    });
+
+    expect(getRemovalBlock('installed', finished.a)).toBeUndefined();
+  });
+
+  it('offers force only for an instance that is not installed', () => {
+    expect(getRemovalBlock('not_installed', undefined)).toBe('notInstalled');
+  });
+});
+
+describe('applyProcessSnapshot', () => {
+  it('drops a game that the fresh list does not have', () => {
+    const instances = applyProcessSnapshot(
+      { a: { processId: 'p1', isLoading: false, isRunning: true } },
+      [],
+    );
+
+    expect(instances).toEqual({});
+  });
+
+  it('adds a game that the events missed and keeps a launch without a process', () => {
+    const instances = applyProcessSnapshot(
+      { b: { processId: undefined, isLoading: true, isRunning: false } },
+      [{ instanceId: 'a', processId: 'p1' }],
+    );
+
+    expect(instances).toEqual({
+      a: { processId: 'p1', isLoading: false, isRunning: true },
+      b: { processId: undefined, isLoading: true, isRunning: false },
+    });
+  });
+});
 
 describe('applyRunningProcessUpdate', () => {
   it('adds a running instance', () => {

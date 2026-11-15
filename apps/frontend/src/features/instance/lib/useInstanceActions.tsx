@@ -7,12 +7,12 @@ import type { Instance } from '../model/instance';
 
 import { useLaunchInstance, useStopInstance } from '../api/instanceLaunch';
 import { useRemoveInstance } from '../api/instanceQueries';
+import { getRemovalBlock, type RemovalBlock } from '../model/runningInstances';
 import { RunningInstancesContext } from '../model/runningInstancesContext';
 
 export const useInstanceActions = () => {
-  const [context, { get: getRunningInstance, setIsLoading }] = useContext(
-    RunningInstancesContext,
-  );
+  const [context, { get: getRunningInstance, setIsLoading, refresh }] =
+    useContext(RunningInstancesContext);
 
   const { mutateAsync: launchInstance } = useLaunchInstance();
   const { mutateAsync: stopInstance } = useStopInstance();
@@ -70,35 +70,31 @@ export const useInstanceActions = () => {
     setIsLoading(instance.id, false);
   };
 
-  const remove = async (instance: Instance, force: boolean = false) => {
-    const runningInstance = getRunningInstance(context, instance.id);
+  const showRemovalBlocked = (instance: Instance, block: RemovalBlock) => {
+    const title = (
+      <span class='line-clamp-2'>
+        {t('instance.failedToRemove', { name: instance.name })}
+      </span>
+    );
 
-    if (
-      !force &&
-      (instance.installStage !== 'installed' ||
-        runningInstance?.isLoading ||
-        runningInstance?.isRunning)
-    ) {
-      const handleForceRemove = async (e: MouseEvent) => {
+    if (block === 'running') {
+      const handleStop = async (e: MouseEvent) => {
         e.stopPropagation();
-        await remove(instance, true);
+        await stop(instance);
+        await refresh();
         closeToast(id);
       };
 
       const id = showToast({
-        title: (
-          <span class='line-clamp-2'>
-            {t('instance.failedToRemove', { name: instance.name })}
-          </span>
-        ),
+        title,
         description: (
           <div class='gap-2 inline-flex w-full flex-col'>
-            {t('instance.failedToRemoveDescription')}
+            {t('instance.stopToDelete')}
             <Button
               class='w-full'
               variant='secondary'
-              onClick={handleForceRemove}
-              children={t('instance.removeForce')}
+              onClick={handleStop}
+              children={t('instance.stop')}
             />
           </div>
         ),
@@ -107,12 +103,77 @@ export const useInstanceActions = () => {
       return;
     }
 
+    if (block === 'launching') {
+      showToast({
+        title,
+        description: t('instance.removeWhileLaunching'),
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const handleForceRemove = async (e: MouseEvent) => {
+      e.stopPropagation();
+      await remove(instance, true);
+      closeToast(id);
+    };
+
+    const id = showToast({
+      title,
+      description: (
+        <div class='gap-2 inline-flex w-full flex-col'>
+          {t('instance.failedToRemoveDescription')}
+          <Button
+            class='w-full'
+            variant='secondary'
+            onClick={handleForceRemove}
+            children={t('instance.removeForce')}
+          />
+        </div>
+      ),
+      variant: 'destructive',
+    });
+  };
+
+  const currentRemovalBlock = (instance: Instance) =>
+    getRemovalBlock(
+      instance.installStage,
+      getRunningInstance(context, instance.id),
+    );
+
+  /** Tells why a removal that cannot go on is refused; false when it may be asked for. */
+  const notifyRemovalBlocked = (instance: Instance): boolean => {
+    const block = currentRemovalBlock(instance);
+
+    // A not fully installed instance is offered the force removal once the removal is confirmed.
+    if (block === undefined || block === 'notInstalled') {
+      return false;
+    }
+
+    showRemovalBlocked(instance, block);
+    return true;
+  };
+
+  const remove = async (instance: Instance, force: boolean = false) => {
+    const block = currentRemovalBlock(instance);
+
+    if (block === 'running' || block === 'launching') {
+      showRemovalBlocked(instance, block);
+      return;
+    }
+
+    if (!force && block !== undefined) {
+      showRemovalBlocked(instance, block);
+      return;
+    }
+
     setIsLoading(instance.id, true);
 
     try {
       await removeInstance(instance.id);
     } catch {
-      /* empty */
+      // The game may have started behind the UI's back; the mutation shows the error.
+      await refresh();
     }
 
     setIsLoading(instance.id, false);
@@ -122,5 +183,6 @@ export const useInstanceActions = () => {
     launch,
     stop,
     remove,
+    notifyRemovalBlocked,
   };
 };
