@@ -1,6 +1,6 @@
-use std::sync::Arc;
+use std::{path::Path, sync::Arc};
 
-use super::CommandParseError;
+use super::{CommandParseError, parse_command_line};
 
 /// Which of the user's launch hooks a command is.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -56,4 +56,24 @@ impl HookSpawnError {
             source: Arc::new(err),
         }
     }
+}
+
+/// The program and the arguments of the wrapper command, or `None` when there is no wrapper.
+///
+/// A wrapper that is, as a whole, the path of a file is that program with no arguments: the
+/// setting used to be read so, and a path with spaces in it was not quoted.
+pub fn parse_wrapper(wrapper: &str) -> Result<Option<(String, Vec<String>)>, HookSpawnError> {
+    let wrapper = wrapper.trim();
+    if wrapper.is_empty() {
+        return Ok(None);
+    }
+    if Path::new(wrapper).is_file() {
+        return Ok(Some((wrapper.to_owned(), Vec::new())));
+    }
+    parse_command_line(wrapper)
+        .map(Some)
+        .map_err(|reason| HookSpawnError::Invalid {
+            hook: HookKind::Wrapper,
+            reason,
+        })
 }

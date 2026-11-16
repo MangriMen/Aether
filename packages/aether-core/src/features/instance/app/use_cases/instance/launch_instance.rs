@@ -17,9 +17,9 @@ use crate::{
         process::{
             KillScope, MinecraftProcessMetadata, ProcessError, ProcessStartService, ProcessStorage,
         },
-        settings::{DefaultInstanceSettings, DefaultInstanceSettingsStorage, LocationInfo},
+        settings::{DefaultInstanceSettings, DefaultInstanceSettingsStorage, Hooks, LocationInfo},
     },
-    shared::serializable_command::{HookKind, HookSpawnError, SerializableCommand},
+    shared::serializable_command::{HookKind, HookSpawnError, SerializableCommand, parse_wrapper},
 };
 
 /// How long a pre-launch hook may run. The instance stays locked meanwhile, and a hook that
@@ -184,11 +184,14 @@ impl LaunchInstanceUseCase {
             instance = self.instance_storage.get(&instance_id).await?;
         }
 
-        let pre_launch_command = launch_settings.hooks.pre_launch();
-
         let instance_path = self.location_info.instance_dir(instance.id());
 
-        run_pre_launch_hook(pre_launch_command, &instance_path, PRELAUNCH_HOOK_TIMEOUT).await?;
+        run_pre_launch_hook(
+            &launch_settings.hooks,
+            &instance_path,
+            PRELAUNCH_HOOK_TIMEOUT,
+        )
+        .await?;
 
         self.notify_plugin_event(
             &instance,
@@ -283,13 +286,18 @@ fn start_error(err: ProcessError, wrapped: bool) -> InstanceError {
     }
 }
 
-/// Runs the pre-launch hook `command` in `dir` and waits for it for `timeout`. An empty hook is
-/// no hook. A hook still running at the deadline is killed: the game does not start under it.
+/// Runs the pre-launch hook in `dir` and waits for it for `timeout`. An empty hook is no hook.
+/// A hook still running at the deadline is killed: the game does not start under it.
+///
+/// The wrapper is read first: a typo in it would only stop the launch after the pre-launch hook
+/// had already done its work.
 async fn run_pre_launch_hook(
-    command: &str,
+    hooks: &Hooks,
     dir: &Path,
     timeout: Duration,
 ) -> Result<(), InstanceError> {
+    parse_wrapper(hooks.wrapper())?;
+    let command = hooks.pre_launch();
     if command.trim().is_empty() {
         return Ok(());
     }
@@ -347,6 +355,33 @@ mod tests {
         std::thread::sleep(Duration::from_secs(600));
     }
 
+    fn pre_launch(command: &str) -> Hooks {
+        Hooks::new(command.to_owned(), String::new(), String::new())
+    }
+
+    #[tokio::test]
+    async fn should_not_run_the_pre_launch_hook_when_the_wrapper_is_invalid() {
+        // Run, this hook would fail to start: the error would name it, not the wrapper.
+        let hooks = Hooks::new(
+            "aether-no-such-program-0f3a".to_owned(),
+            "\"prime-run".to_owned(),
+            String::new(),
+        );
+
+        let result = run_pre_launch_hook(&hooks, Path::new("."), Duration::from_secs(1)).await;
+
+        assert!(
+            matches!(
+                result,
+                Err(InstanceError::Hook(HookSpawnError::Invalid {
+                    hook: HookKind::Wrapper,
+                    reason: CommandParseError::UnclosedQuote,
+                }))
+            ),
+            "{result:?}"
+        );
+    }
+
     fn hanging_hook() -> SerializableCommand {
         let module = module_path!().trim_start_matches("aether_core::");
         SerializableCommand {
@@ -370,7 +405,9 @@ mod tests {
             "", "   ", "	
 ",
         ] {
-            let result = run_pre_launch_hook(command, Path::new("."), Duration::from_secs(1)).await;
+            let result =
+                run_pre_launch_hook(&pre_launch(command), Path::new("."), Duration::from_secs(1))
+                    .await;
             assert!(result.is_ok(), "{command:?}: {result:?}");
         }
     }
@@ -378,7 +415,7 @@ mod tests {
     #[tokio::test]
     async fn should_fail_when_the_hook_cannot_be_started() {
         let result = run_pre_launch_hook(
-            "aether-no-such-program-0f3a",
+            &pre_launch("aether-no-such-program-0f3a"),
             Path::new("."),
             Duration::from_secs(1),
         )
@@ -400,7 +437,7 @@ mod tests {
     #[tokio::test]
     async fn should_fail_without_running_anything_when_a_quote_of_the_hook_is_not_closed() {
         let result = run_pre_launch_hook(
-            "\"aether-no-such-program-0f3a --token secret",
+            &pre_launch("\"aether-no-such-program-0f3a --token secret"),
             Path::new("."),
             Duration::from_secs(1),
         )

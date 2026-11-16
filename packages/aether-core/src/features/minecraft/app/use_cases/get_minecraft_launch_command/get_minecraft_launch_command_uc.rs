@@ -24,7 +24,7 @@ use crate::{
     },
     shared::{
         io::infra::create_dir_all,
-        serializable_command::{HookKind, HookSpawnError, parse_command_line},
+        serializable_command::{HookSpawnError, parse_wrapper},
     },
 };
 
@@ -261,7 +261,7 @@ impl MinecraftLaunchCommandService for GetMinecraftLaunchCommandUseCase {
 /// The process to start: the java binary, behind the user's wrapper command when one is set
 /// (then `true`). The java path goes after the wrapper's own arguments.
 fn java_command(wrapper: &str, java_path: &Path) -> Result<(Command, bool), HookSpawnError> {
-    match wrapper_command(wrapper)? {
+    match parse_wrapper(wrapper)? {
         None => Ok((Command::new(java_path), false)),
         Some((program, args)) => {
             let mut command = Command::new(program);
@@ -269,26 +269,6 @@ fn java_command(wrapper: &str, java_path: &Path) -> Result<(Command, bool), Hook
             Ok((command, true))
         }
     }
-}
-
-/// The program and the arguments of the wrapper command, or `None` when there is no wrapper.
-///
-/// A wrapper that is, as a whole, the path of a file is that program with no arguments: the
-/// setting used to be read so, and a path with spaces in it was not quoted.
-fn wrapper_command(wrapper: &str) -> Result<Option<(String, Vec<String>)>, HookSpawnError> {
-    let wrapper = wrapper.trim();
-    if wrapper.is_empty() {
-        return Ok(None);
-    }
-    if Path::new(wrapper).is_file() {
-        return Ok(Some((wrapper.to_owned(), Vec::new())));
-    }
-    parse_command_line(wrapper)
-        .map(Some)
-        .map_err(|reason| HookSpawnError::Invalid {
-            hook: HookKind::Wrapper,
-            reason,
-        })
 }
 
 /// Environment of the game process: scrub inherited variables, then apply the instance's own.
@@ -318,6 +298,7 @@ mod tests {
     use std::ffi::OsStr;
 
     use super::*;
+    use crate::shared::serializable_command::{CommandParseError, HookKind};
 
     #[derive(Debug, PartialEq)]
     enum EnvChange {
@@ -420,7 +401,7 @@ mod tests {
                 result,
                 Err(HookSpawnError::Invalid {
                     hook: HookKind::Wrapper,
-                    reason: crate::shared::serializable_command::CommandParseError::UnclosedQuote,
+                    reason: CommandParseError::UnclosedQuote,
                 })
             ),
             "{:?}",
