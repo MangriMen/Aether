@@ -11,13 +11,15 @@ use std::sync::{Arc, Mutex};
 
 use aether_core_plugin_api::v0::wire;
 use aether_core_plugin_api::v0::{
-    ContentAuthorDto, ContentCompatibilityResultDto, ContentMetadataDto, ContentSourceDto,
-    ContentTypeDto, ContentVersionDto, ContentVersionFileDto, ContentVersionMetadataDto,
-    ContentVersionStatusDto, ContentVersionTypeDto, FileHashDto, FileSideDto, GetAuthorsParamsDto,
-    GetContentsMetadataParamsDto, GetVersionsMetadataParamsDto, InstallFileEntryDto,
-    InstallPlanDto, InstallTargetDto, InstanceGameDto, ModLoaderDto, NewInstanceDto,
-    OverrideLocationDto, OverrideSourceDto, PackMetadataDto, PackSourceDto, ResolveFileParamsDto,
-    ResolveInstallPlanParamsDto, ResolveTargetDto, ResolvedFileDto,
+    CheckCompatibilityResultDto, ContentAuthorDto, ContentCompatibilityResultDto,
+    ContentMetadataDto, ContentSourceDto, ContentTypeDto, ContentVersionDto, ContentVersionFileDto,
+    ContentVersionMetadataDto, ContentVersionStatusDto, ContentVersionTypeDto, FileHashDto,
+    FileSideDto, GetAuthorsParamsDto, GetAuthorsResultDto, GetContentsMetadataParamsDto,
+    GetContentsMetadataResultDto, GetVersionParamsDto, GetVersionsMetadataParamsDto,
+    GetVersionsMetadataResultDto, InstallFileEntryDto, InstallPlanDto, InstallTargetDto,
+    InstanceGameDto, ModLoaderDto, NewInstanceDto, OverrideLocationDto, OverrideSourceDto,
+    PackMetadataDto, PackSourceDto, ResolveFileParamsDto, ResolveInstallPlanParamsDto,
+    ResolveTargetDto, ResolvedFileDto,
 };
 use serde::{Serialize, de::DeserializeOwned};
 
@@ -584,6 +586,12 @@ async fn should_call_the_version_handler_the_file_names_when_asked_for_a_version
         .unwrap();
 
     assert_eq!(fixture.called(), ["cf_get_version"]);
+    assert_eq!(
+        fixture.arguments_of_last_call::<GetVersionParamsDto>(),
+        GetVersionParamsDto {
+            version_id: "IZskON6d".to_owned()
+        }
+    );
     assert_eq!(version.changelog.as_deref(), Some("Fixed a crash."));
     assert_eq!(version.files.len(), 1);
     assert_eq!(version.files[0].file_name, "sodium.jar");
@@ -595,7 +603,9 @@ async fn should_call_the_authors_handler_the_file_names_when_naming_authors() {
         RESOLVE_ONLY_CAPABILITIES,
         vec![(
             "cf_get_authors",
-            encode(vec![author("team:abc", "Mezz Team")]),
+            encode(GetAuthorsResultDto {
+                authors: vec![author("team:abc", "Mezz Team")],
+            }),
         )],
     );
 
@@ -629,12 +639,9 @@ async fn should_keep_an_author_ref_when_describing_content_and_drop_a_blank_one(
         RESOLVE_ONLY_CAPABILITIES,
         vec![(
             "cf_get_contents_metadata",
-            encode(vec![
-                with_ref,
-                blank_ref,
-                project_metadata("3", None),
-                long_ref,
-            ]),
+            encode(GetContentsMetadataResultDto {
+                contents: vec![with_ref, blank_ref, project_metadata("3", None), long_ref],
+            }),
         )],
     );
 
@@ -656,10 +663,12 @@ async fn should_trim_and_cut_the_name_of_an_author() {
         RESOLVE_ONLY_CAPABILITIES,
         vec![(
             "cf_get_authors",
-            encode(vec![
-                author("team:a", "  Mezz  "),
-                author("team:b", &"n".repeat(1000)),
-            ]),
+            encode(GetAuthorsResultDto {
+                authors: vec![
+                    author("team:a", "  Mezz  "),
+                    author("team:b", &"n".repeat(1000)),
+                ],
+            }),
         )],
     );
 
@@ -685,7 +694,12 @@ async fn should_drop_an_author_ref_when_the_plugin_has_no_authors_handler() {
     assert_ne!(capabilities, RESOLVE_ONLY_CAPABILITIES);
     let fixture = Fixture::new(
         &capabilities,
-        vec![("cf_get_contents_metadata", encode(vec![with_ref]))],
+        vec![(
+            "cf_get_contents_metadata",
+            encode(GetContentsMetadataResultDto {
+                contents: vec![with_ref],
+            }),
+        )],
     );
 
     let projects = fixture
@@ -703,14 +717,16 @@ async fn should_drop_authors_nobody_asked_about_repeated_or_unnamed_ones() {
         RESOLVE_ONLY_CAPABILITIES,
         vec![(
             "cf_get_authors",
-            encode(vec![
-                author("team:a", "First"),
-                author("team:a", "Again"),
-                author("team:stranger", "Stranger"),
-                author("  ", "Blank ref"),
-                author("team:b", "  "),
-                author("team:c", "Third"),
-            ]),
+            encode(GetAuthorsResultDto {
+                authors: vec![
+                    author("team:a", "First"),
+                    author("team:a", "Again"),
+                    author("team:stranger", "Stranger"),
+                    author("  ", "Blank ref"),
+                    author("team:b", "  "),
+                    author("team:c", "Third"),
+                ],
+            }),
         )],
     );
 
@@ -736,18 +752,22 @@ async fn should_call_the_metadata_handlers_the_file_names_when_describing_conten
         vec![
             (
                 "cf_get_contents_metadata",
-                encode(vec![project_metadata(
-                    "238222",
-                    Some("https://media.forgecdn.net/jei.png"),
-                )]),
+                encode(GetContentsMetadataResultDto {
+                    contents: vec![project_metadata(
+                        "238222",
+                        Some("https://media.forgecdn.net/jei.png"),
+                    )],
+                }),
             ),
             (
                 "cf_get_versions_metadata",
-                encode(vec![ContentVersionMetadataDto {
-                    version_id: "5000000".into(),
-                    version_number: "19.21.0".into(),
-                    name: Some(String::new()),
-                }]),
+                encode(GetVersionsMetadataResultDto {
+                    versions: vec![ContentVersionMetadataDto {
+                        version_id: "5000000".into(),
+                        version_number: "19.21.0".into(),
+                        name: Some(String::new()),
+                    }],
+                }),
             ),
         ],
     );
@@ -795,14 +815,16 @@ async fn should_drop_an_icon_when_it_is_not_a_web_address() {
         RESOLVE_ONLY_CAPABILITIES,
         vec![(
             "cf_get_contents_metadata",
-            encode(vec![
-                project_metadata("1", Some("file:///C:/Users/me/secret.png")),
-                project_metadata("2", Some("/cache/icon.png")),
-                project_metadata("3", Some("https://example.com/icon.png")),
-                project_metadata("4", Some("http://example.com/icon.png")),
-                project_metadata("5", Some("https://192.168.1.1/icon.png")),
-                project_metadata("6", Some("https://localhost/icon.png")),
-            ]),
+            encode(GetContentsMetadataResultDto {
+                contents: vec![
+                    project_metadata("1", Some("file:///C:/Users/me/secret.png")),
+                    project_metadata("2", Some("/cache/icon.png")),
+                    project_metadata("3", Some("https://example.com/icon.png")),
+                    project_metadata("4", Some("http://example.com/icon.png")),
+                    project_metadata("5", Some("https://192.168.1.1/icon.png")),
+                    project_metadata("6", Some("https://localhost/icon.png")),
+                ],
+            }),
         )],
     );
 
@@ -833,7 +855,9 @@ async fn should_keep_the_other_projects_when_one_described_project_has_no_name()
         RESOLVE_ONLY_CAPABILITIES,
         vec![(
             "cf_get_contents_metadata",
-            encode(vec![nameless, project_metadata("2", None)]),
+            encode(GetContentsMetadataResultDto {
+                contents: vec![nameless, project_metadata("2", None)],
+            }),
         )],
     );
 
@@ -861,11 +885,13 @@ async fn should_drop_projects_nobody_asked_about_and_repeated_ones() {
         RESOLVE_ONLY_CAPABILITIES,
         vec![(
             "cf_get_contents_metadata",
-            encode(vec![
-                project_metadata("1", None),
-                project_metadata("1", None),
-                project_metadata("stranger", None),
-            ]),
+            encode(GetContentsMetadataResultDto {
+                contents: vec![
+                    project_metadata("1", None),
+                    project_metadata("1", None),
+                    project_metadata("stranger", None),
+                ],
+            }),
         )],
     );
 
@@ -885,7 +911,9 @@ async fn should_keep_a_project_when_it_answers_an_id_asked_by_its_slug() {
         RESOLVE_ONLY_CAPABILITIES,
         vec![(
             "cf_get_contents_metadata",
-            encode(vec![project_metadata("238222", None)]),
+            encode(GetContentsMetadataResultDto {
+                contents: vec![project_metadata("238222", None)],
+            }),
         )],
     );
 
@@ -912,12 +940,14 @@ async fn should_drop_versions_nobody_asked_about_and_numberless_ones() {
         RESOLVE_ONLY_CAPABILITIES,
         vec![(
             "cf_get_versions_metadata",
-            encode(vec![
-                version("1", "1.0"),
-                version("1", "1.0"),
-                version("2", ""),
-                version("stranger", "9.9"),
-            ]),
+            encode(GetVersionsMetadataResultDto {
+                versions: vec![
+                    version("1", "1.0"),
+                    version("1", "1.0"),
+                    version("2", ""),
+                    version("stranger", "9.9"),
+                ],
+            }),
         )],
     );
 
@@ -1257,12 +1287,14 @@ async fn should_refuse_a_compatibility_answer_when_a_key_is_not_a_plain_name() {
         }"#,
         vec![(
             "cf_check_compatibility",
-            encode(HashMap::from([(
-                "../x".to_owned(),
-                ContentCompatibilityResultDto {
-                    is_compatible: true,
-                },
-            )])),
+            encode(CheckCompatibilityResultDto {
+                results: HashMap::from([(
+                    "../x".to_owned(),
+                    ContentCompatibilityResultDto {
+                        is_compatible: true,
+                    },
+                )]),
+            }),
         )],
     );
     let check_params = ContentCompatibilityCheckParams {

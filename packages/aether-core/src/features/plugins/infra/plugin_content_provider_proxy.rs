@@ -5,9 +5,11 @@ use std::{
 };
 
 use aether_core_plugin_api::v0::{
-    ContentAuthorDto, ContentMetadataDto, ContentSearchParamsDto, ContentSearchResultDto,
-    ContentVersionDto, ContentVersionMetadataDto, GetAuthorsParamsDto,
-    GetContentsMetadataParamsDto, GetVersionsMetadataParamsDto, InstallPlanDto,
+    CheckCompatibilityResultDto, ContentMetadataDto, ContentSearchParamsDto,
+    ContentSearchResultDto, ContentVersionDto, ContentVersionMetadataDto, GetAuthorsParamsDto,
+    GetAuthorsResultDto, GetContentParamsDto, GetContentsMetadataParamsDto,
+    GetContentsMetadataResultDto, GetVersionParamsDto, GetVersionsMetadataParamsDto,
+    GetVersionsMetadataResultDto, InstallPlanDto, ListVersionsParamsDto, ListVersionsResultDto,
     OverrideLocationDto, OverrideSourceDto, PackMetadataDto, PackSourceDto,
     PluginCheckCompatibilityParamsDto, ResolveFileParamsDto, ResolveInstallPlanParamsDto,
     ResolvedFileDto,
@@ -397,7 +399,9 @@ impl ContentProvider for PluginContentProviderProxy {
             .call_plugin(
                 "get_content",
                 &self.capability.handlers.get_content,
-                String::from(content_id),
+                GetContentParamsDto {
+                    content_id: String::from(content_id),
+                },
             )
             .await?;
         Ok(result_dto.into())
@@ -411,10 +415,17 @@ impl ContentProvider for PluginContentProviderProxy {
             self.capability.handlers.list_version.as_ref(),
             "list_versions",
         )?;
-        let result_dto: Vec<ContentVersionDto> = self
-            .call_plugin("list_versions", handler, String::from(content_id))
+        let result_dto: ListVersionsResultDto = self
+            .call_plugin(
+                "list_versions",
+                handler,
+                ListVersionsParamsDto {
+                    content_id: String::from(content_id),
+                },
+            )
             .await?;
         result_dto
+            .versions
             .into_iter()
             .map(ContentVersion::try_from)
             .collect::<Result<_, _>>()
@@ -427,7 +438,13 @@ impl ContentProvider for PluginContentProviderProxy {
     ) -> Result<ContentVersion, InstanceError> {
         let handler = self.handler(self.capability.handlers.get_version.as_ref(), "get_version")?;
         let result_dto: ContentVersionDto = self
-            .call_plugin("get_version", handler, version_id.as_str().to_owned())
+            .call_plugin(
+                "get_version",
+                handler,
+                GetVersionParamsDto {
+                    version_id: version_id.as_str().to_owned(),
+                },
+            )
             .await?;
         ContentVersion::try_from(result_dto).map_err(|err| self.invalid_answer("get_version", err))
     }
@@ -504,7 +521,7 @@ impl ContentProvider for PluginContentProviderProxy {
             "get_contents_metadata",
         )?;
 
-        let result_dto: Vec<ContentMetadataDto> = self
+        let result: GetContentsMetadataResultDto = self
             .call_plugin(
                 "get_contents_metadata",
                 handler,
@@ -526,7 +543,7 @@ impl ContentProvider for PluginContentProviderProxy {
         Ok(self
             .keep_answered(
                 handler,
-                result_dto,
+                result.contents,
                 asked,
                 |dto| {
                     ContentId::try_from(dto.content_id.as_str()).is_ok()
@@ -553,7 +570,7 @@ impl ContentProvider for PluginContentProviderProxy {
     ) -> Result<Vec<ContentAuthor>, InstanceError> {
         let handler = self.handler(self.capability.handlers.get_authors.as_ref(), "get_authors")?;
 
-        let result_dto: Vec<ContentAuthorDto> = self
+        let result: GetAuthorsResultDto = self
             .call_plugin(
                 "get_authors",
                 handler,
@@ -566,7 +583,7 @@ impl ContentProvider for PluginContentProviderProxy {
         Ok(self
             .keep_answered(
                 handler,
-                result_dto,
+                result.authors,
                 |dto| asked.contains(dto.author_ref.as_str()),
                 |dto| !dto.name.trim().is_empty(),
                 |dto| &dto.author_ref,
@@ -588,7 +605,7 @@ impl ContentProvider for PluginContentProviderProxy {
             "get_versions_metadata",
         )?;
 
-        let result_dto: Vec<ContentVersionMetadataDto> = self
+        let result: GetVersionsMetadataResultDto = self
             .call_plugin(
                 "get_versions_metadata",
                 handler,
@@ -601,7 +618,7 @@ impl ContentProvider for PluginContentProviderProxy {
         Ok(self
             .keep_answered(
                 handler,
-                result_dto,
+                result.versions,
                 |dto| asked.contains(dto.version_id.as_str()),
                 |dto| {
                     ContentVersionId::try_from(dto.version_id.as_str()).is_ok()
@@ -629,10 +646,11 @@ impl ContentProvider for PluginContentProviderProxy {
         }
         .into();
 
-        let result_dto: HashMap<String, aether_core_plugin_api::v0::ContentCompatibilityResultDto> =
-            self.call_plugin("check_compatibility", handler, params)
-                .await?;
-        result_dto
+        let result: CheckCompatibilityResultDto = self
+            .call_plugin("check_compatibility", handler, params)
+            .await?;
+        result
+            .results
             .into_iter()
             .map(|(k, v)| {
                 Ok((

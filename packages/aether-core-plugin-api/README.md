@@ -10,7 +10,7 @@ List every host function the plugin imports, by its import name:
 
 ```json
 "api": {
-  "version": "0.4.0",
+  "version": "0.5.0",
   "hostFunctions": ["log", "get_id", "http_get", "write_instance_file"]
 }
 ```
@@ -112,7 +112,26 @@ Some values are not msgpack at all:
 | `log` message, the instance id of `instance_get_dir`, `instance_plugin_get_dir`, `list_content`, and the first argument of `enable_contents` / `disable_contents` | raw UTF-8 string |
 | `log` level, the version of `get_java` / `install_java` | `u32`, 4 bytes little-endian, written to a memory block whose offset is the argument (as Extism passes every host-function argument) |
 | `get_id` result | raw UTF-8 string, not wrapped in a result |
-| the instance id given to a plugin's updater export | raw UTF-8 string |
+
+What the host sends to a plugin's exports and what it expects back (the names of the exports are
+the `handler` values of the capabilities; the properties are those of `schemas/plugin-wire.schema.json`):
+
+| Export | Input | Answer |
+| --- | --- | --- |
+| an event handler | `internalEvent` | none |
+| an importer | `importInstance` | none |
+| an updater | `updateInstanceParams` | none |
+| `search` | `contentSearchParams` | `contentSearchResult` |
+| `getContent` | `getContentParams` | `contentItem` |
+| `listVersion` | `listVersionsParams` | `listVersionsResult` |
+| `getVersion` | `getVersionParams` | `contentVersion` |
+| `resolveFile` | `resolveFileParams` | `resolvedFile` |
+| `resolveInstallPlan` | `resolveInstallPlanParams` | `installPlan` |
+| `resolvePackMetadata` | `packSource` | `packMetadata` |
+| `getContentsMetadata` | `getContentsMetadataParams` | `getContentsMetadataResult` |
+| `getVersionsMetadata` | `getVersionsMetadataParams` | `getVersionsMetadataResult` |
+| `getAuthors` | `getAuthorsParams` | `getAuthorsResult` |
+| `checkCompatibility` | `checkCompatibilityParams` | `checkCompatibilityResult` |
 
 [`schemas/plugin-wire.schema.json`](src/v0/schemas/plugin-wire.schema.json) describes every value
 that crosses the boundary (one property per type, the types under `$defs`; a `bin` is a string

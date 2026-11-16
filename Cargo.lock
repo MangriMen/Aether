@@ -151,7 +151,7 @@ dependencies = [
 
 [[package]]
 name = "aether-core-plugin-api"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "jsonschema",
  "register-schema",
@@ -166,7 +166,7 @@ dependencies = [
 
 [[package]]
 name = "aether-core-plugin-pdk"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "aether-core-plugin-api",
  "anyhow",

@@ -4,26 +4,17 @@
   "description": "Every structured value that crosses the plugin boundary, in one schema: the properties only\nname the types, which are described under `$defs`. Which one a host function or an export\ntakes and returns is in the README of the plugin API; how a value is encoded is in its\n\"Wire format\" section.",
   "type": "object",
   "properties": {
-    "authors": {
-      "type": "array",
-      "items": {
-        "$ref": "#/$defs/ContentAuthorDto"
-      }
-    },
     "cachedFile": {
       "$ref": "#/$defs/CachedFileDto"
     },
     "checkCompatibilityParams": {
       "$ref": "#/$defs/PluginCheckCompatibilityParamsDto"
     },
+    "checkCompatibilityResult": {
+      "$ref": "#/$defs/CheckCompatibilityResultDto"
+    },
     "command": {
       "$ref": "#/$defs/CommandDto"
-    },
-    "compatibilityResult": {
-      "type": "object",
-      "additionalProperties": {
-        "$ref": "#/$defs/ContentCompatibilityResultDto"
-      }
     },
     "contentCompatibilityCheckParams": {
       "$ref": "#/$defs/ContentCompatibilityCheckParamsDto"
@@ -43,17 +34,8 @@
     "contentSearchResult": {
       "$ref": "#/$defs/ContentSearchResultDto"
     },
-    "contentVersions": {
-      "type": "array",
-      "items": {
-        "$ref": "#/$defs/ContentVersionDto"
-      }
-    },
-    "contentsMetadata": {
-      "type": "array",
-      "items": {
-        "$ref": "#/$defs/ContentMetadataDto"
-      }
+    "contentVersion": {
+      "$ref": "#/$defs/ContentVersionDto"
     },
     "downloadToCache": {
       "$ref": "#/$defs/DownloadToCacheParamsDto"
@@ -61,11 +43,26 @@
     "getAuthorsParams": {
       "$ref": "#/$defs/GetAuthorsParamsDto"
     },
+    "getAuthorsResult": {
+      "$ref": "#/$defs/GetAuthorsResultDto"
+    },
+    "getContentParams": {
+      "$ref": "#/$defs/GetContentParamsDto"
+    },
     "getContentsMetadataParams": {
       "$ref": "#/$defs/GetContentsMetadataParamsDto"
     },
+    "getContentsMetadataResult": {
+      "$ref": "#/$defs/GetContentsMetadataResultDto"
+    },
+    "getVersionParams": {
+      "$ref": "#/$defs/GetVersionParamsDto"
+    },
     "getVersionsMetadataParams": {
       "$ref": "#/$defs/GetVersionsMetadataParamsDto"
+    },
+    "getVersionsMetadataResult": {
+      "$ref": "#/$defs/GetVersionsMetadataResultDto"
     },
     "hostError": {
       "description": "What every host function returns on failure, inside `{\"status\": \"err\", \"data\": …}`.",
@@ -95,6 +92,12 @@
     "java": {
       "$ref": "#/$defs/JavaDto"
     },
+    "listVersionsParams": {
+      "$ref": "#/$defs/ListVersionsParamsDto"
+    },
+    "listVersionsResult": {
+      "$ref": "#/$defs/ListVersionsResultDto"
+    },
     "newInstance": {
       "$ref": "#/$defs/NewInstanceDto"
     },
@@ -119,11 +122,8 @@
     "resolvedFile": {
       "$ref": "#/$defs/ResolvedFileDto"
     },
-    "versionsMetadata": {
-      "type": "array",
-      "items": {
-        "$ref": "#/$defs/ContentVersionMetadataDto"
-      }
+    "updateInstanceParams": {
+      "$ref": "#/$defs/UpdateInstanceParamsDto"
     },
     "writeInstanceFile": {
       "$ref": "#/$defs/WriteInstanceFileParamsDto"
@@ -146,7 +146,11 @@
     "cachedFile",
     "internalEvent",
     "importInstance",
+    "updateInstanceParams",
     "contentSearchParams",
+    "getContentParams",
+    "listVersionsParams",
+    "getVersionParams",
     "resolveFileParams",
     "resolveInstallPlanParams",
     "packSource",
@@ -157,14 +161,15 @@
     "contentCompatibilityCheckParams",
     "contentSearchResult",
     "contentItem",
-    "contentVersions",
+    "contentVersion",
+    "listVersionsResult",
     "resolvedFile",
     "installPlan",
     "packMetadata",
-    "contentsMetadata",
-    "versionsMetadata",
-    "authors",
-    "compatibilityResult"
+    "getContentsMetadataResult",
+    "getVersionsMetadataResult",
+    "getAuthorsResult",
+    "checkCompatibilityResult"
   ],
   "$defs": {
     "AuthErrorDto": {
@@ -309,6 +314,22 @@
       "required": [
         "path",
         "size"
+      ]
+    },
+    "CheckCompatibilityResultDto": {
+      "description": "The answer of `checkCompatibility`.",
+      "type": "object",
+      "properties": {
+        "results": {
+          "description": "By instance id.",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/ContentCompatibilityResultDto"
+          }
+        }
+      },
+      "required": [
+        "results"
       ]
     },
     "CommandDto": {
@@ -1306,6 +1327,34 @@
         "authorRefs"
       ]
     },
+    "GetAuthorsResultDto": {
+      "description": "The answer of `getAuthors`.",
+      "type": "object",
+      "properties": {
+        "authors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ContentAuthorDto"
+          }
+        }
+      },
+      "required": [
+        "authors"
+      ]
+    },
+    "GetContentParamsDto": {
+      "description": "The input of `getContent`.",
+      "type": "object",
+      "properties": {
+        "contentId": {
+          "description": "The provider's id of the project.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "contentId"
+      ]
+    },
     "GetContentsMetadataParamsDto": {
       "description": "The input of `getContentsMetadata`: the projects to describe, asked in one go for a whole\ninstance.",
       "type": "object",
@@ -1322,6 +1371,34 @@
         "contentIds"
       ]
     },
+    "GetContentsMetadataResultDto": {
+      "description": "The answer of `getContentsMetadata`.",
+      "type": "object",
+      "properties": {
+        "contents": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ContentMetadataDto"
+          }
+        }
+      },
+      "required": [
+        "contents"
+      ]
+    },
+    "GetVersionParamsDto": {
+      "description": "The input of `getVersion`.",
+      "type": "object",
+      "properties": {
+        "versionId": {
+          "description": "The provider's id of the version.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "versionId"
+      ]
+    },
     "GetVersionsMetadataParamsDto": {
       "description": "The input of `getVersionsMetadata`: the versions to describe, asked in one go for a whole\ninstance.",
       "type": "object",
@@ -1336,6 +1413,21 @@
       },
       "required": [
         "versionIds"
+      ]
+    },
+    "GetVersionsMetadataResultDto": {
+      "description": "The answer of `getVersionsMetadata`.",
+      "type": "object",
+      "properties": {
+        "versions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ContentVersionMetadataDto"
+          }
+        }
+      },
+      "required": [
+        "versions"
       ]
     },
     "HostError": {
@@ -2949,6 +3041,34 @@
             "kind"
           ]
         }
+      ]
+    },
+    "ListVersionsParamsDto": {
+      "description": "The input of `listVersion`.",
+      "type": "object",
+      "properties": {
+        "contentId": {
+          "description": "The provider's id of the project.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "contentId"
+      ]
+    },
+    "ListVersionsResultDto": {
+      "description": "The answer of `listVersion`.",
+      "type": "object",
+      "properties": {
+        "versions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ContentVersionDto"
+          }
+        }
+      },
+      "required": [
+        "versions"
       ]
     },
     "LoadConfigTypeDto": {
@@ -5114,6 +5234,18 @@
             "data"
           ]
         }
+      ]
+    },
+    "UpdateInstanceParamsDto": {
+      "description": "The input of an updater's export.",
+      "type": "object",
+      "properties": {
+        "instanceId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "instanceId"
       ]
     },
     "WriteInstanceFileParamsDto": {
