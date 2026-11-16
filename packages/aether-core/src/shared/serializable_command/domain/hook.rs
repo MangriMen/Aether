@@ -92,10 +92,10 @@ pub fn parse_hook_command(
 /// setting used to be read so, and a path with spaces in it was not quoted. The path is looked up
 /// as the game is started: from `launch_dir`.
 pub fn parse_wrapper(wrapper: &str, launch_dir: &Path) -> Result<Option<Wrapper>, HookSpawnError> {
-    let wrapper = wrapper.trim_matches(is_separator);
-    if wrapper.is_empty() {
+    if is_unset(wrapper) {
         return Ok(None);
     }
+    let wrapper = wrapper.trim_matches(is_separator);
     if is_existing_program(&launch_dir.join(wrapper)) {
         return Ok(Some(Wrapper {
             program: wrapper.to_owned(),
