@@ -1053,7 +1053,7 @@ mod tests {
         let (temp_dir, location_info, _service) = setup().await;
 
         for id in escaping_ids(&temp_dir) {
-            handle_instance_get_dir(&id, &location_info, &OneInstance)
+            handle_instance_get_dir(&id, &location_info, &AnyInstance)
                 .await
                 .expect_err("an id outside `instances/` must be refused");
         }

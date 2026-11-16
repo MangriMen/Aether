@@ -30,7 +30,7 @@ pub(crate) const HOST_FUNCTIONS: &[HostFunctionSpec] = &[
     HostFunctionSpec {
         name: "log",
         params: &[PTR],
-        results: &[],
+        results: &[PTR],
         handler: features::log,
     },
     HostFunctionSpec {
