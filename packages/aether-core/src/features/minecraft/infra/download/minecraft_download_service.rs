@@ -214,7 +214,7 @@ impl<RC: RequestClient, PS: ProgressService, C: Cache, FS: FileStore> MinecraftD
     ) -> Result<vanilla::VersionInfo, MinecraftDomainError> {
         let force = force.unwrap_or(false);
 
-        let version_id = get_version_id(version, loader)?;
+        let version_id = version_jar_name(&version.id, loader.map(|l| l.id.as_str()))?;
 
         let version_info = self
             .cached_resource
@@ -236,11 +236,4 @@ impl<RC: RequestClient, PS: ProgressService, C: Cache, FS: FileStore> MinecraftD
 
         Ok(version_info)
     }
-}
-
-fn get_version_id(
-    version: &vanilla::Version,
-    loader: Option<&modded::LoaderVersion>,
-) -> Result<String, MinecraftDomainError> {
-    version_jar_name(&version.id, loader.map(|l| l.id.as_str()))
 }

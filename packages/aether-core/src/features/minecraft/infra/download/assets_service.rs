@@ -91,7 +91,7 @@ impl<RC: RequestClient, C: Cache> AssetsService<RC, C> {
         Ok(self
             .location_info
             .legacy_assets_dir()
-            .join(relative.replace('/', &String::from(std::path::MAIN_SEPARATOR))))
+            .join(relative.replace('/', std::path::MAIN_SEPARATOR_STR)))
     }
 
     fn build_asset_url(hash: &FileHash) -> String {
