@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 
 /// Description of a Java installation known to the launcher.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct JavaDto {
     /// Major Java release number (for example 8, 17 or 21).
     pub major_version: u32,

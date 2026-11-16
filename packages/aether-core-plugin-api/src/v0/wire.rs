@@ -66,6 +66,35 @@ mod tests {
     }
 
     #[test]
+    fn field_names_are_camel_case_in_structs_and_in_error_variants() {
+        use crate::v0::{CommandDto, CommandRefusalDto, OutputDto, PluginErrorDto};
+
+        let command = serde_json::to_value(CommandDto {
+            program: "java".to_owned(),
+            args: vec![],
+            current_dir: Some("#/cache".to_owned()),
+        })
+        .unwrap();
+        let output = serde_json::to_value(OutputDto {
+            status: 0,
+            stdout: vec![],
+            stderr: vec![],
+            stdout_truncated: false,
+            stderr_truncated: false,
+        })
+        .unwrap();
+        let refusal = serde_json::to_value(PluginErrorDto::CommandNotApproved {
+            plugin_id: "p".to_owned(),
+            reason: CommandRefusalDto::Denied,
+        })
+        .unwrap();
+
+        assert!(command.get("currentDir").is_some());
+        assert!(output.get("stdoutTruncated").is_some());
+        assert!(refusal["data"].get("pluginId").is_some());
+    }
+
+    #[test]
     fn a_result_is_a_map_in_both_cases() {
         let ok = encode(&HostResult::Ok(())).unwrap();
         let err = encode(&HostResult::<()>::Err(HostError::AuthError(

@@ -9,6 +9,7 @@ use serde_with::{Bytes, serde_as};
 /// and the host decides where that lands on disk.
 #[serde_as]
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct WriteInstanceFileParamsDto {
     /// Id of an existing instance. An unknown id is an error, not a directory the host creates.
     pub instance_id: String,
@@ -33,6 +34,7 @@ pub struct InstanceFileBytesDto(#[serde_as(as = "Bytes")] pub Vec<u8>);
 ///
 /// Same path rules as [`WriteInstanceFileParamsDto`].
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct ReadInstanceFileParamsDto {
     /// Id of an existing instance.
     pub instance_id: String,

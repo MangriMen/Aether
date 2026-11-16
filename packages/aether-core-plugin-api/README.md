@@ -54,7 +54,7 @@ call short.
 ## `run_command` output
 
 `OutputDto` carries `stdout` and `stderr` as raw bytes, each capped at 1 MiB. A stream that hit
-the cap is cut there and flagged — `stdout_truncated` / `stderr_truncated` — with nothing added
+the cap is cut there and flagged — `stdoutTruncated` / `stderrTruncated` — with nothing added
 to the bytes themselves.
 
 A command that exits with a non-zero code is an error, not an `OutputDto`: the call fails with
@@ -72,7 +72,7 @@ question first).
 
 A refused command fails the call with `HostError::PluginError(CommandNotApproved { plugin_id,
 reason })` where `reason` is one of `denied`, `timed_out`, `cancelled` or `jar_changed` (on the
-wire: `{"type": "pluginError", "payload": {"kind": "commandNotApproved", "data": {"plugin_id": …,
+wire: `{"type": "pluginError", "payload": {"kind": "commandNotApproved", "data": {"pluginId": …,
 "reason": "denied"}}}`). *Deny* is remembered until the plugin is stopped or reloaded: the same
 command is refused again without a new question.
 
@@ -94,7 +94,7 @@ and the plugin's choice of arguments; a new build of the plugin starts over. Any
 ## Wire format
 
 Every structured value that crosses the boundary, in both directions, is **msgpack with structs
-written as maps keyed by field name**; byte fields (`Vec<u8>`) are msgpack `bin`, and enums have
+written as maps keyed by field name (camelCase)**; byte fields (`Vec<u8>`) are msgpack `bin`, and enums have
 their JSON shape (`{"type": …, "payload": …}`, `{"status": …, "data": …}`). Arrays are not part
 of the contract: they make the field order carry the meaning, and an adjacently tagged enum such
 as `HostError` cannot be read back from one. A reader ignores a key it does not know and gives a
