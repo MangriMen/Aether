@@ -351,12 +351,6 @@ impl From<&MinecraftApplicationError> for HostError {
                     reason: err.to_string(),
                 })
             }
-            // No kind of its own, so as not to break decoding in plugins built without it.
-            MinecraftApplicationError::Hook(err) => {
-                Self::MinecraftError(MinecraftErrorDto::ParseFailed {
-                    reason: err.to_string(),
-                })
-            }
         }
     }
 }

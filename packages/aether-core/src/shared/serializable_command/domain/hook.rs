@@ -58,22 +58,86 @@ impl HookSpawnError {
     }
 }
 
-/// The program and the arguments of the wrapper command, or `None` when there is no wrapper.
+/// The user's wrapper command, which starts java: its program and the arguments that go before
+/// the java path.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Wrapper {
+    pub program: String,
+    pub args: Vec<String>,
+}
+
+/// The wrapper command, or `None` when there is no wrapper.
 ///
 /// A wrapper that is, as a whole, the path of a file is that program with no arguments: the
 /// setting used to be read so, and a path with spaces in it was not quoted.
-pub fn parse_wrapper(wrapper: &str) -> Result<Option<(String, Vec<String>)>, HookSpawnError> {
+pub fn parse_wrapper(wrapper: &str) -> Result<Option<Wrapper>, HookSpawnError> {
     let wrapper = wrapper.trim();
     if wrapper.is_empty() {
         return Ok(None);
     }
     if Path::new(wrapper).is_file() {
-        return Ok(Some((wrapper.to_owned(), Vec::new())));
+        return Ok(Some(Wrapper {
+            program: wrapper.to_owned(),
+            args: Vec::new(),
+        }));
     }
-    parse_command_line(wrapper)
-        .map(Some)
-        .map_err(|reason| HookSpawnError::Invalid {
+    let (program, args) =
+        parse_command_line(wrapper).map_err(|reason| HookSpawnError::Invalid {
             hook: HookKind::Wrapper,
             reason,
-        })
+        })?;
+    Ok(Some(Wrapper { program, args }))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn should_have_no_wrapper_when_it_is_blank() {
+        assert_eq!(parse_wrapper("  \t ").unwrap(), None);
+    }
+
+    #[test]
+    fn should_split_the_wrapper_into_program_and_arguments() {
+        assert_eq!(
+            parse_wrapper(" env VAR=1 \"prime run\" ").unwrap(),
+            Some(Wrapper {
+                program: "env".to_owned(),
+                args: vec!["VAR=1".to_owned(), "prime run".to_owned()],
+            })
+        );
+    }
+
+    #[test]
+    fn should_take_the_whole_wrapper_as_the_program_when_it_is_a_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("my wrapper.sh");
+        std::fs::write(&path, "").unwrap();
+        let path = path.to_string_lossy().into_owned();
+
+        assert_eq!(
+            parse_wrapper(&format!(" {path} ")).unwrap(),
+            Some(Wrapper {
+                program: path,
+                args: Vec::new(),
+            })
+        );
+    }
+
+    #[test]
+    fn should_refuse_a_wrapper_with_a_quote_that_is_not_closed() {
+        let result = parse_wrapper("\"prime-run --x");
+
+        assert!(
+            matches!(
+                result,
+                Err(HookSpawnError::Invalid {
+                    hook: HookKind::Wrapper,
+                    reason: CommandParseError::UnclosedQuote,
+                })
+            ),
+            "{result:?}"
+        );
+    }
 }

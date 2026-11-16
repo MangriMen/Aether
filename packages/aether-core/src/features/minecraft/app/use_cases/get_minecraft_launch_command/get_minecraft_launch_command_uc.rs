@@ -22,10 +22,7 @@ use crate::{
         },
         settings::LocationInfo,
     },
-    shared::{
-        io::infra::create_dir_all,
-        serializable_command::{HookSpawnError, parse_wrapper},
-    },
+    shared::{io::infra::create_dir_all, serializable_command::Wrapper},
 };
 
 use super::get_minecraft_arguments::get_minecraft_arguments;
@@ -37,6 +34,9 @@ pub struct GetMinecraftLaunchCommandParams {
     pub loader_version: Option<LoaderVersionPreference>,
     pub launch_dir: PathBuf,
     pub java_path: Option<JavaPath>,
+    /// The wrapper of the launch settings' hooks, already read: the caller checks it before the
+    /// pre-launch hook runs.
+    pub wrapper: Option<Wrapper>,
 }
 
 /// The process to start, and the values it is given that must not be kept in logs.
@@ -103,6 +103,7 @@ impl GetMinecraftLaunchCommandUseCase {
             loader_version,
             launch_dir,
             java_path,
+            wrapper,
         } = get_minecraft_launch_command_params;
 
         let version_manifest = self.get_version_manifest_use_case.execute().await?;
@@ -179,8 +180,7 @@ impl GetMinecraftLaunchCommandUseCase {
         .into_iter()
         .collect::<Vec<_>>();
 
-        let (mut command, wrapped) =
-            java_command(launch_settings.hooks.wrapper(), java.path().as_path())?;
+        let (mut command, wrapped) = java_command(wrapper.as_ref(), java.path().as_path());
 
         command
             .args(jvm_arguments)
@@ -260,13 +260,13 @@ impl MinecraftLaunchCommandService for GetMinecraftLaunchCommandUseCase {
 
 /// The process to start: the java binary, behind the user's wrapper command when one is set
 /// (then `true`). The java path goes after the wrapper's own arguments.
-fn java_command(wrapper: &str, java_path: &Path) -> Result<(Command, bool), HookSpawnError> {
-    match parse_wrapper(wrapper)? {
-        None => Ok((Command::new(java_path), false)),
-        Some((program, args)) => {
-            let mut command = Command::new(program);
-            command.args(args).arg(java_path);
-            Ok((command, true))
+fn java_command(wrapper: Option<&Wrapper>, java_path: &Path) -> (Command, bool) {
+    match wrapper {
+        None => (Command::new(java_path), false),
+        Some(wrapper) => {
+            let mut command = Command::new(&wrapper.program);
+            command.args(&wrapper.args).arg(java_path);
+            (command, true)
         }
     }
 }
@@ -298,7 +298,6 @@ mod tests {
     use std::ffi::OsStr;
 
     use super::*;
-    use crate::shared::serializable_command::{CommandParseError, HookKind};
 
     #[derive(Debug, PartialEq)]
     enum EnvChange {
@@ -344,23 +343,25 @@ mod tests {
 
     #[test]
     fn should_start_java_itself_when_there_is_no_wrapper() {
-        for wrapper in ["", "  	 "] {
-            let (command, wrapped) = java_command(wrapper, Path::new("/jdk/bin/java")).unwrap();
+        let (command, wrapped) = java_command(None, Path::new("/jdk/bin/java"));
 
-            assert!(!wrapped);
-            assert_eq!(
-                program_and_args(&command),
-                ("/jdk/bin/java".to_owned(), Vec::new())
-            );
-        }
+        assert!(!wrapped);
+        assert_eq!(
+            program_and_args(&command),
+            ("/jdk/bin/java".to_owned(), Vec::new())
+        );
     }
 
     #[test]
     fn should_put_the_arguments_of_the_wrapper_before_the_java_path() {
-        let (command, wrapped) =
-            java_command(" env VAR=1 \"prime run\" --x ", Path::new("/jdk/bin/java")).unwrap();
+        let wrapper = Wrapper {
+            program: "env".to_owned(),
+            args: vec!["VAR=1".to_owned(), "prime run".to_owned()],
+        };
 
-        assert!(wrapped);
+        let (command, is_wrapped) = java_command(Some(&wrapper), Path::new("/jdk/bin/java"));
+
+        assert!(is_wrapped);
         assert_eq!(
             program_and_args(&command),
             (
@@ -368,44 +369,9 @@ mod tests {
                 vec![
                     "VAR=1".to_owned(),
                     "prime run".to_owned(),
-                    "--x".to_owned(),
                     "/jdk/bin/java".to_owned()
                 ]
             )
-        );
-    }
-
-    #[test]
-    fn should_take_the_whole_wrapper_as_the_program_when_it_is_a_file() {
-        let dir = tempfile::tempdir().unwrap();
-        let wrapper = dir.path().join("my wrapper.sh");
-        std::fs::write(&wrapper, "").unwrap();
-        let wrapper = wrapper.to_string_lossy().into_owned();
-
-        let (command, is_wrapped) =
-            java_command(&format!(" {wrapper} "), Path::new("/jdk/bin/java")).unwrap();
-
-        assert!(is_wrapped);
-        assert_eq!(
-            program_and_args(&command),
-            (wrapper, vec!["/jdk/bin/java".to_owned()])
-        );
-    }
-
-    #[test]
-    fn should_refuse_a_wrapper_with_a_quote_that_is_not_closed() {
-        let result = java_command("\"prime-run --x", Path::new("/jdk/bin/java"));
-
-        assert!(
-            matches!(
-                result,
-                Err(HookSpawnError::Invalid {
-                    hook: HookKind::Wrapper,
-                    reason: CommandParseError::UnclosedQuote,
-                })
-            ),
-            "{:?}",
-            result.map(|(_, wrapped)| wrapped)
         );
     }
 

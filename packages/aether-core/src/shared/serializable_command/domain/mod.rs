@@ -1,6 +1,6 @@
 mod hook;
 
-pub use hook::{HookKind, HookSpawnError, parse_wrapper};
+pub use hook::{HookKind, HookSpawnError, Wrapper, parse_wrapper};
 
 use std::{
     collections::BTreeMap,
@@ -109,7 +109,7 @@ pub fn parse_command_line(text: &str) -> Result<(String, Vec<String>), CommandPa
 /// words are separated by whitespace; text inside `"..."` keeps its spaces and the quotes are
 /// dropped (`-Dx="a b"` is `-Dx=a b`); `""` inside quotes is a literal quote. Backslashes and
 /// single quotes are plain characters, so Windows paths need no escaping.
-pub fn split_command_line(text: &str) -> Result<Vec<String>, CommandParseError> {
+fn split_command_line(text: &str) -> Result<Vec<String>, CommandParseError> {
     let mut words = Vec::new();
     let mut current = String::new();
     let mut has_word = false;

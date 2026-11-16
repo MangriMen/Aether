@@ -10,8 +10,8 @@ use crate::{
             InstanceLaunchService, InstanceLocks, InstanceStorage, InstanceStorageExt, LockRefused,
         },
         minecraft::{
-            GetMinecraftLaunchCommandParams, LaunchSettings, MinecraftApplicationError,
-            MinecraftHealthParams, MinecraftHealthService, MinecraftLaunchCommandService,
+            GetMinecraftLaunchCommandParams, LaunchSettings, MinecraftHealthParams,
+            MinecraftHealthService, MinecraftLaunchCommandService,
         },
         plugins::{PluginInternalEvent, PluginRegistry, PluginState},
         process::{
@@ -19,7 +19,9 @@ use crate::{
         },
         settings::{DefaultInstanceSettings, DefaultInstanceSettingsStorage, Hooks, LocationInfo},
     },
-    shared::serializable_command::{HookKind, HookSpawnError, SerializableCommand, parse_wrapper},
+    shared::serializable_command::{
+        HookKind, HookSpawnError, SerializableCommand, Wrapper, parse_wrapper,
+    },
 };
 
 /// How long a pre-launch hook may run. The instance stays locked meanwhile, and a hook that
@@ -186,7 +188,7 @@ impl LaunchInstanceUseCase {
 
         let instance_path = self.location_info.instance_dir(instance.id());
 
-        run_pre_launch_hook(
+        let wrapper = run_pre_launch_hook(
             &launch_settings.hooks,
             &instance_path,
             PRELAUNCH_HOOK_TIMEOUT,
@@ -211,15 +213,12 @@ impl LaunchInstanceUseCase {
                     loader_version: instance.loader_version.clone(),
                     launch_dir: instance_path,
                     java_path: instance.java_path_override(),
+                    wrapper,
                 },
                 launch_settings.clone(),
                 credentials,
             )
-            .await
-            .map_err(|err| match err {
-                MinecraftApplicationError::Hook(err) => InstanceError::Hook(err),
-                other => other.into(),
-            })?;
+            .await?;
 
         self.instance_storage
             .upsert_with(instance.id(), |instance| {
@@ -230,8 +229,8 @@ impl LaunchInstanceUseCase {
 
         // Behind a wrapper the started process is the wrapper: stopping it alone would leave
         // the game running.
-        let wrapped = launch_command.wrapped;
-        let kill_scope = if wrapped {
+        let behind_wrapper = launch_command.wrapped;
+        let kill_scope = if behind_wrapper {
             KillScope::Tree
         } else {
             KillScope::Process
@@ -246,7 +245,7 @@ impl LaunchInstanceUseCase {
                 launch_command.secrets,
             )
             .await
-            .map_err(|err| start_error(err, wrapped));
+            .map_err(|err| start_error(err, behind_wrapper));
 
         self.notify_plugin_event(
             &instance,
@@ -286,8 +285,9 @@ fn start_error(err: ProcessError, wrapped: bool) -> InstanceError {
     }
 }
 
-/// Runs the pre-launch hook in `dir` and waits for it for `timeout`. An empty hook is no hook.
-/// A hook still running at the deadline is killed: the game does not start under it.
+/// Runs the pre-launch hook in `dir` and waits for it for `timeout`, and gives the wrapper the
+/// game is to be started by. An empty hook is no hook. A hook still running at the deadline is
+/// killed: the game does not start under it.
 ///
 /// The wrapper is read first: a typo in it would only stop the launch after the pre-launch hook
 /// had already done its work.
@@ -295,11 +295,11 @@ async fn run_pre_launch_hook(
     hooks: &Hooks,
     dir: &Path,
     timeout: Duration,
-) -> Result<(), InstanceError> {
-    parse_wrapper(hooks.wrapper())?;
+) -> Result<Option<Wrapper>, InstanceError> {
+    let wrapper = parse_wrapper(hooks.wrapper())?;
     let command = hooks.pre_launch();
     if command.trim().is_empty() {
-        return Ok(());
+        return Ok(wrapper);
     }
     let command = SerializableCommand::from_string(command, Some(dir)).map_err(|reason| {
         HookSpawnError::Invalid {
@@ -307,7 +307,8 @@ async fn run_pre_launch_hook(
             reason,
         }
     })?;
-    run_hook_command(&command, timeout).await
+    run_hook_command(&command, timeout).await?;
+    Ok(wrapper)
 }
 
 async fn run_hook_command(
