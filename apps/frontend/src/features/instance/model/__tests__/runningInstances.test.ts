@@ -371,4 +371,14 @@ describe('store: ended launches', () => {
     expect(store.state.instances.a).toBeUndefined();
     expect(store.state.instances.b?.isRunning).toBe(true);
   });
+
+  it('ends a recovered launch that was called off', () => {
+    const store = createRunningInstancesStore();
+
+    store.applyRecoveredLaunches(['a']);
+    store.applyLaunchChange('a', 'cancelling');
+    store.applyEndedLaunches(['a']);
+
+    expect(store.state.instances.a).toBeUndefined();
+  });
 });

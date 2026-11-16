@@ -256,7 +256,7 @@ export const createRunningInstancesStore = () => {
       apply((instances) =>
         ids.reduce(
           (current, id) =>
-            current[id]?.launch === 'launching'
+            current[id]?.launch !== undefined && !current[id].isRunning
               ? applyLaunchChange(current, id, undefined)
               : current,
           instances,

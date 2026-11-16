@@ -18,6 +18,12 @@ import {
 } from '../model/runningInstances';
 import { RunningInstancesContext } from '../model/runningInstancesContext';
 
+/**
+ * The instances whose launch was started by this page, so that a `launch` is waiting to see it
+ * end. A launch that is not here was recovered after a reload: nothing waits for it.
+ */
+const ownLaunches = new Set<string>();
+
 export const useInstanceActions = () => {
   const [
     context,
@@ -43,6 +49,7 @@ export const useInstanceActions = () => {
     }
 
     setLaunch(instance.id, 'launching');
+    ownLaunches.add(instance.id);
 
     try {
       const process = await launchInstance(instance.id);
@@ -55,6 +62,7 @@ export const useInstanceActions = () => {
       /* empty */
     }
 
+    ownLaunches.delete(instance.id);
     setLaunch(instance.id, undefined);
   };
 
@@ -73,7 +81,13 @@ export const useInstanceActions = () => {
       setLaunch(instance.id, 'cancelling');
 
       try {
-        await cancelLaunch(instance.id);
+        const found = await cancelLaunch(instance.id);
+
+        // No launch to call off: the game is starting. A launch of this page stops it when it
+        // returns; a recovered one has nobody to, and is left to the user to stop.
+        if (!found && !ownLaunches.has(instance.id)) {
+          setLaunch(instance.id, undefined);
+        }
       } catch {
         setLaunch(instance.id, 'launching');
       }

@@ -182,8 +182,8 @@ impl LaunchInstanceUseCase {
         // On network error (offline), unwrap_or(true) skips the check.
         // If something is missing, the full install runs with a progress bar.
         ensure_not_cancelled(cancel)?;
-        if instance.install_stage != InstanceInstallStage::Installed
-            || !self
+        let healthy = instance.install_stage == InstanceInstallStage::Installed
+            && self
                 .minecraft_health_service
                 .verify_files(MinecraftHealthParams {
                     game_version: instance.game_version.clone(),
@@ -192,8 +192,10 @@ impl LaunchInstanceUseCase {
                     java_path: instance.java_path_override(),
                 })
                 .await
-                .unwrap_or(true)
-        {
+                .unwrap_or(true);
+        // A call off during the check is not left to wait for a whole install.
+        ensure_not_cancelled(cancel)?;
+        if !healthy {
             self.instance_install_service
                 .execute(instance_id.clone(), false, None)
                 .await?;
@@ -584,6 +586,8 @@ mod tests {
         let result = run_hook_command(&hook, Duration::from_mins(5), &never()).await;
 
         let grandchild = grandchild_pid(&pid_file).await;
+        // A kill that wrongly came with the hook's end may take a moment to land.
+        tokio::time::sleep(Duration::from_millis(500)).await;
         let running = is_running(grandchild);
         kill(grandchild);
         assert!(result.is_ok(), "{result:?}");
