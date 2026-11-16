@@ -9,6 +9,12 @@ use serde::{Serialize, de::DeserializeOwned};
 
 pub use rmp_serde::{decode::Error as DecodeError, encode::Error as EncodeError};
 
+/// Whether `bytes` start a msgpack map: what every struct on the boundary must be.
+#[must_use]
+pub fn is_map(bytes: &[u8]) -> bool {
+    matches!(bytes.first(), Some(0x80..=0x8f | 0xde | 0xdf))
+}
+
 /// The bytes to hand to the other side.
 ///
 /// # Errors
@@ -67,9 +73,7 @@ mod tests {
         )))
         .unwrap();
 
-        // Map headers: fixmap is 0x80..=0x8f.
-        assert_eq!(ok[0] & 0xf0, 0x80);
-        assert_eq!(err[0] & 0xf0, 0x80);
+        assert!(is_map(&ok) && is_map(&err));
         assert!(matches!(
             decode::<HostResult<()>>(&ok),
             Ok(HostResult::Ok(()))

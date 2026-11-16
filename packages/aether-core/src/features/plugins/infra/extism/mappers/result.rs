@@ -69,6 +69,10 @@ mod tests {
             .expect("mapping never fails")
             .to_bytes()
             .expect("encodes");
+        assert!(
+            wire::is_map(bytes.as_ref()),
+            "the result is not a msgpack map"
+        );
         let decoded: HostResult<()> = wire::decode(bytes.as_ref()).expect("decodes");
         match decoded {
             HostResult::Err(error) => error,
@@ -89,6 +93,7 @@ mod tests {
         };
 
         let bytes = wire::encode(&response).expect("encodes");
+        assert!(wire::is_map(&bytes));
 
         assert!(
             bytes.len() < body.len() + 64,

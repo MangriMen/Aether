@@ -79,8 +79,8 @@ pub struct ContentVersionDto {
     /// The version's page, an `http` or `https` URL; empty when it has none. Any other value is
     /// dropped by the host.
     pub web_url: String,
-    /// The files of the version. Last, so that a plugin built before it existed, which the
-    /// positional msgpack encoding of the wire leaves without it, decodes with an empty list.
+    /// The files of the version. A plugin built before it existed leaves it out and decodes with
+    /// an empty list.
     #[serde(default)]
     pub files: Vec<ContentVersionFileDto>,
 }

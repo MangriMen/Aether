@@ -110,7 +110,7 @@ Some values are not msgpack at all:
 | What | Encoding |
 | --- | --- |
 | `log` message, the instance id of `instance_get_dir`, `instance_plugin_get_dir`, `list_content`, and the first argument of `enable_contents` / `disable_contents` | raw UTF-8 string |
-| `log` level, the version of `get_java` / `install_java` | integer (Extism `i64`) |
+| `log` level, the version of `get_java` / `install_java` | `u32`, 4 bytes little-endian, written to a memory block whose offset is the argument (as Extism passes every host-function argument) |
 | `get_id` result | raw UTF-8 string, not wrapped in a result |
 | the instance id given to a plugin's updater export | raw UTF-8 string |
 

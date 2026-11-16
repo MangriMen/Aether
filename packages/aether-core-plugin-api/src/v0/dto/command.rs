@@ -21,9 +21,7 @@ pub struct OutputDto {
     pub stderr: Vec<u8>,
     /// `stdout` hit the host's per-stream cap and was cut short.
     // `default` lets a plugin built against this DTO still decode a response from a host that
-    // predates the flags. The other way round does not work: the ABI encodes DTOs as
-    // fixed-length msgpack arrays, so a plugin built before the flags rejects a response that
-    // carries them, so the core is released before the plugins.
+    // predates the flags; a plugin built before them ignores the keys it does not know.
     #[serde(default)]
     pub stdout_truncated: bool,
     /// `stderr` hit the host's per-stream cap and was cut short.

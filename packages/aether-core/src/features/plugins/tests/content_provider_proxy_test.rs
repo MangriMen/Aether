@@ -127,6 +127,8 @@ fn encode<T: Serialize>(value: T) -> Vec<u8> {
 }
 
 fn decode<T: DeserializeOwned>(bytes: &[u8]) -> T {
+    // The host must write maps; a reader would accept arrays too.
+    assert!(wire::is_map(bytes), "arguments are not a msgpack map");
     wire::decode(bytes).expect("arguments should decode")
 }
 
