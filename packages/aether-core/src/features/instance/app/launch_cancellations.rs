@@ -74,6 +74,11 @@ impl RegisteredLaunch {
     /// off either comes first and is obeyed, or finds no launch and is told so.
     #[must_use = "a launch that was called off must not go on"]
     pub fn commit(self) -> bool {
+        self.leave() && !self.token.is_cancelled()
+    }
+
+    /// Takes the launch out of the registry, unless a newer one took its place. Whether it was in.
+    fn leave(&self) -> bool {
         let mut launches = self.registry.launches();
         let live = launches
             .get(&self.instance_id)
@@ -81,19 +86,13 @@ impl RegisteredLaunch {
         if live {
             launches.remove(&self.instance_id);
         }
-        live && !self.token.is_cancelled()
+        live
     }
 }
 
 impl Drop for RegisteredLaunch {
     fn drop(&mut self) {
-        let mut launches = self.registry.launches();
-        if launches
-            .get(&self.instance_id)
-            .is_some_and(|(key, _)| *key == self.key)
-        {
-            launches.remove(&self.instance_id);
-        }
+        self.leave();
     }
 }
 

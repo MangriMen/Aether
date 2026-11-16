@@ -54,7 +54,8 @@ export const RunningInstancesProvider: Component<
   onMount(() => {
     let disposed = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
-    let pending: string[] = [];
+    // The launches that were found on mount and are not over yet; `undefined` until then.
+    let pending: string[] | undefined;
 
     const poll = async () => {
       try {
@@ -64,35 +65,25 @@ export const RunningInstancesProvider: Component<
           return;
         }
 
-        store.applyEndedLaunches(
-          pending.filter((id) => !launching.includes(id)),
-        );
-        pending = pending.filter((id) => launching.includes(id));
+        if (pending === undefined) {
+          store.applyRecoveredLaunches(launching);
+          pending = launching;
+        } else {
+          store.applyEndedLaunches(
+            pending.filter((id) => !launching.includes(id)),
+          );
+          pending = pending.filter((id) => launching.includes(id));
+        }
       } catch (error) {
         logError('Failed to list launching instances:', error);
       }
 
-      if (pending.length > 0 && !disposed) {
+      if (pending?.length && !disposed) {
         timer = setTimeout(poll, RECOVERED_LAUNCH_POLL_MS);
       }
     };
 
-    void (async () => {
-      try {
-        pending = await instanceCommands.listLaunching();
-      } catch (error) {
-        logError('Failed to list launching instances:', error);
-
-        return;
-      }
-
-      if (disposed || pending.length === 0) {
-        return;
-      }
-
-      store.applyRecoveredLaunches(pending);
-      timer = setTimeout(poll, RECOVERED_LAUNCH_POLL_MS);
-    })();
+    void poll();
 
     onCleanup(() => {
       disposed = true;

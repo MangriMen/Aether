@@ -62,6 +62,7 @@ impl LaunchInstanceUseCase {
         minecraft_launch_command_service: Arc<dyn MinecraftLaunchCommandService>,
         process_start_service: Arc<dyn ProcessStartService>,
         instance_locks: Arc<InstanceLocks>,
+        cancellations: Arc<LaunchCancellations>,
     ) -> Self {
         Self {
             plugin_registry,
@@ -74,15 +75,8 @@ impl LaunchInstanceUseCase {
             minecraft_launch_command_service,
             process_start_service,
             instance_locks,
-            cancellations: Arc::default(),
+            cancellations,
         }
-    }
-
-    /// Registers the launches in `cancellations`, so that the user can call them off.
-    #[must_use]
-    pub fn with_cancellations(mut self, cancellations: Arc<LaunchCancellations>) -> Self {
-        self.cancellations = cancellations;
-        self
     }
 
     fn resolve_launch_settings(
@@ -154,7 +148,7 @@ impl LaunchInstanceUseCase {
         // After the lock, so that a launch refused for it never takes the place of the one that
         // holds it. Dropped before the lock.
         let launch = self.cancellations.register(&instance_id);
-        let cancel = &launch.token.clone();
+        let cancel = &launch.token;
         let settings = self.default_instance_settings_storage.get().await?;
         let mut instance = self.instance_storage.get(&instance_id).await?;
 
@@ -517,11 +511,16 @@ mod tests {
 
     /// A zombie is gone too: nothing may have reaped it yet.
     fn is_running(pid: sysinfo::Pid) -> bool {
+        with_process(pid, |process| {
+            process.status() != sysinfo::ProcessStatus::Zombie
+        })
+    }
+
+    /// Runs `f` on the process `pid`; false when there is none.
+    fn with_process(pid: sysinfo::Pid, f: impl FnOnce(&sysinfo::Process) -> bool) -> bool {
         let mut system = sysinfo::System::new().expect("system information");
         system.refresh_processes(sysinfo::ProcessesToUpdate::Some(&[pid]), true);
-        system
-            .process(pid)
-            .is_some_and(|process| process.status() != sysinfo::ProcessStatus::Zombie)
+        system.process(pid).is_some_and(f)
     }
 
     async fn wait_until_gone(pid: sysinfo::Pid) {
@@ -536,11 +535,7 @@ mod tests {
     }
 
     fn kill(pid: sysinfo::Pid) {
-        let mut system = sysinfo::System::new().expect("system information");
-        system.refresh_processes(sysinfo::ProcessesToUpdate::Some(&[pid]), true);
-        if let Some(process) = system.process(pid) {
-            process.kill();
-        }
+        with_process(pid, sysinfo::Process::kill);
     }
 
     #[tokio::test]

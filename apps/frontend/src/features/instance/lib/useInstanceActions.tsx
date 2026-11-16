@@ -99,11 +99,16 @@ export const useInstanceActions = () => {
       </span>
     );
 
-    if (block === 'running') {
+    if (block === 'running' || block === 'launching') {
+      // Stops the game, or calls the launch off while it has no game yet.
       const handleStop = async (e: MouseEvent) => {
         e.stopPropagation();
         await stop(instance);
-        await refresh();
+
+        if (block === 'running') {
+          await refresh();
+        }
+
         closeToast(id);
       };
 
@@ -111,36 +116,13 @@ export const useInstanceActions = () => {
         title,
         description: (
           <div class='gap-2 inline-flex w-full flex-col'>
-            {t('instance.stopToDelete')}
+            {block === 'running'
+              ? t('instance.stopToDelete')
+              : t('instance.removeWhileLaunching')}
             <Button
               class='w-full'
               variant='secondary'
               onClick={handleStop}
-              children={t('instance.stop')}
-            />
-          </div>
-        ),
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    if (block === 'launching') {
-      const handleCancel = async (e: MouseEvent) => {
-        e.stopPropagation();
-        await stop(instance);
-        closeToast(id);
-      };
-
-      const id = showToast({
-        title,
-        description: (
-          <div class='gap-2 inline-flex w-full flex-col'>
-            {t('instance.removeWhileLaunching')}
-            <Button
-              class='w-full'
-              variant='secondary'
-              onClick={handleCancel}
               children={t('instance.stop')}
             />
           </div>

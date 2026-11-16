@@ -449,21 +449,19 @@ impl AetherContainer {
             .launch_instance_uc
             .get_or_init(|| {
                 let start = self.process_start_service();
-                Arc::new(
-                    LaunchInstanceUseCase::new(
-                        self.plugins().registry.clone(),
-                        self.storage().instance_storage.clone(),
-                        self.storage().default_instance_settings_storage.clone(),
-                        self.location_info().clone(),
-                        self.storage().process_storage.clone(),
-                        self.instance_install_service(),
-                        self.health_service(),
-                        self.launch_command_service(),
-                        start,
-                        self.instance_locks.clone(),
-                    )
-                    .with_cancellations(self.launch_cancellations.clone()),
-                )
+                Arc::new(LaunchInstanceUseCase::new(
+                    self.plugins().registry.clone(),
+                    self.storage().instance_storage.clone(),
+                    self.storage().default_instance_settings_storage.clone(),
+                    self.location_info().clone(),
+                    self.storage().process_storage.clone(),
+                    self.instance_install_service(),
+                    self.health_service(),
+                    self.launch_command_service(),
+                    start,
+                    self.instance_locks.clone(),
+                    self.launch_cancellations.clone(),
+                ))
             })
             .clone()
     }
