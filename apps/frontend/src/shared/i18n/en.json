@@ -265,6 +265,7 @@
       "PARSE_FAILED": "Failed to parse Minecraft configuration",
       "STORAGE_FAILURE": "Minecraft storage failure",
       "INVALID_LOG_CONFIG_NAME": "The game log config has an unsafe name: {{name}}",
+      "UNSAFE_METADATA_PATH": "Unsafe {{entity_type}} name in the version metadata: {{value}}",
       "STORAGE": "General storage error",
       "entityType": {
         "GAME": "game folder",

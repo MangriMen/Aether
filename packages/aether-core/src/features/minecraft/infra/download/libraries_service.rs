@@ -11,7 +11,7 @@ use tracing::{debug, error, info, trace, warn};
 use crate::{
     features::{
         events::{ProgressBarId, ProgressService},
-        minecraft::{MinecraftDomainError, parse_rules, vanilla},
+        minecraft::{MinecraftDomainError, library_path, parse_rules, vanilla},
         settings::LocationInfo,
     },
     shared::{
@@ -107,7 +107,7 @@ impl<RC: RequestClient> LibrariesService<RC> {
         let mut candidates = Vec::new();
         for library in &version_info.libraries {
             if Self::should_download_library(library, java_arch, minecraft_updated) {
-                candidates.push((library, daedalus::get_path_from_artifact(&library.name)?));
+                candidates.push((library, library_path(&library.name)?));
             }
         }
         let missing = if force {

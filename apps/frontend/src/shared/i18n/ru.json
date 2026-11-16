@@ -265,6 +265,7 @@
       "PARSE_FAILED": "Не удалось прочитать конфигурацию Minecraft",
       "STORAGE_FAILURE": "Ошибка хранилища Minecraft",
       "INVALID_LOG_CONFIG_NAME": "Недопустимое имя конфигурации логов игры: {{name}}",
+      "UNSAFE_METADATA_PATH": "Небезопасное имя ({{entity_type}}) в метаданных версии: {{value}}",
       "STORAGE": "Общая ошибка хранилища",
       "entityType": {
         "GAME": "папка игры",

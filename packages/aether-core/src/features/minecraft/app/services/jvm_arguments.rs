@@ -7,7 +7,11 @@ use crate::features::{
     },
     settings::LocationInfo,
 };
-use crate::shared::{io::infra::canonicalize, java::domain::get_classpath_separator};
+use crate::shared::{
+    io::infra::canonicalize,
+    java::domain::get_classpath_separator,
+    safe_path::{Separators, parse_relative},
+};
 
 /// Canonicalizes `path` as a string, reporting a missing path as `entity_type`.
 fn canonical_string(
@@ -181,12 +185,24 @@ pub fn get_class_paths_jar<T: AsRef<str>>(
     Ok(paths.join(get_classpath_separator(java_arch)))
 }
 
+/// Where the library `coordinate` lies under the libraries directory, `/`-separated. Refused
+/// when a part of the coordinate would lead out of it (`..`, an empty group, a separator).
+pub fn library_path(coordinate: &str) -> Result<String, MinecraftDomainError> {
+    let path = daedalus::get_path_from_artifact(coordinate)?;
+    parse_relative(&path, Separators::SlashOrBackslash).map_err(|_| {
+        MinecraftDomainError::UnsafeMetadataPath {
+            entity_type: GamePathKind::Library,
+            value: coordinate.to_owned(),
+        }
+    })
+}
+
 pub fn get_lib_path(
     libraries_path: &Path,
     lib: &str,
     allow_not_exist: bool,
 ) -> Result<String, MinecraftDomainError> {
-    let full_path = libraries_path.join(daedalus::get_path_from_artifact(lib)?);
+    let full_path = libraries_path.join(library_path(lib)?);
 
     if allow_not_exist && !full_path.exists() {
         return Ok(full_path.to_string_lossy().into_owned());
@@ -363,6 +379,56 @@ mod tests {
         for allow in [true, false] {
             let err = get_lib_path(&e.libs, "justname", allow).unwrap_err();
             assert!(matches!(err, MinecraftDomainError::ParseFailed { .. }));
+        }
+    }
+
+    #[test]
+    fn library_path_should_refuse_a_coordinate_that_leaves_the_libraries_dir() {
+        for coordinate in [
+            "g:../../x:1",
+            "g:a:../../x",
+            "g:a:1@../../x",
+            ":a:1",
+            "g:a:1:../x",
+            r"g:a\..\b:1",
+            "..:a:1",
+            "g::1",
+        ] {
+            assert!(
+                matches!(
+                    library_path(coordinate),
+                    Err(MinecraftDomainError::UnsafeMetadataPath { .. }
+                        | MinecraftDomainError::ParseFailed { .. })
+                ),
+                "{coordinate} was accepted"
+            );
+        }
+    }
+
+    #[test]
+    fn library_path_should_report_an_unsafe_coordinate_with_its_value() {
+        let err = library_path("g:../../x:1").unwrap_err();
+
+        assert!(matches!(
+            err,
+            MinecraftDomainError::UnsafeMetadataPath { entity_type: GamePathKind::Library, ref value }
+                if value == "g:../../x:1"
+        ));
+    }
+
+    #[test]
+    fn library_path_should_keep_the_maven_layout_of_a_valid_coordinate() {
+        for (coordinate, expected) in [
+            ("com.example:foo:1.0", "com/example/foo/1.0/foo-1.0.jar"),
+            ("g:a:1@zip", "g/a/1/a-1.zip"),
+            ("g:a:1:natives-linux", "g/a/1/a-1-natives-linux.jar"),
+            ("g:a:1:data@zip", "g/a/1/a-1-data.zip"),
+            (
+                "org.lwjgl:lwjgl:3.3.3:natives-windows",
+                "org/lwjgl/lwjgl/3.3.3/lwjgl-3.3.3-natives-windows.jar",
+            ),
+        ] {
+            assert_eq!(library_path(coordinate).unwrap(), expected);
         }
     }
 
