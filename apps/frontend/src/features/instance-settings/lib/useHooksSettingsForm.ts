@@ -2,8 +2,9 @@ import type { FormStore } from '@formisch/solid';
 import type { Accessor } from 'solid-js';
 
 import { createForm, setInput } from '@formisch/solid';
-import { createEffect } from 'solid-js';
+import { createEffect, createMemo } from 'solid-js';
 
+import { FIELDS_CONFIG } from '../model/hooksFields';
 import {
   HooksSettingsSchema,
   type HooksSettingsSchemaInput,
@@ -26,27 +27,18 @@ export const useResetHooksSettingsFormValues = (
     }
   });
 
-  createEffect(() => {
-    const preLaunch = initialValues()?.preLaunch;
+  // Saving one hook refreshes the values of all of them; only a changed stored command may reset
+  // its field, or the refresh would wipe a command the user is still fixing (an invalid one is
+  // not saved).
+  for (const { key } of FIELDS_CONFIG) {
+    const command = createMemo(() => initialValues()?.[key]);
 
-    if (preLaunch !== undefined) {
-      setInput(form, { path: ['preLaunch'], input: preLaunch });
-    }
-  });
+    createEffect(() => {
+      const value = command();
 
-  createEffect(() => {
-    const wrapper = initialValues()?.wrapper;
-
-    if (wrapper !== undefined) {
-      setInput(form, { path: ['wrapper'], input: wrapper });
-    }
-  });
-
-  createEffect(() => {
-    const postExit = initialValues()?.postExit;
-
-    if (postExit !== undefined) {
-      setInput(form, { path: ['postExit'], input: postExit });
-    }
-  });
+      if (value !== undefined) {
+        setInput(form, { path: [key], input: value });
+      }
+    });
+  }
 };

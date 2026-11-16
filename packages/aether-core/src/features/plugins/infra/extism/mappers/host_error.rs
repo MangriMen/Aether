@@ -182,8 +182,7 @@ fn instance_dto(value: &InstanceError) -> InstanceErrorDto {
         | InstanceError::CachesBeingCleared
         | InstanceError::IconTooLarge { .. }
         | InstanceError::IconNotSupported
-        | InstanceError::PrelaunchCommandInvalid { .. }
-        | InstanceError::PrelaunchCommandSpawnFailed { .. }
+        | InstanceError::Hook(_)
         | InstanceError::PrelaunchCommandTimeout { .. }
         | InstanceError::NotBroken { .. }
         | InstanceError::Cancelled => Dto::ContentProviderError {
@@ -656,7 +655,9 @@ impl From<&ProcessError> for HostError {
         Self::ProcessError(match value {
             ProcessError::KillError { id } => ProcessErrorDto::KillError { id: id.clone() },
             ProcessError::WaitError { id } => ProcessErrorDto::WaitError { id: id.clone() },
-            ProcessError::Io(err) => ProcessErrorDto::Io(err.to_string()),
+            ProcessError::Io(_) | ProcessError::SpawnFailed { .. } => {
+                ProcessErrorDto::Io(value.to_string())
+            }
         })
     }
 }

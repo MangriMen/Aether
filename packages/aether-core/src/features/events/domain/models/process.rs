@@ -1,6 +1,6 @@
 use uuid::Uuid;
 
-use crate::features::instance::InstanceId;
+use crate::{features::instance::InstanceId, shared::serializable_command::HookSpawnError};
 
 #[derive(Clone, Debug)]
 pub struct ProcessEvent {
@@ -18,4 +18,7 @@ pub struct ProcessEvent {
 pub enum ProcessEventType {
     Launched,
     Finished,
+    /// The post-exit hook could not be started; sent after `Finished`. A hook that ran and
+    /// failed is not reported: nothing waits for it.
+    PostExitHookFailed(HookSpawnError),
 }

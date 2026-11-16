@@ -165,6 +165,7 @@ const withTranslatedReason = (
 const TRANSLATED_NAMES = {
   field: 'field',
   entity_type: 'entityType',
+  hook: 'kind',
 } as const;
 
 /**

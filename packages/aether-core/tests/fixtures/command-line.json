@@ -1,0 +1,147 @@
+{
+  "description": "How a hook command line (pre-launch, wrapper, post-exit) is read. Shared by the core parser (shared/serializable_command) and the settings form: both must give the same program and args, or the same error code, for every input. Words are split on whitespace (JavaScript's \\s); \"...\" keeps spaces and drops the quotes; \"\" inside quotes is a literal quote; backslashes and single quotes are plain characters. An empty program is EMPTY; a quote that is never closed is UNCLOSED_QUOTE.",
+  "vectors": [
+    {
+      "name": "program and arguments",
+      "input": "java -jar app.jar",
+      "program": "java",
+      "args": ["-jar", "app.jar"]
+    },
+    {
+      "name": "surrounding and repeated whitespace",
+      "input": "  prime-run   %command%  ",
+      "program": "prime-run",
+      "args": ["%command%"]
+    },
+    {
+      "name": "tabs and newlines separate words",
+      "input": "mangohud\t--dlsym\r\n",
+      "program": "mangohud",
+      "args": ["--dlsym"]
+    },
+    {
+      "name": "no-break space separates words as in JavaScript",
+      "input": "mangohud\u00a0--dlsym",
+      "program": "mangohud",
+      "args": ["--dlsym"]
+    },
+    {
+      "name": "byte order mark separates words as in JavaScript",
+      "input": "\ufeffmangohud\ufeff--dlsym",
+      "program": "mangohud",
+      "args": ["--dlsym"]
+    },
+    {
+      "name": "next line character is part of a word as in JavaScript",
+      "input": "\u0085 a\u0085b",
+      "program": "\u0085",
+      "args": ["a\u0085b"]
+    },
+    {
+      "name": "environment through env",
+      "input": "env VAR=1 prime-run",
+      "program": "env",
+      "args": ["VAR=1", "prime-run"]
+    },
+    {
+      "name": "quoted Windows path with spaces",
+      "input": "\"C:\\Program Files\\x.exe\" --flag",
+      "program": "C:\\Program Files\\x.exe",
+      "args": ["--flag"]
+    },
+    {
+      "name": "unquoted Windows path with spaces is two words",
+      "input": "C:\\Program Files\\x.exe",
+      "program": "C:\\Program",
+      "args": ["Files\\x.exe"]
+    },
+    {
+      "name": "backslashes are plain characters",
+      "input": "C:\\tools\\hook.bat a\\b \\\\server\\share",
+      "program": "C:\\tools\\hook.bat",
+      "args": ["a\\b", "\\\\server\\share"]
+    },
+    {
+      "name": "backslash before a closing quote does not escape it",
+      "input": "\"C:\\dir\\\" next",
+      "program": "C:\\dir\\",
+      "args": ["next"]
+    },
+    {
+      "name": "quotes inside a word",
+      "input": "java -Dx=\"a b\" -Dy=c",
+      "program": "java",
+      "args": ["-Dx=a b", "-Dy=c"]
+    },
+    {
+      "name": "doubled quote inside quotes is a literal quote",
+      "input": "echo \"say \"\"hi\"\"\"",
+      "program": "echo",
+      "args": ["say \"hi\""]
+    },
+    {
+      "name": "only a doubled quote inside quotes",
+      "input": "echo \"\"\"\"",
+      "program": "echo",
+      "args": ["\""]
+    },
+    {
+      "name": "empty quoted argument is kept",
+      "input": "echo \"\" x",
+      "program": "echo",
+      "args": ["", "x"]
+    },
+    {
+      "name": "empty quotes inside a word join its parts",
+      "input": "echo a\"\"b",
+      "program": "echo",
+      "args": ["ab"]
+    },
+    {
+      "name": "single quotes are plain characters",
+      "input": "echo 'a b'",
+      "program": "echo",
+      "args": ["'a", "b'"]
+    },
+    {
+      "name": "empty",
+      "input": "",
+      "error": "EMPTY"
+    },
+    {
+      "name": "whitespace only",
+      "input": "  \t\r\n ",
+      "error": "EMPTY"
+    },
+    {
+      "name": "byte order mark only",
+      "input": "\ufeff",
+      "error": "EMPTY"
+    },
+    {
+      "name": "empty quoted program",
+      "input": "\"\" arg",
+      "error": "EMPTY"
+    },
+    {
+      "name": "unclosed quote",
+      "input": "echo \"a b",
+      "error": "UNCLOSED_QUOTE"
+    },
+    {
+      "name": "unclosed quote in the program",
+      "input": "\"C:\\Program Files\\x.exe --flag",
+      "error": "UNCLOSED_QUOTE"
+    },
+    {
+      "name": "doubled quote at the end does not close",
+      "input": "echo \"a\"\"",
+      "error": "UNCLOSED_QUOTE"
+    },
+    {
+      "name": "lone quote",
+      "input": "\"",
+      "error": "UNCLOSED_QUOTE"
+    }
+  ]
+}

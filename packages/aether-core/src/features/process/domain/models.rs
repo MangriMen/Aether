@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use chrono::{DateTime, Utc};
 
 use uuid::Uuid;
@@ -13,8 +15,27 @@ pub enum ProcessError {
     #[error("Failed to wait process {id}")]
     WaitError { id: String },
 
+    /// The program of the command could not be started. Names the program only: the arguments
+    /// of a launch hold the access token.
+    #[error("Failed to start \"{program}\": {source}")]
+    SpawnFailed {
+        program: String,
+        #[source]
+        source: Arc<std::io::Error>,
+    },
+
     #[error(transparent)]
     Io(#[from] IoError),
+}
+
+/// What stopping a started process ends.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum KillScope {
+    /// The started process alone.
+    Process,
+    /// The started process and every process it starts: a job object on Windows, a process
+    /// group on Unix.
+    Tree,
 }
 
 #[derive(Debug, Clone)]
