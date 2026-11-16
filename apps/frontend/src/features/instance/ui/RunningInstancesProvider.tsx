@@ -1,6 +1,8 @@
 import type { Component, JSX } from 'solid-js';
 
 import { useRunningProcessesListener } from '@/features/process';
+import { processCommands } from '@/platform/ipc';
+import { logError } from '@/shared/log';
 
 import type { Instance } from '../model/instance';
 import type { RunningInstancesContextValue } from '../model/runningInstancesContext';
@@ -22,6 +24,20 @@ export const RunningInstancesProvider: Component<
         return context.instances[id];
       },
       setIsLoading: store.applyLoadingChange,
+      refresh: async () => {
+        try {
+          const processes = await processCommands.list();
+
+          store.applyProcessSnapshot(
+            processes.map((p) => ({
+              instanceId: p.instance_id,
+              processId: p.uuid,
+            })),
+          );
+        } catch (error) {
+          logError('Failed to list running processes:', error);
+        }
+      },
     },
   ];
 

@@ -16,7 +16,11 @@ use crate::features::instance::{
     InstanceWatcherService, RemoveInstanceUseCase, RemoveInstanceUseCasePort,
 };
 use crate::features::minecraft::ModLoader;
+use crate::features::process::ProcessStorage;
+use crate::features::process::{MinecraftProcessMetadata, ProcessError};
 use crate::features::settings::LocationInfo;
+use process_wrap::tokio::ChildWrapper;
+use std::process::ExitStatus;
 
 // ─── Minimal inline mock ───────────────────────────────────────
 
@@ -52,6 +56,60 @@ impl InstanceWatcherService for RecordingWatcher {
     async fn unwatch_instance(&self, _instance_id: &InstanceId) -> Result<(), InstanceError> {
         self.calls.lock().unwrap().push("unwatch");
         Ok(())
+    }
+}
+
+#[derive(Default)]
+struct FakeProcesses {
+    running: std::sync::Mutex<Vec<MinecraftProcessMetadata>>,
+}
+
+impl FakeProcesses {
+    fn start(&self, instance_id: &str) -> Uuid {
+        let process =
+            MinecraftProcessMetadata::new(InstanceId::try_from(instance_id.to_owned()).unwrap());
+        let id = process.uuid();
+        self.running.lock().unwrap().push(process);
+        id
+    }
+
+    fn finish(&self, process_id: Uuid) {
+        self.running
+            .lock()
+            .unwrap()
+            .retain(|p| p.uuid() != process_id);
+    }
+}
+
+#[async_trait]
+impl ProcessStorage for FakeProcesses {
+    async fn insert(
+        &self,
+        _: MinecraftProcessMetadata,
+        _: Box<dyn ChildWrapper>,
+    ) -> Result<(), ProcessError> {
+        unimplemented!()
+    }
+    async fn remove(&self, _: Uuid) -> Result<(), ProcessError> {
+        unimplemented!()
+    }
+    async fn list_metadata(&self) -> Result<Vec<MinecraftProcessMetadata>, ProcessError> {
+        Ok(self.running.lock().unwrap().clone())
+    }
+    async fn get_metadata(
+        &self,
+        _: Uuid,
+    ) -> Result<Option<MinecraftProcessMetadata>, ProcessError> {
+        unimplemented!()
+    }
+    async fn try_wait(&self, _: Uuid) -> Result<Option<Option<ExitStatus>>, ProcessError> {
+        unimplemented!()
+    }
+    async fn kill(&self, _: Uuid) -> Result<(), ProcessError> {
+        unimplemented!()
+    }
+    async fn was_killed(&self, _: Uuid) -> bool {
+        false
     }
 }
 
@@ -159,6 +217,7 @@ async fn should_clean_everything_when_an_instance_is_removed() {
         pack_storage,
         Arc::new(InstanceLocks::new()),
         no_op_reaper(storage),
+        Arc::new(FakeProcesses::default()),
     );
 
     // ── Act ──
@@ -212,6 +271,7 @@ async fn should_succeed_when_the_instance_to_remove_does_not_exist() {
         pack_storage,
         Arc::new(InstanceLocks::new()),
         no_op_reaper(storage),
+        Arc::new(FakeProcesses::default()),
     );
 
     // Deleting something that never existed should be fine
@@ -256,6 +316,7 @@ async fn should_wait_for_the_instance_lock_when_a_plan_holds_it_on_removal() {
         pack_storage,
         locks.clone(),
         no_op_reaper(storage),
+        Arc::new(FakeProcesses::default()),
     );
     let held = locks
         .lock(&InstanceId::try_from(instance_id.as_str()).unwrap())
@@ -331,6 +392,7 @@ async fn should_keep_records_when_the_instance_directory_cannot_be_removed() {
         Arc::new(SqlitePackStorage::new(pool.clone())),
         Arc::new(InstanceLocks::new()),
         no_op_reaper(storage),
+        Arc::new(FakeProcesses::default()),
     );
 
     let result = use_case
@@ -365,6 +427,7 @@ async fn should_watch_the_instance_again_when_the_directory_cannot_be_removed() 
         Arc::new(SqlitePackStorage::new(pool.clone())),
         Arc::new(InstanceLocks::new()),
         no_op_reaper(storage),
+        Arc::new(FakeProcesses::default()),
     );
 
     let result = use_case
@@ -427,6 +490,7 @@ async fn remove_with_assets(
         Arc::new(SqlitePackStorage::new(pool.clone())),
         Arc::new(InstanceLocks::new()),
         crate::features::instance::IconAssetReaper::new(storage, assets),
+        Arc::new(FakeProcesses::default()),
     );
     use_case
         .execute(InstanceId::try_from(id).unwrap())
@@ -565,6 +629,7 @@ async fn should_not_fail_the_removal_when_the_icon_asset_cannot_be_deleted() {
         Arc::new(SqlitePackStorage::new(pool.clone())),
         Arc::new(InstanceLocks::new()),
         crate::features::instance::IconAssetReaper::new(storage, Arc::new(FailingRemoveAssets)),
+        Arc::new(FakeProcesses::default()),
     );
 
     use_case
@@ -593,6 +658,7 @@ async fn should_call_off_the_install_of_the_game_when_the_instance_is_removed() 
         Arc::new(SqlitePackStorage::new(pool)),
         Arc::new(InstanceLocks::new()),
         no_op_reaper(storage.clone()),
+        Arc::new(FakeProcesses::default()),
     )
     .with_cancellations(installs.clone());
     let id = InstanceId::try_from(instance_id).unwrap();
@@ -637,6 +703,7 @@ async fn should_call_off_the_install_before_waiting_for_the_lock_of_the_instance
             Arc::new(SqlitePackStorage::new(pool)),
             locks.clone(),
             no_op_reaper(storage.clone()),
+            Arc::new(FakeProcesses::default()),
         )
         .with_cancellations(installs.clone()),
     );
@@ -689,6 +756,7 @@ async fn should_remove_only_the_folder_of_a_broken_legacy_instance_when_it_is_de
         Arc::new(SqlitePackStorage::new(pool)),
         Arc::new(InstanceLocks::new()),
         no_op_reaper(storage.clone()),
+        Arc::new(FakeProcesses::default()),
     ));
     let list = Arc::new(ListBrokenInstancesUseCase::new(
         storage.clone(),
@@ -705,4 +773,148 @@ async fn should_remove_only_the_folder_of_a_broken_legacy_instance_when_it_is_de
         std::fs::read(neighbour.join("world.dat")).unwrap(),
         b"worlds"
     );
+}
+
+#[tokio::test]
+async fn should_refuse_and_keep_everything_when_the_instance_is_running() {
+    let (_temp, location_info, pool) = create_test_infrastructure().await;
+    let instance_id = Uuid::new_v4().to_string();
+    let storage = Arc::new(SqliteInstanceStorage::new(pool.clone()));
+    let pack_storage = Arc::new(SqlitePackStorage::new(pool.clone()));
+    let file_service = Arc::new(FsInstanceFileService::new(
+        location_info.clone(),
+        crate::shared::limits::PluginSandboxLimits::default().max_instance_file_bytes,
+    ));
+    storage
+        .upsert(&create_instance(&instance_id))
+        .await
+        .unwrap();
+    seed_pack_data(&pool, &instance_id).await;
+    create_instance_dir(&location_info, &instance_id).await;
+    let processes = Arc::new(FakeProcesses::default());
+    let process_id = processes.start(&instance_id);
+    let use_case = RemoveInstanceUseCase::new(
+        storage.clone(),
+        Arc::new(NoOpWatcher),
+        file_service,
+        pack_storage,
+        Arc::new(InstanceLocks::new()),
+        no_op_reaper(storage),
+        processes.clone(),
+    );
+
+    let result = use_case
+        .execute(InstanceId::try_from(instance_id.clone()).unwrap())
+        .await;
+
+    assert!(matches!(
+        result,
+        Err(InstanceError::InstanceAlreadyRunning { process_id: p, .. }) if p == process_id
+    ));
+    let instances: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM instances")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(instances, 1);
+    let pack_files: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM pack_files")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert!(pack_files > 0);
+    assert!(
+        location_info
+            .instance_dir(&InstanceId::try_from(instance_id.as_str()).unwrap())
+            .exists()
+    );
+
+    processes.finish(process_id);
+    use_case
+        .execute(InstanceId::try_from(instance_id).unwrap())
+        .await
+        .unwrap();
+    let instances: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM instances")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(instances, 0);
+}
+
+#[tokio::test]
+async fn should_refuse_when_the_game_starts_while_the_removal_waits_for_the_lock() {
+    let (_temp, location_info, pool) = create_test_infrastructure().await;
+    let instance_id = Uuid::new_v4().to_string();
+    let storage = Arc::new(SqliteInstanceStorage::new(pool.clone()));
+    storage
+        .upsert(&create_instance(&instance_id))
+        .await
+        .unwrap();
+    create_instance_dir(&location_info, &instance_id).await;
+    let processes = Arc::new(FakeProcesses::default());
+    let locks = Arc::new(InstanceLocks::new());
+    let use_case = RemoveInstanceUseCase::new(
+        storage.clone(),
+        Arc::new(NoOpWatcher),
+        Arc::new(FsInstanceFileService::new(
+            location_info.clone(),
+            crate::shared::limits::PluginSandboxLimits::default().max_instance_file_bytes,
+        )),
+        Arc::new(SqlitePackStorage::new(pool)),
+        locks.clone(),
+        no_op_reaper(storage.clone()),
+        processes.clone(),
+    );
+    let id = InstanceId::try_from(instance_id.as_str()).unwrap();
+    let held = locks.lock(&id).await;
+
+    // Pending: the quick check found nothing and the removal waits for the lock.
+    let mut remove = std::pin::pin!(use_case.execute(id.clone()));
+    assert!(futures::poll!(&mut remove).is_pending());
+    let process_id = processes.start(&instance_id);
+    drop(held);
+
+    let result = remove.await;
+
+    assert!(matches!(
+        result,
+        Err(InstanceError::InstanceAlreadyRunning { process_id: p, .. }) if p == process_id
+    ));
+    assert!(storage.get(&id).await.is_ok());
+    assert!(location_info.instance_dir(&id).exists());
+}
+
+#[tokio::test]
+async fn should_not_call_off_the_install_when_the_removal_is_refused_for_a_running_game() {
+    let (_temp, location_info, pool) = create_test_infrastructure().await;
+    let instance_id = Uuid::new_v4().to_string();
+    let storage = Arc::new(SqliteInstanceStorage::new(pool.clone()));
+    storage
+        .upsert(&create_instance(&instance_id))
+        .await
+        .unwrap();
+    let installs = Arc::new(crate::features::instance::InstallCancellations::default());
+    let processes = Arc::new(FakeProcesses::default());
+    processes.start(&instance_id);
+    let use_case = RemoveInstanceUseCase::new(
+        storage.clone(),
+        Arc::new(NoOpWatcher),
+        Arc::new(FsInstanceFileService::new(
+            location_info,
+            crate::shared::limits::PluginSandboxLimits::default().max_instance_file_bytes,
+        )),
+        Arc::new(SqlitePackStorage::new(pool)),
+        Arc::new(InstanceLocks::new()),
+        no_op_reaper(storage),
+        processes,
+    )
+    .with_cancellations(installs.clone());
+    let id = InstanceId::try_from(instance_id).unwrap();
+    let install = installs.register(&id);
+
+    let result = use_case.execute(id).await;
+
+    assert!(matches!(
+        result,
+        Err(InstanceError::InstanceAlreadyRunning { .. })
+    ));
+    assert!(!install.token.is_cancelled());
 }

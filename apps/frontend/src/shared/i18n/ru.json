@@ -650,6 +650,8 @@
     },
     "failedToRemove": "Не удалось удалить {{name}}",
     "removeForce": "Удалить принудительно",
+    "stopToDelete": "Остановите игру, чтобы удалить",
+    "removeWhileLaunching": "Игра запускается. Повторите, когда она запустится.",
     "failedToRemoveDescription": "Инстанс все еще устанавливается или запущен",
     "instanceNotFound": "Инстанс не найден",
     "notCompatibleWithContent": "Этот инстанс несовместим с этим контентом",
