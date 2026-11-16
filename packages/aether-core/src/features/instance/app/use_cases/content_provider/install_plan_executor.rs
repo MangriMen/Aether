@@ -56,10 +56,17 @@
 //! Server sources are skipped, later sources win over earlier ones, and planned files win over
 //! overrides. Their count and bytes are bounded over the whole plan, the bytes counted while
 //! staging so an archive declaring less than it holds is still refused. Overrides overwrite their
-//! paths on every update and are not recorded under the plan's origin, so no update removes them.
+//! paths on every update. One in a content folder (`mods/x.jar`, not deeper, not disabled) is
+//! recorded under the plan's origin, as a planned file is: the next update replaces it, and
+//! removes it when the pack drops it, so an instance never holds two versions of a mod the pack
+//! ships as an override. An override over a file another plan installed is left out; any other
+//! (a config, a nested file, a disabled one) is not recorded, so no update removes it, and the
+//! record of the plan's own file at such a path goes while the file stays. Overrides are applied
+//! before the removals, and their paths are never among them. A pack installed before this was
+//! not recorded this way and is not migrated.
 
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     path::{Path, PathBuf},
     sync::{
         Arc,
@@ -110,7 +117,8 @@ use crate::{
 };
 pub(super) use installed_state::is_pack_of;
 use installed_state::{
-    diff_against_installed, dropped_paths, select_files, without_separate_installs,
+    diff_against_installed, dropped_paths, is_recorded_override, override_key, select_files,
+    without_separate_installs,
 };
 pub use staging::remove_plan_leftovers;
 use staging::{PlanDirs, remove_staging};
@@ -747,6 +755,16 @@ struct PlanOverrides {
 }
 
 impl PlanOverrides {
+    /// The paths the overrides write, as [`dropped_paths`] compares them.
+    fn overridden_keys(&self) -> HashSet<String> {
+        self.sources
+            .iter()
+            .flat_map(|(_, files)| files)
+            .filter_map(|file| ContentPath::parse(&file.relative_path).ok())
+            .map(|path| override_key(&path))
+            .collect()
+    }
+
     fn file_count(&self) -> usize {
         self.sources.iter().map(|(_, files)| files.len()).sum()
     }
@@ -915,7 +933,7 @@ impl InstallPlanExecutor {
         // The bar was started before the refs are resolved and the instance is hashed, so that
         // slow part can be called off too; it is sized once the work is known.
         let (installed, diff) = progress
-            .unless_cancelled(self.diff_plan(files, &target, &origin, &game))
+            .unless_cancelled(self.diff_plan(files, &target, &origin, &game, &overrides))
             .await?;
         let event_type = self.pack_event(&target, &origin).await;
         progress
@@ -938,6 +956,7 @@ impl InstallPlanExecutor {
         target: &InstallTarget,
         origin: &PlanOrigin,
         game: &TargetGame,
+        overrides: &PlanOverrides,
     ) -> Result<(InstalledState, InstallDiff), InstanceError> {
         let entries = self
             .resolve_all_refs(files, &origin.provider_id, game)
@@ -946,7 +965,13 @@ impl InstallPlanExecutor {
         let records = self.records_of(target).await?;
         let entries = without_separate_installs(entries, &records, origin);
         let installed = self
-            .installed_state(target, origin, records, &entries)
+            .installed_state(
+                target,
+                origin,
+                records,
+                &entries,
+                &overrides.overridden_keys(),
+            )
             .await?;
         let diff = diff_against_installed(entries, &installed);
         Ok((installed, diff))
@@ -1008,9 +1033,18 @@ impl InstallPlanExecutor {
                     &mut undo,
                 )
                 .await?;
+                // Before the removals: the paths the overrides write are never among them, and a
+                // failure here leaves the old files as they were.
+                self.apply_overrides(
+                    &instance_id,
+                    origin,
+                    &installed.records,
+                    staged_overrides,
+                    progress,
+                    &mut undo,
+                )
+                .await?;
                 self.remove_dropped(&instance_id, &diff.to_remove, &mut undo)
-                    .await?;
-                self.apply_overrides(&instance_id, staged_overrides, progress, &mut undo)
                     .await
             }
             .await;
@@ -1218,6 +1252,7 @@ impl InstallPlanExecutor {
         origin: &PlanOrigin,
         records: HashMap<ContentPath, PackFile>,
         entries: &[DownloadEntry],
+        overridden: &HashSet<String>,
     ) -> Result<InstalledState, InstanceError> {
         let InstallTarget::Existing { instance_id, .. } = target else {
             return Ok(InstalledState::default());
@@ -1236,7 +1271,7 @@ impl InstallPlanExecutor {
         let planned = found.into_iter().flatten().collect();
 
         let mut dropped = Vec::new();
-        for content_path in dropped_paths(&records, origin, entries) {
+        for content_path in dropped_paths(&records, origin, entries, overridden) {
             dropped.push(DroppedFile {
                 disabled: self.is_disabled(instance_id, &content_path).await,
                 record: records[&content_path].clone(),
@@ -1455,20 +1490,14 @@ impl InstallPlanExecutor {
                     .get(&entry.relative_path)
                     .filter(|record| record.hash == sha1);
 
-                let mut pack_file = PackFile {
-                    file_name: entry.relative_path.file_name().to_owned(),
-                    name: entry
-                        .name
-                        .or_else(|| same_bytes.and_then(|record| record.name.clone())),
-                    hash: sha1,
-                    download: None,
-                    option: None,
-                    side: Some(entry.side),
-                    update_provider_id: same_bytes
-                        .and_then(|record| record.update_provider_id.clone()),
-                    update: same_bytes.and_then(|record| record.update.clone()),
-                    installed_by: Some(origin.clone()),
-                };
+                let mut pack_file = recorded_file(
+                    origin,
+                    &entry.relative_path,
+                    entry.name,
+                    sha1,
+                    entry.side,
+                    same_bytes,
+                );
 
                 if let Some(resolved) = entry.resolved {
                     pack_file.update_provider_id = Some(resolved.provider_id.clone());
@@ -1496,21 +1525,51 @@ impl InstallPlanExecutor {
     }
 
     /// Move the staged overrides into the instance, over whatever is at their paths; a path the
-    /// user disabled stays disabled.
+    /// user disabled stays disabled. A file of a content folder is recorded as `origin`'s, so
+    /// that the next plan of the pack replaces it and removes it when the pack drops it.
+    ///
+    /// An override over a file another plan installed is left out: that file stays the other's.
+    /// A record of `origin`'s at a path an override takes without recording (a config) goes,
+    /// the file stays.
     async fn apply_overrides(
         &self,
         instance_id: &InstanceId,
+        origin: &PlanOrigin,
+        records: &HashMap<ContentPath, PackFile>,
         staged: Vec<StagedOverride>,
         progress: &PlanProgress,
         undo: &mut Undo,
     ) -> Result<(), InstanceError> {
+        let by_key: HashMap<String, (&ContentPath, &PackFile)> = records
+            .iter()
+            .map(|(content_path, record)| (content_path.file_system_key(), (content_path, record)))
+            .collect();
+        let mut paths = Vec::new();
+        let mut files = Vec::new();
+        let mut unrecorded = Vec::new();
+
         for StagedOverride {
             relative_path,
             path,
+            side,
         } in staged
         {
             // The same rule as when the overrides were checked, as a type from here on.
             let relative_path = ContentPath::parse(&relative_path)?;
+            let existing = by_key.get(&override_key(&relative_path)).copied();
+            if let Some((owned_path, record)) = existing
+                && record
+                    .installed_by
+                    .as_ref()
+                    .is_some_and(|installed_by| installed_by != origin)
+            {
+                tracing::info!(
+                    "Override \"{relative_path}\" skipped: \"{owned_path}\" is installed by                      another plan"
+                );
+                progress.step("Installing").await;
+                continue;
+            }
+
             let disabled = self
                 .content_file_service
                 .locate_content_file(instance_id, &relative_path)
@@ -1519,12 +1578,55 @@ impl InstallPlanExecutor {
             let install_path = if disabled {
                 format!("{relative_path}{DISABLED_SUFFIX}")
             } else {
-                relative_path.into_string()
+                relative_path.as_str().to_owned()
             };
 
+            // Before the file moves into the instance.
+            let recorded_sha1 = if is_recorded_override(&relative_path) {
+                Some(sha1_of(&path, None).await?)
+            } else {
+                None
+            };
             self.put_file(instance_id, &install_path, &path, undo)
                 .await?;
             progress.step("Installing").await;
+
+            if let Some(sha1) = recorded_sha1 {
+                let same_bytes = existing
+                    .map(|(_, record)| record)
+                    .filter(|record| record.hash == sha1);
+                if let Some((owned_path, _)) = existing
+                    && *owned_path != relative_path
+                {
+                    unrecorded.push(owned_path.clone());
+                }
+                files.push(recorded_file(
+                    origin,
+                    &relative_path,
+                    None,
+                    sha1,
+                    side,
+                    same_bytes,
+                ));
+                paths.push(relative_path);
+            } else if let Some((owned_path, record)) = existing
+                && record.installed_by.as_ref() == Some(origin)
+            {
+                unrecorded.push(owned_path.clone());
+            }
+        }
+
+        undo.records
+            .extend(paths.iter().chain(&unrecorded).cloned());
+        if !paths.is_empty() {
+            self.pack_storage
+                .update_pack_file_many(instance_id, &paths, &files)
+                .await?;
+        }
+        if !unrecorded.is_empty() {
+            self.pack_storage
+                .remove_pack_file_many(instance_id, &unrecorded)
+                .await?;
         }
 
         Ok(())
@@ -1562,6 +1664,30 @@ impl InstallPlanExecutor {
         self.pack_storage
             .remove_pack_file_many(instance_id, content_paths)
             .await
+    }
+}
+
+/// A file of `origin`'s as the pack storage records it. The side is the plan's, and so is the
+/// name when it has one; update info, and a name the plan lacks, are kept from the old record
+/// while the bytes are the same (`same_bytes`).
+fn recorded_file(
+    origin: &PlanOrigin,
+    content_path: &ContentPath,
+    name: Option<String>,
+    sha1: FileHash,
+    side: FileSide,
+    same_bytes: Option<&PackFile>,
+) -> PackFile {
+    PackFile {
+        file_name: content_path.file_name().to_owned(),
+        name: name.or_else(|| same_bytes.and_then(|record| record.name.clone())),
+        hash: sha1,
+        download: None,
+        option: None,
+        side: Some(side),
+        update_provider_id: same_bytes.and_then(|record| record.update_provider_id.clone()),
+        update: same_bytes.and_then(|record| record.update.clone()),
+        installed_by: Some(origin.clone()),
     }
 }
 

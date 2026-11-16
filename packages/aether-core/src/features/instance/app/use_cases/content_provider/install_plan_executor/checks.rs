@@ -85,7 +85,7 @@ impl InstallPlanExecutor {
             let mut seen = HashSet::new();
             let mut kept = Vec::with_capacity(listed.len());
 
-            for file in listed {
+            for mut file in listed {
                 ContentPath::parse(&file.relative_path)?;
 
                 if !seen.insert(file.relative_path.clone()) {
@@ -102,6 +102,7 @@ impl InstallPlanExecutor {
                     continue;
                 }
 
+                file.side = side;
                 kept.push(file);
             }
 

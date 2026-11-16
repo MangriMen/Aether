@@ -5,7 +5,8 @@ use std::collections::{HashMap, HashSet};
 
 use super::{DownloadEntry, InstallDiff, InstalledState, PlannedFile, UnchangedFile};
 use crate::features::instance::{
-    ContentPath, FileSide, InstallFileEntry, Instance, PackFile, PlanOrigin,
+    ContentPath, ContentType, FileSide, InstallFileEntry, Instance, PackFile, PlanOrigin,
+    app::DISABLED_SUFFIX,
 };
 
 /// The files an instance gets when nobody chose otherwise.
@@ -85,15 +86,18 @@ pub(super) fn without_separate_installs(
 /// one version of a content.
 ///
 /// A path that differs from a planned one only in case is left alone where the file system
-/// ignores case (Windows, macOS): there it is the planned file.
+/// ignores case (Windows, macOS): there it is the planned file. So is a path an override
+/// writes (`overridden`, as [`override_key`] gives them): the override puts the file there anew.
 pub(super) fn dropped_paths(
     records: &HashMap<ContentPath, PackFile>,
     origin: &PlanOrigin,
     entries: &[DownloadEntry],
+    overridden: &HashSet<String>,
 ) -> Vec<ContentPath> {
     let planned: HashSet<String> = entries
         .iter()
         .map(|entry| entry.relative_path.file_system_key())
+        .chain(overridden.iter().cloned())
         .collect();
     let replaced = |record: &PackFile| {
         entries.iter().any(|entry| {
@@ -115,6 +119,32 @@ pub(super) fn dropped_paths(
 
     dropped.sort();
     dropped
+}
+
+/// The key an override's path is compared under with the recorded ones: as the file system tells
+/// paths apart, and for the enabled file when the override is the disabled one.
+pub(super) fn override_key(path: &ContentPath) -> String {
+    let key = path.file_system_key();
+    match key.strip_suffix(DISABLED_SUFFIX) {
+        Some(enabled) => enabled.to_owned(),
+        None => key,
+    }
+}
+
+/// Whether the file an override writes is recorded as its plan's: a file of a content folder
+/// (`mods/x.jar`, not deeper), which is what `list_content` lists and a plan replaces by name.
+/// Any other override (a config, a file in a subfolder) is the user's from then on, and so is a
+/// disabled one, which stays as the pack shipped it.
+pub(super) fn is_recorded_override(path: &ContentPath) -> bool {
+    let key = path.file_system_key();
+    let mut segments = key.split('/');
+    let (Some(folder), Some(file), None) = (segments.next(), segments.next(), segments.next())
+    else {
+        return false;
+    };
+
+    !file.ends_with(DISABLED_SUFFIX)
+        && ContentType::iterator().any(|content_type| content_type.get_folder() == folder)
 }
 
 /// What to download, keep and remove for the plan's `entries` given what the instance has.
