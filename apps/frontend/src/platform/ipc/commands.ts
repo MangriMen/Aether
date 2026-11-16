@@ -101,6 +101,7 @@ export const instanceCommands = {
   edit: withIdempotency(instanceRawCommands.edit),
   remove: withIdempotency(instanceRawCommands.remove),
   launch: withIdempotency(instanceRawCommands.launch),
+  listLaunching: instanceRawCommands.listLaunching,
   stop: withIdempotency(instanceRawCommands.stop),
   importContents: withIdempotency(instanceRawCommands.importContents),
   listContent: instanceRawCommands.listContent,

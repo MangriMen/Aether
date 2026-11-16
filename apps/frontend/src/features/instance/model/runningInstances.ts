@@ -35,8 +35,8 @@ export const applyRunningProcessUpdate = (
     ...instances,
     [update.instanceId]: {
       processId: update.processId,
-      isLoading: false,
       isRunning: true,
+      isLoading: false,
     },
   };
 };
@@ -69,12 +69,12 @@ export const applyProcessSnapshot = (
 };
 
 /**
- * The process to stop, if there is one: a running game is stopped whatever the install stage
- * says, a launch in progress has nothing to stop yet.
+ * Whether the instance has something to stop: a game that runs, or a launch that has no game
+ * yet. Which of the two is for the backend to tell.
  */
-export const getStoppableProcessId = (
-  running: { processId?: string; isLoading: boolean } | undefined,
-): string | undefined => (running?.isLoading ? undefined : running?.processId);
+export const isStoppable = (
+  running: { isRunning: boolean; isLaunching?: boolean } | undefined,
+): boolean => running?.isRunning === true || running?.isLaunching === true;
 
 export type RemovalBlock = 'running' | 'launching' | 'notInstalled';
 
@@ -131,6 +131,27 @@ export const applyLoadingChange = (
 };
 
 /**
+ * Applies the start or the end of a launch: the loading flag follows it, and a launch that is
+ * over leaves what it left, as `applyLoadingChange` does.
+ */
+export const applyLaunchChange = (
+  instances: RunningInstancesState,
+  id: string,
+  isLaunching: boolean,
+): RunningInstancesState => {
+  const next = applyLoadingChange(instances, id, isLaunching);
+  const entry = next[id];
+
+  if (entry === undefined) {
+    return next;
+  }
+
+  const { isLaunching: _previous, ...rest } = entry;
+
+  return { ...next, [id]: isLaunching ? { ...rest, isLaunching } : rest };
+};
+
+/**
  * The store of running instances. A store setter merges an object into the state, so a
  * removed entry would stay; reconcile replaces the map and drops the keys that are gone.
  */
@@ -154,5 +175,7 @@ export const createRunningInstancesStore = () => {
     ) => apply((instances) => applyProcessSnapshot(instances, processes)),
     applyLoadingChange: (id: string, isLoading: boolean) =>
       apply((instances) => applyLoadingChange(instances, id, isLoading)),
+    applyLaunchChange: (id: string, isLaunching: boolean) =>
+      apply((instances) => applyLaunchChange(instances, id, isLaunching)),
   };
 };

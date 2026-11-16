@@ -7,6 +7,7 @@ import { logError } from '@/shared/log';
 import type { Instance } from '../model/instance';
 import type { RunningInstancesContextValue } from '../model/runningInstancesContext';
 
+import { useLaunchStateListener } from '../api/useLaunchStateListener';
 import { createRunningInstancesStore } from '../model/runningInstances';
 import { RunningInstancesContext } from '../model/runningInstancesContext';
 
@@ -42,6 +43,8 @@ export const RunningInstancesProvider: Component<
   ];
 
   useRunningProcessesListener(store.applyProcessUpdate);
+
+  useLaunchStateListener(store.applyLaunchChange);
 
   return (
     <RunningInstancesContext.Provider value={context}>

@@ -125,6 +125,12 @@ pub trait LaunchInstanceWithActiveAccountUseCasePort: Send + Sync {
     ) -> Result<MinecraftProcessMetadata, InstanceError>;
 }
 
+/// Stops what the instance is doing to run the game: its launch, or its game.
+#[async_trait]
+pub trait StopInstanceUseCasePort: Send + Sync {
+    async fn execute(&self, instance_id: InstanceId) -> Result<(), InstanceError>;
+}
+
 // ── Content management ──
 
 #[async_trait]

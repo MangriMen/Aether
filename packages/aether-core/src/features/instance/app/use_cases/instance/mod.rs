@@ -12,6 +12,7 @@ mod list_importers;
 mod list_instances;
 mod remove_instance;
 mod reset_stuck_install_stages;
+mod stop_instance;
 mod update_instance;
 
 pub use broken_instances::*;
@@ -28,4 +29,5 @@ pub use list_importers::*;
 pub use list_instances::*;
 pub use remove_instance::*;
 pub use reset_stuck_install_stages::*;
+pub use stop_instance::*;
 pub use update_instance::*;

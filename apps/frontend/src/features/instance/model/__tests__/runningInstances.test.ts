@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  applyLaunchChange,
   applyLoadingChange,
   applyProcessSnapshot,
   applyRunningProcessUpdate,
   createRunningInstancesStore,
   getRemovalBlock,
-  getStoppableProcessId,
+  isStoppable,
 } from '../runningInstances';
 
 describe('getRemovalBlock', () => {
@@ -49,24 +50,15 @@ describe('getRemovalBlock', () => {
   });
 });
 
-describe('getStoppableProcessId', () => {
-  it('gives the process of a running game', () => {
-    expect(
-      getStoppableProcessId({
-        processId: 'p1',
-        isLoading: false,
-      }),
-    ).toBe('p1');
+describe('isStoppable', () => {
+  it('stops a game that runs and a launch that has no game yet', () => {
+    expect(isStoppable({ isRunning: true })).toBe(true);
+    expect(isStoppable({ isRunning: false, isLaunching: true })).toBe(true);
   });
 
-  it('gives nothing while a launch is in progress or when nothing runs', () => {
-    expect(
-      getStoppableProcessId({ processId: 'p1', isLoading: true }),
-    ).toBeUndefined();
-    expect(
-      getStoppableProcessId({ processId: undefined, isLoading: false }),
-    ).toBeUndefined();
-    expect(getStoppableProcessId(undefined)).toBeUndefined();
+  it('has nothing to stop otherwise', () => {
+    expect(isStoppable({ isRunning: false })).toBe(false);
+    expect(isStoppable(undefined)).toBe(false);
   });
 });
 
@@ -235,5 +227,69 @@ describe('createRunningInstancesStore', () => {
       isLoading: false,
       isRunning: true,
     });
+  });
+});
+
+describe('applyLaunchChange', () => {
+  it('marks a launch and leaves nothing behind when it fails', () => {
+    const launching = applyLaunchChange({}, 'a', true);
+
+    expect(launching.a).toEqual({
+      processId: undefined,
+      isLoading: true,
+      isRunning: false,
+      isLaunching: true,
+    });
+    expect(applyLaunchChange(launching, 'a', false)).toEqual({});
+  });
+
+  it('keeps the game of a launch that ends, without the launch', () => {
+    const running = applyRunningProcessUpdate(
+      applyLaunchChange({}, 'a', true),
+      {
+        instanceId: 'a',
+        processId: 'p1',
+        isRunning: true,
+      },
+    );
+
+    expect(running.a).toEqual({
+      processId: 'p1',
+      isLoading: false,
+      isRunning: true,
+    });
+    expect(applyLaunchChange(running, 'a', false).a).toEqual({
+      processId: 'p1',
+      isLoading: false,
+      isRunning: true,
+    });
+  });
+
+  it('ignores the end of a launch whose game has finished already', () => {
+    const running = applyRunningProcessUpdate(
+      applyLaunchChange({}, 'a', true),
+      {
+        instanceId: 'a',
+        processId: 'p1',
+        isRunning: true,
+      },
+    );
+    const finished = applyRunningProcessUpdate(running, {
+      instanceId: 'a',
+      processId: 'p1',
+      isRunning: false,
+    });
+
+    expect(applyLaunchChange(finished, 'a', false)).toEqual({});
+  });
+
+  it('does not touch the launch of another instance', () => {
+    const instances = applyLaunchChange(
+      applyLaunchChange({}, 'a', true),
+      'b',
+      true,
+    );
+
+    expect(applyLaunchChange(instances, 'b', false).a?.isLaunching).toBe(true);
   });
 });

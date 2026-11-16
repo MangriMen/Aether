@@ -12,6 +12,7 @@ pub mod json_store;
 pub mod keyed_locks;
 pub mod limits;
 pub mod overridable;
+pub mod process_tree;
 pub(crate) mod public_address;
 pub mod request_client;
 pub mod safe_path;

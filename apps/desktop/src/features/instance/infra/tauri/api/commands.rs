@@ -1,20 +1,15 @@
-use aether_core::features::{
-    instance::{
-        ChangeContentState, ContentCompatibilityCheckParams, ContentGetParams,
-        ContentGetVersionParams, ContentInstallParams, ContentListVersionsParams,
-        ContentManagementPort, ContentPath, ContentProviderPort, ContentSearchParams,
-        ContentStateAction, EditInstanceIcon, ImportContent, ImportInstance, InstanceCrudPort,
-        InstanceError, InstanceId, InstanceLifecyclePort, InstanceServicesPort, NewInstance,
-        RemoveContent,
-    },
-    process::ProcessFeature,
+use aether_core::features::instance::{
+    ChangeContentState, ContentCompatibilityCheckParams, ContentGetParams, ContentGetVersionParams,
+    ContentInstallParams, ContentListVersionsParams, ContentManagementPort, ContentPath,
+    ContentProviderPort, ContentSearchParams, ContentStateAction, EditInstanceIcon, ImportContent,
+    ImportInstance, InstanceCrudPort, InstanceError, InstanceId, InstanceLifecyclePort,
+    InstanceServicesPort, NewInstance, RemoveContent,
 };
 use std::{
     collections::{HashMap, HashSet},
     path::PathBuf,
 };
 use tauri::State;
-use uuid::Uuid;
 
 use crate::{
     FrontendResult,
@@ -280,20 +275,37 @@ async fn launch(
         .into())
 }
 
+/// The instances being launched, which `stop` calls off. The page asks it when it opens, for a
+/// launch that began before it was reloaded; `LaunchStarted` and `LaunchEnded` tell the rest.
+#[tauri::command]
+#[specta::specta]
+async fn list_launching(container: State<'_, ContainerState>) -> FrontendResult<Vec<String>> {
+    Ok(container
+        .0
+        .launch_cancellations()
+        .launching()
+        .into_iter()
+        .map(|id| id.to_string())
+        .collect())
+}
+
+/// Stops the instance: calls its launch off while it has no game yet, or ends its game. Nothing
+/// to stop is no error.
 #[tauri::command]
 #[specta::specta]
 async fn stop(
-    uuid: Uuid,
+    id: String,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
     container: State<'_, ContainerState>,
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
+    let id = InstanceId::try_from(id).map_err(aether_core::Error::from)?;
     let container = container.0.clone();
     Ok(container
-        .kill_process_use_case()
-        .execute(uuid)
+        .stop_instance_use_case()
+        .execute(id)
         .await
         .map_err(aether_core::Error::from)?)
 }

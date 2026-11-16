@@ -9,7 +9,7 @@ import { useLaunchInstance, useStopInstance } from '../api/instanceLaunch';
 import { useRemoveInstance } from '../api/instanceQueries';
 import {
   getRemovalBlock,
-  getStoppableProcessId,
+  isStoppable,
   type RemovalBlock,
 } from '../model/runningInstances';
 import { RunningInstancesContext } from '../model/runningInstancesContext';
@@ -18,7 +18,7 @@ export const useInstanceActions = () => {
   const [context, { get: getRunningInstance, setIsLoading, refresh }] =
     useContext(RunningInstancesContext);
 
-  const { mutateAsync: launchInstance } = useLaunchInstance();
+  const launchMutation = useLaunchInstance();
   const { mutateAsync: stopInstance } = useStopInstance();
   const { mutateAsync: removeInstance } = useRemoveInstance();
 
@@ -30,40 +30,32 @@ export const useInstanceActions = () => {
     if (
       instance.installStage !== 'installed' ||
       runningInstance?.isLoading ||
-      runningInstance?.isRunning
+      runningInstance?.isRunning ||
+      // The backend has not told yet that this launch began: a second click must not start one more.
+      launchMutation.isPending
     ) {
       return;
     }
 
-    setIsLoading(instance.id, true);
-
+    // The backend tells that the launch has begun and that it is over.
     try {
-      await launchInstance(instance.id);
+      await launchMutation.mutateAsync(instance.id);
     } catch {
       /* empty */
     }
-
-    setIsLoading(instance.id, false);
   };
 
+  /** Stops the game of the instance, or calls its launch off while it has no game yet. */
   const stop = async (instance: Instance) => {
-    const uuid = getStoppableProcessId(
-      getRunningInstance(context, instance.id),
-    );
-
-    if (uuid === undefined) {
+    if (!isStoppable(getRunningInstance(context, instance.id))) {
       return;
     }
 
-    setIsLoading(instance.id, true);
-
     try {
-      await stopInstance(uuid);
+      await stopInstance(instance.id);
     } catch {
       /* empty */
     }
-
-    setIsLoading(instance.id, false);
   };
 
   const showRemovalBlocked = (instance: Instance, block: RemovalBlock) => {
@@ -73,11 +65,16 @@ export const useInstanceActions = () => {
       </span>
     );
 
-    if (block === 'running') {
+    if (block === 'running' || block === 'launching') {
+      // Stops the game, or calls the launch off while it has no game yet.
       const handleStop = async (e: MouseEvent) => {
         e.stopPropagation();
         await stop(instance);
-        await refresh();
+
+        if (block === 'running') {
+          await refresh();
+        }
+
         closeToast(id);
       };
 
@@ -85,7 +82,9 @@ export const useInstanceActions = () => {
         title,
         description: (
           <div class='gap-2 inline-flex w-full flex-col'>
-            {t('instance.stopToDelete')}
+            {block === 'running'
+              ? t('instance.stopToDelete')
+              : t('instance.removeWhileLaunching')}
             <Button
               class='w-full'
               variant='secondary'
@@ -94,15 +93,6 @@ export const useInstanceActions = () => {
             />
           </div>
         ),
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    if (block === 'launching') {
-      showToast({
-        title,
-        description: t('instance.removeWhileLaunching'),
         variant: 'destructive',
       });
       return;

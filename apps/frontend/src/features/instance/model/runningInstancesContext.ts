@@ -6,6 +6,8 @@ type RunningInstancesInstanceData = {
   processId?: string;
   isLoading: boolean;
   isRunning: boolean;
+  /** A launch has the instance, and may be called off until the game starts. */
+  isLaunching?: boolean;
 };
 
 export type RunningInstancesContextValue = [

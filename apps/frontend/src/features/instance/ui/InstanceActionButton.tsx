@@ -37,7 +37,13 @@ export const InstanceActionButton: Component<InstanceActionButtonProps> = (
     () => isInstanceInstalling() || runningInstance()?.isLoading,
   );
 
-  const isPlayButton = createMemo(() => !runningInstance()?.isRunning);
+  // A launch is called off while it waits for the game; an install it started has its own
+  // progress, and is not called off by this button.
+  const isStopButton = createMemo(
+    () =>
+      runningInstance()?.isRunning ||
+      (runningInstance()?.isLaunching && !isInstanceInstalling()),
+  );
 
   const isPlayButtonDisabled = createMemo(
     () =>
@@ -58,7 +64,7 @@ export const InstanceActionButton: Component<InstanceActionButtonProps> = (
 
   return (
     <Show
-      when={isPlayButton()}
+      when={!isStopButton()}
       fallback={<InstanceStopButton onClick={handleStop} {...others} />}
     >
       <InstancePlayButton

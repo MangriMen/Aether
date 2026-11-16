@@ -30,7 +30,7 @@ use crate::features::{
         InstallContentUseCasePort, InstallInstanceUseCase, InstallPlanExecutor,
         InstallPlanExecutorPort, InstanceFileService, InstanceInstallService,
         InstanceLaunchService, InstanceLocks, InstanceStorage, InstanceWatcherService,
-        LaunchInstanceUseCase, LaunchInstanceWithActiveAccountUseCase,
+        LaunchCancellations, LaunchInstanceUseCase, LaunchInstanceWithActiveAccountUseCase,
         LaunchInstanceWithActiveAccountUseCasePort, ListBrokenInstancesUseCase,
         ListBrokenInstancesUseCasePort, ListContentUseCase, ListContentUseCasePort,
         ListContentVersionsUseCase, ListContentVersionsUseCasePort, ListImportersUseCase,
@@ -38,7 +38,8 @@ use crate::features::{
         ListProvidersUseCase, ListProvidersUseCasePort, PackStorage, RemoveBrokenInstanceUseCase,
         RemoveBrokenInstanceUseCasePort, RemoveContentUseCase, RemoveContentUseCasePort,
         RemoveInstanceUseCase, RemoveInstanceUseCasePort, SearchContentUseCase,
-        SearchContentUseCasePort, UpdateInstanceUseCase, UpdateInstanceUseCasePort, Updater,
+        SearchContentUseCasePort, StopInstanceUseCase, StopInstanceUseCasePort,
+        UpdateInstanceUseCase, UpdateInstanceUseCasePort, Updater,
     },
     java::{
         DiscoverJavaUseCase, DiscoverJavaUseCasePort, EditJavaUseCase, EditJavaUseCasePort,
@@ -230,6 +231,7 @@ pub struct AetherContainer {
     instance_locks: Arc<InstanceLocks>,
     /// Shared by the install of games and the removal of instances.
     install_cancellations: Arc<InstallCancellations>,
+    launch_cancellations: Arc<LaunchCancellations>,
     /// Held busy by installs and instance locks, paused while the caches are emptied.
     activity_gate: Arc<ActivityGate>,
     /// One for the process: it keeps which refreshes run and what providers could not tell.
@@ -275,6 +277,7 @@ impl AetherContainer {
             params,
             instance_locks,
             install_cancellations: Arc::default(),
+            launch_cancellations: Arc::default(),
             activity_gate,
             content_metadata,
             cache_storage,
@@ -448,6 +451,7 @@ impl AetherContainer {
             .get_or_init(|| {
                 let start = self.process_start_service();
                 Arc::new(LaunchInstanceUseCase::new(
+                    self.event_emitter(),
                     self.plugins().registry.clone(),
                     self.storage().instance_storage.clone(),
                     self.storage().default_instance_settings_storage.clone(),
@@ -458,6 +462,7 @@ impl AetherContainer {
                     self.launch_command_service(),
                     start,
                     self.instance_locks.clone(),
+                    self.launch_cancellations.clone(),
                 ))
             })
             .clone()
@@ -785,6 +790,15 @@ impl InstanceLifecyclePort for AetherContainer {
     }
     fn list_importers_use_case(&self) -> Arc<dyn ListImportersUseCasePort> {
         Arc::new(ListImportersUseCase::new(self.importers_registry().clone()))
+    }
+    fn launch_cancellations(&self) -> Arc<LaunchCancellations> {
+        self.launch_cancellations.clone()
+    }
+    fn stop_instance_use_case(&self) -> Arc<dyn StopInstanceUseCasePort> {
+        Arc::new(StopInstanceUseCase::new(
+            self.launch_cancellations.clone(),
+            self.storage().process_storage.clone(),
+        ))
     }
     fn launch_instance_with_active_account_use_case(
         &self,

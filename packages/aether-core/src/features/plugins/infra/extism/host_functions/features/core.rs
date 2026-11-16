@@ -25,7 +25,10 @@ use crate::{
         java::{Java, JavaFeature},
         plugins::PluginsFeature,
     },
-    shared::{limits::COMMAND_TIMEOUT, serializable_command::domain::SerializableCommand},
+    shared::{
+        limits::COMMAND_TIMEOUT, process_tree::wrap_tree,
+        serializable_command::domain::SerializableCommand,
+    },
 };
 
 use super::super::{
@@ -117,10 +120,7 @@ impl ProcessTree {
         wrapped.wrap(process_wrap::tokio::CreationFlags(
             windows::Win32::System::Threading::CREATE_NO_WINDOW,
         ));
-        #[cfg(windows)]
-        wrapped.wrap(process_wrap::tokio::JobObject);
-        #[cfg(unix)]
-        wrapped.wrap(process_wrap::tokio::ProcessGroup::leader());
+        wrap_tree(&mut wrapped);
         // A safety net on Windows too: the job dies with its last handle, even if the launcher does.
         wrapped.wrap(process_wrap::tokio::KillOnDrop);
 
