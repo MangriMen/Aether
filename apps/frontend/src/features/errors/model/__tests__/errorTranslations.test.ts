@@ -641,6 +641,37 @@ describe('plugin command not approved', () => {
   });
 });
 
+describe('plugin command refused, reported by the plugin', () => {
+  const refused = (reason: string, cause: unknown) =>
+    ({
+      type: 'plugin',
+      payload: {
+        code: 'COMMAND_NOT_APPROVED',
+        payload: { plugin_id: 'packwiz', reason: { code: reason }, cause },
+      },
+    }) as unknown as LauncherError;
+
+  it.each(['DENIED', 'TIMED_OUT', 'CANCELLED', 'JAR_CHANGED'])(
+    'should_say_why_the_command_did_not_run_when_the_reason_is_%s',
+    (reason) => {
+      const message = getTranslatedError(refused(reason, null), tEn);
+
+      expect(message).toMatch(/^The command of plugin packwiz did not run: /);
+      expect(message).not.toContain('{{');
+    },
+  );
+
+  it('should_keep_the_text_of_the_plugin_in_the_details_when_it_gave_one', () => {
+    const error = refused('DENIED', {
+      type: 'unknown',
+      details: 'AccessViolation',
+    });
+
+    expect(getErrorDetails(error)).toBe('AccessViolation');
+    expect(getErrorDetails(refused('DENIED', null))).toBeUndefined();
+  });
+});
+
 describe('plugin provider failure', () => {
   it('should_translate_the_reason_and_the_category_of_its_cause', () => {
     const error = {

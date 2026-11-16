@@ -110,15 +110,15 @@ impl<T: DeserializeOwned> FromBytesOwned for HostReply<T> {
 
 #[cfg(test)]
 mod tests {
-    use aether_core_plugin_api::v0::PluginErrorDto;
+    use aether_core_plugin_api::v0::{CommandRefusalDto, PluginErrorDto};
 
     use super::*;
 
     #[test]
     fn a_host_error_survives_the_trip_through_anyhow() {
-        let host = HostError::PluginError(PluginErrorDto::AccessViolation {
+        let host = HostError::PluginError(PluginErrorDto::CommandNotApproved {
             plugin_id: "p".to_owned(),
-            path: "timed_out".to_owned(),
+            reason: CommandRefusalDto::TimedOut,
         });
 
         let raw = format!("{:?}", anyhow::Error::from(Error::from(host)));
@@ -126,7 +126,10 @@ mod tests {
 
         assert!(matches!(
             failure.host,
-            Some(HostError::PluginError(PluginErrorDto::AccessViolation { path, .. })) if path == "timed_out"
+            Some(HostError::PluginError(PluginErrorDto::CommandNotApproved {
+                reason: CommandRefusalDto::TimedOut,
+                ..
+            }))
         ));
     }
 

@@ -62,6 +62,11 @@ pub enum PluginErrorDto {
         plugin_id: String,
         path: String,
     },
+    /// The user did not allow the plugin's command, or was not there to.
+    CommandNotApproved {
+        plugin_id: String,
+        reason: CommandRefusalDto,
+    },
     HashComputationFailed,
     Storage(String),
     ProviderFetchError {
@@ -91,6 +96,20 @@ pub enum PluginSourceTypeDto {
     Local,
 }
 
+/// Why a command was not run.
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum CommandRefusalDto {
+    /// The user said no, or said it earlier and the plugin has not been reloaded since.
+    Denied,
+    /// Nobody answered in time.
+    TimedOut,
+    /// The plugin was stopped or removed.
+    Cancelled,
+    /// The jar changed while the user was being asked.
+    JarChanged,
+}
+
 /// Why a call into a plugin failed.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(tag = "kind", content = "data", rename_all = "camelCase")]
@@ -102,6 +121,11 @@ pub enum PluginCallErrorDto {
     Trap(String),
     NonZeroExit(i32),
     Plugin(String),
+    /// The plugin reported that a command it asked for was not run, with the plugin's own words.
+    CommandNotApproved {
+        reason: CommandRefusalDto,
+        details: String,
+    },
     Codec(String),
     Reentrant,
 }

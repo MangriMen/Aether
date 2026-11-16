@@ -168,7 +168,10 @@ impl From<&PluginCallError> for PluginCallReasonDto {
                 cause: CauseDto::unknown(details),
             },
             PluginCallError::NonZeroExit(code) => Self::NonZeroExit { code: *code },
-            PluginCallError::Plugin(details) => Self::Plugin {
+            // `PluginErrorDto` lifts a refused command out of the failed call; this is the
+            // fallback for a reason read on its own.
+            PluginCallError::Plugin(details)
+            | PluginCallError::CommandNotApproved { details, .. } => Self::Plugin {
                 cause: CauseDto::unknown(details),
             },
             PluginCallError::Codec(details) => Self::Codec {
@@ -316,10 +319,13 @@ pub enum PluginErrorDto {
         entry: String,
         reason: AllowedHostEntryRejectionDto,
     },
-    /// The user did not allow the plugin's command, or was not there to.
+    /// The user did not allow the plugin's command, or was not there to. When a plugin reported
+    /// it as the reason a call failed, `plugin_id` is the plugin that was called and `cause`
+    /// holds that plugin's own words.
     CommandNotApproved {
         plugin_id: String,
         reason: CommandRefusalDto,
+        cause: Option<CauseDto>,
     },
     /// The question was answered or ended before this answer came.
     CommandApprovalNotFound {
@@ -416,6 +422,15 @@ impl PluginErrorDto {
                 host: host.to_string(),
             },
             PluginError::FunctionCallFailed {
+                plugin_id,
+                error: PluginCallError::CommandNotApproved { reason, details },
+                ..
+            } => Self::CommandNotApproved {
+                plugin_id: plugin_id.to_string(),
+                reason: (*reason).into(),
+                cause: Some(CauseDto::unknown(details)),
+            },
+            PluginError::FunctionCallFailed {
                 function_name,
                 plugin_id,
                 error,
@@ -476,6 +491,7 @@ impl PluginErrorDto {
             PluginError::CommandNotApproved { plugin_id, reason } => Self::CommandNotApproved {
                 plugin_id: plugin_id.to_string(),
                 reason: (*reason).into(),
+                cause: None,
             },
             PluginError::CommandApprovalNotFound { request_id } => Self::CommandApprovalNotFound {
                 request_id: request_id.clone(),
@@ -558,7 +574,7 @@ impl From<&PluginProviderError> for PluginErrorDto {
 mod tests {
     use aether_core::features::{
         instance::{CapabilityId, PluginId},
-        plugins::{PluginCallError, PluginSourceType},
+        plugins::{CommandApprovalRefusal, PluginCallError, PluginSourceType},
         settings::SettingsError,
     };
     use aether_core::shared::io::IoError;
@@ -722,6 +738,43 @@ mod tests {
                 "function_name": "list",
                 "plugin_id": "p",
                 "reason": {"code": "PLUGIN", "payload": {"cause": {"type": "unknown", "details": "denied"}}},
+            }})
+        );
+    }
+
+    #[test]
+    fn should_report_a_refused_command_with_its_reason_when_a_plugin_call_failed_that_way() {
+        for (reason, code) in [
+            (CommandApprovalRefusal::Denied, "DENIED"),
+            (CommandApprovalRefusal::TimedOut, "TIMED_OUT"),
+            (CommandApprovalRefusal::Cancelled, "CANCELLED"),
+            (CommandApprovalRefusal::JarChanged, "JAR_CHANGED"),
+        ] {
+            assert_eq!(
+                call_failed(PluginCallError::CommandNotApproved {
+                    reason,
+                    details: "AccessViolation".to_owned(),
+                }),
+                json!({"code": "COMMAND_NOT_APPROVED", "payload": {
+                    "plugin_id": "p",
+                    "reason": {"code": code},
+                    "cause": {"type": "unknown", "details": "AccessViolation"},
+                }})
+            );
+        }
+    }
+
+    #[test]
+    fn should_report_a_refused_command_without_a_cause_when_the_core_refused_it() {
+        assert_eq!(
+            plugin(&PluginError::CommandNotApproved {
+                plugin_id: PluginId::from_static("p"),
+                reason: CommandApprovalRefusal::Denied,
+            }),
+            json!({"code": "COMMAND_NOT_APPROVED", "payload": {
+                "plugin_id": "p",
+                "reason": {"code": "DENIED"},
+                "cause": null,
             }})
         );
     }
