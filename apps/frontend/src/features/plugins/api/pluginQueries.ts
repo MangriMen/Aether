@@ -363,10 +363,15 @@ export const useCheckPluginUpdates = () => {
 
 export const usePluginProviders = () => useQuery(pluginsQueries.providers);
 
+export const usePluginReleases = (
+  provider: PluginSourceType,
+  url: Accessor<string>,
+) => useQuery(() => pluginsQueries.releases(provider, url()));
+
 export const usePluginPreview = (
   provider: PluginSourceType,
   url: Accessor<string>,
-  tag: Accessor<string | null> = () => null,
+  tag: Accessor<string>,
 ) => useQuery(() => pluginsQueries.preview(provider, url(), tag()));
 
 export const useUpdatePlugin = () => {

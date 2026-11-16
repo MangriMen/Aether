@@ -431,7 +431,7 @@ async fn preview_then_install(
         factory.clone(),
         cache.clone(),
     )
-    .execute(PluginSourceType::GitHub, "owner/repo", Some("v2".into()))
+    .execute(PluginSourceType::GitHub, "owner/repo", "v2")
     .await
     .unwrap();
     let result = fixture
@@ -498,7 +498,7 @@ async fn should_refuse_an_archive_that_was_replaced_in_the_cache_after_the_previ
         factory.clone(),
         cache.clone(),
     )
-    .execute(PluginSourceType::GitHub, "owner/repo", Some("v2".into()))
+    .execute(PluginSourceType::GitHub, "owner/repo", "v2")
     .await
     .unwrap();
 

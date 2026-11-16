@@ -1,6 +1,6 @@
 use crate::features::plugins::{
-    PluginError, PluginProviderError, PluginSourceType, ProviderFailure, ProviderPluginPreview,
-    ProviderReleaseInfo,
+    PluginError, PluginProvider, PluginProviderError, PluginSourceType, ProviderFailure,
+    ProviderPluginPreview, ProviderReleaseInfo,
 };
 
 use std::sync::Arc;
@@ -21,39 +21,72 @@ pub(super) fn pick_release<'a>(
     }
 }
 
+fn provider_of<'a>(
+    factory: &'a PluginProviderFactory,
+    source_type: &PluginSourceType,
+) -> Result<&'a dyn PluginProvider, PluginProviderError> {
+    factory
+        .get_provider(source_type)
+        .ok_or_else(|| PluginProviderError::ProviderFetchError {
+            source_type: source_type.clone(),
+            reason: ProviderFailure::NotRegistered,
+        })
+}
+
 pub(super) struct ReleaseArchive {
     pub identifier: String,
-    pub listing: ProviderPluginPreview,
     pub release: ProviderReleaseInfo,
     pub archive: Arc<DownloadedArchive>,
 }
 
+/// What a provider lists for a plugin, with the releases that have no archive left out: such a
+/// release cannot be installed, so it must not be offered or picked by default. The same list,
+/// held briefly, serves listing, previewing and installing. Returns the identifier as the
+/// provider normalizes it.
+pub(super) async fn fetch_release_listing(
+    factory: &PluginProviderFactory,
+    cache: &ReleaseArchiveCache,
+    source_type: &PluginSourceType,
+    identifier: &str,
+) -> Result<(String, Arc<ProviderPluginPreview>), PluginError> {
+    let provider = provider_of(factory, source_type)?;
+    let identifier = provider.parse_identifier(identifier)?;
+
+    let listing = cache
+        .get_or_fetch_listing(&format!("{source_type}:{identifier}"), || async {
+            let mut listing = provider.fetch_preview(&identifier).await?;
+            listing.releases.retain(|r| !r.download_url.is_empty());
+            // Checked here so that an empty list is not kept: the author may fix the release.
+            if listing.releases.is_empty() {
+                return Err(PluginProviderError::ProviderNoAssets {
+                    source_type: source_type.clone(),
+                }
+                .into());
+            }
+            Ok(listing)
+        })
+        .await?;
+
+    Ok((identifier, listing))
+}
+
 /// The archive URL comes from the provider's listing, never from the caller, so only this
-/// repository's release is fetched. A release that is not listed or has no archive is
-/// `ProviderNoAssets`.
+/// repository's release is fetched. A release that is not listed is `ProviderNoAssets`.
 pub(super) async fn download_release_archive(
     factory: &PluginProviderFactory,
     cache: &Arc<ReleaseArchiveCache>,
     source_type: &PluginSourceType,
     identifier: &str,
-    tag: Option<&str>,
+    tag: &str,
 ) -> Result<ReleaseArchive, PluginError> {
-    let provider = factory.get_provider(source_type).ok_or_else(|| {
-        PluginProviderError::ProviderFetchError {
+    let (identifier, listing) =
+        fetch_release_listing(factory, cache, source_type, identifier).await?;
+    let release = pick_release(&listing.releases, Some(tag))
+        .ok_or_else(|| PluginProviderError::ProviderNoAssets {
             source_type: source_type.clone(),
-            reason: ProviderFailure::NotRegistered,
-        }
-    })?;
-    let identifier = provider.parse_identifier(identifier)?;
-    let no_assets = || PluginProviderError::ProviderNoAssets {
-        source_type: source_type.clone(),
-    };
-
-    let listing = provider.fetch_preview(&identifier).await?;
-    let release = pick_release(&listing.releases, tag)
-        .filter(|r| !r.download_url.is_empty())
-        .ok_or_else(no_assets)?
+        })?
         .clone();
+    let provider = provider_of(factory, source_type)?;
     let archive = cache
         .get_or_download(&release.download_url, || {
             download_to_temp_file(provider, &release.download_url)
@@ -62,7 +95,6 @@ pub(super) async fn download_release_archive(
 
     Ok(ReleaseArchive {
         identifier,
-        listing,
         release,
         archive,
     })

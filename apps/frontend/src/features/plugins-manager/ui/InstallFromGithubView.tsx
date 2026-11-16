@@ -17,12 +17,12 @@ import {
 import {
   useInstallPluginFromProvider,
   usePluginPreview,
+  usePluginReleases,
 } from '@/features/plugins';
 import { useTranslation } from '@/shared/i18n';
 import { CombinedTextField } from '@/shared/ui-kit';
 import { debounce } from '@/shared/utils';
 
-import type { ProviderPluginPreview } from '../model/pluginProvider';
 import type { ReleaseOption } from './PluginPreviewCard';
 
 import { PluginPreviewCard } from './PluginPreviewCard';
@@ -44,19 +44,13 @@ export const InstallFromGithubView: Component<InstallFromGithubViewProps> = (
   const [url, setUrl] = createSignal('');
   const [debouncedUrl, setDebouncedUrl] = createSignal('');
 
-  // null until the user picks a tag: the first preview is requested without one.
-  const [requestedTag, setRequestedTag] = createSignal<string | null>(null);
+  // null until the user picks a tag: the listing says which one to start from.
+  const [pickedTag, setPickedTag] = createSignal<string | null>(null);
 
-  // Kept across tag loads so the release picker does not vanish while another tag loads.
-  const [releases, setReleases] = createSignal<
-    ProviderPluginPreview['releases']
-  >([]);
-
-  // Reset tag and releases together with the URL, so a new URL is never queried with the old tag.
+  // Reset the picked tag together with the URL, so a new URL is never previewed with the old tag.
   const applyUrl = (value: string) => {
     batch(() => {
-      setRequestedTag(null);
-      setReleases([]);
+      setPickedTag(null);
       setDebouncedUrl(value);
     });
   };
@@ -74,20 +68,49 @@ export const InstallFromGithubView: Component<InstallFromGithubViewProps> = (
     applyUrl('');
   };
 
-  const previewQuery = usePluginPreview(PROVIDER, debouncedUrl, requestedTag);
-  const installMutation = useInstallPluginFromProvider();
+  const releasesQuery = usePluginReleases(PROVIDER, debouncedUrl);
 
+  // The list of the URL shown: while the query still holds the list of the previous URL, there
+  // is none, so a new URL is never previewed with a tag of the old one.
+  const listing = () => {
+    const data = releasesQuery.data;
+
+    return data?.url === debouncedUrl() ? data : undefined;
+  };
+
+  // The tag to preview is pinned once the list arrives, so a refreshed list does not change the
+  // release the user is looking at.
   createEffect(() => {
-    const data = previewQuery.data;
+    const data = listing();
 
-    if (data) {
-      setReleases(data.releases);
+    if (data && pickedTag() === null) {
+      setPickedTag(data.default_tag);
     }
   });
 
-  const selectedTag = createMemo(
-    () => requestedTag() ?? previewQuery.data?.tag ?? '',
-  );
+  // A pinned tag the list no longer has falls back to the default one.
+  const selectedTag = createMemo(() => {
+    const data = listing();
+    const picked = pickedTag();
+
+    if (!data) {
+      return '';
+    }
+
+    return picked && data.releases.some((r) => r.tag_name === picked)
+      ? picked
+      : data.default_tag;
+  });
+
+  const previewQuery = usePluginPreview(PROVIDER, debouncedUrl, selectedTag);
+  const installMutation = useInstallPluginFromProvider();
+
+  const errorMessage = (err: Error) =>
+    isLauncherError(err)
+      ? getTranslatedError(err, t)
+      : t('plugins.githubPreviewError');
+
+  const failure = () => releasesQuery.error ?? previewQuery.error;
 
   const isUrlPending = () => url() !== debouncedUrl();
 
@@ -104,7 +127,7 @@ export const InstallFromGithubView: Component<InstallFromGithubViewProps> = (
   });
 
   const releaseOptions = createMemo<ReleaseOption[]>(() =>
-    releases().map((r) => ({
+    (listing()?.releases ?? []).map((r) => ({
       value: r.tag_name,
       label: r.is_prerelease
         ? `${r.tag_name} (${t('plugins.prerelease')})`
@@ -114,7 +137,7 @@ export const InstallFromGithubView: Component<InstallFromGithubViewProps> = (
 
   const handleReleaseChange = (option: ReleaseOption | null) => {
     if (option) {
-      setRequestedTag(option.value);
+      setPickedTag(option.value);
     }
   };
 
@@ -157,40 +180,43 @@ export const InstallFromGithubView: Component<InstallFromGithubViewProps> = (
       />
 
       {/* Loading indicator */}
-      <Show when={previewQuery.isLoading && releases().length === 0}>
+      <Show when={releasesQuery.isLoading}>
         <p class='text-sm text-muted-foreground'>{t('common.loading')}</p>
       </Show>
 
-      {/* Error message */}
-      <Show when={previewQuery.isError}>
-        <p class='text-sm text-destructive'>
-          {isLauncherError(previewQuery.error)
-            ? getTranslatedError(previewQuery.error, t)
-            : t('plugins.githubPreviewError')}
-        </p>
-        <Show when={getErrorDetails(previewQuery.error)}>
-          {(details) => (
-            <ErrorDetails
-              details={details()}
-              defaultOpen={isInternalError(previewQuery.error)}
-            />
-          )}
-        </Show>
+      {/* Error message: of the list, else of the preview */}
+      <Show when={failure()}>
+        {(err) => (
+          <>
+            <p class='text-sm text-destructive'>{errorMessage(err())}</p>
+            <Show when={getErrorDetails(err())}>
+              {(details) => (
+                <ErrorDetails
+                  details={details()}
+                  defaultOpen={isInternalError(err())}
+                />
+              )}
+            </Show>
+          </>
+        )}
       </Show>
 
       {/* Preview card */}
-      <Show when={releases().length > 0 || previewQuery.data}>
-        <PluginPreviewCard
-          preview={readyPreview()}
-          isPreviewLoading={previewQuery.isFetching || isUrlPending()}
-          releaseOptions={releaseOptions()}
-          selectedTag={selectedTag()}
-          onReleaseChange={handleReleaseChange}
-          onInstall={handleInstall}
-          onClear={handleUrlClear}
-          authors={authorsStr()}
-          isInstalling={installMutation.isPending}
-        />
+      <Show when={listing()}>
+        {(data) => (
+          <PluginPreviewCard
+            repo={data().repo}
+            preview={readyPreview()}
+            isPreviewLoading={previewQuery.isFetching || isUrlPending()}
+            releaseOptions={releaseOptions()}
+            selectedTag={selectedTag()}
+            onReleaseChange={handleReleaseChange}
+            onInstall={handleInstall}
+            onClear={handleUrlClear}
+            authors={authorsStr()}
+            isInstalling={installMutation.isPending}
+          />
+        )}
       </Show>
     </div>
   );

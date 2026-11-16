@@ -13,6 +13,7 @@ mod grant_plugin_folder_access;
 mod grant_plugin_host_access;
 mod import_plugins;
 mod install_plugin_from_provider;
+mod list_plugin_releases;
 mod list_plugins_dto;
 mod list_skipped_plugin_dirs;
 mod pending_command_approvals;
@@ -56,6 +57,7 @@ pub(crate) use grant_plugin_host_access::GrantPluginHostAccessUseCase;
 pub use grant_plugin_host_access::HostAccess;
 pub(crate) use import_plugins::ImportPluginsUseCase;
 pub(crate) use install_plugin_from_provider::InstallPluginFromProviderUseCase;
+pub(crate) use list_plugin_releases::ListPluginReleasesUseCase;
 pub(crate) use list_plugins_dto::ListPluginsDtoUseCase;
 pub(crate) use list_skipped_plugin_dirs::ListSkippedPluginDirsUseCase;
 pub use pending_command_approvals::PendingCommandApprovals;
@@ -65,7 +67,7 @@ pub use ports::{
     EnablePluginUseCasePort, ForceEnablePluginUseCasePort, GetPluginApiVersionUseCasePort,
     GetPluginDtoUseCasePort, GetPluginReadmeUseCasePort, GetPluginSettingsUseCasePort,
     GrantPluginFolderAccessUseCasePort, GrantPluginHostAccessUseCasePort, ImportPluginsUseCasePort,
-    InstallPluginFromProviderUseCasePort, ListPluginsDtoUseCasePort,
+    InstallPluginFromProviderUseCasePort, ListPluginReleasesUseCasePort, ListPluginsDtoUseCasePort,
     ListSkippedPluginDirsUseCasePort, PluginDisableService, PluginExtractor, PluginLoader,
     PluginSettingsStorage, PluginSourceStorage, PluginStorage, PluginSyncService,
     PluginVerificationStorage, PreviewPluginReleaseUseCasePort, ReloadPluginUseCasePort,

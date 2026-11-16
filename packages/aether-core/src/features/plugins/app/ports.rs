@@ -11,8 +11,8 @@ use crate::features::plugins::domain::PluginHandle;
 use crate::features::plugins::{
     ArchiveMetadata, CommandApprovalAnswer, CommandApprovalRefusal, CommandApprovalRequest,
     CommandGrant, ExtractedPlugin, PendingCommandApproval, Plugin, PluginError, PluginManifest,
-    PluginProviderError, PluginReleasePreview, PluginSettings, PluginSource, PluginSourceType,
-    PluginVerification, ProviderUpdateInfo, SkippedPluginDir,
+    PluginProviderError, PluginReleaseListing, PluginReleasePreview, PluginSettings, PluginSource,
+    PluginSourceType, PluginVerification, ProviderUpdateInfo, SkippedPluginDir,
 };
 
 #[async_trait]
@@ -263,11 +263,21 @@ pub trait InstallPluginFromProviderUseCasePort: Send + Sync {
 
 #[async_trait]
 pub trait PreviewPluginReleaseUseCasePort: Send + Sync {
-    /// With no `tag`, the first stable release is used.
+    /// Reads the archive of release `tag`, one of those `ListPluginReleasesUseCasePort` gives.
     async fn execute(
         &self,
         source_type: PluginSourceType,
         identifier: &str,
-        tag: Option<String>,
+        tag: &str,
     ) -> Result<PluginReleasePreview, PluginError>;
+}
+
+#[async_trait]
+pub trait ListPluginReleasesUseCasePort: Send + Sync {
+    /// The releases that can be installed, without downloading any archive.
+    async fn execute(
+        &self,
+        source_type: PluginSourceType,
+        identifier: &str,
+    ) -> Result<PluginReleaseListing, PluginError>;
 }

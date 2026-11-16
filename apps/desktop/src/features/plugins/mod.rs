@@ -19,6 +19,7 @@ pub use infra::tauri::dtos::PluginEventDto;
 pub use infra::tauri::dtos::PluginImporterCapabilityDto;
 pub use infra::tauri::dtos::PluginManifestDto;
 pub use infra::tauri::dtos::PluginMetadataDto;
+pub use infra::tauri::dtos::PluginReleaseListingDto;
 pub use infra::tauri::dtos::PluginSettingsDto;
 pub use infra::tauri::dtos::PluginSourceDto;
 pub use infra::tauri::dtos::PluginUpdateInfoDto;

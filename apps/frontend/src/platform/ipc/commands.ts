@@ -65,7 +65,8 @@ export const pluginsCommands = {
   checkForUpdates: pluginsRawCommands.checkForUpdates,
   updatePlugin: withIdempotency(pluginsRawCommands.updatePlugin),
   getAvailableProviders: pluginsRawCommands.getAvailableProviders,
-  previewPluginFromProvider: pluginsRawCommands.previewPluginFromProvider,
+  listPluginReleases: pluginsRawCommands.listPluginReleases,
+  previewPluginRelease: pluginsRawCommands.previewPluginRelease,
   installPluginFromProvider: withIdempotency(
     pluginsRawCommands.installPluginFromProvider,
   ),

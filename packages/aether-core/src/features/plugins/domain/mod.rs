@@ -14,11 +14,12 @@ pub use models::{
     PluginCapabilities, PluginCheckCompatibilityParams, PluginContent,
     PluginContentProviderCapability, PluginError, PluginImportInstance, PluginImporterCapability,
     PluginInternalEvent, PluginLoadFailure, PluginManifest, PluginManifestPreview, PluginMetadata,
-    PluginProviderError, PluginProviderInfo, PluginReleasePreview, PluginSettings, PluginSource,
-    PluginSourceType, PluginState, PluginStateReason, PluginUpdaterCapability, PluginVerification,
-    ProviderFailure, ProviderHandlers, ProviderPluginPreview, ProviderReleaseInfo,
-    ProviderUpdateInfo, RuntimeConfig, SkippedPluginDir, SkippedPluginDirReason,
-    host_function_risks, is_wide_allowed_host, manifest_has_class_path, parse_jar_launch,
+    PluginProviderError, PluginProviderInfo, PluginReleaseListing, PluginReleasePreview,
+    PluginSettings, PluginSource, PluginSourceType, PluginState, PluginStateReason,
+    PluginUpdaterCapability, PluginVerification, ProviderFailure, ProviderHandlers,
+    ProviderPluginPreview, ProviderReleaseInfo, ProviderUpdateInfo, RuntimeConfig,
+    SkippedPluginDir, SkippedPluginDirReason, host_function_risks, is_wide_allowed_host,
+    manifest_has_class_path, parse_jar_launch,
 };
 pub(crate) use models::{
     AsCapabilityMetadata, CoreMount, GrantableHost, PLUGIN_API_VERSION, PLUGIN_CACHE_MOUNT,

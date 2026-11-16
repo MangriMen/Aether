@@ -9,7 +9,9 @@ export const pluginKeys = {
     [...pluginKeys.all, 'readme', id, version] as const,
   source: (id: string) => [...pluginKeys.all, 'source', id] as const,
   updates: (id: string) => [...pluginKeys.all, 'updates', id] as const,
-  preview: (provider: string, identifier: string, tag: string | null) =>
+  releases: (provider: string, identifier: string) =>
+    [...pluginKeys.all, 'releases', provider, identifier] as const,
+  preview: (provider: string, identifier: string, tag: string) =>
     [...pluginKeys.all, 'preview', provider, identifier, tag] as const,
   /** Whether the core finds an `allowed_hosts` entry wide; a pure function of the text. */
   wideHost: (entry: string) => [...pluginKeys.all, 'wide-host', entry] as const,

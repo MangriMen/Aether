@@ -6,7 +6,8 @@ import type { Plugin } from '../../model/plugin';
 const commands = vi.hoisted(() => ({
   list: vi.fn(),
   get: vi.fn(),
-  previewPluginFromProvider: vi.fn(),
+  listPluginReleases: vi.fn(),
+  previewPluginRelease: vi.fn(),
 }));
 
 vi.mock('@/platform/ipc', () => ({
@@ -182,7 +183,7 @@ describe('plugins cache', () => {
   });
 });
 
-describe('plugin preview query', () => {
+describe('plugin release queries', () => {
   let queryClient: QueryClient;
 
   beforeEach(() => {
@@ -190,29 +191,24 @@ describe('plugin preview query', () => {
     queryClient = new QueryClient();
   });
 
-  it('should_ask_the_given_provider_when_a_preview_is_fetched', async () => {
-    commands.previewPluginFromProvider.mockResolvedValue({ id: 'p' });
+  it('should_list_the_releases_of_the_given_provider_without_asking_for_an_archive', async () => {
+    commands.listPluginReleases.mockResolvedValue({ default_tag: 'v1' });
 
-    await queryClient.fetchQuery(
-      pluginsQueries.preview('git_hub', 'owner/repo'),
-    );
+    await queryClient.fetchQuery(pluginsQueries.releases('git_hub', 'o/r'));
 
-    expect(commands.previewPluginFromProvider).toHaveBeenCalledWith(
-      'git_hub',
-      'owner/repo',
-      null,
-    );
+    expect(commands.listPluginReleases).toHaveBeenCalledWith('git_hub', 'o/r');
+    expect(commands.previewPluginRelease).not.toHaveBeenCalled();
   });
 
-  it('should_ask_for_the_tag_and_keep_each_tag_apart_when_one_is_given', async () => {
-    commands.previewPluginFromProvider
+  it('should_ask_for_the_tag_and_keep_each_tag_apart_when_previewing', async () => {
+    commands.previewPluginRelease
       .mockResolvedValueOnce({ tag: 'v1' })
       .mockResolvedValueOnce({ tag: 'v2' });
 
     await queryClient.fetchQuery(pluginsQueries.preview('git_hub', 'x', 'v1'));
     await queryClient.fetchQuery(pluginsQueries.preview('git_hub', 'x', 'v2'));
 
-    expect(commands.previewPluginFromProvider).toHaveBeenLastCalledWith(
+    expect(commands.previewPluginRelease).toHaveBeenLastCalledWith(
       'git_hub',
       'x',
       'v2',
@@ -224,19 +220,28 @@ describe('plugin preview query', () => {
     ).toEqual({ tag: 'v1' });
   });
 
+  it('should_not_preview_until_there_is_a_tag', () => {
+    expect(pluginsQueries.preview('git_hub', 'x', '').enabled).toBe(false);
+    expect(pluginsQueries.preview('git_hub', 'x', 'v1').enabled).toBe(true);
+  });
+
   it('should_keep_the_preview_of_each_provider_apart_when_the_url_is_the_same', async () => {
-    commands.previewPluginFromProvider
+    commands.previewPluginRelease
       .mockResolvedValueOnce({ id: 'from-github' })
       .mockResolvedValueOnce({ id: 'from-local' });
 
-    await queryClient.fetchQuery(pluginsQueries.preview('git_hub', 'x'));
-    await queryClient.fetchQuery(pluginsQueries.preview('local', 'x'));
+    await queryClient.fetchQuery(pluginsQueries.preview('git_hub', 'x', 'v1'));
+    await queryClient.fetchQuery(pluginsQueries.preview('local', 'x', 'v1'));
 
     expect(
-      queryClient.getQueryData(pluginsQueries.preview('git_hub', 'x').queryKey),
+      queryClient.getQueryData(
+        pluginsQueries.preview('git_hub', 'x', 'v1').queryKey,
+      ),
     ).toEqual({ id: 'from-github' });
     expect(
-      queryClient.getQueryData(pluginsQueries.preview('local', 'x').queryKey),
+      queryClient.getQueryData(
+        pluginsQueries.preview('local', 'x', 'v1').queryKey,
+      ),
     ).toEqual({ id: 'from-local' });
   });
 });
