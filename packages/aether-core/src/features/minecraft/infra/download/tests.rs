@@ -20,12 +20,15 @@ use crate::{
             infra::InMemoryProgressBarStorage,
             test_support::{ChannelEmitter, mirrors, pack, sent},
         },
-        minecraft::{MinecraftDomainError, MinecraftDownloader, vanilla},
+        minecraft::{GamePathKind, MinecraftDomainError, MinecraftDownloader, vanilla},
         settings::LocationInfo,
     },
     shared::{
         cache::infra::FileCache,
-        hash::infra::{hash_hex_async, sha1_async},
+        hash::{
+            FileHash, HashAlgorithm,
+            infra::{hash_hex_async, sha1_async},
+        },
         request_client::{BytesProgress, FileDownload, Request, RequestClient, RequestError},
     },
 };
@@ -37,7 +40,9 @@ use super::{
 
 const LIBRARY: &str = "com.example:lib:1.0";
 const LIBRARY_URL: &str = "https://libraries.example/lib-1.0.jar";
-const ASSET_HASH: &str = "ab0123456789";
+/// The digest of the body [`asset_body`] serves for it.
+const OTHER_ASSET_HASH: &str = "d0941e68da8f38151ff86a61fc59f7c5cf9fcaa2";
+const ASSET_HASH: &str = "5e2e97c3c7ba3035c6e6fc3a17e1bc22029c0c3e";
 
 /// Serves fixed bodies by URL and records every fetch; a gated URL answers only once the gate
 /// is opened.
@@ -220,6 +225,14 @@ fn asset_url(hash: &str) -> String {
     )
 }
 
+fn asset_body(hash: &str) -> &'static str {
+    if hash == OTHER_ASSET_HASH {
+        "other"
+    } else {
+        "sound"
+    }
+}
+
 /// A version with a client, the library [`LIBRARY`] and one asset of its own, all served by
 /// `client`.
 fn version(client: &FakeClient, id: &str, asset_hash: &str) -> Arc<vanilla::VersionInfo> {
@@ -242,7 +255,7 @@ fn version_from(
         }))
         .unwrap(),
     );
-    client.serve(&asset_url(asset_hash), "sound");
+    client.serve(&asset_url(asset_hash), asset_body(asset_hash));
 
     let mut json = serde_json::json!({
         "assetIndex": {
@@ -351,7 +364,7 @@ fn download(
 #[tokio::test]
 async fn should_make_an_install_wait_when_the_lock_it_returned_is_not_dropped() {
     let fixture = fixture();
-    let other = version(&fixture.client, "1.20.2", "cd0123456789");
+    let other = version(&fixture.client, "1.20.2", OTHER_ASSET_HASH);
     let version = version(&fixture.client, "1.20.1", ASSET_HASH);
     let lock = fixture
         .service
@@ -559,7 +572,12 @@ async fn should_leave_no_asset_when_its_digest_does_not_match() {
     let (result, _) = download(&fixture.service, &version, None).await.unwrap();
 
     assert!(result.is_err(), "{result:?}");
-    assert!(!fixture.location_info.object_dir(hash).exists());
+    assert!(
+        !fixture
+            .location_info
+            .object_dir(&FileHash::new(HashAlgorithm::Sha1, hash).unwrap())
+            .exists()
+    );
 }
 
 const LOG_CONFIG_URL: &str = "https://launcher.example/client-1.12.xml";
@@ -665,6 +683,83 @@ async fn should_refuse_a_log_config_whose_id_leaves_its_directory() {
             .unwrap()
             .join("escape.xml")
             .exists()
+    );
+}
+
+/// What an install of a version whose metadata is changed by `adjust` ends in.
+async fn install_error(
+    adjust: impl FnOnce(&mut serde_json::Value),
+    asset_hash: &str,
+) -> MinecraftDomainError {
+    let fixture = fixture();
+    let version = version_from(&fixture.client, "1.12", asset_hash, adjust);
+
+    let (result, _) = download(&fixture.service, &version, None).await.unwrap();
+
+    result.expect_err("the install went through")
+}
+
+#[tokio::test]
+async fn should_refuse_an_asset_whose_hash_is_not_a_digest() {
+    let err = install_error(|_| {}, "ab").await;
+
+    assert!(
+        matches!(
+            err,
+            MinecraftDomainError::UnsafeMetadataPath {
+                entity_type: GamePathKind::Asset,
+                ..
+            }
+        ),
+        "{err:?}"
+    );
+}
+
+#[tokio::test]
+async fn should_refuse_a_legacy_asset_whose_name_leaves_its_directory() {
+    let fixture = fixture();
+    let version = version_from(&fixture.client, "1.12", ASSET_HASH, |json| {
+        json["assets"] = "legacy".into();
+    });
+    fixture.client.serve(
+        &assets_index_url("1.12"),
+        serde_json::to_vec(&serde_json::json!({
+            "objects": { "../../escape.ogg": { "hash": ASSET_HASH, "size": 5 } }
+        }))
+        .unwrap(),
+    );
+
+    let (result, _) = download(&fixture.service, &version, None).await.unwrap();
+
+    assert!(
+        matches!(
+            result,
+            Err(MinecraftDomainError::UnsafeMetadataPath {
+                entity_type: GamePathKind::Asset,
+                ..
+            })
+        ),
+        "{result:?}"
+    );
+}
+
+#[tokio::test]
+async fn should_refuse_an_assets_index_id_that_leaves_its_directory() {
+    let err = install_error(
+        |json| json["assetIndex"]["id"] = "../../x".into(),
+        ASSET_HASH,
+    )
+    .await;
+
+    assert!(
+        matches!(
+            err,
+            MinecraftDomainError::UnsafeMetadataPath {
+                entity_type: GamePathKind::AssetsIndex,
+                ..
+            }
+        ),
+        "{err:?}"
     );
 }
 
@@ -811,7 +906,7 @@ async fn should_start_no_bar_and_no_mirror_when_the_version_is_downloaded_alread
 async fn should_make_a_second_install_wait_for_a_shared_library_being_written() {
     let fixture = fixture();
     let first_version = version(&fixture.client, "1.20.1", ASSET_HASH);
-    let second_version = version(&fixture.client, "1.20.2", "cd0123456789");
+    let second_version = version(&fixture.client, "1.20.2", OTHER_ASSET_HASH);
     fixture.client.gate(LIBRARY_URL);
 
     let first = download(&fixture.service, &first_version, None);
@@ -825,7 +920,7 @@ async fn should_make_a_second_install_wait_for_a_shared_library_being_written() 
     .unwrap();
     // Everything else of both versions is in; the library holds both up.
     tokio::time::timeout(Duration::from_secs(5), async {
-        while fixture.client.fetches_of(&asset_url("cd0123456789")) == 0
+        while fixture.client.fetches_of(&asset_url(OTHER_ASSET_HASH)) == 0
             || fixture.client.fetches_of(&asset_url(ASSET_HASH)) == 0
         {
             tokio::task::yield_now().await;

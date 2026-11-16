@@ -15,6 +15,11 @@ pub enum GamePathKind {
     LogConfig,
     /// The client jar, put on the classpath.
     Classpath,
+    /// The id a version is installed under.
+    VersionId,
+    AssetsIndex,
+    /// An asset of the game: the hash its object is stored under, or the name of its legacy copy.
+    Asset,
 }
 
 impl GamePathKind {
@@ -27,6 +32,9 @@ impl GamePathKind {
             Self::NativeLibrary => "native_library",
             Self::LogConfig => "log_config",
             Self::Classpath => "classpath",
+            Self::VersionId => "version_id",
+            Self::AssetsIndex => "assets_index",
+            Self::Asset => "asset",
         }
     }
 }

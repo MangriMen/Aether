@@ -274,7 +274,10 @@
         "LIBRARIES_DIR": "папка библиотек",
         "NATIVE_LIBRARY": "папка нативных библиотек",
         "LOG_CONFIG": "настройка логов игры",
-        "CLASSPATH": "файл клиента игры"
+        "CLASSPATH": "файл клиента игры",
+        "VERSION_ID": "id версии",
+        "ASSETS_INDEX": "индекс ресурсов",
+        "ASSET": "ресурс"
       },
       "reason": {
         "PROCESSOR_FAILED": {

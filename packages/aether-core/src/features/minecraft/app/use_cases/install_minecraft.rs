@@ -117,7 +117,7 @@ impl InstallMinecraftUseCase {
         let version_jar = version_jar_name(
             &version.id,
             loader_version.as_ref().map(|it| it.id.as_str()),
-        );
+        )?;
 
         debug!("Java path: {java_path:#?}");
 
@@ -479,7 +479,7 @@ mod tests {
             _: Option<bool>,
             _: Option<&ProgressBarId>,
         ) -> Result<vanilla::VersionInfo, MinecraftDomainError> {
-            let id = version_jar_name(&version.id, loader.map(|loader| loader.id.as_str()));
+            let id = version_jar_name(&version.id, loader.map(|loader| loader.id.as_str()))?;
             Ok(serde_json::from_value(serde_json::json!({
                 "assetIndex": { "id": "1", "sha1": "0", "size": 1, "totalSize": 1, "url": "" },
                 "assets": "1",

@@ -119,7 +119,7 @@ impl GetMinecraftLaunchCommandUseCase {
         let version_jar = version_jar_name(
             &version.id,
             loader_version.as_ref().map(|it| it.id.as_str()),
-        );
+        )?;
 
         let version_info = self
             .minecraft_downloader

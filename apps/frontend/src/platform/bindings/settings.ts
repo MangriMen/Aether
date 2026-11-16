@@ -245,7 +245,7 @@ export type GameLogErrorDto = { code: "INVALID_SOURCE"; payload: {
 } };
 
 /**  What a path the launch needs is the path of. */
-export type GamePathKindDto = "GAME" | "ASSETS" | "LIBRARY" | "LIBRARIES_DIR" | "NATIVE_LIBRARY" | "LOG_CONFIG" | "CLASSPATH";
+export type GamePathKindDto = "GAME" | "ASSETS" | "LIBRARY" | "LIBRARIES_DIR" | "NATIVE_LIBRARY" | "LOG_CONFIG" | "CLASSPATH" | "VERSION_ID" | "ASSETS_INDEX" | "ASSET";
 
 /**  Why a text is not a Minecraft version. */
 export type GameVersionReasonDto = { code: "EMPTY" } | { code: "TOO_LONG" } | { code: "SURROUNDING_WHITESPACE" } | { code: "CONTROL_CHARACTER" } | { code: "FORBIDDEN_CHARACTER"; payload: {

@@ -8,14 +8,16 @@ use tracing::trace;
 use crate::{
     features::{
         events::{ProgressEventType, ProgressService},
-        minecraft::{MinecraftDomainError, vanilla},
+        minecraft::{GamePathKind, MinecraftDomainError, ensure_plain_name, vanilla},
         settings::LocationInfo,
     },
     shared::{
         cache::{domain::Cache, infra::InfinityCachedResource},
+        hash::{FileHash, HashAlgorithm},
         io::{domain::IoError, infra::write_replacing_async},
         keyed_locks::KeyedLocks,
         request_client::{Request, RequestClient, RequestClientExt},
+        safe_path::{Separators, parse_relative},
     },
 };
 
@@ -23,6 +25,13 @@ use super::{VersionProgress, assets_index_key, checked_get};
 
 const MINECRAFT_RESOURCES_BASE_URL: &str = "https://resources.download.minecraft.net/";
 const HASH_PREFIX_LENGTH: usize = 2;
+
+fn unsafe_asset(value: &str) -> MinecraftDomainError {
+    MinecraftDomainError::UnsafeMetadataPath {
+        entity_type: GamePathKind::Asset,
+        value: value.to_owned(),
+    }
+}
 
 /// Assets are shared by every game version that lists them; one of them is written by one
 /// install at a time ([`KeyedLocks`] by path), and whole or not at all, so another never takes
@@ -64,20 +73,32 @@ impl<RC: RequestClient, C: Cache> AssetsService<RC, C> {
         }
     }
 
-    fn get_asset_path(&self, hash: &str) -> PathBuf {
+    /// The digest an asset is stored and fetched under. It comes from the metadata, so it is
+    /// checked to be a digest before it names a file.
+    fn asset_hash(hash: &str) -> Result<FileHash, MinecraftDomainError> {
+        FileHash::new(HashAlgorithm::Sha1, hash).map_err(|_| unsafe_asset(hash))
+    }
+
+    fn get_asset_path(&self, hash: &FileHash) -> PathBuf {
         self.location_info.object_dir(hash)
     }
 
-    fn get_legacy_asset_path(&self, name: &str) -> PathBuf {
-        self.location_info
+    /// Where the legacy copy of the asset `name` goes; refused when the name would lead out of
+    /// the legacy directory.
+    fn get_legacy_asset_path(&self, name: &str) -> Result<PathBuf, MinecraftDomainError> {
+        let relative =
+            parse_relative(name, Separators::SlashOrBackslash).map_err(|_| unsafe_asset(name))?;
+        Ok(self
+            .location_info
             .legacy_assets_dir()
-            .join(name.replace('/', &String::from(std::path::MAIN_SEPARATOR)))
+            .join(relative.replace('/', std::path::MAIN_SEPARATOR_STR)))
     }
 
-    fn build_asset_url(hash: &str) -> String {
+    fn build_asset_url(hash: &FileHash) -> String {
+        let hex = hash.hex();
         format!(
-            "{MINECRAFT_RESOURCES_BASE_URL}{sub_hash}/{hash}",
-            sub_hash = &hash[..HASH_PREFIX_LENGTH]
+            "{MINECRAFT_RESOURCES_BASE_URL}{sub_hash}/{hex}",
+            sub_hash = &hex[..HASH_PREFIX_LENGTH]
         )
     }
 
@@ -107,6 +128,7 @@ impl<RC: RequestClient, C: Cache> AssetsService<RC, C> {
         version_info: &vanilla::VersionInfo,
         force: bool,
     ) -> Result<vanilla::AssetsIndex, MinecraftDomainError> {
+        ensure_plain_name(&version_info.asset_index.id, GamePathKind::AssetsIndex)?;
         self.cached_resource
             .get_cached(
                 || assets_index_key(version_info.asset_index.id.clone()),
@@ -134,16 +156,18 @@ impl<RC: RequestClient, C: Cache> AssetsService<RC, C> {
             return Ok(assets.collect());
         }
 
-        let paths: Vec<_> = index
+        let paths = index
             .objects
             .iter()
             .map(|(name, asset)| {
-                (
-                    self.get_asset_path(&asset.hash),
-                    with_legacy.then(|| self.get_legacy_asset_path(name)),
-                )
+                Ok((
+                    self.get_asset_path(&Self::asset_hash(&asset.hash)?),
+                    with_legacy
+                        .then(|| self.get_legacy_asset_path(name))
+                        .transpose()?,
+                ))
             })
-            .collect();
+            .collect::<Result<Vec<_>, MinecraftDomainError>>()?;
         let missing = tokio::task::spawn_blocking(move || {
             paths
                 .iter()
@@ -211,22 +235,25 @@ impl<RC: RequestClient, C: Cache> AssetsService<RC, C> {
         with_legacy: bool,
         force: bool,
     ) -> Result<u64, MinecraftDomainError> {
-        let hash = &asset.hash;
-        let url = Self::build_asset_url(hash);
+        let hash = Self::asset_hash(&asset.hash)?;
+        let url = Self::build_asset_url(&hash);
 
-        let asset_path = self.get_asset_path(hash);
-        let legacy_path = self.get_legacy_asset_path(name);
+        let asset_path = self.get_asset_path(&hash);
+        let legacy_path = with_legacy
+            .then(|| self.get_legacy_asset_path(name))
+            .transpose()?;
 
         // Always the object first, then the name: no two installs wait on each other's.
         let _asset_lock = self.path_locks.lock(&asset_path).await;
-        let _legacy_lock = if with_legacy {
-            Some(self.path_locks.lock(&legacy_path).await)
-        } else {
-            None
+        let _legacy_lock = match &legacy_path {
+            Some(path) => Some(self.path_locks.lock(path).await),
+            None => None,
         };
 
         let need_download_asset = force || !asset_path.exists();
-        let need_download_legacy = with_legacy && (force || !legacy_path.exists());
+        let need_download_legacy = legacy_path
+            .as_ref()
+            .is_some_and(|path| force || !path.exists());
 
         if !need_download_asset && !need_download_legacy {
             trace!("Asset \"{}\" already downloaded", name);
@@ -234,7 +261,7 @@ impl<RC: RequestClient, C: Cache> AssetsService<RC, C> {
         }
 
         trace!("Downloading asset \"{}\"\n\tfrom {}", name, url);
-        let asset_data = self.fetch_bytes(&url, hash).await?;
+        let asset_data = self.fetch_bytes(&url, hash.hex()).await?;
         let size = asset_data.len() as u64;
 
         tokio::try_join!(
@@ -246,8 +273,8 @@ impl<RC: RequestClient, C: Cache> AssetsService<RC, C> {
                 Ok::<(), MinecraftDomainError>(())
             },
             async {
-                if need_download_legacy {
-                    write_replacing_async(&legacy_path, asset_data.clone()).await?;
+                if let Some(path) = legacy_path.as_ref().filter(|_| need_download_legacy) {
+                    write_replacing_async(path, asset_data.clone()).await?;
                 }
 
                 Ok::<(), MinecraftDomainError>(())

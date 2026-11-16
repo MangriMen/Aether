@@ -274,7 +274,10 @@
         "LIBRARIES_DIR": "libraries folder",
         "NATIVE_LIBRARY": "native libraries folder",
         "LOG_CONFIG": "game log config",
-        "CLASSPATH": "game client file"
+        "CLASSPATH": "game client file",
+        "VERSION_ID": "version id",
+        "ASSETS_INDEX": "assets index",
+        "ASSET": "asset"
       },
       "reason": {
         "PROCESSOR_FAILED": {

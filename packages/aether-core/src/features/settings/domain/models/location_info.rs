@@ -1,6 +1,9 @@
 use std::path::{Path, PathBuf};
 
-use crate::features::instance::{InstanceId, PluginId};
+use crate::{
+    features::instance::{InstanceId, PluginId},
+    shared::hash::FileHash,
+};
 
 pub const METADATA_FOLDER_NAME: &str = ".minecraft";
 pub const CACHE_FOLDER_NAME: &str = "cache";
@@ -113,8 +116,9 @@ impl LocationInfo {
 
     /// Get the directory for a specific object
     #[inline]
-    pub fn object_dir(&self, hash: &str) -> PathBuf {
-        self.objects_dir().join(&hash[..2]).join(hash)
+    pub fn object_dir(&self, hash: &FileHash) -> PathBuf {
+        let hex = hash.hex();
+        self.objects_dir().join(&hex[..2]).join(hex)
     }
 
     /// Get the Minecraft legacy assets metadata directory
@@ -277,7 +281,10 @@ mod tests {
     use std::path::{Path, PathBuf};
 
     use super::LocationInfo;
-    use crate::features::instance::{InstanceId, PluginId};
+    use crate::{
+        features::instance::{InstanceId, PluginId},
+        shared::hash::{FileHash, HashAlgorithm},
+    };
 
     #[test]
     fn should_pin_every_path_accessor() {
@@ -301,12 +308,10 @@ mod tests {
         assert_eq!(li.assets_dir(), meta.join("assets"));
         assert_eq!(li.assets_index_dir(), meta.join("assets").join("indexes"));
         assert_eq!(li.objects_dir(), meta.join("assets").join("objects"));
+        let hash = "abcdef0123456789abcdef0123456789abcdef01";
         assert_eq!(
-            li.object_dir("abcdef"),
-            meta.join("assets")
-                .join("objects")
-                .join("ab")
-                .join("abcdef")
+            li.object_dir(&FileHash::new(HashAlgorithm::Sha1, hash).unwrap()),
+            meta.join("assets").join("objects").join("ab").join(hash)
         );
         assert_eq!(li.legacy_assets_dir(), meta.join("resources"));
         assert_eq!(li.natives_dir(), meta.join("natives"));
