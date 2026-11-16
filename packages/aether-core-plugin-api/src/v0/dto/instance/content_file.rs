@@ -1,16 +1,17 @@
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use super::ContentTypeDto;
 use crate::v0::dto::FileHashDto;
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Serialize, JsonSchema, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
 #[serde(rename_all = "camelCase")]
 pub struct ProviderIdDto {
     pub plugin_id: String,
     pub capability_id: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, JsonSchema, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ContentFileDto {
     pub content_path: String,
@@ -29,7 +30,7 @@ pub struct ContentFileDto {
     pub update: Option<Vec<ContentFileUpdateInfoDto>>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[derive(Serialize, JsonSchema, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct ContentFileUpdateInfoDto {
     pub provider_id: ProviderIdDto,

@@ -1,8 +1,9 @@
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::v0::ModLoaderDto;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, JsonSchema, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum ContentVersionDependencyTypeDto {
     Required,
@@ -11,7 +12,7 @@ pub enum ContentVersionDependencyTypeDto {
     Embedded,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, JsonSchema, Deserialize)]
 pub struct ContentVersionDependencyDto {
     pub version_id: Option<String>,
     pub content_id: Option<String>,
@@ -19,7 +20,7 @@ pub struct ContentVersionDependencyDto {
     pub dependency_type: ContentVersionDependencyTypeDto,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, JsonSchema, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum ContentVersionTypeDto {
     Release,
@@ -27,7 +28,7 @@ pub enum ContentVersionTypeDto {
     Alpha,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, JsonSchema, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum ContentVersionStatusDto {
     Listed,
@@ -38,7 +39,7 @@ pub enum ContentVersionStatusDto {
     Unknown,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, JsonSchema, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum RequestedContentVersionStatusDto {
     Listed,
@@ -48,7 +49,7 @@ pub enum RequestedContentVersionStatusDto {
 }
 
 /// One file of a version.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, JsonSchema, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ContentVersionFileDto {
     pub file_name: String,
@@ -58,7 +59,7 @@ pub struct ContentVersionFileDto {
     pub primary: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, JsonSchema, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ContentVersionDto {
     pub id: String,

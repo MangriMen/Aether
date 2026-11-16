@@ -114,6 +114,11 @@ Some values are not msgpack at all:
 | `get_id` result | raw UTF-8 string, not wrapped in a result |
 | the instance id given to a plugin's updater export | raw UTF-8 string |
 
+[`schemas/plugin-wire.schema.json`](src/v0/schemas/plugin-wire.schema.json) describes every value
+that crosses the boundary (one property per type, the types under `$defs`; a `bin` is a string
+with `x-msgpack: "bin"`, since JSON has none). The schema leaves unknown keys open on purpose; a
+test checks that what the codec writes is listed in it.
+
 **With Rust**, `aether_core_plugin_api::v0::wire` is the codec and `aether-core-plugin-pdk` has
 `Wire<T>` for Extism in place of `Msgpack<T>`.
 

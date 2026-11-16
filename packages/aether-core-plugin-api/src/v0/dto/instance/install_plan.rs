@@ -2,6 +2,7 @@
 //! instance should contain, described as data. The launcher downloads, verifies and writes the
 //! files itself; a provider never writes into the instance.
 
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::v0::{
@@ -9,7 +10,7 @@ use crate::v0::{
 };
 
 /// Everything a provider wants installed, and where.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, JsonSchema, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct InstallPlanDto {
     pub target: InstallTargetDto,
@@ -26,7 +27,7 @@ pub struct InstallPlanDto {
 /// Answers the request's `ResolveTargetDto`: `existing` with the same instance id, `new` with
 /// the instance the content needs (a modpack's game version and loader). A plan for any other
 /// instance is rejected.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, JsonSchema, Deserialize)]
 #[serde(rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum InstallTargetDto {
     Existing {
@@ -45,7 +46,7 @@ pub enum InstallTargetDto {
 }
 
 /// What an instance runs, as a `NewInstanceDto` describes it.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, JsonSchema, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct InstanceGameDto {
     pub game_version: String,
@@ -57,7 +58,7 @@ pub struct InstanceGameDto {
 }
 
 /// One file the plan wants in the instance.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, JsonSchema, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct InstallFileEntryDto {
     pub source: ContentSourceDto,
@@ -82,7 +83,7 @@ pub struct InstallFileEntryDto {
 
 /// What makes a file optional: whether it is selected unless the user changes that, and what to
 /// tell them about it.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, JsonSchema, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OptionalFileDto {
     pub default_enabled: bool,
@@ -91,7 +92,7 @@ pub struct OptionalFileDto {
 }
 
 /// The side of the game a file is for.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, JsonSchema, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum FileSideDto {
     #[default]
@@ -101,7 +102,7 @@ pub enum FileSideDto {
 }
 
 /// Where the bytes of a file come from.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, JsonSchema, Deserialize)]
 #[serde(rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum ContentSourceDto {
     /// An `https` URL to download, checked against the plugin's `allowedHosts` like its own
@@ -134,7 +135,7 @@ pub enum ContentSourceDto {
 
 /// One concrete file of a platform's content, in the ids of `ContentSourceDto::ProviderRef`, its
 /// version always known.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, JsonSchema, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ContentIdentityDto {
     pub platform: String,
@@ -144,7 +145,7 @@ pub struct ContentIdentityDto {
 
 /// Files copied into the instance as they are, on top of the planned ones (a modpack's
 /// `overrides/`, `client-overrides/`).
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, JsonSchema, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OverrideSourceDto {
     pub location: OverrideLocationDto,
@@ -158,7 +159,7 @@ pub struct OverrideSourceDto {
 ///
 /// Paths are plugin-side and must lie in the plugin's `/cache` (where `download_to_cache` puts
 /// files); the launcher refuses anything else.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, JsonSchema, Deserialize)]
 #[serde(rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum OverrideLocationDto {
     /// The `subdir` directory of a zip archive (`overrides`).

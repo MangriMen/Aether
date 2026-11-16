@@ -1,3 +1,4 @@
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::v0::{InstanceInstallStageDto, LoaderVersionPreferenceDto, ModLoaderDto, PackInfoDto};
@@ -9,7 +10,7 @@ use crate::v0::{InstanceInstallStageDto, LoaderVersionPreferenceDto, ModLoaderDt
 /// host paths: users keep API keys and proxy credentials in the environment variables, and a
 /// plugin with network access could send them out. Add a field here only when every plugin that
 /// receives it needs it.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, JsonSchema, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct InstanceSummaryDto {
     pub id: String,

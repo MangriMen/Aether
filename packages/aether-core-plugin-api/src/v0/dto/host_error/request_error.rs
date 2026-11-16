@@ -1,6 +1,7 @@
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, JsonSchema, Deserialize, Clone)]
 #[serde(
     tag = "kind",
     content = "data",

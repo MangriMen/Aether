@@ -15,6 +15,7 @@ pub mod plugin_failure;
 pub mod plugin_internal_event;
 pub mod plugin_manifest;
 pub mod plugin_settings;
+pub mod plugin_wire;
 pub mod serializable_output;
 pub mod settings;
 
@@ -35,5 +36,6 @@ pub use plugin_failure::*;
 pub use plugin_internal_event::*;
 pub use plugin_manifest::*;
 pub use plugin_settings::*;
+pub use plugin_wire::*;
 pub use serializable_output::*;
 pub use settings::*;

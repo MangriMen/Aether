@@ -1,8 +1,9 @@
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 /// The input of `getContentsMetadata`: the projects to describe, asked in one go for a whole
 /// instance.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, JsonSchema, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GetContentsMetadataParamsDto {
     /// The provider's ids of the projects, or their slugs.
@@ -11,7 +12,7 @@ pub struct GetContentsMetadataParamsDto {
 
 /// The input of `getVersionsMetadata`: the versions to describe, asked in one go for a whole
 /// instance.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, JsonSchema, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GetVersionsMetadataParamsDto {
     /// The provider's ids of the versions, as `ContentFileUpdateInfo::version` records them.
@@ -19,7 +20,7 @@ pub struct GetVersionsMetadataParamsDto {
 }
 
 /// The input of `getAuthors`: the authors to name, asked in one go for a whole instance.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, JsonSchema, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GetAuthorsParamsDto {
     /// The `authorRef`s the provider gave in `ContentMetadataDto`.
@@ -37,7 +38,7 @@ pub struct GetAuthorsParamsDto {
 /// is kept under its `contentId`, so do not give an item the `slug` of one asked project and the
 /// `contentId` of another. An item
 /// without a `contentId` or a non-blank `name` is dropped; the rest of the answer is kept.
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, JsonSchema, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ContentMetadataDto {
     /// The provider's own id of the project, which may differ from the one asked by (a slug, for
@@ -72,7 +73,7 @@ pub struct ContentMetadataDto {
 ///
 /// The host keeps only items whose `versionId` was asked, once each, and with a non-blank
 /// `versionNumber`; the rest of the answer is kept when one item is dropped.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, JsonSchema, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ContentVersionMetadataDto {
     /// The provider's own id of the version, as asked.
@@ -93,7 +94,7 @@ pub struct ContentVersionMetadataDto {
 /// The host keeps only items whose `authorRef` was asked, once each, and with a non-blank
 /// `name`; the rest of the answer is kept when one item is dropped. The name is trimmed and cut
 /// to 128 characters.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, JsonSchema, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ContentAuthorDto {
     /// The ref, as asked.

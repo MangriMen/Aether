@@ -1,9 +1,10 @@
 use std::str::FromStr;
 
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_with::{Bytes, serde_as};
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, JsonSchema, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct CommandDto {
     pub program: String,
@@ -13,13 +14,15 @@ pub struct CommandDto {
 
 /// Output of a command run through `run_command`. The streams travel as msgpack `bin`.
 #[serde_as]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, JsonSchema, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct OutputDto {
     pub status: u32,
     #[serde_as(as = "Bytes")]
+    #[schemars(schema_with = "crate::v0::schema::bytes")]
     pub stdout: Vec<u8>,
     #[serde_as(as = "Bytes")]
+    #[schemars(schema_with = "crate::v0::schema::bytes")]
     pub stderr: Vec<u8>,
     /// `stdout` hit the host's per-stream cap and was cut short.
     // `default` lets a plugin built against this DTO still decode a response from a host that

@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_with::{Bytes, serde_as};
 
@@ -8,7 +9,7 @@ use serde_with::{Bytes, serde_as};
 /// Unlike Extism's built-in `http_request`, the host checks **every** redirect hop as if it
 /// were the first request (`allowed_hosts`, public addresses, no `https` → `http`) and follows
 /// at most 5 of them. The request headers are not sent on to another origin.
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, JsonSchema, Deserialize, Debug, Clone)]
 pub struct HttpRequestDto {
     /// Absolute URL. Only the `http` and `https` schemes are accepted.
     pub url: String,
@@ -23,7 +24,7 @@ pub struct HttpRequestDto {
 /// Same network policy as [`HttpRequestDto`] (host `allowed_hosts`, no non-public
 /// addresses), except that redirects are never followed: any 3xx is an error. The host always
 /// sends `Content-Type: application/json`.
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, JsonSchema, Deserialize, Debug, Clone)]
 pub struct HttpPostJsonRequestDto {
     /// Absolute URL. Only the `http` and `https` schemes are accepted.
     pub url: String,
@@ -42,7 +43,7 @@ pub struct HttpPostJsonRequestDto {
 /// copy instead of an instruction per byte, which is what keeps a megabyte-sized body within
 /// the plugin's fuel.
 #[serde_as]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, JsonSchema, Deserialize, Debug, Clone)]
 pub struct HttpResponseDto {
     /// HTTP status code of the final response, after any redirects the host followed.
     pub status: u16,
@@ -51,5 +52,6 @@ pub struct HttpResponseDto {
     /// Response body. Truncation never happens silently: a body over the host limit
     /// fails the whole call.
     #[serde_as(as = "Bytes")]
+    #[schemars(schema_with = "crate::v0::schema::bytes")]
     pub body: Vec<u8>,
 }

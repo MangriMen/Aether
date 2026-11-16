@@ -1,5 +1,5 @@
 use register_schema::RegisterSchema;
-use schemars::{JsonSchema, Schema, SchemaGenerator, json_schema};
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use super::HostError;
@@ -28,21 +28,7 @@ pub struct PluginFailureDto {
     /// failure is the plugin's own. A value the host does not understand is ignored, the
     /// `message` still counts.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[schemars(schema_with = "host_error_schema")]
     pub host: Option<HostError>,
-}
-
-// The full `HostError` contract is not described by a schema yet, so only its envelope is:
-// `type` names the variant, `payload` carries it. (The field's doc comment is the description.)
-fn host_error_schema(_: &mut SchemaGenerator) -> Schema {
-    json_schema!({
-        "type": "object",
-        "properties": {
-            "type": { "type": "string" },
-            "payload": {}
-        },
-        "required": ["type"]
-    })
 }
 
 impl PluginFailureDto {

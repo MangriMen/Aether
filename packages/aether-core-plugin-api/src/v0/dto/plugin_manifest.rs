@@ -84,7 +84,7 @@ pub struct PathMappingDto(
     pub String,
 );
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, Hash, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, Serialize, JsonSchema, Deserialize, Hash, Eq, PartialEq)]
 #[serde(rename_all = "snake_case")]
 pub enum LoadConfigTypeDto {
     Extism,
