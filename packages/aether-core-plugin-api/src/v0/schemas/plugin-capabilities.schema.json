@@ -177,39 +177,39 @@
           ]
         },
         "getAuthors": {
-          "description": "Optional function naming the authors of projects by the `authorRef`s of\n`ContentMetadataDto`. Takes `GetAuthorsParamsDto`, returns a list of `ContentAuthorDto`.\nWithout it a project is shown by its `author` alone.",
+          "description": "Optional function naming the authors of projects by the `authorRef`s of\n`ContentMetadataDto`. Takes `GetAuthorsParamsDto`, returns `GetAuthorsResultDto`.\nWithout it a project is shown by its `author` alone.",
           "type": [
             "string",
             "null"
           ]
         },
         "getContent": {
-          "description": "Function to get detailed information about a specific piece of content.",
+          "description": "Function to get detailed information about a specific piece of content. Takes\n`GetContentParamsDto`, returns `ContentItemDto`.",
           "type": "string"
         },
         "getContentsMetadata": {
-          "description": "Optional function describing projects to show installed content by (name, icon, author).\nTakes `GetContentsMetadataParamsDto`, returns a list of `ContentMetadataDto`. Without it the\nprovider's content is shown by file alone.",
+          "description": "Optional function describing projects to show installed content by (name, icon, author).\nTakes `GetContentsMetadataParamsDto`, returns `GetContentsMetadataResultDto`. Without it the\nprovider's content is shown by file alone.",
           "type": [
             "string",
             "null"
           ]
         },
         "getVersion": {
-          "description": "Optional function giving one version whole, by its id, for the page of the version. Takes\nthe version id, returns a `ContentVersionDto` with its changelog. Without it the provider\nhas no page for a version.",
+          "description": "Optional function giving one version whole, by its id, for the page of the version. Takes\n`GetVersionParamsDto`, returns a `ContentVersionDto` with its changelog. Without it the provider\nhas no page for a version.",
           "type": [
             "string",
             "null"
           ]
         },
         "getVersionsMetadata": {
-          "description": "Optional function giving the version number of installed files. Takes\n`GetVersionsMetadataParamsDto`, returns a list of `ContentVersionMetadataDto`. Without it the files are shown\nwithout a version.",
+          "description": "Optional function giving the version number of installed files. Takes\n`GetVersionsMetadataParamsDto`, returns `GetVersionsMetadataResultDto`. Without it the files are shown\nwithout a version.",
           "type": [
             "string",
             "null"
           ]
         },
         "listVersion": {
-          "description": "Optional function to list available versions of a specific content item.",
+          "description": "Optional function to list available versions of a specific content item. Takes\n`ListVersionsParamsDto`, returns `ListVersionsResultDto`.",
           "type": [
             "string",
             "null"

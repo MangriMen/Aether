@@ -20,7 +20,8 @@ use std::{
 use aether_core_plugin_api::v0::wire;
 use aether_core_plugin_api::v0::{
     ContentAuthorDto, ContentMetadataDto, ContentSearchResultDto, ContentVersionMetadataDto,
-    FileHashDto, ModLoaderDto, PackMetadataDto, ProviderIdDto, ResolvedFileDto,
+    FileHashDto, GetAuthorsResultDto, GetContentsMetadataResultDto, GetVersionsMetadataResultDto,
+    ModLoaderDto, PackMetadataDto, ProviderIdDto, ResolvedFileDto,
 };
 use extism::{Function, Manifest, PluginBuilder, UserData, Wasm};
 use serde::Serialize;
@@ -422,29 +423,35 @@ async fn should_describe_content_when_a_wasm_plugin_answers_the_metadata_handler
         &[
             (
                 "cf_get_contents_metadata",
-                Body::Answer(encode(vec![ContentMetadataDto {
-                    content_id: "238222".into(),
-                    slug: "jei".into(),
-                    name: "Just Enough Items".into(),
-                    author: Some("mezz".into()),
-                    author_ref: Some("team:abc".into()),
-                    icon_url: Some("https://media.forgecdn.net/jei.png".into()),
-                }])),
+                Body::Answer(encode(GetContentsMetadataResultDto {
+                    contents: vec![ContentMetadataDto {
+                        content_id: "238222".into(),
+                        slug: "jei".into(),
+                        name: "Just Enough Items".into(),
+                        author: Some("mezz".into()),
+                        author_ref: Some("team:abc".into()),
+                        icon_url: Some("https://media.forgecdn.net/jei.png".into()),
+                    }],
+                })),
             ),
             (
                 "cf_get_authors",
-                Body::Answer(encode(vec![ContentAuthorDto {
-                    author_ref: "team:abc".into(),
-                    name: "Mezz Team".into(),
-                }])),
+                Body::Answer(encode(GetAuthorsResultDto {
+                    authors: vec![ContentAuthorDto {
+                        author_ref: "team:abc".into(),
+                        name: "Mezz Team".into(),
+                    }],
+                })),
             ),
             (
                 "cf_get_versions_metadata",
-                Body::Answer(encode(vec![ContentVersionMetadataDto {
-                    version_id: "4512345".into(),
-                    version_number: "15.2.0".into(),
-                    name: Some("JEI 15.2.0".into()),
-                }])),
+                Body::Answer(encode(GetVersionsMetadataResultDto {
+                    versions: vec![ContentVersionMetadataDto {
+                        version_id: "4512345".into(),
+                        version_number: "15.2.0".into(),
+                        name: Some("JEI 15.2.0".into()),
+                    }],
+                })),
             ),
         ],
         Arc::default(),
@@ -485,14 +492,16 @@ async fn should_still_describe_content_when_a_wasm_plugin_fails_naming_authors()
         &[
             (
                 "cf_get_contents_metadata",
-                Body::Answer(encode(vec![ContentMetadataDto {
-                    content_id: "238222".into(),
-                    slug: "jei".into(),
-                    name: "Just Enough Items".into(),
-                    author: None,
-                    author_ref: Some("team:abc".into()),
-                    icon_url: None,
-                }])),
+                Body::Answer(encode(GetContentsMetadataResultDto {
+                    contents: vec![ContentMetadataDto {
+                        content_id: "238222".into(),
+                        slug: "jei".into(),
+                        name: "Just Enough Items".into(),
+                        author: None,
+                        author_ref: Some("team:abc".into()),
+                        icon_url: None,
+                    }],
+                })),
             ),
             ("cf_get_authors", Body::Panic),
         ],

@@ -78,9 +78,11 @@ pub struct PluginContentProviderCapabilityDto {
 pub struct ProviderHandlersDto {
     /// Function to search for content within the provider.
     pub search: String,
-    /// Function to get detailed information about a specific piece of content.
+    /// Function to get detailed information about a specific piece of content. Takes
+    /// `GetContentParamsDto`, returns `ContentItemDto`.
     pub get_content: String,
-    /// Optional function to list available versions of a specific content item.
+    /// Optional function to list available versions of a specific content item. Takes
+    /// `ListVersionsParamsDto`, returns `ListVersionsResultDto`.
     pub list_version: Option<String>,
     /// Optional function to check if a specific content item is compatible with current environment.
     pub check_compatibility: Option<String>,
@@ -94,19 +96,19 @@ pub struct ProviderHandlersDto {
     /// installing and the check for updates. Takes `PackSourceDto`, returns `PackMetadataDto`.
     pub resolve_pack_metadata: Option<String>,
     /// Optional function describing projects to show installed content by (name, icon, author).
-    /// Takes `GetContentsMetadataParamsDto`, returns a list of `ContentMetadataDto`. Without it the
+    /// Takes `GetContentsMetadataParamsDto`, returns `GetContentsMetadataResultDto`. Without it the
     /// provider's content is shown by file alone.
     pub get_contents_metadata: Option<String>,
     /// Optional function giving the version number of installed files. Takes
-    /// `GetVersionsMetadataParamsDto`, returns a list of `ContentVersionMetadataDto`. Without it the files are shown
+    /// `GetVersionsMetadataParamsDto`, returns `GetVersionsMetadataResultDto`. Without it the files are shown
     /// without a version.
     pub get_versions_metadata: Option<String>,
     /// Optional function naming the authors of projects by the `authorRef`s of
-    /// `ContentMetadataDto`. Takes `GetAuthorsParamsDto`, returns a list of `ContentAuthorDto`.
+    /// `ContentMetadataDto`. Takes `GetAuthorsParamsDto`, returns `GetAuthorsResultDto`.
     /// Without it a project is shown by its `author` alone.
     pub get_authors: Option<String>,
     /// Optional function giving one version whole, by its id, for the page of the version. Takes
-    /// the version id, returns a `ContentVersionDto` with its changelog. Without it the provider
+    /// `GetVersionParamsDto`, returns a `ContentVersionDto` with its changelog. Without it the provider
     /// has no page for a version.
     pub get_version: Option<String>,
 }

@@ -2,15 +2,17 @@ use register_schema::RegisterSchema;
 use schemars::JsonSchema;
 
 use super::{
-    CachedFileDto, CommandDto, ContentAuthorDto, ContentCompatibilityCheckParamsDto,
-    ContentCompatibilityResultDto, ContentFileDto, ContentItemDto, ContentMetadataDto,
-    ContentSearchParamsDto, ContentSearchResultDto, ContentVersionDto, ContentVersionMetadataDto,
-    DownloadToCacheParamsDto, GetAuthorsParamsDto, GetContentsMetadataParamsDto,
-    GetVersionsMetadataParamsDto, HostError, HttpPostJsonRequestDto, HttpRequestDto,
-    HttpResponseDto, InstallPlanDto, InstanceFileBytesDto, JavaDto, NewInstanceDto, OutputDto,
+    CachedFileDto, CheckCompatibilityResultDto, CommandDto, ContentCompatibilityCheckParamsDto,
+    ContentFileDto, ContentItemDto, ContentSearchParamsDto, ContentSearchResultDto,
+    ContentVersionDto, DownloadToCacheParamsDto, GetAuthorsParamsDto, GetAuthorsResultDto,
+    GetContentParamsDto, GetContentsMetadataParamsDto, GetContentsMetadataResultDto,
+    GetVersionParamsDto, GetVersionsMetadataParamsDto, GetVersionsMetadataResultDto, HostError,
+    HttpPostJsonRequestDto, HttpRequestDto, HttpResponseDto, InstallPlanDto, InstanceFileBytesDto,
+    JavaDto, ListVersionsParamsDto, ListVersionsResultDto, NewInstanceDto, OutputDto,
     PackMetadataDto, PackSourceDto, PluginCheckCompatibilityParamsDto, PluginImportInstanceDto,
     PluginInternalEventDto, ReadInstanceFileParamsDto, ResolveFileParamsDto,
-    ResolveInstallPlanParamsDto, ResolvedFileDto, WriteInstanceFileParamsDto,
+    ResolveInstallPlanParamsDto, ResolvedFileDto, UpdateInstanceParamsDto,
+    WriteInstanceFileParamsDto,
 };
 
 /// Every structured value that crosses the plugin boundary, in one schema: the properties only
@@ -48,7 +50,11 @@ pub struct PluginWireDto {
     // Exports the host calls: what it sends.
     pub internal_event: PluginInternalEventDto,
     pub import_instance: PluginImportInstanceDto,
+    pub update_instance_params: UpdateInstanceParamsDto,
     pub content_search_params: ContentSearchParamsDto,
+    pub get_content_params: GetContentParamsDto,
+    pub list_versions_params: ListVersionsParamsDto,
+    pub get_version_params: GetVersionParamsDto,
     pub resolve_file_params: ResolveFileParamsDto,
     pub resolve_install_plan_params: ResolveInstallPlanParamsDto,
     pub pack_source: PackSourceDto,
@@ -61,12 +67,13 @@ pub struct PluginWireDto {
     // Exports the host calls: what they answer.
     pub content_search_result: ContentSearchResultDto,
     pub content_item: ContentItemDto,
-    pub content_versions: Vec<ContentVersionDto>,
+    pub content_version: ContentVersionDto,
+    pub list_versions_result: ListVersionsResultDto,
     pub resolved_file: ResolvedFileDto,
     pub install_plan: InstallPlanDto,
     pub pack_metadata: PackMetadataDto,
-    pub contents_metadata: Vec<ContentMetadataDto>,
-    pub versions_metadata: Vec<ContentVersionMetadataDto>,
-    pub authors: Vec<ContentAuthorDto>,
-    pub compatibility_result: std::collections::HashMap<String, ContentCompatibilityResultDto>,
+    pub get_contents_metadata_result: GetContentsMetadataResultDto,
+    pub get_versions_metadata_result: GetVersionsMetadataResultDto,
+    pub get_authors_result: GetAuthorsResultDto,
+    pub check_compatibility_result: CheckCompatibilityResultDto,
 }

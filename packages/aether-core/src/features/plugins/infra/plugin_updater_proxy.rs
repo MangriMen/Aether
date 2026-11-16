@@ -1,3 +1,5 @@
+use crate::features::plugins::infra::extism::Wire;
+use aether_core_plugin_api::v0::UpdateInstanceParamsDto;
 use async_trait::async_trait;
 
 use crate::features::{
@@ -39,9 +41,14 @@ impl Updater for PluginUpdaterProxy {
         let result = self
             .instance
             .run(&self.capability.handler, move |plugin| {
-                plugin
-                    .supports(&handler)
-                    .then(|| plugin.call::<_, ()>(&handler, instance_id.as_str()))
+                plugin.supports(&handler).then(|| {
+                    plugin.call::<_, ()>(
+                        &handler,
+                        Wire(UpdateInstanceParamsDto {
+                            instance_id: instance_id.as_str().to_owned(),
+                        }),
+                    )
+                })
             })
             .await
             .and_then(Option::transpose);
