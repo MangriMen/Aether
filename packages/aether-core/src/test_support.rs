@@ -58,3 +58,60 @@ pub(crate) fn link_file(target: &Path, link: &Path) {
         )
     });
 }
+
+/// Makes renaming the file `path` fail, as a jar held open by a running game does on Windows,
+/// until the guard is dropped. `None` where this cannot be done: on Unix a read-only directory
+/// stops nobody running as root, and a test that went on would not prove anything.
+#[must_use = "the rename works again once the guard is dropped"]
+// Windows can always hold the file; only Unix may have to give up.
+#[cfg_attr(windows, expect(clippy::unnecessary_wraps))]
+pub(crate) fn block_rename(path: &Path) -> Option<RenameBlock> {
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::OpenOptionsExt;
+
+        // Without `FILE_SHARE_DELETE` (std shares it by default) a file cannot be renamed.
+        const FILE_SHARE_READ: u32 = 1;
+        Some(RenameBlock(
+            std::fs::OpenOptions::new()
+                .read(true)
+                .share_mode(FILE_SHARE_READ)
+                .open(path)
+                .expect("could not hold the file open"),
+        ))
+    }
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+
+        let dir = path.parent().expect("a file has a directory").to_path_buf();
+        let original = std::fs::metadata(&dir).unwrap().permissions();
+        std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o555)).unwrap();
+
+        // Root is not stopped by it.
+        let probe = dir.join(".rename-block-probe");
+        if std::fs::write(&probe, b"").is_ok() {
+            std::fs::remove_file(&probe).unwrap();
+            std::fs::set_permissions(&dir, original).unwrap();
+            return None;
+        }
+
+        Some(RenameBlock { dir, original })
+    }
+}
+
+#[cfg(windows)]
+pub(crate) struct RenameBlock(#[allow(dead_code)] std::fs::File);
+
+#[cfg(unix)]
+pub(crate) struct RenameBlock {
+    dir: std::path::PathBuf,
+    original: std::fs::Permissions,
+}
+
+#[cfg(unix)]
+impl Drop for RenameBlock {
+    fn drop(&mut self) {
+        let _ = std::fs::set_permissions(&self.dir, self.original.clone());
+    }
+}

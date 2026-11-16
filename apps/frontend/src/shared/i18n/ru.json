@@ -124,6 +124,7 @@
       "CONTENT_FILENAME": "Недопустимое имя файла контента",
       "PACK_FILE_NOT_FOUND": "Файл контента {{content_path}} не записан для инстанса {{instance_id}}",
       "NOT_A_CONTENT_FILE": "{{content_path}} в инстансе {{instance_id}} — папка, а не файл контента",
+      "CONTENT_STATE_CHANGE_FAILED": "Не удалось изменить {{paths}}",
       "INVALID_RELATIVE_PATH": "Недопустимый путь {{path}}: {{reason}}",
       "INVALID_CONTENT_ID": "Недопустимый идентификатор: {{value}}",
       "INVALID_GAME_VERSION": "Недопустимая версия Minecraft {{value}}: {{reason}}",

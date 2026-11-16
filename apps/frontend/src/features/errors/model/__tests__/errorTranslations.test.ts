@@ -128,6 +128,23 @@ describe('error translations', () => {
     }
   });
 
+  it('should_list_the_failed_files_and_the_cause_when_a_toggle_failed_partly', () => {
+    const error = {
+      type: 'instance',
+      payload: {
+        code: 'CONTENT_STATE_CHANGE_FAILED',
+        payload: {
+          paths: ['mods/a.jar', 'mods/b.jar'],
+          cause: { type: 'io', kind: 'resourceBusy' },
+        },
+      },
+    } as LauncherError;
+
+    expect(getTranslatedError(error, tEn)).toBe(
+      'Could not change mods/a.jar, mods/b.jar: the file is in use by another program',
+    );
+  });
+
   it('should_translate_the_cause_into_russian', () => {
     const text = getTranslatedError(io({ type: 'io', kind: 'notFound' }), tRu);
 

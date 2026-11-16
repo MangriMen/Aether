@@ -345,7 +345,7 @@ const DURATION_KEYS: ReadonlySet<string> = new Set([
   'java.PROPERTIES_TIMEOUT',
 ]);
 
-/** Values the core sends as raw numbers, turned into text in the language of the interface. */
+/** Values the core sends as raw numbers, turned into text in the language of the interface; a list of names reads as one, comma-separated. */
 const withFormattedArgs = (
   key: string,
   args: unknown,
@@ -360,6 +360,17 @@ const withFormattedArgs = (
       ...(args as Record<string, string | number | boolean>),
       duration: formatDuration(Number(args.seconds), dayjs.locale()),
     };
+  }
+
+  if (isRecord(args)) {
+    return Object.fromEntries(
+      Object.entries(args).map(([name, value]) => [
+        name,
+        Array.isArray(value) && value.every((item) => typeof item === 'string')
+          ? value.join(', ')
+          : value,
+      ]),
+    ) as Parameters<TFunction>[1];
   }
 
   return args as Parameters<TFunction>[1];

@@ -85,7 +85,8 @@ export const useDisableContents = () => {
   return useMutation(() => ({
     mutationFn: ({ id, paths }: { id: string; paths: string[] }) =>
       instanceCommands.disableContents(id, paths),
-    onSuccess: (_, { id }) => {
+    // A toggle that failed on some files changed the others.
+    onSettled: (_, __, { id }) => {
       invalidateInstanceContent(queryClient, id);
     },
     onError: (err) => {
@@ -105,7 +106,8 @@ export const useEnableContents = () => {
   return useMutation(() => ({
     mutationFn: ({ id, paths }: { id: string; paths: string[] }) =>
       instanceCommands.enableContents(id, paths),
-    onSuccess: (_, { id }) => {
+    // A toggle that failed on some files changed the others.
+    onSettled: (_, __, { id }) => {
       invalidateInstanceContent(queryClient, id);
     },
     onError: (err) => {

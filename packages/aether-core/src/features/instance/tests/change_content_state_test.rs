@@ -12,6 +12,7 @@ use crate::features::instance::{
     InstanceId, InstanceLocks,
 };
 use crate::features::settings::LocationInfo;
+use crate::test_support::block_rename;
 
 // ─── Mock event emitter ────────────────────────────────────────
 
@@ -26,6 +27,18 @@ impl EventEmitter<Event> for MockEventEmitter {
     fn listen(&self, _handler: Box<dyn Fn(Event) + Send + Sync + 'static>) {
         // no-op
     }
+}
+
+struct RecordingEmitter(std::sync::Mutex<Vec<Event>>);
+
+#[async_trait]
+impl EventEmitter<Event> for RecordingEmitter {
+    async fn emit(&self, event: Event) -> Result<(), EventError> {
+        self.0.lock().unwrap().push(event);
+        Ok(())
+    }
+
+    fn listen(&self, _handler: Box<dyn Fn(Event) + Send + Sync + 'static>) {}
 }
 
 // ─── Test infrastructure ───────────────────────────────────────
@@ -236,4 +249,50 @@ async fn should_change_the_state_when_the_lock_is_released_within_the_wait() {
     drop(held);
     change.await.unwrap();
     assert!(dir.join("mods/test.jar.disabled").exists());
+}
+
+#[rstest]
+#[case::some_changed(&["mods/a.jar", "shaderpacks/b.jar"], 1)]
+#[case::none_changed(&["shaderpacks/b.jar"], 0)]
+#[tokio::test]
+async fn should_announce_the_edit_only_when_a_file_changed_though_another_failed(
+    #[case] files: &[&str],
+    #[case] edits: usize,
+) {
+    let (_temp, location_info, service) = setup();
+    let emitter = Arc::new(RecordingEmitter(std::sync::Mutex::new(Vec::new())));
+    let use_case =
+        ChangeContentStateUseCase::new(emitter.clone(), service, Arc::new(InstanceLocks::new()));
+    let instance_id = InstanceId::try_from("test-partial-toggle-usecase").unwrap();
+    let dir = location_info.instance_dir(&instance_id);
+    put_files(&dir, &["mods/a.jar"]).await;
+    // Its own directory: on Unix the one holding the file is locked as a whole.
+    tokio::fs::create_dir_all(dir.join("shaderpacks"))
+        .await
+        .unwrap();
+    tokio::fs::write(dir.join("shaderpacks/b.jar"), b"data")
+        .await
+        .unwrap();
+    let Some(_block) = block_rename(&dir.join("shaderpacks/b.jar")) else {
+        return;
+    };
+
+    let err = use_case
+        .execute(ChangeContentState::multiple(
+            instance_id,
+            files
+                .iter()
+                .map(|file| ContentPath::parse(file).unwrap())
+                .collect(),
+            ContentStateAction::Disable,
+        ))
+        .await
+        .expect_err("a file that cannot be renamed is an error");
+
+    let InstanceError::ContentStateChangeFailed { failures, .. } = err else {
+        panic!("unexpected error: {err:?}");
+    };
+    assert_eq!(failures.len(), 1);
+    let announced = emitter.0.lock().unwrap();
+    assert_eq!(announced.len(), edits);
 }

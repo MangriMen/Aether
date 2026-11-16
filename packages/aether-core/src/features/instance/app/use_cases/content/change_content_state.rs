@@ -100,17 +100,24 @@ impl ChangeContentStateUseCase {
             });
         };
 
-        match action {
+        let result = match action {
             ContentStateAction::Enable => {
                 self.content_file_service
                     .enable_content_files(&instance_id, content_paths.as_slice())
-                    .await?;
+                    .await
             }
             ContentStateAction::Disable => {
                 self.content_file_service
                     .disable_content_files(&instance_id, content_paths.as_slice())
-                    .await?;
+                    .await
             }
+        };
+
+        // Files that did change are announced even when others did not.
+        if let Err(err) = &result
+            && !matches!(err, InstanceError::ContentStateChangeFailed { changed, .. } if *changed > 0)
+        {
+            return result;
         }
 
         self.event_emitter
@@ -120,7 +127,7 @@ impl ChangeContentStateUseCase {
             })
             .await;
 
-        Ok(())
+        result
     }
 }
 
