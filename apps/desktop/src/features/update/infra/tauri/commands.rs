@@ -1,6 +1,6 @@
 use crate::{
     FrontendResult,
-    core::UpdateServiceState,
+    core::{ContainerState, UpdateServiceState},
     features::update::{CheckForUpdatesUseCase, InstallUpdateUseCase},
     shared::{
         IdempotencyManager, RequestId, TauriIdempotencyExt,
@@ -8,6 +8,7 @@ use crate::{
     },
 };
 
+use aether_core::features::process::ProcessFeature;
 use tauri::State;
 
 use super::UpdateStatusDto;
@@ -40,13 +41,17 @@ pub async fn check_for_updates(
 #[specta::specta]
 pub async fn install_update(
     update_service: State<'_, UpdateServiceState<tauri::Wry>>,
+    container: State<'_, ContainerState>,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    Ok(InstallUpdateUseCase::new(update_service.inner().clone())
-        .execute()
-        .await
-        .map_err(crate::Error::from)?)
+    Ok(InstallUpdateUseCase::new(
+        update_service.inner().clone(),
+        container.0.list_process_metadata_use_case(),
+    )
+    .execute()
+    .await
+    .map_err(crate::Error::from)?)
 }

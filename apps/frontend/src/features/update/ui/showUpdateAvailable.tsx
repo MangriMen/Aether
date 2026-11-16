@@ -6,7 +6,9 @@ import { Button, closeToast, showToast } from '@/shared/ui-kit';
 
 import type { UpdateStatus } from '../model/update';
 
+import { useRunningGames } from '../lib/useRunningGames';
 import { useUpdate } from '../lib/useUpdate';
+import { RunningGamesHint } from './RunningGamesHint';
 import { UpdateAndRestartWarningDialog } from './UpdateAndRestartWarningDialog';
 
 let isAlreadyOpened = false;
@@ -36,6 +38,8 @@ export const showUpdateAvailable = (update: UpdateStatus) => {
     const [{ t }] = useTranslation();
 
     const { isUpdating, updateAndRestart } = useUpdate();
+
+    const runningGames = useRunningGames();
 
     const [isDialogOpen, setIsDialogOpen] = createSignal(false);
 
@@ -72,6 +76,7 @@ export const showUpdateAvailable = (update: UpdateStatus) => {
               class='h-auto'
               size='sm'
               loading={isUpdating()}
+              disabled={runningGames.isRunning()}
               onClick={handleOpenDialog}
             >
               {t('settings.update')}
@@ -85,6 +90,7 @@ export const showUpdateAvailable = (update: UpdateStatus) => {
               {t('settings.goToUpdatePage')}
             </Button>
           </div>
+          <RunningGamesHint games={runningGames.names()} />
           <UpdateAndRestartWarningDialog
             open={isDialogOpen()}
             onOpenChange={setIsDialogOpen}

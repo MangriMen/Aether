@@ -8,6 +8,11 @@ pub enum UpdateError {
     #[error("No update to install: check for updates first")]
     NoPendingUpdate,
 
+    /// A game is running: the launcher restarts after the install and would leave it an orphan,
+    /// its play time, post-exit hook and crash detection lost.
+    #[error("A game is running: close it to install the update")]
+    GameRunning,
+
     #[error("Could not download the update: {0}")]
     Network(#[source] SharedSource),
 

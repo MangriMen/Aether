@@ -415,6 +415,7 @@
       "INVALID_MEMORY": "The memory amount must be at least 1 MB"
     },
     "update": {
+      "GAME_RUNNING": "A game is running. Close it to install the update",
       "NO_PENDING_UPDATE": "No update to install. Check for updates again",
       "NETWORK": "Could not download the update",
       "SIGNATURE": "The update signature is invalid; it was not installed",
@@ -910,6 +911,7 @@
     }
   },
   "update": {
+    "closeGameToInstall": "Close the game to install the update: {{games}}",
     "updateError": "Failed to install update",
     "banner": "Banner",
     "toast": "Toast",

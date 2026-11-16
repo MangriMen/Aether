@@ -596,7 +596,7 @@ export type SettingsErrorDto = { code: "NOT_FOUND" } | { code: "STORAGE_FAILURE"
 } } | { code: "INVALID_MAX_CONCURRENT_DOWNLOADS" } | { code: "INVALID_MEMORY" };
 
 /**  Why the launcher could not be updated. */
-export type UpdateErrorDto = { code: "NO_PENDING_UPDATE" } | { code: "NETWORK"; payload: {
+export type UpdateErrorDto = { code: "NO_PENDING_UPDATE" } | { code: "GAME_RUNNING" } | { code: "NETWORK"; payload: {
 	cause: CauseDto,
 } } | { code: "SIGNATURE"; payload: {
 	cause: CauseDto,
