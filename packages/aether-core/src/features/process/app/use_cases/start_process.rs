@@ -97,7 +97,6 @@ impl StartProcessUseCase {
                 message: "Launched Minecraft".to_string(),
                 exit_code: None,
                 crashed: false,
-                hook_error: None,
             })
             .await;
 
@@ -263,23 +262,12 @@ mod tests {
 #[cfg(test)]
 mod spawn_error_tests {
     use crate::features::{
-        events::{Event, EventEmitter, EventError},
+        events::test_support::NoOpEmitter,
         game_log::{CaptureGameOutputParams, CaptureHandle, GameOutputCaptureService},
         process::infra::InMemoryProcessStorage,
     };
 
     use super::*;
-
-    struct NoEvents;
-
-    #[async_trait]
-    impl EventEmitter<Event> for NoEvents {
-        async fn emit(&self, _event: Event) -> Result<(), EventError> {
-            Ok(())
-        }
-
-        fn listen(&self, _handler: Box<dyn Fn(Event) + Send + Sync + 'static>) {}
-    }
 
     struct NotManaged;
 
@@ -301,7 +289,7 @@ mod spawn_error_tests {
     #[tokio::test]
     async fn should_name_the_program_when_it_cannot_be_started() {
         let use_case = StartProcessUseCase::new(
-            Arc::new(NoEvents),
+            Arc::new(NoOpEmitter),
             Arc::new(InMemoryProcessStorage::default()),
             Arc::new(NotManaged),
             Arc::new(NotCaptured),

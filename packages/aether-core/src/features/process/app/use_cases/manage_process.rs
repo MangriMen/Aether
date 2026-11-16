@@ -68,7 +68,6 @@ impl ManageProcessService for ManageProcessUseCase {
                 message: "Exited process".to_string(),
                 exit_code: mc_exit_status.and_then(|s| s.code()),
                 crashed: is_crash(mc_exit_status, killed),
-                hook_error: None,
             })
             .await;
 
@@ -80,11 +79,10 @@ impl ManageProcessService for ManageProcessUseCase {
                 .emit_safe(ProcessEvent {
                     instance_id,
                     process_id,
-                    event: ProcessEventType::PostExitHookFailed,
                     message: err.to_string(),
+                    event: ProcessEventType::PostExitHookFailed(err),
                     exit_code: None,
                     crashed: false,
-                    hook_error: Some(err),
                 })
                 .await;
         }
@@ -131,14 +129,12 @@ impl ManageProcessUseCase {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::Mutex;
-
     use rstest::rstest;
-    use tokio::sync::oneshot;
+    use tokio::sync::{mpsc, oneshot};
 
     use super::*;
     use crate::features::{
-        events::{Event, EventEmitter, EventError},
+        events::{Event, test_support::ChannelEmitter},
         process::infra::InMemoryProcessStorage,
     };
     use crate::shared::serializable_command::CommandParseError;
@@ -167,21 +163,6 @@ mod tests {
         assert_eq!(is_crash(code.map(status), killed), expected);
     }
 
-    #[derive(Default)]
-    struct RecordingEmitter(Mutex<Vec<ProcessEvent>>);
-
-    #[async_trait::async_trait]
-    impl EventEmitter<Event> for RecordingEmitter {
-        async fn emit(&self, event: Event) -> Result<(), EventError> {
-            if let Ok(event) = ProcessEvent::try_from(event) {
-                self.0.lock().unwrap().push(event);
-            }
-            Ok(())
-        }
-
-        fn listen(&self, _handler: Box<dyn Fn(Event) + Send + Sync + 'static>) {}
-    }
-
     struct ExitedWith(i32);
 
     #[async_trait::async_trait]
@@ -201,9 +182,9 @@ mod tests {
         ));
         let instance_id = InstanceId::try_from("test-instance").unwrap();
         std::fs::create_dir_all(location_info.instance_dir(&instance_id)).unwrap();
-        let emitter = Arc::new(RecordingEmitter::default());
+        let (sender, mut events) = mpsc::unbounded_channel();
         let use_case = ManageProcessUseCase::new(
-            emitter.clone(),
+            Arc::new(ChannelEmitter(sender)),
             Arc::new(InMemoryProcessStorage::default()),
             Arc::new(ExitedWith(game_exit_code)),
             location_info,
@@ -221,7 +202,12 @@ mod tests {
             .await
             .unwrap();
 
-        emitter.0.lock().unwrap().clone()
+        std::iter::from_fn(|| events.try_recv().ok())
+            .filter_map(|event| match event {
+                Event::Process(event) => Some(event),
+                _ => None,
+            })
+            .collect()
     }
 
     fn kinds(events: &[ProcessEvent]) -> Vec<&'static str> {
@@ -230,7 +216,7 @@ mod tests {
             .map(|event| match event.event {
                 ProcessEventType::Launched => "launched",
                 ProcessEventType::Finished => "finished",
-                ProcessEventType::PostExitHookFailed => "post_exit_hook_failed",
+                ProcessEventType::PostExitHookFailed(_) => "post_exit_hook_failed",
             })
             .collect()
     }
@@ -243,8 +229,8 @@ mod tests {
         let failed = &events[1];
         assert!(
             matches!(
-                &failed.hook_error,
-                Some(HookSpawnError::SpawnFailed {
+                &failed.event,
+                ProcessEventType::PostExitHookFailed(HookSpawnError::SpawnFailed {
                     hook: HookKind::PostExit,
                     program,
                     ..
@@ -262,8 +248,8 @@ mod tests {
 
         assert_eq!(kinds(&events), ["finished", "post_exit_hook_failed"]);
         assert!(matches!(
-            events[1].hook_error,
-            Some(HookSpawnError::Invalid {
+            events[1].event,
+            ProcessEventType::PostExitHookFailed(HookSpawnError::Invalid {
                 hook: HookKind::PostExit,
                 reason: CommandParseError::UnclosedQuote,
             })

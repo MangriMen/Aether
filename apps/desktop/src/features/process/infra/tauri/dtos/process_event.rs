@@ -33,25 +33,29 @@ pub enum ProcessEventTypeDto {
 
 impl From<ProcessEvent> for ProcessEventDto {
     fn from(value: ProcessEvent) -> Self {
+        let hook_error = match &value.event {
+            ProcessEventType::PostExitHookFailed(err) => Some(err.into()),
+            ProcessEventType::Launched | ProcessEventType::Finished => None,
+        };
         Self {
             seq: 0,
             instance_id: value.instance_id.to_string(),
             process_id: value.process_id,
-            event: value.event.into(),
+            event: (&value.event).into(),
             message: value.message,
             exit_code: value.exit_code,
             crashed: value.crashed,
-            hook_error: value.hook_error.as_ref().map(Into::into),
+            hook_error,
         }
     }
 }
 
-impl From<ProcessEventType> for ProcessEventTypeDto {
-    fn from(value: ProcessEventType) -> Self {
+impl From<&ProcessEventType> for ProcessEventTypeDto {
+    fn from(value: &ProcessEventType) -> Self {
         match value {
             ProcessEventType::Launched => Self::Launched,
             ProcessEventType::Finished => Self::Finished,
-            ProcessEventType::PostExitHookFailed => Self::PostExitHookFailed,
+            ProcessEventType::PostExitHookFailed(_) => Self::PostExitHookFailed,
         }
     }
 }

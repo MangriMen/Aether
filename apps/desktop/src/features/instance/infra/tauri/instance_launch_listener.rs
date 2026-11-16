@@ -34,7 +34,7 @@ impl<ASS: AppSettingsStorage, WM: WindowManager> InstanceLaunchListener<ASS, WM>
                 .unwrap_or_else(|err| error!("Failed to handle instance finish: {err}")),
 
             // Shown to the user by the frontend; the windows were handled on `Finished`.
-            ProcessEventType::PostExitHookFailed => {}
+            ProcessEventType::PostExitHookFailed(_) => {}
         }
     }
 
