@@ -148,7 +148,7 @@ const MAX_ICON_REDIRECTS: usize = 3;
 /// Whether an icon fetch may follow a redirect to `target`, which is the `redirect_number`th.
 /// Each hop is vetted like the first URL: a public host could otherwise send the request to
 /// the user's own network.
-pub fn icon_redirect_allowed(target: &url::Url, redirect_number: usize) -> bool {
+fn icon_redirect_allowed(target: &url::Url, redirect_number: usize) -> bool {
     redirect_number <= MAX_ICON_REDIRECTS
         && HttpsUrl::parse(target.as_str()).is_ok_and(|url| url.names_public_host())
 }

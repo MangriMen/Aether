@@ -16,7 +16,7 @@ pub use content_providers::{ModrinthContentProvider, MrpackCacheCleaner, mrpack_
 pub use event_emitting_instance_storage::EventEmittingInstanceStorage;
 pub use fs::{FsInstanceStorage, FsPackStorage, LegacyInstanceScanner};
 pub use fs_content_icon_cache::{
-    CONTENT_ICONS_FOLDER, FsContentIconCache, icon_redirect_allowed, icon_redirect_policy,
+    CONTENT_ICONS_FOLDER, FsContentIconCache, icon_redirect_policy,
 };
 pub use instance_event_handler::InstanceEventHandler;
 pub use services::{
