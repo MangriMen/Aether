@@ -1,6 +1,6 @@
 mod hook;
 
-pub use hook::{HookKind, HookSpawnError, Wrapper, parse_wrapper};
+pub use hook::{HookKind, HookSpawnError, Wrapper, parse_hook_command, parse_wrapper};
 
 use std::{
     collections::BTreeMap,

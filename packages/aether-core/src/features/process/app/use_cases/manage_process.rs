@@ -10,7 +10,7 @@ use crate::{
         process::{ManageProcessService, ProcessError, ProcessStorage, TrackProcessService},
         settings::LocationInfo,
     },
-    shared::serializable_command::{HookKind, HookSpawnError, SerializableCommand},
+    shared::serializable_command::{HookKind, HookSpawnError, parse_hook_command},
 };
 
 use super::TrackProcessParams;
@@ -109,17 +109,10 @@ impl ManageProcessUseCase {
     /// Starts the post-exit hook `command` in the instance folder and leaves it running: the
     /// game is over, and nothing waits for the hook. An empty hook is no hook.
     fn run_post_exit(&self, command: &str, instance_id: &InstanceId) -> Result<(), HookSpawnError> {
-        if command.trim().is_empty() {
-            return Ok(());
-        }
         let instance_dir = self.location_info.instance_dir(instance_id);
-        let command =
-            SerializableCommand::from_string(command, Some(&instance_dir)).map_err(|reason| {
-                HookSpawnError::Invalid {
-                    hook: HookKind::PostExit,
-                    reason,
-                }
-            })?;
+        let Some(command) = parse_hook_command(HookKind::PostExit, command, &instance_dir)? else {
+            return Ok(());
+        };
         command.to_tokio_command().spawn().map_err(|err| {
             HookSpawnError::spawn_failed(HookKind::PostExit, &command.program, err)
         })?;

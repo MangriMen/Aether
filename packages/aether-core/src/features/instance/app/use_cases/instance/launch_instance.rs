@@ -20,7 +20,7 @@ use crate::{
         settings::{DefaultInstanceSettings, DefaultInstanceSettingsStorage, Hooks, LocationInfo},
     },
     shared::serializable_command::{
-        HookKind, HookSpawnError, SerializableCommand, Wrapper, parse_wrapper,
+        HookKind, HookSpawnError, SerializableCommand, Wrapper, parse_hook_command, parse_wrapper,
     },
 };
 
@@ -296,18 +296,10 @@ async fn run_pre_launch_hook(
     dir: &Path,
     timeout: Duration,
 ) -> Result<Option<Wrapper>, InstanceError> {
-    let wrapper = parse_wrapper(hooks.wrapper())?;
-    let command = hooks.pre_launch();
-    if command.trim().is_empty() {
-        return Ok(wrapper);
+    let wrapper = parse_wrapper(hooks.wrapper(), dir)?;
+    if let Some(command) = parse_hook_command(HookKind::PreLaunch, hooks.pre_launch(), dir)? {
+        run_hook_command(&command, timeout).await?;
     }
-    let command = SerializableCommand::from_string(command, Some(dir)).map_err(|reason| {
-        HookSpawnError::Invalid {
-            hook: HookKind::PreLaunch,
-            reason,
-        }
-    })?;
-    run_hook_command(&command, timeout).await?;
     Ok(wrapper)
 }
 

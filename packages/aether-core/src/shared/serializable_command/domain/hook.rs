@@ -1,6 +1,6 @@
 use std::{path::Path, sync::Arc};
 
-use super::{CommandParseError, parse_command_line};
+use super::{CommandParseError, SerializableCommand, is_separator, parse_command_line};
 
 /// Which of the user's launch hooks a command is.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -66,16 +66,37 @@ pub struct Wrapper {
     pub args: Vec<String>,
 }
 
+/// Whether a hook command has no words, so the hook is not set. Read with the parser's own idea
+/// of whitespace, not [`str::trim`]: the two differ on U+FEFF and U+0085.
+fn is_unset(command: &str) -> bool {
+    command.chars().all(is_separator)
+}
+
+/// The user's `hook` command, started in `dir`, or `None` when the hook is not set.
+pub fn parse_hook_command(
+    hook: HookKind,
+    command: &str,
+    dir: &Path,
+) -> Result<Option<SerializableCommand>, HookSpawnError> {
+    if is_unset(command) {
+        return Ok(None);
+    }
+    SerializableCommand::from_string(command, Some(dir))
+        .map(Some)
+        .map_err(|reason| HookSpawnError::Invalid { hook, reason })
+}
+
 /// The wrapper command, or `None` when there is no wrapper.
 ///
 /// A wrapper that is, as a whole, the path of a file is that program with no arguments: the
-/// setting used to be read so, and a path with spaces in it was not quoted.
-pub fn parse_wrapper(wrapper: &str) -> Result<Option<Wrapper>, HookSpawnError> {
-    let wrapper = wrapper.trim();
+/// setting used to be read so, and a path with spaces in it was not quoted. The path is looked up
+/// as the game is started: from `launch_dir`.
+pub fn parse_wrapper(wrapper: &str, launch_dir: &Path) -> Result<Option<Wrapper>, HookSpawnError> {
+    let wrapper = wrapper.trim_matches(is_separator);
     if wrapper.is_empty() {
         return Ok(None);
     }
-    if Path::new(wrapper).is_file() {
+    if is_existing_program(&launch_dir.join(wrapper)) {
         return Ok(Some(Wrapper {
             program: wrapper.to_owned(),
             args: Vec::new(),
@@ -89,19 +110,32 @@ pub fn parse_wrapper(wrapper: &str) -> Result<Option<Wrapper>, HookSpawnError> {
     Ok(Some(Wrapper { program, args }))
 }
 
+/// Whether `path` is a file a process can be started from. On Windows a path without an
+/// extension is also started as `.exe`.
+fn is_existing_program(path: &Path) -> bool {
+    path.is_file()
+        || (cfg!(windows) && path.extension().is_none() && path.with_extension("exe").is_file())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
+    fn here() -> &'static Path {
+        Path::new(".")
+    }
+
     #[test]
     fn should_have_no_wrapper_when_it_is_blank() {
-        assert_eq!(parse_wrapper("  \t ").unwrap(), None);
+        for wrapper in ["", "  \t ", "\u{feff}"] {
+            assert_eq!(parse_wrapper(wrapper, here()).unwrap(), None, "{wrapper:?}");
+        }
     }
 
     #[test]
     fn should_split_the_wrapper_into_program_and_arguments() {
         assert_eq!(
-            parse_wrapper(" env VAR=1 \"prime run\" ").unwrap(),
+            parse_wrapper(" env VAR=1 \"prime run\" ", here()).unwrap(),
             Some(Wrapper {
                 program: "env".to_owned(),
                 args: vec!["VAR=1".to_owned(), "prime run".to_owned()],
@@ -117,7 +151,7 @@ mod tests {
         let path = path.to_string_lossy().into_owned();
 
         assert_eq!(
-            parse_wrapper(&format!(" {path} ")).unwrap(),
+            parse_wrapper(&format!(" {path} "), here()).unwrap(),
             Some(Wrapper {
                 program: path,
                 args: Vec::new(),
@@ -126,8 +160,38 @@ mod tests {
     }
 
     #[test]
+    fn should_look_for_a_relative_wrapper_file_in_the_launch_folder() {
+        let launch_dir = tempfile::tempdir().unwrap();
+        std::fs::create_dir(launch_dir.path().join("my tools")).unwrap();
+        std::fs::write(launch_dir.path().join("my tools").join("my wrapper.sh"), "").unwrap();
+
+        assert_eq!(
+            parse_wrapper("my tools/my wrapper.sh", launch_dir.path()).unwrap(),
+            Some(Wrapper {
+                program: "my tools/my wrapper.sh".to_owned(),
+                args: Vec::new(),
+            })
+        );
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn should_take_a_wrapper_file_named_without_exe_as_windows_starts_it() {
+        let launch_dir = tempfile::tempdir().unwrap();
+        std::fs::write(launch_dir.path().join("my wrapper.exe"), "").unwrap();
+
+        assert_eq!(
+            parse_wrapper("my wrapper", launch_dir.path()).unwrap(),
+            Some(Wrapper {
+                program: "my wrapper".to_owned(),
+                args: Vec::new(),
+            })
+        );
+    }
+
+    #[test]
     fn should_refuse_a_wrapper_with_a_quote_that_is_not_closed() {
-        let result = parse_wrapper("\"prime-run --x");
+        let result = parse_wrapper("\"prime-run --x", here());
 
         assert!(
             matches!(
@@ -139,5 +203,40 @@ mod tests {
             ),
             "{result:?}"
         );
+    }
+
+    #[test]
+    fn should_have_no_hook_command_when_it_has_no_words() {
+        for command in ["", " \t\r\n", "\u{feff}", "\u{a0}\u{feff} "] {
+            let result = parse_hook_command(HookKind::PostExit, command, here());
+            assert!(matches!(result, Ok(None)), "{command:?}: {result:?}");
+        }
+    }
+
+    #[test]
+    fn should_refuse_a_hook_command_whose_program_is_empty() {
+        for command in ["\"\"", "\"\" arg"] {
+            let result = parse_hook_command(HookKind::PreLaunch, command, here());
+            assert!(
+                matches!(
+                    result,
+                    Err(HookSpawnError::Invalid {
+                        hook: HookKind::PreLaunch,
+                        reason: CommandParseError::Empty,
+                    })
+                ),
+                "{command:?}: {result:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn should_run_a_next_line_character_as_a_program_as_the_form_reads_it() {
+        let command = parse_hook_command(HookKind::PostExit, "\u{85}", here())
+            .unwrap()
+            .unwrap();
+
+        assert_eq!(command.program, "\u{85}");
+        assert_eq!(command.current_dir.as_deref(), Some(here()));
     }
 }

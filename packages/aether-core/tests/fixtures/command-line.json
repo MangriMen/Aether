@@ -26,6 +26,18 @@
       "args": ["--dlsym"]
     },
     {
+      "name": "byte order mark separates words as in JavaScript",
+      "input": "\ufeffmangohud\ufeff--dlsym",
+      "program": "mangohud",
+      "args": ["--dlsym"]
+    },
+    {
+      "name": "next line character is part of a word as in JavaScript",
+      "input": "\u0085 a\u0085b",
+      "program": "\u0085",
+      "args": ["a\u0085b"]
+    },
+    {
       "name": "environment through env",
       "input": "env VAR=1 prime-run",
       "program": "env",
@@ -99,6 +111,11 @@
     {
       "name": "whitespace only",
       "input": "  \t\r\n ",
+      "error": "EMPTY"
+    },
+    {
+      "name": "byte order mark only",
+      "input": "\ufeff",
       "error": "EMPTY"
     },
     {
