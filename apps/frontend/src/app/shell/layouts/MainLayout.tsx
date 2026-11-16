@@ -1,7 +1,7 @@
 import type { Component, ComponentProps } from 'solid-js';
 
 import { useLocation, useNavigate } from '@solidjs/router';
-import { createEffect, ErrorBoundary, on, splitProps } from 'solid-js';
+import { ErrorBoundary, splitProps } from 'solid-js';
 
 import { CreateOfflineAccountDialog } from '@/features/account';
 import { CreateInstanceDialog } from '@/features/instance-create';
@@ -21,16 +21,8 @@ export const MainLayout: Component<MainLayoutProps> = (props) => {
 
   let resetBoundary: (() => void) | undefined;
 
-  // Resetting in place would render the broken route again, so go home first;
-  // any pathname change clears the boundary.
-  createEffect(
-    on(
-      () => location.pathname,
-      () => resetBoundary?.(),
-      { defer: true },
-    ),
-  );
-
+  // Resetting in place would render the broken route again, so go home first: a
+  // new route renders new children, which clears the boundary by itself.
   const handleReset = () => {
     if (location.pathname === APP_ROUTES.HOME) {
       resetBoundary?.();

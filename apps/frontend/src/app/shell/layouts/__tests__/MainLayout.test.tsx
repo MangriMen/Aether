@@ -1,4 +1,4 @@
-import { MemoryRouter, Route } from '@solidjs/router';
+import { createMemoryHistory, MemoryRouter, Route } from '@solidjs/router';
 import { createSignal } from 'solid-js';
 import { render } from 'solid-js/web';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -65,6 +65,48 @@ describe('MainLayout', () => {
     await Promise.resolve();
 
     expect(container.querySelector('[data-testid="page"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="sidebar"]')).not.toBeNull();
+  });
+
+  it('should go home on reset when a page other than home throws', async () => {
+    const history = createMemoryHistory();
+    history.set({ value: '/broken', scroll: false, replace: true });
+
+    const container = document.createElement('div');
+    document.body.append(container);
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    dispose = render(
+      () => (
+        <I18nProvider resources={LOCALE_RESOURCES} fallbackLocale={LOCALES.En}>
+          <MemoryRouter
+            history={history}
+            root={(props) => <MainLayout>{props.children}</MainLayout>}
+          >
+            <Route
+              path='/'
+              component={() => <div data-testid='home'>ok</div>}
+            />
+            <Route
+              path='/broken'
+              component={() => {
+                throw new Error('boom');
+              }}
+            />
+          </MemoryRouter>
+        </I18nProvider>
+      ),
+      container,
+    );
+    await Promise.resolve();
+
+    expect(container.querySelector('[data-testid="home"]')).toBeNull();
+    expect(container.querySelector('button')).not.toBeNull();
+
+    container.querySelector('button')?.click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(container.querySelector('[data-testid="home"]')).not.toBeNull();
     expect(container.querySelector('[data-testid="sidebar"]')).not.toBeNull();
   });
 });
