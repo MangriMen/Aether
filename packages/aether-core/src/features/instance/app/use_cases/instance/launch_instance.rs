@@ -271,17 +271,10 @@ impl LaunchInstanceUseCase {
             )
             .await?;
         // The last stop, and the launch leaves the registry with it: past it a call off finds no
-        // launch, and the user stops the game.
+        // launch, and the user stops the game once it is started.
         if !launch.commit() {
             return Err(InstanceError::Cancelled);
         }
-
-        self.instance_storage
-            .upsert_with(instance.id(), |instance| {
-                instance.last_played = Some(chrono::Utc::now());
-                Ok(())
-            })
-            .await?;
 
         // Behind a wrapper the started process is the wrapper: stopping it alone would leave
         // the game running.
@@ -302,6 +295,21 @@ impl LaunchInstanceUseCase {
             )
             .await
             .map_err(|err| start_error(err, behind_wrapper));
+
+        // After the start, so that the time between the last stop and the game being stored, in
+        // which a stop finds nothing, is the start alone. The game is running: failing to note
+        // it must not fail the launch.
+        if metadata.is_ok()
+            && let Err(err) = self
+                .instance_storage
+                .upsert_with(instance.id(), |instance| {
+                    instance.last_played = Some(chrono::Utc::now());
+                    Ok(())
+                })
+                .await
+        {
+            tracing::warn!("Failed to save the last played time: {err}");
+        }
 
         self.notify_plugin_event(
             &instance,
