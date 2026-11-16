@@ -10,7 +10,13 @@
  *   bun run licenses:generate
  */
 import { execFileSync } from "node:child_process";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -49,6 +55,52 @@ const checkerOutput = execFileSync(
   { cwd: frontendDir, encoding: "utf-8", maxBuffer: 256 * 1024 * 1024 },
 );
 const packages = JSON.parse(checkerOutput);
+
+// `--production` lists only `dependencies`, but some devDependencies end up in
+// the bundle at build time (icons are inlined by unplugin-icons, Tailwind
+// preflight and plugin CSS are compiled into the stylesheet). List them too,
+// and add a package here whenever a devDependency gets inlined at build time.
+// `licenseFallback` is used for packages that ship no license file
+// (@iconify-json/mdi is Apache-2.0 but ships only `info.json`).
+const BUNDLED_AT_BUILD = [
+  {
+    name: "@iconify-json/mdi",
+    licenseFallback: join(
+      root,
+      "packages",
+      "aether-core-plugin-api",
+      "LICENSE-APACHE",
+    ),
+  },
+  { name: "tailwindcss" },
+  { name: "tailwindcss-animate" },
+  { name: "@tailwindcss/typography" },
+];
+
+const resolvePackageDir = (name) =>
+  [
+    join(frontendDir, "node_modules", name),
+    join(root, "node_modules", name),
+  ].find((dir) => existsSync(join(dir, "package.json")));
+
+for (const { name, licenseFallback } of BUNDLED_AT_BUILD) {
+  const dir = resolvePackageDir(name);
+  if (!dir) {
+    throw new Error(`${name} is bundled at build time but is not installed`);
+  }
+  const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf-8"));
+  const info = JSON.parse(
+    existsSync(join(dir, "info.json"))
+      ? readFileSync(join(dir, "info.json"), "utf-8")
+      : "{}",
+  );
+  const licenseFile = readdirSync(dir).find((f) => /^licen[sc]e/i.test(f));
+  packages[`${name}@${pkg.version}`] = {
+    licenses: pkg.license ?? info.license?.spdx,
+    publisher: info.author?.name,
+    licenseFile: licenseFile ? join(dir, licenseFile) : licenseFallback,
+  };
+}
 
 // Group packages by license text so each distinct text is printed once.
 const byText = new Map();

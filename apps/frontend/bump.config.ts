@@ -1,4 +1,4 @@
-import type { VersionBumpResults } from 'bumpp';
+import type { VersionBumpOptions } from 'bumpp';
 
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -10,25 +10,38 @@ import { execa } from 'execa';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const TAURI_DIR = path.resolve(__dirname, '../../apps/desktop');
 const MONOREPO_ROOT = path.resolve(__dirname, '../..');
-const CHANGELOG_PATH = path.resolve(__dirname, './CHANGELOG.md');
+// bumpp does not export its Operation type; take it from the execute hook.
+type BumpContext = Parameters<
+  Extract<VersionBumpOptions['execute'], (...args: never[]) => unknown>
+>[0];
+
+const CARGO_LOCK_PATH = path.resolve(MONOREPO_ROOT, 'Cargo.lock');
+const CHANGELOG_PATH = path.resolve(MONOREPO_ROOT, 'CHANGELOG.md');
 
 export default defineConfig({
-  all: true,
   push: false,
   execute: async (ctx) => {
     await validateChangelog();
 
-    await syncTauriVersion(ctx);
+    const tauriFiles = await syncTauriVersion(ctx);
     await syncCargoLock();
 
-    await updateChangelog(ctx.results);
+    await updateChangelog(ctx);
+
+    // Without `all`, bumpp commits only the files it lists. Add the ones
+    // edited here so the release commit (and the tag) carry the new version.
+    ctx.update({
+      updatedFiles: [
+        ...ctx.state.updatedFiles,
+        ...tauriFiles,
+        CARGO_LOCK_PATH,
+        CHANGELOG_PATH,
+      ],
+    });
   },
 });
 
-const syncTauriVersion = async (ctx: {
-  options: { cwd: string };
-  state: { newVersion: string; currentVersion: string };
-}) => {
+const syncTauriVersion = async (ctx: BumpContext) => {
   const { newVersion, currentVersion } = ctx.state;
 
   const confPath = path.join(TAURI_DIR, 'tauri.conf.json');
@@ -46,6 +59,8 @@ const syncTauriVersion = async (ctx: {
     `$1${newVersion}$2`,
   );
   await writeFile(cargoPath, updatedCargo, 'utf-8');
+
+  return [confPath, cargoPath];
 };
 
 function escapeRegex(str: string) {
@@ -62,6 +77,9 @@ const syncCargoLock = async () => {
 const readChangelog = () => readFile(CHANGELOG_PATH, 'utf-8');
 const writeChangelog = (data: string) => writeFile(CHANGELOG_PATH, data);
 
+const UNRELEASED_LINK = /^\[Unreleased\]: .*$/m;
+const REPO_COMPARE_URL = 'https://github.com/MangriMen/Aether/compare';
+
 const validateChangelog = async () => {
   const content = await readChangelog();
 
@@ -77,18 +95,33 @@ const validateChangelog = async () => {
       'CHANGELOG.md: The [Unreleased] section is empty! Please add some notes before bumping.',
     );
   }
+
+  // Fail before any file is written, not halfway through the bump.
+  if (!UNRELEASED_LINK.test(content)) {
+    throw new Error('CHANGELOG.md: the [Unreleased] compare link is missing.');
+  }
 };
 
-const updateChangelog = async (results: VersionBumpResults) => {
+const updateChangelog = async (ctx: BumpContext) => {
+  const { newVersion, currentVersion } = ctx.state;
   const date = new Date().toISOString().split('T')[0];
-  const newVersionHeader = `## [${results.newVersion}] - ${date}`;
+  const newVersionHeader = `## [${newVersion}] - ${date}`;
 
   const content = await readChangelog();
   const unreleasedHeader = '## [Unreleased]';
 
-  const updatedContent = content.replace(
+  const withNewSection = content.replace(
     unreleasedHeader,
     `${unreleasedHeader}\n\n${newVersionHeader}`,
+  );
+
+  // Keep the compare links at the bottom in step with the new section.
+  const updatedContent = withNewSection.replace(
+    UNRELEASED_LINK,
+    [
+      `[Unreleased]: ${REPO_COMPARE_URL}/v${newVersion}...HEAD`,
+      `[${newVersion}]: ${REPO_COMPARE_URL}/v${currentVersion}...v${newVersion}`,
+    ].join('\n'),
   );
 
   await writeChangelog(updatedContent);
