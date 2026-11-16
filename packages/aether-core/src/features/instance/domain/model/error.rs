@@ -22,7 +22,7 @@ use crate::shared::error::DatabaseError;
 pub use crate::shared::error::{BoxedSource, SharedSource, shared_source};
 use crate::shared::io::IoError;
 use crate::shared::safe_path::PathRejection;
-use crate::shared::serializable_command::CommandParseError;
+use crate::shared::serializable_command::HookSpawnError;
 use crate::shared::web_url::InvalidUrl;
 
 /// What the storage of instances failed on.
@@ -278,15 +278,9 @@ pub enum InstanceError {
     #[error("Prelaunch command error with code: {code}")]
     PrelaunchCommandError { code: i32 },
 
-    #[error("The pre-launch command is invalid: {reason}")]
-    PrelaunchCommandInvalid { reason: CommandParseError },
-
-    #[error("The pre-launch command \"{program}\" could not be started: {source}")]
-    PrelaunchCommandSpawnFailed {
-        program: String,
-        #[source]
-        source: Arc<std::io::Error>,
-    },
+    /// A hook of the user (pre-launch, or the wrapper the game is started by) could not be run.
+    #[error(transparent)]
+    Hook(#[from] HookSpawnError),
 
     #[error("The pre-launch command did not finish in {seconds} seconds")]
     PrelaunchCommandTimeout { seconds: u64 },

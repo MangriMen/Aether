@@ -150,6 +150,7 @@ impl From<&MinecraftApplicationError> for FrontendError {
             MinecraftApplicationError::Storage(err) => {
                 Self::Minecraft(MinecraftErrorDto::Storage { cause: err.into() })
             }
+            MinecraftApplicationError::Hook(err) => Self::Hook(err.into()),
         }
     }
 }

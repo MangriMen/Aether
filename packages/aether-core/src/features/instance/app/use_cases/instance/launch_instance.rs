@@ -10,14 +10,16 @@ use crate::{
             InstanceLaunchService, InstanceLocks, InstanceStorage, InstanceStorageExt, LockRefused,
         },
         minecraft::{
-            GetMinecraftLaunchCommandParams, LaunchSettings, MinecraftHealthParams,
-            MinecraftHealthService, MinecraftLaunchCommandService,
+            GetMinecraftLaunchCommandParams, LaunchSettings, MinecraftApplicationError,
+            MinecraftHealthParams, MinecraftHealthService, MinecraftLaunchCommandService,
         },
         plugins::{PluginInternalEvent, PluginRegistry, PluginState},
-        process::{KillScope, MinecraftProcessMetadata, ProcessStartService, ProcessStorage},
+        process::{
+            KillScope, MinecraftProcessMetadata, ProcessError, ProcessStartService, ProcessStorage,
+        },
         settings::{DefaultInstanceSettings, DefaultInstanceSettingsStorage, LocationInfo},
     },
-    shared::serializable_command::domain::SerializableCommand,
+    shared::serializable_command::{HookKind, HookSpawnError, SerializableCommand},
 };
 
 /// How long a pre-launch hook may run. The instance stays locked meanwhile, and a hook that
@@ -210,7 +212,11 @@ impl LaunchInstanceUseCase {
                 launch_settings.clone(),
                 credentials,
             )
-            .await?;
+            .await
+            .map_err(|err| match err {
+                MinecraftApplicationError::Hook(err) => InstanceError::Hook(err),
+                other => other.into(),
+            })?;
 
         self.instance_storage
             .upsert_with(instance.id(), |instance| {
@@ -221,7 +227,8 @@ impl LaunchInstanceUseCase {
 
         // Behind a wrapper the started process is the wrapper: stopping it alone would leave
         // the game running.
-        let kill_scope = if launch_command.wrapped {
+        let wrapped = launch_command.wrapped;
+        let kill_scope = if wrapped {
             KillScope::Tree
         } else {
             KillScope::Process
@@ -235,7 +242,8 @@ impl LaunchInstanceUseCase {
                 launch_settings.hooks.post_exit().to_owned(),
                 launch_command.secrets,
             )
-            .await;
+            .await
+            .map_err(|err| start_error(err, wrapped));
 
         self.notify_plugin_event(
             &instance,
@@ -246,7 +254,7 @@ impl LaunchInstanceUseCase {
         )
         .await;
 
-        Ok(metadata?)
+        metadata
     }
 }
 
@@ -261,6 +269,20 @@ impl InstanceLaunchService for LaunchInstanceUseCase {
     }
 }
 
+/// Why the game did not start. Behind a wrapper, the program that could not be started is the
+/// user's wrapper, not java.
+fn start_error(err: ProcessError, wrapped: bool) -> InstanceError {
+    match err {
+        ProcessError::SpawnFailed { program, source } if wrapped => HookSpawnError::SpawnFailed {
+            hook: HookKind::Wrapper,
+            program,
+            source,
+        }
+        .into(),
+        other => other.into(),
+    }
+}
+
 /// Runs the pre-launch hook `command` in `dir` and waits for it for `timeout`. An empty hook is
 /// no hook. A hook still running at the deadline is killed: the game does not start under it.
 async fn run_pre_launch_hook(
@@ -271,8 +293,12 @@ async fn run_pre_launch_hook(
     if command.trim().is_empty() {
         return Ok(());
     }
-    let command = SerializableCommand::from_string(command, Some(dir))
-        .map_err(|reason| InstanceError::PrelaunchCommandInvalid { reason })?;
+    let command = SerializableCommand::from_string(command, Some(dir)).map_err(|reason| {
+        HookSpawnError::Invalid {
+            hook: HookKind::PreLaunch,
+            reason,
+        }
+    })?;
     run_hook_command(&command, timeout).await
 }
 
@@ -284,10 +310,7 @@ async fn run_hook_command(
         .to_tokio_command()
         .kill_on_drop(true)
         .spawn()
-        .map_err(|source| InstanceError::PrelaunchCommandSpawnFailed {
-            program: command.program.clone(),
-            source: std::sync::Arc::new(source),
-        })?;
+        .map_err(|err| HookSpawnError::spawn_failed(HookKind::PreLaunch, &command.program, err))?;
 
     let Ok(status) = tokio::time::timeout(timeout, child.wait()).await else {
         if let Err(err) = child.kill().await {
@@ -297,7 +320,11 @@ async fn run_hook_command(
             seconds: timeout.as_secs(),
         });
     };
-    let status = status.map_err(InstanceError::storage)?;
+    let status = status.map_err(|err| HookSpawnError::WaitFailed {
+        hook: HookKind::PreLaunch,
+        program: command.program.clone(),
+        source: Arc::new(err),
+    })?;
 
     if status.success() {
         Ok(())
@@ -311,6 +338,7 @@ async fn run_hook_command(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::shared::serializable_command::CommandParseError;
 
     /// Not a test: the process the hook tests start (this very binary), which never ends.
     #[test]
@@ -358,10 +386,72 @@ mod tests {
 
         assert!(
             matches!(
-                result,
-                Err(InstanceError::PrelaunchCommandSpawnFailed { .. })
+                &result,
+                Err(InstanceError::Hook(HookSpawnError::SpawnFailed {
+                    hook: HookKind::PreLaunch,
+                    program,
+                    ..
+                })) if program == "aether-no-such-program-0f3a"
             ),
             "{result:?}"
+        );
+    }
+
+    #[tokio::test]
+    async fn should_fail_without_running_anything_when_a_quote_of_the_hook_is_not_closed() {
+        let result = run_pre_launch_hook(
+            "\"aether-no-such-program-0f3a --token secret",
+            Path::new("."),
+            Duration::from_secs(1),
+        )
+        .await;
+
+        assert!(
+            matches!(
+                result,
+                Err(InstanceError::Hook(HookSpawnError::Invalid {
+                    hook: HookKind::PreLaunch,
+                    reason: CommandParseError::UnclosedQuote,
+                }))
+            ),
+            "{result:?}"
+        );
+    }
+
+    fn spawn_failed() -> ProcessError {
+        ProcessError::SpawnFailed {
+            program: "gamemoderun".to_owned(),
+            source: Arc::new(std::io::Error::from(std::io::ErrorKind::NotFound)),
+        }
+    }
+
+    #[test]
+    fn should_report_the_wrapper_when_the_wrapped_game_cannot_be_started() {
+        let err = start_error(spawn_failed(), true);
+
+        assert!(
+            matches!(
+                &err,
+                InstanceError::Hook(HookSpawnError::SpawnFailed {
+                    hook: HookKind::Wrapper,
+                    program,
+                    ..
+                }) if program == "gamemoderun"
+            ),
+            "{err:?}"
+        );
+    }
+
+    #[test]
+    fn should_report_the_process_when_java_itself_cannot_be_started() {
+        let err = start_error(spawn_failed(), false);
+
+        assert!(
+            matches!(
+                err,
+                InstanceError::ProcessError(ProcessError::SpawnFailed { .. })
+            ),
+            "{err:?}"
         );
     }
 

@@ -164,6 +164,7 @@ mod tests {
             message: "started".into(),
             exit_code: None,
             crashed: false,
+            hook_error: None,
         }
     }
 

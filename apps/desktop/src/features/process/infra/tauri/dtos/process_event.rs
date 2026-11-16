@@ -4,7 +4,9 @@ use specta::Type;
 use tauri_specta::Event;
 use uuid::Uuid;
 
-#[derive(Serialize, Deserialize, Clone, Debug, Type, Event)]
+use crate::core::HookErrorDto;
+
+#[derive(Serialize, Clone, Debug, Type, Event)]
 #[serde(rename_all = "camelCase")]
 pub struct ProcessEventDto {
     /// The number of the event, from one counter for all the events the backend sends: the
@@ -16,6 +18,9 @@ pub struct ProcessEventDto {
     pub message: String,
     pub exit_code: Option<i32>,
     pub crashed: bool,
+    /// Why the hook could not be run, on `post_exit_hook_failed`; `message` holds the same in
+    /// English, for logs.
+    pub hook_error: Option<HookErrorDto>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Type)]
@@ -23,6 +28,7 @@ pub struct ProcessEventDto {
 pub enum ProcessEventTypeDto {
     Launched,
     Finished,
+    PostExitHookFailed,
 }
 
 impl From<ProcessEvent> for ProcessEventDto {
@@ -35,6 +41,7 @@ impl From<ProcessEvent> for ProcessEventDto {
             message: value.message,
             exit_code: value.exit_code,
             crashed: value.crashed,
+            hook_error: value.hook_error.as_ref().map(Into::into),
         }
     }
 }
@@ -44,6 +51,7 @@ impl From<ProcessEventType> for ProcessEventTypeDto {
         match value {
             ProcessEventType::Launched => Self::Launched,
             ProcessEventType::Finished => Self::Finished,
+            ProcessEventType::PostExitHookFailed => Self::PostExitHookFailed,
         }
     }
 }

@@ -6,7 +6,6 @@ use aether_core::features::{
     minecraft::{GameVersionRejection, LoaderVersionIdRejection},
 };
 use aether_core::shared::safe_path::PathRejection;
-use aether_core::shared::serializable_command::CommandParseError;
 use serde::Serialize;
 use specta::Type;
 use uuid::Uuid;
@@ -41,13 +40,6 @@ pub enum InstanceErrorDto {
     },
     PrelaunchCommandError {
         code: i32,
-    },
-    PrelaunchCommandInvalid {
-        reason: CommandParseReasonDto,
-    },
-    PrelaunchCommandSpawnFailed {
-        program: String,
-        cause: CauseDto,
     },
     PrelaunchCommandTimeout {
         // Formatted before it crosses the boundary: no `u64` in bindings.
@@ -227,15 +219,6 @@ impl InstanceErrorDto {
             InstanceError::PrelaunchCommandError { code } => {
                 Self::PrelaunchCommandError { code: *code }
             }
-            InstanceError::PrelaunchCommandInvalid { reason } => Self::PrelaunchCommandInvalid {
-                reason: (*reason).into(),
-            },
-            InstanceError::PrelaunchCommandSpawnFailed { program, source } => {
-                Self::PrelaunchCommandSpawnFailed {
-                    program: program.clone(),
-                    cause: source.into(),
-                }
-            }
             InstanceError::PrelaunchCommandTimeout { seconds } => Self::PrelaunchCommandTimeout {
                 seconds: seconds.to_string(),
             },
@@ -374,6 +357,9 @@ impl InstanceErrorDto {
                 provider_id: provider_id.to_string(),
                 content_id: content_id.clone(),
             },
+            InstanceError::Hook(err) => {
+                return Err(Box::new(FrontendError::Hook(err.into())));
+            }
             InstanceError::SettingsLoadError(err) => {
                 return Err(Box::new(FrontendError::Settings(err.into())));
             }
@@ -521,21 +507,6 @@ impl From<PaginationRejection> for PaginationReasonDto {
     }
 }
 
-/// Why a text is not a command.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Type)]
-#[serde(tag = "code", content = "payload", rename_all = "SCREAMING_SNAKE_CASE")]
-pub enum CommandParseReasonDto {
-    Empty,
-}
-
-impl From<CommandParseError> for CommandParseReasonDto {
-    fn from(value: CommandParseError) -> Self {
-        match value {
-            CommandParseError::Empty => Self::Empty,
-        }
-    }
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Type)]
 #[serde(rename_all = "snake_case")]
 pub enum InstanceFieldDto {
@@ -574,6 +545,7 @@ mod tests {
     use aether_core::features::settings::SettingsError;
     use aether_core::shared::error::DatabaseError;
     use aether_core::shared::io::IoError;
+    use aether_core::shared::serializable_command::{CommandParseError, HookKind, HookSpawnError};
     use serde_json::{Value, json};
 
     fn to_json(err: &InstanceError) -> Value {
@@ -712,28 +684,13 @@ mod tests {
     }
 
     #[test]
-    fn should_serialize_an_empty_prelaunch_command_with_a_reason() {
-        let err = InstanceError::PrelaunchCommandInvalid {
+    fn should_report_a_hook_error_as_a_hook_error() {
+        let err = InstanceError::Hook(HookSpawnError::Invalid {
+            hook: HookKind::PreLaunch,
             reason: CommandParseError::Empty,
-        };
+        });
 
-        assert_eq!(
-            to_json(&err),
-            json!({"code": "PRELAUNCH_COMMAND_INVALID", "payload": {"reason": {"code": "EMPTY"}}})
-        );
-    }
-
-    #[test]
-    fn should_serialize_a_prelaunch_command_that_cannot_start_with_an_io_cause() {
-        let err = InstanceError::PrelaunchCommandSpawnFailed {
-            program: "x".into(),
-            source: std::io::Error::from(std::io::ErrorKind::PermissionDenied).into(),
-        };
-
-        assert_eq!(
-            to_json(&err),
-            json!({"code": "PRELAUNCH_COMMAND_SPAWN_FAILED", "payload": {"program": "x", "cause": {"type": "io", "kind": "permissionDenied"}}})
-        );
+        assert!(matches!(FrontendError::from(&err), FrontendError::Hook(_)));
     }
 
     #[test]

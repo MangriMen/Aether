@@ -4,17 +4,14 @@ use async_trait::async_trait;
 use process_wrap::tokio::{ChildWrapper, CommandWrap};
 use tokio::process::Command;
 
-use crate::{
-    features::{
-        events::{EventEmitterExt, ProcessEvent, ProcessEventType, SharedEventEmitter},
-        game_log::{CaptureGameOutputParams, GameOutputCaptureService},
-        instance::InstanceId,
-        process::{
-            KillScope, ManageProcessService, MinecraftProcessMetadata, ProcessError,
-            ProcessStartService, ProcessStorage,
-        },
+use crate::features::{
+    events::{EventEmitterExt, ProcessEvent, ProcessEventType, SharedEventEmitter},
+    game_log::{CaptureGameOutputParams, GameOutputCaptureService},
+    instance::InstanceId,
+    process::{
+        KillScope, ManageProcessService, MinecraftProcessMetadata, ProcessError,
+        ProcessStartService, ProcessStorage,
     },
-    shared::io::domain::IoError,
 };
 
 use super::ManageProcessParams;
@@ -54,7 +51,15 @@ impl StartProcessUseCase {
             .stdout(Stdio::piped())
             .stderr(Stdio::piped());
 
-        let mut process = spawn(command, kill_scope).map_err(IoError::from)?;
+        let program = command
+            .as_std()
+            .get_program()
+            .to_string_lossy()
+            .into_owned();
+        let mut process = spawn(command, kill_scope).map_err(|err| ProcessError::SpawnFailed {
+            program,
+            source: Arc::new(err),
+        })?;
         let metadata = MinecraftProcessMetadata::new(instance_id.clone());
 
         let capture = self.game_output_capture.start(CaptureGameOutputParams {
@@ -92,6 +97,7 @@ impl StartProcessUseCase {
                 message: "Launched Minecraft".to_string(),
                 exit_code: None,
                 crashed: false,
+                hook_error: None,
             })
             .await;
 
@@ -251,5 +257,78 @@ mod tests {
         child.start_kill().unwrap();
 
         wait_until_gone(grandchild).await;
+    }
+}
+
+#[cfg(test)]
+mod spawn_error_tests {
+    use crate::features::{
+        events::{Event, EventEmitter, EventError},
+        game_log::{CaptureGameOutputParams, CaptureHandle, GameOutputCaptureService},
+        process::infra::InMemoryProcessStorage,
+    };
+
+    use super::*;
+
+    struct NoEvents;
+
+    #[async_trait]
+    impl EventEmitter<Event> for NoEvents {
+        async fn emit(&self, _event: Event) -> Result<(), EventError> {
+            Ok(())
+        }
+
+        fn listen(&self, _handler: Box<dyn Fn(Event) + Send + Sync + 'static>) {}
+    }
+
+    struct NotManaged;
+
+    #[async_trait]
+    impl ManageProcessService for NotManaged {
+        async fn execute(&self, _params: ManageProcessParams) -> Result<(), ProcessError> {
+            Ok(())
+        }
+    }
+
+    struct NotCaptured;
+
+    impl GameOutputCaptureService for NotCaptured {
+        fn start(&self, _params: CaptureGameOutputParams) -> CaptureHandle {
+            CaptureHandle::new(tokio::sync::oneshot::channel().1)
+        }
+    }
+
+    #[tokio::test]
+    async fn should_name_the_program_when_it_cannot_be_started() {
+        let use_case = StartProcessUseCase::new(
+            Arc::new(NoEvents),
+            Arc::new(InMemoryProcessStorage::default()),
+            Arc::new(NotManaged),
+            Arc::new(NotCaptured),
+        );
+        let mut command = Command::new("aether-no-such-program-0f3a");
+        command.arg("--accessToken").arg("secret");
+
+        let result = use_case
+            .execute(
+                InstanceId::try_from("test-instance").unwrap(),
+                command,
+                KillScope::Tree,
+                String::new(),
+                Vec::new(),
+            )
+            .await;
+
+        let Err(err) = result else {
+            panic!("the program was started");
+        };
+        assert!(
+            matches!(
+                &err,
+                ProcessError::SpawnFailed { program, .. } if program == "aether-no-such-program-0f3a"
+            ),
+            "{err:?}"
+        );
+        assert!(!err.to_string().contains("secret"), "{err}");
     }
 }
