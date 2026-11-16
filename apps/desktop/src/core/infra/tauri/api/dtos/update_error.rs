@@ -9,6 +9,7 @@ use crate::features::update::UpdateError;
 #[serde(tag = "code", content = "payload", rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum UpdateErrorDto {
     NoPendingUpdate,
+    GameRunning,
     Network { cause: CauseDto },
     Signature { cause: CauseDto },
     Install { cause: CauseDto },
@@ -23,6 +24,7 @@ impl From<UpdateError> for UpdateErrorDto {
 
         match value {
             UpdateError::NoPendingUpdate => Self::NoPendingUpdate,
+            UpdateError::GameRunning => Self::GameRunning,
             UpdateError::Network(source) => Self::Network {
                 cause: cause(&source),
             },
@@ -65,6 +67,14 @@ mod tests {
         assert_eq!(
             serde_json::to_value(UpdateErrorDto::from(UpdateError::NoPendingUpdate)).unwrap(),
             json!({"code": "NO_PENDING_UPDATE"})
+        );
+    }
+
+    #[test]
+    fn should_serialize_a_running_game_when_it_has_no_payload() {
+        assert_eq!(
+            serde_json::to_value(UpdateErrorDto::from(UpdateError::GameRunning)).unwrap(),
+            json!({"code": "GAME_RUNNING"})
         );
     }
 

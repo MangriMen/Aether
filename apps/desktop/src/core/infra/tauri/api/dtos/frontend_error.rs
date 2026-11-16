@@ -94,6 +94,7 @@ impl FrontendError {
             self,
             Self::Instance(InstanceErrorDto::Cancelled)
                 | Self::Java(JavaErrorDto::Cancelled)
+                | Self::Update(UpdateErrorDto::GameRunning)
                 | Self::Application(ApplicationErrorDto::DuplicateRequest)
         )
     }

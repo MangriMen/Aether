@@ -49,17 +49,18 @@ export const AppRoot: Component<RouteSectionProps> = (props) => {
             >
               <AppInitializeGuard>
                 <QueryClientProvider client={queryClient}>
-                  <AppGlobalsProvider>
-                    <AppLayout titleBar={AppTitleBar}>
-                      <RunningInstancesProvider>
+                  {/* Above the globals: the update toast is made by them and reads the running games. */}
+                  <RunningInstancesProvider>
+                    <AppGlobalsProvider>
+                      <AppLayout titleBar={AppTitleBar}>
                         <MainLayout>{props.children}</MainLayout>
                         <GlobalDialogRenderer />
                         <CommandApprovalDialog />
                         <DialogUrlBridge />
-                      </RunningInstancesProvider>
-                    </AppLayout>
-                    <Toaster />
-                  </AppGlobalsProvider>
+                      </AppLayout>
+                      <Toaster />
+                    </AppGlobalsProvider>
+                  </RunningInstancesProvider>
                 </QueryClientProvider>
               </AppInitializeGuard>
             </ThemeProvider>

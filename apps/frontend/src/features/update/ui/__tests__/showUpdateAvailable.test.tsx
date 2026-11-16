@@ -10,10 +10,17 @@ const dialog = vi.hoisted(() => ({
   onOk: undefined as (() => unknown) | undefined,
 }));
 const update = vi.hoisted(() => ({ updateAndRestart: vi.fn() }));
+const buttons = vi.hoisted(() => ({
+  props: [] as { disabled?: boolean; onClick?: () => void }[],
+}));
+const games = vi.hoisted(() => ({ names: [] as string[] }));
 const settings = vi.hoisted(() => ({ open: vi.fn() }));
 
 vi.mock('@/shared/ui-kit', () => ({
-  Button: () => null,
+  Button: (props: { disabled?: boolean; onClick?: () => void }) => {
+    buttons.props.push(props);
+    return null;
+  },
   showToast: toast.show,
   closeToast: toast.close,
 }));
@@ -24,6 +31,13 @@ vi.mock('@/features/settings', () => ({
   SettingsTab: { Update: 'update' },
   useSettingsSearchParams: () => ({ open: settings.open }),
 }));
+vi.mock('../../lib/useRunningGames', () => ({
+  useRunningGames: () => ({
+    names: () => games.names,
+    isRunning: () => games.names.length > 0,
+  }),
+}));
+vi.mock('../RunningGamesHint', () => ({ RunningGamesHint: () => null }));
 vi.mock('../../lib/useUpdate', () => ({
   useUpdate: () => ({
     isUpdating: () => false,
@@ -54,6 +68,8 @@ beforeEach(() => {
   toast.close.mockClear();
   update.updateAndRestart.mockReset();
   dialog.onOk = undefined;
+  games.names = [];
+  buttons.props = [];
 });
 
 describe('showUpdateAvailable', () => {
@@ -89,5 +105,22 @@ describe('showUpdateAvailable', () => {
     show(status);
 
     expect(toast.show).toHaveBeenCalledTimes(2);
+  });
+
+  it('should_disable_the_update_button_when_a_game_runs', async () => {
+    const show = await load();
+    games.names = ['Alpha'];
+
+    show(status);
+
+    expect(buttons.props[0]?.disabled).toBe(true);
+  });
+
+  it('should_enable_the_update_button_when_no_game_runs', async () => {
+    const show = await load();
+
+    show(status);
+
+    expect(buttons.props[0]?.disabled).toBe(false);
   });
 });

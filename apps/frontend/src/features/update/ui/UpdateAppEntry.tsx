@@ -1,6 +1,6 @@
 import type { Component } from 'solid-js';
 
-import { createMemo, Show } from 'solid-js';
+import { createMemo, createSignal, Show } from 'solid-js';
 
 import type { SettingsEntryProps } from '@/shared/settings-layout';
 
@@ -10,8 +10,11 @@ import { SettingsEntry } from '@/shared/settings-layout';
 import { Button } from '@/shared/ui-kit';
 
 import { useCheckUpdate } from '../api/updateQueries';
+import { useRunningGames } from '../lib/useRunningGames';
 import { useUpdate } from '../lib/useUpdate';
 import { checkIsUpdateAvailable } from '../model/checkIsUpdateAvailable';
+import { RunningGamesHint } from './RunningGamesHint';
+import { UpdateAndRestartWarningDialog } from './UpdateAndRestartWarningDialog';
 import { UpdateDescription } from './UpdateDescription';
 import { WhatsNew } from './WhatsNew';
 
@@ -36,7 +39,13 @@ export const UpdateAppEntry: Component<UpdateAppEntryProps> = (props) => {
 
   const { isUpdating, updateAndRestart } = useUpdate();
 
+  const runningGames = useRunningGames();
+
+  const [isDialogOpen, setIsDialogOpen] = createSignal(false);
+
   const handleInstallUpdate = async () => {
+    setIsDialogOpen(false);
+
     if (!update.data) {
       return;
     }
@@ -60,10 +69,20 @@ export const UpdateAppEntry: Component<UpdateAppEntryProps> = (props) => {
           isUpdateAvailable={isUpdateAvailable()}
           isFetching={update.isFetching}
           isUpdating={isUpdating()}
+          isBlocked={runningGames.isRunning()}
           onCheckUpdates={handleCheckUpdates}
-          onSubmitUpdate={handleInstallUpdate}
+          onSubmitUpdate={() => setIsDialogOpen(true)}
         />
       </SettingsEntry>
+      <Show when={isUpdateAvailable()}>
+        <RunningGamesHint games={runningGames.names()} />
+      </Show>
+      <UpdateAndRestartWarningDialog
+        open={isDialogOpen()}
+        onOpenChange={setIsDialogOpen}
+        onOk={handleInstallUpdate}
+        onCancel={() => setIsDialogOpen(false)}
+      />
       <Show when={update.data?.body}>
         {(body) => <WhatsNew changelogBody={body()} />}
       </Show>
@@ -75,6 +94,8 @@ interface UpdateButtonProps {
   isUpdateAvailable: boolean;
   isFetching: boolean;
   isUpdating: boolean;
+  /** A game runs: the launcher would restart under it. */
+  isBlocked: boolean;
   onCheckUpdates: () => void;
   onSubmitUpdate: () => void;
 }
@@ -91,7 +112,11 @@ const UpdateButton: Component<UpdateButtonProps> = (props) => {
         </Button>
       }
     >
-      <Button loading={props.isUpdating} onClick={props.onSubmitUpdate}>
+      <Button
+        loading={props.isUpdating}
+        disabled={props.isBlocked}
+        onClick={props.onSubmitUpdate}
+      >
         {t('settings.installAndRestart')}
       </Button>
     </Show>

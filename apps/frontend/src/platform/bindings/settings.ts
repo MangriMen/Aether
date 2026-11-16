@@ -698,7 +698,7 @@ export type StorageUsageEntryDto = {
 };
 
 /**  Why the launcher could not be updated. */
-export type UpdateErrorDto = { code: "NO_PENDING_UPDATE" } | { code: "NETWORK"; payload: {
+export type UpdateErrorDto = { code: "NO_PENDING_UPDATE" } | { code: "GAME_RUNNING" } | { code: "NETWORK"; payload: {
 	cause: CauseDto,
 } } | { code: "SIGNATURE"; payload: {
 	cause: CauseDto,
