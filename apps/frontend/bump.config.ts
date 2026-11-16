@@ -77,6 +77,9 @@ const syncCargoLock = async () => {
 const readChangelog = () => readFile(CHANGELOG_PATH, 'utf-8');
 const writeChangelog = (data: string) => writeFile(CHANGELOG_PATH, data);
 
+const UNRELEASED_LINK = /^\[Unreleased\]: .*$/m;
+const REPO_COMPARE_URL = 'https://github.com/MangriMen/Aether/compare';
+
 const validateChangelog = async () => {
   const content = await readChangelog();
 
@@ -92,9 +95,12 @@ const validateChangelog = async () => {
       'CHANGELOG.md: The [Unreleased] section is empty! Please add some notes before bumping.',
     );
   }
-};
 
-const REPO_COMPARE_URL = 'https://github.com/MangriMen/Aether/compare';
+  // Fail before any file is written, not halfway through the bump.
+  if (!UNRELEASED_LINK.test(content)) {
+    throw new Error('CHANGELOG.md: the [Unreleased] compare link is missing.');
+  }
+};
 
 const updateChangelog = async (ctx: BumpContext) => {
   const { newVersion, currentVersion } = ctx.state;
@@ -110,14 +116,8 @@ const updateChangelog = async (ctx: BumpContext) => {
   );
 
   // Keep the compare links at the bottom in step with the new section.
-  const unreleasedLink = /^\[Unreleased\]: .*$/m;
-
-  if (!unreleasedLink.test(withNewSection)) {
-    throw new Error('CHANGELOG.md: the [Unreleased] compare link is missing.');
-  }
-
   const updatedContent = withNewSection.replace(
-    unreleasedLink,
+    UNRELEASED_LINK,
     [
       `[Unreleased]: ${REPO_COMPARE_URL}/v${newVersion}...HEAD`,
       `[${newVersion}]: ${REPO_COMPARE_URL}/v${currentVersion}...v${newVersion}`,

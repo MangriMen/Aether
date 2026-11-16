@@ -12,60 +12,69 @@ This release adds a permission prompt for plugin commands, cancellable installs,
 ### Added
 
 - **Plugin permissions:** The launcher now asks before a plugin runs a command. You can allow a program once or always, and take back an always-allowed program from the plugin's settings.
-- **Plugins:** A plugin's `README.md` is shown on a new Description tab. The sources plugins are installed from now come from the launcher, saved plugin folders it ignored are listed and can be removed, and plugin folders skipped because of their name are reported.
+- **Plugins:** A plugin's `README.md` is shown on a new Description tab. Saved plugin folders the launcher ignored are listed and can be removed, and plugin folders skipped because of their name are reported.
 - **Plugin API:** Content providers can describe projects and versions and name authors separately from the metadata.
 - **Install progress:** Progress is shown as a collapsible tree with install titles, translated stages and errors, downloaded size and speed. Java and Minecraft downloads are shared between installs that need them, and a pack install groups its steps under one bar.
 - **Cancel:** You can cancel a content install, a game install, a pack download, a pack update and a Java install. Removing an instance also stops what is still installing for it.
-- **Instance log:** The log of an instance can be viewed in the launcher.
+- **Instance logs:** A Logs tab on the instance page shows the live game output and past logs, with level and text filters, copy and show in folder. The account token is masked.
 - **Broken instances:** Instances that cannot be read are listed, with the reason, and can be deleted.
 - **Content versions:** A page for a single version of a content item.
-- **Content list:** Content loads in stages, with cached metadata and icons, and shows a loader while the author is fetched.
+- **Content list:** Content loads in stages, with cached metadata and icons, and shows a loading indicator while the author is fetched.
 - **Interface font:** Choose the interface font in the settings: the system font, Inter, an installed font or any font by name.
-- **Settings:** A button to clear the cache. Only data the launcher can download again is removed.
+- **Storage:** A Storage tab in the settings shows disk usage by kind and the size of the cache, with a button to clear the cache. Only data the launcher can download again is removed.
 
 ### Changed
 
 - **Errors:** Failures now show their cause in your language instead of a generic message, and failed commands are logged.
-- **Loader version:** An instance keeps the loader version it was created with instead of following Stable or Latest.
+- **Loader version:** An instance keeps the loader version it was created with, so a repair no longer quietly upgrades the loader. Instances still set to Stable or Latest are pinned on their next install.
 - **Select lists:** Selects and comboboxes show a single arrow that turns when the list is open.
-- **Credentials:** The old `credentials.json` from early versions is deleted instead of being archived.
 - **Updates:** The launcher no longer installs an update while a game is running.
-- **Activity:** Installs, downloads and cache clearing no longer start on top of each other.
+- **Cache clearing:** Clearing the cache waits for installs and downloads to finish, and they wait while it runs.
+- **Content removal:** Removing content asks for confirmation.
 
 ### Fixed
 
 - **Instances:**
   - Editing an instance no longer wipes its install stage or last played time.
-  - Removing an instance now also removes its pack records, icons and watched folders, and a running instance cannot be removed.
+  - Removing an instance no longer leaves it half-removed when its folder is in use, deletes icons nothing uses any more, and a running instance cannot be removed.
   - Names are checked before an instance is created, and the name you typed is kept when the form refreshes.
   - A failed reinstall keeps the instance installed, and stuck install stages are reset at startup.
-  - Content with backslash paths in packs is migrated, files shipped as pack overrides are recorded as the pack's, and a file that cannot be toggled no longer stops the rest.
+  - A pack install or update downloads the game and Java first, so a failed download leaves the instance as it was.
+  - Pack content saved with Windows-style paths is recognized correctly, files shipped as pack overrides are recorded as the pack's, and a file that cannot be toggled no longer stops the rest.
+  - Importing content files refuses duplicate names and cleans up after a failure.
   - The enabled and disabled copies of a file are listed together, and content is listed faster.
+  - An instance's custom Java is used only while the override is switched on, and changing the resolution no longer turns off forced fullscreen.
   - Instance settings keep typed values on refresh, revert a failed save, check the resolution, and no longer cap memory at 512 MB when the amount of RAM is unknown.
   - The action button is no longer invisible while loading.
 - **Game launch:**
-  - Launch arguments, environment variables and hook commands with quotes are parsed correctly, and a failed hook is reported.
-  - Quilt manifests and `os.version` rules are read correctly, and Java is found in the macOS bundle layout.
-  - The whole game process tree is stopped, including behind a wrapper, and the exit code or crash is shown when the game ends.
-  - Installing Java is atomic and no longer flashes console windows, and the Java probe has a timeout.
-  - Installing the same version twice, or while it is processed, no longer corrupts it.
+  - Launch arguments with spaces, such as `-Dos.name=Windows 10`, environment variables and hook commands with quotes are passed intact, and a failed hook is reported. The pre-launch hook has a time limit.
+  - Quilt versions and rules for specific Windows versions are read correctly, and Java is found in the macOS bundle layout.
+  - Minecraft 1.7.10–1.12.2 no longer fail on libraries that ship only native files, and a failed download of the game's native files fails the install instead of being ignored.
+  - The whole game process tree is stopped, including behind a wrapper, and the exit code or crash is shown when the game ends. Finished games no longer stay shown as running.
+  - A failed Java install no longer leaves a broken Java behind, checking a Java installation can no longer hang, and console windows no longer flash.
+  - Two installs of the same Forge or NeoForge version no longer overwrite each other's files, and steps already done are skipped on reinstall.
 - **Plugins:**
   - Plugins stay enabled after an update and are unloaded before their files are deleted.
   - Importing a plugin replaces the installed one, and archives imported before a failure still show up.
   - A provider release is previewed from its own archive, and only that archive is installed.
 - **Content:** A malformed project or version from a provider is skipped instead of failing the whole list, and Markdown videos load.
-- **Accounts:** Signing out no longer fails when the next account's token has expired, and only one account is active.
-- **Startup:** Startup failures and panics are shown in a dialog, startup dialogs appear on Linux, a second launcher copy is refused, and a failed window recreation recovers.
+- **Accounts:** Signing out no longer fails when the next account's token has expired, and several accounts can no longer be active at once.
+- **Startup:**
+  - Startup errors and crashes are shown in a dialog, and startup dialogs appear on Linux.
+  - A second launcher copy is refused and the open one is focused, and the launcher exits with an error instead of hanging when its window cannot be reopened.
+  - Data from a newer Aether version is reported in a dialog instead of crashing.
+  - A failed move of old accounts, settings or instances no longer blocks startup; you are told once.
 - **Interface:**
   - Dialogs return focus to what opened them, controls and menus have accessible names and work from the keyboard, and hardcoded text is translated.
   - Selects stay open when clicked right after a choice inside a dialog, and the selected content rows and loading and empty states are correct.
-  - Event listener errors and stale selections no longer leave the interface out of date.
 
 ### Security
 
-- **Plugins:** Plugins can run only Java launchers, cannot reach files outside their folders, are given less instance data, and are limited in the hosts they may contact and the size of the assets they download.
-- **Downloads and launch:** Version ids, asset names, library paths and redirect targets are checked before use, and download integrity checks fall back safely.
+- **Plugins:** Plugins can start only a Java installation known to the launcher, cannot reach files outside their folders, are given less instance data, and are limited in the hosts they may contact and the size of the assets they download.
+- **Downloads and launch:** Version ids, asset names, library paths and redirect targets are checked before use. Game libraries from a backup server and the downloaded Java are checked against their checksums.
+- **Log4Shell:** Minecraft 1.7–1.18.0 starts with Mojang's logging config that switches off the Log4Shell lookups.
 - **Files:** Unsafe paths, reserved Windows device names and links are refused, instance icons are limited in size and format, and "show in explorer" works only inside the launcher folders.
+- **Credentials:** Sign-in tokens in the old `credentials.json` are deleted once moved, instead of kept in a backup folder.
 - **Data and dependencies:** The app database and its folder are private on Unix, tokens are hidden from debug output, plain `http` images are blocked, and dependencies with known advisories were updated.
 
 ## [0.10.5] - 2026-07-04
