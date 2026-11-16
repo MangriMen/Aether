@@ -39,6 +39,7 @@
       "INTERNAL": "Unexpected error",
       "DUPLICATE_REQUEST": "This action is already in progress"
     },
+    "moreItems": "and {{count}} more",
     "cause": {
       "io": {
         "notFound": "file or folder not found",

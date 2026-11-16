@@ -4,7 +4,9 @@ use async_trait::async_trait;
 use rstest::rstest;
 use tempfile::TempDir;
 
-use crate::features::events::{Event, EventEmitter, EventError, SharedEventEmitter};
+use crate::features::events::{
+    Event, EventEmitter, EventError, InstanceEvent, InstanceEventType, SharedEventEmitter,
+};
 use crate::features::instance::app::ContentFileService;
 use crate::features::instance::infra::FsContentFileService;
 use crate::features::instance::{
@@ -295,4 +297,10 @@ async fn should_announce_the_edit_only_when_a_file_changed_though_another_failed
     assert_eq!(failures.len(), 1);
     let announced = emitter.0.lock().unwrap();
     assert_eq!(announced.len(), edits);
+    for event in announced.iter() {
+        assert!(
+            matches!(event, Event::Instance(InstanceEvent { event: InstanceEventType::Edited, instance_id: id }) if id.to_string() == "test-partial-toggle-usecase"),
+            "{event:?}"
+        );
+    }
 }

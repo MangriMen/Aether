@@ -694,3 +694,66 @@ async fn should_change_the_other_files_and_report_the_failed_when_one_cannot_be_
     }
     assert!(dir.join(format!("shaderpacks/b{from}")).exists());
 }
+
+#[rstest]
+#[case::disable(false)]
+#[case::enable(true)]
+#[tokio::test]
+async fn should_rename_a_file_once_when_its_path_is_given_twice(#[case] enable: bool) {
+    let (_temp_dir, location_info) = setup_temp_location();
+    let service = FsContentFileService::new(location_info.clone());
+    let instance_id = &InstanceId::try_from("test-toggle-twice").unwrap();
+    let dir = location_info.instance_dir(instance_id);
+    tokio::fs::create_dir_all(dir.join("mods")).await.unwrap();
+    let (from, to) = if enable {
+        ("mods/a.jar.disabled", "mods/a.jar")
+    } else {
+        ("mods/a.jar", "mods/a.jar.disabled")
+    };
+    tokio::fs::write(dir.join(from), b"data").await.unwrap();
+    let paths = [cp("mods/a.jar"), cp("mods/a.jar")];
+
+    if enable {
+        service.enable_content_files(instance_id, &paths).await
+    } else {
+        service.disable_content_files(instance_id, &paths).await
+    }
+    .expect("a path given twice is not a failure");
+
+    assert!(dir.join(to).exists());
+    assert!(!dir.join(from).exists());
+}
+
+/// A path outside the instance fails the call before any file is renamed.
+#[tokio::test]
+async fn should_rename_nothing_when_a_later_path_leads_out_of_the_instance() {
+    let (temp_dir, location_info) = setup_temp_location();
+    let service = FsContentFileService::new(location_info.clone());
+    let instance_id = &InstanceId::try_from("test-toggle-escape").unwrap();
+    let instance_dir = location_info.instance_dir(instance_id);
+    tokio::fs::create_dir_all(instance_dir.join("shaderpacks"))
+        .await
+        .unwrap();
+    tokio::fs::write(instance_dir.join("shaderpacks/ok.zip"), b"data")
+        .await
+        .unwrap();
+    let outside = temp_dir.path().join("outside");
+    std::fs::create_dir_all(&outside).unwrap();
+    std::fs::write(outside.join("escaped.jar"), b"outside").unwrap();
+    link_dir(&outside, &instance_dir.join("mods"));
+
+    let err = service
+        .disable_content_files(
+            instance_id,
+            &[cp("shaderpacks/ok.zip"), cp("mods/escaped.jar")],
+        )
+        .await
+        .expect_err("the escaping path should be refused");
+
+    assert!(
+        matches!(err, InstanceError::PathEscapesInstance { .. }),
+        "{err:?}"
+    );
+    assert!(instance_dir.join("shaderpacks/ok.zip").exists());
+    assert!(!instance_dir.join("shaderpacks/ok.zip.disabled").exists());
+}

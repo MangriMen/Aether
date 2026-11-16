@@ -93,6 +93,7 @@ pub(crate) fn block_rename(path: &Path) -> Option<RenameBlock> {
         if std::fs::write(&probe, b"").is_ok() {
             std::fs::remove_file(&probe).unwrap();
             std::fs::set_permissions(&dir, original).unwrap();
+            eprintln!("skipped: a read-only directory does not stop root");
             return None;
         }
 

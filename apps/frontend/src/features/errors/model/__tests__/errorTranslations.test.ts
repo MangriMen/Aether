@@ -145,6 +145,24 @@ describe('error translations', () => {
     );
   });
 
+  it('should_count_the_files_past_the_fifth_when_many_failed', () => {
+    const paths = Array.from({ length: 8 }, (_, i) => `mods/${i}.jar`);
+    const error = {
+      type: 'instance',
+      payload: {
+        code: 'CONTENT_STATE_CHANGE_FAILED',
+        payload: { paths, cause: { type: 'io', kind: 'resourceBusy' } },
+      },
+    } as LauncherError;
+
+    expect(getTranslatedError(error, tEn)).toBe(
+      'Could not change mods/0.jar, mods/1.jar, mods/2.jar, mods/3.jar, mods/4.jar and 3 more: the file is in use by another program',
+    );
+    expect(getTranslatedError(error, tRu)).toBe(
+      'Не удалось изменить mods/0.jar, mods/1.jar, mods/2.jar, mods/3.jar, mods/4.jar и ещё 3: файл занят другой программой',
+    );
+  });
+
   it('should_translate_the_cause_into_russian', () => {
     const text = getTranslatedError(io({ type: 'io', kind: 'notFound' }), tRu);
 

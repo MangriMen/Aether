@@ -329,7 +329,7 @@ impl InstanceErrorDto {
                         .collect(),
                     cause: failures
                         .first()
-                        .map_or_else(|| CauseDto::unknown("no failure"), |f| (&f.cause).into()),
+                        .map_or_else(|| CauseDto::unknown(String::new()), |f| (&f.cause).into()),
                 }
             }
             InstanceError::ContentDownloadError(failure) => Self::ContentDownloadError {

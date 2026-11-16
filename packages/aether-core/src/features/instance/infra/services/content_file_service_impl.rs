@@ -48,8 +48,14 @@ fn resolve_disabled(
 async fn rename_all(renames: Vec<(&ContentPath, PathBuf, PathBuf)>) -> Result<(), InstanceError> {
     let mut changed = 0;
     let mut failures = Vec::new();
+    // A path given twice is one file: its second rename would find nothing to rename.
+    let mut seen = std::collections::HashSet::new();
 
     for (content_path, from, to) in renames {
+        if !seen.insert(from.clone()) {
+            continue;
+        }
+
         match rename(from, to).await {
             Ok(()) => changed += 1,
             Err(err) => failures.push(ContentFileFailure {
