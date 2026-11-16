@@ -5,7 +5,7 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
-import { isWideHostPattern } from '@/features/plugins';
+import { useIsWideAllowedHost } from '@/features/plugins';
 import { useTranslation } from '@/shared/i18n';
 import { cn } from '@/shared/utils';
 
@@ -25,6 +25,7 @@ export const AllowedHost: Component<AllowedHostProps> = (props) => {
     'class',
   ]);
   const [{ t }] = useTranslation();
+  const isWide = useIsWideAllowedHost(() => local.value ?? '');
 
   return (
     <div class={cn('flex flex-col', local.class)} {...others}>
@@ -41,7 +42,7 @@ export const AllowedHost: Component<AllowedHostProps> = (props) => {
       <span class='text-destructive'>
         {local.error ? t('validation.hostRequired') : undefined}
       </span>
-      <Show when={isWideHostPattern(local.value ?? '')}>
+      <Show when={isWide.data}>
         <span class='px-2 text-sm text-warning'>
           {t('plugin.allowedHostsWide')}
         </span>

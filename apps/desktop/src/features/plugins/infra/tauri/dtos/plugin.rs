@@ -8,6 +8,26 @@ use crate::features::plugins::{
     PluginMetadataDto, PluginUpdaterCapabilityDto, ProviderHandlersDto, RuntimeConfigDto,
 };
 
+/// What a plugin can do through a host function it declares that the user is warned about.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Type)]
+#[serde(rename_all = "snake_case")]
+pub enum HostFunctionRiskDto {
+    RunsPrograms,
+    WritesInstanceFiles,
+    InstallsJava,
+}
+
+impl From<aether_core::features::plugins::HostFunctionRisk> for HostFunctionRiskDto {
+    fn from(value: aether_core::features::plugins::HostFunctionRisk) -> Self {
+        use aether_core::features::plugins::HostFunctionRisk as Risk;
+        match value {
+            Risk::RunsPrograms => Self::RunsPrograms,
+            Risk::WritesInstanceFiles => Self::WritesInstanceFiles,
+            Risk::InstallsJava => Self::InstallsJava,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
 pub enum PluginDtoState {
     NotLoaded,
@@ -44,6 +64,8 @@ pub struct PluginDto {
     /// it restarts.
     pub restart_needed: bool,
     pub verified: bool,
+    /// What the declared host functions let the plugin do that the user should be warned about.
+    pub host_function_risks: Vec<HostFunctionRiskDto>,
 }
 
 impl From<aether_core::features::plugins::PluginDto> for PluginDto {
@@ -55,6 +77,11 @@ impl From<aether_core::features::plugins::PluginDto> for PluginDto {
             state_reason: value.state_reason.map(Into::into),
             restart_needed: value.restart_needed,
             verified: value.verified,
+            host_function_risks: value
+                .host_function_risks
+                .into_iter()
+                .map(Into::into)
+                .collect(),
         }
     }
 }

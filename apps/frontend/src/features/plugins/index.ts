@@ -1,3 +1,4 @@
+export * from './api/allowedHostQueries';
 export * from './api/commandApprovalQueries';
 export * from './api/importerQueries';
 export * from './api/pluginQueries';
@@ -11,7 +12,6 @@ export * from './model/pluginManifest';
 export * from './model/pluginSettings';
 export * from './model/pluginSource';
 export * from './model/skippedPluginDir';
-export * from './model/wideHostPattern';
 export * from './ui/CommandApprovalDialog';
 export * from './ui/PluginAllowedHostsSection';
 export * from './ui/PluginCapabilitiesSection';

@@ -124,6 +124,7 @@ macro_rules! plugin_commands {
             edit_settings,
             grant_folder_access,
             grant_host_access,
+            is_wide_allowed_host,
             open_plugins_folder,
             get_api_version,
             get_plugin_source,

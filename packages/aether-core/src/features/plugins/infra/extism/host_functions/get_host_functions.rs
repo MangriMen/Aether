@@ -174,6 +174,17 @@ mod tests {
     use std::collections::HashSet;
 
     use super::*;
+    use crate::features::plugins::classify_host_function;
+
+    #[test]
+    fn should_classify_every_host_function_the_core_offers() {
+        for name in host_function_names() {
+            assert!(
+                classify_host_function(name).is_some(),
+                "`{name}` is not classified in domain/models/host_function_risk.rs: decide whether the user is warned about it"
+            );
+        }
+    }
 
     #[test]
     fn should_not_register_a_host_function_name_twice_when_building_the_list() {

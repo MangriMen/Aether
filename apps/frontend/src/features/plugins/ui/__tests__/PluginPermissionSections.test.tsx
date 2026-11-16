@@ -33,18 +33,24 @@ afterEach(() => {
 });
 
 describe('PluginAllowedHostsSection', () => {
-  it('should list the hosts and warn when one admits almost any site', () => {
+  it('should list the hosts and warn when the core reports a wide one', () => {
     const container = mount(() => (
-      <PluginAllowedHostsSection allowedHosts={['example.com', '*']} />
+      <PluginAllowedHostsSection
+        allowedHosts={['example.com', '*']}
+        wideHosts={['*']}
+      />
     ));
 
     expect(container.textContent).toContain('example.com');
     expect(container.textContent).toContain('Matches almost any site');
   });
 
-  it('should not warn when every host stays on one domain', () => {
+  it('should not warn when the core reports no wide host', () => {
     const container = mount(() => (
-      <PluginAllowedHostsSection allowedHosts={['*.example.com']} />
+      <PluginAllowedHostsSection
+        allowedHosts={['*.example.com']}
+        wideHosts={[]}
+      />
     ));
 
     expect(container.textContent).not.toContain('Matches almost any site');
@@ -52,7 +58,7 @@ describe('PluginAllowedHostsSection', () => {
 
   it('should say so when the plugin asks for no hosts', () => {
     const container = mount(() => (
-      <PluginAllowedHostsSection allowedHosts={[]} />
+      <PluginAllowedHostsSection allowedHosts={[]} wideHosts={[]} />
     ));
 
     expect(container.textContent).toContain('makes no network requests');
@@ -60,23 +66,29 @@ describe('PluginAllowedHostsSection', () => {
 });
 
 describe('PluginHostFunctionsSection', () => {
-  it('should say a plugin asks before running a program when run_command is declared', () => {
+  it('should warn about each risk the core reports', () => {
     const container = mount(() => (
-      <PluginHostFunctionsSection hostFunctions={['run_command', 'log']} />
+      <PluginHostFunctionsSection
+        hostFunctions={['run_command', 'write_instance_file', 'install_java']}
+        risks={['runs_programs', 'writes_instance_files', 'installs_java']}
+      />
     ));
 
     expect(container.textContent).toContain(
       'can ask to run a program on your computer',
     );
+    expect(container.textContent).toContain(
+      'put files into your game instances',
+    );
+    expect(container.textContent).toContain('install a Java runtime');
   });
 
-  it('should not say a plugin asks to run a program when it is not declared', () => {
+  it('should not warn when the core reports no risk', () => {
     const container = mount(() => (
-      <PluginHostFunctionsSection hostFunctions={['log']} />
+      <PluginHostFunctionsSection hostFunctions={['log']} risks={[]} />
     ));
 
-    expect(container.textContent).not.toContain(
-      'can ask to run a program on your computer',
-    );
+    expect(container.textContent).not.toContain('can ask to run a program');
+    expect(container.textContent).not.toContain('put files into your game');
   });
 });
