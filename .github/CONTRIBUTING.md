@@ -29,6 +29,7 @@ The pre-commit hooks (lefthook) run the main checks for the files you changed. P
 - Use [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `chore:`, ...).
 - Write commit messages, PR titles and PR descriptions in English.
 - Keep pull requests focused: one logical change per PR.
+- If a change is visible to users (a new feature, a behavior change, a user-facing fix), add a line to the `[Unreleased]` section of [`CHANGELOG.md`](../CHANGELOG.md). The release notes shown in the launcher come from it, so write what changes for the user, in English.
 - Do not reference issues or pull requests of other repositories in commits or PR descriptions.
 - We do not accept contributions that bundle third-party assets we cannot redistribute, or that are intended to circumvent access controls.
 

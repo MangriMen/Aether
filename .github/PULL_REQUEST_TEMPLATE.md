@@ -6,5 +6,6 @@
 
 - [ ] `bun run lint:rust` and the frontend `bun run lint` pass
 - [ ] `cargo test --workspace` and the frontend tests pass
+- [ ] If the change is visible to users, I added a line to `[Unreleased]` in [CHANGELOG.md](../CHANGELOG.md)
 - [ ] Commit messages and this description are in English and follow Conventional Commits
 - [ ] I agree to the contribution terms in [CONTRIBUTING.md](CONTRIBUTING.md#licensing-of-contributions) (Contributor License Agreement)
