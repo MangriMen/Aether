@@ -1,6 +1,6 @@
 //! An instance never holds two versions of one content.
 
-use crate::features::instance::{FileSide, InstallFileEntry, PackFile, PlanOrigin};
+use crate::features::instance::{FileSide, InstallFileEntry, InstallPlan, PackFile, PlanOrigin};
 
 use super::common::*;
 
@@ -323,4 +323,38 @@ async fn install_over_a_path_that_differs_only_in_case() -> (Fixture, &'static s
         .unwrap();
 
     (fixture, url)
+}
+
+/// An override over the file of another plan is left out, and when that file is another version
+/// of a content the plan installs it is still replaced: no second version of the content.
+#[tokio::test]
+async fn should_replace_another_plans_version_of_a_content_when_an_override_names_its_path() {
+    let fixture = Fixture::new().await;
+    fixture.register(&MockProvider::builtin_modrinth()).await;
+    fixture.put("mods/modmenu-v7.jar", "modmenu 7");
+    fixture
+        .record(
+            "mods/modmenu-v7.jar",
+            modmenu_record(
+                "mods/modmenu-v7.jar",
+                "modmenu 7",
+                "v7",
+                pack_of(&plugin("other")),
+            ),
+        )
+        .await;
+    let archive = zip_archive(&fixture, &[("overrides/mods/modmenu-v7.jar", "override")]);
+
+    fixture
+        .execute(
+            InstallPlan {
+                overrides: archive_overrides(archive),
+                ..existing(vec![modmenu_entry("v9")])
+            },
+            &plugin("packwiz"),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(fixture.instance_files(INSTANCE_ID), ["mods/modmenu-v9.jar"]);
 }

@@ -809,3 +809,45 @@ async fn should_refuse_a_source_when_it_has_a_jar_both_enabled_and_disabled() {
         "{err:?}"
     );
 }
+
+/// An override that differs from the pack's recorded jar only in case is that very file where
+/// the file system ignores case (Windows, macOS): one file, one record, none left stale.
+#[cfg(any(windows, target_os = "macos"))]
+#[tokio::test]
+async fn should_keep_one_file_and_one_record_when_an_override_differs_only_in_case() {
+    let fixture = Fixture::new().await;
+    run_overrides(&fixture, &[("overrides/mods/a.jar", "one")]).await;
+
+    run_overrides(&fixture, &[("overrides/mods/A.jar", "two")]).await;
+
+    assert_eq!(fixture.instance_files(INSTANCE_ID).len(), 1);
+    let records = fixture.records(INSTANCE_ID).await;
+    assert_eq!(records.len(), 1);
+    assert_eq!(records.values().next().unwrap().hash, sha1_hash("two"));
+
+    run_overrides(&fixture, &[]).await;
+
+    assert!(fixture.instance_files(INSTANCE_ID).is_empty());
+    assert!(fixture.records(INSTANCE_ID).await.is_empty());
+}
+
+/// Where the file system tells cases apart (Linux) `mods/A.jar` is another file than the
+/// recorded `mods/a.jar`: the old one is dropped.
+#[cfg(not(any(windows, target_os = "macos")))]
+#[tokio::test]
+async fn should_replace_the_jar_when_an_override_differs_only_in_case_on_a_case_sensitive_system() {
+    let fixture = Fixture::new().await;
+    run_overrides(&fixture, &[("overrides/mods/a.jar", "one")]).await;
+
+    run_overrides(&fixture, &[("overrides/mods/A.jar", "two")]).await;
+
+    assert_eq!(fixture.instance_files(INSTANCE_ID), ["mods/A.jar"]);
+    assert_eq!(
+        fixture
+            .records(INSTANCE_ID)
+            .await
+            .keys()
+            .collect::<Vec<_>>(),
+        ["mods/A.jar"]
+    );
+}
