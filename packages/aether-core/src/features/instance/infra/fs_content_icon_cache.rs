@@ -142,6 +142,29 @@ fn check_public(url: &HttpsUrl) -> Result<(), ContentIconError> {
     }
 }
 
+/// How many redirects an icon fetch follows.
+const MAX_ICON_REDIRECTS: usize = 3;
+
+/// Whether an icon fetch may follow a redirect to `target`, which is the `redirect_number`th.
+/// Each hop is vetted like the first URL: a public host could otherwise send the request to
+/// the user's own network.
+pub fn icon_redirect_allowed(target: &url::Url, redirect_number: usize) -> bool {
+    redirect_number <= MAX_ICON_REDIRECTS
+        && HttpsUrl::parse(target.as_str()).is_ok_and(|url| url.names_public_host())
+}
+
+/// The redirect policy of the client that fetches icons; see [`icon_redirect_allowed`].
+pub fn icon_redirect_policy() -> reqwest::redirect::Policy {
+    reqwest::redirect::Policy::custom(|attempt| {
+        if icon_redirect_allowed(attempt.url(), attempt.previous().len()) {
+            attempt.follow()
+        } else {
+            tracing::warn!("Content icon redirect to {} refused", attempt.url());
+            attempt.stop()
+        }
+    })
+}
+
 /// Whether a `Content-Type` says image. A missing one leaves it to the body.
 fn is_image_type(content_type: Option<&str>) -> bool {
     content_type.is_none_or(|value| {
@@ -430,6 +453,55 @@ mod tests {
 
     fn https(url: &str) -> HttpsUrl {
         HttpsUrl::parse(url).unwrap()
+    }
+
+    #[test]
+    fn redirect_rule_vets_every_hop() {
+        let cases = [
+            ("https://cdn.modrinth.com/a.png", 1, true),
+            ("https://cdn.modrinth.com/a.png", 3, true),
+            ("https://cdn.modrinth.com/a.png", 4, false),
+            ("http://cdn.modrinth.com/a.png", 1, false),
+            ("https://127.0.0.1/a.png", 1, false),
+            ("https://192.168.1.1/a.png", 1, false),
+            ("https://10.0.0.1/a.png", 1, false),
+            ("https://[::1]/a.png", 1, false),
+            ("https://localhost/a.png", 1, false),
+        ];
+        for (url, number, allowed) in cases {
+            let url = url::Url::parse(url).unwrap();
+            assert_eq!(
+                icon_redirect_allowed(&url, number),
+                allowed,
+                "{url} #{number}"
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn redirect_policy_does_not_follow_to_loopback() {
+        use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        tokio::spawn(async move {
+            while let Ok((mut stream, _)) = listener.accept().await {
+                let mut buf = [0u8; 1024];
+                let _ = stream.read(&mut buf).await;
+                let _ = stream
+                    .write_all(
+                        b"HTTP/1.1 302 Found\r\nLocation: https://127.0.0.1:1/x\r\nContent-Length: 0\r\nConnection: close\r\n\r\n",
+                    )
+                    .await;
+            }
+        });
+
+        let client = reqwest::Client::builder()
+            .redirect(icon_redirect_policy())
+            .build()
+            .unwrap();
+        let response = client.get(format!("http://{addr}/")).send().await.unwrap();
+        assert_eq!(response.status(), reqwest::StatusCode::FOUND);
     }
 
     const HASHED_URL: &str =

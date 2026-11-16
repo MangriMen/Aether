@@ -14,7 +14,7 @@ use aether_core::features::instance::infra::{
     CONTENT_METADATA_NAMESPACES, EventEmittingInstanceStorage, FsContentFileService,
     FsContentIconCache, FsInstanceFileService, InstanceEventHandler, InstanceWatcherServiceImpl,
     LegacyInstanceScanner, ModrinthContentProvider, MrpackCacheCleaner, SqliteInstanceStorage,
-    SqlitePackStorage, UniversalContentMetadataCache, mrpack_dir,
+    SqlitePackStorage, UniversalContentMetadataCache, icon_redirect_policy, mrpack_dir,
 };
 use aether_core::features::instance::{
     ContentIconHousekeeping, ContentProvider, Importer, PluginId, Updater,
@@ -229,12 +229,12 @@ pub async fn build_container(
     let sandbox_limits = PluginSandboxLimits::default();
 
     // ── HTTP client ─────────────────────────────────────────────────
-    let reqwest_client: Arc<ClientWithMiddleware> = {
-        let client = with_default_timeouts(
-            reqwest::Client::builder().tcp_keepalive(Some(std::time::Duration::from_secs(10))),
-        )
-        .build()
-        .expect("Failed to build reqwest client");
+    // Timeouts and retries are the same for every client; only the redirect policy differs.
+    let build_http_client = |builder: reqwest::ClientBuilder| -> Arc<ClientWithMiddleware> {
+        let client =
+            with_default_timeouts(builder.tcp_keepalive(Some(std::time::Duration::from_secs(10))))
+                .build()
+                .expect("Failed to build reqwest client");
         let retry_policy = ExponentialBackoff::builder().build_with_max_retries(5);
         let retry_middleware =
             reqwest_retry::RetryTransientMiddleware::new_with_policy(retry_policy);
@@ -244,6 +244,10 @@ pub async fn build_container(
                 .build(),
         )
     };
+    let reqwest_client = build_http_client(reqwest::Client::builder());
+    // Icon URLs may come from a plugin, so no redirect may lead them off the public internet.
+    let icon_reqwest_client =
+        build_http_client(reqwest::Client::builder().redirect(icon_redirect_policy()));
 
     // ── Progress & HTTP wrapper ─────────────────────────────────────
     let progress_bar_storage: Arc<PBarStorage> = Arc::new(InMemoryProgressBarStorage::default());
@@ -291,8 +295,14 @@ pub async fn build_container(
         Arc::new(UniversalContentMetadataCache::new(SqliteCache::new(
             pool.clone(),
         )));
+    let icon_client: Arc<ReqwestClient<ProgressServiceType>> =
+        Arc::new(ReqwestClient::for_downloads(
+            progress_service.clone(),
+            icon_reqwest_client,
+            fetch_semaphore.clone(),
+        ));
     let fs_content_icon_cache = Arc::new(FsContentIconCache::new(
-        download_client.clone(),
+        icon_client,
         &location_info.assets_cache_dir(),
     ));
     let content_icon_cache: Arc<dyn aether_core::features::instance::ContentIconCache> =
