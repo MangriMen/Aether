@@ -450,7 +450,6 @@ async fn should_apply_overrides_after_planned_files_when_both_name_a_path() {
         &[
             ("overrides/mods/a.jar", "override a"),
             ("overrides/mods/B.jar", "override b"),
-            ("overrides/mods/b.jar.disabled", "override b disabled"),
             ("overrides/mods/dropped.jar", "override dropped"),
         ],
     );
@@ -761,4 +760,52 @@ async fn should_record_the_planned_file_when_the_pack_moves_an_override_jar_to_t
         "https://cdn.example/a.jar"
     );
     assert_eq!(fixture.records(INSTANCE_ID).await.len(), 1);
+}
+
+/// The pack ships a jar it had enabled as disabled now: the enabled file goes, the disabled one
+/// is the only copy, and no record is left for it.
+#[tokio::test]
+async fn should_remove_the_enabled_jar_when_the_pack_ships_it_disabled_instead() {
+    let fixture = Fixture::new().await;
+    run_overrides(&fixture, &[("overrides/mods/a.jar", "one")]).await;
+
+    run_overrides(&fixture, &[("overrides/mods/a.jar.disabled", "two")]).await;
+
+    assert_eq!(fixture.instance_files(INSTANCE_ID), ["mods/a.jar.disabled"]);
+    assert_eq!(
+        fixture
+            .instance_file(INSTANCE_ID, "mods/a.jar.disabled")
+            .unwrap(),
+        "two"
+    );
+    assert!(fixture.records(INSTANCE_ID).await.is_empty());
+}
+
+/// A path is claimed once by a source, enabled or disabled: the two are one file.
+#[tokio::test]
+async fn should_refuse_a_source_when_it_has_a_jar_both_enabled_and_disabled() {
+    let fixture = Fixture::new().await;
+    let archive = zip_archive(
+        &fixture,
+        &[
+            ("overrides/mods/a.jar", "a"),
+            ("overrides/mods/a.jar.disabled", "a"),
+        ],
+    );
+
+    let err = fixture
+        .execute(
+            InstallPlan {
+                overrides: archive_overrides(archive),
+                ..existing(vec![])
+            },
+            &plugin("packwiz"),
+        )
+        .await
+        .unwrap_err();
+
+    assert!(
+        matches!(err, InstanceError::ContentDuplication { .. }),
+        "{err:?}"
+    );
 }

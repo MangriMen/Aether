@@ -87,7 +87,9 @@ pub(super) fn without_separate_installs(
 ///
 /// A path that differs from a planned one only in case is left alone where the file system
 /// ignores case (Windows, macOS): there it is the planned file. So is a path an override
-/// writes (`overridden`, as [`override_key`] gives them): the override puts the file there anew.
+/// writes (`overridden`, as [`override_key`] gives them) while the record is `origin`'s or has no
+/// owner: the override puts the file there anew. A record of another plan is not the override's
+/// to take (it is left out), so a version of a content it holds is still replaced.
 pub(super) fn dropped_paths(
     records: &HashMap<ContentPath, PackFile>,
     origin: &PlanOrigin,
@@ -97,8 +99,14 @@ pub(super) fn dropped_paths(
     let planned: HashSet<String> = entries
         .iter()
         .map(|entry| entry.relative_path.file_system_key())
-        .chain(overridden.iter().cloned())
         .collect();
+    let overwritten = |content_path: &ContentPath, record: &PackFile| {
+        overridden.contains(&content_path.file_system_key())
+            && record
+                .installed_by
+                .as_ref()
+                .is_none_or(|installed_by| installed_by == origin)
+    };
     let replaced = |record: &PackFile| {
         entries.iter().any(|entry| {
             entry
@@ -113,6 +121,7 @@ pub(super) fn dropped_paths(
         .filter(|(content_path, record)| {
             (is_installed_by(record, origin) || replaced(record))
                 && !planned.contains(&content_path.file_system_key())
+                && !overwritten(content_path, record)
         })
         .map(|(content_path, _)| content_path.clone())
         .collect();

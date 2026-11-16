@@ -1564,7 +1564,7 @@ impl InstallPlanExecutor {
                     .is_some_and(|installed_by| installed_by != origin)
             {
                 tracing::info!(
-                    "Override \"{relative_path}\" skipped: \"{owned_path}\" is installed by                      another plan"
+                    "Override \"{relative_path}\" skipped: \"{owned_path}\" is installed by another plan"
                 );
                 progress.step("Installing").await;
                 continue;
@@ -1612,6 +1612,12 @@ impl InstallPlanExecutor {
             } else if let Some((owned_path, record)) = existing
                 && record.installed_by.as_ref() == Some(origin)
             {
+                // The pack now ships its file disabled: the enabled one it recorded goes, as
+                // the removal of a dropped file would have taken it.
+                if relative_path.as_str().ends_with(DISABLED_SUFFIX) {
+                    self.move_aside(instance_id, owned_path.as_str(), undo)
+                        .await?;
+                }
                 unrecorded.push(owned_path.clone());
             }
         }
