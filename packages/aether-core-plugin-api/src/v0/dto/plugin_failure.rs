@@ -87,21 +87,23 @@ impl PluginFailureDto {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::v0::PluginErrorDto;
+    use crate::v0::{CommandRefusalDto, PluginErrorDto};
 
     fn refused() -> PluginFailureDto {
         PluginFailureDto {
-            message: "AccessViolation".to_owned(),
-            host: Some(HostError::PluginError(PluginErrorDto::AccessViolation {
+            message: "refused".to_owned(),
+            host: Some(HostError::PluginError(PluginErrorDto::CommandNotApproved {
                 plugin_id: "packwiz".to_owned(),
-                path: "denied".to_owned(),
+                reason: CommandRefusalDto::Denied,
             })),
         }
     }
 
-    fn denied_path(failure: &PluginFailureDto) -> Option<&str> {
+    fn refusal(failure: &PluginFailureDto) -> Option<CommandRefusalDto> {
         match failure.host.as_ref()? {
-            HostError::PluginError(PluginErrorDto::AccessViolation { path, .. }) => Some(path),
+            HostError::PluginError(PluginErrorDto::CommandNotApproved { reason, .. }) => {
+                Some(*reason)
+            }
             _ => None,
         }
     }
@@ -110,8 +112,8 @@ mod tests {
     fn round_trips() {
         let parsed = PluginFailureDto::parse(&refused().encode()).expect("envelope");
 
-        assert_eq!(parsed.message, "AccessViolation");
-        assert_eq!(denied_path(&parsed), Some("denied"));
+        assert_eq!(parsed.message, "refused");
+        assert_eq!(refusal(&parsed), Some(CommandRefusalDto::Denied));
     }
 
     #[test]
@@ -119,7 +121,7 @@ mod tests {
         let raw = format!("Error: {}\n\nCaused by: x", refused().encode());
         let parsed = PluginFailureDto::parse(&raw).expect("envelope");
 
-        assert_eq!(denied_path(&parsed), Some("denied"));
+        assert_eq!(refusal(&parsed), Some(CommandRefusalDto::Denied));
     }
 
     #[test]

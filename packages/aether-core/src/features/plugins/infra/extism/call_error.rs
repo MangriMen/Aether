@@ -27,34 +27,33 @@ pub(super) fn classify_call_error(error: &extism::Error, code: i32) -> PluginCal
         OUT_OF_FUEL => PluginCallError::OutOfFuel,
         OUT_OF_MEMORY => PluginCallError::OutOfMemory,
         _ if cause.starts_with(WASI_EXIT_PREFIX) => PluginCallError::NonZeroExit(code),
-        // A plugin that reports a typed failure and then traps still reported it.
-        _ if let Some(refusal) = refused_command(&cause) => refusal,
+        // What the plugin reported in a failure envelope. Extism keeps the plugin's message as the
+        // cause even when it traps after setting it, so this is not hidden behind the trap code.
+        _ if let Some(failure) = PluginFailureDto::parse(&cause) => reported_failure(failure),
         _ if code == TRAP_CODE => PluginCallError::Trap(cause),
         _ => PluginCallError::Plugin(cause),
     }
 }
 
-/// The refusal of a command the plugin reports in its failure envelope, either its own call of
-/// `run_command` or a call of another plugin that failed that way. Anything else in the envelope
-/// stays an ordinary plugin failure, with the text as it came.
-fn refused_command(cause: &str) -> Option<PluginCallError> {
-    let failure = PluginFailureDto::parse(cause)?;
-
-    match failure.host? {
-        HostError::PluginError(PluginErrorDto::CommandNotApproved { reason, .. }) => {
-            Some(PluginCallError::CommandNotApproved {
+/// A failure the plugin reported in its envelope: the refusal of a command, either of its own
+/// call of `run_command` or of a call of another plugin that failed that way, else the plugin's
+/// own message.
+fn reported_failure(failure: PluginFailureDto) -> PluginCallError {
+    match failure.host {
+        Some(HostError::PluginError(PluginErrorDto::CommandNotApproved { reason, .. })) => {
+            PluginCallError::CommandNotApproved {
                 reason: reason.into(),
                 details: failure.message,
-            })
+            }
         }
-        HostError::PluginError(PluginErrorDto::FunctionCallFailed {
+        Some(HostError::PluginError(PluginErrorDto::FunctionCallFailed {
             error: PluginCallErrorDto::CommandNotApproved { reason, details },
             ..
-        }) => Some(PluginCallError::CommandNotApproved {
+        })) => PluginCallError::CommandNotApproved {
             reason: reason.into(),
             details,
-        }),
-        _ => None,
+        },
+        _ => PluginCallError::Plugin(failure.message),
     }
 }
 
@@ -314,13 +313,22 @@ Caused by: x"#,
     }
 
     #[test]
-    fn should_pass_the_text_through_when_the_envelope_holds_nothing_it_understands() {
-        for name in ["unknown_reason", "broken_json", "only_message"] {
-            let error = call_error(&mut unlimited(), name);
-            let message = MESSAGES.iter().find(|(n, _)| *n == name).unwrap().1;
-
-            assert_eq!(error, PluginCallError::Plugin(message.to_owned()), "{name}");
+    fn should_give_the_message_of_the_envelope_when_it_reports_nothing_else_the_host_knows() {
+        for (name, message) in [("unknown_reason", "m"), ("only_message", "just text")] {
+            assert_eq!(
+                call_error(&mut unlimited(), name),
+                PluginCallError::Plugin(message.to_owned()),
+                "{name}"
+            );
         }
+    }
+
+    #[test]
+    fn should_pass_the_text_through_when_the_envelope_is_broken() {
+        assert_eq!(
+            call_error(&mut unlimited(), "broken_json"),
+            PluginCallError::Plugin("aether-plugin-failure:{not json".to_owned())
+        );
     }
 
     #[test]

@@ -82,7 +82,7 @@ wire: `{"type": "pluginError", "payload": {"kind": "commandNotApproved", "data":
 command is refused again without a new question.
 
 To let the user see why, report the error as a failure envelope (see "Reporting a typed failure"
-above), passing the `HostError` as `host`: the launcher then tells the user that the command was
+below), passing the `HostError` as `host`: the launcher then tells the user that the command was
 not allowed, and why. A plugin that turns the error into plain text still fails, but the user
 only learns that the plugin reported an error. When a plugin calls another through the host and
 the other one reported a refusal this way, the refusal passes through as
