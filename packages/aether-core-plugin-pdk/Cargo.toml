@@ -11,8 +11,5 @@ anyhow.workspace = true
 extism-convert = "1.30"
 serde.workspace = true
 
-[dev-dependencies]
-rmp-serde = "1.3.1"
-
 [lints]
 workspace = true

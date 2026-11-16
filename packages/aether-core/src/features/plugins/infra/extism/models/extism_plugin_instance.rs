@@ -1,5 +1,6 @@
 use super::PluginInstanceExt;
 use crate::features::instance::PluginId;
+use crate::features::plugins::infra::extism::Wire;
 use crate::features::plugins::{
     PluginCallError, PluginError, PluginInstance, PluginInternalEvent,
     infra::extism::call_error::classify_call_error,
@@ -57,6 +58,6 @@ impl PluginInstance for ExtismPluginInstance {
         }
 
         let dto: aether_core_plugin_api::v0::PluginInternalEventDto = event.into();
-        self.call::<extism_convert::Msgpack<_>, ()>(handle, extism_convert::Msgpack(dto))
+        self.call::<Wire<_>, ()>(handle, Wire(dto))
     }
 }

@@ -110,7 +110,7 @@ mod tests {
     use crate::features::instance::{ContentId, ContentVersionId};
     use std::collections::HashMap;
 
-    use extism_convert::{FromBytes, Msgpack, ToBytes};
+    use aether_core_plugin_api::v0::wire;
 
     use super::*;
     use crate::features::instance::ContentType;
@@ -143,10 +143,8 @@ mod tests {
             )])),
         };
 
-        let bytes = Msgpack(ContentFileDto::from(file))
-            .to_bytes()
-            .expect("DTO should encode");
-        let Msgpack(dto) = Msgpack::<ContentFileDto>::from_bytes(&bytes).expect("should decode");
+        let bytes = wire::encode(&ContentFileDto::from(file)).expect("DTO should encode");
+        let dto: ContentFileDto = wire::decode(&bytes).expect("should decode");
         let back = ContentFile::try_from(dto).expect("ids should parse");
 
         assert_eq!(back.update_provider_id, Some(modrinth.clone()));

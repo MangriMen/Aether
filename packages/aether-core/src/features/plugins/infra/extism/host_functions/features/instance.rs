@@ -3,7 +3,7 @@ use aether_core_plugin_api::v0::{
     WriteInstanceFileParamsDto,
 };
 use dashmap::DashMap;
-use extism::{convert::Msgpack, host_fn};
+use extism::host_fn;
 use path_slash::PathBufExt;
 
 use crate::{
@@ -23,7 +23,10 @@ use crate::{
     features::settings::LocationInfo,
 };
 
-use super::super::{super::mappers::to_extism_res, PluginContext, block_on};
+use super::super::{
+    super::mappers::{Wire, to_extism_res},
+    PluginContext, block_on,
+};
 
 // ── Testable business logic ──
 
@@ -292,7 +295,7 @@ pub(crate) async fn handle_read_instance_file(
 // ── Extism host function wrappers ──
 
 host_fn!(
-pub instance_get_dir(user_data: PluginContext; id: String) -> MsgpackResult<String> {
+pub instance_get_dir(user_data: PluginContext; id: String) -> HostReply<String> {
     let context = user_data.get()?;
     let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
     let container = ctx.upgrade_container().ok_or_else(|| anyhow::Error::msg("AetherContainer dropped before plugin call"))?;
@@ -305,7 +308,7 @@ pub instance_get_dir(user_data: PluginContext; id: String) -> MsgpackResult<Stri
 });
 
 host_fn!(
-pub instance_plugin_get_dir(user_data: PluginContext; instance_id: String) -> MsgpackResult<String> {
+pub instance_plugin_get_dir(user_data: PluginContext; instance_id: String) -> HostReply<String> {
     let context = user_data.get()?;
     let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
     let plugin_id = ctx.id.clone();
@@ -326,8 +329,8 @@ pub instance_plugin_get_dir(user_data: PluginContext; instance_id: String) -> Ms
 host_fn!(
     pub instance_create(
         user_data: PluginContext;
-        new_instance_dto: Msgpack<NewInstanceDto>
-    ) -> MsgpackResult<String> {
+        new_instance_dto: Wire<NewInstanceDto>
+    ) -> HostReply<String> {
         let context = user_data.get()?;
         let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
         let container = ctx.upgrade_container().ok_or_else(|| anyhow::Error::msg("AetherContainer dropped before plugin call"))?;
@@ -347,7 +350,7 @@ host_fn!(
 );
 
 host_fn!(
-pub list_content(user_data: PluginContext; id: String) -> MsgpackResult<DashMap<String, ContentFileDto>> {
+pub list_content(user_data: PluginContext; id: String) -> HostReply<DashMap<String, ContentFileDto>> {
     let context = user_data.get()?;
     let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
     let container = ctx.upgrade_container().ok_or_else(|| anyhow::Error::msg("AetherContainer dropped before plugin call"))?;
@@ -363,7 +366,7 @@ pub list_content(user_data: PluginContext; id: String) -> MsgpackResult<DashMap<
 });
 
 host_fn!(
-pub enable_contents(user_data: PluginContext; instance_id: String, content_paths: Msgpack<Vec<String>>) -> MsgpackResult<()> {
+pub enable_contents(user_data: PluginContext; instance_id: String, content_paths: Wire<Vec<String>>) -> HostReply<()> {
     let context = user_data.get()?;
     let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
     let container = ctx.upgrade_container().ok_or_else(|| anyhow::Error::msg("AetherContainer dropped before plugin call"))?;
@@ -381,7 +384,7 @@ pub enable_contents(user_data: PluginContext; instance_id: String, content_paths
 });
 
 host_fn!(
-pub disable_contents(user_data: PluginContext; instance_id: String, content_paths: Msgpack<Vec<String>>) -> MsgpackResult<()> {
+pub disable_contents(user_data: PluginContext; instance_id: String, content_paths: Wire<Vec<String>>) -> HostReply<()> {
     let context = user_data.get()?;
     let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
     let container = ctx.upgrade_container().ok_or_else(|| anyhow::Error::msg("AetherContainer dropped before plugin call"))?;
@@ -399,7 +402,7 @@ pub disable_contents(user_data: PluginContext; instance_id: String, content_path
 });
 
 host_fn!(
-pub write_instance_file(user_data: PluginContext; params: Msgpack<WriteInstanceFileParamsDto>) -> MsgpackResult<()> {
+pub write_instance_file(user_data: PluginContext; params: Wire<WriteInstanceFileParamsDto>) -> HostReply<()> {
     let context = user_data.get()?;
     let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
     let id = ctx.id.clone();
@@ -412,7 +415,7 @@ pub write_instance_file(user_data: PluginContext; params: Msgpack<WriteInstanceF
 });
 
 host_fn!(
-pub read_instance_file(user_data: PluginContext; params: Msgpack<ReadInstanceFileParamsDto>) -> MsgpackResult<InstanceFileBytesDto> {
+pub read_instance_file(user_data: PluginContext; params: Wire<ReadInstanceFileParamsDto>) -> HostReply<InstanceFileBytesDto> {
     let context = user_data.get()?;
     let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
     let id = ctx.id.clone();

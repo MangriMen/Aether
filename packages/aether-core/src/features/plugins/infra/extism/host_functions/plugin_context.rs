@@ -86,7 +86,7 @@ impl PluginContext {
 mod tests {
     use std::{collections::HashMap, sync::Mutex};
 
-    use aether_core_plugin_api::v0::{HostResult, HttpRequestDto, HttpResponseDto};
+    use aether_core_plugin_api::v0::{HostResult, HttpRequestDto, HttpResponseDto, wire};
     use extism::{Function, Manifest, Plugin, PluginBuilder, UserData, Wasm};
 
     use super::*;
@@ -153,12 +153,12 @@ mod tests {
             url: format!("http://{host}/"),
             headers: HashMap::new(),
         };
-        let input = rmp_serde::to_vec(&request).expect("encodes");
+        let input = wire::encode(&request).expect("encodes");
 
         let output: Vec<u8> = plugin
             .call("via_http_get", input)
             .expect("http_get answers with a result, not a trap");
-        let answer: HostResult<HttpResponseDto> = rmp_serde::from_slice(&output).expect("decodes");
+        let answer: HostResult<HttpResponseDto> = wire::decode(&output).expect("decodes");
 
         format!("{answer:?}")
     }

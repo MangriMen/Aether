@@ -13,7 +13,6 @@ use aether_core_plugin_api::v0::{
     ResolvedFileDto,
 };
 use async_trait::async_trait;
-use extism_convert::Msgpack;
 use serde::{Serialize, de::DeserializeOwned};
 
 use crate::features::{
@@ -34,7 +33,7 @@ use crate::features::{
 };
 
 use crate::features::plugins::infra::extism::models::PluginInstanceExt;
-use crate::features::plugins::infra::extism::{InvalidPlanFile, InvalidResolvedFile};
+use crate::features::plugins::infra::extism::{InvalidPlanFile, InvalidResolvedFile, Wire};
 use crate::features::plugins::infra::pack_instances::deploying_packs;
 use crate::features::plugins::infra::plugin_utils::{
     MountSet, host_path_to_plugin, parse_plugin_path, resolve_plugin_path,
@@ -315,7 +314,7 @@ impl PluginContentProviderProxy {
                 plugin.supports(&handler).then(|| {
                     let call = || {
                         plugin
-                            .call::<Msgpack<I>, Msgpack<O>>(&handler, Msgpack(input))
+                            .call::<Wire<I>, Wire<O>>(&handler, Wire(input))
                             .map(|res| res.0)
                     };
                     if deploys_pack {

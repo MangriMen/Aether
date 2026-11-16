@@ -1,5 +1,5 @@
+use crate::features::plugins::infra::extism::Wire;
 use async_trait::async_trait;
-use extism_convert::Msgpack;
 
 use crate::features::{
     instance::{Importer, ImporterCapabilityMetadata, InstanceError, InstanceId},
@@ -76,7 +76,7 @@ impl Importer for PluginImporterProxy {
             .run(&self.capability.handler, move |plugin| {
                 plugin.supports(&handler).then(|| {
                     let (result, instances) = deploying_packs(&deploying, || {
-                        plugin.call::<_, ()>(&handler, Msgpack(params))
+                        plugin.call::<_, ()>(&handler, Wire(params))
                     });
                     result.map(|()| instances)
                 })

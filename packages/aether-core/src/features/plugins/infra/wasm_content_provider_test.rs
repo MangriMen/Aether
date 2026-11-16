@@ -17,12 +17,12 @@ use std::{
     time::Duration,
 };
 
+use aether_core_plugin_api::v0::wire;
 use aether_core_plugin_api::v0::{
     ContentAuthorDto, ContentMetadataDto, ContentSearchResultDto, ContentVersionMetadataDto,
     FileHashDto, ModLoaderDto, PackMetadataDto, ProviderIdDto, ResolvedFileDto,
 };
 use extism::{Function, Manifest, PluginBuilder, UserData, Wasm};
-use extism_convert::{Msgpack, ToBytes};
 use serde::Serialize;
 
 use crate::features::instance::{CapabilityId, PluginId};
@@ -81,7 +81,7 @@ const CAPABILITIES: &str = r#"{
 
 /// What one export of the test plugin does.
 enum Body {
-    /// Hands back these bytes as its output, as the PDK does with a Msgpack answer.
+    /// Hands back these bytes as its output, as the PDK does with an answer.
     Answer(Vec<u8>),
     /// Calls the host function `wait` first, then answers.
     WaitThenAnswer(Vec<u8>),
@@ -90,7 +90,7 @@ enum Body {
 }
 
 fn encode<T: Serialize>(value: T) -> Vec<u8> {
-    Msgpack(value).to_bytes().expect("DTO should encode")
+    wire::encode(&value).expect("DTO should encode")
 }
 
 /// A module exporting `exports`. The answers are data segments; `$emit` copies one into Extism

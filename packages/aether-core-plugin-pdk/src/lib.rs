@@ -1,5 +1,5 @@
-//! What a Rust plugin needs to talk to the host: reading what a host function returned, and
-//! reporting a failure the host can tell apart.
+//! What a Rust plugin needs to talk to the host: the wire encoding, reading what a host function
+//! returned, and reporting a failure the host can tell apart.
 //!
 //! The DTOs, the failure envelope and its schema live in `aether-core-plugin-api`, which has no
 //! Extism dependency; this crate is the Extism side of it.
@@ -9,12 +9,15 @@
 //!
 //! #[host_fn]
 //! extern "ExtismHost" {
-//!     fn run_command(command: Msgpack<CommandDto>) -> HostReply<OutputDto>;
+//!     fn run_command(command: Wire<CommandDto>) -> HostReply<OutputDto>;
 //! }
 //!
 //! // `#[plugin_fn]` wants `FnResult`; `?` turns a `pdk::Error` into it.
+//! // `Wire` is `Msgpack` with named fields, which is what the host reads and writes; the
+//! // plugin's own inputs and outputs (`#[plugin_fn] fn f(Wire(x): Wire<X>) -> FnResult<Wire<Y>>`)
+//! // use it the same way.
 //! fn run(command: CommandDto) -> pdk::Result<OutputDto> {
-//!     Ok(unsafe { run_command(Msgpack(command)) }?.into_result()?)
+//!     Ok(unsafe { run_command(Wire(command)) }?.into_result()?)
 //! }
 //!
 //! #[plugin_fn]
@@ -26,9 +29,29 @@
 
 use std::fmt;
 
-use aether_core_plugin_api::v0::{HostError, HostResult, PluginFailureDto};
-use extism_convert::{FromBytesOwned, Msgpack};
-use serde::de::DeserializeOwned;
+use aether_core_plugin_api::v0::{HostError, HostResult, PluginFailureDto, wire};
+use extism_convert::{FromBytesOwned, ToBytes};
+use serde::{Serialize, de::DeserializeOwned};
+
+/// A value as it crosses the host boundary: msgpack with named fields, see
+/// [`aether_core_plugin_api::v0::wire`]. Use it instead of `extism_pdk::Msgpack`, which writes
+/// structs as arrays.
+#[derive(Debug)]
+pub struct Wire<T>(pub T);
+
+impl<T: Serialize> ToBytes<'_> for Wire<T> {
+    type Bytes = Vec<u8>;
+
+    fn to_bytes(&self) -> std::result::Result<Self::Bytes, extism_convert::Error> {
+        Ok(wire::encode(&self.0)?)
+    }
+}
+
+impl<T: DeserializeOwned> FromBytesOwned for Wire<T> {
+    fn from_bytes_owned(data: &[u8]) -> std::result::Result<Self, extism_convert::Error> {
+        Ok(Self(wire::decode(data)?))
+    }
+}
 
 #[derive(Debug)]
 pub enum Error {
@@ -91,7 +114,7 @@ impl From<Error> for anyhow::Error {
     }
 }
 
-/// The return type to declare a host function with: what the host wrote, decoded from msgpack.
+/// The return type to declare a host function with: what the host wrote, decoded with [`Wire`].
 #[derive(Debug)]
 pub struct HostReply<T>(pub HostResult<T>);
 
@@ -103,8 +126,8 @@ impl<T> HostReply<T> {
 }
 
 impl<T: DeserializeOwned> FromBytesOwned for HostReply<T> {
-    fn from_bytes_owned(data: &[u8]) -> anyhow::Result<Self> {
-        Ok(Self(Msgpack::<HostResult<T>>::from_bytes_owned(data)?.0))
+    fn from_bytes_owned(data: &[u8]) -> std::result::Result<Self, extism_convert::Error> {
+        Ok(Self(Wire::<HostResult<T>>::from_bytes_owned(data)?.0))
     }
 }
 
@@ -144,9 +167,8 @@ mod tests {
 
     #[test]
     fn a_reply_is_read_from_what_the_host_writes() {
-        // The host writes `Ok` compact (an array) and `Err` with names (a map).
-        let ok = rmp_serde::to_vec(&HostResult::Ok(7_u32)).unwrap();
-        let err = rmp_serde::to_vec_named(&HostResult::<u32>::Err(HostError::CoreError(
+        let ok = wire::encode(&HostResult::Ok(7_u32)).unwrap();
+        let err = wire::encode(&HostResult::<u32>::Err(HostError::CoreError(
             "x".to_owned(),
         )))
         .unwrap();

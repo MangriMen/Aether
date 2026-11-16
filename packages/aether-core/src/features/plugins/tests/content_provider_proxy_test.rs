@@ -9,6 +9,7 @@ use crate::shared::web_url::HttpsUrl;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
+use aether_core_plugin_api::v0::wire;
 use aether_core_plugin_api::v0::{
     ContentAuthorDto, ContentCompatibilityResultDto, ContentMetadataDto, ContentSourceDto,
     ContentTypeDto, ContentVersionDto, ContentVersionFileDto, ContentVersionMetadataDto,
@@ -18,7 +19,6 @@ use aether_core_plugin_api::v0::{
     OverrideLocationDto, OverrideSourceDto, PackMetadataDto, PackSourceDto, ResolveFileParamsDto,
     ResolveInstallPlanParamsDto, ResolveTargetDto, ResolvedFileDto,
 };
-use extism_convert::{FromBytes, Msgpack, ToBytes};
 use serde::{Serialize, de::DeserializeOwned};
 
 use crate::features::instance::{CapabilityId, PluginId};
@@ -123,12 +123,13 @@ impl PluginInstance for RecordingPlugin {
 // ─── Fixtures ──────────────────────────────────────────────────
 
 fn encode<T: Serialize>(value: T) -> Vec<u8> {
-    Msgpack(value).to_bytes().expect("DTO should encode")
+    wire::encode(&value).expect("DTO should encode")
 }
 
 fn decode<T: DeserializeOwned>(bytes: &[u8]) -> T {
-    let Msgpack(value) = Msgpack::<T>::from_bytes(bytes).expect("arguments should decode");
-    value
+    // The host must write maps; a reader would accept arrays too.
+    assert!(wire::is_map(bytes), "arguments are not a msgpack map");
+    wire::decode(bytes).expect("arguments should decode")
 }
 
 fn capabilities(json: &str) -> PluginCapabilities {
