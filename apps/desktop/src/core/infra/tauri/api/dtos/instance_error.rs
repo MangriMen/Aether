@@ -690,7 +690,16 @@ mod tests {
             reason: CommandParseError::Empty,
         });
 
-        assert!(matches!(FrontendError::from(&err), FrontendError::Hook(_)));
+        assert_eq!(
+            serde_json::to_value(FrontendError::from(&err)).unwrap(),
+            json!({
+                "type": "hook",
+                "payload": {
+                    "code": "INVALID",
+                    "payload": {"hook": "PRE_LAUNCH", "reason": {"code": "EMPTY"}}
+                }
+            })
+        );
     }
 
     #[test]
