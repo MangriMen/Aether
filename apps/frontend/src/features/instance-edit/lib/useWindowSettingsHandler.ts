@@ -37,14 +37,15 @@ export const useWindowSettingsHandler = ({
     defaultInstanceSettingsToWindowSettingsValues(defaultSettings?.()),
   );
 
-  const onChange = (values: Partial<WindowSettingsSchemaOutput>) => {
+  // The form handles a failed save: it logs it and puts the stored values back.
+  const onChange = async (values: Partial<WindowSettingsSchemaOutput>) => {
     const edit = windowSettingsValuesToEditInstanceSettings(instance(), values);
 
     if (isEditInstanceSettingsEmpty(edit)) {
       return;
     }
 
-    editInstance()({ id: instance().id, edit });
+    await editInstance()({ id: instance().id, edit });
   };
 
   return { initialValues, defaultValues, onChange };

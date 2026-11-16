@@ -1,13 +1,14 @@
 import type { FormStore } from '@formisch/solid';
 import type { Accessor } from 'solid-js';
 
-import { createForm, setInput } from '@formisch/solid';
-import { createEffect } from 'solid-js';
+import { createForm, reset } from '@formisch/solid';
 
 import {
   WindowSettingsSchema,
   type WindowSettingsSchemaInput,
+  type WindowSettingsSchemaOutput,
 } from '../model/windowSettingsSchema';
+import { createFieldSync, reapplyFields } from './createFieldSync';
 
 type WindowFormStore = FormStore<typeof WindowSettingsSchema>;
 
@@ -19,29 +20,29 @@ export const useResetWindowSettingsFormValues = (
   form: WindowFormStore,
   initialValues: Accessor<Partial<WindowSettingsSchemaInput> | undefined>,
 ) => {
-  createEffect(() => {
-    const overrideWindowSettings = initialValues()?.overrideWindowSettings;
+  const reapplyWidth = createFieldSync(
+    () => initialValues()?.resolution?.width || undefined,
+    (input) =>
+      reset(form, { path: ['resolution', 'width'], initialInput: input }),
+  );
+  const reapplyHeight = createFieldSync(
+    () => initialValues()?.resolution?.height || undefined,
+    (input) =>
+      reset(form, { path: ['resolution', 'height'], initialInput: input }),
+  );
 
-    if (overrideWindowSettings !== undefined) {
-      setInput(form, {
-        path: ['overrideWindowSettings'],
-        input: overrideWindowSettings,
-      });
-    }
-  });
+  const reappliers = {
+    overrideWindowSettings: createFieldSync(
+      () => initialValues()?.overrideWindowSettings,
+      (input) =>
+        reset(form, { path: ['overrideWindowSettings'], initialInput: input }),
+    ),
+    resolution: () => {
+      reapplyWidth();
+      reapplyHeight();
+    },
+  };
 
-  createEffect(() => {
-    const resolution = initialValues()?.resolution;
-
-    if (resolution?.width && resolution?.height) {
-      setInput(form, {
-        path: ['resolution', 'width'],
-        input: resolution.width,
-      });
-      setInput(form, {
-        path: ['resolution', 'height'],
-        input: resolution.height,
-      });
-    }
-  });
+  return (values: Partial<WindowSettingsSchemaOutput>) =>
+    reapplyFields(reappliers, values);
 };

@@ -40,14 +40,15 @@ export const useHooksSettingsHandler = ({
     defaultInstanceSettingsToHooksSettingsValues(defaultSettings?.()),
   );
 
-  const onChange = (values: Partial<HooksSettingsSchemaOutput>) => {
+  // The form handles a failed save: it logs it and puts the stored values back.
+  const onChange = async (values: Partial<HooksSettingsSchemaOutput>) => {
     const edit = hooksSettingsValuesToEditInstanceSettings(values);
 
     if (isEditInstanceSettingsEmpty(edit)) {
       return;
     }
 
-    editInstance()({ id: instance().id, edit });
+    await editInstance()({ id: instance().id, edit });
   };
 
   return { initialValues, defaultValues, onChange };

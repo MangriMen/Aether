@@ -1,4 +1,10 @@
-import { setInput, validate, Field, type FormStore } from '@formisch/solid';
+import {
+  setInput,
+  isDirty,
+  validate,
+  Field,
+  type FormStore,
+} from '@formisch/solid';
 import { type Accessor, type Component } from 'solid-js';
 
 import { useTranslation, parseI18nError } from '@/shared/i18n';
@@ -77,7 +83,10 @@ export const EnvVarsFieldSection: Component<Props> = (props) => {
 
                   const result = await validate(props.form);
 
-                  if (result.success) {
+                  if (
+                    result.success &&
+                    isDirty(props.form, { path: ['envVars'] })
+                  ) {
                     props.onChangePartial({
                       envVars: result.output.envVars,
                     });

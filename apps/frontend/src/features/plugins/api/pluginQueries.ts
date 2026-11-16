@@ -157,7 +157,7 @@ export const useEditPluginSettings = () => {
       editSettings: EditPluginSettingsDto;
     }) => pluginsCommands.editSettings(id, editSettings),
     // A running plugin may now need a restart, which its state carries.
-    onSuccess: (_, variables) =>
+    onSettled: (_, __, variables) =>
       pluginsCache.invalidate.state(queryClient, variables.id),
     onError: (err, variables) => {
       const plugin = pluginsCache.getData.detail(queryClient, variables.id);

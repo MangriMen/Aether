@@ -18,8 +18,13 @@ export const useEditDefaultInstanceSettings = () => {
 
   return useMutation(() => ({
     mutationFn: settingsCommands.editDefaultInstanceSettings,
-    onSuccess: (data) => {
-      defaultInstanceSettingsCache.set(queryClient, data);
+    // Read again after a failed edit too, so the forms show what is actually stored.
+    onSettled: (data) => {
+      if (data) {
+        defaultInstanceSettingsCache.set(queryClient, data);
+      } else {
+        void defaultInstanceSettingsCache.invalidate.get(queryClient);
+      }
     },
     onError: (err) => {
       showError({

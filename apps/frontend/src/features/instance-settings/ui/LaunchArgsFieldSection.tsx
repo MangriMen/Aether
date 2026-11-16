@@ -1,6 +1,6 @@
 import type { FormStore } from '@formisch/solid';
 
-import { setInput, getInput, Field } from '@formisch/solid';
+import { setInput, getInput, isDirty, Field } from '@formisch/solid';
 import { type Accessor, type Component } from 'solid-js';
 
 import type {
@@ -50,6 +50,11 @@ export const LaunchArgsFieldSection: Component<Props> = (props) => {
                 type: 'text',
                 onBlur: () => {
                   field.props.onBlur?.();
+
+                  if (!isDirty(props.form, { path: ['launchArgs'] })) {
+                    return;
+                  }
+
                   props.onChangePartial({
                     launchArgs: getInput(props.form, { path: ['launchArgs'] }),
                   });

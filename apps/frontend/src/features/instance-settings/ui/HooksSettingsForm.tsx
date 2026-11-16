@@ -11,6 +11,7 @@ import {
 import { useTranslation } from '@/shared/i18n';
 import { cn, noop } from '@/shared/utils';
 
+import { revertOnFailure } from '../lib/createFieldSync';
 import {
   useHooksSettingsForm,
   useResetHooksSettingsFormValues,
@@ -39,7 +40,10 @@ export type HooksSettingsFormProps = Omit<
   overridable?: boolean;
   initialValues: Accessor<Partial<HooksSettingsSchemaInput> | undefined>;
   defaultValues?: Accessor<Partial<HooksSettingsSchemaInput> | undefined>;
-  onChangePartial?: (values: Partial<HooksSettingsSchemaOutput>) => void;
+  /** A returned promise that rejects puts the stored values back into the fields. */
+  onChangePartial?: (
+    values: Partial<HooksSettingsSchemaOutput>,
+  ) => Promise<unknown> | void;
 };
 
 export const HooksSettingsForm: Component<HooksSettingsFormProps> = (props) => {
@@ -54,10 +58,15 @@ export const HooksSettingsForm: Component<HooksSettingsFormProps> = (props) => {
   const [{ t }] = useTranslation();
 
   const form = useHooksSettingsForm();
-  useResetHooksSettingsFormValues(form, () => local.initialValues());
+  const revert = useResetHooksSettingsFormValues(form, () =>
+    local.initialValues(),
+  );
+
+  const save = (values: Partial<HooksSettingsSchemaOutput>) =>
+    revertOnFailure(local.onChangePartial?.(values), () => revert(values));
 
   const handleOverrideChange = (value: boolean) => {
-    local.onChangePartial?.({ overrideHooks: value });
+    save({ overrideHooks: value });
   };
 
   return (
@@ -101,7 +110,7 @@ export const HooksSettingsForm: Component<HooksSettingsFormProps> = (props) => {
                     form={form}
                     isDisabled={isDisabled}
                     overrideHooksInput={overrideHooks.input}
-                    onChangePartial={local.onChangePartial}
+                    onChangePartial={save}
                     defaultValues={local.defaultValues}
                     overridable={local.overridable}
                   />

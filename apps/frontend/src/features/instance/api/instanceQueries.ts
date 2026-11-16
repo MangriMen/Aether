@@ -163,7 +163,8 @@ export const useEditInstance = () => {
   return useMutation(() => ({
     mutationFn: ({ id, edit }: { id: string; edit: EditInstanceDto }) =>
       instanceCommands.edit(id, edit),
-    onSuccess: (_, { id }) => {
+    // Read again after a failed edit too, so the forms show what is actually stored.
+    onSettled: (_, __, { id }) => {
       invalidateInstanceData(queryClient, id);
     },
     onError: (err, values) => {
