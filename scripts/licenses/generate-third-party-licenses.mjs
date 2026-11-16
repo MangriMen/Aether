@@ -58,8 +58,10 @@ const packages = JSON.parse(checkerOutput);
 
 // `--production` lists only `dependencies`, but some devDependencies end up in
 // the bundle at build time (icons are inlined by unplugin-icons, Tailwind
-// preflight and plugin CSS are compiled into the stylesheet). List them too.
-// `licenseFallback` is used for packages that ship no license file.
+// preflight and plugin CSS are compiled into the stylesheet). List them too,
+// and add a package here whenever a devDependency gets inlined at build time.
+// `licenseFallback` is used for packages that ship no license file
+// (@iconify-json/mdi is Apache-2.0 but ships only `info.json`).
 const BUNDLED_AT_BUILD = [
   {
     name: "@iconify-json/mdi",
