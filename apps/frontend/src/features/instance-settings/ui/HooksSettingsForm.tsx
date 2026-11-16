@@ -24,6 +24,14 @@ import { HookTextField } from './HookTextField';
 import { InheritanceLabel } from './InheritanceLabel';
 import { OverrideCheckbox } from './OverrideCheckbox';
 
+const HINT_KEYS = [
+  'instanceSettings.hookSettings.hints.syntax',
+  'instanceSettings.hookSettings.hints.quotes',
+  'instanceSettings.hookSettings.hints.builtins',
+  'instanceSettings.hookSettings.hints.wrapper',
+  'instanceSettings.hookSettings.hints.postExit',
+] as const;
+
 export type HooksSettingsFormProps = Omit<
   ComponentProps<'form'>,
   'onSubmit' | 'children'
@@ -81,6 +89,10 @@ export const HooksSettingsForm: Component<HooksSettingsFormProps> = (props) => {
                   onOverrideChange={handleOverrideChange}
                 />
               </Show>
+
+              <ul class='text-xs text-muted-foreground mb-1 list-disc pl-4'>
+                <For each={HINT_KEYS}>{(key) => <li>{t(key)}</li>}</For>
+              </ul>
 
               <For each={FIELDS_CONFIG}>
                 {(fieldConfig) => (

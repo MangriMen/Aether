@@ -1,4 +1,7 @@
-use std::{path::PathBuf, sync::Arc};
+use std::{
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
 use async_trait::async_trait;
 use tokio::process::Command;
@@ -19,7 +22,7 @@ use crate::{
         },
         settings::LocationInfo,
     },
-    shared::io::infra::create_dir_all,
+    shared::{io::infra::create_dir_all, serializable_command::Wrapper},
 };
 
 use super::get_minecraft_arguments::get_minecraft_arguments;
@@ -31,6 +34,9 @@ pub struct GetMinecraftLaunchCommandParams {
     pub loader_version: Option<LoaderVersionPreference>,
     pub launch_dir: PathBuf,
     pub java_path: Option<JavaPath>,
+    /// The wrapper of the launch settings' hooks, already read: the caller checks it before the
+    /// pre-launch hook runs.
+    pub wrapper: Option<Wrapper>,
 }
 
 /// The process to start, and the values it is given that must not be kept in logs.
@@ -97,6 +103,7 @@ impl GetMinecraftLaunchCommandUseCase {
             loader_version,
             launch_dir,
             java_path,
+            wrapper,
         } = get_minecraft_launch_command_params;
 
         let version_manifest = self.get_version_manifest_use_case.execute().await?;
@@ -173,7 +180,7 @@ impl GetMinecraftLaunchCommandUseCase {
         .into_iter()
         .collect::<Vec<_>>();
 
-        let (mut command, wrapped) = java_command(&launch_settings, &java);
+        let (mut command, wrapped) = java_command(wrapper.as_ref(), java.path().as_path());
 
         command
             .args(jvm_arguments)
@@ -252,14 +259,15 @@ impl MinecraftLaunchCommandService for GetMinecraftLaunchCommandUseCase {
 }
 
 /// The process to start: the java binary, behind the user's wrapper command when one is set
-/// (then `true`).
-fn java_command(launch_settings: &LaunchSettings, java: &Java) -> (Command, bool) {
-    if launch_settings.hooks.wrapper().is_empty() {
-        (Command::new(java.path()), false)
-    } else {
-        let mut command = Command::new(launch_settings.hooks.wrapper());
-        command.arg(java.path());
-        (command, true)
+/// (then `true`). The java path goes after the wrapper's own arguments.
+fn java_command(wrapper: Option<&Wrapper>, java_path: &Path) -> (Command, bool) {
+    match wrapper {
+        None => (Command::new(java_path), false),
+        Some(wrapper) => {
+            let mut command = Command::new(&wrapper.program);
+            command.args(&wrapper.args).arg(java_path);
+            (command, true)
+        }
     }
 }
 
@@ -319,6 +327,51 @@ mod tests {
         assert_eq!(
             utf8_output_arguments(17),
             ["-Dsun.stdout.encoding=UTF-8", "-Dsun.stderr.encoding=UTF-8"]
+        );
+    }
+
+    fn program_and_args(command: &Command) -> (String, Vec<String>) {
+        let command = command.as_std();
+        (
+            command.get_program().to_string_lossy().into_owned(),
+            command
+                .get_args()
+                .map(|arg| arg.to_string_lossy().into_owned())
+                .collect(),
+        )
+    }
+
+    #[test]
+    fn should_start_java_itself_when_there_is_no_wrapper() {
+        let (command, wrapped) = java_command(None, Path::new("/jdk/bin/java"));
+
+        assert!(!wrapped);
+        assert_eq!(
+            program_and_args(&command),
+            ("/jdk/bin/java".to_owned(), Vec::new())
+        );
+    }
+
+    #[test]
+    fn should_put_the_arguments_of_the_wrapper_before_the_java_path() {
+        let wrapper = Wrapper {
+            program: "env".to_owned(),
+            args: vec!["VAR=1".to_owned(), "prime run".to_owned()],
+        };
+
+        let (command, is_wrapped) = java_command(Some(&wrapper), Path::new("/jdk/bin/java"));
+
+        assert!(is_wrapped);
+        assert_eq!(
+            program_and_args(&command),
+            (
+                "env".to_owned(),
+                vec![
+                    "VAR=1".to_owned(),
+                    "prime run".to_owned(),
+                    "/jdk/bin/java".to_owned()
+                ]
+            )
         );
     }
 

@@ -9,7 +9,10 @@ import {
 import { useInstanceEventsListener } from '@/features/instance';
 import { useJavaInstallationListener } from '@/features/java';
 import { usePluginEventListener } from '@/features/plugins';
-import { useProcessCrashListener } from '@/features/process';
+import {
+  usePostExitHookFailedListener,
+  useProcessCrashListener,
+} from '@/features/process';
 import { useCacheEventListener } from '@/features/settings';
 import { useUpdateSync } from '@/features/update';
 
@@ -19,6 +22,7 @@ export const useSetupListeners = () => {
   useProgressEventsListener();
   usePluginEventListener();
   useProcessCrashListener();
+  usePostExitHookFailedListener();
   useJavaInstallationListener();
   useCacheEventListener();
 

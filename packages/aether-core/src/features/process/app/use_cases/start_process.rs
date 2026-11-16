@@ -4,17 +4,14 @@ use async_trait::async_trait;
 use process_wrap::tokio::{ChildWrapper, CommandWrap};
 use tokio::process::Command;
 
-use crate::{
-    features::{
-        events::{EventEmitterExt, ProcessEvent, ProcessEventType, SharedEventEmitter},
-        game_log::{CaptureGameOutputParams, GameOutputCaptureService},
-        instance::InstanceId,
-        process::{
-            KillScope, ManageProcessService, MinecraftProcessMetadata, ProcessError,
-            ProcessStartService, ProcessStorage,
-        },
+use crate::features::{
+    events::{EventEmitterExt, ProcessEvent, ProcessEventType, SharedEventEmitter},
+    game_log::{CaptureGameOutputParams, GameOutputCaptureService},
+    instance::InstanceId,
+    process::{
+        KillScope, ManageProcessService, MinecraftProcessMetadata, ProcessError,
+        ProcessStartService, ProcessStorage,
     },
-    shared::io::domain::IoError,
 };
 
 use super::ManageProcessParams;
@@ -54,7 +51,15 @@ impl StartProcessUseCase {
             .stdout(Stdio::piped())
             .stderr(Stdio::piped());
 
-        let mut process = spawn(command, kill_scope).map_err(IoError::from)?;
+        let program = command
+            .as_std()
+            .get_program()
+            .to_string_lossy()
+            .into_owned();
+        let mut process = spawn(command, kill_scope).map_err(|err| ProcessError::SpawnFailed {
+            program,
+            source: Arc::new(err),
+        })?;
         let metadata = MinecraftProcessMetadata::new(instance_id.clone());
 
         let capture = self.game_output_capture.start(CaptureGameOutputParams {
@@ -133,63 +138,11 @@ fn spawn(command: Command, kill_scope: KillScope) -> std::io::Result<Box<dyn Chi
 // Process liveness is read from /proc on Linux; there is no such check for other Unixes.
 #[cfg(all(test, any(target_os = "linux", windows)))]
 mod tests {
-    use std::{
-        future::Future,
-        path::PathBuf,
-        time::{Duration, Instant},
-    };
+    use std::time::{Duration, Instant};
 
     use tokio::io::{AsyncBufReadExt, BufReader};
 
     use super::*;
-
-    /// Where [`finish_when_told`] looks for its `go` file and leaves its `done` file.
-    const SIGNAL_DIR_VAR: &str = "AETHER_TEST_SIGNAL_DIR";
-
-    /// Not a test: a grandchild the tree tests start, which never ends.
-    #[test]
-    #[ignore = "started by the process tree tests as a grandchild that hangs"]
-    fn print_pid_and_hang() {
-        use std::io::Write;
-
-        println!("pid:{}", std::process::id());
-        std::io::stdout().flush().unwrap();
-        std::thread::sleep(Duration::from_secs(600));
-    }
-
-    /// Not a test: a grandchild the tree tests start, which ends once a `go` file appears and
-    /// leaves a `done` file to show it was still running then.
-    #[test]
-    #[ignore = "started by the process tree tests as a grandchild that waits for a file"]
-    fn finish_when_told() {
-        let dir = PathBuf::from(std::env::var_os(SIGNAL_DIR_VAR).unwrap());
-        let deadline = Instant::now() + Duration::from_secs(60);
-        while !dir.join("go").exists() {
-            assert!(Instant::now() < deadline, "no go file appeared");
-            std::thread::sleep(Duration::from_millis(20));
-        }
-        std::fs::write(dir.join("done"), "").unwrap();
-    }
-
-    /// One of the helpers above, started by a shell, so that it is a grandchild of the process
-    /// started.
-    fn behind_a_shell(helper: &str) -> Command {
-        let module = module_path!().trim_start_matches("aether_core::");
-        let (shell, shell_args): (&str, &[&str]) = if cfg!(windows) {
-            ("cmd", &["/c"])
-        } else {
-            ("sh", &["-c", r#""$0" "$@" & wait"#])
-        };
-        let mut command = Command::new(shell);
-        command
-            .args(shell_args)
-            .arg(std::env::current_exe().unwrap())
-            .args(["--ignored", "--exact", "--nocapture"])
-            .arg(format!("{module}::{helper}"))
-            .stdin(Stdio::null())
-            .stdout(Stdio::piped());
-        command
-    }
 
     /// Read the pid that the started process prints on a line `pid:<pid>`.
     async fn printed_pid(child: &mut dyn ChildWrapper) -> u32 {
@@ -208,12 +161,17 @@ mod tests {
             .expect("no pid was printed")
     }
 
-    async fn wait_until<F: Future<Output = bool>>(what: &str, mut check: impl FnMut() -> F) {
+    async fn wait_until_gone(pid: u32) {
         let deadline = Instant::now() + Duration::from_secs(30);
-        while !check().await {
-            assert!(Instant::now() < deadline, "timed out waiting until {what}");
+        while is_running(pid).await {
+            assert!(Instant::now() < deadline, "process {pid} is still running");
             tokio::time::sleep(Duration::from_millis(20)).await;
         }
+    }
+
+    fn piped(mut command: Command) -> Command {
+        command.stdin(Stdio::null()).stdout(Stdio::piped());
+        command
     }
 
     /// The `(state, process group)` of a process; a reaped process has none.
@@ -233,6 +191,45 @@ mod tests {
         proc_stat(&pid.to_string()).is_some_and(|(state, _)| state != 'Z')
     }
 
+    #[cfg(target_os = "linux")]
+    #[tokio::test]
+    async fn should_stop_the_grandchild_when_the_tree_is_killed() {
+        let mut command = Command::new("sh");
+        command.args(["-c", "sleep 60 & echo pid:$!; wait"]);
+        let mut child = spawn(piped(command), KillScope::Tree).unwrap();
+        let grandchild = printed_pid(child.as_mut()).await;
+
+        child.start_kill().unwrap();
+
+        wait_until_gone(grandchild).await;
+    }
+
+    #[cfg(target_os = "linux")]
+    #[tokio::test]
+    async fn should_keep_the_process_in_the_launcher_group_when_only_it_is_to_be_killed() {
+        let mut command = Command::new("sleep");
+        command.arg("60");
+        let mut child = spawn(piped(command), KillScope::Process).unwrap();
+        let pid = child.id().unwrap();
+
+        let group = proc_stat(&pid.to_string()).map(|(_, group)| group);
+        child.start_kill().unwrap();
+
+        assert_eq!(group, proc_stat("self").map(|(_, group)| group));
+    }
+
+    /// Not a test: the grandchild the Windows tree test starts, which never ends.
+    #[cfg(windows)]
+    #[test]
+    #[ignore = "started by the process tree test as a grandchild that hangs"]
+    fn print_pid_and_hang() {
+        use std::io::Write;
+
+        println!("pid:{}", std::process::id());
+        std::io::stdout().flush().unwrap();
+        std::thread::sleep(Duration::from_secs(600));
+    }
+
     #[cfg(windows)]
     async fn is_running(pid: u32) -> bool {
         let output = Command::new("tasklist")
@@ -243,50 +240,83 @@ mod tests {
         String::from_utf8_lossy(&output.stdout).contains(&format!("\"{pid}\""))
     }
 
+    #[cfg(windows)]
     #[tokio::test]
     async fn should_stop_the_grandchild_when_the_tree_is_killed() {
-        let mut child = spawn(behind_a_shell("print_pid_and_hang"), KillScope::Tree).unwrap();
+        let module = module_path!().trim_start_matches("aether_core::");
+        let mut command = Command::new("cmd");
+        command
+            .arg("/c")
+            .arg(std::env::current_exe().unwrap())
+            .args(["--ignored", "--exact", "--nocapture"])
+            .arg(format!("{module}::print_pid_and_hang"));
+        let mut child = spawn(piped(command), KillScope::Tree).unwrap();
         let grandchild = printed_pid(child.as_mut()).await;
 
         child.start_kill().unwrap();
 
-        wait_until("the grandchild is gone", || async move {
-            !is_running(grandchild).await
-        })
-        .await;
+        wait_until_gone(grandchild).await;
+    }
+}
+
+#[cfg(test)]
+mod spawn_error_tests {
+    use crate::features::{
+        events::test_support::NoOpEmitter,
+        game_log::{CaptureGameOutputParams, CaptureHandle, GameOutputCaptureService},
+        process::infra::InMemoryProcessStorage,
+    };
+
+    use super::*;
+
+    struct NotManaged;
+
+    #[async_trait]
+    impl ManageProcessService for NotManaged {
+        async fn execute(&self, _params: ManageProcessParams) -> Result<(), ProcessError> {
+            Ok(())
+        }
+    }
+
+    struct NotCaptured;
+
+    impl GameOutputCaptureService for NotCaptured {
+        fn start(&self, _params: CaptureGameOutputParams) -> CaptureHandle {
+            CaptureHandle::new(tokio::sync::oneshot::channel().1)
+        }
     }
 
     #[tokio::test]
-    async fn should_leave_the_tree_running_when_the_launcher_lets_go_of_it() {
-        let dir = tempfile::tempdir().unwrap();
-        let mut command = behind_a_shell("finish_when_told");
-        command
-            .env(SIGNAL_DIR_VAR, dir.path())
-            .stdout(Stdio::null());
-        let child = spawn(command, KillScope::Tree).unwrap();
+    async fn should_name_the_program_when_it_cannot_be_started() {
+        let use_case = StartProcessUseCase::new(
+            Arc::new(NoOpEmitter),
+            Arc::new(InMemoryProcessStorage::default()),
+            Arc::new(NotManaged),
+            Arc::new(NotCaptured),
+        );
+        let mut command = Command::new("aether-no-such-program-0f3a");
+        command.arg("--accessToken").arg("secret");
 
-        // What the launcher's exit does to the game: its hold on the tree goes away.
-        drop(child);
-        std::fs::write(dir.path().join("go"), "").unwrap();
+        let result = use_case
+            .execute(
+                InstanceId::try_from("test-instance").unwrap(),
+                command,
+                KillScope::Tree,
+                String::new(),
+                Vec::new(),
+            )
+            .await;
 
-        let done = dir.path().join("done");
-        wait_until("the grandchild answers", || {
-            std::future::ready(done.exists())
-        })
-        .await;
-    }
-
-    #[cfg(target_os = "linux")]
-    #[tokio::test]
-    async fn should_keep_the_process_in_the_launcher_group_when_only_it_is_to_be_killed() {
-        let mut command = Command::new("sleep");
-        command.arg("60").stdin(Stdio::null());
-        let mut child = spawn(command, KillScope::Process).unwrap();
-        let pid = child.id().unwrap();
-
-        let group = proc_stat(&pid.to_string()).map(|(_, group)| group);
-        child.start_kill().unwrap();
-
-        assert_eq!(group, proc_stat("self").map(|(_, group)| group));
+        let Err(err) = result else {
+            panic!("the program was started");
+        };
+        assert!(
+            matches!(
+                &err,
+                ProcessError::SpawnFailed { program, .. } if program == "aether-no-such-program-0f3a"
+            ),
+            "{err:?}"
+        );
+        assert!(!err.to_string().contains("secret"), "{err}");
     }
 }

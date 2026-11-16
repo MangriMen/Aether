@@ -3,9 +3,9 @@ use specta::Type;
 
 use crate::core::{
     AppSettingsErrorDto, ApplicationErrorDto, AuthErrorDto, CauseDto, EventErrorDto,
-    FileWatcherErrorDto, GameLogErrorDto, InstanceErrorDto, JavaErrorDto, MinecraftErrorDto,
-    PluginErrorDto, ProcessErrorDto, RequestErrorDto, SettingsErrorDto, UpdateErrorDto,
-    WindowErrorDto,
+    FileWatcherErrorDto, GameLogErrorDto, HookErrorDto, InstanceErrorDto, JavaErrorDto,
+    MinecraftErrorDto, PluginErrorDto, ProcessErrorDto, RequestErrorDto, SettingsErrorDto,
+    UpdateErrorDto, WindowErrorDto,
 };
 
 pub type FrontendResult<T, E = FrontendError> = Result<T, E>;
@@ -26,6 +26,9 @@ pub enum FrontendError {
     FileWatcher(FileWatcherErrorDto),
 
     GameLog(GameLogErrorDto),
+
+    /// A hook command of the user could not be run, whichever feature ran it.
+    Hook(HookErrorDto),
 
     Instance(InstanceErrorDto),
 

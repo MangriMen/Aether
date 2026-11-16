@@ -1,3 +1,7 @@
+mod hook;
+
+pub use hook::{HookKind, HookSpawnError, Wrapper, parse_hook_command, parse_wrapper};
+
 use std::{
     collections::BTreeMap,
     path::{Path, PathBuf},
@@ -21,15 +25,17 @@ pub struct SerializableCommand {
 }
 
 impl SerializableCommand {
+    /// Reads a command line typed by the user, the same way on every OS (see
+    /// [`split_command_line`]). The first word is the program.
     pub fn from_string(
         command: &str,
         current_dir: Option<&Path>,
     ) -> Result<Self, CommandParseError> {
-        let mut parts = command.split_whitespace();
+        let (program, args) = parse_command_line(command)?;
 
         Ok(Self {
-            program: parts.next().ok_or(CommandParseError::Empty)?.to_string(),
-            args: parts.map(ToString::to_string).collect(),
+            program,
+            args,
             current_dir: current_dir.map(Path::to_path_buf),
             env: None,
         })
@@ -85,25 +91,124 @@ impl FromStr for SerializableCommand {
 pub enum CommandParseError {
     #[error("the command is empty")]
     Empty,
+
+    #[error("a quote is not closed")]
+    UnclosedQuote,
+}
+
+/// The program and the arguments of a command line typed by the user.
+pub fn parse_command_line(text: &str) -> Result<(String, Vec<String>), CommandParseError> {
+    let mut words = split_command_line(text)?.into_iter();
+    match words.next() {
+        Some(program) if !program.is_empty() => Ok((program, words.collect())),
+        _ => Err(CommandParseError::Empty),
+    }
+}
+
+/// Splits a command line into words, the same way on every OS and as the settings form does:
+/// words are separated by whitespace; text inside `"..."` keeps its spaces and the quotes are
+/// dropped (`-Dx="a b"` is `-Dx=a b`); `""` inside quotes is a literal quote. Backslashes and
+/// single quotes are plain characters, so Windows paths need no escaping.
+fn split_command_line(text: &str) -> Result<Vec<String>, CommandParseError> {
+    let mut words = Vec::new();
+    let mut current = String::new();
+    let mut has_word = false;
+    let mut chars = text.chars().peekable();
+
+    while let Some(char) = chars.next() {
+        if char == '"' {
+            loop {
+                match chars.next() {
+                    None => return Err(CommandParseError::UnclosedQuote),
+                    Some('"') if chars.peek() == Some(&'"') => {
+                        chars.next();
+                        current.push('"');
+                    }
+                    Some('"') => break,
+                    Some(other) => current.push(other),
+                }
+            }
+            has_word = true;
+        } else if is_separator(char) {
+            if has_word {
+                words.push(std::mem::take(&mut current));
+                has_word = false;
+            }
+        } else {
+            current.push(char);
+            has_word = true;
+        }
+    }
+
+    if has_word {
+        words.push(current);
+    }
+
+    Ok(words)
+}
+
+/// Whitespace as JavaScript's `\s` reads it, so a command splits as it does in the form.
+fn is_separator(char: char) -> bool {
+    (char.is_whitespace() && char != '\u{85}') || char == '\u{feff}'
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    #[test]
-    fn should_refuse_an_empty_command() {
-        assert_eq!(
-            SerializableCommand::from_string("   ", None).unwrap_err(),
-            CommandParseError::Empty
-        );
+    #[derive(serde::Deserialize)]
+    struct Vectors {
+        vectors: Vec<Vector>,
+    }
+
+    #[derive(serde::Deserialize)]
+    struct Vector {
+        name: String,
+        input: String,
+        program: Option<String>,
+        #[serde(default)]
+        args: Vec<String>,
+        error: Option<String>,
+    }
+
+    fn error_code(err: CommandParseError) -> &'static str {
+        match err {
+            CommandParseError::Empty => "EMPTY",
+            CommandParseError::UnclosedQuote => "UNCLOSED_QUOTE",
+        }
     }
 
     #[test]
-    fn should_split_a_command_into_program_and_arguments() {
-        let command = SerializableCommand::from_string("java -jar app.jar", None).unwrap();
+    fn should_read_every_shared_command_line_vector_as_the_frontend_does() {
+        let Vectors { vectors } =
+            serde_json::from_str(include_str!("../../../../tests/fixtures/command-line.json"))
+                .unwrap();
+        assert!(!vectors.is_empty());
+
+        for vector in vectors {
+            let result = parse_command_line(&vector.input);
+            match (&vector.error, result) {
+                (Some(expected), Err(err)) => {
+                    assert_eq!(error_code(err), expected, "{}", vector.name);
+                }
+                (None, Ok((program, args))) => {
+                    assert_eq!(Some(program), vector.program, "{}", vector.name);
+                    assert_eq!(args, vector.args, "{}", vector.name);
+                }
+                (expected, result) => {
+                    panic!("{}: expected {expected:?}, got {result:?}", vector.name);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn should_give_the_working_directory_to_a_parsed_command() {
+        let command =
+            SerializableCommand::from_string("java -jar app.jar", Some(Path::new("dir"))).unwrap();
 
         assert_eq!(command.program, "java");
         assert_eq!(command.args, ["-jar", "app.jar"]);
+        assert_eq!(command.current_dir.as_deref(), Some(Path::new("dir")));
     }
 }

@@ -70,7 +70,7 @@ export type CauseDto = { type: "io"; kind: IoErrorKindDto } | { type: "network";
 { type: "unknown"; details: string };
 
 /**  Why a text is not a command. */
-export type CommandParseReasonDto = { code: "EMPTY" };
+export type CommandParseReasonDto = { code: "EMPTY" } | { code: "UNCLOSED_QUOTE" };
 
 /**  Why a plugin's command was not run. */
 export type CommandRefusalDto = { code: "DENIED" } | { code: "TIMED_OUT" } | { code: "CANCELLED" } | { code: "JAR_CHANGED" };
@@ -166,7 +166,9 @@ export type FileWatcherErrorDto = { code: "PATH_NOT_FOUND"; payload: {
 	cause: CauseDto,
 } };
 
-export type FrontendError = { type: "appSettings"; payload: AppSettingsErrorDto } | { type: "window"; payload: WindowErrorDto } | { type: "application"; payload: ApplicationErrorDto } | { type: "auth"; payload: AuthErrorDto } | { type: "event"; payload: EventErrorDto } | { type: "fileWatcher"; payload: FileWatcherErrorDto } | { type: "gameLog"; payload: GameLogErrorDto } | { type: "instance"; payload: InstanceErrorDto } | { type: "java"; payload: JavaErrorDto } | { type: "minecraft"; payload: MinecraftErrorDto } | { type: "plugin"; payload: PluginErrorDto } | { type: "process"; payload: ProcessErrorDto } | { type: "request"; payload: RequestErrorDto } | { type: "settings"; payload: SettingsErrorDto } | { type: "update"; payload: UpdateErrorDto };
+export type FrontendError = { type: "appSettings"; payload: AppSettingsErrorDto } | { type: "window"; payload: WindowErrorDto } | { type: "application"; payload: ApplicationErrorDto } | { type: "auth"; payload: AuthErrorDto } | { type: "event"; payload: EventErrorDto } | { type: "fileWatcher"; payload: FileWatcherErrorDto } | { type: "gameLog"; payload: GameLogErrorDto } | 
+/**  A hook command of the user could not be run, whichever feature ran it. */
+{ type: "hook"; payload: HookErrorDto } | { type: "instance"; payload: InstanceErrorDto } | { type: "java"; payload: JavaErrorDto } | { type: "minecraft"; payload: MinecraftErrorDto } | { type: "plugin"; payload: PluginErrorDto } | { type: "process"; payload: ProcessErrorDto } | { type: "request"; payload: RequestErrorDto } | { type: "settings"; payload: SettingsErrorDto } | { type: "update"; payload: UpdateErrorDto };
 
 export type GameLogErrorDto = { code: "INVALID_SOURCE"; payload: {
 	source_id: string,
@@ -187,6 +189,23 @@ export type GameVersionReasonDto = { code: "EMPTY" } | { code: "TOO_LONG" } | { 
 	char: string,
 } } | { code: "DOTS" } | { code: "RESERVED_NAME" };
 
+/**  Why a hook command of the user (pre-launch, wrapper, post-exit) could not be run. */
+export type HookErrorDto = { code: "INVALID"; payload: {
+	hook: HookKindDto,
+	reason: CommandParseReasonDto,
+} } | { code: "SPAWN_FAILED"; payload: {
+	hook: HookKindDto,
+	program: string,
+	cause: CauseDto,
+} } | { code: "WAIT_FAILED"; payload: {
+	hook: HookKindDto,
+	program: string,
+	cause: CauseDto,
+} };
+
+/**  Which of the user's launch hooks failed. */
+export type HookKindDto = "PRE_LAUNCH" | "WRAPPER" | "POST_EXIT";
+
 export type InstanceErrorDto = { code: "STORAGE"; payload: {
 	cause: CauseDto,
 } } | { code: "NOT_FOUND"; payload: {
@@ -204,11 +223,6 @@ export type InstanceErrorDto = { code: "STORAGE"; payload: {
 	process_id: string,
 } } | { code: "PRELAUNCH_COMMAND_ERROR"; payload: {
 	code: number,
-} } | { code: "PRELAUNCH_COMMAND_INVALID"; payload: {
-	reason: CommandParseReasonDto,
-} } | { code: "PRELAUNCH_COMMAND_SPAWN_FAILED"; payload: {
-	program: string,
-	cause: CauseDto,
 } } | { code: "PRELAUNCH_COMMAND_TIMEOUT"; payload: {
 	seconds: string,
 } } | { code: "VALIDATION_ERROR"; payload: {

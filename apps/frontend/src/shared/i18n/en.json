@@ -90,6 +90,22 @@
       "TOO_LARGE": "The log is too large to open",
       "IO": "Log file I/O error"
     },
+    "hook": {
+      "INVALID": "The {{hook}} command is invalid: {{reason}}",
+      "SPAWN_FAILED": "The {{hook}} command \"{{program}}\" could not be started",
+      "WAIT_FAILED": "The {{hook}} command \"{{program}}\" could not be waited for",
+      "kind": {
+        "PRE_LAUNCH": "pre-launch",
+        "WRAPPER": "wrapper",
+        "POST_EXIT": "post-exit"
+      },
+      "reason": {
+        "INVALID": {
+          "EMPTY": "the command is empty",
+          "UNCLOSED_QUOTE": "a quote is not closed"
+        }
+      }
+    },
     "instance": {
       "CONTENT_PROVIDER_NOT_FOUND": "Content provider not found",
       "CAPABILITY_OPERATION_ERROR": "Failed to execute component function",
@@ -100,8 +116,6 @@
       "ICON_NOT_SUPPORTED": "Unsupported icon: use a PNG, JPEG, GIF, WebP or SVG image",
       "CANCELLED": "Installation cancelled",
       "PRELAUNCH_COMMAND_ERROR": "Pre-launch command failed with exit code {{code}}",
-      "PRELAUNCH_COMMAND_INVALID": "Pre-launch command is invalid: {{reason}}",
-      "PRELAUNCH_COMMAND_SPAWN_FAILED": "Pre-launch command \"{{program}}\" could not be started",
       "PRELAUNCH_COMMAND_TIMEOUT": "Pre-launch command did not finish in {{duration}} and was stopped",
       "VALIDATION_ERROR": "Instance validation failed",
       "NOT_BROKEN": "The instance is not broken (any more), so it was left as it is",
@@ -135,9 +149,6 @@
       "INVALID_RECORD": "The stored data of instance {{instance_id}} is invalid: {{reason}}",
       "STORAGE": "Instance storage error",
       "reason": {
-        "PRELAUNCH_COMMAND_INVALID": {
-          "EMPTY": "the command is empty"
-        },
         "INVALID_RELATIVE_PATH": {
           "EMPTY": "the path is empty",
           "NUL_BYTE": "it contains a null character",
@@ -549,6 +560,7 @@
     "toggleDetails": "Show details",
     "gameCrashed": "The game exited with an error",
     "gameCrashedCode": "The game exited with an error (code {{code}})",
+    "postExitHookFailed": "The post-exit command failed",
     "gameInstalling": "Installing game files",
     "installing": "Installing {{name}}",
     "javaDownloading": "Downloading Java {{version}}",
@@ -709,6 +721,15 @@
       "postExit": "Post exit",
       "postExitLabel": "Runs after the game closes",
       "enterCommandPlaceholder": "Enter command",
+      "unclosedQuote": "A quote is not closed",
+      "emptyProgram": "The program is empty: write it before the arguments",
+      "hints": {
+        "syntax": "Write the program, then its arguments, separated by spaces.",
+        "quotes": "Put a path with spaces in double quotes: \"C:\\Program Files\\app.exe\" --flag. A backslash is written as is. To type a quote inside quotes, double it.",
+        "builtins": "Built-in cmd commands (such as echo or del) need cmd /c in front.",
+        "wrapper": "Use an .exe or another real program as the wrapper. A .cmd or .bat file can fail, because the game's command line may be longer than the 8191 characters cmd allows.",
+        "postExit": "The post-exit command runs after a normal game exit, while Aether is open."
+      },
       "title": "Hooks"
     }
   },

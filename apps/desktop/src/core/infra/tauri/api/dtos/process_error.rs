@@ -18,6 +18,9 @@ impl From<&ProcessError> for ProcessErrorDto {
             ProcessError::KillError { id } => Self::KillError { id: id.clone() },
             ProcessError::WaitError { id } => Self::WaitError { id: id.clone() },
             ProcessError::Io(err) => Self::Io { cause: err.into() },
+            ProcessError::SpawnFailed { source, .. } => Self::Io {
+                cause: source.into(),
+            },
         }
     }
 }
