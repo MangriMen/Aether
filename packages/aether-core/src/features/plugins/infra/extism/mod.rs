@@ -12,4 +12,4 @@ pub(crate) use host_functions::{
     AddressFilter, PluginDownloadError, PluginNetwork, ProxySource, VettedDownloadClient,
     download_with, is_blocked_ip, vetted_download_client,
 };
-pub(crate) use mappers::{InvalidPlanFile, InvalidResolvedFile};
+pub(crate) use mappers::{InvalidPlanFile, InvalidResolvedFile, Wire};

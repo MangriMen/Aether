@@ -22,7 +22,7 @@ use std::{
 };
 
 use aether_core_plugin_api::v0::{CachedFileDto, DownloadToCacheParamsDto};
-use extism::{convert::Msgpack, host_fn};
+use extism::host_fn;
 use reqwest_retry::{RetryTransientMiddleware, policies::ExponentialBackoff};
 
 use crate::{
@@ -41,7 +41,10 @@ use crate::{
 };
 
 use super::{
-    super::{super::mappers::to_extism_res, PluginContext, block_on},
+    super::{
+        super::mappers::{Wire, to_extism_res},
+        PluginContext, block_on,
+    },
     http::{
         AddressFilter, PluginHttpError, ProxySource, check_target, find_policy_refusal,
         is_blocked_ip, system_lookup, vetted_client,
@@ -348,7 +351,7 @@ pub(crate) async fn handle_download_to_cache(
 // ── Extism host function wrappers ──
 
 host_fn!(
-pub download_to_cache(user_data: PluginContext; params: Msgpack<DownloadToCacheParamsDto>) -> MsgpackResult<CachedFileDto> {
+pub download_to_cache(user_data: PluginContext; params: Wire<DownloadToCacheParamsDto>) -> HostReply<CachedFileDto> {
     let context = user_data.get()?;
     let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
     let id = ctx.id.clone();

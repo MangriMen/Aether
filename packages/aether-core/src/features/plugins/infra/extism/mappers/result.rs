@@ -1,37 +1,38 @@
-use aether_core_plugin_api::v0::{HostError, HostResult};
-use extism_convert::ToBytes;
-use serde::Serialize;
+use aether_core_plugin_api::v0::{HostError, HostResult, wire};
+use extism_convert::{FromBytesOwned, ToBytes};
+use serde::{Serialize, de::DeserializeOwned};
 
-/// A host function's result as the plugin receives it.
-///
-/// Msgpack through `extism_convert::Msgpack` writes structs as arrays, and serde cannot read an
-/// adjacently tagged enum back from an array when the variant has no content: every error
-/// variant without fields (`HostError::AuthError(TokenExpired)`) would fail to decode in the
-/// plugin. Errors are therefore written as maps, which every serde reader accepts; the success
-/// path keeps the compact form.
+/// A value as it crosses the plugin boundary: msgpack with named fields, see
+/// [`aether_core_plugin_api::v0::wire`]. The one codec for every structured argument and result;
+/// `extism_convert::Msgpack` writes structs as arrays and must not be used on the boundary.
 #[derive(Debug)]
-pub(crate) struct MsgpackResult<T>(pub HostResult<T>);
+pub(crate) struct Wire<T>(pub T);
 
-impl<T: Serialize> ToBytes<'_> for MsgpackResult<T> {
+impl<T: Serialize> ToBytes<'_> for Wire<T> {
     type Bytes = Vec<u8>;
 
     fn to_bytes(&self) -> Result<Self::Bytes, extism_convert::Error> {
-        let bytes = match &self.0 {
-            HostResult::Ok(_) => rmp_serde::to_vec(&self.0)?,
-            HostResult::Err(_) => rmp_serde::to_vec_named(&self.0)?,
-        };
-        Ok(bytes)
+        Ok(wire::encode(&self.0)?)
     }
 }
 
+impl<T: DeserializeOwned> FromBytesOwned for Wire<T> {
+    fn from_bytes_owned(data: &[u8]) -> Result<Self, extism_convert::Error> {
+        Ok(Self(wire::decode(data)?))
+    }
+}
+
+/// What a host function returns to the plugin.
+pub(crate) type HostReply<T> = Wire<HostResult<T>>;
+
 #[allow(clippy::unnecessary_wraps)]
-pub(crate) fn to_extism_res<T>(res: crate::Result<T>) -> Result<MsgpackResult<T>, extism::Error> {
+pub(crate) fn to_extism_res<T>(res: crate::Result<T>) -> Result<HostReply<T>, extism::Error> {
     let host_res = match res {
         Ok(v) => HostResult::Ok(v),
         Err(e) => HostResult::Err(HostError::from(e.raw.as_ref())),
     };
 
-    Ok(MsgpackResult(host_res))
+    Ok(Wire(host_res))
 }
 
 #[cfg(test)]
@@ -39,9 +40,9 @@ mod tests {
     use aether_core_plugin_api::v0::{
         AuthErrorDto, EventErrorDto, FileWatcherErrorDto, HostError, HostResult, InstanceErrorDto,
         JavaErrorDto, MinecraftErrorDto, PluginCallErrorDto, PluginErrorDto, ProcessErrorDto,
-        RequestErrorDto, SettingsErrorDto,
+        RequestErrorDto, SettingsErrorDto, wire,
     };
-    use extism_convert::{FromBytesOwned, Msgpack, ToBytes};
+    use extism_convert::ToBytes;
     use rstest::rstest;
 
     use super::to_extism_res;
@@ -68,8 +69,7 @@ mod tests {
             .expect("mapping never fails")
             .to_bytes()
             .expect("encodes");
-        let Msgpack(decoded) =
-            <Msgpack<HostResult<()>>>::from_bytes_owned(bytes.as_ref()).expect("decodes");
+        let decoded: HostResult<()> = wire::decode(bytes.as_ref()).expect("decodes");
         match decoded {
             HostResult::Err(error) => error,
             HostResult::Ok(()) => panic!("an error became Ok"),
@@ -88,7 +88,7 @@ mod tests {
             body: body.clone(),
         };
 
-        let bytes = Msgpack(&response).to_bytes().expect("encodes");
+        let bytes = wire::encode(&response).expect("encodes");
 
         assert!(
             bytes.len() < body.len() + 64,
@@ -96,28 +96,9 @@ mod tests {
             bytes.len(),
             body.len()
         );
-        let Msgpack(decoded) =
-            <Msgpack<aether_core_plugin_api::v0::HttpResponseDto>>::from_bytes_owned(
-                bytes.as_ref(),
-            )
-            .expect("decodes");
+        let decoded: aether_core_plugin_api::v0::HttpResponseDto =
+            wire::decode(&bytes).expect("decodes");
         assert_eq!(decoded.body, body);
-    }
-
-    #[test]
-    fn should_still_read_bytes_when_they_were_written_as_an_array_of_numbers() {
-        let old = rmp_serde::to_vec(&(
-            200_u16,
-            std::collections::HashMap::<String, String>::new(),
-            vec![1_u8, 2, 3],
-        ))
-        .expect("encodes");
-
-        let Msgpack(decoded) =
-            <Msgpack<aether_core_plugin_api::v0::HttpResponseDto>>::from_bytes_owned(&old)
-                .expect("decodes");
-
-        assert_eq!(decoded.body, [1, 2, 3]);
     }
 
     #[test]

@@ -62,11 +62,6 @@ A command that exits with a non-zero code is an error, not an `OutputDto`: the c
 to the launcher's log. So `status` of a returned `OutputDto` is always `0`: the code of a command
 that succeeded. A command that runs past 15 minutes is killed and fails the call too.
 
-The flags changed the DTO's msgpack layout. A plugin built against this crate still reads a
-response from an older host (the flags then read `false`), but a plugin built **before** the
-flags cannot decode a `run_command` response from a host that sends them: rebuild it against
-this version.
-
 ## `run_command` needs the user's consent
 
 Besides the program and folder checks, the user is asked before a command runs: *allow once*,
@@ -96,9 +91,31 @@ content (sha256) and those options, not the arguments after the jar, so the user
 and the plugin's choice of arguments; a new build of the plugin starts over. Anything else
 (`@argfile`, `-javaagent`, `-cp`, a jar outside `/cache`) can be allowed once only.
 
-`ContentMetadataDto` no longer has `description`, which sat before `author` in the msgpack layout: a plugin built
-against an older crate cannot decode a `getContentsMetadata` answer correctly. Rebuild it against this
-version.
+## Wire format
+
+Every structured value that crosses the boundary, in both directions, is **msgpack with structs
+written as maps keyed by field name**; byte fields (`Vec<u8>`) are msgpack `bin`, and enums have
+their JSON shape (`{"type": …, "payload": …}`, `{"status": …, "data": …}`). Arrays are not part
+of the contract: they make the field order carry the meaning, and an adjacently tagged enum such
+as `HostError` cannot be read back from one. A reader ignores a key it does not know and gives a
+missing key its default when the DTO has one, so a field can be added without breaking the other
+side.
+
+A host function returns `{"status": "ok", "data": <value>}` or `{"status": "err", "data":
+<HostError>}`; `data` is always there (`nil` for `()`). Its structured arguments and the
+arguments and answers of a plugin's exports are the DTOs as maps.
+
+Some values are not msgpack at all:
+
+| What | Encoding |
+| --- | --- |
+| `log` message, the instance id of `instance_get_dir`, `instance_plugin_get_dir`, `list_content`, and the first argument of `enable_contents` / `disable_contents` | raw UTF-8 string |
+| `log` level, the version of `get_java` / `install_java` | integer (Extism `i64`) |
+| `get_id` result | raw UTF-8 string, not wrapped in a result |
+| the instance id given to a plugin's updater export | raw UTF-8 string |
+
+**With Rust**, `aether_core_plugin_api::v0::wire` is the codec and `aether-core-plugin-pdk` has
+`Wire<T>` for Extism in place of `Msgpack<T>`.
 
 ## Reporting a typed failure (any language)
 
@@ -125,9 +142,8 @@ an example.
 
 **In another language**, do the steps by hand:
 
-1. Decode the msgpack response of the host function. A success is a positional array,
-   `["ok", <value>]` (the value itself positional too); a failure is a map,
-   `{"status": "err", "data": <HostError>}`.
+1. Decode the msgpack response of the host function (see "Wire format"): `{"status": "ok",
+   "data": <value>}` or `{"status": "err", "data": <HostError>}`.
 2. On `err`, build `{"message": <any text>, "host": <that HostError>}`, prefix it with the
    marker and call `error_set` with it.
 3. Return a non-zero code.
@@ -167,10 +183,10 @@ A plugin has two ways to make an HTTP request. They are **not** equally safe.
 
 ```rust
 // plugin side
-let response: HostResult<HttpResponseDto> = unsafe { http_get(&HttpRequestDto {
+let response: HostReply<HttpResponseDto> = unsafe { http_get(Wire(HttpRequestDto {
     url: "https://example.com/pack.toml".to_string(),
     headers: HashMap::new(),
-}) };
+})) }?;
 ```
 
 The host performs the request itself and applies, in this order:
@@ -260,10 +276,10 @@ the plugin can open through WASI:
 
 ```rust
 // plugin side
-let file: HostResult<CachedFileDto> = unsafe { download_to_cache(&DownloadToCacheParamsDto {
+let file: HostReply<CachedFileDto> = unsafe { download_to_cache(Wire(DownloadToCacheParamsDto {
     url: "https://cdn.modrinth.com/data/AANobbMI/versions/x/sodium.jar".to_string(),
     hash: FileHashDto::Sha1("…40 hex characters…".to_string()),
-}) };
+})) }?;
 // file.path == "/cache/downloads/sha1/<hex digest>"
 ```
 

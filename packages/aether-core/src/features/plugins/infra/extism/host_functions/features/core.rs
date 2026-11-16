@@ -14,7 +14,6 @@ use std::{process::Stdio, time::Duration};
 
 use aether_core_plugin_api::v0::{CommandDto, OutputDto};
 use extism::host_fn;
-use extism_convert::Msgpack;
 use process_wrap::tokio::{ChildWrapper, CommandWrap};
 use tokio::io::{AsyncRead, AsyncReadExt};
 
@@ -34,7 +33,7 @@ use crate::{
 use super::super::{
     super::{
         super::plugin_utils,
-        mappers::{OutputDtoExt, to_extism_res},
+        mappers::{OutputDtoExt, Wire, to_extism_res},
     },
     PluginContext, block_on,
 };
@@ -338,7 +337,7 @@ pub get_id(user_data: PluginContext;) -> String {
 });
 
 host_fn!(
-pub run_command(user_data: PluginContext; command: Msgpack<CommandDto>) -> HostResult<OutputDto> {
+pub run_command(user_data: PluginContext; command: Wire<CommandDto>) -> HostReply<OutputDto> {
     let context = user_data.get()?;
     let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
     let id = ctx.id.clone();

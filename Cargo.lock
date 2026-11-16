@@ -112,7 +112,6 @@ dependencies = [
  "reqwest",
  "reqwest-middleware",
  "reqwest-retry",
- "rmp-serde",
  "rstest",
  "rust_arkitect",
  "semver",
@@ -156,6 +155,7 @@ version = "0.4.0"
 dependencies = [
  "chrono",
  "register-schema",
+ "rmp-serde",
  "rstest",
  "schemars 1.2.3",
  "serde",
@@ -170,7 +170,6 @@ dependencies = [
  "aether-core-plugin-api",
  "anyhow",
  "extism-convert",
- "rmp-serde",
  "serde",
 ]
 
