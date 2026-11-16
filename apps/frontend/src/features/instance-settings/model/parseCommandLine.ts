@@ -2,7 +2,7 @@ import { readQuoted } from './quoting';
 
 const WHITESPACE = /\s/;
 
-type CommandLineError = 'EMPTY' | 'UNCLOSED_QUOTE';
+export type CommandLineError = 'EMPTY' | 'UNCLOSED_QUOTE';
 
 export type CommandLineResult =
   | { program: string; args: string[] }
@@ -62,8 +62,15 @@ export const parseCommandLine = (value: string): CommandLineResult => {
 /** The edges are never part of a command, and the core trims them too. */
 export const normalizeHookCommand = (value: string): string => value.trim();
 
-export const hasUnclosedQuote = (value: string): boolean => {
+/** Why the core would refuse a normalized hook command; an empty one is no hook, not an error. */
+export const getHookCommandError = (
+  value: string,
+): CommandLineError | undefined => {
+  if (value === '') {
+    return undefined;
+  }
+
   const result = parseCommandLine(value);
 
-  return 'error' in result && result.error === 'UNCLOSED_QUOTE';
+  return 'error' in result ? result.error : undefined;
 };

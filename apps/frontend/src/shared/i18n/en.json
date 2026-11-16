@@ -722,6 +722,7 @@
       "postExitLabel": "Runs after the game closes",
       "enterCommandPlaceholder": "Enter command",
       "unclosedQuote": "A quote is not closed",
+      "emptyProgram": "The program is empty: write it before the arguments",
       "hints": {
         "syntax": "Write the program, then its arguments, separated by spaces.",
         "quotes": "Put a path with spaces in double quotes: \"C:\\Program Files\\app.exe\" --flag. A backslash is written as is. To type a quote inside quotes, double it.",

@@ -2,11 +2,17 @@ import * as v from 'valibot';
 import { describe, expect, it } from 'vitest';
 
 import {
+  HOOK_COMMAND_ERRORS,
   HooksSettingsSchema,
-  UNCLOSED_QUOTE_ERROR,
 } from '../hooksSettingsSchema';
 
 const base = { preLaunch: '', wrapper: '', postExit: '' };
+
+const errorsOf = (key: keyof typeof base, command: string) => {
+  const result = v.safeParse(HooksSettingsSchema, { ...base, [key]: command });
+
+  return result.issues?.map((issue) => issue.message);
+};
 
 describe('HooksSettingsSchema', () => {
   it('should_trim_the_edges_of_every_command', () => {
@@ -34,15 +40,16 @@ describe('HooksSettingsSchema', () => {
   it.each(['preLaunch', 'wrapper', 'postExit'] as const)(
     'should_report_an_unclosed_quote_when_the_%s_command_has_one',
     (key) => {
-      const result = v.safeParse(HooksSettingsSchema, {
-        ...base,
-        [key]: 'echo "a b',
-      });
-
-      expect(result.success).toBe(false);
-      expect(result.issues?.map((issue) => issue.message)).toEqual([
-        UNCLOSED_QUOTE_ERROR,
+      expect(errorsOf(key, 'echo "a b')).toEqual([
+        HOOK_COMMAND_ERRORS.UNCLOSED_QUOTE,
       ]);
+    },
+  );
+
+  it.each(['""', ' "" arg '])(
+    'should_report_an_empty_program_when_the_command_is_%j',
+    (command) => {
+      expect(errorsOf('wrapper', command)).toEqual([HOOK_COMMAND_ERRORS.EMPTY]);
     },
   );
 });

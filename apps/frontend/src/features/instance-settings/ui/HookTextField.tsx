@@ -2,6 +2,7 @@ import {
   Field,
   getErrors,
   getInput,
+  setInput,
   validate,
   type FormStore,
 } from '@formisch/solid';
@@ -18,7 +19,7 @@ import type {
 } from '../model/hooksSettingsSchema';
 
 import { getHookDisplayValue } from '../model/hooksDisplay';
-import { UNCLOSED_QUOTE_ERROR } from '../model/hooksSettingsSchema';
+import { HOOK_COMMAND_ERRORS } from '../model/hooksSettingsSchema';
 import { normalizeHookCommand } from '../model/parseCommandLine';
 
 export type HookTextFieldProps = {
@@ -34,6 +35,14 @@ export type HookTextFieldProps = {
 export const HookTextField: Component<HookTextFieldProps> = (props) => {
   const [{ t }] = useTranslation();
 
+  const translateHookError = (message: string | undefined) => {
+    const key = Object.values(HOOK_COMMAND_ERRORS).find(
+      (error) => error === message,
+    );
+
+    return key ? t(key) : message;
+  };
+
   return (
     <LabeledField label={t(props.fieldConfig.labelKey)}>
       <Field of={props.form} path={[props.fieldConfig.key]}>
@@ -48,11 +57,7 @@ export const HookTextField: Component<HookTextFieldProps> = (props) => {
               props.overrideHooksInput,
             )}
             label={t(props.fieldConfig.subLabelKey)}
-            errorMessage={
-              field.errors?.[0] === UNCLOSED_QUOTE_ERROR
-                ? t(UNCLOSED_QUOTE_ERROR)
-                : field.errors?.[0]
-            }
+            errorMessage={translateHookError(field.errors?.[0])}
             labelProps={{ variant: 'description' }}
             inputProps={{
               ...field.props,
@@ -69,12 +74,15 @@ export const HookTextField: Component<HookTextFieldProps> = (props) => {
                   return;
                 }
 
-                props.onChangePartial?.({
-                  [props.fieldConfig.key]: normalizeHookCommand(
-                    getInput(props.form, { path: [props.fieldConfig.key] }) ??
-                      '',
-                  ),
-                });
+                const path = [props.fieldConfig.key] as const;
+                const command = normalizeHookCommand(
+                  getInput(props.form, { path }) ?? '',
+                );
+
+                // A refresh keeps the field as typed when the stored command is unchanged, so
+                // the field shows the trimmed command that is saved.
+                setInput(props.form, { path, input: command });
+                props.onChangePartial?.({ [props.fieldConfig.key]: command });
               },
             }}
           />
