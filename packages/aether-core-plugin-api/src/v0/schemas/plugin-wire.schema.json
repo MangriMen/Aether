@@ -7,6 +7,9 @@
     "cachedFile": {
       "$ref": "#/$defs/CachedFileDto"
     },
+    "changeContents": {
+      "$ref": "#/$defs/ChangeContentsParamsDto"
+    },
     "checkCompatibilityParams": {
       "$ref": "#/$defs/PluginCheckCompatibilityParamsDto"
     },
@@ -18,12 +21,6 @@
     },
     "contentCompatibilityCheckParams": {
       "$ref": "#/$defs/ContentCompatibilityCheckParamsDto"
-    },
-    "contentFiles": {
-      "type": "object",
-      "additionalProperties": {
-        "$ref": "#/$defs/ContentFileDto"
-      }
     },
     "contentItem": {
       "$ref": "#/$defs/ContentItemDto"
@@ -83,8 +80,17 @@
     "installPlan": {
       "$ref": "#/$defs/InstallPlanDto"
     },
+    "instanceCreated": {
+      "$ref": "#/$defs/InstanceCreatedDto"
+    },
+    "instanceDir": {
+      "$ref": "#/$defs/InstanceDirDto"
+    },
     "instanceFileBytes": {
       "$ref": "#/$defs/InstanceFileBytesDto"
+    },
+    "instanceId": {
+      "$ref": "#/$defs/InstanceIdParamsDto"
     },
     "internalEvent": {
       "$ref": "#/$defs/PluginInternalEventDto"
@@ -92,11 +98,20 @@
     "java": {
       "$ref": "#/$defs/JavaDto"
     },
+    "javaVersion": {
+      "$ref": "#/$defs/JavaVersionParamsDto"
+    },
+    "listContentResult": {
+      "$ref": "#/$defs/ListContentResultDto"
+    },
     "listVersionsParams": {
       "$ref": "#/$defs/ListVersionsParamsDto"
     },
     "listVersionsResult": {
       "$ref": "#/$defs/ListVersionsResultDto"
+    },
+    "log": {
+      "$ref": "#/$defs/LogParamsDto"
     },
     "newInstance": {
       "$ref": "#/$defs/NewInstanceDto"
@@ -131,6 +146,10 @@
   },
   "required": [
     "hostError",
+    "log",
+    "javaVersion",
+    "instanceId",
+    "changeContents",
     "command",
     "newInstance",
     "writeInstanceFile",
@@ -140,7 +159,9 @@
     "downloadToCache",
     "output",
     "java",
-    "contentFiles",
+    "instanceDir",
+    "instanceCreated",
+    "listContentResult",
     "instanceFileBytes",
     "httpResponse",
     "cachedFile",
@@ -314,6 +335,26 @@
       "required": [
         "path",
         "size"
+      ]
+    },
+    "ChangeContentsParamsDto": {
+      "description": "The input of `enable_contents` and `disable_contents`.",
+      "type": "object",
+      "properties": {
+        "instanceId": {
+          "type": "string"
+        },
+        "paths": {
+          "description": "The paths of the files, as `list_content` names them.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "instanceId",
+        "paths"
       ]
     },
     "CheckCompatibilityResultDto": {
@@ -1837,6 +1878,31 @@
         }
       ]
     },
+    "InstanceCreatedDto": {
+      "description": "The answer of `instance_create`.",
+      "type": "object",
+      "properties": {
+        "instanceId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "instanceId"
+      ]
+    },
+    "InstanceDirDto": {
+      "description": "The answer of `instance_get_dir` and `instance_plugin_get_dir`.",
+      "type": "object",
+      "properties": {
+        "path": {
+          "description": "A path in the plugin's own file system (`/instances/…`).",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path"
+      ]
+    },
     "InstanceErrorDto": {
       "oneOf": [
         {
@@ -2658,6 +2724,18 @@
         "modLoader"
       ]
     },
+    "InstanceIdParamsDto": {
+      "description": "The input of the host functions that take one instance: `instance_get_dir`,\n`instance_plugin_get_dir` and `list_content`.",
+      "type": "object",
+      "properties": {
+        "instanceId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "instanceId"
+      ]
+    },
     "InstanceInstallStageDto": {
       "type": "string",
       "enum": [
@@ -3043,6 +3121,37 @@
         }
       ]
     },
+    "JavaVersionParamsDto": {
+      "description": "The input of `get_java` and `install_java`.",
+      "type": "object",
+      "properties": {
+        "version": {
+          "description": "The major Java release (for example 8, 17 or 21).",
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "version"
+      ]
+    },
+    "ListContentResultDto": {
+      "description": "The answer of `list_content`.",
+      "type": "object",
+      "properties": {
+        "files": {
+          "description": "By the path of the file in the instance.",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/ContentFileDto"
+          }
+        }
+      },
+      "required": [
+        "files"
+      ]
+    },
     "ListVersionsParamsDto": {
       "description": "The input of `listVersion`.",
       "type": "object",
@@ -3089,6 +3198,33 @@
         {
           "type": "string"
         }
+      ]
+    },
+    "LogLevelDto": {
+      "description": "A log level, as the plugin names it.",
+      "type": "string",
+      "enum": [
+        "error",
+        "warn",
+        "info",
+        "debug",
+        "trace"
+      ]
+    },
+    "LogParamsDto": {
+      "description": "The input of `log`.",
+      "type": "object",
+      "properties": {
+        "level": {
+          "$ref": "#/$defs/LogLevelDto"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "level",
+        "message"
       ]
     },
     "ManifestErrorDto": {

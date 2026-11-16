@@ -29,7 +29,7 @@ pub(crate) const HOST_FUNCTIONS: &[HostFunctionSpec] = &[
     // ── core ──
     HostFunctionSpec {
         name: "log",
-        params: &[ValType::I64, PTR],
+        params: &[PTR],
         results: &[],
         handler: features::log,
     },
@@ -48,13 +48,13 @@ pub(crate) const HOST_FUNCTIONS: &[HostFunctionSpec] = &[
     // ── java ──
     HostFunctionSpec {
         name: "get_java",
-        params: &[ValType::I64],
+        params: &[PTR],
         results: &[PTR],
         handler: features::get_java,
     },
     HostFunctionSpec {
         name: "install_java",
-        params: &[ValType::I64],
+        params: &[PTR],
         results: &[PTR],
         handler: features::install_java,
     },
@@ -85,13 +85,13 @@ pub(crate) const HOST_FUNCTIONS: &[HostFunctionSpec] = &[
     },
     HostFunctionSpec {
         name: "enable_contents",
-        params: &[PTR, PTR],
+        params: &[PTR],
         results: &[PTR],
         handler: features::enable_contents,
     },
     HostFunctionSpec {
         name: "disable_contents",
-        params: &[PTR, PTR],
+        params: &[PTR],
         results: &[PTR],
         handler: features::disable_contents,
     },

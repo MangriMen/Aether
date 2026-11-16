@@ -1,6 +1,7 @@
 use aether_core_plugin_api::v0::{
-    ContentFileDto, InstanceFileBytesDto, NewInstanceDto, ReadInstanceFileParamsDto,
-    WriteInstanceFileParamsDto,
+    ChangeContentsParamsDto, ContentFileDto, InstanceCreatedDto, InstanceDirDto,
+    InstanceFileBytesDto, InstanceIdParamsDto, ListContentResultDto, NewInstanceDto,
+    ReadInstanceFileParamsDto, WriteInstanceFileParamsDto,
 };
 use dashmap::DashMap;
 use extism::host_fn;
@@ -33,8 +34,9 @@ use super::super::{
 pub(crate) async fn handle_instance_get_dir(
     id: &str,
     location_info: &LocationInfo,
+    get_instance: &dyn GetInstanceUseCasePort,
 ) -> crate::Result<String> {
-    let id = InstanceId::try_from(id)?;
+    let id = require_instance(id, get_instance).await?;
     let dir = location_info.instance_dir(&id);
     let relative_path = dir
         .strip_prefix(location_info.config_dir())
@@ -295,20 +297,25 @@ pub(crate) async fn handle_read_instance_file(
 // ── Extism host function wrappers ──
 
 host_fn!(
-pub instance_get_dir(user_data: PluginContext; id: String) -> HostReply<String> {
+pub instance_get_dir(user_data: PluginContext; params: Wire<InstanceIdParamsDto>) -> HostReply<InstanceDirDto> {
     let context = user_data.get()?;
     let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
     let container = ctx.upgrade_container().ok_or_else(|| anyhow::Error::msg("AetherContainer dropped before plugin call"))?;
     let location_info = container.location_info();
     drop(ctx);
 
-    to_extism_res::<String>(
-        block_on(handle_instance_get_dir(&id, &location_info))
+    to_extism_res::<InstanceDirDto>(
+        block_on(handle_instance_get_dir(
+            &params.0.instance_id,
+            &location_info,
+            &*container.get_instance_use_case(),
+        ))
+        .map(|path| InstanceDirDto { path })
     )
 });
 
 host_fn!(
-pub instance_plugin_get_dir(user_data: PluginContext; instance_id: String) -> HostReply<String> {
+pub instance_plugin_get_dir(user_data: PluginContext; params: Wire<InstanceIdParamsDto>) -> HostReply<InstanceDirDto> {
     let context = user_data.get()?;
     let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
     let plugin_id = ctx.id.clone();
@@ -316,13 +323,14 @@ pub instance_plugin_get_dir(user_data: PluginContext; instance_id: String) -> Ho
     let location_info = container.location_info();
     drop(ctx);
 
-    to_extism_res::<String>(
+    to_extism_res::<InstanceDirDto>(
         block_on(handle_instance_plugin_get_dir(
             &plugin_id,
-            &instance_id,
+            &params.0.instance_id,
             &location_info,
             &*container.get_instance_use_case(),
         ))
+        .map(|path| InstanceDirDto { path })
     )
 });
 
@@ -330,7 +338,7 @@ host_fn!(
     pub instance_create(
         user_data: PluginContext;
         new_instance_dto: Wire<NewInstanceDto>
-    ) -> HostReply<String> {
+    ) -> HostReply<InstanceCreatedDto> {
         let context = user_data.get()?;
         let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
         let container = ctx.upgrade_container().ok_or_else(|| anyhow::Error::msg("AetherContainer dropped before plugin call"))?;
@@ -345,28 +353,33 @@ host_fn!(
             record_pack_instance(&plugin_id, instance_id);
         }
 
-        to_extism_res::<String>(result.map(String::from))
+        to_extism_res::<InstanceCreatedDto>(result.map(|id| InstanceCreatedDto {
+            instance_id: String::from(id),
+        }))
     }
 );
 
 host_fn!(
-pub list_content(user_data: PluginContext; id: String) -> HostReply<DashMap<String, ContentFileDto>> {
+pub list_content(user_data: PluginContext; params: Wire<InstanceIdParamsDto>) -> HostReply<ListContentResultDto> {
     let context = user_data.get()?;
     let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
     let container = ctx.upgrade_container().ok_or_else(|| anyhow::Error::msg("AetherContainer dropped before plugin call"))?;
     drop(ctx);
 
-    to_extism_res::<DashMap<String, ContentFileDto>>(
+    to_extism_res::<ListContentResultDto>(
         block_on(handle_list_content(
-            id,
+            params.0.instance_id,
             &*container.get_instance_use_case(),
             &*container.list_content_use_case(),
         ))
+        .map(|files| ListContentResultDto {
+            files: files.into_iter().collect(),
+        })
     )
 });
 
 host_fn!(
-pub enable_contents(user_data: PluginContext; instance_id: String, content_paths: Wire<Vec<String>>) -> HostReply<()> {
+pub enable_contents(user_data: PluginContext; params: Wire<ChangeContentsParamsDto>) -> HostReply<()> {
     let context = user_data.get()?;
     let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
     let container = ctx.upgrade_container().ok_or_else(|| anyhow::Error::msg("AetherContainer dropped before plugin call"))?;
@@ -374,8 +387,8 @@ pub enable_contents(user_data: PluginContext; instance_id: String, content_paths
 
     to_extism_res::<()>(
         block_on(handle_change_contents(
-            instance_id,
-            content_paths.0,
+            params.0.instance_id,
+            params.0.paths,
             ContentStateAction::Enable,
             &*container.get_instance_use_case(),
             &*container.change_content_state_use_case(),
@@ -384,7 +397,7 @@ pub enable_contents(user_data: PluginContext; instance_id: String, content_paths
 });
 
 host_fn!(
-pub disable_contents(user_data: PluginContext; instance_id: String, content_paths: Wire<Vec<String>>) -> HostReply<()> {
+pub disable_contents(user_data: PluginContext; params: Wire<ChangeContentsParamsDto>) -> HostReply<()> {
     let context = user_data.get()?;
     let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
     let container = ctx.upgrade_container().ok_or_else(|| anyhow::Error::msg("AetherContainer dropped before plugin call"))?;
@@ -392,8 +405,8 @@ pub disable_contents(user_data: PluginContext; instance_id: String, content_path
 
     to_extism_res::<()>(
         block_on(handle_change_contents(
-            instance_id,
-            content_paths.0,
+            params.0.instance_id,
+            params.0.paths,
             ContentStateAction::Disable,
             &*container.get_instance_use_case(),
             &*container.change_content_state_use_case(),
@@ -1040,13 +1053,17 @@ mod tests {
         let (temp_dir, location_info, _service) = setup().await;
 
         for id in escaping_ids(&temp_dir) {
-            handle_instance_get_dir(&id, &location_info)
+            handle_instance_get_dir(&id, &location_info, &OneInstance)
                 .await
                 .expect_err("an id outside `instances/` must be refused");
         }
 
+        handle_instance_get_dir("no-such-instance", &location_info, &OneInstance)
+            .await
+            .expect_err("an unknown instance must be refused");
+
         assert_eq!(
-            handle_instance_get_dir(INSTANCE_ID, &location_info)
+            handle_instance_get_dir(INSTANCE_ID, &location_info, &OneInstance)
                 .await
                 .unwrap(),
             format!("/instances/{INSTANCE_ID}")

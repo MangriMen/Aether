@@ -102,16 +102,27 @@ missing key its default when the DTO has one, so a field can be added without br
 side.
 
 A host function returns `{"status": "ok", "data": <value>}` or `{"status": "err", "data":
-<HostError>}`; `data` is always there (`nil` for `()`). Its structured arguments and the
-arguments and answers of a plugin's exports are the DTOs as maps.
+<HostError>}`; `data` is always there (`nil` for `()`). The arguments and answers of a plugin's exports are the DTOs as maps.
 
-Some values are not msgpack at all:
+Every host function takes one structured argument and answers a `{"status", "data"}` result, except
+`get_id`, whose answer is the plugin's id as a raw UTF-8 string (not wrapped in a result). The
+host functions, with the properties of `schemas/plugin-wire.schema.json` that describe their
+argument and the `data` of an `ok` answer:
 
-| What | Encoding |
-| --- | --- |
-| `log` message, the instance id of `instance_get_dir`, `instance_plugin_get_dir`, `list_content`, and the first argument of `enable_contents` / `disable_contents` | raw UTF-8 string |
-| `log` level, the version of `get_java` / `install_java` | `u32`, 4 bytes little-endian, written to a memory block whose offset is the argument (as Extism passes every host-function argument) |
-| `get_id` result | raw UTF-8 string, not wrapped in a result |
+| Host function | Argument | `data` |
+| --- | --- | --- |
+| `log` | `log` | none |
+| `run_command` | `command` | `output` |
+| `get_java`, `install_java` | `javaVersion` | `java` |
+| `instance_create` | `newInstance` | `instanceCreated` |
+| `instance_get_dir`, `instance_plugin_get_dir` | `instanceId` | `instanceDir` |
+| `list_content` | `instanceId` | `listContentResult` |
+| `enable_contents`, `disable_contents` | `changeContents` | none |
+| `write_instance_file` | `writeInstanceFile` | none |
+| `read_instance_file` | `readInstanceFile` | `instanceFileBytes` |
+| `http_get` | `httpRequest` | `httpResponse` |
+| `http_post_json` | `httpPostJsonRequest` | `httpResponse` |
+| `download_to_cache` | `downloadToCache` | `cachedFile` |
 
 What the host sends to a plugin's exports and what it expects back (the names of the exports are
 the `handler` values of the capabilities; the properties are those of `schemas/plugin-wire.schema.json`):
