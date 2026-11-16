@@ -77,7 +77,7 @@ impl InstallPluginFromProviderUseCase {
             &self.archive_cache,
             &source_type,
             identifier,
-            Some(tag),
+            tag,
         )
         .await?;
         let release = downloaded.release;

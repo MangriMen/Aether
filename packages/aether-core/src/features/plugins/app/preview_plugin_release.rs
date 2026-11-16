@@ -34,14 +34,14 @@ impl PreviewPluginReleaseUseCase {
         &self,
         source_type: PluginSourceType,
         identifier: &str,
-        tag: Option<String>,
+        tag: &str,
     ) -> Result<PluginReleasePreview, PluginError> {
         let downloaded = download_release_archive(
             &self.provider_factory,
             &self.archive_cache,
             &source_type,
             identifier,
-            tag.as_deref(),
+            tag,
         )
         .await?;
         let metadata = self
@@ -50,9 +50,6 @@ impl PreviewPluginReleaseUseCase {
             .await?;
 
         Ok(PluginReleasePreview {
-            owner: downloaded.listing.owner,
-            repo: downloaded.listing.repo,
-            releases: downloaded.listing.releases,
             tag: downloaded.release.tag_name,
             manifest: PluginManifestPreview::from(&metadata.manifest),
             capabilities: metadata.capabilities,
@@ -67,7 +64,7 @@ impl PreviewPluginReleaseUseCasePort for PreviewPluginReleaseUseCase {
         &self,
         source_type: PluginSourceType,
         identifier: &str,
-        tag: Option<String>,
+        tag: &str,
     ) -> Result<PluginReleasePreview, PluginError> {
         self.execute(source_type, identifier, tag).await
     }

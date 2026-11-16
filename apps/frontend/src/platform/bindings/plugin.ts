@@ -56,7 +56,13 @@ export const commands = {
 	checkForUpdates: (id: string) => __TAURI_INVOKE<PluginUpdateInfoDto>("plugin:plugin|check_for_updates", { id }),
 	updatePlugin: (id: string, targetTag: string | null, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:plugin|update_plugin", { id, targetTag, requestId }),
 	getAvailableProviders: () => __TAURI_INVOKE<PluginProviderDto[]>("plugin:plugin|get_available_providers"),
-	previewPluginFromProvider: (sourceType: PluginSourceTypeDto, identifier: string, tag: string | null) => __TAURI_INVOKE<ProviderPluginPreviewDto>("plugin:plugin|preview_plugin_from_provider", { sourceType, identifier, tag }),
+	/**
+	 *  The releases of a plugin that can be installed. Downloads nothing: the archive of a release is
+	 *  read by `preview_plugin_release`.
+	 */
+	listPluginReleases: (sourceType: PluginSourceTypeDto, identifier: string) => __TAURI_INVOKE<PluginReleaseListingDto>("plugin:plugin|list_plugin_releases", { sourceType, identifier }),
+	/**  What the archive of release `tag` asks for. The tag is one `list_plugin_releases` gave. */
+	previewPluginRelease: (sourceType: PluginSourceTypeDto, identifier: string, tag: string) => __TAURI_INVOKE<ProviderPluginPreviewDto>("plugin:plugin|preview_plugin_release", { sourceType, identifier, tag }),
 	installPluginFromProvider: (sourceType: PluginSourceTypeDto, identifier: string, tagName: string, archiveSha256: string, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<string>("plugin:plugin|install_plugin_from_provider", { sourceType, identifier, tagName, archiveSha256, requestId }),
 	/**
 	 *  The commands plugins wait to run, oldest first: the frontend reads them when it starts and
@@ -833,6 +839,14 @@ export type PluginProviderDto = {
 	name: string,
 };
 
+/**  The releases of a plugin that can be installed, and the one to start from. */
+export type PluginReleaseListingDto = {
+	owner: string,
+	repo: string,
+	releases: ProviderReleaseInfoDto[],
+	default_tag: string,
+};
+
 export type PluginSettingsDto = {
 	allowedHosts?: string[],
 	allowedPaths?: AllowedPathDto[],
@@ -959,9 +973,6 @@ export type ProviderIdReasonDto =
 
 /**  Generic provider-agnostic plugin preview for the frontend. */
 export type ProviderPluginPreviewDto = {
-	owner: string,
-	repo: string,
-	releases: ProviderReleaseInfoDto[],
 	tag: string,
 	manifest: PluginManifestPreviewDto,
 	capabilities: PluginCapabilitiesDto | null,

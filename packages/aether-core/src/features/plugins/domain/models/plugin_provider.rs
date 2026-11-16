@@ -45,12 +45,20 @@ pub struct ProviderPluginPreview {
     pub releases: Vec<ProviderReleaseInfo>,
 }
 
-/// A release as shown before install, read from its archive rather than from publisher metadata.
+/// The releases of a plugin that can be installed, each with an archive, and the one a preview
+/// starts from. Nothing of what is inside an archive: that is read per release.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PluginReleasePreview {
+pub struct PluginReleaseListing {
     pub owner: String,
     pub repo: String,
     pub releases: Vec<ProviderReleaseInfo>,
+    /// The first stable release, else the first.
+    pub default_tag: String,
+}
+
+/// A release as shown before install, read from its archive rather than from publisher metadata.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PluginReleasePreview {
     pub tag: String,
     pub manifest: PluginManifestPreview,
     pub capabilities: Option<String>,

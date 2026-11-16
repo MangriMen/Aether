@@ -23,6 +23,8 @@ export interface ReleaseOption {
 }
 
 export type PluginPreviewCardProps = {
+  /** The repository the releases belong to, shown while a release has no name of its own. */
+  repo: string;
   /** The preview of the selected tag; undefined while it loads or when it failed. */
   preview: ProviderPluginPreview | undefined;
   isPreviewLoading: boolean;
@@ -56,7 +58,7 @@ export const PluginPreviewCard: Component<PluginPreviewCardProps> = (props) => {
               <Image class='h-31 w-max' />
               <PluginInfoHeader
                 class='flex-1'
-                name={preview().manifest.name || preview().repo}
+                name={preview().manifest.name || props.repo}
                 version={preview().manifest.version}
                 apiVersion={preview().manifest.api_version ?? null}
                 authors={props.authors}

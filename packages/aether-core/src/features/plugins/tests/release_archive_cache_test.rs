@@ -253,3 +253,89 @@ async fn should_drop_an_expired_archive_when_swept_without_anyone_asking_for_it(
     cache.sweep();
     assert!(!path.exists());
 }
+
+fn listing() -> ProviderPluginPreview {
+    ProviderPluginPreview {
+        owner: "o".into(),
+        repo: "r".into(),
+        releases: vec![],
+    }
+}
+
+async fn fetch(
+    cache: &ReleaseArchiveCache,
+    calls: &AtomicUsize,
+    key: &str,
+) -> Result<Arc<ProviderPluginPreview>, PluginError> {
+    cache
+        .get_or_fetch_listing(key, || async {
+            calls.fetch_add(1, Ordering::SeqCst);
+            Ok(listing())
+        })
+        .await
+}
+
+#[tokio::test]
+async fn should_fetch_the_listing_again_once_it_is_older_than_the_ttl() {
+    let (cache, clock) = cache_with_clock();
+    let calls = AtomicUsize::new(0);
+
+    fetch(&cache, &calls, "k").await.unwrap();
+    clock.store(60 - 1, Ordering::SeqCst);
+    fetch(&cache, &calls, "k").await.unwrap();
+    assert_eq!(calls.load(Ordering::SeqCst), 1);
+
+    clock.store(60, Ordering::SeqCst);
+    fetch(&cache, &calls, "k").await.unwrap();
+    assert_eq!(calls.load(Ordering::SeqCst), 2);
+}
+
+#[tokio::test]
+async fn should_keep_the_listing_of_each_key_apart() {
+    let (cache, _) = cache_with_clock();
+    let calls = AtomicUsize::new(0);
+
+    fetch(&cache, &calls, "github:a/b").await.unwrap();
+    fetch(&cache, &calls, "github:c/d").await.unwrap();
+    fetch(&cache, &calls, "github:a/b").await.unwrap();
+
+    assert_eq!(calls.load(Ordering::SeqCst), 2);
+}
+
+#[tokio::test]
+async fn should_not_keep_a_listing_that_failed() {
+    let (cache, _) = cache_with_clock();
+    let calls = AtomicUsize::new(0);
+
+    let failed = cache
+        .get_or_fetch_listing("k", || async {
+            calls.fetch_add(1, Ordering::SeqCst);
+            Err(PluginProviderError::ProviderNoAssets {
+                source_type: PluginSourceType::GitHub,
+            }
+            .into())
+        })
+        .await;
+    assert!(failed.is_err());
+
+    fetch(&cache, &calls, "k").await.unwrap();
+    assert_eq!(calls.load(Ordering::SeqCst), 2);
+}
+
+#[tokio::test]
+async fn should_let_the_oldest_listing_go_when_a_ninth_is_added() {
+    let (cache, clock) = cache_with_clock();
+    let calls = AtomicUsize::new(0);
+
+    for i in 0..9 {
+        clock.store(i, Ordering::SeqCst);
+        fetch(&cache, &calls, &format!("k{i}")).await.unwrap();
+    }
+    assert_eq!(calls.load(Ordering::SeqCst), 9);
+
+    // k8 is still held, k0 was the oldest.
+    fetch(&cache, &calls, "k8").await.unwrap();
+    assert_eq!(calls.load(Ordering::SeqCst), 9);
+    fetch(&cache, &calls, "k0").await.unwrap();
+    assert_eq!(calls.load(Ordering::SeqCst), 10);
+}

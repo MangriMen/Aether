@@ -7,9 +7,6 @@ use super::{PluginCapabilitiesDto, PluginManifestPreviewDto};
 /// Generic provider-agnostic plugin preview for the frontend.
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
 pub struct ProviderPluginPreviewDto {
-    pub owner: String,
-    pub repo: String,
-    pub releases: Vec<ProviderReleaseInfoDto>,
     pub tag: String,
     pub manifest: PluginManifestPreviewDto,
     pub capabilities: Option<PluginCapabilitiesDto>,
@@ -34,12 +31,28 @@ impl From<aether_core::features::plugins::PluginReleasePreview> for ProviderPlug
             .map(PluginCapabilitiesDto::from);
 
         Self {
-            owner: value.owner,
-            repo: value.repo,
             tag: value.tag,
             manifest: PluginManifestPreviewDto::from(value.manifest),
             capabilities,
             archive_sha256: value.archive_sha256,
+        }
+    }
+}
+
+/// The releases of a plugin that can be installed, and the one to start from.
+#[derive(Debug, Clone, Serialize, Deserialize, Type)]
+pub struct PluginReleaseListingDto {
+    pub owner: String,
+    pub repo: String,
+    pub releases: Vec<ProviderReleaseInfoDto>,
+    pub default_tag: String,
+}
+
+impl From<aether_core::features::plugins::PluginReleaseListing> for PluginReleaseListingDto {
+    fn from(value: aether_core::features::plugins::PluginReleaseListing) -> Self {
+        Self {
+            owner: value.owner,
+            repo: value.repo,
             releases: value
                 .releases
                 .into_iter()
@@ -52,6 +65,7 @@ impl From<aether_core::features::plugins::PluginReleasePreview> for ProviderPlug
                     download_url: r.download_url,
                 })
                 .collect(),
+            default_tag: value.default_tag,
         }
     }
 }

@@ -14,6 +14,9 @@ const PLUGIN_STALE_TIME = 60 * 1000;
 // Below the backend's archive cache TTL, so returning to an already viewed tag skips the IPC call.
 const PREVIEW_STALE_TIME = 5 * 60 * 1000;
 
+// As long as the core keeps the list it asked the provider for.
+const RELEASES_STALE_TIME = 60 * 1000;
+
 type PluginList = Awaited<ReturnType<typeof pluginsCommands.list>>;
 
 const pluginIdOf = (plugin: Plugin): PluginId => plugin.manifest.metadata.id;
@@ -132,12 +135,23 @@ export const pluginsQueries = {
     queryFn: pluginsCommands.getAvailableProviders,
     staleTime: Infinity,
   }),
-  // No tag: the newest stable release; the answer carries the tag it read.
-  preview: (provider: PluginSourceType, url: string, tag?: string | null) => ({
-    queryKey: pluginKeys.preview(provider, url, tag ?? null),
-    queryFn: () =>
-      pluginsCommands.previewPluginFromProvider(provider, url, tag ?? null),
+  // The releases that can be installed and the tag to start from; no archive is downloaded.
+  releases: (provider: PluginSourceType, url: string) => ({
+    queryKey: pluginKeys.releases(provider, url),
+    // Carries the URL it was asked for, so a reader can tell the list of another URL.
+    queryFn: async () => ({
+      ...(await pluginsCommands.listPluginReleases(provider, url)),
+      url,
+    }),
     enabled: url.length > 0,
+    staleTime: RELEASES_STALE_TIME,
+  }),
+  // What the archive of one release asks for. `tag` is one of the listed releases; empty while
+  // the list is still loading.
+  preview: (provider: PluginSourceType, url: string, tag: string) => ({
+    queryKey: pluginKeys.preview(provider, url, tag),
+    queryFn: () => pluginsCommands.previewPluginRelease(provider, url, tag),
+    enabled: url.length > 0 && tag.length > 0,
     staleTime: PREVIEW_STALE_TIME,
   }),
 } as const;

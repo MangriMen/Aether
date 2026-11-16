@@ -11,9 +11,9 @@ use crate::{
     core::ContainerState,
     features::plugins::{
         CommandAnswerDto, EditPluginSettingsDto, FolderAccessDto, HostAccessDto,
-        PendingCommandApprovalDto, PluginDto, PluginEventDto, PluginProviderDto, PluginSettingsDto,
-        PluginSourceDto, PluginSourceTypeDto, PluginUpdateInfoDto, ProviderPluginPreviewDto,
-        SkippedPluginDirDto,
+        PendingCommandApprovalDto, PluginDto, PluginEventDto, PluginProviderDto,
+        PluginReleaseListingDto, PluginSettingsDto, PluginSourceDto, PluginSourceTypeDto,
+        PluginUpdateInfoDto, ProviderPluginPreviewDto, SkippedPluginDirDto,
     },
     shared::reveal_in_explorer::infra::reveal_in_explorer,
     shared::{
@@ -436,18 +436,37 @@ async fn update_plugin(
 
 // ── Generic provider-based commands ──
 
+/// The releases of a plugin that can be installed. Downloads nothing: the archive of a release is
+/// read by `preview_plugin_release`.
 #[tauri::command]
 #[specta::specta]
-async fn preview_plugin_from_provider(
+async fn list_plugin_releases(
     source_type: PluginSourceTypeDto,
     identifier: String,
-    tag: Option<String>,
+    container: State<'_, ContainerState>,
+) -> FrontendResult<PluginReleaseListingDto> {
+    let container = container.0.clone();
+    Ok(container
+        .list_plugin_releases_use_case()
+        .execute(source_type.into(), &identifier)
+        .await
+        .map_err(aether_core::Error::from)?
+        .into())
+}
+
+/// What the archive of release `tag` asks for. The tag is one `list_plugin_releases` gave.
+#[tauri::command]
+#[specta::specta]
+async fn preview_plugin_release(
+    source_type: PluginSourceTypeDto,
+    identifier: String,
+    tag: String,
     container: State<'_, ContainerState>,
 ) -> FrontendResult<ProviderPluginPreviewDto> {
     let container = container.0.clone();
     Ok(container
         .preview_plugin_release_use_case()
-        .execute(source_type.into(), &identifier, tag)
+        .execute(source_type.into(), &identifier, &tag)
         .await
         .map_err(aether_core::Error::from)?
         .into())
