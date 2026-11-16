@@ -3,7 +3,12 @@ use serde::{Deserialize, Serialize};
 use crate::v0::LoadConfigTypeDto;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(tag = "kind", content = "data", rename_all = "camelCase")]
+#[serde(
+    tag = "kind",
+    content = "data",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
 pub enum PluginErrorDto {
     NotFound {
         plugin_id: String,
@@ -112,7 +117,12 @@ pub enum CommandRefusalDto {
 
 /// Why a call into a plugin failed.
 #[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(tag = "kind", content = "data", rename_all = "camelCase")]
+#[serde(
+    tag = "kind",
+    content = "data",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
 pub enum PluginCallErrorDto {
     MissingFunction,
     Timeout,
@@ -131,7 +141,12 @@ pub enum PluginCallErrorDto {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(tag = "kind", content = "data", rename_all = "camelCase")]
+#[serde(
+    tag = "kind",
+    content = "data",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
 pub enum ManifestErrorDto {
     UnsupportedApi,
     InvalidSemver {

@@ -130,21 +130,21 @@ mod tests {
     const MESSAGES: &[(&str, &str)] = &[
         (
             "refused",
-            r#"aether-plugin-failure:{"message":"AccessViolation","host":{"type":"pluginError","payload":{"kind":"commandNotApproved","data":{"plugin_id":"packwiz","reason":"timed_out"}}}}"#,
+            r#"aether-plugin-failure:{"message":"AccessViolation","host":{"type":"pluginError","payload":{"kind":"commandNotApproved","data":{"pluginId":"packwiz","reason":"timed_out"}}}}"#,
         ),
         (
             "refused_with_prefix_and_tail",
-            r#"Error: aether-plugin-failure:{"message":"m","host":{"type":"pluginError","payload":{"kind":"commandNotApproved","data":{"plugin_id":"packwiz","reason":"denied"}}}}
+            r#"Error: aether-plugin-failure:{"message":"m","host":{"type":"pluginError","payload":{"kind":"commandNotApproved","data":{"pluginId":"packwiz","reason":"denied"}}}}
 
 Caused by: x"#,
         ),
         (
             "refused_in_a_chain",
-            r#"aether-plugin-failure:{"message":"a","host":{"type":"pluginError","payload":{"kind":"functionCallFailed","data":{"function_name":"f","plugin_id":"b","error":{"kind":"commandNotApproved","data":{"reason":"cancelled","details":"b said so"}}}}}}"#,
+            r#"aether-plugin-failure:{"message":"a","host":{"type":"pluginError","payload":{"kind":"functionCallFailed","data":{"functionName":"f","pluginId":"b","error":{"kind":"commandNotApproved","data":{"reason":"cancelled","details":"b said so"}}}}}}"#,
         ),
         (
             "unknown_reason",
-            r#"aether-plugin-failure:{"message":"m","host":{"type":"pluginError","payload":{"kind":"commandNotApproved","data":{"plugin_id":"p","reason":"because"}}}}"#,
+            r#"aether-plugin-failure:{"message":"m","host":{"type":"pluginError","payload":{"kind":"commandNotApproved","data":{"pluginId":"p","reason":"because"}}}}"#,
         ),
         ("broken_json", "aether-plugin-failure:{not json"),
         (

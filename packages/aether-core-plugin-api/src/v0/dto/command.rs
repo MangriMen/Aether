@@ -1,18 +1,20 @@
-use std::{path::PathBuf, str::FromStr};
+use std::str::FromStr;
 
 use serde::{Deserialize, Serialize};
 use serde_with::{Bytes, serde_as};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct CommandDto {
     pub program: String,
     pub args: Vec<String>,
-    pub current_dir: Option<PathBuf>,
+    pub current_dir: Option<String>,
 }
 
 /// Output of a command run through `run_command`. The streams travel as msgpack `bin`.
 #[serde_as]
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct OutputDto {
     pub status: u32,
     #[serde_as(as = "Bytes")]

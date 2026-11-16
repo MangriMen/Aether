@@ -384,16 +384,12 @@ fn resolve_allowed_program(
 /// really mounted for this plugin (`/cache`, `/instances`).
 fn resolve_required_current_dir(
     id: &PluginId,
-    current_dir: Option<&Path>,
+    current_dir: Option<&str>,
     location_info: &LocationInfo,
 ) -> Result<PathBuf, PluginError> {
     let current_dir = current_dir.ok_or_else(|| access_violation(id, "<no current_dir>"))?;
 
-    let resolved = PathBuf::from(command_value_to_host(
-        id,
-        &current_dir.to_string_lossy(),
-        location_info,
-    )?);
+    let resolved = PathBuf::from(command_value_to_host(id, current_dir, location_info)?);
 
     let mount_roots: Vec<PathBuf> = CoreMount::ALL
         .into_iter()
@@ -607,7 +603,7 @@ mod tests {
                 "--bootstrap-no-update".to_owned(),
                 "https://example.com/pack.toml".to_owned(),
             ],
-            current_dir: Some(PathBuf::from(format!("#/instances/{INSTANCE_ID}"))),
+            current_dir: Some(format!("#/instances/{INSTANCE_ID}")),
         }
     }
 
@@ -804,7 +800,7 @@ mod tests {
         std::fs::create_dir_all(&outside).expect("outside dir");
 
         let mut command = packwiz_command(&layout.java_bin.to_string_lossy());
-        command.current_dir = Some(outside);
+        command.current_dir = Some(outside.to_string_lossy().into_owned());
 
         assert!(matches!(
             plugin_command_to_host(
@@ -1300,7 +1296,7 @@ mod tests {
             format!("#/instances//{INSTANCE_ID}"),
         ] {
             let mut command = packwiz_command(&layout.java_bin.to_string_lossy());
-            command.current_dir = Some(PathBuf::from(&current_dir));
+            command.current_dir = Some(current_dir.clone());
             assert!(refused(&command), "{current_dir} must be refused");
         }
     }
@@ -1349,7 +1345,7 @@ mod tests {
     fn should_refuse_a_current_dir_when_it_is_on_a_network_share() {
         let layout = layout();
         let mut command = packwiz_command(&layout.java_bin.to_string_lossy());
-        command.current_dir = Some(PathBuf::from(r"\\server\share\instances"));
+        command.current_dir = Some(r"\\server\share\instances".to_owned());
 
         assert!(matches!(
             plugin_command_to_host(
@@ -1369,7 +1365,9 @@ mod tests {
         command.current_dir = Some(
             layout
                 .location_info
-                .instance_dir(&InstanceId::try_from(INSTANCE_ID).unwrap()),
+                .instance_dir(&InstanceId::try_from(INSTANCE_ID).unwrap())
+                .to_string_lossy()
+                .into_owned(),
         );
 
         let host_command = plugin_command_to_host(

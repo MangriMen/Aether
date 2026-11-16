@@ -3,7 +3,12 @@ use serde::{Deserialize, Serialize};
 use crate::v0::{ContentTypeDto, ProviderIdDto};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(tag = "kind", content = "data", rename_all = "camelCase")]
+#[serde(
+    tag = "kind",
+    content = "data",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
 pub enum InstanceErrorDto {
     Storage(String),
     NotFound {
