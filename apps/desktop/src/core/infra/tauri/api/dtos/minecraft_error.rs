@@ -63,6 +63,9 @@ pub enum GamePathKindDto {
     NativeLibrary,
     LogConfig,
     Classpath,
+    VersionId,
+    AssetsIndex,
+    Asset,
 }
 
 impl From<GamePathKind> for GamePathKindDto {
@@ -75,6 +78,9 @@ impl From<GamePathKind> for GamePathKindDto {
             GamePathKind::NativeLibrary => Self::NativeLibrary,
             GamePathKind::LogConfig => Self::LogConfig,
             GamePathKind::Classpath => Self::Classpath,
+            GamePathKind::VersionId => Self::VersionId,
+            GamePathKind::AssetsIndex => Self::AssetsIndex,
+            GamePathKind::Asset => Self::Asset,
         }
     }
 }

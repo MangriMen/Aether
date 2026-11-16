@@ -9,7 +9,10 @@ use crate::{
         events::{
             CancellableBar, ProgressBarId, ProgressService, ProgressServiceExt, SharedDownload,
         },
-        minecraft::{MinecraftDomainError, MinecraftDownloader, modded, vanilla, version_jar_name},
+        minecraft::{
+            GamePathKind, MinecraftDomainError, MinecraftDownloader, ensure_plain_name, modded,
+            vanilla, version_jar_name,
+        },
     },
     shared::request_client::{Request, RequestClient, RequestClientExt},
     shared::{
@@ -211,7 +214,7 @@ impl<RC: RequestClient, PS: ProgressService, C: Cache, FS: FileStore> MinecraftD
     ) -> Result<vanilla::VersionInfo, MinecraftDomainError> {
         let force = force.unwrap_or(false);
 
-        let version_id = get_version_id(version, loader);
+        let version_id = get_version_id(version, loader)?;
 
         let version_info = self
             .cached_resource
@@ -223,6 +226,8 @@ impl<RC: RequestClient, PS: ProgressService, C: Cache, FS: FileStore> MinecraftD
             )
             .await?;
 
+        ensure_plain_name(&version_info.asset_index.id, GamePathKind::AssetsIndex)?;
+
         if let Some(bar) = progress_bar_id {
             self.progress_service
                 .emit_progress_safe(bar, 5.0, None)
@@ -233,6 +238,9 @@ impl<RC: RequestClient, PS: ProgressService, C: Cache, FS: FileStore> MinecraftD
     }
 }
 
-fn get_version_id(version: &vanilla::Version, loader: Option<&modded::LoaderVersion>) -> String {
+fn get_version_id(
+    version: &vanilla::Version,
+    loader: Option<&modded::LoaderVersion>,
+) -> Result<String, MinecraftDomainError> {
     version_jar_name(&version.id, loader.map(|l| l.id.as_str()))
 }

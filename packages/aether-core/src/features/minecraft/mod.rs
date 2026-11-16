@@ -28,7 +28,7 @@ pub use domain::TEMPORARY_REPLACE_CHAR;
 pub use domain::UnknownModLoader;
 pub use domain::get_compatible_java_version;
 pub use domain::resolve_minecraft_version;
-pub use domain::version_jar_name;
+pub use domain::{ensure_plain_name, version_jar_name};
 
 // Re-export app types (app is private, but pub use works)
 pub use app::GetLoaderVersionManifestUseCase;

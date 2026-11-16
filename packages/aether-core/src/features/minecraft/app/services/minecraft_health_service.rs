@@ -74,7 +74,7 @@ impl MinecraftHealthService for MinecraftFileHealthService {
         let version_jar = version_jar_name(
             &version.id,
             loader_version.as_ref().map(|it| it.id.as_str()),
-        );
+        )?;
 
         // --- Step 3: Fetch version info (from cache or network) ---
         // If offline, return Ok(true) to skip check rather than crash

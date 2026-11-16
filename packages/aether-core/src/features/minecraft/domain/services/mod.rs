@@ -4,4 +4,4 @@ mod version_jar_name;
 
 pub use get_compatible_java_version::*;
 pub use minecraft_version_resolver::*;
-pub use version_jar_name::version_jar_name;
+pub use version_jar_name::{ensure_plain_name, version_jar_name};
