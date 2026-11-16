@@ -326,6 +326,14 @@ async fn grant_host_access(
         .into())
 }
 
+/// Whether an `allowed_hosts` entry admits far more than one site. The core owns the rule, so
+/// the settings form asks it rather than carrying a copy; a pure check, nothing is stored.
+#[tauri::command]
+#[specta::specta]
+fn is_wide_allowed_host(entry: &str) -> bool {
+    aether_core::features::plugins::is_wide_allowed_host(entry)
+}
+
 #[tauri::command]
 #[specta::specta]
 async fn open_plugins_folder(container: State<'_, ContainerState>) -> FrontendResult<()> {

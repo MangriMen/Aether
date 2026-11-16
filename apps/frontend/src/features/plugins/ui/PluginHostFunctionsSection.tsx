@@ -1,7 +1,6 @@
 import {
   For,
   Match,
-  Show,
   splitProps,
   Switch,
   type Component,
@@ -12,16 +11,24 @@ import { useTranslation } from '@/shared/i18n';
 import { Badge, FieldLabel } from '@/shared/ui-kit';
 import { cn } from '@/shared/utils';
 
+import type { HostFunctionRisk } from '../model/plugin';
+
 export type PluginHostFunctionsSectionProps = ComponentProps<'div'> & {
   /** `null`/`undefined`: the manifest does not declare `api.hostFunctions`. */
   hostFunctions: string[] | null | undefined;
+  /** What the core warns about in `hostFunctions`. */
+  risks: HostFunctionRisk[];
 };
 
 /** The host functions a plugin is linked with — what it may ask the launcher to do. */
 export const PluginHostFunctionsSection: Component<
   PluginHostFunctionsSectionProps
 > = (props) => {
-  const [local, others] = splitProps(props, ['hostFunctions', 'class']);
+  const [local, others] = splitProps(props, [
+    'hostFunctions',
+    'risks',
+    'class',
+  ]);
   const [{ t }] = useTranslation();
 
   return (
@@ -30,11 +37,13 @@ export const PluginHostFunctionsSection: Component<
       <span class='text-sm text-muted-foreground'>
         {t('plugin.hostFunctionsDescription')}
       </span>
-      <Show when={local.hostFunctions?.includes('run_command')}>
-        <span class='text-sm text-warning'>
-          {t('plugin.hostFunctionsRunCommand')}
-        </span>
-      </Show>
+      <For each={local.risks}>
+        {(risk) => (
+          <span class='text-sm text-warning'>
+            {t(`plugin.hostRisk.${risk}`)}
+          </span>
+        )}
+      </For>
       <Switch>
         <Match when={local.hostFunctions == null}>
           <span class='text-sm text-warning'>

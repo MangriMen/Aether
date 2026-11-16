@@ -72,9 +72,11 @@ export const PluginPreviewCard: Component<PluginPreviewCardProps> = (props) => {
 
             <PluginAllowedHostsSection
               allowedHosts={preview().manifest.allowed_hosts}
+              wideHosts={preview().manifest.wide_allowed_hosts}
             />
             <PluginHostFunctionsSection
               hostFunctions={preview().manifest.host_functions}
+              risks={preview().manifest.host_function_risks}
             />
 
             <Show when={preview().manifest.license}>

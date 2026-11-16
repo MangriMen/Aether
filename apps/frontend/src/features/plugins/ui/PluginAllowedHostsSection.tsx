@@ -10,20 +10,22 @@ import { useTranslation } from '@/shared/i18n';
 import { Badge, FieldLabel } from '@/shared/ui-kit';
 import { cn } from '@/shared/utils';
 
-import { isWideHostPattern } from '../model/wideHostPattern';
-
 export type PluginAllowedHostsSectionProps = ComponentProps<'div'> & {
   allowedHosts: string[];
+  /** The entries the core finds wide. */
+  wideHosts: string[];
 };
 
 /** The sites a plugin asks to reach, with a warning on an entry that admits almost any site. */
 export const PluginAllowedHostsSection: Component<
   PluginAllowedHostsSectionProps
 > = (props) => {
-  const [local, others] = splitProps(props, ['allowedHosts', 'class']);
+  const [local, others] = splitProps(props, [
+    'allowedHosts',
+    'wideHosts',
+    'class',
+  ]);
   const [{ t }] = useTranslation();
-
-  const hasWideEntry = () => local.allowedHosts.some(isWideHostPattern);
 
   return (
     <div class={cn('gap-2 flex flex-col', local.class)} {...others}>
@@ -45,7 +47,7 @@ export const PluginAllowedHostsSection: Component<
           </For>
         </div>
       </Show>
-      <Show when={hasWideEntry()}>
+      <Show when={local.wideHosts.length > 0}>
         <span class='text-sm text-warning'>{t('plugin.allowedHostsWide')}</span>
       </Show>
     </div>

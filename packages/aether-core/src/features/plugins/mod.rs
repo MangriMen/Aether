@@ -8,18 +8,21 @@ mod tests;
 #[cfg(test)]
 pub(crate) mod test_support;
 
+#[cfg(test)]
+pub(crate) use domain::classify_host_function;
 pub use domain::{
     AllowedHostEntryRejection, AllowedHostRejection, AllowedPath, AllowedPathInput,
     AllowedPathRejection, ApiConfig, CommandApproval, CommandApprovalAnswer,
     CommandApprovalRefusal, CommandApprovalRequest, CommandGrant, CommandIdentity, CommandJar,
-    IgnoredAllowedPath, JarLaunch, LoadConfig, LoadConfigType, MAX_APPROVED_JAR_BYTES,
-    ManifestError, ManifestFormatError, OnceOnlyReason, PathMapping, PendingCommandApproval,
-    PluginCallError, PluginCapabilities, PluginContentProviderCapability, PluginError,
-    PluginImporterCapability, PluginLoadFailure, PluginManifest, PluginManifestPreview,
-    PluginMetadata, PluginProviderError, PluginProviderInfo, PluginReleasePreview, PluginSettings,
-    PluginSource, PluginSourceType, PluginUpdaterCapability, ProviderFailure, ProviderHandlers,
-    ProviderPluginPreview, ProviderReleaseInfo, ProviderUpdateInfo, RuntimeConfig,
-    SkippedPluginDir, SkippedPluginDirReason, manifest_has_class_path, parse_jar_launch,
+    HostFunctionRisk, IgnoredAllowedPath, JarLaunch, LoadConfig, LoadConfigType,
+    MAX_APPROVED_JAR_BYTES, ManifestError, ManifestFormatError, OnceOnlyReason, PathMapping,
+    PendingCommandApproval, PluginCallError, PluginCapabilities, PluginContentProviderCapability,
+    PluginError, PluginImporterCapability, PluginLoadFailure, PluginManifest,
+    PluginManifestPreview, PluginMetadata, PluginProviderError, PluginProviderInfo,
+    PluginReleasePreview, PluginSettings, PluginSource, PluginSourceType, PluginUpdaterCapability,
+    ProviderFailure, ProviderHandlers, ProviderPluginPreview, ProviderReleaseInfo,
+    ProviderUpdateInfo, RuntimeConfig, SkippedPluginDir, SkippedPluginDirReason,
+    host_function_risks, is_wide_allowed_host, manifest_has_class_path, parse_jar_launch,
 };
 pub(crate) use domain::{
     ArchiveMetadata, AsCapabilityMetadata, Compatibility, CoreMount, ExtractedPlugin, FolderMounts,

@@ -45,6 +45,11 @@ export const commands = {
 	 *  tells it whether there is anything to ask.
 	 */
 	grantHostAccess: (id: string, url: string, dryRun: boolean, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<HostAccessDto>("plugin:plugin|grant_host_access", { id, url, dryRun, requestId }),
+	/**
+	 *  Whether an `allowed_hosts` entry admits far more than one site. The core owns the rule, so
+	 *  the settings form asks it rather than carrying a copy; a pure check, nothing is stored.
+	 */
+	isWideAllowedHost: (entry: string) => __TAURI_INVOKE<boolean>("plugin:plugin|is_wide_allowed_host", { entry }),
 	openPluginsFolder: () => __TAURI_INVOKE<null>("plugin:plugin|open_plugins_folder"),
 	getApiVersion: () => __TAURI_INVOKE<string>("plugin:plugin|get_api_version"),
 	getPluginSource: (id: string) => __TAURI_INVOKE<{ source: "remote"; source_type: PluginSourceTypeDto; identifier: string; current_tag: string; current_version: string } | { source: "local" } | null>("plugin:plugin|get_plugin_source", { id }),
@@ -358,6 +363,9 @@ export type HostAccessDto =
 /**  The host was added to the plugin's allowed hosts. */
 { type: "granted"; host: string };
 
+/**  What a plugin can do through a host function it declares that the user is warned about. */
+export type HostFunctionRiskDto = "runs_programs" | "writes_instance_files" | "installs_java";
+
 /**  A saved folder that was not read, and why. */
 export type IgnoredAllowedPathDto = {
 	path: AllowedPathDto,
@@ -644,6 +652,8 @@ export type PluginDto = {
 	 */
 	restart_needed: boolean,
 	verified: boolean,
+	/**  What the declared host functions let the plugin do that the user should be warned about. */
+	host_function_risks: HostFunctionRiskDto[],
 };
 
 export type PluginDtoState = "NotLoaded" | "Loading" | "Loaded" | "Unloading" | "Incompatible" | "Failed";
@@ -795,7 +805,10 @@ export type PluginManifestPreviewDto = {
 	license: string | null,
 	api_version: string | null,
 	allowed_hosts: string[],
+	/**  The entries of `allowed_hosts` that admit far more than one site. */
+	wide_allowed_hosts: string[],
 	host_functions: string[] | null,
+	host_function_risks: HostFunctionRiskDto[],
 };
 
 export type PluginMetadataDto = {

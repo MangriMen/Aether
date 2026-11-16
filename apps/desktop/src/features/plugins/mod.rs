@@ -9,6 +9,7 @@ pub use infra::tauri::dtos::ApiConfigDto;
 pub use infra::tauri::dtos::EditPluginSettingsDto;
 pub use infra::tauri::dtos::FolderAccessDto;
 pub use infra::tauri::dtos::HostAccessDto;
+pub use infra::tauri::dtos::HostFunctionRiskDto;
 pub use infra::tauri::dtos::LoadConfigDto;
 pub use infra::tauri::dtos::LoadConfigTypeDto;
 pub use infra::tauri::dtos::PathMappingDto;

@@ -11,6 +11,8 @@ export const pluginKeys = {
   updates: (id: string) => [...pluginKeys.all, 'updates', id] as const,
   preview: (provider: string, identifier: string, tag: string | null) =>
     [...pluginKeys.all, 'preview', provider, identifier, tag] as const,
+  /** Whether the core finds an `allowed_hosts` entry wide; a pure function of the text. */
+  wideHost: (entry: string) => [...pluginKeys.all, 'wide-host', entry] as const,
   providers: () => [...pluginKeys.all, 'providers'] as const,
   commandApprovals: () => [...pluginKeys.all, 'command-approvals'] as const,
   importers: () => [...pluginKeys.all, 'importer'] as const,

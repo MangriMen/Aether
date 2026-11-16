@@ -42,6 +42,70 @@ pub(crate) fn is_host_allowed(host: &str, allowed_hosts: &[String]) -> bool {
     })
 }
 
+/// Whether an `allowed_hosts` entry admits far more than one site, so that the user is warned.
+///
+/// Read the way the matcher reads it ([`is_host_allowed`]): `*` crosses dots, a one-character
+/// class such as `[[]` stands for that character (how an IPv6 literal is stored), and an entry
+/// that is not a valid glob is compared exactly, so it admits nothing else. An entry with a glob
+/// is wide unless the literal text at its end, after the glob, holds at least two whole labels:
+/// `*.example.com` stays on one domain, while `*`, `*.com`, `example.*.com`, `*example.com` and
+/// `*.com.` (a trailing dot is kept in the host a request names) do not.
+///
+/// A public suffix under a domain anyone can register (`*.github.io`) is not recognized.
+pub fn is_wide_allowed_host(entry: &str) -> bool {
+    let entry = entry.trim().to_lowercase();
+    if glob::Pattern::new(&entry).is_err() {
+        return false;
+    }
+
+    // The literal text at the end, after the last glob token.
+    let chars: Vec<char> = entry.chars().collect();
+    let mut has_glob = false;
+    let mut suffix = String::new();
+    let mut i = 0;
+    while i < chars.len() {
+        match chars[i] {
+            '*' | '?' => {
+                has_glob = true;
+                suffix.clear();
+            }
+            '[' => {
+                // A class as `glob` reads it: after `[` or `[!` the first character belongs to
+                // the class even when it is `]`, and the class ends at the next `]`. `Pattern::new`
+                // has accepted the entry, so that `]` exists.
+                let negated = chars.get(i + 1) == Some(&'!');
+                let start = i + 1 + usize::from(negated);
+                let end = (start + 1..chars.len())
+                    .find(|&j| chars[j] == ']')
+                    .unwrap_or(chars.len() - 1);
+                if !negated && end == start + 1 {
+                    suffix.push(chars[start]);
+                } else {
+                    has_glob = true;
+                    suffix.clear();
+                }
+                i = end;
+            }
+            c => suffix.push(c),
+        }
+        i += 1;
+    }
+
+    if !has_glob {
+        return false;
+    }
+
+    let suffix = suffix.strip_suffix('.').unwrap_or(&suffix);
+    // The first label touches the glob, so the glob may extend it: it is not a whole label.
+    let whole_labels = suffix
+        .split('.')
+        .skip(1)
+        .filter(|label| !label.is_empty())
+        .count();
+
+    whole_labels < 2
+}
+
 /// Why the host of a URL cannot be given to a plugin.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AllowedHostRejection {
@@ -171,6 +235,41 @@ impl GrantableHost {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn should_flag_a_pattern_that_admits_far_more_than_one_site_as_wide() {
+        for entry in [
+            "*",
+            "*.*",
+            "*.com",
+            "*.com.",
+            "example.*.com",
+            "*example.com",
+            "ex*mple.com",
+            "[[]*",
+            "1.2.3.*",
+            "*.COM",
+            "[!a].com",
+        ] {
+            assert!(is_wide_allowed_host(entry), "{entry} should be wide");
+        }
+    }
+
+    #[test]
+    fn should_not_flag_a_host_or_a_pattern_that_stays_on_one_domain_as_wide() {
+        for entry in [
+            "example.com",
+            "*.example.com",
+            "?.example.com",
+            "*.api.example.com",
+            "[[]2001:db8::1[]]",
+            "[[]::1[]]",
+            "[abc",
+            "",
+        ] {
+            assert!(!is_wide_allowed_host(entry), "{entry} should not be wide");
+        }
+    }
 
     fn grantable(url: &str) -> Result<GrantableHost, AllowedHostRejection> {
         GrantableHost::from_url(url)

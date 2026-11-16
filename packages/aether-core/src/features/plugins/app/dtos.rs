@@ -8,10 +8,10 @@ use crate::features::{
         UpdaterCapabilityMetadata,
     },
     plugins::domain::{
-        ApiConfig, LoadConfig, ManifestError, PathMapping, Plugin, PluginCapabilities,
-        PluginContentProviderCapability, PluginImporterCapability, PluginLoadFailure,
-        PluginManifest, PluginMetadata, PluginState, PluginStateReason, PluginUpdaterCapability,
-        ProviderHandlers, RuntimeConfig,
+        ApiConfig, HostFunctionRisk, LoadConfig, ManifestError, PathMapping, Plugin,
+        PluginCapabilities, PluginContentProviderCapability, PluginImporterCapability,
+        PluginLoadFailure, PluginManifest, PluginMetadata, PluginState, PluginStateReason,
+        PluginUpdaterCapability, ProviderHandlers, RuntimeConfig,
     },
 };
 
@@ -172,6 +172,8 @@ pub struct PluginDto {
     /// `.wasm` is not integrity-checked on load. The reference digest itself
     /// is deliberately not exposed.
     pub verified: bool,
+    /// What the declared host functions let the plugin do that the user should be warned about.
+    pub host_function_risks: Vec<HostFunctionRisk>,
 }
 
 // ── Converters: Domain → App DTO ──
@@ -366,6 +368,7 @@ impl From<&PluginStateReason> for PluginStateReasonDto {
 
 impl PluginDto {
     pub fn new(plugin: Plugin, restart_needed: bool) -> Self {
+        let host_function_risks = plugin.manifest.api.host_function_risks();
         Self {
             manifest: plugin.manifest.into(),
             capabilities: plugin.capabilities.map(Into::into),
@@ -373,6 +376,7 @@ impl PluginDto {
             state_reason: plugin.state.reason().map(Into::into),
             restart_needed,
             verified: plugin.verified,
+            host_function_risks,
         }
     }
 }

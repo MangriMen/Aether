@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 
 use crate::features::instance::{PluginId, ProviderId};
 
-use super::{ManifestError, PluginFilePath};
+use super::{HostFunctionRisk, ManifestError, PluginFilePath, host_function_risks};
 
 /// Root configuration for an Aether plugin.
 #[derive(Debug, Clone, PartialEq)]
@@ -157,6 +157,11 @@ pub enum Compatibility {
 }
 
 impl ApiConfig {
+    /// What the declared host functions let the plugin do that the user should be warned about.
+    pub fn host_function_risks(&self) -> Vec<HostFunctionRisk> {
+        host_function_risks(self.host_functions.as_deref().unwrap_or_default())
+    }
+
     pub fn validate(&self, api_version: &semver::Version) -> Result<(), ManifestError> {
         if !self.version.matches(api_version) {
             return Err(ManifestError::UnsupportedApi);

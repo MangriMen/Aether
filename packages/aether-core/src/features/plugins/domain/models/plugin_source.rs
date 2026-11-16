@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use super::{PluginManifest, PluginSourceType};
+use super::{HostFunctionRisk, PluginManifest, PluginSourceType, is_wide_allowed_host};
 
 /// Describes where a plugin was originally installed from,
 /// enabling update checks and version switching.
@@ -59,8 +59,12 @@ pub struct PluginManifestPreview {
     pub license: Option<String>,
     pub api_version: Option<String>,
     pub allowed_hosts: Vec<String>,
+    /// The `allowed_hosts` entries that admit far more than one site, as the manifest spells them.
+    pub wide_allowed_hosts: Vec<String>,
     /// The host functions the plugin declares; none when its manifest does not say.
     pub host_functions: Option<Vec<String>>,
+    /// What the declared host functions let the plugin do that the user should be warned about.
+    pub host_function_risks: Vec<HostFunctionRisk>,
 }
 
 impl From<&PluginManifest> for PluginManifestPreview {
@@ -74,7 +78,15 @@ impl From<&PluginManifest> for PluginManifestPreview {
             license: manifest.metadata.license.clone(),
             api_version: Some(manifest.api.version.to_string()),
             allowed_hosts: manifest.runtime.allowed_hosts.clone(),
+            wide_allowed_hosts: manifest
+                .runtime
+                .allowed_hosts
+                .iter()
+                .filter(|entry| is_wide_allowed_host(entry))
+                .cloned()
+                .collect(),
             host_functions: manifest.api.host_functions.clone(),
+            host_function_risks: manifest.api.host_function_risks(),
         }
     }
 }
