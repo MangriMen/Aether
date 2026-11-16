@@ -382,7 +382,7 @@
       ]
     },
     "ContentAuthorDto": {
-      "description": "One item of the answer of `getAuthors`: who authors projects, by the `authorRef` of\n`ContentMetadataDto`.\n\nThe answer is a list of these, for the refs of `GetAuthorsParamsDto`. A ref the provider does\nnot know is left out of the answer, not an error.\n\nThe host keeps only items whose `authorRef` was asked, once each, and with a non-blank\n`name`; the rest of the answer is kept when one item is dropped. The name is trimmed and cut\nto 128 characters.",
+      "description": "One item of the answer of `getAuthors`: who authors projects, by the `authorRef` of\n`ContentMetadataDto`.\n\nThe answer, `GetAuthorsResultDto`, is a list of these, for the refs of\n`GetAuthorsParamsDto`. A ref the provider does\nnot know is left out of the answer, not an error.\n\nThe host keeps only items whose `authorRef` was asked, once each, and with a non-blank\n`name`; the rest of the answer is kept when one item is dropped. The name is trimmed and cut\nto 128 characters.",
       "type": "object",
       "properties": {
         "authorRef": {
@@ -581,7 +581,7 @@
       ]
     },
     "ContentMetadataDto": {
-      "description": "One item of the answer of `getContentsMetadata`: what the provider says about a project, to\nshow installed content by.\n\nThe answer is a list of these, for the ids of `GetContentsMetadataParamsDto`. An id the\nprovider does not know is left out of the answer, not an error.\n\nThe host keeps only items that answer an asked id by their `contentId` or by their `slug`\n(compared without regard to case), and only the first of items with one `contentId`. An item\nis kept under its `contentId`, so do not give an item the `slug` of one asked project and the\n`contentId` of another. An item\nwithout a `contentId` or a non-blank `name` is dropped; the rest of the answer is kept.",
+      "description": "One item of the answer of `getContentsMetadata`: what the provider says about a project, to\nshow installed content by.\n\nThe answer, `GetContentsMetadataResultDto`, is a list of these, for the ids of\n`GetContentsMetadataParamsDto`. An id the\nprovider does not know is left out of the answer, not an error.\n\nThe host keeps only items that answer an asked id by their `contentId` or by their `slug`\n(compared without regard to case), and only the first of items with one `contentId`. An item\nis kept under its `contentId`, so do not give an item the `slug` of one asked project and the\n`contentId` of another. An item\nwithout a `contentId` or a non-blank `name` is dropped; the rest of the answer is kept.",
       "type": "object",
       "properties": {
         "author": {
@@ -970,7 +970,7 @@
       ]
     },
     "ContentVersionMetadataDto": {
-      "description": "One item of the answer of `getVersionsMetadata`: what the provider says about a version, to\nshow installed files by.\n\nThe answer is a list of these, for the ids of `GetVersionsMetadataParamsDto`. An id the\nprovider does not know is left out of the answer, not an error.\n\nThe host keeps only items whose `versionId` was asked, once each, and with a non-blank\n`versionNumber`; the rest of the answer is kept when one item is dropped.",
+      "description": "One item of the answer of `getVersionsMetadata`: what the provider says about a version, to\nshow installed files by.\n\nThe answer, `GetVersionsMetadataResultDto`, is a list of these, for the ids of\n`GetVersionsMetadataParamsDto`. An id the\nprovider does not know is left out of the answer, not an error.\n\nThe host keeps only items whose `versionId` was asked, once each, and with a non-blank\n`versionNumber`; the rest of the answer is kept when one item is dropped.",
       "type": "object",
       "properties": {
         "name": {

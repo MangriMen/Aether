@@ -11,13 +11,14 @@ use std::sync::{Arc, Mutex};
 
 use aether_core_plugin_api::v0::wire;
 use aether_core_plugin_api::v0::{
-    CheckCompatibilityResultDto, ContentAuthorDto, ContentCompatibilityResultDto,
+    CheckCompatibilityResultDto, ContentAuthorDto, ContentCompatibilityResultDto, ContentItemDto,
     ContentMetadataDto, ContentSourceDto, ContentTypeDto, ContentVersionDto, ContentVersionFileDto,
     ContentVersionMetadataDto, ContentVersionStatusDto, ContentVersionTypeDto, FileHashDto,
-    FileSideDto, GetAuthorsParamsDto, GetAuthorsResultDto, GetContentsMetadataParamsDto,
-    GetContentsMetadataResultDto, GetVersionParamsDto, GetVersionsMetadataParamsDto,
-    GetVersionsMetadataResultDto, InstallFileEntryDto, InstallPlanDto, InstallTargetDto,
-    InstanceGameDto, ModLoaderDto, NewInstanceDto, OverrideLocationDto, OverrideSourceDto,
+    FileSideDto, GetAuthorsParamsDto, GetAuthorsResultDto, GetContentParamsDto,
+    GetContentsMetadataParamsDto, GetContentsMetadataResultDto, GetVersionParamsDto,
+    GetVersionsMetadataParamsDto, GetVersionsMetadataResultDto, InstallFileEntryDto,
+    InstallPlanDto, InstallTargetDto, InstanceGameDto, ListVersionsParamsDto,
+    ListVersionsResultDto, ModLoaderDto, NewInstanceDto, OverrideLocationDto, OverrideSourceDto,
     PackMetadataDto, PackSourceDto, ResolveFileParamsDto, ResolveInstallPlanParamsDto,
     ResolveTargetDto, ResolvedFileDto,
 };
@@ -595,6 +596,123 @@ async fn should_call_the_version_handler_the_file_names_when_asked_for_a_version
     assert_eq!(version.changelog.as_deref(), Some("Fixed a crash."));
     assert_eq!(version.files.len(), 1);
     assert_eq!(version.files[0].file_name, "sodium.jar");
+}
+
+const HANDLERS_BY_CONTENT: &str = r#"{
+    "contentProviders": [{
+        "id": "curseforge",
+        "name": "CurseForge",
+        "handlers": {
+            "search": "cf_search",
+            "getContent": "cf_get_content",
+            "listVersion": "cf_list_version",
+            "checkCompatibility": "cf_check_compatibility"
+        }
+    }]
+}"#;
+
+#[tokio::test]
+async fn should_send_the_content_id_as_a_struct_when_asking_for_content() {
+    let fixture = Fixture::new(
+        HANDLERS_BY_CONTENT,
+        vec![(
+            "cf_get_content",
+            encode(ContentItemDto {
+                id: "238222".into(),
+                slug: "jei".into(),
+                name: "JEI".into(),
+                description: None,
+                long_description: None,
+                author: "mezz".into(),
+                url: String::new(),
+                icon_url: String::new(),
+                versions: Vec::new(),
+                content_type: ContentTypeDto::Mod,
+            }),
+        )],
+    );
+
+    let item = fixture
+        .proxy
+        .get_content(ContentId::try_from("238222").unwrap())
+        .await
+        .unwrap();
+
+    assert_eq!(item.slug, "jei");
+    assert_eq!(
+        fixture.arguments_of_last_call::<GetContentParamsDto>(),
+        GetContentParamsDto {
+            content_id: "238222".to_owned()
+        }
+    );
+}
+
+#[tokio::test]
+async fn should_send_the_content_id_as_a_struct_and_read_the_versions_from_the_answer() {
+    let fixture = Fixture::new(
+        HANDLERS_BY_CONTENT,
+        vec![(
+            "cf_list_version",
+            encode(ListVersionsResultDto {
+                versions: Vec::new(),
+            }),
+        )],
+    );
+
+    let versions = fixture
+        .proxy
+        .list_versions(ContentId::try_from("238222").unwrap())
+        .await
+        .unwrap();
+
+    assert!(versions.is_empty());
+    assert_eq!(
+        fixture.arguments_of_last_call::<ListVersionsParamsDto>(),
+        ListVersionsParamsDto {
+            content_id: "238222".to_owned()
+        }
+    );
+}
+
+#[tokio::test]
+async fn should_read_the_results_of_a_compatibility_answer_by_instance() {
+    let fixture = Fixture::new(
+        HANDLERS_BY_CONTENT,
+        vec![(
+            "cf_check_compatibility",
+            encode(CheckCompatibilityResultDto {
+                results: HashMap::from([(
+                    "instance".to_owned(),
+                    ContentCompatibilityResultDto {
+                        is_compatible: true,
+                    },
+                )]),
+            }),
+        )],
+    );
+    let check_params = ContentCompatibilityCheckParams {
+        provider_id: ProviderId::from_parts(PLUGIN_ID, "curseforge").unwrap(),
+        content_item: ContentItem {
+            id: "238222".to_owned(),
+            slug: "jei".to_owned(),
+            name: "JEI".to_owned(),
+            description: None,
+            long_description: None,
+            author: "mezz".to_owned(),
+            url: None,
+            icon_url: None,
+            versions: Vec::new(),
+            content_type: ContentType::Mod,
+        },
+    };
+
+    let results = fixture
+        .proxy
+        .check_compatibility(&[], &check_params)
+        .await
+        .unwrap();
+
+    assert!(results[&InstanceId::try_from("instance").unwrap()].is_compatible);
 }
 
 #[tokio::test]

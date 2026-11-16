@@ -30,7 +30,8 @@ pub struct GetAuthorsParamsDto {
 /// One item of the answer of `getContentsMetadata`: what the provider says about a project, to
 /// show installed content by.
 ///
-/// The answer is a list of these, for the ids of `GetContentsMetadataParamsDto`. An id the
+/// The answer, `GetContentsMetadataResultDto`, is a list of these, for the ids of
+/// `GetContentsMetadataParamsDto`. An id the
 /// provider does not know is left out of the answer, not an error.
 ///
 /// The host keeps only items that answer an asked id by their `contentId` or by their `slug`
@@ -68,7 +69,8 @@ pub struct ContentMetadataDto {
 /// One item of the answer of `getVersionsMetadata`: what the provider says about a version, to
 /// show installed files by.
 ///
-/// The answer is a list of these, for the ids of `GetVersionsMetadataParamsDto`. An id the
+/// The answer, `GetVersionsMetadataResultDto`, is a list of these, for the ids of
+/// `GetVersionsMetadataParamsDto`. An id the
 /// provider does not know is left out of the answer, not an error.
 ///
 /// The host keeps only items whose `versionId` was asked, once each, and with a non-blank
@@ -88,7 +90,8 @@ pub struct ContentVersionMetadataDto {
 /// One item of the answer of `getAuthors`: who authors projects, by the `authorRef` of
 /// `ContentMetadataDto`.
 ///
-/// The answer is a list of these, for the refs of `GetAuthorsParamsDto`. A ref the provider does
+/// The answer, `GetAuthorsResultDto`, is a list of these, for the refs of
+/// `GetAuthorsParamsDto`. A ref the provider does
 /// not know is left out of the answer, not an error.
 ///
 /// The host keeps only items whose `authorRef` was asked, once each, and with a non-blank
