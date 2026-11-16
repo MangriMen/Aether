@@ -361,6 +361,10 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
                     <SelectSpecificLoaderVersion
                       placeholder={t('createInstance.loaderVersionPlaceholder')}
                       options={loaderVersions()}
+                      value={
+                        loaderVersions().find((v) => v.id === field.input) ??
+                        null
+                      }
                       errorMessage={formatError(field.errors?.[0])}
                       {...field.props}
                       onChange={(value: ModdedLoaderVersion | null) => {

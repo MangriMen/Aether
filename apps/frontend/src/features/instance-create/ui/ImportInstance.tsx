@@ -1,11 +1,11 @@
 import type { Component, ComponentProps } from 'solid-js';
 
-import { Show, splitProps } from 'solid-js';
+import { Match, Show, splitProps, Switch } from 'solid-js';
 
 import { ImportInstanceView } from '@/features/instance-import';
 import { useImporters } from '@/features/plugins';
 import { useTranslation } from '@/shared/i18n';
-import { Button, DialogFooter } from '@/shared/ui-kit';
+import { Button, DialogFooter, LoadError, Skeleton } from '@/shared/ui-kit';
 import { cn } from '@/shared/utils';
 
 import type { TabContentProps } from '../model/tabs';
@@ -25,13 +25,28 @@ export const ImportInstance: Component<ImportInstanceProps> = (props) => {
         when={pluginsImporters.data?.length ? pluginsImporters.data : undefined}
         fallback={
           <div class='flex grow items-center justify-center'>
-            <span
-              class='
-                text-lg text-muted-foreground text-center whitespace-pre-line
-              '
-            >
-              {t('createInstance.noImportConfigs')}
-            </span>
+            <Switch>
+              <Match when={pluginsImporters.isError && !pluginsImporters.data}>
+                <LoadError
+                  message={t('common.loadFailed')}
+                  retryLabel={t('common.retry')}
+                  onRetry={() => void pluginsImporters.refetch()}
+                />
+              </Match>
+              <Match when={pluginsImporters.isLoading}>
+                <Skeleton class='h-8 w-48' data-testid='importers-loading' />
+              </Match>
+              <Match when>
+                <span
+                  class='
+                    text-lg text-muted-foreground text-center
+                    whitespace-pre-line
+                  '
+                >
+                  {t('createInstance.noImportConfigs')}
+                </span>
+              </Match>
+            </Switch>
           </div>
         }
       >

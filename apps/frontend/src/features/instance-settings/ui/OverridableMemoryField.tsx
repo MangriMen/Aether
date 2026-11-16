@@ -11,6 +11,9 @@ import { InheritanceLabel } from './InheritanceLabel';
 import { MemoryInput } from './MemoryInput';
 import { OverrideCheckbox } from './OverrideCheckbox';
 
+/** Slider range shown while the amount of RAM is unknown. */
+const FALLBACK_SLIDER_MAX = 32_768;
+
 export type OverridableMemoryFieldProps = Omit<
   ComponentProps<'div'>,
   'onChange'
@@ -41,12 +44,24 @@ export const OverridableMemoryField: Component<OverridableMemoryFieldProps> = (
   const maxRam = useMaxRam();
 
   const minMemory = createMemo(() => Math.max(Math.floor(MIN_JRE_MEMORY), 0));
-  const maxMemory = createMemo(() =>
-    maxRam.data
-      ? Math.floor(bytesToMegabytes(Number.parseInt(maxRam.data.totalMemory)))
-      : MIN_JRE_MEMORY,
+  // Without RAM data (loading or failed) the value is not limited from above:
+  // a guessed cap would silently lower a saved allocation.
+  const ramMemory = createMemo(() => {
+    const total = maxRam.data
+      ? Number.parseInt(maxRam.data.totalMemory)
+      : Number.NaN;
+
+    return Number.isFinite(total) && total > 0
+      ? Math.floor(bytesToMegabytes(total))
+      : undefined;
+  });
+  const sliderMaxMemory = createMemo(
+    () => ramMemory() ?? Math.max(FALLBACK_SLIDER_MAX, local.value ?? 0),
   );
-  const warningMemory = createMemo(() => Math.floor(maxMemory() / 2));
+  const warningMemory = createMemo(() => {
+    const ram = ramMemory();
+    return ram === undefined ? undefined : Math.floor(ram / 2);
+  });
 
   const value = createMemo(() =>
     local.value != null ? [local.value] : undefined,
@@ -61,7 +76,7 @@ export const OverridableMemoryField: Component<OverridableMemoryFieldProps> = (
   });
 
   const getClampedMemory = (value: number) => {
-    return Math.max(minMemory(), Math.min(value, maxMemory()));
+    return Math.max(minMemory(), Math.min(value, ramMemory() ?? value));
   };
 
   const handleChangeMemory = (value: number[]) => {
@@ -99,7 +114,7 @@ export const OverridableMemoryField: Component<OverridableMemoryFieldProps> = (
         value={value()}
         defaultValue={defaultMemory()}
         minValue={minMemory()}
-        maxValue={maxMemory()}
+        maxValue={sliderMaxMemory()}
         warningValue={warningMemory()}
         onChange={handleChangeMemory}
       />

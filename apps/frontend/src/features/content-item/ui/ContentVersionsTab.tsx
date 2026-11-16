@@ -8,6 +8,8 @@ import {
 } from 'solid-js';
 
 import { useContentContext, useContentVersions } from '@/features/content';
+import { useTranslation } from '@/shared/i18n';
+import { LoadError } from '@/shared/ui-kit';
 import { cn } from '@/shared/utils';
 
 import type { ContentItemPageTabProps } from '../model/contentItemPageTabs';
@@ -23,6 +25,7 @@ export const ContentVersionsTab: Component<ContentVersionsTabProps> = (
 ) => {
   const [local, others] = splitProps(props, ['item', 'class']);
 
+  const [{ t }] = useTranslation();
   const [context] = useContentContext();
   const params = useParams();
 
@@ -36,16 +39,34 @@ export const ContentVersionsTab: Component<ContentVersionsTabProps> = (
   );
 
   const versionsData = createMemo(() => versions.data ?? []);
+  const hasLoadError = () => versions.isError && !versions.data;
 
   return (
     <div class={cn('flex flex-col', local.class)} {...others}>
       {/* Hidden, not unmounted, while a version is open: Back keeps the page and the sort. */}
-      <ContentVersionsTable
-        class={cn({ hidden: Boolean(params.versionId) })}
-        data={versionsData()}
-        contentType={local.item?.contentType}
-        isLoading={versions.isFetching}
-      />
+      <Show
+        when={!hasLoadError()}
+        fallback={
+          <div
+            class={cn('py-8 flex grow items-center justify-center', {
+              hidden: Boolean(params.versionId),
+            })}
+          >
+            <LoadError
+              message={t('common.loadFailed')}
+              retryLabel={t('common.retry')}
+              onRetry={() => void versions.refetch()}
+            />
+          </div>
+        }
+      >
+        <ContentVersionsTable
+          class={cn({ hidden: Boolean(params.versionId) })}
+          data={versionsData()}
+          contentType={local.item?.contentType}
+          isLoading={versions.isLoading}
+        />
+      </Show>
       <Show when={params.versionId}>
         {(versionId) => (
           <ContentVersionView

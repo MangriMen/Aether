@@ -1,5 +1,11 @@
 import { useMatch, useNavigate, useParams } from '@solidjs/router';
-import { For, splitProps, type Component, type ComponentProps } from 'solid-js';
+import {
+  For,
+  Show,
+  splitProps,
+  type Component,
+  type ComponentProps,
+} from 'solid-js';
 import { Dynamic } from 'solid-js/web';
 
 import {
@@ -11,6 +17,7 @@ import {
 } from '@/features/content';
 import { useTranslation } from '@/shared/i18n';
 import {
+  LoadError,
   Separator,
   Tabs,
   TabsContent,
@@ -75,44 +82,60 @@ export const ContentItemPage: Component<ContentItemPageProps> = (props) => {
       : undefined,
   );
 
+  // A failed background refresh keeps the item that is already shown.
+  const hasLoadError = () => item.isError && !item.data;
+
   return (
     <div
       class={cn('gap-4 p-0.5 flex grow flex-col overflow-hidden', local.class)}
       {...others}
     >
-      <ContentItemPageInfo item={item.data} isLoading={item.isFetching} />
-      <Separator />
-
-      <Tabs
-        class='p-0.5 flex flex-col overflow-hidden'
-        value={activeTab()}
-        onChange={handleTabChange}
+      <Show
+        when={!hasLoadError()}
+        fallback={
+          <div class='flex grow items-center justify-center'>
+            <LoadError
+              message={t('common.loadFailed')}
+              retryLabel={t('common.retry')}
+              onRetry={() => void item.refetch()}
+            />
+          </div>
+        }
       >
-        <TabsList class='p-0 self-start'>
+        <ContentItemPageInfo item={item.data} isLoading={item.isLoading} />
+        <Separator />
+
+        <Tabs
+          class='p-0.5 flex flex-col overflow-hidden'
+          value={activeTab()}
+          onChange={handleTabChange}
+        >
+          <TabsList class='p-0 self-start'>
+            <For each={CONTENT_ITEM_PAGE_TABS_DEFINITION}>
+              {(tab) => (
+                <TabsTrigger value={tab.value}>
+                  {t(`content.item.${tab.label}`)}
+                </TabsTrigger>
+              )}
+            </For>
+          </TabsList>
+
           <For each={CONTENT_ITEM_PAGE_TABS_DEFINITION}>
             {(tab) => (
-              <TabsTrigger value={tab.value}>
-                {t(`content.item.${tab.label}`)}
-              </TabsTrigger>
+              <TabsContent
+                class='flex flex-1 flex-col overflow-hidden'
+                value={tab.value}
+              >
+                <Dynamic
+                  class='flex flex-1 flex-col overflow-hidden'
+                  component={tab.component}
+                  item={item.data}
+                />
+              </TabsContent>
             )}
           </For>
-        </TabsList>
-
-        <For each={CONTENT_ITEM_PAGE_TABS_DEFINITION}>
-          {(tab) => (
-            <TabsContent
-              class='flex flex-1 flex-col overflow-hidden'
-              value={tab.value}
-            >
-              <Dynamic
-                class='flex flex-1 flex-col overflow-hidden'
-                component={tab.component}
-                item={item.data}
-              />
-            </TabsContent>
-          )}
-        </For>
-      </Tabs>
+        </Tabs>
+      </Show>
     </div>
   );
 };
