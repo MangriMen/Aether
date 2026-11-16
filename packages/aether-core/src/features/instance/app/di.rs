@@ -11,7 +11,7 @@ use crate::features::instance::app::ports::{
     ListBrokenInstancesUseCasePort, ListContentUseCasePort, ListContentVersionsUseCasePort,
     ListImportersUseCasePort, ListInstancesUseCasePort, ListProvidersUseCasePort,
     RemoveBrokenInstanceUseCasePort, RemoveContentUseCasePort, RemoveInstanceUseCasePort,
-    SearchContentUseCasePort, UpdateInstanceUseCasePort,
+    SearchContentUseCasePort, StopInstanceUseCasePort, UpdateInstanceUseCasePort,
 };
 
 pub trait InstanceCrudPort {
@@ -29,8 +29,9 @@ pub trait InstanceCrudPort {
 pub trait InstanceLifecyclePort {
     fn import_instance_use_case(&self) -> Arc<dyn ImportInstanceUseCasePort>;
     fn list_importers_use_case(&self) -> Arc<dyn ListImportersUseCasePort>;
-    /// The launches in progress, which the user may call off.
+    /// The launches in progress.
     fn launch_cancellations(&self) -> Arc<LaunchCancellations>;
+    fn stop_instance_use_case(&self) -> Arc<dyn StopInstanceUseCasePort>;
     fn launch_instance_with_active_account_use_case(
         &self,
     ) -> Arc<dyn LaunchInstanceWithActiveAccountUseCasePort>;

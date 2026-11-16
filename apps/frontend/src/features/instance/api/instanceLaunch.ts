@@ -23,27 +23,12 @@ export const useLaunchInstance = () => {
   }));
 };
 
+/** Stops the instance: calls its launch off while it has no game yet, or ends its game. */
 export const useStopInstance = () => {
   const [{ t }] = useTranslation();
 
   return useMutation(() => ({
-    mutationFn: (uuid: string) => instanceCommands.stop(uuid),
-    onError: (err) => {
-      showError({
-        title: t('instance.stopError'),
-        err,
-        t,
-      });
-    },
-  }));
-};
-
-/** Calls the launch of an instance off. Gives whether there was a launch to call off. */
-export const useCancelLaunch = () => {
-  const [{ t }] = useTranslation();
-
-  return useMutation(() => ({
-    mutationFn: (id: string) => instanceCommands.cancelLaunch(id),
+    mutationFn: (id: string) => instanceCommands.stop(id),
     onError: (err) => {
       showError({
         title: t('instance.stopError'),

@@ -53,10 +53,11 @@ pub use app::{
     ListContentUseCase, ListContentUseCasePort, ListContentVersionsUseCase,
     ListContentVersionsUseCasePort, ListImportersUseCase, ListImportersUseCasePort,
     ListInstancesUseCase, ListInstancesUseCasePort, ListProvidersUseCase, ListProvidersUseCasePort,
-    LockRefused, PackStorage, PlatformProviderSelection, RemoveBrokenInstanceUseCase,
-    RemoveBrokenInstanceUseCasePort, RemoveContent, RemoveContentUseCase, RemoveContentUseCasePort,
-    RemoveInstanceUseCase, RemoveInstanceUseCasePort, SearchContentUseCase,
-    SearchContentUseCasePort, UpdateInstanceUseCase, UpdateInstanceUseCasePort, Updater,
+    LockRefused, PackStorage, PlatformProviderSelection, RegisteredLaunch,
+    RemoveBrokenInstanceUseCase, RemoveBrokenInstanceUseCasePort, RemoveContent,
+    RemoveContentUseCase, RemoveContentUseCasePort, RemoveInstanceUseCase,
+    RemoveInstanceUseCasePort, SearchContentUseCase, SearchContentUseCasePort, StopInstanceUseCase,
+    StopInstanceUseCasePort, UpdateInstanceUseCase, UpdateInstanceUseCasePort, Updater,
     remove_plan_leftovers, reset_stuck_install_stages,
 };
 

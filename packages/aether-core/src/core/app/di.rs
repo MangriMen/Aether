@@ -38,7 +38,8 @@ use crate::features::{
         ListProvidersUseCase, ListProvidersUseCasePort, PackStorage, RemoveBrokenInstanceUseCase,
         RemoveBrokenInstanceUseCasePort, RemoveContentUseCase, RemoveContentUseCasePort,
         RemoveInstanceUseCase, RemoveInstanceUseCasePort, SearchContentUseCase,
-        SearchContentUseCasePort, UpdateInstanceUseCase, UpdateInstanceUseCasePort, Updater,
+        SearchContentUseCasePort, StopInstanceUseCase, StopInstanceUseCasePort,
+        UpdateInstanceUseCase, UpdateInstanceUseCasePort, Updater,
     },
     java::{
         DiscoverJavaUseCase, DiscoverJavaUseCasePort, EditJavaUseCase, EditJavaUseCasePort,
@@ -450,6 +451,7 @@ impl AetherContainer {
             .get_or_init(|| {
                 let start = self.process_start_service();
                 Arc::new(LaunchInstanceUseCase::new(
+                    self.event_emitter(),
                     self.plugins().registry.clone(),
                     self.storage().instance_storage.clone(),
                     self.storage().default_instance_settings_storage.clone(),
@@ -791,6 +793,12 @@ impl InstanceLifecyclePort for AetherContainer {
     }
     fn launch_cancellations(&self) -> Arc<LaunchCancellations> {
         self.launch_cancellations.clone()
+    }
+    fn stop_instance_use_case(&self) -> Arc<dyn StopInstanceUseCasePort> {
+        Arc::new(StopInstanceUseCase::new(
+            self.launch_cancellations.clone(),
+            self.storage().process_storage.clone(),
+        ))
     }
     fn launch_instance_with_active_account_use_case(
         &self,

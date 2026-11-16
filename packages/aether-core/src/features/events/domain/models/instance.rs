@@ -14,4 +14,8 @@ pub enum InstanceEventType {
     ContentSynced,
     Edited,
     Removed,
+    /// A launch took the instance: it may be called off until the game starts.
+    LaunchStarted,
+    /// The launch is over, whether the game started, it failed or it was called off.
+    LaunchEnded,
 }

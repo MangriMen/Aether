@@ -21,6 +21,8 @@ pub enum InstanceEventTypeDto {
     ContentSynced,
     Edited,
     Removed,
+    LaunchStarted,
+    LaunchEnded,
 }
 
 impl From<InstanceEvent> for InstanceEventDto {
@@ -41,6 +43,8 @@ impl From<InstanceEventType> for InstanceEventTypeDto {
             InstanceEventType::ContentSynced => Self::ContentSynced,
             InstanceEventType::Edited => Self::Edited,
             InstanceEventType::Removed => Self::Removed,
+            InstanceEventType::LaunchStarted => Self::LaunchStarted,
+            InstanceEventType::LaunchEnded => Self::LaunchEnded,
         }
     }
 }

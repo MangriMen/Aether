@@ -21,14 +21,15 @@ export const commands = {
 	remove: (id: string, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:instance|remove", { id, requestId }),
 	launch: (id: string, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<MinecraftProcessMetadataDto>("plugin:instance|launch", { id, requestId }),
 	/**
-	 *  Calls off the launch of the instance that has no game yet (it waits for the pre-launch hook,
-	 *  say). False when there is no such launch: it did not begin, or the game is started already
-	 *  and is stopped by `stop`. Calling off twice is harmless, so there is no request id to lock.
+	 *  The instances being launched, which `stop` calls off. The page asks it when it opens, for a
+	 *  launch that began before it was reloaded; `LaunchStarted` and `LaunchEnded` tell the rest.
 	 */
-	cancelLaunch: (id: string) => __TAURI_INVOKE<boolean>("plugin:instance|cancel_launch", { id }),
-	/**  The instances being launched, which may be called off with `cancel_launch`. */
 	listLaunching: () => __TAURI_INVOKE<string[]>("plugin:instance|list_launching"),
-	stop: (uuid: string, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:instance|stop", { uuid, requestId }),
+	/**
+	 *  Stops the instance: calls its launch off while it has no game yet, or ends its game. Nothing
+	 *  to stop is no error.
+	 */
+	stop: (id: string, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:instance|stop", { id, requestId }),
 	importContents: (instanceId: string, contentType: ContentTypeDto, sourcePaths: string[], requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:instance|import_contents", { instanceId, contentType, sourcePaths, requestId }),
 	listContent: (id: string) => __TAURI_INVOKE<{ [key in string]: ContentFileDto }>("plugin:instance|list_content", { id }),
 	installContent: (payload: ContentInstallParamsDto, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:instance|install_content", { payload, requestId }),
@@ -633,7 +634,7 @@ export type InstanceEventDto = {
 	instanceId: string,
 };
 
-export type InstanceEventTypeDto = "created" | "synced" | "content_synced" | "edited" | "removed";
+export type InstanceEventTypeDto = "created" | "synced" | "content_synced" | "edited" | "removed" | "launch_started" | "launch_ended";
 
 export type InstanceFieldDto = "name";
 

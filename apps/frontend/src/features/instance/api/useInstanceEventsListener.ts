@@ -14,6 +14,14 @@ export const useInstanceEventsListener = () => {
   useEventListener(instanceEvents.instanceEventDto, (e) => {
     logDebug('[EVENT][DEBUG]', e);
 
+    if (
+      e.payload.event === 'launch_started' ||
+      e.payload.event === 'launch_ended'
+    ) {
+      // The launch state is the running instances' business, and the instance did not change.
+      return;
+    }
+
     if (e.payload.event === 'content_synced') {
       // Only the content's metadata and icons changed.
       invalidateInstanceContent(queryClient, e.payload.instanceId);

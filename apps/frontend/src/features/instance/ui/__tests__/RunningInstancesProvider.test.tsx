@@ -10,6 +10,20 @@ const listener = vi.hoisted(() => ({
   callback: undefined as ((update: RunningProcessUpdate) => void) | undefined,
 }));
 
+const launches = vi.hoisted(() => ({
+  callback: undefined as
+    | ((instanceId: string, isLaunching: boolean) => void)
+    | undefined,
+}));
+
+vi.mock('../../api/useLaunchStateListener', () => ({
+  useLaunchStateListener: (
+    callback: (instanceId: string, isLaunching: boolean) => void,
+  ) => {
+    launches.callback = callback;
+  },
+}));
+
 vi.mock('@/features/process', () => ({
   useRunningProcessesListener: (
     callback: (update: RunningProcessUpdate) => void,
@@ -25,7 +39,12 @@ const Consumer = () => {
   const [context, { get }] = useRunningInstancesContext();
   const running = () => get(context, INSTANCE_ID);
 
-  return <div data-testid='process-id'>{running()?.processId ?? 'none'}</div>;
+  return (
+    <div>
+      <div data-testid='process-id'>{running()?.processId ?? 'none'}</div>
+      <div data-testid='launching'>{String(running()?.isLaunching)}</div>
+    </div>
+  );
 };
 
 let dispose: (() => void) | undefined;
@@ -50,6 +69,7 @@ afterEach(() => {
   dispose?.();
   dispose = undefined;
   listener.callback = undefined;
+  launches.callback = undefined;
   document.body.innerHTML = '';
 });
 
@@ -66,5 +86,15 @@ describe('RunningInstancesProvider', () => {
     });
 
     await expect.poll(() => container.textContent).toContain(PROCESS_ID);
+  });
+
+  it('should_show_a_launch_until_the_backend_tells_that_it_is_over', async () => {
+    const container = mount();
+
+    launches.callback?.(INSTANCE_ID, true);
+    await expect.poll(() => container.textContent).toContain('true');
+
+    launches.callback?.(INSTANCE_ID, false);
+    await expect.poll(() => container.textContent).toContain('undefined');
   });
 });

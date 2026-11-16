@@ -5,34 +5,21 @@ import { Button, closeToast, showToast } from '@/shared/ui-kit';
 
 import type { Instance } from '../model/instance';
 
-import {
-  useCancelLaunch,
-  useLaunchInstance,
-  useStopInstance,
-} from '../api/instanceLaunch';
+import { useLaunchInstance, useStopInstance } from '../api/instanceLaunch';
 import { useRemoveInstance } from '../api/instanceQueries';
 import {
   getRemovalBlock,
-  getStopAction,
+  isStoppable,
   type RemovalBlock,
 } from '../model/runningInstances';
 import { RunningInstancesContext } from '../model/runningInstancesContext';
 
-/**
- * The instances whose launch was started by this page, so that a `launch` is waiting to see it
- * end. A launch that is not here was recovered after a reload: nothing waits for it.
- */
-const ownLaunches = new Set<string>();
-
 export const useInstanceActions = () => {
-  const [
-    context,
-    { get: getRunningInstance, setIsLoading, setLaunch, refresh },
-  ] = useContext(RunningInstancesContext);
+  const [context, { get: getRunningInstance, setIsLoading, refresh }] =
+    useContext(RunningInstancesContext);
 
-  const { mutateAsync: launchInstance } = useLaunchInstance();
+  const launchMutation = useLaunchInstance();
   const { mutateAsync: stopInstance } = useStopInstance();
-  const { mutateAsync: cancelLaunch } = useCancelLaunch();
   const { mutateAsync: removeInstance } = useRemoveInstance();
 
   const [{ t }] = useTranslation();
@@ -43,67 +30,32 @@ export const useInstanceActions = () => {
     if (
       instance.installStage !== 'installed' ||
       runningInstance?.isLoading ||
-      runningInstance?.isRunning
+      runningInstance?.isRunning ||
+      // The backend has not told yet that this launch began: a second click must not start one more.
+      launchMutation.isPending
     ) {
       return;
     }
 
-    setLaunch(instance.id, 'launching');
-    ownLaunches.add(instance.id);
-
+    // The backend tells that the launch has begun and that it is over.
     try {
-      const process = await launchInstance(instance.id);
-
-      // The call off came too late for the launch, and the game started all the same.
-      if (getRunningInstance(context, instance.id)?.launch === 'cancelling') {
-        await stopInstance(process.uuid);
-      }
+      await launchMutation.mutateAsync(instance.id);
     } catch {
       /* empty */
     }
-
-    ownLaunches.delete(instance.id);
-    setLaunch(instance.id, undefined);
   };
 
   /** Stops the game of the instance, or calls its launch off while it has no game yet. */
   const stop = async (instance: Instance) => {
-    const action = getStopAction(getRunningInstance(context, instance.id));
-
-    if (action === undefined) {
+    if (!isStoppable(getRunningInstance(context, instance.id))) {
       return;
     }
-
-    if (action.kind === 'cancelLaunch') {
-      // The launch itself ends it: with `Cancelled` when it was called off in time, or with the
-      // game, which `launch` then stops. The state stays until then, so that Play is not offered
-      // while the launch still holds the instance.
-      setLaunch(instance.id, 'cancelling');
-
-      try {
-        const found = await cancelLaunch(instance.id);
-
-        // No launch to call off: the game is starting. A launch of this page stops it when it
-        // returns; a recovered one has nobody to, and is left to the user to stop.
-        if (!found && !ownLaunches.has(instance.id)) {
-          setLaunch(instance.id, undefined);
-        }
-      } catch {
-        setLaunch(instance.id, 'launching');
-      }
-
-      return;
-    }
-
-    setIsLoading(instance.id, true);
 
     try {
-      await stopInstance(action.processId);
+      await stopInstance(instance.id);
     } catch {
       /* empty */
     }
-
-    setIsLoading(instance.id, false);
   };
 
   const showRemovalBlocked = (instance: Instance, block: RemovalBlock) => {

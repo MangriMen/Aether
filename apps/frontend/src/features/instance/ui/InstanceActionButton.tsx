@@ -42,11 +42,7 @@ export const InstanceActionButton: Component<InstanceActionButtonProps> = (
   const isStopButton = createMemo(
     () =>
       runningInstance()?.isRunning ||
-      (runningInstance()?.launch !== undefined && !isInstanceInstalling()),
-  );
-
-  const isStopButtonLoading = createMemo(
-    () => runningInstance()?.launch === 'cancelling',
+      (runningInstance()?.isLaunching && !isInstanceInstalling()),
   );
 
   const isPlayButtonDisabled = createMemo(
@@ -69,14 +65,7 @@ export const InstanceActionButton: Component<InstanceActionButtonProps> = (
   return (
     <Show
       when={!isStopButton()}
-      fallback={
-        <InstanceStopButton
-          loading={isStopButtonLoading()}
-          disabled={isStopButtonLoading()}
-          onClick={handleStop}
-          {...others}
-        />
-      }
+      fallback={<InstanceStopButton onClick={handleStop} {...others} />}
     >
       <InstancePlayButton
         loading={isPlayButtonLoading()}

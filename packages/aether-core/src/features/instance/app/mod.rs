@@ -21,6 +21,6 @@ pub use extensions::*;
 pub use icon_asset_reaper::{IconAssetGuard, IconAssetReaper};
 pub use install_cancellations::{InstallCancellations, RegisteredInstall};
 pub use instance_locks::{InstanceLockGuard, InstanceLocks, LockRefused};
-pub use launch_cancellations::LaunchCancellations;
+pub use launch_cancellations::{LaunchCancellations, RegisteredLaunch};
 pub use ports::*;
 pub use use_cases::*;

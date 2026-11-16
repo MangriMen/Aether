@@ -7,10 +7,11 @@ use tokio_util::sync::CancellationToken;
 use crate::{
     features::{
         auth::Credential,
+        events::{EventEmitterExt, InstanceEvent, InstanceEventType, SharedEventEmitter},
         instance::{
             Instance, InstanceError, InstanceId, InstanceInstallService, InstanceInstallStage,
             InstanceLaunchService, InstanceLocks, InstanceStorage, InstanceStorageExt,
-            LaunchCancellations, LockRefused,
+            LaunchCancellations, LockRefused, RegisteredLaunch,
         },
         minecraft::{
             GetMinecraftLaunchCommandParams, LaunchSettings, MinecraftHealthParams,
@@ -36,6 +37,7 @@ use crate::{
 const PRELAUNCH_HOOK_TIMEOUT: Duration = Duration::from_mins(10);
 
 pub struct LaunchInstanceUseCase {
+    event_emitter: SharedEventEmitter,
     plugin_registry: Arc<PluginRegistry>,
     instance_storage: Arc<dyn InstanceStorage>,
     default_instance_settings_storage: Arc<dyn DefaultInstanceSettingsStorage>,
@@ -52,6 +54,7 @@ pub struct LaunchInstanceUseCase {
 impl LaunchInstanceUseCase {
     #[allow(clippy::type_complexity, clippy::too_many_arguments)]
     pub fn new(
+        event_emitter: SharedEventEmitter,
         plugin_registry: Arc<PluginRegistry>,
         instance_storage: Arc<dyn InstanceStorage>,
         default_instance_settings_storage: Arc<dyn DefaultInstanceSettingsStorage>,
@@ -65,6 +68,7 @@ impl LaunchInstanceUseCase {
         cancellations: Arc<LaunchCancellations>,
     ) -> Self {
         Self {
+            event_emitter,
             plugin_registry,
             instance_storage,
             default_instance_settings_storage,
@@ -127,7 +131,6 @@ impl LaunchInstanceUseCase {
         }
     }
 
-    #[allow(clippy::too_many_lines)]
     pub async fn execute(
         &self,
         instance_id: InstanceId,
@@ -148,6 +151,34 @@ impl LaunchInstanceUseCase {
         // After the lock, so that a launch refused for it never takes the place of the one that
         // holds it. Dropped before the lock.
         let launch = self.cancellations.register(&instance_id);
+        self.emit_launch(&instance_id, InstanceEventType::LaunchStarted)
+            .await;
+
+        let result = self.launch(instance_id.clone(), credentials, launch).await;
+
+        self.emit_launch(&instance_id, InstanceEventType::LaunchEnded)
+            .await;
+        result
+    }
+
+    async fn emit_launch(&self, instance_id: &InstanceId, event: InstanceEventType) {
+        self.event_emitter
+            .emit_safe(InstanceEvent {
+                event,
+                instance_id: instance_id.clone(),
+            })
+            .await;
+    }
+
+    /// The launch itself, from the install to the start of the game. Leaves the registry when it
+    /// returns, so that the end of the launch is told once nobody can call it off any more.
+    #[allow(clippy::too_many_lines)]
+    async fn launch(
+        &self,
+        instance_id: InstanceId,
+        credentials: Credential,
+        launch: RegisteredLaunch,
+    ) -> Result<MinecraftProcessMetadata, InstanceError> {
         let cancel = &launch.token;
         let settings = self.default_instance_settings_storage.get().await?;
         let mut instance = self.instance_storage.get(&instance_id).await?;
