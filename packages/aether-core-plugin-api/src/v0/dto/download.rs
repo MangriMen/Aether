@@ -1,3 +1,4 @@
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use super::FileHashDto;
@@ -7,7 +8,7 @@ use super::FileHashDto;
 /// The host downloads `url` into the plugin's `/cache`, verifies it against `hash` and only
 /// then makes it visible. The network policy is the one of `http_get` (host `allowed_hosts`,
 /// public addresses only, at most 5 redirects, each hop checked like the first request).
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, JsonSchema, Deserialize, Debug, Clone)]
 pub struct DownloadToCacheParamsDto {
     /// Absolute URL. Only the `http` and `https` schemes are accepted.
     pub url: String,
@@ -17,7 +18,7 @@ pub struct DownloadToCacheParamsDto {
 }
 
 /// A verified file in the plugin's cache, returned by `download_to_cache`.
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, JsonSchema, Deserialize, Debug, Clone)]
 pub struct CachedFileDto {
     /// Plugin-side path, readable through WASI: `/cache/downloads/<algorithm>/<hex digest>`.
     /// The name is derived from the hash by the host, never from the plugin.

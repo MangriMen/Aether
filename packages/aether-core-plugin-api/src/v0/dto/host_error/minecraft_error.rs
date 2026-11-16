@@ -1,8 +1,9 @@
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::v0::LoaderVersionPreferenceDto;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, JsonSchema, Deserialize, Clone)]
 #[serde(
     tag = "kind",
     content = "data",

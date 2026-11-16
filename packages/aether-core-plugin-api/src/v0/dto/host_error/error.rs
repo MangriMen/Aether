@@ -1,6 +1,7 @@
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, JsonSchema, Deserialize, Debug, Clone)]
 #[serde(tag = "status", content = "data", rename_all = "camelCase")]
 pub enum HostResult<T> {
     Ok(T),
@@ -17,7 +18,7 @@ impl<T> HostResult<T> {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, JsonSchema, Deserialize, Clone)]
 #[serde(tag = "type", content = "payload", rename_all = "camelCase")]
 pub enum HostError {
     AuthError(super::AuthErrorDto),

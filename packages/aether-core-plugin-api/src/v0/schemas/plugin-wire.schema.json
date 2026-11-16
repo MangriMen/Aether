@@ -1,0 +1,5145 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PluginWire",
+  "description": "Every structured value that crosses the plugin boundary, in one schema: the properties only\nname the types, which are described under `$defs`. Which one a host function or an export\ntakes and returns is in the README of the plugin API; how a value is encoded is in its\n\"Wire format\" section.",
+  "type": "object",
+  "properties": {
+    "authors": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ContentAuthorDto"
+      }
+    },
+    "cachedFile": {
+      "$ref": "#/$defs/CachedFileDto"
+    },
+    "checkCompatibilityParams": {
+      "$ref": "#/$defs/PluginCheckCompatibilityParamsDto"
+    },
+    "command": {
+      "$ref": "#/$defs/CommandDto"
+    },
+    "compatibilityResult": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/ContentCompatibilityResultDto"
+      }
+    },
+    "contentCompatibilityCheckParams": {
+      "$ref": "#/$defs/ContentCompatibilityCheckParamsDto"
+    },
+    "contentFiles": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/ContentFileDto"
+      }
+    },
+    "contentItem": {
+      "$ref": "#/$defs/ContentItemDto"
+    },
+    "contentSearchParams": {
+      "$ref": "#/$defs/ContentSearchParamsDto"
+    },
+    "contentSearchResult": {
+      "$ref": "#/$defs/ContentSearchResultDto"
+    },
+    "contentVersions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ContentVersionDto"
+      }
+    },
+    "contentsMetadata": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ContentMetadataDto"
+      }
+    },
+    "downloadToCache": {
+      "$ref": "#/$defs/DownloadToCacheParamsDto"
+    },
+    "getAuthorsParams": {
+      "$ref": "#/$defs/GetAuthorsParamsDto"
+    },
+    "getContentsMetadataParams": {
+      "$ref": "#/$defs/GetContentsMetadataParamsDto"
+    },
+    "getVersionsMetadataParams": {
+      "$ref": "#/$defs/GetVersionsMetadataParamsDto"
+    },
+    "hostError": {
+      "description": "What every host function returns on failure, inside `{\"status\": \"err\", \"data\": …}`.",
+      "$ref": "#/$defs/HostError"
+    },
+    "httpPostJsonRequest": {
+      "$ref": "#/$defs/HttpPostJsonRequestDto"
+    },
+    "httpRequest": {
+      "$ref": "#/$defs/HttpRequestDto"
+    },
+    "httpResponse": {
+      "$ref": "#/$defs/HttpResponseDto"
+    },
+    "importInstance": {
+      "$ref": "#/$defs/PluginImportInstanceDto"
+    },
+    "installPlan": {
+      "$ref": "#/$defs/InstallPlanDto"
+    },
+    "instanceFileBytes": {
+      "$ref": "#/$defs/InstanceFileBytesDto"
+    },
+    "internalEvent": {
+      "$ref": "#/$defs/PluginInternalEventDto"
+    },
+    "java": {
+      "$ref": "#/$defs/JavaDto"
+    },
+    "newInstance": {
+      "$ref": "#/$defs/NewInstanceDto"
+    },
+    "output": {
+      "$ref": "#/$defs/OutputDto"
+    },
+    "packMetadata": {
+      "$ref": "#/$defs/PackMetadataDto"
+    },
+    "packSource": {
+      "$ref": "#/$defs/PackSourceDto"
+    },
+    "readInstanceFile": {
+      "$ref": "#/$defs/ReadInstanceFileParamsDto"
+    },
+    "resolveFileParams": {
+      "$ref": "#/$defs/ResolveFileParamsDto"
+    },
+    "resolveInstallPlanParams": {
+      "$ref": "#/$defs/ResolveInstallPlanParamsDto"
+    },
+    "resolvedFile": {
+      "$ref": "#/$defs/ResolvedFileDto"
+    },
+    "versionsMetadata": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ContentVersionMetadataDto"
+      }
+    },
+    "writeInstanceFile": {
+      "$ref": "#/$defs/WriteInstanceFileParamsDto"
+    }
+  },
+  "required": [
+    "hostError",
+    "command",
+    "newInstance",
+    "writeInstanceFile",
+    "readInstanceFile",
+    "httpRequest",
+    "httpPostJsonRequest",
+    "downloadToCache",
+    "output",
+    "java",
+    "contentFiles",
+    "instanceFileBytes",
+    "httpResponse",
+    "cachedFile",
+    "internalEvent",
+    "importInstance",
+    "contentSearchParams",
+    "resolveFileParams",
+    "resolveInstallPlanParams",
+    "packSource",
+    "getContentsMetadataParams",
+    "getVersionsMetadataParams",
+    "getAuthorsParams",
+    "checkCompatibilityParams",
+    "contentCompatibilityCheckParams",
+    "contentSearchResult",
+    "contentItem",
+    "contentVersions",
+    "resolvedFile",
+    "installPlan",
+    "packMetadata",
+    "contentsMetadata",
+    "versionsMetadata",
+    "authors",
+    "compatibilityResult"
+  ],
+  "$defs": {
+    "AuthErrorDto": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "credentialsNotFound"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "noActiveCredentials"
+            }
+          },
+          "required": [
+            "kind"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "max": {
+                  "type": "integer",
+                  "format": "uint",
+                  "minimum": 0
+                },
+                "min": {
+                  "type": "integer",
+                  "format": "uint",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "min",
+                "max"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "invalidUsernameLength"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "invalidUsernameChars"
+            }
+          },
+          "required": [
+            "kind"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "invalidAccountType"
+            }
+          },
+          "required": [
+            "kind"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "tokenExpired"
+            }
+          },
+          "required": [
+            "kind"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "const": "storage"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        }
+      ]
+    },
+    "CachedFileDto": {
+      "description": "A verified file in the plugin's cache, returned by `download_to_cache`.",
+      "type": "object",
+      "properties": {
+        "path": {
+          "description": "Plugin-side path, readable through WASI: `/cache/downloads/<algorithm>/<hex digest>`.\nThe name is derived from the hash by the host, never from the plugin.",
+          "type": "string"
+        },
+        "size": {
+          "description": "File size in bytes.",
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "path",
+        "size"
+      ]
+    },
+    "CommandDto": {
+      "type": "object",
+      "properties": {
+        "args": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "currentDir": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "program": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "program",
+        "args"
+      ]
+    },
+    "CommandRefusalDto": {
+      "description": "Why a command was not run.",
+      "oneOf": [
+        {
+          "description": "The user said no, or said it earlier and the plugin has not been reloaded since.",
+          "type": "string",
+          "const": "denied"
+        },
+        {
+          "description": "Nobody answered in time.",
+          "type": "string",
+          "const": "timed_out"
+        },
+        {
+          "description": "The plugin was stopped or removed.",
+          "type": "string",
+          "const": "cancelled"
+        },
+        {
+          "description": "The jar changed while the user was being asked.",
+          "type": "string",
+          "const": "jar_changed"
+        }
+      ]
+    },
+    "ContentAuthorDto": {
+      "description": "One item of the answer of `getAuthors`: who authors projects, by the `authorRef` of\n`ContentMetadataDto`.\n\nThe answer is a list of these, for the refs of `GetAuthorsParamsDto`. A ref the provider does\nnot know is left out of the answer, not an error.\n\nThe host keeps only items whose `authorRef` was asked, once each, and with a non-blank\n`name`; the rest of the answer is kept when one item is dropped. The name is trimmed and cut\nto 128 characters.",
+      "type": "object",
+      "properties": {
+        "authorRef": {
+          "description": "The ref, as asked.",
+          "type": "string"
+        },
+        "name": {
+          "description": "The name to show as the author.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "authorRef",
+        "name"
+      ]
+    },
+    "ContentCompatibilityCheckParamsDto": {
+      "type": "object",
+      "properties": {
+        "contentItem": {
+          "$ref": "#/$defs/ContentItemDto"
+        },
+        "providerId": {
+          "$ref": "#/$defs/ProviderIdDto"
+        }
+      },
+      "required": [
+        "providerId",
+        "contentItem"
+      ]
+    },
+    "ContentCompatibilityResultDto": {
+      "type": "object",
+      "properties": {
+        "isCompatible": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "isCompatible"
+      ]
+    },
+    "ContentFileDto": {
+      "type": "object",
+      "properties": {
+        "contentPath": {
+          "type": "string"
+        },
+        "contentType": {
+          "$ref": "#/$defs/ContentTypeDto"
+        },
+        "disabled": {
+          "type": "boolean"
+        },
+        "fileName": {
+          "type": "string"
+        },
+        "hash": {
+          "description": "Digest of the file: sha1 for files the app hashes itself, else whatever the pack recorded.",
+          "$ref": "#/$defs/FileHashDto"
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "size": {
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0
+        },
+        "update": {
+          "description": "Where the file can be updated from, one entry per provider.\n\nA list rather than a map keyed by provider: a map key would need a string form of\n[`ProviderIdDto`], and a plugin id may itself contain the separator.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/ContentFileUpdateInfoDto"
+          }
+        },
+        "updateProviderId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ProviderIdDto"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "contentPath",
+        "contentType",
+        "disabled",
+        "fileName",
+        "hash",
+        "size"
+      ]
+    },
+    "ContentFileUpdateInfoDto": {
+      "type": "object",
+      "properties": {
+        "contentId": {
+          "type": "string"
+        },
+        "providerId": {
+          "$ref": "#/$defs/ProviderIdDto"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "providerId",
+        "contentId",
+        "version"
+      ]
+    },
+    "ContentIdentityDto": {
+      "description": "One concrete file of a platform's content, in the ids of `ContentSourceDto::ProviderRef`, its\nversion always known.",
+      "type": "object",
+      "properties": {
+        "contentId": {
+          "type": "string"
+        },
+        "platform": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "platform",
+        "contentId",
+        "version"
+      ]
+    },
+    "ContentItemDto": {
+      "type": "object",
+      "properties": {
+        "author": {
+          "type": "string"
+        },
+        "contentType": {
+          "$ref": "#/$defs/ContentTypeDto"
+        },
+        "description": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "iconUrl": {
+          "description": "An `https` URL of the icon on a public host; empty when it has none. Any other value, or\none naming `localhost` or a private address, is dropped by the host.",
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "longDescription": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "slug": {
+          "type": "string"
+        },
+        "url": {
+          "description": "The content's page, an `http` or `https` URL; empty when it has none. Any other value is\ndropped by the host.",
+          "type": "string"
+        },
+        "versions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "slug",
+        "name",
+        "author",
+        "url",
+        "iconUrl",
+        "versions",
+        "contentType"
+      ]
+    },
+    "ContentMetadataDto": {
+      "description": "One item of the answer of `getContentsMetadata`: what the provider says about a project, to\nshow installed content by.\n\nThe answer is a list of these, for the ids of `GetContentsMetadataParamsDto`. An id the\nprovider does not know is left out of the answer, not an error.\n\nThe host keeps only items that answer an asked id by their `contentId` or by their `slug`\n(compared without regard to case), and only the first of items with one `contentId`. An item\nis kept under its `contentId`, so do not give an item the `slug` of one asked project and the\n`contentId` of another. An item\nwithout a `contentId` or a non-blank `name` is dropped; the rest of the answer is kept.",
+      "type": "object",
+      "properties": {
+        "author": {
+          "description": "Absent when the provider cannot tell it without extra requests: the rest is shown alone.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "authorRef": {
+          "description": "The provider's own token for whoever authors the project (a team, an organization), when\nnaming them is a request apart: the host asks `getAuthors` for it later, so the project is\nshown even when that request fails. Opaque to the host; used instead of `author` or\nbesides it. A blank ref, or one over 256 bytes, is no ref. The host also drops it when the\nprovider declares no `getAuthors`.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "contentId": {
+          "description": "The provider's own id of the project, which may differ from the one asked by (a slug, for\none).",
+          "type": "string"
+        },
+        "iconUrl": {
+          "description": "An `https` URL of the icon. The host downloads it itself, so the plugin needs no network\naccess to it; a URL of another scheme, with credentials, or naming `localhost` or an\naddress of a private network, is dropped.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "name": {
+          "type": "string"
+        },
+        "slug": {
+          "description": "The project's short name in URLs. Ids are also asked by it, so the host matches it to an\nasked id.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "contentId",
+        "slug",
+        "name"
+      ]
+    },
+    "ContentSearchParamsDto": {
+      "type": "object",
+      "properties": {
+        "contentType": {
+          "$ref": "#/$defs/ContentTypeDto"
+        },
+        "gameVersions": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "loader": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ModLoaderDto"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "page": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "pageSize": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "providerId": {
+          "$ref": "#/$defs/ProviderIdDto"
+        },
+        "query": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "contentType",
+        "providerId",
+        "page",
+        "pageSize"
+      ]
+    },
+    "ContentSearchResultDto": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ContentItemDto"
+          }
+        },
+        "page": {
+          "description": "The page the items are of, counted from 1 (the host refuses `0`, also for an empty result).",
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "pageCount": {
+          "description": "How many pages the search has; `0` for no results.",
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "pageSize": {
+          "description": "How many items a page holds, 1 to 1000 (the host refuses anything else).",
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "providerId": {
+          "$ref": "#/$defs/ProviderIdDto"
+        }
+      },
+      "required": [
+        "page",
+        "pageSize",
+        "pageCount",
+        "providerId",
+        "items"
+      ]
+    },
+    "ContentSourceDto": {
+      "description": "Where the bytes of a file come from.",
+      "oneOf": [
+        {
+          "description": "An `https` URL to download, checked against the plugin's `allowedHosts` like its own\nrequests; any other refuses the plan. With a hash, the download is verified against it.",
+          "type": "object",
+          "properties": {
+            "direct": {
+              "type": "object",
+              "properties": {
+                "hash": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/FileHashDto"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null
+                },
+                "identity": {
+                  "description": "Which content of a platform the file is, when known (a pack listing a Modrinth CDN\nURL). The file is then recorded with it for updates, and a new version of a mod the\nuser disabled stays disabled under a new file name.",
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/ContentIdentityDto"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null
+                },
+                "url": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "url"
+              ]
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "direct"
+          ]
+        },
+        {
+          "description": "Content hosted on a platform, resolved by the launcher through a provider serving that\nplatform (its `resolveFile`) — how a pack points at content it does not host, without\nknowing which plugin serves it.\n\n`platform` is the platform's name (`modrinth`, `curseforge`), not a plugin id;\n`contentId` the platform's project id (Modrinth `AANobbMI`, `CurseForge` `238222`);\n`version` the platform's id of one file of it (Modrinth version id, `CurseForge` file id),\nabsent — the newest file fitting the instance.",
+          "type": "object",
+          "properties": {
+            "providerRef": {
+              "type": "object",
+              "properties": {
+                "contentId": {
+                  "type": "string"
+                },
+                "platform": {
+                  "type": "string"
+                },
+                "version": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "default": null
+                }
+              },
+              "required": [
+                "platform",
+                "contentId"
+              ]
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "providerRef"
+          ]
+        }
+      ]
+    },
+    "ContentTypeDto": {
+      "type": "string",
+      "enum": [
+        "modpack",
+        "mod",
+        "datapack",
+        "resourcepack",
+        "shaderpack"
+      ]
+    },
+    "ContentVersionDependencyDto": {
+      "type": "object",
+      "properties": {
+        "content_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "dependency_type": {
+          "$ref": "#/$defs/ContentVersionDependencyTypeDto"
+        },
+        "file_name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "version_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "dependency_type"
+      ]
+    },
+    "ContentVersionDependencyTypeDto": {
+      "type": "string",
+      "enum": [
+        "required",
+        "optional",
+        "incompatible",
+        "embedded"
+      ]
+    },
+    "ContentVersionDto": {
+      "type": "object",
+      "properties": {
+        "authorId": {
+          "type": "string"
+        },
+        "changelog": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "contentId": {
+          "type": "string"
+        },
+        "datePublished": {
+          "type": "string"
+        },
+        "dependencies": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ContentVersionDependencyDto"
+          }
+        },
+        "downloads": {
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0
+        },
+        "featured": {
+          "type": "boolean"
+        },
+        "files": {
+          "description": "The files of the version. A plugin built before it existed leaves it out and decodes with\nan empty list.",
+          "type": "array",
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ContentVersionFileDto"
+          }
+        },
+        "gameVersions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "id": {
+          "type": "string"
+        },
+        "loaders": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ModLoaderDto"
+          }
+        },
+        "name": {
+          "type": "string"
+        },
+        "requestedStatus": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RequestedContentVersionStatusDto"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "$ref": "#/$defs/ContentVersionStatusDto"
+        },
+        "versionNumber": {
+          "type": "string"
+        },
+        "versionType": {
+          "$ref": "#/$defs/ContentVersionTypeDto"
+        },
+        "webUrl": {
+          "description": "The version's page, an `http` or `https` URL; empty when it has none. Any other value is\ndropped by the host.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "contentId",
+        "authorId",
+        "name",
+        "versionNumber",
+        "dependencies",
+        "gameVersions",
+        "versionType",
+        "loaders",
+        "featured",
+        "status",
+        "datePublished",
+        "downloads",
+        "webUrl"
+      ]
+    },
+    "ContentVersionFileDto": {
+      "description": "One file of a version.",
+      "type": "object",
+      "properties": {
+        "fileName": {
+          "type": "string"
+        },
+        "primary": {
+          "description": "The main file of the version.",
+          "type": "boolean"
+        },
+        "size": {
+          "description": "In bytes.",
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "fileName",
+        "size",
+        "primary"
+      ]
+    },
+    "ContentVersionMetadataDto": {
+      "description": "One item of the answer of `getVersionsMetadata`: what the provider says about a version, to\nshow installed files by.\n\nThe answer is a list of these, for the ids of `GetVersionsMetadataParamsDto`. An id the\nprovider does not know is left out of the answer, not an error.\n\nThe host keeps only items whose `versionId` was asked, once each, and with a non-blank\n`versionNumber`; the rest of the answer is kept when one item is dropped.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "The version's title, when the provider has one apart from its number.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "versionId": {
+          "description": "The provider's own id of the version, as asked.",
+          "type": "string"
+        },
+        "versionNumber": {
+          "description": "The version as its authors number it (`0.6.13+mc1.21.4`).",
+          "type": "string"
+        }
+      },
+      "required": [
+        "versionId",
+        "versionNumber"
+      ]
+    },
+    "ContentVersionStatusDto": {
+      "type": "string",
+      "enum": [
+        "listed",
+        "archived",
+        "draft",
+        "unlisted",
+        "scheduled",
+        "unknown"
+      ]
+    },
+    "ContentVersionTypeDto": {
+      "type": "string",
+      "enum": [
+        "release",
+        "beta",
+        "alpha"
+      ]
+    },
+    "DownloadToCacheParamsDto": {
+      "description": "Parameters of the `download_to_cache` host function.\n\nThe host downloads `url` into the plugin's `/cache`, verifies it against `hash` and only\nthen makes it visible. The network policy is the one of `http_get` (host `allowed_hosts`,\npublic addresses only, at most 5 redirects, each hop checked like the first request).",
+      "type": "object",
+      "properties": {
+        "hash": {
+          "description": "Expected digest of the file. Required: it is both the integrity check and the file's\nname in the cache.",
+          "$ref": "#/$defs/FileHashDto"
+        },
+        "url": {
+          "description": "Absolute URL. Only the `http` and `https` schemes are accepted.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "url",
+        "hash"
+      ]
+    },
+    "EventErrorDto": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "notInitialized"
+            }
+          },
+          "required": [
+            "kind"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "noLoadingBar"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "const": "serializeError"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "const": "storageError"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        }
+      ]
+    },
+    "FileHashDto": {
+      "description": "An expected file digest, hex-encoded. Hex case does not matter.\n\nMd5 is deliberately not offered.",
+      "oneOf": [
+        {
+          "description": "40 hex characters.",
+          "type": "object",
+          "properties": {
+            "sha1": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "sha1"
+          ]
+        },
+        {
+          "description": "64 hex characters.",
+          "type": "object",
+          "properties": {
+            "sha256": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "sha256"
+          ]
+        },
+        {
+          "description": "128 hex characters.",
+          "type": "object",
+          "properties": {
+            "sha512": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "sha512"
+          ]
+        }
+      ]
+    },
+    "FileSideDto": {
+      "description": "The side of the game a file is for.",
+      "type": "string",
+      "enum": [
+        "both",
+        "client",
+        "server"
+      ]
+    },
+    "FileWatcherErrorDto": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "path"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "pathNotFound"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "watchNotFound"
+            }
+          },
+          "required": [
+            "kind"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "const": "notifyError"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        }
+      ]
+    },
+    "GameLogErrorDto": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "sourceId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "sourceId"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "invalidSource"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "sourceId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "sourceId"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "sourceNotFound"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "limit": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0
+                },
+                "sourceId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "sourceId",
+                "limit"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "tooLarge"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "const": "io"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        }
+      ]
+    },
+    "GetAuthorsParamsDto": {
+      "description": "The input of `getAuthors`: the authors to name, asked in one go for a whole instance.",
+      "type": "object",
+      "properties": {
+        "authorRefs": {
+          "description": "The `authorRef`s the provider gave in `ContentMetadataDto`.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "authorRefs"
+      ]
+    },
+    "GetContentsMetadataParamsDto": {
+      "description": "The input of `getContentsMetadata`: the projects to describe, asked in one go for a whole\ninstance.",
+      "type": "object",
+      "properties": {
+        "contentIds": {
+          "description": "The provider's ids of the projects, or their slugs.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "contentIds"
+      ]
+    },
+    "GetVersionsMetadataParamsDto": {
+      "description": "The input of `getVersionsMetadata`: the versions to describe, asked in one go for a whole\ninstance.",
+      "type": "object",
+      "properties": {
+        "versionIds": {
+          "description": "The provider's ids of the versions, as `ContentFileUpdateInfo::version` records them.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "versionIds"
+      ]
+    },
+    "HostError": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "payload": {
+              "$ref": "#/$defs/AuthErrorDto"
+            },
+            "type": {
+              "type": "string",
+              "const": "authError"
+            }
+          },
+          "required": [
+            "type",
+            "payload"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "payload": {
+              "$ref": "#/$defs/EventErrorDto"
+            },
+            "type": {
+              "type": "string",
+              "const": "eventError"
+            }
+          },
+          "required": [
+            "type",
+            "payload"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "payload": {
+              "$ref": "#/$defs/FileWatcherErrorDto"
+            },
+            "type": {
+              "type": "string",
+              "const": "fileWatcherError"
+            }
+          },
+          "required": [
+            "type",
+            "payload"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "payload": {
+              "$ref": "#/$defs/GameLogErrorDto"
+            },
+            "type": {
+              "type": "string",
+              "const": "gameLogError"
+            }
+          },
+          "required": [
+            "type",
+            "payload"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "payload": {
+              "$ref": "#/$defs/InstanceErrorDto"
+            },
+            "type": {
+              "type": "string",
+              "const": "instanceError"
+            }
+          },
+          "required": [
+            "type",
+            "payload"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "payload": {
+              "$ref": "#/$defs/JavaErrorDto"
+            },
+            "type": {
+              "type": "string",
+              "const": "javaError"
+            }
+          },
+          "required": [
+            "type",
+            "payload"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "payload": {
+              "$ref": "#/$defs/MinecraftErrorDto"
+            },
+            "type": {
+              "type": "string",
+              "const": "minecraftError"
+            }
+          },
+          "required": [
+            "type",
+            "payload"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "payload": {
+              "$ref": "#/$defs/PluginErrorDto"
+            },
+            "type": {
+              "type": "string",
+              "const": "pluginError"
+            }
+          },
+          "required": [
+            "type",
+            "payload"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "payload": {
+              "$ref": "#/$defs/ProcessErrorDto"
+            },
+            "type": {
+              "type": "string",
+              "const": "processError"
+            }
+          },
+          "required": [
+            "type",
+            "payload"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "payload": {
+              "$ref": "#/$defs/SettingsErrorDto"
+            },
+            "type": {
+              "type": "string",
+              "const": "settingsError"
+            }
+          },
+          "required": [
+            "type",
+            "payload"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "payload": {
+              "$ref": "#/$defs/RequestErrorDto"
+            },
+            "type": {
+              "type": "string",
+              "const": "requestError"
+            }
+          },
+          "required": [
+            "type",
+            "payload"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "payload": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "const": "coreError"
+            }
+          },
+          "required": [
+            "type",
+            "payload"
+          ]
+        }
+      ]
+    },
+    "HttpPostJsonRequestDto": {
+      "description": "A JSON POST request issued by a plugin through the `http_post_json` host function.\n\nSame network policy as [`HttpRequestDto`] (host `allowed_hosts`, no non-public\naddresses), except that redirects are never followed: any 3xx is an error. The host always\nsends `Content-Type: application/json`.",
+      "type": "object",
+      "properties": {
+        "body": {
+          "description": "Already-serialized JSON document. The host rejects a body that is not valid JSON.",
+          "type": "string"
+        },
+        "headers": {
+          "description": "Extra request headers. Unlike `http_get`, only a fixed allowlist is honoured\n(`accept`, `accept-language`, `authorization`, `user-agent`, `x-api-key`);\nanything else, including `Content-Type`, is silently dropped.",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "default": {}
+        },
+        "url": {
+          "description": "Absolute URL. Only the `http` and `https` schemes are accepted.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "url",
+        "body"
+      ]
+    },
+    "HttpRequestDto": {
+      "description": "A plain HTTP GET request issued by a plugin through the `http_get` host function.\n\nUnlike Extism's built-in `http_request`, the host checks **every** redirect hop as if it\nwere the first request (`allowed_hosts`, public addresses, no `https` → `http`) and follows\nat most 5 of them. The request headers are not sent on to another origin.",
+      "type": "object",
+      "properties": {
+        "headers": {
+          "description": "Extra request headers. Hop-by-hop and connection-control headers are rejected\nby the host (see `HttpRequestDto` documentation in the plugin API README).",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "default": {}
+        },
+        "url": {
+          "description": "Absolute URL. Only the `http` and `https` schemes are accepted.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "url"
+      ]
+    },
+    "HttpResponseDto": {
+      "description": "Response returned by the `http_get` and `http_post_json` host functions.\n\nThe body travels as a msgpack `bin`, not as an array of numbers: a plugin decodes it with a\ncopy instead of an instruction per byte, which is what keeps a megabyte-sized body within\nthe plugin's fuel.",
+      "type": "object",
+      "properties": {
+        "body": {
+          "description": "Response body. Truncation never happens silently: a body over the host limit\nfails the whole call.",
+          "type": "string",
+          "contentEncoding": "binary",
+          "x-msgpack": "bin"
+        },
+        "headers": {
+          "description": "Response headers, lowercased. Repeated headers are collapsed to the last value.",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "status": {
+          "description": "HTTP status code of the final response, after any redirects the host followed.",
+          "type": "integer",
+          "format": "uint16",
+          "maximum": 65535,
+          "minimum": 0
+        }
+      },
+      "required": [
+        "status",
+        "headers",
+        "body"
+      ]
+    },
+    "InstallFileEntryDto": {
+      "description": "One file the plan wants in the instance.",
+      "type": "object",
+      "properties": {
+        "contentType": {
+          "$ref": "#/$defs/ContentTypeDto"
+        },
+        "name": {
+          "description": "What the file is called (a mod's or version's name), shown in the instance's content\nlist. Absent — the name `resolveFile` gives for a `providerRef`, or none.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "optional": {
+          "description": "Absent — the file is required.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OptionalFileDto"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "relativePath": {
+          "description": "Where the file goes, relative to the instance directory (`mods/sodium.jar`). `\\` is\nread as `/`. A path leaving the instance is refused when the file is written.",
+          "type": "string"
+        },
+        "side": {
+          "description": "Absent — the file is for both sides.",
+          "$ref": "#/$defs/FileSideDto",
+          "default": "both"
+        },
+        "size": {
+          "description": "Expected size in bytes, when known. Informational; the hash is what is verified.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "default": null,
+          "minimum": 0
+        },
+        "source": {
+          "$ref": "#/$defs/ContentSourceDto"
+        }
+      },
+      "required": [
+        "source",
+        "relativePath",
+        "contentType"
+      ]
+    },
+    "InstallPlanDto": {
+      "description": "Everything a provider wants installed, and where.",
+      "type": "object",
+      "properties": {
+        "files": {
+          "description": "Every file the content needs, optional and server-side ones included: leaving files out\nis the launcher's decision, made from the plan.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/InstallFileEntryDto"
+          }
+        },
+        "overrides": {
+          "description": "Applied in order, a later source's file replacing an earlier one's at the same path.",
+          "type": "array",
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/OverrideSourceDto"
+          }
+        },
+        "target": {
+          "$ref": "#/$defs/InstallTargetDto"
+        }
+      },
+      "required": [
+        "target",
+        "files"
+      ]
+    },
+    "InstallTargetDto": {
+      "description": "The instance a plan applies to.\n\nAnswers the request's `ResolveTargetDto`: `existing` with the same instance id, `new` with\nthe instance the content needs (a modpack's game version and loader). A plan for any other\ninstance is rejected.",
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "existing": {
+              "type": "object",
+              "properties": {
+                "game": {
+                  "description": "The game the instance runs once the plan is applied. Absent — the instance keeps its\ngame.\n\nOnly an update of the pack the instance was installed from may set it (its\n`packInfo` names the provider and content the plan was resolved for); the request's\n`gameVersion` and `loader` are then the instance's current state, not a requirement.\nAny other plan with a game is rejected.",
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/InstanceGameDto"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null
+                },
+                "instanceId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "instanceId"
+              ]
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "existing"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "new": {
+              "$ref": "#/$defs/NewInstanceDto"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "new"
+          ]
+        }
+      ]
+    },
+    "InstanceErrorDto": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "const": "storage"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "instanceId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "instanceId"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "notFound"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "capabilityId": {
+                  "type": "string"
+                },
+                "pluginId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "pluginId",
+                "capabilityId"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "contentProviderNotFound"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "capabilityOperationError"
+            }
+          },
+          "required": [
+            "kind"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "instanceId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "instanceId"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "instanceStillInstalling"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "instanceId": {
+                  "type": "string"
+                },
+                "processId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "instanceId",
+                "processId"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "instanceAlreadyRunning"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "required": [
+                "code"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "prelaunchCommandError"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "field": {
+                  "$ref": "#/$defs/InstanceFieldDto"
+                },
+                "reason": {
+                  "$ref": "#/$defs/InstanceValidationErrorReasonDto"
+                }
+              },
+              "required": [
+                "field",
+                "reason"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "validationError"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "importerId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "importerId"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "importerNotFound"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "capabilityId": {
+                  "type": "string"
+                },
+                "pluginId": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "pluginId",
+                "capabilityId",
+                "reason"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "importFailed"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "packInfoNotFound"
+            }
+          },
+          "required": [
+            "kind"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "modpackId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "modpackId"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "updaterNotFound"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "modpackId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "modpackId"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "updateFailed"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "instanceId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "instanceId"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "unmanagedInstance"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "contentPath": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "contentPath"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "contentDuplication"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "path"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "contentFilename"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "path",
+                "reason"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "invalidRelativePath"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "value"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "invalidContentId"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "reason": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "value",
+                "reason"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "invalidGameVersion"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "field": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "field",
+                "value",
+                "reason"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "invalidPagination"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "reason": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "value",
+                "reason"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "invalidLoaderVersion"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "instanceId": {
+                  "type": "string"
+                },
+                "path": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "path",
+                "instanceId"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "pathEscapesInstance"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "limit": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0
+                },
+                "path": {
+                  "type": "string"
+                },
+                "size": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "path",
+                "size",
+                "limit"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "fileTooLarge"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "const": "contentDownloadError"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "reason": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "reason"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "contentProviderError"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "gameVersion": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "gameVersion"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "contentForGameVersionNotFound"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "contentType": {
+                  "$ref": "#/$defs/ContentTypeDto"
+                }
+              },
+              "required": [
+                "contentType"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "unsupportedContentType"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "operation": {
+                  "type": "string"
+                },
+                "providerId": {
+                  "$ref": "#/$defs/ProviderIdDto"
+                }
+              },
+              "required": [
+                "providerId",
+                "operation"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "unsupportedOperation"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "platform": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "platform"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "platformProviderNotFound"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "platform": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "platform"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "platformProviderNotChosen"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "contentId": {
+                  "type": "string"
+                },
+                "instanceId": {
+                  "type": "string"
+                },
+                "providerId": {
+                  "$ref": "#/$defs/ProviderIdDto"
+                }
+              },
+              "required": [
+                "instanceId",
+                "providerId",
+                "contentId"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "gameChangeNotAllowed"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        }
+      ]
+    },
+    "InstanceFieldDto": {
+      "type": "string",
+      "enum": [
+        "name"
+      ]
+    },
+    "InstanceFileBytesDto": {
+      "description": "What `read_instance_file` returns: the file contents as a msgpack `bin`.\n\nA newtype, so that the bytes can be encoded as `bin` — a bare `Vec<u8>` result would be an\narray of numbers.",
+      "type": "string",
+      "contentEncoding": "binary",
+      "x-msgpack": "bin"
+    },
+    "InstanceGameDto": {
+      "description": "What an instance runs, as a `NewInstanceDto` describes it.",
+      "type": "object",
+      "properties": {
+        "gameVersion": {
+          "type": "string"
+        },
+        "loaderVersion": {
+          "description": "Absent — not pinned: the instance keeps its loader version while the game version and\nloader stay, and gets the default one otherwise.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/LoaderVersionPreferenceDto"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "modLoader": {
+          "$ref": "#/$defs/ModLoaderDto"
+        }
+      },
+      "required": [
+        "gameVersion",
+        "modLoader"
+      ]
+    },
+    "InstanceInstallStageDto": {
+      "type": "string",
+      "enum": [
+        "installed",
+        "installing",
+        "pack_installing",
+        "not_installed"
+      ]
+    },
+    "InstanceSummaryDto": {
+      "description": "What a plugin may learn about an instance it was not asked to work on: enough to judge\nwhether content fits it.\n\nDeliberately without launch settings (`java_path`, `launch_args`, `env_vars`, `hooks`) and\nhost paths: users keep API keys and proxy credentials in the environment variables, and a\nplugin with network access could send them out. Add a field here only when every plugin that\nreceives it needs it.",
+      "type": "object",
+      "properties": {
+        "gameVersion": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "installStage": {
+          "$ref": "#/$defs/InstanceInstallStageDto"
+        },
+        "loader": {
+          "$ref": "#/$defs/ModLoaderDto"
+        },
+        "loaderVersion": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/LoaderVersionPreferenceDto"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "packInfo": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PackInfoDto"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "installStage",
+        "gameVersion",
+        "loader"
+      ]
+    },
+    "InstanceValidationErrorReasonDto": {
+      "type": "string",
+      "enum": [
+        "cannot_be_empty"
+      ]
+    },
+    "JavaDto": {
+      "description": "Description of a Java installation known to the launcher.",
+      "type": "object",
+      "properties": {
+        "architecture": {
+          "description": "CPU architecture the installation was built for.",
+          "type": "string"
+        },
+        "majorVersion": {
+          "description": "Major Java release number (for example 8, 17 or 21).",
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "path": {
+          "description": "Filesystem location of the Java executable or installation.",
+          "type": "string"
+        },
+        "version": {
+          "description": "Full version string reported by the installation.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "majorVersion",
+        "version",
+        "architecture",
+        "path"
+      ]
+    },
+    "JavaErrorDto": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "version": {
+                  "type": "integer",
+                  "format": "uint32",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "version"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "notFound"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "path"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "invalidPath"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "emptyPath"
+            }
+          },
+          "required": [
+            "kind"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "path"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "relativePath"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "version": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "version"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "invalidVersion"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "reason": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "reason"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "failedToGetProperties"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "arch": {
+                  "type": "string"
+                },
+                "os": {
+                  "type": "string"
+                },
+                "version": {
+                  "type": "integer",
+                  "format": "uint32",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "version",
+                "os",
+                "arch"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "versionNotAvailable"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "arch": {
+                  "type": "string"
+                },
+                "os": {
+                  "type": "string"
+                },
+                "version": {
+                  "type": "integer",
+                  "format": "uint32",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "version",
+                "os",
+                "arch"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "versionGetFailed"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "arch": {
+                  "type": "string"
+                },
+                "os": {
+                  "type": "string"
+                },
+                "version": {
+                  "type": "integer",
+                  "format": "uint32",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "version",
+                "os",
+                "arch"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "failedToInstall"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "path"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "removeOldInstallationError"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "const": "storage"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "cancelled"
+            }
+          },
+          "required": [
+            "kind"
+          ]
+        }
+      ]
+    },
+    "LoadConfigTypeDto": {
+      "type": "string",
+      "enum": [
+        "extism"
+      ]
+    },
+    "LoaderVersionPreferenceDto": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "latest",
+            "stable"
+          ]
+        },
+        {
+          "type": "string"
+        }
+      ]
+    },
+    "ManifestErrorDto": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "unsupportedApi"
+            }
+          },
+          "required": [
+            "kind"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string"
+                },
+                "field": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "field",
+                "value",
+                "error"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "invalidSemver"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "invalidPathMapping"
+            }
+          },
+          "required": [
+            "kind"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "kind": {
+              "type": "string",
+              "const": "unknownHostFunctions"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "hostFunctionsNotDeclared"
+            }
+          },
+          "required": [
+            "kind"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "field": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "field",
+                "value"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "invalidId"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "reservedPluginId"
+            }
+          },
+          "required": [
+            "kind"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "capabilityId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "capabilityId"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "platformWithoutResolveFile"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        }
+      ]
+    },
+    "MinecraftErrorDto": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "version": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "version"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "versionNotFound"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "loaderVersionPreference": {
+                  "$ref": "#/$defs/LoaderVersionPreferenceDto"
+                }
+              },
+              "required": [
+                "loaderVersionPreference"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "versionForLoaderNotFound"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "loaderVersionPreference": {
+                  "$ref": "#/$defs/LoaderVersionPreferenceDto"
+                }
+              },
+              "required": [
+                "loaderVersionPreference"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "loaderNotFound"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "loaderVersionRequired"
+            }
+          },
+          "required": [
+            "kind"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "defaultLoaderNotFound"
+            }
+          },
+          "required": [
+            "kind"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "reason": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "reason"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "processorFailed"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "required": [
+                "code"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "preLaunchFailed"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "required": [
+                "code"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "postLaunchFailed"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "entityType": {
+                  "type": "string"
+                },
+                "path": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "path",
+                "entityType"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "pathNotFound"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "reason": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "reason"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "parseFailed"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "reason": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "reason"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "storageFailure"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        }
+      ]
+    },
+    "ModLoaderDto": {
+      "description": "Mod loader an instance can run on. Serialized as a lowercase string\n(`vanilla`, `forge`, `fabric`, `quilt`, `neoforge`).",
+      "type": "string",
+      "enum": [
+        "vanilla",
+        "forge",
+        "fabric",
+        "quilt",
+        "neoforge"
+      ]
+    },
+    "NewInstanceDto": {
+      "type": "object",
+      "properties": {
+        "gameVersion": {
+          "type": "string"
+        },
+        "iconPath": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "loaderVersion": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/LoaderVersionPreferenceDto"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "modLoader": {
+          "$ref": "#/$defs/ModLoaderDto"
+        },
+        "name": {
+          "type": "string"
+        },
+        "packInfo": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PackInfoDto"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "skipInstallInstance": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "name",
+        "gameVersion",
+        "modLoader"
+      ]
+    },
+    "OptionalFileDto": {
+      "description": "What makes a file optional: whether it is selected unless the user changes that, and what to\ntell them about it.",
+      "type": "object",
+      "properties": {
+        "defaultEnabled": {
+          "type": "boolean"
+        },
+        "description": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "defaultEnabled"
+      ]
+    },
+    "OutputDto": {
+      "description": "Output of a command run through `run_command`. The streams travel as msgpack `bin`.",
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "stderr": {
+          "type": "string",
+          "contentEncoding": "binary",
+          "x-msgpack": "bin"
+        },
+        "stderrTruncated": {
+          "description": "`stderr` hit the host's per-stream cap and was cut short.",
+          "type": "boolean",
+          "default": false
+        },
+        "stdout": {
+          "type": "string",
+          "contentEncoding": "binary",
+          "x-msgpack": "bin"
+        },
+        "stdoutTruncated": {
+          "description": "`stdout` hit the host's per-stream cap and was cut short.",
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": [
+        "status",
+        "stdout",
+        "stderr"
+      ]
+    },
+    "OverrideLocationDto": {
+      "description": "Where the files of an override source are.\n\nPaths are plugin-side and must lie in the plugin's `/cache` (where `download_to_cache` puts\nfiles); the launcher refuses anything else.",
+      "oneOf": [
+        {
+          "description": "The `subdir` directory of a zip archive (`overrides`).",
+          "type": "object",
+          "properties": {
+            "archive": {
+              "type": "object",
+              "properties": {
+                "archivePath": {
+                  "type": "string"
+                },
+                "subdir": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "archivePath",
+                "subdir"
+              ]
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "archive"
+          ]
+        },
+        {
+          "description": "A directory, copied recursively.",
+          "type": "object",
+          "properties": {
+            "directory": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "path"
+              ]
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "directory"
+          ]
+        }
+      ]
+    },
+    "OverrideSourceDto": {
+      "description": "Files copied into the instance as they are, on top of the planned ones (a modpack's\n`overrides/`, `client-overrides/`).",
+      "type": "object",
+      "properties": {
+        "location": {
+          "$ref": "#/$defs/OverrideLocationDto"
+        },
+        "side": {
+          "description": "Absent — for both sides. As with files, a source for the other side stays in the plan:\nthe launcher leaves it out.",
+          "$ref": "#/$defs/FileSideDto",
+          "default": "both"
+        }
+      },
+      "required": [
+        "location"
+      ]
+    },
+    "PackInfoDto": {
+      "type": "object",
+      "properties": {
+        "modpackId": {
+          "type": "string"
+        },
+        "providerId": {
+          "$ref": "#/$defs/ProviderIdDto"
+        },
+        "versionId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "providerId",
+        "modpackId",
+        "versionId"
+      ]
+    },
+    "PackMetadataDto": {
+      "description": "The answer of `resolvePackMetadata`: a pack's description, read without resolving its files.",
+      "type": "object",
+      "properties": {
+        "description": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "fileCount": {
+          "description": "How many files installing the pack would bring, when known without resolving them.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "default": null,
+          "minimum": 0
+        },
+        "gameVersion": {
+          "type": "string"
+        },
+        "iconUrl": {
+          "description": "An `https` URL of the pack's icon on a public host; any other value is dropped by the host.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "loaderVersion": {
+          "description": "Absent — the pack does not pin one.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "modLoader": {
+          "$ref": "#/$defs/ModLoaderDto"
+        },
+        "name": {
+          "type": "string"
+        },
+        "versionId": {
+          "description": "The platform's id of this version — what a check for updates compares. Absent when the\npack was not read from the platform and the provider cannot tell.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "versionName": {
+          "description": "The version as the pack's author wrote it (`1.4.2`), for display only.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "name",
+        "gameVersion",
+        "modLoader"
+      ]
+    },
+    "PackSourceDto": {
+      "description": "The input of `resolvePackMetadata`: where to read a pack from.",
+      "oneOf": [
+        {
+          "description": "A pack hosted on the provider's platform; absent `version` — the version an update would\ntake from `installedVersion`, by the same rule as `ResolveInstallPlanParamsDto::version`,\nwhich is how a check for updates asks.",
+          "type": "object",
+          "properties": {
+            "content": {
+              "type": "object",
+              "properties": {
+                "contentId": {
+                  "type": "string"
+                },
+                "installedVersion": {
+                  "description": "The version of the pack the instance runs now.",
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "default": null
+                },
+                "version": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "default": null
+                }
+              },
+              "required": [
+                "contentId"
+              ]
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "content"
+          ]
+        },
+        {
+          "description": "A pack file to download (a `.mrpack`, a packwiz `pack.toml`).",
+          "type": "object",
+          "properties": {
+            "url": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "url"
+          ]
+        },
+        {
+          "description": "A pack file the plugin can read: a plugin-side path under `/cache` or `/instances`.",
+          "type": "object",
+          "properties": {
+            "file": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "file"
+          ]
+        }
+      ]
+    },
+    "PluginCallErrorDto": {
+      "description": "Why a call into a plugin failed.",
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "missingFunction"
+            }
+          },
+          "required": [
+            "kind"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "timeout"
+            }
+          },
+          "required": [
+            "kind"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "outOfFuel"
+            }
+          },
+          "required": [
+            "kind"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "outOfMemory"
+            }
+          },
+          "required": [
+            "kind"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "const": "trap"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "kind": {
+              "type": "string",
+              "const": "nonZeroExit"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "const": "plugin"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "description": "The plugin reported that a command it asked for was not run, with the plugin's own words.",
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "details": {
+                  "type": "string"
+                },
+                "reason": {
+                  "$ref": "#/$defs/CommandRefusalDto"
+                }
+              },
+              "required": [
+                "reason",
+                "details"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "commandNotApproved"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "const": "codec"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "reentrant"
+            }
+          },
+          "required": [
+            "kind"
+          ]
+        }
+      ]
+    },
+    "PluginCheckCompatibilityParamsDto": {
+      "type": "object",
+      "properties": {
+        "check_params": {
+          "$ref": "#/$defs/ContentCompatibilityCheckParamsDto"
+        },
+        "instances": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/InstanceSummaryDto"
+          }
+        }
+      },
+      "required": [
+        "instances",
+        "check_params"
+      ]
+    },
+    "PluginErrorDto": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "pluginId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "pluginId"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "notFound"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "pluginId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "pluginId"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "alreadyLoaded"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "pluginId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "pluginId"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "loadingInProgress"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "pluginId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "pluginId"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "unloadingInProgress"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "pluginId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "pluginId"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "alreadyUnloaded"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "pluginId": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "pluginId",
+                "reason"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "loadFailed"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "pluginId": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "pluginId",
+                "reason"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "incompatibleApiVersion"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "$ref": "#/$defs/PluginCallErrorDto"
+                },
+                "functionName": {
+                  "type": "string"
+                },
+                "pluginId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "functionName",
+                "pluginId",
+                "error"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "functionCallFailed"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "$ref": "#/$defs/ManifestErrorDto"
+            },
+            "kind": {
+              "type": "string",
+              "const": "manifest"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "path"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "manifestNotFound"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "error"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "invalidManifestFormat"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "configType": {
+                  "$ref": "#/$defs/LoadConfigTypeDto"
+                }
+              },
+              "required": [
+                "configType"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "loaderNotFound"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "from": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "from"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "extractionFailed"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "invalidExtractionFormat"
+            }
+          },
+          "required": [
+            "kind"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "from": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "from"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "fileExtractionFailed"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "capabilityId": {
+                  "type": "string"
+                },
+                "capabilityType": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "capabilityType",
+                "capabilityId"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "capabilityRegistrationFailed"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "capabilityId": {
+                  "type": "string"
+                },
+                "capabilityType": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "capabilityType",
+                "capabilityId"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "capabilityCancelRegistrationFailed"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "pluginId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "pluginId",
+                "path"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "accessViolation"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "description": "The user did not allow the plugin's command, or was not there to.",
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "pluginId": {
+                  "type": "string"
+                },
+                "reason": {
+                  "$ref": "#/$defs/CommandRefusalDto"
+                }
+              },
+              "required": [
+                "pluginId",
+                "reason"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "commandNotApproved"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "hashComputationFailed"
+            }
+          },
+          "required": [
+            "kind"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "const": "storage"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "details": {
+                  "type": "string"
+                },
+                "sourceType": {
+                  "$ref": "#/$defs/PluginSourceTypeDto"
+                }
+              },
+              "required": [
+                "sourceType",
+                "details"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "providerFetchError"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "sourceType": {
+                  "$ref": "#/$defs/PluginSourceTypeDto"
+                }
+              },
+              "required": [
+                "sourceType"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "providerNoAssets"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "pluginId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "pluginId"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "noRemoteSource"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "details": {
+                  "type": "string"
+                },
+                "url": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "url",
+                "details"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "downloadFailed"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "retryAfter": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "format": "uint32",
+                  "minimum": 0
+                },
+                "sourceType": {
+                  "$ref": "#/$defs/PluginSourceTypeDto"
+                }
+              },
+              "required": [
+                "sourceType"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "providerRateLimited"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        }
+      ]
+    },
+    "PluginImportInstanceDto": {
+      "type": "object",
+      "properties": {
+        "importerId": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "importerId",
+        "path"
+      ]
+    },
+    "PluginInternalEventDto": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "loaded",
+            "unloaded"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "beforeInstanceLaunch": {
+              "type": "object",
+              "properties": {
+                "instanceId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "instanceId"
+              ]
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "beforeInstanceLaunch"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "afterInstanceLaunch": {
+              "type": "object",
+              "properties": {
+                "instanceId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "instanceId"
+              ]
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "afterInstanceLaunch"
+          ]
+        }
+      ]
+    },
+    "PluginSourceTypeDto": {
+      "type": "string",
+      "enum": [
+        "git_hub",
+        "local"
+      ]
+    },
+    "ProcessErrorDto": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "killError"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "waitError"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "const": "io"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        }
+      ]
+    },
+    "ProviderIdDto": {
+      "type": "object",
+      "properties": {
+        "capabilityId": {
+          "type": "string"
+        },
+        "pluginId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "pluginId",
+        "capabilityId"
+      ]
+    },
+    "ReadInstanceFileParamsDto": {
+      "description": "Parameters of the `read_instance_file` host function.\n\nSame path rules as [`WriteInstanceFileParamsDto`].",
+      "type": "object",
+      "properties": {
+        "instanceId": {
+          "description": "Id of an existing instance.",
+          "type": "string"
+        },
+        "relativePath": {
+          "description": "Path relative to the instance root, `/`-separated.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "instanceId",
+        "relativePath"
+      ]
+    },
+    "RequestErrorDto": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "const": "acquire"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "const": "requestSend"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "const": "middleware"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "actual": {
+                  "type": "string"
+                },
+                "expected": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "actual",
+                "expected"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "hash"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "const": "json"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "const": "toml"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "const": "parse"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "integer",
+                  "format": "uint16",
+                  "maximum": 65535,
+                  "minimum": 0
+                },
+                "url": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "status",
+                "url"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "status"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "limit": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "limit"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "tooLarge"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "details": {
+                  "type": "string"
+                },
+                "path": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "path",
+                "details"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "const": "io"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        }
+      ]
+    },
+    "RequestedContentVersionStatusDto": {
+      "type": "string",
+      "enum": [
+        "listed",
+        "archived",
+        "draft",
+        "unlisted"
+      ]
+    },
+    "ResolveFileParamsDto": {
+      "description": "The input of `resolveFile`: which file a `providerRef` stands for.",
+      "type": "object",
+      "properties": {
+        "contentId": {
+          "type": "string"
+        },
+        "gameVersion": {
+          "type": "string"
+        },
+        "loader": {
+          "description": "The loader as written in `ResolveTargetDto::Existing` (`fabric`, `neoforge`); absent —\nvanilla.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "version": {
+          "description": "Absent — the newest file that runs on `gameVersion` with `loader`. With a version, the\nprovider returns that file and need not check it against them.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "contentId",
+        "gameVersion"
+      ]
+    },
+    "ResolveInstallPlanParamsDto": {
+      "description": "The input of `resolveInstallPlan`: which content to install, and into what. One shape for a\nsingle mod and a whole modpack, for installing and updating alike.",
+      "type": "object",
+      "properties": {
+        "contentId": {
+          "type": "string"
+        },
+        "installedVersion": {
+          "description": "The platform's id of the version of this content installed in the target now; absent —\nnone is, or the launcher does not know it.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "target": {
+          "$ref": "#/$defs/ResolveTargetDto"
+        },
+        "version": {
+          "description": "Absent — the provider picks among the versions compatible with the target, by the\nrelease channel: the newest release, or with `installedVersion` set, the newest version\nof its channel (a beta takes betas and releases) that is newer than it — never an older\none; with nothing newer, the installed version itself.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "contentId",
+        "target"
+      ]
+    },
+    "ResolveTargetDto": {
+      "description": "Where the resolved plan is going to be applied; the plan's `InstallTargetDto` answers it.",
+      "oneOf": [
+        {
+          "description": "Install into, or update, an existing instance, with the game version and loader it runs\nnow. For most content they are a requirement: it has to fit what the instance runs. For\nthe pack the instance was installed from (its `packInfo`) they are only the current\nstate: the plan of an update names the pack's game in `InstallTargetDto::Existing::game`,\nand the launcher moves the instance to it.",
+          "type": "object",
+          "properties": {
+            "existing": {
+              "type": "object",
+              "properties": {
+                "gameVersion": {
+                  "type": "string"
+                },
+                "instanceId": {
+                  "type": "string"
+                },
+                "loader": {
+                  "description": "`fabric`, `neoforge`, …; absent for a vanilla instance.",
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "default": null
+                }
+              },
+              "required": [
+                "instanceId",
+                "gameVersion"
+              ]
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "existing"
+          ]
+        },
+        {
+          "description": "A new instance, described by the content (a modpack).",
+          "type": "string",
+          "const": "new"
+        }
+      ]
+    },
+    "ResolvedFileDto": {
+      "description": "The answer of `resolveFile`: which bytes the ref stands for. No path: where the file goes is\nthe plan entry's `relativePath`.",
+      "type": "object",
+      "properties": {
+        "fileName": {
+          "description": "The name the platform gives the file.",
+          "type": "string"
+        },
+        "hash": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FileHashDto"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "name": {
+          "description": "What the platform calls the file (a version's name), shown in the instance's content list.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "size": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "default": null,
+          "minimum": 0
+        },
+        "url": {
+          "description": "Downloaded under the same rules as a `direct` source of a plan: an `https` URL, or the\nanswer is refused.",
+          "type": "string"
+        },
+        "version": {
+          "description": "The platform's id of the file the ref resolved to.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "version",
+        "url",
+        "fileName"
+      ]
+    },
+    "SettingsErrorDto": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "notFound"
+            }
+          },
+          "required": [
+            "kind"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "const": "storage"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ]
+        }
+      ]
+    },
+    "WriteInstanceFileParamsDto": {
+      "description": "Parameters of the `write_instance_file` host function — the only way a plugin may put a\nfile inside an instance directory.\n\nThe path is **not** a WASI path: `/instances/<id>/...` and `/mnt/d/...` forms are refused.\nA plugin names the instance by id and the file by a path relative to that instance's root,\nand the host decides where that lands on disk.",
+      "type": "object",
+      "properties": {
+        "bytes": {
+          "description": "File contents. The whole file is replaced; the host caps the size. Travels as a msgpack\n`bin` as the body of `HttpResponseDto` does.",
+          "type": "string",
+          "contentEncoding": "binary",
+          "x-msgpack": "bin"
+        },
+        "instanceId": {
+          "description": "Id of an existing instance. An unknown id is an error, not a directory the host creates.",
+          "type": "string"
+        },
+        "relativePath": {
+          "description": "Path relative to the instance root, `/`-separated. Must be made of plain name segments:\nno leading separator, no drive letter, no `.` or `..`.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "instanceId",
+        "relativePath",
+        "bytes"
+      ]
+    }
+  }
+}

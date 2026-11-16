@@ -1,8 +1,9 @@
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::v0::LoadConfigTypeDto;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, JsonSchema, Deserialize, Clone)]
 #[serde(
     tag = "kind",
     content = "data",
@@ -94,7 +95,7 @@ pub enum PluginErrorDto {
     },
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Serialize, JsonSchema, Deserialize, Clone, Copy, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum PluginSourceTypeDto {
     GitHub,
@@ -102,7 +103,7 @@ pub enum PluginSourceTypeDto {
 }
 
 /// Why a command was not run.
-#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Serialize, JsonSchema, Deserialize, Clone, Copy, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum CommandRefusalDto {
     /// The user said no, or said it earlier and the plugin has not been reloaded since.
@@ -116,7 +117,7 @@ pub enum CommandRefusalDto {
 }
 
 /// Why a call into a plugin failed.
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, JsonSchema, Deserialize, Clone)]
 #[serde(
     tag = "kind",
     content = "data",
@@ -140,7 +141,7 @@ pub enum PluginCallErrorDto {
     Reentrant,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, JsonSchema, Deserialize, Clone)]
 #[serde(
     tag = "kind",
     content = "data",

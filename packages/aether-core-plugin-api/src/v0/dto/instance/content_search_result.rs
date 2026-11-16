@@ -1,8 +1,9 @@
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::v0::{ContentItemDto, ProviderIdDto};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, JsonSchema, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ContentSearchResultDto {
     /// The page the items are of, counted from 1 (the host refuses `0`, also for an empty result).

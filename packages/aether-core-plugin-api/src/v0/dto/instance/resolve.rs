@@ -3,12 +3,13 @@
 //! Ids are the platform's: a `contentId` is the project, a `version` one concrete file of it,
 //! and an absent `version` asks for the newest one that fits.
 
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::v0::{FileHashDto, ModLoaderDto};
 
 /// The input of `resolveFile`: which file a `providerRef` stands for.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, JsonSchema, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ResolveFileParamsDto {
     pub content_id: String,
@@ -25,7 +26,7 @@ pub struct ResolveFileParamsDto {
 
 /// The answer of `resolveFile`: which bytes the ref stands for. No path: where the file goes is
 /// the plan entry's `relativePath`.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, JsonSchema, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ResolvedFileDto {
     /// The platform's id of the file the ref resolved to.
@@ -46,7 +47,7 @@ pub struct ResolvedFileDto {
 
 /// The input of `resolveInstallPlan`: which content to install, and into what. One shape for a
 /// single mod and a whole modpack, for installing and updating alike.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, JsonSchema, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ResolveInstallPlanParamsDto {
     pub content_id: String,
@@ -64,7 +65,7 @@ pub struct ResolveInstallPlanParamsDto {
 }
 
 /// Where the resolved plan is going to be applied; the plan's `InstallTargetDto` answers it.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, JsonSchema, Deserialize)]
 #[serde(rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum ResolveTargetDto {
     /// Install into, or update, an existing instance, with the game version and loader it runs
@@ -84,7 +85,7 @@ pub enum ResolveTargetDto {
 }
 
 /// The input of `resolvePackMetadata`: where to read a pack from.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, JsonSchema, Deserialize)]
 #[serde(rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum PackSourceDto {
     /// A pack hosted on the provider's platform; absent `version` — the version an update would
@@ -105,7 +106,7 @@ pub enum PackSourceDto {
 }
 
 /// The answer of `resolvePackMetadata`: a pack's description, read without resolving its files.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, JsonSchema, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PackMetadataDto {
     pub name: String,

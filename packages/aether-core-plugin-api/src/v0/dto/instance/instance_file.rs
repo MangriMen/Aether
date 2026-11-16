@@ -1,3 +1,4 @@
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_with::{Bytes, serde_as};
 
@@ -8,7 +9,7 @@ use serde_with::{Bytes, serde_as};
 /// A plugin names the instance by id and the file by a path relative to that instance's root,
 /// and the host decides where that lands on disk.
 #[serde_as]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, JsonSchema, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct WriteInstanceFileParamsDto {
     /// Id of an existing instance. An unknown id is an error, not a directory the host creates.
@@ -19,6 +20,7 @@ pub struct WriteInstanceFileParamsDto {
     /// File contents. The whole file is replaced; the host caps the size. Travels as a msgpack
     /// `bin` as the body of `HttpResponseDto` does.
     #[serde_as(as = "Bytes")]
+    #[schemars(schema_with = "crate::v0::schema::bytes")]
     pub bytes: Vec<u8>,
 }
 
@@ -27,13 +29,17 @@ pub struct WriteInstanceFileParamsDto {
 /// A newtype, so that the bytes can be encoded as `bin` — a bare `Vec<u8>` result would be an
 /// array of numbers.
 #[serde_as]
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct InstanceFileBytesDto(#[serde_as(as = "Bytes")] pub Vec<u8>);
+#[derive(Serialize, JsonSchema, Deserialize, Debug, Clone)]
+pub struct InstanceFileBytesDto(
+    #[serde_as(as = "Bytes")]
+    #[schemars(schema_with = "crate::v0::schema::bytes")]
+    pub Vec<u8>,
+);
 
 /// Parameters of the `read_instance_file` host function.
 ///
 /// Same path rules as [`WriteInstanceFileParamsDto`].
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, JsonSchema, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ReadInstanceFileParamsDto {
     /// Id of an existing instance.
