@@ -255,7 +255,7 @@ pub async fn build_container(
         event_emitter.clone(),
         progress_bar_storage.clone(),
     ));
-    // Two clients over one connection pool, each with its own queue, so that a long line of
+    // Two clients over the shared connection pool, each with its own queue, so that a long line of
     // file downloads never holds a metadata request back; see `ApiSemaphore`. A service that
     // does both takes both.
     let download_client: Arc<ReqwestClient<ProgressServiceType>> =
