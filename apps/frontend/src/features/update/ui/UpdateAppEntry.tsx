@@ -74,7 +74,9 @@ export const UpdateAppEntry: Component<UpdateAppEntryProps> = (props) => {
           onSubmitUpdate={() => setIsDialogOpen(true)}
         />
       </SettingsEntry>
-      <RunningGamesHint games={runningGames.names()} />
+      <Show when={isUpdateAvailable()}>
+        <RunningGamesHint games={runningGames.names()} />
+      </Show>
       <UpdateAndRestartWarningDialog
         open={isDialogOpen()}
         onOpenChange={setIsDialogOpen}

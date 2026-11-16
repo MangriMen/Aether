@@ -8,7 +8,7 @@ const instances = [
 ];
 
 describe('getRunningGameNames', () => {
-  it('should_name_only_the_games_that_run', () => {
+  it('should_name_only_the_games_that_run_when_others_are_idle', () => {
     expect(
       getRunningGameNames(
         {
@@ -19,6 +19,15 @@ describe('getRunningGameNames', () => {
         instances,
       ),
     ).toEqual(['Alpha']);
+  });
+
+  it('should_name_a_game_that_is_launching_when_it_has_no_process_yet', () => {
+    expect(
+      getRunningGameNames(
+        { b: { isRunning: false, isLoading: true } },
+        instances,
+      ),
+    ).toEqual(['Beta']);
   });
 
   it('should_be_empty_when_nothing_runs_so_the_update_is_free', () => {

@@ -17,7 +17,7 @@ use aether_core::shared::error::SharedSource;
 use crate::features::events::AppEvent;
 use crate::features::update::UpdatePhase;
 use crate::features::update::UpdateProgress;
-use crate::features::update::{UpdateError, UpdateService, UpdateStatus};
+use crate::features::update::{BeforeInstall, UpdateError, UpdateService, UpdateStatus};
 
 pub struct TauriUpdateService<R: tauri::Runtime> {
     app: AppHandle<R>,
@@ -47,7 +47,7 @@ impl<R: tauri::Runtime> UpdateService for TauriUpdateService<R> {
         Ok(update.map(Into::into))
     }
 
-    async fn install(&self) -> Result<(), UpdateError> {
+    async fn install(&self, before_install: BeforeInstall<'_>) -> Result<(), UpdateError> {
         let update = {
             let mut cache = self.pending_update.lock().await;
             cache.take().ok_or(UpdateError::NoPendingUpdate)?
@@ -69,7 +69,7 @@ impl<R: tauri::Runtime> UpdateService for TauriUpdateService<R> {
         let current_version = update.current_version.clone();
 
         let update_result = update
-            .download_and_install(
+            .download(
                 |chunk_length, total_length| {
                     downloaded += chunk_length;
                     content_length = total_length;
@@ -111,9 +111,17 @@ impl<R: tauri::Runtime> UpdateService for TauriUpdateService<R> {
             )
             .await;
 
-        if let Err(e) = update_result {
+        // A game started during the download must not be left without the launcher.
+        let installed = match update_result {
+            Ok(bytes) => match before_install().await {
+                Ok(()) => update.install(bytes).map_err(install_error),
+                Err(error) => Err(error),
+            },
+            Err(e) => Err(install_error(e)),
+        };
+
+        if let Err(error) = installed {
             // Logged by the command that returns it.
-            let error = install_error(e);
             self.event_emitter
                 .emit_safe(UpdateProgress {
                     fraction: None,

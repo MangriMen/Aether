@@ -107,7 +107,7 @@ describe('showUpdateAvailable', () => {
     expect(toast.show).toHaveBeenCalledTimes(2);
   });
 
-  it('should_disable_the_update_button_while_a_game_runs', async () => {
+  it('should_disable_the_update_button_when_a_game_runs', async () => {
     const show = await load();
     games.names = ['Alpha'];
 

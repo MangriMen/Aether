@@ -71,7 +71,7 @@ mod tests {
     }
 
     #[test]
-    fn should_serialize_a_running_game_without_payload() {
+    fn should_serialize_a_running_game_when_it_has_no_payload() {
         assert_eq!(
             serde_json::to_value(UpdateErrorDto::from(UpdateError::GameRunning)).unwrap(),
             json!({"code": "GAME_RUNNING"})

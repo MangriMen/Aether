@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{future::Future, pin::Pin, sync::Arc};
 
 use aether_core::features::process::ListProcessMetadataUseCasePort;
 
@@ -22,19 +22,28 @@ impl<US: UpdateService> InstallUpdateUseCase<US> {
 
     /// Installs the update and restarts the launcher, unless a game is running: it would be left
     /// without the launcher, which tracks its time, runs its post-exit hook and detects a crash.
+    /// Checked again after the download, as a game may have been started during it.
     pub async fn execute(&self) -> Result<(), UpdateError> {
-        // A process that cannot be listed is not known to be absent.
-        let running = self
-            .processes
-            .execute()
-            .await
-            .map_or(true, |p| !p.is_empty());
+        ensure_no_game_runs(self.processes.as_ref()).await?;
 
-        if running {
-            return Err(UpdateError::GameRunning);
-        }
+        let processes = self.processes.clone();
+        let before_install = move || {
+            let processes = processes.clone();
+            Box::pin(async move { ensure_no_game_runs(processes.as_ref()).await })
+                as Pin<Box<dyn Future<Output = Result<(), UpdateError>> + Send>>
+        };
 
-        self.update_service.install().await
+        self.update_service.install(&before_install).await
+    }
+}
+
+async fn ensure_no_game_runs(
+    processes: &dyn ListProcessMetadataUseCasePort,
+) -> Result<(), UpdateError> {
+    // A process that cannot be listed is not known to be absent.
+    match processes.execute().await {
+        Ok(running) if running.is_empty() => Ok(()),
+        _ => Err(UpdateError::GameRunning),
     }
 }
 
@@ -47,7 +56,7 @@ mod tests {
     use async_trait::async_trait;
 
     use super::*;
-    use crate::features::update::UpdateStatus;
+    use crate::features::update::{BeforeInstall, UpdateStatus};
 
     struct MockUpdateService {
         install_result: Result<(), UpdateError>,
@@ -60,19 +69,29 @@ mod tests {
             Ok(None)
         }
 
-        async fn install(&self) -> Result<(), UpdateError> {
+        async fn install(&self, before_install: BeforeInstall<'_>) -> Result<(), UpdateError> {
+            before_install().await?;
             self.installs.fetch_add(1, Ordering::SeqCst);
             self.install_result.clone()
         }
     }
 
-    /// The listed processes, or `None` for a list that cannot be read.
-    struct MockProcesses(Option<usize>);
+    /// The processes listed on each call in turn (the last one repeats), `None` for a list that
+    /// cannot be read.
+    struct MockProcesses(Vec<Option<usize>>, AtomicUsize);
+
+    impl MockProcesses {
+        fn new(lists: Vec<Option<usize>>) -> Self {
+            Self(lists, AtomicUsize::new(0))
+        }
+    }
 
     #[async_trait]
     impl ListProcessMetadataUseCasePort for MockProcesses {
         async fn execute(&self) -> Result<Vec<MinecraftProcessMetadata>, ProcessError> {
-            self.0
+            let call = self.1.fetch_add(1, Ordering::SeqCst).min(self.0.len() - 1);
+
+            self.0[call]
                 .map(|n| {
                     (0..n)
                         .map(|_| MinecraftProcessMetadata::new(InstanceId::generate()))
@@ -93,7 +112,7 @@ mod tests {
     async fn install_failure() {
         let use_case = InstallUpdateUseCase::new(
             service(Err(UpdateError::NoPendingUpdate)),
-            Arc::new(MockProcesses(Some(0))),
+            Arc::new(MockProcesses::new(vec![Some(0)])),
         );
         let result = use_case.execute().await;
         assert!(matches!(result, Err(UpdateError::NoPendingUpdate)));
@@ -102,16 +121,18 @@ mod tests {
     #[tokio::test]
     async fn should_install_when_no_game_is_running() {
         let service = service(Ok(()));
-        let use_case = InstallUpdateUseCase::new(service.clone(), Arc::new(MockProcesses(Some(0))));
+        let use_case =
+            InstallUpdateUseCase::new(service.clone(), Arc::new(MockProcesses::new(vec![Some(0)])));
 
         assert!(use_case.execute().await.is_ok());
         assert_eq!(service.installs.load(Ordering::SeqCst), 1);
     }
 
     #[tokio::test]
-    async fn should_refuse_to_install_while_a_game_is_running() {
+    async fn should_refuse_to_install_when_a_game_is_running() {
         let service = service(Ok(()));
-        let use_case = InstallUpdateUseCase::new(service.clone(), Arc::new(MockProcesses(Some(1))));
+        let use_case =
+            InstallUpdateUseCase::new(service.clone(), Arc::new(MockProcesses::new(vec![Some(1)])));
 
         assert!(matches!(
             use_case.execute().await,
@@ -123,7 +144,23 @@ mod tests {
     #[tokio::test]
     async fn should_refuse_to_install_when_the_running_games_are_unknown() {
         let service = service(Ok(()));
-        let use_case = InstallUpdateUseCase::new(service.clone(), Arc::new(MockProcesses(None)));
+        let use_case =
+            InstallUpdateUseCase::new(service.clone(), Arc::new(MockProcesses::new(vec![None])));
+
+        assert!(matches!(
+            use_case.execute().await,
+            Err(UpdateError::GameRunning)
+        ));
+        assert_eq!(service.installs.load(Ordering::SeqCst), 0);
+    }
+
+    #[tokio::test]
+    async fn should_refuse_to_restart_when_a_game_started_during_the_download() {
+        let service = service(Ok(()));
+        let use_case = InstallUpdateUseCase::new(
+            service.clone(),
+            Arc::new(MockProcesses::new(vec![Some(0), Some(1)])),
+        );
 
         assert!(matches!(
             use_case.execute().await,

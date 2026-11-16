@@ -19,6 +19,7 @@ impl<US: UpdateService> CheckForUpdatesUseCase<US> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::features::update::BeforeInstall;
     use async_trait::async_trait;
 
     struct MockUpdateService {
@@ -31,7 +32,7 @@ mod tests {
             self.check_result.clone()
         }
 
-        async fn install(&self) -> Result<(), UpdateError> {
+        async fn install(&self, _before_install: BeforeInstall<'_>) -> Result<(), UpdateError> {
             Ok(())
         }
     }
