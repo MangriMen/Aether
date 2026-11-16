@@ -20,7 +20,6 @@ use crate::{
         settings::LocationInfo,
     },
     shared::io::infra::create_dir_all,
-    with_mut_ref,
 };
 
 use super::get_minecraft_arguments::get_minecraft_arguments;
@@ -37,6 +36,8 @@ pub struct GetMinecraftLaunchCommandParams {
 /// The process to start, and the values it is given that must not be kept in logs.
 pub struct MinecraftLaunchCommand {
     pub command: Command,
+    /// The java is started by the user's wrapper command, so it is not the process started.
+    pub wrapped: bool,
     pub secrets: Vec<String>,
 }
 
@@ -172,7 +173,7 @@ impl GetMinecraftLaunchCommandUseCase {
         .into_iter()
         .collect::<Vec<_>>();
 
-        let mut command = java_command(&launch_settings, &java);
+        let (mut command, wrapped) = java_command(&launch_settings, &java);
 
         command
             .args(jvm_arguments)
@@ -186,6 +187,7 @@ impl GetMinecraftLaunchCommandUseCase {
 
         Ok(MinecraftLaunchCommand {
             command,
+            wrapped,
             secrets: vec![credentials.access_token().to_owned()],
         })
     }
@@ -249,12 +251,15 @@ impl MinecraftLaunchCommandService for GetMinecraftLaunchCommandUseCase {
     }
 }
 
-/// The process to start: the java binary, behind the user's wrapper command when one is set.
-fn java_command(launch_settings: &LaunchSettings, java: &Java) -> Command {
+/// The process to start: the java binary, behind the user's wrapper command when one is set
+/// (then `true`).
+fn java_command(launch_settings: &LaunchSettings, java: &Java) -> (Command, bool) {
     if launch_settings.hooks.wrapper().is_empty() {
-        Command::new(java.path())
+        (Command::new(java.path()), false)
     } else {
-        with_mut_ref!(it = Command::new(launch_settings.hooks.wrapper()) => {it.arg(java.path())})
+        let mut command = Command::new(launch_settings.hooks.wrapper());
+        command.arg(java.path());
+        (command, true)
     }
 }
 

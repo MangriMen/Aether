@@ -17,6 +17,16 @@ pub enum ProcessError {
     Io(#[from] IoError),
 }
 
+/// What stopping a started process ends.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum KillScope {
+    /// The started process alone.
+    Process,
+    /// The started process and every process it starts: a job object on Windows, a process
+    /// group on Unix.
+    Tree,
+}
+
 #[derive(Debug, Clone)]
 pub struct MinecraftProcessMetadata {
     uuid: Uuid,

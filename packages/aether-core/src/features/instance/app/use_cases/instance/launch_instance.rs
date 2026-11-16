@@ -14,7 +14,7 @@ use crate::{
             MinecraftHealthService, MinecraftLaunchCommandService,
         },
         plugins::{PluginInternalEvent, PluginRegistry, PluginState},
-        process::{MinecraftProcessMetadata, ProcessStartService, ProcessStorage},
+        process::{KillScope, MinecraftProcessMetadata, ProcessStartService, ProcessStorage},
         settings::{DefaultInstanceSettings, DefaultInstanceSettingsStorage, LocationInfo},
     },
     shared::serializable_command::domain::SerializableCommand,
@@ -219,11 +219,19 @@ impl LaunchInstanceUseCase {
             })
             .await?;
 
+        // Behind a wrapper the started process is the wrapper: stopping it alone would leave
+        // the game running.
+        let kill_scope = if launch_command.wrapped {
+            KillScope::Tree
+        } else {
+            KillScope::Process
+        };
         let metadata = self
             .process_start_service
             .execute(
                 instance_id,
                 launch_command.command,
+                kill_scope,
                 launch_settings.hooks.post_exit().to_owned(),
                 launch_command.secrets,
             )

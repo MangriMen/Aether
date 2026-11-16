@@ -1,3 +1,3 @@
 mod models;
 
-pub use models::{MinecraftProcessMetadata, ProcessError};
+pub use models::{KillScope, MinecraftProcessMetadata, ProcessError};
