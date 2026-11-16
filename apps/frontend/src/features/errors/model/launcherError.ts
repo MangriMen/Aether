@@ -291,6 +291,7 @@ export const getTranslatedError = (
       withFormattedArgs(
         key,
         withTranslatedReason(key, withTranslatedNames(key, args, t), t),
+        t,
       ),
     ) ?? key;
   const causeText = getCauseText(getCause(error), t);
@@ -345,10 +346,23 @@ const DURATION_KEYS: ReadonlySet<string> = new Set([
   'java.PROPERTIES_TIMEOUT',
 ]);
 
-/** Values the core sends as raw numbers, turned into text in the language of the interface. */
+/** The most names a message lists; the rest are counted. */
+const MAX_LISTED_NAMES = 5;
+
+const joinNames = (names: string[], t: TFunction): string => {
+  const listed = names.slice(0, MAX_LISTED_NAMES).join(', ');
+  const more = names.length - MAX_LISTED_NAMES;
+
+  return more > 0
+    ? `${listed} ${t('errors.moreItems', { count: more })}`
+    : listed;
+};
+
+/** Values the core sends as raw numbers, turned into text in the language of the interface; a list of names reads as one, comma-separated. */
 const withFormattedArgs = (
   key: string,
   args: unknown,
+  t: TFunction,
 ): Parameters<TFunction>[1] => {
   if (
     DURATION_KEYS.has(key) &&
@@ -360,6 +374,17 @@ const withFormattedArgs = (
       ...(args as Record<string, string | number | boolean>),
       duration: formatDuration(Number(args.seconds), dayjs.locale()),
     };
+  }
+
+  if (isRecord(args)) {
+    return Object.fromEntries(
+      Object.entries(args).map(([name, value]) => [
+        name,
+        Array.isArray(value) && value.every((item) => typeof item === 'string')
+          ? joinNames(value, t)
+          : value,
+      ]),
+    ) as Parameters<TFunction>[1];
   }
 
   return args as Parameters<TFunction>[1];

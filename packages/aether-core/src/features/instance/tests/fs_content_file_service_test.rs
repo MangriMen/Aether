@@ -1,12 +1,13 @@
 use std::sync::Arc;
 
+use rstest::rstest;
 use tempfile::TempDir;
 
 use crate::features::instance::{
     ContentPath, InstanceError, InstanceId, app::ContentFileService, infra::FsContentFileService,
 };
 use crate::features::settings::LocationInfo;
-use crate::test_support::link_dir;
+use crate::test_support::{block_rename, link_dir};
 
 fn cp(path: &str) -> ContentPath {
     ContentPath::parse(path).unwrap()
@@ -634,4 +635,125 @@ async fn should_refuse_to_change_a_file_when_a_symlink_leads_out_of_the_instance
 
     assert!(outside.join("escaped.jar").exists());
     assert!(!outside.join("escaped.jar.disabled").exists());
+}
+
+#[rstest]
+#[case::disable(false)]
+#[case::enable(true)]
+#[tokio::test]
+async fn should_change_the_other_files_and_report_the_failed_when_one_cannot_be_renamed(
+    #[case] enable: bool,
+) {
+    let (_temp_dir, location_info) = setup_temp_location();
+    let service = FsContentFileService::new(location_info.clone());
+    let instance_id = &InstanceId::try_from("test-partial-toggle").unwrap();
+    let dir = location_info.instance_dir(instance_id);
+    let (from, to, action) = if enable {
+        (".jar.disabled", ".jar", "enable")
+    } else {
+        (".jar", ".jar.disabled", "disable")
+    };
+    // On Unix the directory is locked as a whole, so the failing file has its own.
+    tokio::fs::create_dir_all(dir.join("mods")).await.unwrap();
+    tokio::fs::create_dir_all(dir.join("shaderpacks"))
+        .await
+        .unwrap();
+    for file in ["mods/a", "mods/c"] {
+        tokio::fs::write(dir.join(format!("{file}{from}")), b"data")
+            .await
+            .unwrap();
+    }
+    tokio::fs::write(dir.join(format!("shaderpacks/b{from}")), b"data")
+        .await
+        .unwrap();
+    let Some(_block) = block_rename(&dir.join(format!("shaderpacks/b{from}"))) else {
+        return;
+    };
+    let paths = [cp("mods/a.jar"), cp("shaderpacks/b.jar"), cp("mods/c.jar")];
+
+    let result = if enable {
+        service.enable_content_files(instance_id, &paths).await
+    } else {
+        service.disable_content_files(instance_id, &paths).await
+    };
+
+    let Err(InstanceError::ContentStateChangeFailed { changed, failures }) = result else {
+        panic!("{action} should report the file that failed: {result:?}");
+    };
+    assert_eq!(changed, 2);
+    assert_eq!(
+        failures
+            .iter()
+            .map(|failure| failure.content_path.to_string())
+            .collect::<Vec<_>>(),
+        ["shaderpacks/b.jar"]
+    );
+    for file in ["mods/a", "mods/c"] {
+        assert!(dir.join(format!("{file}{to}")).exists(), "{file} changed");
+        assert!(!dir.join(format!("{file}{from}")).exists(), "{file} moved");
+    }
+    assert!(dir.join(format!("shaderpacks/b{from}")).exists());
+}
+
+#[rstest]
+#[case::disable(false)]
+#[case::enable(true)]
+#[tokio::test]
+async fn should_rename_a_file_once_when_its_path_is_given_twice(#[case] enable: bool) {
+    let (_temp_dir, location_info) = setup_temp_location();
+    let service = FsContentFileService::new(location_info.clone());
+    let instance_id = &InstanceId::try_from("test-toggle-twice").unwrap();
+    let dir = location_info.instance_dir(instance_id);
+    tokio::fs::create_dir_all(dir.join("mods")).await.unwrap();
+    let (from, to) = if enable {
+        ("mods/a.jar.disabled", "mods/a.jar")
+    } else {
+        ("mods/a.jar", "mods/a.jar.disabled")
+    };
+    tokio::fs::write(dir.join(from), b"data").await.unwrap();
+    let paths = [cp("mods/a.jar"), cp("mods/a.jar")];
+
+    if enable {
+        service.enable_content_files(instance_id, &paths).await
+    } else {
+        service.disable_content_files(instance_id, &paths).await
+    }
+    .expect("a path given twice is not a failure");
+
+    assert!(dir.join(to).exists());
+    assert!(!dir.join(from).exists());
+}
+
+/// A path outside the instance fails the call before any file is renamed.
+#[tokio::test]
+async fn should_rename_nothing_when_a_later_path_leads_out_of_the_instance() {
+    let (temp_dir, location_info) = setup_temp_location();
+    let service = FsContentFileService::new(location_info.clone());
+    let instance_id = &InstanceId::try_from("test-toggle-escape").unwrap();
+    let instance_dir = location_info.instance_dir(instance_id);
+    tokio::fs::create_dir_all(instance_dir.join("shaderpacks"))
+        .await
+        .unwrap();
+    tokio::fs::write(instance_dir.join("shaderpacks/ok.zip"), b"data")
+        .await
+        .unwrap();
+    let outside = temp_dir.path().join("outside");
+    std::fs::create_dir_all(&outside).unwrap();
+    std::fs::write(outside.join("escaped.jar"), b"outside").unwrap();
+    link_dir(&outside, &instance_dir.join("mods"));
+
+    let err = service
+        .disable_content_files(
+            instance_id,
+            &[cp("shaderpacks/ok.zip"), cp("mods/escaped.jar")],
+        )
+        .await
+        .expect_err("the escaping path should be refused");
+
+    assert!(
+        matches!(err, InstanceError::PathEscapesInstance { .. }),
+        "{err:?}"
+    );
+    assert!(instance_dir.join("shaderpacks/ok.zip").exists());
+    assert!(!instance_dir.join("shaderpacks/ok.zip.disabled").exists());
 }

@@ -4,7 +4,8 @@ use std::sync::Arc;
 use uuid::Uuid;
 
 use super::{
-    BrokenInstanceReason, InvalidContentId, InvalidPagination, PaginationField, PaginationRejection,
+    BrokenInstanceReason, ContentPath, InvalidContentId, InvalidPagination, PaginationField,
+    PaginationRejection,
 };
 use crate::features::{
     auth::AuthApplicationError,
@@ -58,6 +59,21 @@ impl StorageError {
     pub fn other(err: impl Into<BoxedSource>) -> Self {
         Self::Other(shared_source(err))
     }
+}
+
+/// A content file whose state (enabled or disabled) could not be changed, and why.
+#[derive(Clone, Debug)]
+pub struct ContentFileFailure {
+    pub content_path: ContentPath,
+    pub cause: StorageError,
+}
+
+fn describe_failures(failures: &[ContentFileFailure]) -> String {
+    failures
+        .iter()
+        .map(|failure| format!("{}: {}", failure.content_path, failure.cause))
+        .collect::<Vec<_>>()
+        .join("; ")
 }
 
 /// Why a content provider's answer, or the request made to it, is refused. The reasons are the
@@ -350,6 +366,17 @@ pub enum InstanceError {
     NotAContentFile {
         instance_id: String,
         content_path: String,
+    },
+
+    /// A toggle of several files went on past the ones that failed: the others did change.
+    #[error(
+        "Failed to change {} of the content files ({changed} changed): {}",
+        failures.len(),
+        describe_failures(failures)
+    )]
+    ContentStateChangeFailed {
+        changed: usize,
+        failures: Vec<ContentFileFailure>,
     },
 
     // Instance files

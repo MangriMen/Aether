@@ -7,7 +7,7 @@ use crate::{
     features::{
         instance::{
             app::{ContentFileService, DISABLED_SUFFIX, LocatedContentFile},
-            domain::{ContentPath, InstanceError, InstanceId},
+            domain::{ContentFileFailure, ContentPath, InstanceError, InstanceId},
         },
         settings::LocationInfo,
     },
@@ -40,6 +40,36 @@ fn resolve_disabled(
         instance_dir,
         &content_path.with_suffix(DISABLED_SUFFIX)?,
     )
+}
+
+/// Renames every file of `renames` (content path, from, to), the ones before a failure and the
+/// ones after it alike: a file a game holds open fails alone, and the others still change. What
+/// failed is reported together, with how many did change.
+async fn rename_all(renames: Vec<(&ContentPath, PathBuf, PathBuf)>) -> Result<(), InstanceError> {
+    let mut changed = 0;
+    let mut failures = Vec::new();
+    // A path given twice is one file: its second rename would find nothing to rename.
+    let mut seen = std::collections::HashSet::new();
+
+    for (content_path, from, to) in renames {
+        if !seen.insert(from.clone()) {
+            continue;
+        }
+
+        match rename(from, to).await {
+            Ok(()) => changed += 1,
+            Err(err) => failures.push(ContentFileFailure {
+                content_path: content_path.clone(),
+                cause: err.into(),
+            }),
+        }
+    }
+
+    if failures.is_empty() {
+        Ok(())
+    } else {
+        Err(InstanceError::ContentStateChangeFailed { changed, failures })
+    }
 }
 
 pub struct FsContentFileService {
@@ -104,6 +134,7 @@ impl ContentFileService for FsContentFileService {
             return Ok(());
         };
 
+        let mut renames = Vec::new();
         for content_path in content_paths {
             let enabled_path = resolve_content(instance_id, &instance_dir, content_path)?;
 
@@ -113,16 +144,12 @@ impl ContentFileService for FsContentFileService {
 
             let disabled_path = resolve_disabled(instance_id, &instance_dir, content_path)?;
 
-            if !disabled_path.exists() {
-                continue;
+            if disabled_path.exists() {
+                renames.push((content_path, disabled_path, enabled_path));
             }
-
-            rename(disabled_path, enabled_path)
-                .await
-                .map_err(InstanceError::storage)?;
         }
 
-        Ok(())
+        rename_all(renames).await
     }
 
     async fn disable_content_files(
@@ -134,6 +161,7 @@ impl ContentFileService for FsContentFileService {
             return Ok(());
         };
 
+        let mut renames = Vec::new();
         for content_path in content_paths {
             let disabled_path = resolve_disabled(instance_id, &instance_dir, content_path)?;
 
@@ -143,16 +171,12 @@ impl ContentFileService for FsContentFileService {
 
             let enabled_path = resolve_content(instance_id, &instance_dir, content_path)?;
 
-            if !enabled_path.exists() {
-                continue;
+            if enabled_path.exists() {
+                renames.push((content_path, enabled_path, disabled_path));
             }
-
-            rename(enabled_path, disabled_path)
-                .await
-                .map_err(InstanceError::storage)?;
         }
 
-        Ok(())
+        rename_all(renames).await
     }
 
     async fn locate_content_file(

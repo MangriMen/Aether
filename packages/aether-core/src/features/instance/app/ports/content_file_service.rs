@@ -35,6 +35,12 @@ pub trait ContentFileService: Send + Sync {
     ) -> Result<(), InstanceError>;
 
     /// Renames `.disabled` → original for the given content paths.
+    ///
+    /// Here and in [`Self::disable_content_files`], a file that cannot be renamed does not stop
+    /// the others: the call goes on and ends with [`InstanceError::ContentStateChangeFailed`],
+    /// which counts the files that did change and names those that did not. Every path is
+    /// resolved before the first rename, so a path outside the instance fails the call with
+    /// nothing changed.
     async fn enable_content_files(
         &self,
         instance_id: &InstanceId,

@@ -39,6 +39,7 @@
       "INTERNAL": "Unexpected error",
       "DUPLICATE_REQUEST": "This action is already in progress"
     },
+    "moreItems": "and {{count}} more",
     "cause": {
       "io": {
         "notFound": "file or folder not found",
@@ -124,6 +125,7 @@
       "CONTENT_FILENAME": "Invalid content filename",
       "PACK_FILE_NOT_FOUND": "Content file {{content_path}} is not recorded for instance {{instance_id}}",
       "NOT_A_CONTENT_FILE": "{{content_path}} in instance {{instance_id}} is a folder, not a content file",
+      "CONTENT_STATE_CHANGE_FAILED": "Could not change {{paths}}",
       "INVALID_RELATIVE_PATH": "Invalid path {{path}}: {{reason}}",
       "INVALID_CONTENT_ID": "Invalid {{kind}}: {{value}}",
       "INVALID_GAME_VERSION": "Invalid Minecraft version {{value}}: {{reason}}",

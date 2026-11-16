@@ -132,7 +132,8 @@ fn instance_dto(value: &InstanceError) -> InstanceErrorDto {
         // Storage failures until they had kinds of their own; the wire keeps them so.
         InstanceError::InvalidRecord { .. }
         | InstanceError::PackFileNotFound { .. }
-        | InstanceError::NotAContentFile { .. } => Dto::Storage(value.to_string()),
+        | InstanceError::NotAContentFile { .. }
+        | InstanceError::ContentStateChangeFailed { .. } => Dto::Storage(value.to_string()),
         InstanceError::NotFound { instance_id } => Dto::NotFound {
             instance_id: instance_id.clone(),
         },

@@ -245,6 +245,9 @@ export type InstanceErrorDto = { code: "STORAGE"; payload: {
 } } | { code: "NOT_A_CONTENT_FILE"; payload: {
 	instance_id: string,
 	content_path: string,
+} } | { code: "CONTENT_STATE_CHANGE_FAILED"; payload: {
+	paths: string[],
+	cause: CauseDto,
 } } | { code: "INVALID_RELATIVE_PATH"; payload: {
 	path: string,
 	reason: PathRejectionDto,

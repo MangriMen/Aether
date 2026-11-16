@@ -94,6 +94,12 @@ pub enum InstanceErrorDto {
         instance_id: String,
         content_path: String,
     },
+    ContentStateChangeFailed {
+        // The paths that did not change; the others did.
+        paths: Vec<String>,
+        // Why the first of them did not.
+        cause: CauseDto,
+    },
     InvalidRelativePath {
         path: String,
         reason: PathRejectionDto,
@@ -315,6 +321,17 @@ impl InstanceErrorDto {
                 instance_id: instance_id.clone(),
                 content_path: content_path.clone(),
             },
+            InstanceError::ContentStateChangeFailed { failures, .. } => {
+                Self::ContentStateChangeFailed {
+                    paths: failures
+                        .iter()
+                        .map(|failure| failure.content_path.to_string())
+                        .collect(),
+                    cause: failures
+                        .first()
+                        .map_or_else(|| CauseDto::unknown(String::new()), |f| (&f.cause).into()),
+                }
+            }
             InstanceError::ContentDownloadError(failure) => Self::ContentDownloadError {
                 reason: failure.into(),
             },
@@ -539,7 +556,7 @@ impl From<InstanceValidationErrorReason> for InstanceValidationErrorReasonDto {
 mod tests {
     use super::*;
     use aether_core::features::auth::{AuthApplicationError, AuthDomainError};
-    use aether_core::features::instance::BrokenInstanceReason;
+    use aether_core::features::instance::{BrokenInstanceReason, ContentFileFailure, ContentPath};
     use aether_core::features::minecraft::MinecraftApplicationError;
     use aether_core::features::process::ProcessError;
     use aether_core::features::settings::SettingsError;
@@ -652,6 +669,26 @@ mod tests {
         assert_eq!(
             to_json(&err),
             json!({"code": "INVALID_RECORD", "payload": {"instance_id": "i", "reason": {"code": "INVALID_COLUMN", "payload": {"column": "launch_args_json"}}}})
+        );
+    }
+
+    #[test]
+    fn should_name_the_files_and_the_cause_when_a_content_state_change_fails_partly() {
+        let busy = |path: &str| ContentFileFailure {
+            content_path: ContentPath::parse(path).unwrap(),
+            cause: StorageError::from(std::io::Error::from(std::io::ErrorKind::PermissionDenied)),
+        };
+        let err = InstanceError::ContentStateChangeFailed {
+            changed: 3,
+            failures: vec![busy("mods/a.jar"), busy("mods/b.jar")],
+        };
+
+        assert_eq!(
+            to_json(&err),
+            json!({"code": "CONTENT_STATE_CHANGE_FAILED", "payload": {
+                "paths": ["mods/a.jar", "mods/b.jar"],
+                "cause": {"type": "io", "kind": "permissionDenied"}
+            }})
         );
     }
 
