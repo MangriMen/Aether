@@ -18,6 +18,6 @@
   ],
   // tsgo comes from the root @typescript/native-preview
   "ignoreBinaries": ["tsgo"],
-  // pinned so `bun update` keeps browserslist data fresh (no "outdated" warnings)
+  // dev-only, but pinned so `bun update` keeps browserslist data fresh (no "outdated" warnings)
   "ignoreDependencies": ["baseline-browser-mapping", "caniuse-lite"]
 }
