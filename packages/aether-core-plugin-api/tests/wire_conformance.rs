@@ -311,6 +311,10 @@ macro_rules! conforms {
 
 conforms! {
     host_error: "hostError" => v0::HostError,
+    log: "log" => v0::LogParamsDto,
+    java_version: "javaVersion" => v0::JavaVersionParamsDto,
+    instance_id: "instanceId" => v0::InstanceIdParamsDto,
+    change_contents: "changeContents" => v0::ChangeContentsParamsDto,
     command: "command" => v0::CommandDto,
     new_instance: "newInstance" => v0::NewInstanceDto,
     write_instance_file: "writeInstanceFile" => v0::WriteInstanceFileParamsDto,
@@ -320,7 +324,9 @@ conforms! {
     download_to_cache: "downloadToCache" => v0::DownloadToCacheParamsDto,
     output: "output" => v0::OutputDto,
     java: "java" => v0::JavaDto,
-    content_files: "contentFiles" => std::collections::HashMap<String, v0::ContentFileDto>,
+    instance_dir: "instanceDir" => v0::InstanceDirDto,
+    instance_created: "instanceCreated" => v0::InstanceCreatedDto,
+    list_content_result: "listContentResult" => v0::ListContentResultDto,
     instance_file_bytes: "instanceFileBytes" => v0::InstanceFileBytesDto,
     http_response: "httpResponse" => v0::HttpResponseDto,
     cached_file: "cachedFile" => v0::CachedFileDto,

@@ -914,7 +914,7 @@ mod tests {
 
     /// Imports two host functions, with the signatures the core registers them under.
     const IMPORTS_LOG_AND_GET_ID: &str = r#"(module
-        (import "extism:host/user" "log" (func (param i64 i64)))
+        (import "extism:host/user" "log" (func (param i64) (result i64)))
         (import "extism:host/user" "get_id" (func (result i64))))"#;
 
     fn load_failure(result: Result<Plugin, PluginError>) -> String {

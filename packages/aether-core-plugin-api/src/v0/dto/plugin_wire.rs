@@ -2,13 +2,15 @@ use register_schema::RegisterSchema;
 use schemars::JsonSchema;
 
 use super::{
-    CachedFileDto, CheckCompatibilityResultDto, CommandDto, ContentCompatibilityCheckParamsDto,
-    ContentFileDto, ContentItemDto, ContentSearchParamsDto, ContentSearchResultDto,
-    ContentVersionDto, DownloadToCacheParamsDto, GetAuthorsParamsDto, GetAuthorsResultDto,
-    GetContentParamsDto, GetContentsMetadataParamsDto, GetContentsMetadataResultDto,
-    GetVersionParamsDto, GetVersionsMetadataParamsDto, GetVersionsMetadataResultDto, HostError,
-    HttpPostJsonRequestDto, HttpRequestDto, HttpResponseDto, InstallPlanDto, InstanceFileBytesDto,
-    JavaDto, ListVersionsParamsDto, ListVersionsResultDto, NewInstanceDto, OutputDto,
+    CachedFileDto, ChangeContentsParamsDto, CheckCompatibilityResultDto, CommandDto,
+    ContentCompatibilityCheckParamsDto, ContentItemDto, ContentSearchParamsDto,
+    ContentSearchResultDto, ContentVersionDto, DownloadToCacheParamsDto, GetAuthorsParamsDto,
+    GetAuthorsResultDto, GetContentParamsDto, GetContentsMetadataParamsDto,
+    GetContentsMetadataResultDto, GetVersionParamsDto, GetVersionsMetadataParamsDto,
+    GetVersionsMetadataResultDto, HostError, HttpPostJsonRequestDto, HttpRequestDto,
+    HttpResponseDto, InstallPlanDto, InstanceCreatedDto, InstanceDirDto, InstanceFileBytesDto,
+    InstanceIdParamsDto, JavaDto, JavaVersionParamsDto, ListContentResultDto,
+    ListVersionsParamsDto, ListVersionsResultDto, LogParamsDto, NewInstanceDto, OutputDto,
     PackMetadataDto, PackSourceDto, PluginCheckCompatibilityParamsDto, PluginImportInstanceDto,
     PluginInternalEventDto, ReadInstanceFileParamsDto, ResolveFileParamsDto,
     ResolveInstallPlanParamsDto, ResolvedFileDto, UpdateInstanceParamsDto,
@@ -31,6 +33,10 @@ pub struct PluginWireDto {
     pub host_error: HostError,
 
     // Host functions: what the plugin sends.
+    pub log: LogParamsDto,
+    pub java_version: JavaVersionParamsDto,
+    pub instance_id: InstanceIdParamsDto,
+    pub change_contents: ChangeContentsParamsDto,
     pub command: CommandDto,
     pub new_instance: NewInstanceDto,
     pub write_instance_file: WriteInstanceFileParamsDto,
@@ -42,7 +48,9 @@ pub struct PluginWireDto {
     // Host functions: what comes back inside `{"status": "ok", "data": …}`.
     pub output: OutputDto,
     pub java: JavaDto,
-    pub content_files: std::collections::HashMap<String, ContentFileDto>,
+    pub instance_dir: InstanceDirDto,
+    pub instance_created: InstanceCreatedDto,
+    pub list_content_result: ListContentResultDto,
     pub instance_file_bytes: InstanceFileBytesDto,
     pub http_response: HttpResponseDto,
     pub cached_file: CachedFileDto,

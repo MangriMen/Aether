@@ -1,4 +1,4 @@
-use aether_core_plugin_api::v0::JavaDto;
+use aether_core_plugin_api::v0::{JavaDto, JavaVersionParamsDto};
 use extism::host_fn;
 
 use crate::{
@@ -6,7 +6,10 @@ use crate::{
     features::java::{InstallJava, JavaFeature},
 };
 
-use super::super::{super::mappers::to_extism_res, PluginContext, block_on};
+use super::super::{
+    super::mappers::{Wire, to_extism_res},
+    PluginContext, block_on,
+};
 
 // ── Testable business logic ──
 
@@ -37,25 +40,25 @@ pub(crate) async fn handle_install_java(
 // ── Extism host function wrappers ──
 
 host_fn!(
-pub get_java(user_data: PluginContext; version: u32) -> HostReply<JavaDto> {
+pub get_java(user_data: PluginContext; params: Wire<JavaVersionParamsDto>) -> HostReply<JavaDto> {
     let context = user_data.get()?;
     let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
     let container = ctx.upgrade_container().ok_or_else(|| anyhow::Error::msg("AetherContainer dropped before plugin call"))?;
     drop(ctx);
 
     to_extism_res::<JavaDto>(
-        block_on(handle_get_java(version, &container))
+        block_on(handle_get_java(params.0.version, &container))
     )
 });
 
 host_fn!(
-pub install_java(user_data: PluginContext; version: u32) -> HostReply<JavaDto> {
+pub install_java(user_data: PluginContext; params: Wire<JavaVersionParamsDto>) -> HostReply<JavaDto> {
     let context = user_data.get()?;
     let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
     let container = ctx.upgrade_container().ok_or_else(|| anyhow::Error::msg("AetherContainer dropped before plugin call"))?;
     drop(ctx);
 
     to_extism_res::<JavaDto>(
-        block_on(handle_install_java(version, &container))
+        block_on(handle_install_java(params.0.version, &container))
     )
 });

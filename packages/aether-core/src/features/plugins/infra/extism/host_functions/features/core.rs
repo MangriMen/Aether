@@ -12,7 +12,7 @@
 
 use std::{process::Stdio, time::Duration};
 
-use aether_core_plugin_api::v0::{CommandDto, OutputDto};
+use aether_core_plugin_api::v0::{CommandDto, LogLevelDto, LogParamsDto, OutputDto};
 use extism::host_fn;
 use process_wrap::tokio::{ChildWrapper, CommandWrap};
 use tokio::io::{AsyncRead, AsyncReadExt};
@@ -40,21 +40,21 @@ use super::super::{
 
 // ── Testable business logic ──
 
-fn log_level_from_u32(level: u32) -> log::Level {
+fn log_level(level: LogLevelDto) -> log::Level {
     match level {
-        1 => log::Level::Error,
-        2 => log::Level::Warn,
-        3 => log::Level::Info,
-        4 => log::Level::Debug,
-        _ => log::Level::Trace,
+        LogLevelDto::Error => log::Level::Error,
+        LogLevelDto::Warn => log::Level::Warn,
+        LogLevelDto::Info => log::Level::Info,
+        LogLevelDto::Debug => log::Level::Debug,
+        LogLevelDto::Trace => log::Level::Trace,
     }
 }
 
 /// Handle `log` — forward a log message from the plugin.
-pub(crate) fn handle_log(plugin_id: &PluginId, level: u32, msg: &str) {
+pub(crate) fn handle_log(plugin_id: &PluginId, level: LogLevelDto, msg: &str) {
     log::log!(
         target: "plugin",
-        log_level_from_u32(level),
+        log_level(level),
         "[{plugin_id}]: {msg}"
     );
 }
@@ -318,13 +318,13 @@ pub(crate) async fn handle_run_command(
 // ── Extism host function wrappers ──
 
 host_fn!(
-pub log(user_data: PluginContext; level: u32, msg: String) -> () {
+pub log(user_data: PluginContext; params: Wire<LogParamsDto>) -> HostReply<()> {
     let context = user_data.get()?;
     let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
     let id = ctx.id.clone();
 
-    handle_log(&id, level, &msg);
-    Ok(())
+    handle_log(&id, params.0.level, &params.0.message);
+    to_extism_res::<()>(Ok(()))
 });
 
 host_fn!(
