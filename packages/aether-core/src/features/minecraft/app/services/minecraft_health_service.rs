@@ -119,7 +119,7 @@ impl MinecraftHealthService for MinecraftFileHealthService {
 
             // A coordinate that cannot be a path is for the install to report.
             let Ok(lib_path_part) = library_path(&library.name) else {
-                return Ok(false);
+                continue;
             };
 
             let lib_path = libraries_dir.join(&lib_path_part);
