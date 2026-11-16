@@ -198,6 +198,41 @@ fn bins_are_bins(value: &rmpv::Value, schema: &Value, defs: &Map<String, Value>)
     }
 }
 
+/// Every field the schema names is `camelCase`. The codec and the schema agree on a `snake_case` key
+/// just as well as on a camelCase one, so only this tells a slip from a decision.
+#[test]
+fn every_field_name_in_the_schema_is_camel_case() {
+    fn walk(schema: &Value, path: &str, bad: &mut Vec<String>) {
+        match schema {
+            Value::Object(object) => {
+                if let Some(Value::Object(properties)) = object.get("properties") {
+                    for name in properties.keys() {
+                        if name.contains('_') || name.chars().next().is_some_and(char::is_uppercase)
+                        {
+                            bad.push(format!("{path}/{name}"));
+                        }
+                    }
+                }
+                for (key, value) in object {
+                    walk(value, &format!("{path}/{key}"), bad);
+                }
+            }
+            Value::Array(items) => {
+                for (index, value) in items.iter().enumerate() {
+                    walk(value, &format!("{path}/{index}"), bad);
+                }
+            }
+            _ => {}
+        }
+    }
+
+    let bundle: Value = serde_json::from_str(SCHEMA).expect("schema");
+    let mut bad = Vec::new();
+    walk(&bundle, "", &mut bad);
+
+    assert!(bad.is_empty(), "not camelCase: {bad:?}");
+}
+
 /// A copy of the schema that refuses a key it does not list. The published schema leaves them
 /// open so that a plugin may be newer than the host, but what the codec *writes* must be listed,
 /// or a renamed field would pass unnoticed.

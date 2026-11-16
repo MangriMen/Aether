@@ -435,7 +435,7 @@
           "minimum": 0
         },
         "update": {
-          "description": "Where the file can be updated from, one entry per provider.\n\nA list rather than a map keyed by provider: a map key would need a string form of\n[`ProviderIdDto`], and a plugin id may itself contain the separator.",
+          "description": "Where the file can be updated from, one entry per provider.\n\nA list rather than a map keyed by provider: a map key would need a string form of\n[`ProviderIdDto`], which is two ids, not one string.",
           "type": [
             "array",
             "null"
@@ -790,22 +790,22 @@
     "ContentVersionDependencyDto": {
       "type": "object",
       "properties": {
-        "content_id": {
+        "contentId": {
           "type": [
             "string",
             "null"
           ]
         },
-        "dependency_type": {
+        "dependencyType": {
           "$ref": "#/$defs/ContentVersionDependencyTypeDto"
         },
-        "file_name": {
+        "fileName": {
           "type": [
             "string",
             "null"
           ]
         },
-        "version_id": {
+        "versionId": {
           "type": [
             "string",
             "null"
@@ -813,7 +813,7 @@
         }
       },
       "required": [
-        "dependency_type"
+        "dependencyType"
       ]
     },
     "ContentVersionDependencyTypeDto": {
@@ -3878,7 +3878,7 @@
     "PluginCheckCompatibilityParamsDto": {
       "type": "object",
       "properties": {
-        "check_params": {
+        "checkParams": {
           "$ref": "#/$defs/ContentCompatibilityCheckParamsDto"
         },
         "instances": {
@@ -3890,7 +3890,7 @@
       },
       "required": [
         "instances",
-        "check_params"
+        "checkParams"
       ]
     },
     "PluginErrorDto": {

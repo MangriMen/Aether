@@ -11,6 +11,7 @@ pub struct PluginImportInstanceDto {
 }
 
 #[derive(Debug, Clone, Serialize, JsonSchema, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct PluginCheckCompatibilityParamsDto {
     pub instances: Vec<InstanceSummaryDto>,
     pub check_params: ContentCompatibilityCheckParamsDto,

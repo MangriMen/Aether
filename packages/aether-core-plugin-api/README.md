@@ -197,7 +197,7 @@ let response: HostReply<HttpResponseDto> = unsafe { http_get(Wire(HttpRequestDto
 The host performs the request itself and applies, in this order:
 
 1. **Scheme check** — only `http` and `https`.
-2. **Allowlist check in the host** — the URL's host must match the plugin's `allowed_hosts`
+2. **Allowlist check in the host** — the URL's host must match the plugin's `allowedHosts`
    (manifest entries plus whatever the user added in the plugin's settings). Matching uses
    glob semantics.
 3. **Header check** — connection-control and virtual-host headers (`host`, `content-length`,
@@ -213,7 +213,7 @@ The host performs the request itself and applies, in this order:
 6. **Checked redirects** — `301`, `302`, `303`, `307` and `308` are followed, **at most 5**
    times; a sixth redirect fails the call ("Too many redirects: more than 5"). Every hop goes
    through steps 1, 2, 4 and 5 again **before** anything is sent to the new host: the target must be
-   `http`/`https`, its host must be in `allowed_hosts`, all its addresses must be public, and
+   `http`/`https`, its host must be in `allowedHosts`, all its addresses must be public, and
    the connection is pinned to them. On top of that:
    * `https` → `http` is refused ("Redirect from `…` to `…` would downgrade https to http");
    * a relative `Location` is resolved against the URL that answered; a missing or
@@ -232,8 +232,8 @@ The host performs the request itself and applies, in this order:
    Downloads from GitHub releases need this: `/releases/latest/download/<file>` answers `302`
    to `/releases/download/<tag>/<file>`, which answers `302` to a signed, expiring URL on
    `release-assets.githubusercontent.com`. Put **both** `github.com` and
-   `release-assets.githubusercontent.com` in `allowed_hosts`; without the second, the call fails
-   at that hop with "not listed in the plugin's allowed_hosts".
+   `release-assets.githubusercontent.com` in `allowedHosts`; without the second, the call fails
+   at that hop with "not listed in the plugin's allowedHosts".
 7. **Limits** — 30 s total for the whole chain of hops, 10 s to connect, 16 MiB of response
    body. An oversized body fails the call; it is never silently truncated.
 
@@ -245,7 +245,7 @@ carried to another origin (scheme, host or port) — not even `http://a` → `ht
 (`HTTPS_PROXY`, `HTTP_PROXY`, `ALL_PROXY`, `NO_PROXY`) or, failing those, the OS settings, the
 same source the launcher's own requests use — the host functions go through it. The proxy
 then resolves host names and connects itself, so steps 4 and 5 cannot apply to a host *name*:
-it is passed to the proxy unresolved. Everything else stays: the scheme check, `allowed_hosts`
+it is passed to the proxy unresolved. Everything else stays: the scheme check, `allowedHosts`
 on every hop, the redirect limit and rules, the header drop, and the address check of a host
 given as an IP literal. The proxy's own address is not filtered — the user set it up, not the
 plugin. The launcher logs once that plugin requests go through the proxy.
@@ -261,7 +261,7 @@ Repeated response headers collapse to the last value.
 
 `http_post_json(HttpPostJsonRequestDto { url, headers, body }) -> HostResult<HttpResponseDto>`
 goes through the same pipeline as `http_get` (shared code, so the policy cannot drift): scheme,
-`allowed_hosts`, public-address check, pinned resolution, 30 s / 16 MiB response limits.
+`allowedHosts`, public-address check, pinned resolution, 30 s / 16 MiB response limits.
 Differences:
 
 * **No redirects** — any 3xx is an error, never followed: what to do with a POST body on
@@ -288,7 +288,7 @@ let file: HostReply<CachedFileDto> = unsafe { download_to_cache(Wire(DownloadToC
 // file.path == "/cache/downloads/sha1/<hex digest>"
 ```
 
-* **Network policy** — the same code as `http_get`: scheme, `allowed_hosts` in the host,
+* **Network policy** — the same code as `http_get`: scheme, `allowedHosts` in the host,
   public addresses only, pinned resolution, **at most 5 redirects, each hop checked** like the
   first request (see `http_get`, step 6). Any other non-2xx final status is an error. No custom
   headers.
