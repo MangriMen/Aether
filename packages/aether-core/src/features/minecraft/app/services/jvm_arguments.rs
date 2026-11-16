@@ -397,8 +397,7 @@ mod tests {
             assert!(
                 matches!(
                     library_path(coordinate),
-                    Err(MinecraftDomainError::UnsafeMetadataPath { .. }
-                        | MinecraftDomainError::ParseFailed { .. })
+                    Err(MinecraftDomainError::UnsafeMetadataPath { .. })
                 ),
                 "{coordinate} was accepted"
             );
