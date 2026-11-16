@@ -1,6 +1,6 @@
 import type { FormStore } from '@formisch/solid';
 
-import { Field, setInput, getInput } from '@formisch/solid';
+import { Field, setInput, getInput, isDirty, validate } from '@formisch/solid';
 import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
 import type { TFunction } from '@/shared/i18n';
@@ -77,10 +77,10 @@ export const ResolutionPicker: Component<ResolutionFieldProps> = (props) => {
       path: ['resolution', 'height'],
       input: height.toString(),
     });
-    handleResolutionSubmit();
+    void handleResolutionSubmit();
   };
 
-  const handleResolutionSubmit = () => {
+  const handleResolutionSubmit = async () => {
     const width = getInput(local.form, {
       path: ['resolution', 'width'],
     });
@@ -88,11 +88,28 @@ export const ResolutionPicker: Component<ResolutionFieldProps> = (props) => {
       path: ['resolution', 'height'],
     });
 
-    if (!width || !height) {
+    // Without a stored resolution a field shows the default until both parts are typed.
+    if (width === undefined || height === undefined) {
       return;
     }
 
-    local.onSubmit?.(Number(width), Number(height));
+    const result = await validate(local.form);
+
+    if (!result.success) {
+      return;
+    }
+
+    if (
+      !isDirty(local.form, { path: ['resolution', 'width'] }) &&
+      !isDirty(local.form, { path: ['resolution', 'height'] })
+    ) {
+      return;
+    }
+
+    local.onSubmit?.(
+      result.output.resolution.width,
+      result.output.resolution.height,
+    );
   };
 
   const getWidthDisplayValue = (value: string | undefined) => {
@@ -149,7 +166,7 @@ export const ResolutionPicker: Component<ResolutionFieldProps> = (props) => {
                     ...field.props,
                     onBlur: () => {
                       field.props.onBlur?.();
-                      handleResolutionSubmit();
+                      void handleResolutionSubmit();
                     },
                   }}
                 />
@@ -172,7 +189,7 @@ export const ResolutionPicker: Component<ResolutionFieldProps> = (props) => {
                     ...field.props,
                     onBlur: () => {
                       field.props.onBlur?.();
-                      handleResolutionSubmit();
+                      void handleResolutionSubmit();
                     },
                   }}
                 />

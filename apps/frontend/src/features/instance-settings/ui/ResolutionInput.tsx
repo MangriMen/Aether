@@ -16,6 +16,7 @@ export const ResolutionInput: Component<ResolutionInputProps> = (props) => {
       class={cn('w-[6ch]', local.class)}
       inputProps={{
         type: 'text',
+        inputMode: 'numeric',
         class:
           'border-none bg-transparent focus:bg-transparent grow focus-visible:ring-none focus-visible:ring-0 focus-visible:shadow-none text-center px-0',
         maxLength: 5,

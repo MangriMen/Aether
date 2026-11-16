@@ -13,6 +13,7 @@ import {
 } from 'solid-js';
 
 import { useTranslation } from '@/shared/i18n';
+import { logError } from '@/shared/log';
 import {
   Badge,
   DropdownMenu,
@@ -46,7 +47,7 @@ export const ResolutionSelectButton: Component<ResolutionSelectButtonProps> = (
 
   const handleDropdownOpenChange = (isOpen: boolean) => {
     if (isOpen) {
-      updateMaxResolution();
+      updateMaxResolution().catch(logError);
     }
   };
 
@@ -67,7 +68,7 @@ export const ResolutionSelectButton: Component<ResolutionSelectButtonProps> = (
   };
 
   onMount(() => {
-    updateMaxResolution();
+    updateMaxResolution().catch(logError);
   });
 
   return (
