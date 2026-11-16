@@ -1,6 +1,6 @@
 import type { FormStore } from '@formisch/solid';
 
-import { Field, setInput, getInput, isDirty, validate } from '@formisch/solid';
+import { Field, setInput, isDirty, validate } from '@formisch/solid';
 import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
 import type { TFunction } from '@/shared/i18n';
@@ -81,18 +81,6 @@ export const ResolutionPicker: Component<ResolutionFieldProps> = (props) => {
   };
 
   const handleResolutionSubmit = async () => {
-    const width = getInput(local.form, {
-      path: ['resolution', 'width'],
-    });
-    const height = getInput(local.form, {
-      path: ['resolution', 'height'],
-    });
-
-    // Without a stored resolution a field shows the default until both parts are typed.
-    if (width === undefined || height === undefined) {
-      return;
-    }
-
     const result = await validate(local.form);
 
     if (!result.success) {
