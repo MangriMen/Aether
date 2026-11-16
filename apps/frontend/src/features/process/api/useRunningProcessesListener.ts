@@ -3,6 +3,7 @@ import { onMount } from 'solid-js';
 import { processCommands } from '@/platform/ipc';
 import { logError } from '@/shared/log';
 
+import { getRunningState } from '../model/processEventEffects';
 import { useProcessEventListener } from './useProcessEventListener';
 
 export type RunningProcessUpdate = {
@@ -23,11 +24,17 @@ export const useRunningProcessesListener = (
   let liveInstanceIds: Set<string> | undefined = new Set<string>();
 
   useProcessEventListener((event) => {
+    const isRunning = getRunningState(event);
+
+    if (isRunning === undefined) {
+      return;
+    }
+
     liveInstanceIds?.add(event.instanceId);
     callback({
       instanceId: event.instanceId,
       processId: event.processId,
-      isRunning: event.event === 'launched',
+      isRunning,
     });
   });
 

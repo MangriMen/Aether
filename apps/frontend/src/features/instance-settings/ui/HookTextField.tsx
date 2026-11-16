@@ -1,4 +1,10 @@
-import { Field, getInput, type FormStore } from '@formisch/solid';
+import {
+  Field,
+  getErrors,
+  getInput,
+  validate,
+  type FormStore,
+} from '@formisch/solid';
 import { type Accessor, type Component } from 'solid-js';
 
 import { useTranslation } from '@/shared/i18n';
@@ -12,6 +18,8 @@ import type {
 } from '../model/hooksSettingsSchema';
 
 import { getHookDisplayValue } from '../model/hooksDisplay';
+import { UNCLOSED_QUOTE_ERROR } from '../model/hooksSettingsSchema';
+import { normalizeHookCommand } from '../model/parseCommandLine';
 
 export type HookTextFieldProps = {
   fieldConfig: HookFieldConfig;
@@ -40,6 +48,11 @@ export const HookTextField: Component<HookTextFieldProps> = (props) => {
               props.overrideHooksInput,
             )}
             label={t(props.fieldConfig.subLabelKey)}
+            errorMessage={
+              field.errors?.[0] === UNCLOSED_QUOTE_ERROR
+                ? t(UNCLOSED_QUOTE_ERROR)
+                : field.errors?.[0]
+            }
             labelProps={{ variant: 'description' }}
             inputProps={{
               ...field.props,
@@ -47,12 +60,20 @@ export const HookTextField: Component<HookTextFieldProps> = (props) => {
               placeholder: t(
                 'instanceSettings.hookSettings.enterCommandPlaceholder',
               ),
-              onBlur: () => {
+              onBlur: async () => {
                 field.props.onBlur?.();
+                await validate(props.form);
+
+                // A command the core cannot read is not saved; the field shows why.
+                if (getErrors(props.form, { path: [props.fieldConfig.key] })) {
+                  return;
+                }
+
                 props.onChangePartial?.({
-                  [props.fieldConfig.key]: getInput(props.form, {
-                    path: [props.fieldConfig.key],
-                  }),
+                  [props.fieldConfig.key]: normalizeHookCommand(
+                    getInput(props.form, { path: [props.fieldConfig.key] }) ??
+                      '',
+                  ),
                 });
               },
             }}
