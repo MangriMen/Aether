@@ -26,7 +26,7 @@ pub struct ContentFileDto {
     /// Where the file can be updated from, one entry per provider.
     ///
     /// A list rather than a map keyed by provider: a map key would need a string form of
-    /// [`ProviderIdDto`], and a plugin id may itself contain the separator.
+    /// [`ProviderIdDto`], which is two ids, not one string.
     pub update: Option<Vec<ContentFileUpdateInfoDto>>,
 }
 
