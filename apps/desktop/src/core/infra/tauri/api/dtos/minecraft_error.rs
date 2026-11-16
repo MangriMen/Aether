@@ -43,6 +43,10 @@ pub enum MinecraftErrorDto {
     InvalidLogConfigName {
         name: String,
     },
+    UnsafeMetadataPath {
+        entity_type: GamePathKindDto,
+        value: String,
+    },
     Storage {
         cause: CauseDto,
     },
@@ -190,6 +194,12 @@ impl From<&MinecraftDomainError> for MinecraftErrorDto {
             MinecraftDomainError::StorageFailure(err) => Self::StorageFailure { cause: err.into() },
             MinecraftDomainError::InvalidLogConfigName { name } => {
                 Self::InvalidLogConfigName { name: name.clone() }
+            }
+            MinecraftDomainError::UnsafeMetadataPath { entity_type, value } => {
+                Self::UnsafeMetadataPath {
+                    entity_type: (*entity_type).into(),
+                    value: value.clone(),
+                }
             }
         }
     }
@@ -377,6 +387,22 @@ mod tests {
         assert_eq!(
             out,
             json!({"code": "INVALID_LOG_CONFIG_NAME", "payload": {"name": "../x.xml"}})
+        );
+    }
+
+    #[test]
+    fn should_serialize_an_unsafe_metadata_path_with_its_kind_and_value() {
+        let out = domain(&MinecraftDomainError::UnsafeMetadataPath {
+            entity_type: GamePathKind::Library,
+            value: "g:../x:1".into(),
+        });
+
+        assert_eq!(
+            out,
+            json!({
+                "code": "UNSAFE_METADATA_PATH",
+                "payload": {"entity_type": "LIBRARY", "value": "g:../x:1"}
+            })
         );
     }
 

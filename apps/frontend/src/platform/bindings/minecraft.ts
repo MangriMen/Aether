@@ -381,6 +381,9 @@ export type MinecraftErrorDto = { code: "VERSION_NOT_FOUND"; payload: {
 	cause: CauseDto,
 } } | { code: "INVALID_LOG_CONFIG_NAME"; payload: {
 	name: string,
+} } | { code: "UNSAFE_METADATA_PATH"; payload: {
+	entity_type: GamePathKindDto,
+	value: string,
 } } | { code: "STORAGE"; payload: {
 	cause: CauseDto,
 } };

@@ -390,7 +390,8 @@ impl From<&MinecraftDomainError> for MinecraftErrorDto {
             MinecraftDomainError::StorageFailure(err) => Self::StorageFailure {
                 reason: err.to_string(),
             },
-            MinecraftDomainError::InvalidLogConfigName { .. } => Self::StorageFailure {
+            MinecraftDomainError::InvalidLogConfigName { .. }
+            | MinecraftDomainError::UnsafeMetadataPath { .. } => Self::StorageFailure {
                 reason: value.to_string(),
             },
         }

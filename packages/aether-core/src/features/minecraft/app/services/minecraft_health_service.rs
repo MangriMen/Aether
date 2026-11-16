@@ -1,14 +1,13 @@
 use std::{path::Path, sync::Arc};
 
 use async_trait::async_trait;
-use daedalus::get_path_from_artifact;
 
 use crate::features::{
     java::{JavaPath, JavaQueryService},
     minecraft::{
         GameVersion, LoaderVersionPreference, LoaderVersionService, MinecraftApplicationError,
         MinecraftDownloader, MinecraftHealthService, ModLoader, VersionManifestService,
-        get_compatible_java_version, parse_rules, resolve_minecraft_version, vanilla,
+        get_compatible_java_version, library_path, parse_rules, resolve_minecraft_version, vanilla,
         version_jar_name,
     },
     settings::LocationInfo,
@@ -118,7 +117,8 @@ impl MinecraftHealthService for MinecraftFileHealthService {
                 continue;
             }
 
-            let Ok(lib_path_part) = get_path_from_artifact(&library.name) else {
+            // A coordinate that cannot be a path is for the install to report.
+            let Ok(lib_path_part) = library_path(&library.name) else {
                 continue;
             };
 

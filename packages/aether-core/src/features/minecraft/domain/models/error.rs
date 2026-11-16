@@ -107,6 +107,14 @@ pub enum MinecraftDomainError {
     #[error("Storage failure: {0}")]
     StorageFailure(#[source] IoError),
 
+    /// A name from the version's metadata (a library's coordinate, say) that would put a file
+    /// outside the directory it belongs in. `value` is the name as the metadata spelled it.
+    #[error("Unsafe {entity_type} name in metadata: {value}")]
+    UnsafeMetadataPath {
+        entity_type: GamePathKind,
+        value: String,
+    },
+
     /// The log config of a version is named so that it would leave its directory.
     #[error("Invalid log config name: {name}")]
     InvalidLogConfigName { name: String },
