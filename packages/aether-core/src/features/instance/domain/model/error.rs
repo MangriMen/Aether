@@ -327,9 +327,9 @@ pub enum InstanceError {
     #[error("The caches are being cleared; try again in a moment")]
     CachesBeingCleared,
 
-    /// The user called the install off before it changed anything: the instance is as it was,
-    /// and a new one was never created. Not a failure to report.
-    #[error("The install was cancelled")]
+    /// The user called the install, or the launch, off before it changed anything: the instance is
+    /// as it was, and a new one was never created. Not a failure to report.
+    #[error("The install or launch was cancelled")]
     Cancelled,
 
     // Update errors

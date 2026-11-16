@@ -14,6 +14,8 @@ use crate::features::{
     },
 };
 
+use crate::shared::process_tree::wrap_tree;
+
 use super::ManageProcessParams;
 
 pub struct StartProcessUseCase {
@@ -125,12 +127,7 @@ impl ProcessStartService for StartProcessUseCase {
 fn spawn(command: Command, kill_scope: KillScope) -> std::io::Result<Box<dyn ChildWrapper>> {
     let mut command = CommandWrap::from(command);
     if kill_scope == KillScope::Tree {
-        // The job object replaces creation flags set on the command: any the game needs must be
-        // given through `CreationFlags`.
-        #[cfg(windows)]
-        command.wrap(process_wrap::tokio::JobObject);
-        #[cfg(unix)]
-        command.wrap(process_wrap::tokio::ProcessGroup::leader());
+        wrap_tree(&mut command);
     }
     command.spawn()
 }

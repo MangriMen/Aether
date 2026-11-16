@@ -280,6 +280,29 @@ async fn launch(
         .into())
 }
 
+/// Calls off the launch of the instance that has no game yet (it waits for the pre-launch hook,
+/// say). False when there is no such launch: it did not begin, or the game is started already
+/// and is stopped by `stop`. Calling off twice is harmless, so there is no request id to lock.
+#[tauri::command]
+#[specta::specta]
+async fn cancel_launch(id: String, container: State<'_, ContainerState>) -> FrontendResult<bool> {
+    let id = InstanceId::try_from(id).map_err(aether_core::Error::from)?;
+    Ok(container.0.launch_cancellations().cancel(&id))
+}
+
+/// The instances being launched, which may be called off with `cancel_launch`.
+#[tauri::command]
+#[specta::specta]
+async fn list_launching(container: State<'_, ContainerState>) -> FrontendResult<Vec<String>> {
+    Ok(container
+        .0
+        .launch_cancellations()
+        .launching()
+        .into_iter()
+        .map(|id| id.to_string())
+        .collect())
+}
+
 #[tauri::command]
 #[specta::specta]
 async fn stop(

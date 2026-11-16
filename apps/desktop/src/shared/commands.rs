@@ -64,6 +64,8 @@ macro_rules! instance_commands {
             edit,
             remove,
             launch,
+            cancel_launch,
+            list_launching,
             stop,
             import_contents,
             list_content,

@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use crate::features::instance::app::LaunchCancellations;
 use crate::features::instance::app::ports::{
     ChangeContentStateUseCasePort, CheckContentCompatibilityUseCasePort, ContentFileService,
     CreateInstanceUseCasePort, EditInstanceIconUseCasePort, EditInstanceUseCasePort,
@@ -28,6 +29,8 @@ pub trait InstanceCrudPort {
 pub trait InstanceLifecyclePort {
     fn import_instance_use_case(&self) -> Arc<dyn ImportInstanceUseCasePort>;
     fn list_importers_use_case(&self) -> Arc<dyn ListImportersUseCasePort>;
+    /// The launches in progress, which the user may call off.
+    fn launch_cancellations(&self) -> Arc<LaunchCancellations>;
     fn launch_instance_with_active_account_use_case(
         &self,
     ) -> Arc<dyn LaunchInstanceWithActiveAccountUseCasePort>;

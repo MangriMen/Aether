@@ -6,6 +6,7 @@ mod extensions;
 mod icon_asset_reaper;
 mod install_cancellations;
 mod instance_locks;
+mod launch_cancellations;
 mod ports;
 mod use_cases;
 
@@ -20,5 +21,6 @@ pub use extensions::*;
 pub use icon_asset_reaper::{IconAssetGuard, IconAssetReaper};
 pub use install_cancellations::{InstallCancellations, RegisteredInstall};
 pub use instance_locks::{InstanceLockGuard, InstanceLocks, LockRefused};
+pub use launch_cancellations::LaunchCancellations;
 pub use ports::*;
 pub use use_cases::*;

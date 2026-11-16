@@ -5,21 +5,28 @@ import { Button, closeToast, showToast } from '@/shared/ui-kit';
 
 import type { Instance } from '../model/instance';
 
-import { useLaunchInstance, useStopInstance } from '../api/instanceLaunch';
+import {
+  useCancelLaunch,
+  useLaunchInstance,
+  useStopInstance,
+} from '../api/instanceLaunch';
 import { useRemoveInstance } from '../api/instanceQueries';
 import {
   getRemovalBlock,
-  getStoppableProcessId,
+  getStopAction,
   type RemovalBlock,
 } from '../model/runningInstances';
 import { RunningInstancesContext } from '../model/runningInstancesContext';
 
 export const useInstanceActions = () => {
-  const [context, { get: getRunningInstance, setIsLoading, refresh }] =
-    useContext(RunningInstancesContext);
+  const [
+    context,
+    { get: getRunningInstance, setIsLoading, setLaunch, refresh },
+  ] = useContext(RunningInstancesContext);
 
   const { mutateAsync: launchInstance } = useLaunchInstance();
   const { mutateAsync: stopInstance } = useStopInstance();
+  const { mutateAsync: cancelLaunch } = useCancelLaunch();
   const { mutateAsync: removeInstance } = useRemoveInstance();
 
   const [{ t }] = useTranslation();
@@ -35,30 +42,49 @@ export const useInstanceActions = () => {
       return;
     }
 
-    setIsLoading(instance.id, true);
+    setLaunch(instance.id, 'launching');
 
     try {
-      await launchInstance(instance.id);
+      const process = await launchInstance(instance.id);
+
+      // The call off came too late for the launch, and the game started all the same.
+      if (getRunningInstance(context, instance.id)?.launch === 'cancelling') {
+        await stopInstance(process.uuid);
+      }
     } catch {
       /* empty */
     }
 
-    setIsLoading(instance.id, false);
+    setLaunch(instance.id, undefined);
   };
 
+  /** Stops the game of the instance, or calls its launch off while it has no game yet. */
   const stop = async (instance: Instance) => {
-    const uuid = getStoppableProcessId(
-      getRunningInstance(context, instance.id),
-    );
+    const action = getStopAction(getRunningInstance(context, instance.id));
 
-    if (uuid === undefined) {
+    if (action === undefined) {
+      return;
+    }
+
+    if (action.kind === 'cancelLaunch') {
+      // The launch itself ends it: with `Cancelled` when it was called off in time, or with the
+      // game, which `launch` then stops. The state stays until then, so that Play is not offered
+      // while the launch still holds the instance.
+      setLaunch(instance.id, 'cancelling');
+
+      try {
+        await cancelLaunch(instance.id);
+      } catch {
+        setLaunch(instance.id, 'launching');
+      }
+
       return;
     }
 
     setIsLoading(instance.id, true);
 
     try {
-      await stopInstance(uuid);
+      await stopInstance(action.processId);
     } catch {
       /* empty */
     }
@@ -100,9 +126,25 @@ export const useInstanceActions = () => {
     }
 
     if (block === 'launching') {
-      showToast({
+      const handleCancel = async (e: MouseEvent) => {
+        e.stopPropagation();
+        await stop(instance);
+        closeToast(id);
+      };
+
+      const id = showToast({
         title,
-        description: t('instance.removeWhileLaunching'),
+        description: (
+          <div class='gap-2 inline-flex w-full flex-col'>
+            {t('instance.removeWhileLaunching')}
+            <Button
+              class='w-full'
+              variant='secondary'
+              onClick={handleCancel}
+              children={t('instance.stop')}
+            />
+          </div>
+        ),
         variant: 'destructive',
       });
       return;

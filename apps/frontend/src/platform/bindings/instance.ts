@@ -20,6 +20,14 @@ export const commands = {
 	edit: (id: string, editInstance: EditInstanceDto, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<InstanceDto>("plugin:instance|edit", { id, editInstance, requestId }),
 	remove: (id: string, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:instance|remove", { id, requestId }),
 	launch: (id: string, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<MinecraftProcessMetadataDto>("plugin:instance|launch", { id, requestId }),
+	/**
+	 *  Calls off the launch of the instance that has no game yet (it waits for the pre-launch hook,
+	 *  say). False when there is no such launch: it did not begin, or the game is started already
+	 *  and is stopped by `stop`. Calling off twice is harmless, so there is no request id to lock.
+	 */
+	cancelLaunch: (id: string) => __TAURI_INVOKE<boolean>("plugin:instance|cancel_launch", { id }),
+	/**  The instances being launched, which may be called off with `cancel_launch`. */
+	listLaunching: () => __TAURI_INVOKE<string[]>("plugin:instance|list_launching"),
 	stop: (uuid: string, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:instance|stop", { uuid, requestId }),
 	importContents: (instanceId: string, contentType: ContentTypeDto, sourcePaths: string[], requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:instance|import_contents", { instanceId, contentType, sourcePaths, requestId }),
 	listContent: (id: string) => __TAURI_INVOKE<{ [key in string]: ContentFileDto }>("plugin:instance|list_content", { id }),

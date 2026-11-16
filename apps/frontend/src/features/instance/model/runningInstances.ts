@@ -2,10 +2,24 @@ import { createStore, reconcile, unwrap } from 'solid-js/store';
 
 import type { RunningProcessUpdate } from '@/features/process';
 
-import type { RunningInstancesContextValue } from './runningInstancesContext';
+import type {
+  LaunchState,
+  RunningInstancesContextValue,
+} from './runningInstancesContext';
 
 export type RunningInstancesState =
   RunningInstancesContextValue[0]['instances'];
+
+/**
+ * What of a launch outlives the game starting: a call off was asked for, and the launch that
+ * returns with a game stops it. A launch that goes on is over for the state as the game runs.
+ */
+const keptLaunch = (
+  current: { launch?: LaunchState } | undefined,
+): { launch?: LaunchState; isLoading: boolean } =>
+  current?.launch === 'cancelling'
+    ? { launch: 'cancelling', isLoading: true }
+    : { isLoading: false };
 
 /**
  * Applies a process update to the running instances. A finished process leaves no entry
@@ -35,8 +49,8 @@ export const applyRunningProcessUpdate = (
     ...instances,
     [update.instanceId]: {
       processId: update.processId,
-      isLoading: false,
       isRunning: true,
+      ...keptLaunch(current),
     },
   };
 };
@@ -58,10 +72,13 @@ export const applyProcessSnapshot = (
   }
 
   for (const { instanceId, processId } of processes) {
+    const current = instances[instanceId];
+
     next[instanceId] = {
       processId,
-      isLoading: instances[instanceId]?.isLoading ?? false,
+      isLoading: current?.isLoading ?? false,
       isRunning: true,
+      ...(current?.launch === 'cancelling' ? { launch: 'cancelling' } : {}),
     };
   }
 
@@ -75,6 +92,37 @@ export const applyProcessSnapshot = (
 export const getStoppableProcessId = (
   running: { processId?: string; isLoading: boolean } | undefined,
 ): string | undefined => (running?.isLoading ? undefined : running?.processId);
+
+export type StopAction =
+  | { kind: 'cancelLaunch' }
+  | { kind: 'stopProcess'; processId: string };
+
+/**
+ * What stopping the instance does: stops its game, or, while it launches and has no game yet, calls
+ * the launch off. Nothing while that is under way already.
+ */
+export const getStopAction = (
+  running:
+    | {
+        processId?: string;
+        isLoading: boolean;
+        isRunning: boolean;
+        launch?: LaunchState;
+      }
+    | undefined,
+): StopAction | undefined => {
+  const processId = running?.isRunning
+    ? getStoppableProcessId(running)
+    : undefined;
+
+  if (processId !== undefined) {
+    return { kind: 'stopProcess', processId };
+  }
+
+  return running?.launch === 'launching' && !running.isRunning
+    ? { kind: 'cancelLaunch' }
+    : undefined;
+};
 
 export type RemovalBlock = 'running' | 'launching' | 'notInstalled';
 
@@ -131,6 +179,51 @@ export const applyLoadingChange = (
 };
 
 /**
+ * Applies a change of the launch state: the loading flag follows it, and a launch that is over
+ * leaves what it left, as `applyLoadingChange` does.
+ */
+export const applyLaunchChange = (
+  instances: RunningInstancesState,
+  id: string,
+  launch: LaunchState | undefined,
+): RunningInstancesState => {
+  const next = applyLoadingChange(instances, id, launch !== undefined);
+  const entry = next[id];
+
+  if (entry === undefined) {
+    return next;
+  }
+
+  const { launch: _previous, ...rest } = entry;
+
+  return { ...next, [id]: launch === undefined ? rest : { ...rest, launch } };
+};
+
+/**
+ * Launches that are in progress and that this page knows nothing of (it was reloaded meanwhile):
+ * they are taken as launching, and no call comes back to say that they are over.
+ */
+export const applyRecoveredLaunches = (
+  instances: RunningInstancesState,
+  ids: string[],
+): RunningInstancesState => {
+  const next = { ...instances };
+
+  for (const id of ids) {
+    if (next[id] === undefined) {
+      next[id] = {
+        processId: undefined,
+        isLoading: true,
+        isRunning: false,
+        launch: 'launching',
+      };
+    }
+  }
+
+  return next;
+};
+
+/**
  * The store of running instances. A store setter merges an object into the state, so a
  * removed entry would stay; reconcile replaces the map and drops the keys that are gone.
  */
@@ -154,5 +247,20 @@ export const createRunningInstancesStore = () => {
     ) => apply((instances) => applyProcessSnapshot(instances, processes)),
     applyLoadingChange: (id: string, isLoading: boolean) =>
       apply((instances) => applyLoadingChange(instances, id, isLoading)),
+    applyLaunchChange: (id: string, launch: LaunchState | undefined) =>
+      apply((instances) => applyLaunchChange(instances, id, launch)),
+    applyRecoveredLaunches: (ids: string[]) =>
+      apply((instances) => applyRecoveredLaunches(instances, ids)),
+    /** Ends the launches of `ids` that were recovered, if they still wait for a game. */
+    applyEndedLaunches: (ids: string[]) =>
+      apply((instances) =>
+        ids.reduce(
+          (current, id) =>
+            current[id]?.launch === 'launching'
+              ? applyLaunchChange(current, id, undefined)
+              : current,
+          instances,
+        ),
+      ),
   };
 };

@@ -37,3 +37,19 @@ export const useStopInstance = () => {
     },
   }));
 };
+
+/** Calls the launch of an instance off. Gives whether there was a launch to call off. */
+export const useCancelLaunch = () => {
+  const [{ t }] = useTranslation();
+
+  return useMutation(() => ({
+    mutationFn: (id: string) => instanceCommands.cancelLaunch(id),
+    onError: (err) => {
+      showError({
+        title: t('instance.stopError'),
+        err,
+        t,
+      });
+    },
+  }));
+};
