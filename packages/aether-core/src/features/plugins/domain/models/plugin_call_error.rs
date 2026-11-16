@@ -1,3 +1,5 @@
+use super::CommandApprovalRefusal;
+
 /// Why a call into a plugin failed. Each sandbox limit has its own variant so the user is told
 /// which limit the plugin hit, not that "the call failed".
 #[derive(thiserror::Error, Debug, Clone, PartialEq, Eq)]
@@ -26,6 +28,14 @@ pub enum PluginCallError {
     /// The error the plugin itself reported.
     #[error("{0}")]
     Plugin(String),
+
+    /// The plugin reported that a command it asked for was not run, and why. `details` is the
+    /// plugin's own text.
+    #[error("the command was not approved: {}", reason.as_wire())]
+    CommandNotApproved {
+        reason: CommandApprovalRefusal,
+        details: String,
+    },
 
     /// The call input did not serialize or the plugin's output did not deserialize.
     #[error("the plugin exchanged malformed data: {0}")]

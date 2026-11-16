@@ -5,10 +5,10 @@
 //! variant per cause instead of reading it out of text.
 
 use aether_core_plugin_api::v0::{
-    AuthErrorDto, EventErrorDto, FileWatcherErrorDto, GameLogErrorDto, HostError, InstanceErrorDto,
-    InstanceFieldDto, InstanceValidationErrorReasonDto, JavaErrorDto, LoadConfigTypeDto,
-    ManifestErrorDto, MinecraftErrorDto, PluginCallErrorDto, PluginErrorDto, PluginSourceTypeDto,
-    ProcessErrorDto, RequestErrorDto, SettingsErrorDto,
+    AuthErrorDto, CommandRefusalDto, EventErrorDto, FileWatcherErrorDto, GameLogErrorDto,
+    HostError, InstanceErrorDto, InstanceFieldDto, InstanceValidationErrorReasonDto, JavaErrorDto,
+    LoadConfigTypeDto, ManifestErrorDto, MinecraftErrorDto, PluginCallErrorDto, PluginErrorDto,
+    PluginSourceTypeDto, ProcessErrorDto, RequestErrorDto, SettingsErrorDto,
 };
 
 use crate::{
@@ -22,8 +22,8 @@ use crate::{
         java::{JavaApplicationError, JavaDomainError},
         minecraft::{MinecraftApplicationError, MinecraftDomainError},
         plugins::{
-            LoadConfigType, ManifestError, PluginCallError, PluginError, PluginProviderError,
-            PluginSourceType,
+            CommandApprovalRefusal, LoadConfigType, ManifestError, PluginCallError, PluginError,
+            PluginProviderError, PluginSourceType,
         },
         process::ProcessError,
         settings::SettingsError,
@@ -504,12 +504,9 @@ fn plugin_dto(value: &PluginError) -> PluginErrorDto {
             plugin_id: plugin_id.to_string(),
             path: path.clone(),
         },
-        // A refused command reaches the plugin through here: the ABI has no kind of its own, and
-        // a new one would not decode in plugins built before it. `path` holds the word
-        // (`denied`, `timed_out`, `cancelled`, `jar_changed`), never a path.
-        PluginError::CommandNotApproved { plugin_id, reason } => Dto::AccessViolation {
+        PluginError::CommandNotApproved { plugin_id, reason } => Dto::CommandNotApproved {
             plugin_id: plugin_id.to_string(),
-            path: reason.as_wire().to_owned(),
+            reason: (*reason).into(),
         },
         // Only the launcher's own UI answers a question; a plugin never sees these.
         PluginError::CommandApprovalNotFound { .. }
@@ -581,6 +578,28 @@ impl From<&PluginSourceType> for PluginSourceTypeDto {
     }
 }
 
+impl From<CommandApprovalRefusal> for CommandRefusalDto {
+    fn from(value: CommandApprovalRefusal) -> Self {
+        match value {
+            CommandApprovalRefusal::Denied => Self::Denied,
+            CommandApprovalRefusal::TimedOut => Self::TimedOut,
+            CommandApprovalRefusal::Cancelled => Self::Cancelled,
+            CommandApprovalRefusal::JarChanged => Self::JarChanged,
+        }
+    }
+}
+
+impl From<CommandRefusalDto> for CommandApprovalRefusal {
+    fn from(value: CommandRefusalDto) -> Self {
+        match value {
+            CommandRefusalDto::Denied => Self::Denied,
+            CommandRefusalDto::TimedOut => Self::TimedOut,
+            CommandRefusalDto::Cancelled => Self::Cancelled,
+            CommandRefusalDto::JarChanged => Self::JarChanged,
+        }
+    }
+}
+
 impl From<&PluginCallError> for PluginCallErrorDto {
     fn from(value: &PluginCallError) -> Self {
         match value {
@@ -591,6 +610,10 @@ impl From<&PluginCallError> for PluginCallErrorDto {
             PluginCallError::Trap(message) => Self::Trap(message.clone()),
             PluginCallError::NonZeroExit(code) => Self::NonZeroExit(*code),
             PluginCallError::Plugin(message) => Self::Plugin(message.clone()),
+            PluginCallError::CommandNotApproved { reason, details } => Self::CommandNotApproved {
+                reason: (*reason).into(),
+                details: details.clone(),
+            },
             PluginCallError::Codec(message) => Self::Codec(message.clone()),
             PluginCallError::Reentrant => Self::Reentrant,
         }

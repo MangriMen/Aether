@@ -10,7 +10,7 @@ List every host function the plugin imports, by its import name:
 
 ```json
 "api": {
-  "version": "0.3.0",
+  "version": "0.4.0",
   "hostFunctions": ["log", "get_id", "http_get", "write_instance_file"]
 }
 ```
@@ -75,9 +75,19 @@ arguments; an unanswered question is refused after 5 minutes. While it waits, th
 plugin is still running, so the plugin is busy for that long (a stop or restart cancels the
 question first).
 
-A refused command fails the call with `HostError::PluginError(AccessViolation { plugin_id, path })`
-where `path` is one of `denied`, `timed_out`, `cancelled` or `jar_changed`. *Deny* is remembered
-until the plugin is stopped or reloaded: the same command is refused again without a new question.
+A refused command fails the call with `HostError::PluginError(CommandNotApproved { plugin_id,
+reason })` where `reason` is one of `denied`, `timed_out`, `cancelled` or `jar_changed` (on the
+wire: `{"type": "pluginError", "payload": {"kind": "commandNotApproved", "data": {"plugin_id": …,
+"reason": "denied"}}}`). *Deny* is remembered until the plugin is stopped or reloaded: the same
+command is refused again without a new question.
+
+To let the user see why, report the error as a failure envelope (see "Reporting a typed failure"
+above), passing the `HostError` as `host`: the launcher then tells the user that the command was
+not allowed, and why. A plugin that turns the error into plain text still fails, but the user
+only learns that the plugin reported an error. When a plugin calls another through the host and
+the other one reported a refusal this way, the refusal passes through as
+`PluginCallErrorDto::CommandNotApproved { reason, details }` inside `FunctionCallFailed`, and a
+plugin may pass that on the same way.
 
 *Always* is offered only for `java [-Xmx/-Xms/-Xss…] -jar #/cache/<file>.jar <args>`: the jar must be
 a file in the plugin's `/cache` whose manifest has no `Class-Path`, and every option before `-jar`

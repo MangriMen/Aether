@@ -1,7 +1,9 @@
+use aether_core_plugin_api::v0::{HostError, PluginCallErrorDto, PluginErrorDto, PluginFailureDto};
+
 use crate::features::plugins::PluginCallError;
 
 // Extism hands back an untyped `anyhow::Error` and builds these messages itself
-// (`extism-1.30.0/src/plugin.rs`, `raw_call`; `current_plugin.rs`, `memory_growing`). Text is
+// (`extism-1.41.0/src/plugin.rs`, `raw_call`; `current_plugin.rs`, `memory_growing`). Text is
 // all there is to tell the limits apart, so it is matched here and nowhere else, and the tests
 // below run real calls: an Extism update that rewords one fails a test instead of turning a
 // limit into "the plugin returned an error" in production.
@@ -25,24 +27,53 @@ pub(super) fn classify_call_error(error: &extism::Error, code: i32) -> PluginCal
         OUT_OF_FUEL => PluginCallError::OutOfFuel,
         OUT_OF_MEMORY => PluginCallError::OutOfMemory,
         _ if cause.starts_with(WASI_EXIT_PREFIX) => PluginCallError::NonZeroExit(code),
+        // A plugin that reports a typed failure and then traps still reported it.
+        _ if let Some(refusal) = refused_command(&cause) => refusal,
         _ if code == TRAP_CODE => PluginCallError::Trap(cause),
         _ => PluginCallError::Plugin(cause),
     }
 }
 
+/// The refusal of a command the plugin reports in its failure envelope, either its own call of
+/// `run_command` or a call of another plugin that failed that way. Anything else in the envelope
+/// stays an ordinary plugin failure, with the text as it came.
+fn refused_command(cause: &str) -> Option<PluginCallError> {
+    let failure = PluginFailureDto::parse(cause)?;
+
+    match failure.host? {
+        HostError::PluginError(PluginErrorDto::CommandNotApproved { reason, .. }) => {
+            Some(PluginCallError::CommandNotApproved {
+                reason: reason.into(),
+                details: failure.message,
+            })
+        }
+        HostError::PluginError(PluginErrorDto::FunctionCallFailed {
+            error: PluginCallErrorDto::CommandNotApproved { reason, details },
+            ..
+        }) => Some(PluginCallError::CommandNotApproved {
+            reason: reason.into(),
+            details,
+        }),
+        _ => None,
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    use std::fmt::Write as _;
     use std::time::Duration;
 
     use extism::{Manifest, Plugin, PluginBuilder, Wasm};
 
     use crate::features::instance::PluginId;
     use crate::features::plugins::{
-        PluginCallError, PluginError, PluginInstance, infra::extism::models::ExtismPluginInstance,
+        CommandApprovalRefusal, PluginCallError, PluginError, PluginInstance,
+        infra::extism::models::ExtismPluginInstance,
     };
 
     /// One export per way a call can fail. `$report` sets an error the way the PDK does:
-    /// copies the message into Extism memory and hands it to `error_set`.
+    /// copies the message into Extism memory and hands it to `error_set`. `{data}` holds the
+    /// messages (see `MESSAGES`), `{exports}` the exports that report them.
     const PLUGIN: &str = r#"(module
         (import "extism:host/env" "alloc" (func $alloc (param i64) (result i64)))
         (import "extism:host/env" "store_u8" (func $store_u8 (param i64 i32)))
@@ -50,6 +81,7 @@ mod tests {
         (import "wasi_snapshot_preview1" "proc_exit" (func $proc_exit (param i32)))
         (memory (export "memory") 1)
         (data (i32.const 0) "mod not found")
+        {data}
 
         (func (export "spin") (result i32)
             (loop $forever (br $forever))
@@ -67,36 +99,94 @@ mod tests {
             (call $proc_exit (i32.const 3))
             (i32.const 0))
 
-        (func $report
+        (func $report (param $at i32) (param $len i32)
             (local $offset i64)
             (local $i i32)
-            (local.set $offset (call $alloc (i64.const 13)))
+            (local.set $offset (call $alloc (i64.extend_i32_u (local.get $len))))
             (block $copied
                 (loop $copy
-                    (br_if $copied (i32.ge_u (local.get $i) (i32.const 13)))
+                    (br_if $copied (i32.ge_u (local.get $i) (local.get $len)))
                     (call $store_u8
                         (i64.add (local.get $offset) (i64.extend_i32_u (local.get $i)))
-                        (i32.load8_u (local.get $i)))
+                        (i32.load8_u (i32.add (local.get $at) (local.get $i))))
                     (local.set $i (i32.add (local.get $i) (i32.const 1)))
                     (br $copy)))
             (call $error_set (local.get $offset)))
 
         (func (export "fail") (result i32)
-            (call $report)
+            (call $report (i32.const 0) (i32.const 13))
             (i32.const -1))
 
         (func (export "fail_then_panic") (result i32)
-            (call $report)
+            (call $report (i32.const 0) (i32.const 13))
             unreachable)
 
         (func (export "quiet_failure") (result i32)
-            (i32.const 7)))"#;
+            (i32.const 7))
+
+        {exports})"#;
+
+    /// What a plugin may put in `error_set`, by export name. Hand-written strings, as a plugin
+    /// in any language would produce them: the contract is the wire text, not the Rust types.
+    const MESSAGES: &[(&str, &str)] = &[
+        (
+            "refused",
+            r#"aether-plugin-failure:{"message":"AccessViolation","host":{"type":"pluginError","payload":{"kind":"commandNotApproved","data":{"plugin_id":"packwiz","reason":"timed_out"}}}}"#,
+        ),
+        (
+            "refused_with_prefix_and_tail",
+            r#"Error: aether-plugin-failure:{"message":"m","host":{"type":"pluginError","payload":{"kind":"commandNotApproved","data":{"plugin_id":"packwiz","reason":"denied"}}}}
+
+Caused by: x"#,
+        ),
+        (
+            "refused_in_a_chain",
+            r#"aether-plugin-failure:{"message":"a","host":{"type":"pluginError","payload":{"kind":"functionCallFailed","data":{"function_name":"f","plugin_id":"b","error":{"kind":"commandNotApproved","data":{"reason":"cancelled","details":"b said so"}}}}}}"#,
+        ),
+        (
+            "unknown_reason",
+            r#"aether-plugin-failure:{"message":"m","host":{"type":"pluginError","payload":{"kind":"commandNotApproved","data":{"plugin_id":"p","reason":"because"}}}}"#,
+        ),
+        ("broken_json", "aether-plugin-failure:{not json"),
+        (
+            "only_message",
+            r#"aether-plugin-failure:{"message":"just text"}"#,
+        ),
+    ];
+
+    /// Each message is a data segment at its own offset (`MESSAGES` index * 512, after the
+    /// plain one at 0), reported by the export of the same name; `{name}_then_panic` traps after.
+    fn plugin_source() -> String {
+        let mut data = String::new();
+        let mut exports = String::new();
+
+        for (index, (name, text)) in MESSAGES.iter().enumerate() {
+            let at = (index + 1) * 512;
+            let escaped = text.bytes().fold(String::new(), |mut acc, byte| {
+                let _ = write!(acc, "\\{byte:02x}");
+                acc
+            });
+            let len = text.len();
+            let _ = writeln!(data, "(data (i32.const {at}) \"{escaped}\")");
+            let _ = writeln!(
+                exports,
+                "(func (export \"{name}\") (result i32) \
+                    (call $report (i32.const {at}) (i32.const {len})) (i32.const -1))\n\
+                 (func (export \"{name}_then_panic\") (result i32) \
+                    (call $report (i32.const {at}) (i32.const {len})) unreachable)"
+            );
+        }
+
+        PLUGIN
+            .replace("{data}", &data)
+            .replace("{exports}", &exports)
+    }
 
     fn plugin(
         configure: impl FnOnce(Manifest) -> Manifest,
         fuel: Option<u64>,
     ) -> ExtismPluginInstance {
-        let manifest = configure(Manifest::new([Wasm::data(PLUGIN.as_bytes().to_vec())]));
+        let manifest = configure(Manifest::new([Wasm::data(plugin_source().into_bytes())]));
         let mut builder = PluginBuilder::new(manifest).with_wasi(true);
         if let Some(fuel) = fuel {
             builder = builder.with_fuel_limit(fuel);
@@ -177,6 +267,60 @@ mod tests {
             call_error(&mut unlimited(), "fail_then_panic"),
             PluginCallError::Plugin("mod not found".to_owned())
         );
+    }
+
+    #[test]
+    fn should_report_the_refusal_when_the_plugin_reports_a_refused_command() {
+        assert_eq!(
+            call_error(&mut unlimited(), "refused"),
+            PluginCallError::CommandNotApproved {
+                reason: CommandApprovalRefusal::TimedOut,
+                details: "AccessViolation".to_owned(),
+            }
+        );
+    }
+
+    #[test]
+    fn should_find_the_envelope_when_a_prefix_comes_before_it_and_text_after() {
+        assert_eq!(
+            call_error(&mut unlimited(), "refused_with_prefix_and_tail"),
+            PluginCallError::CommandNotApproved {
+                reason: CommandApprovalRefusal::Denied,
+                details: "m".to_owned(),
+            }
+        );
+    }
+
+    #[test]
+    fn should_keep_the_refusal_when_a_trap_follows_it() {
+        assert_eq!(
+            call_error(&mut unlimited(), "refused_then_panic"),
+            PluginCallError::CommandNotApproved {
+                reason: CommandApprovalRefusal::TimedOut,
+                details: "AccessViolation".to_owned(),
+            }
+        );
+    }
+
+    #[test]
+    fn should_report_the_refusal_of_another_plugin_when_the_call_chain_failed_that_way() {
+        assert_eq!(
+            call_error(&mut unlimited(), "refused_in_a_chain"),
+            PluginCallError::CommandNotApproved {
+                reason: CommandApprovalRefusal::Cancelled,
+                details: "b said so".to_owned(),
+            }
+        );
+    }
+
+    #[test]
+    fn should_pass_the_text_through_when_the_envelope_holds_nothing_it_understands() {
+        for name in ["unknown_reason", "broken_json", "only_message"] {
+            let error = call_error(&mut unlimited(), name);
+            let message = MESSAGES.iter().find(|(n, _)| *n == name).unwrap().1;
+
+            assert_eq!(error, PluginCallError::Plugin(message.to_owned()), "{name}");
+        }
     }
 
     #[test]

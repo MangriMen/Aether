@@ -42,6 +42,7 @@ mod tests {
         RequestErrorDto, SettingsErrorDto,
     };
     use extism_convert::{FromBytesOwned, Msgpack, ToBytes};
+    use rstest::rstest;
 
     use super::to_extism_res;
     use crate::{
@@ -53,7 +54,7 @@ mod tests {
             instance::{InstanceError, PluginId},
             java::{JavaApplicationError, JavaDomainError},
             minecraft::{MinecraftApplicationError, MinecraftDomainError},
-            plugins::{PluginCallError, PluginError},
+            plugins::{CommandApprovalRefusal, PluginCallError, PluginError},
             process::ProcessError,
             settings::SettingsError,
         },
@@ -293,6 +294,38 @@ mod tests {
             ),
             "{host:?}"
         );
+    }
+
+    #[rstest]
+    #[case(CommandApprovalRefusal::Denied)]
+    #[case(CommandApprovalRefusal::TimedOut)]
+    #[case(CommandApprovalRefusal::Cancelled)]
+    #[case(CommandApprovalRefusal::JarChanged)]
+    fn should_hand_a_refused_command_over_with_its_reason_when_mapping_a_plugin_error(
+        #[case] reason: CommandApprovalRefusal,
+    ) {
+        let host = through_msgpack(
+            PluginError::CommandNotApproved {
+                plugin_id: PluginId::from_static("packwiz"),
+                reason,
+            }
+            .into(),
+        );
+
+        let HostError::PluginError(PluginErrorDto::CommandNotApproved {
+            plugin_id,
+            reason: dto,
+        }) = host
+        else {
+            panic!("expected CommandNotApproved, got: {host:?}");
+        };
+        assert_eq!(plugin_id, "packwiz");
+        // The word on the wire is the one `as_wire` names, which the docs list.
+        assert_eq!(
+            serde_json::to_value(dto).unwrap(),
+            serde_json::json!(reason.as_wire())
+        );
+        assert_eq!(CommandApprovalRefusal::from(dto), reason);
     }
 
     #[test]
