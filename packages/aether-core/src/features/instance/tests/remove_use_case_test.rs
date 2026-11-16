@@ -19,8 +19,8 @@ use crate::features::minecraft::ModLoader;
 use crate::features::process::ProcessStorage;
 use crate::features::process::{MinecraftProcessMetadata, ProcessError};
 use crate::features::settings::LocationInfo;
-use std::process::ExitStatus;
 use process_wrap::tokio::ChildWrapper;
+use std::process::ExitStatus;
 
 // ─── Minimal inline mock ───────────────────────────────────────
 
@@ -83,7 +83,11 @@ impl FakeProcesses {
 
 #[async_trait]
 impl ProcessStorage for FakeProcesses {
-    async fn insert(&self, _: MinecraftProcessMetadata, _: Box<dyn ChildWrapper>) -> Result<(), ProcessError> {
+    async fn insert(
+        &self,
+        _: MinecraftProcessMetadata,
+        _: Box<dyn ChildWrapper>,
+    ) -> Result<(), ProcessError> {
         unimplemented!()
     }
     async fn remove(&self, _: Uuid) -> Result<(), ProcessError> {
