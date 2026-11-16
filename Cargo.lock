@@ -164,6 +164,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "aether-core-plugin-pdk"
+version = "0.1.0"
+dependencies = [
+ "aether-core-plugin-api",
+ "anyhow",
+ "extism-convert",
+ "rmp-serde",
+ "serde",
+]
+
+[[package]]
 name = "aho-corasick"
 version = "1.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"

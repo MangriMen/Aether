@@ -90,6 +90,41 @@ and the plugin's choice of arguments; a new build of the plugin starts over. Any
 against an older crate cannot decode a `getContentsMetadata` answer correctly. Rebuild it against this
 version.
 
+## Reporting a typed failure (any language)
+
+A plugin call that fails reaches the host as text. To let the host tell *why* — a refused command
+is the case today — the plugin sets that text to a failure envelope:
+
+```
+aether-plugin-failure:{"message":"...","host":{...}}
+```
+
+The marker, directly followed by one line of JSON that follows
+[`schemas/plugin-failure.schema.json`](src/v0/schemas/plugin-failure.schema.json), is the
+whole string given to `error_set`; return a non-zero code after it. The host finds the marker
+anywhere in the string, so a prefix a framework adds is fine, and it ignores what follows the
+JSON. A string without a valid envelope is an ordinary failure with that text as its cause.
+
+`host` is the `HostError` a host function returned to the plugin, passed back untouched.
+
+**With Rust**, use `aether-core-plugin-pdk`. Declare a host function as returning
+`HostReply<T>` and read it with `.into_result()?` inside a function that returns
+`aether_core_plugin_pdk::Result`. `#[plugin_fn]` itself must return `FnResult`, so call that
+function from it with `?`, which turns the error into the envelope. The crate documentation has
+an example.
+
+**In another language**, do the steps by hand:
+
+1. Decode the msgpack response of the host function. A success is a positional array,
+   `["ok", <value>]` (the value itself positional too); a failure is a map,
+   `{"status": "err", "data": <HostError>}`.
+2. On `err`, build `{"message": <any text>, "host": <that HostError>}`, prefix it with the
+   marker and call `error_set` with it.
+3. Return a non-zero code.
+
+What the host makes of `host` is described where the error is documented: for `run_command`, see
+"`run_command` needs the user's consent" above.
+
 ## Ids
 
 `id` in the manifest (and every capability id and platform name) must match

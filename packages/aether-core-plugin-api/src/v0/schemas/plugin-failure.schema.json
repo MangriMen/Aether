@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PluginFailure",
+  "description": "A failure a plugin reports to the host with more than text.\n\nTo report it, a plugin sets the error of its call (`error_set`) to the marker\n`aether-plugin-failure:` directly followed by this value as one line of JSON, and returns a\nnon-zero code. The host looks for the marker anywhere in the string, so a prefix added by a\nplugin framework does no harm, and ignores whatever follows the JSON. A string with no valid\nenvelope is an ordinary failure with that text as its cause.",
+  "type": "object",
+  "properties": {
+    "host": {
+      "description": "The error a host function returned to the plugin, passed back untouched. Absent when the\nfailure is the plugin's own. A value the host does not understand is ignored, the\n`message` still counts.",
+      "type": "object",
+      "properties": {
+        "payload": {},
+        "type": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type"
+      ]
+    },
+    "message": {
+      "description": "What the plugin says went wrong; shown as the cause when `host` is absent or not understood.",
+      "type": "string"
+    }
+  },
+  "required": [
+    "message"
+  ]
+}

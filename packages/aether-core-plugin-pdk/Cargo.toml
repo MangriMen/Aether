@@ -1,0 +1,18 @@
+[package]
+name = "aether-core-plugin-pdk"
+version = "0.1.0"
+edition.workspace = true
+license = "MIT OR Apache-2.0"
+publish = false
+
+[dependencies]
+aether-core-plugin-api = { path = "../aether-core-plugin-api" }
+anyhow.workspace = true
+extism-convert = "1.30"
+serde.workspace = true
+
+[dev-dependencies]
+rmp-serde = "1.3.1"
+
+[lints]
+workspace = true
