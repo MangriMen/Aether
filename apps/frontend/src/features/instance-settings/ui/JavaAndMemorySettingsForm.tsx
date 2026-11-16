@@ -10,6 +10,7 @@ import type {
   JavaAndMemorySettingsSchemaOutput,
 } from '../model/javaAndMemorySettingsSchema';
 
+import { revertOnFailure } from '../lib/createFieldSync';
 import {
   useJavaAndMemorySettingsForm,
   useResetJavaAndMemorySettingsForm,
@@ -29,7 +30,10 @@ export type JavaAndMemorySettingsFormProps = Omit<
   defaultValues?: Accessor<
     Partial<JavaAndMemorySettingsSchemaInput> | undefined
   >;
-  onChangePartial: (values: Partial<JavaAndMemorySettingsSchemaOutput>) => void;
+  /** A returned promise that rejects puts the stored values back into the fields. */
+  onChangePartial: (
+    values: Partial<JavaAndMemorySettingsSchemaOutput>,
+  ) => Promise<unknown> | void;
 };
 
 export const JavaAndMemorySettingsForm: Component<
@@ -44,7 +48,10 @@ export const JavaAndMemorySettingsForm: Component<
   ]);
 
   const form = useJavaAndMemorySettingsForm();
-  useResetJavaAndMemorySettingsForm(form, local.initialValues);
+  const revert = useResetJavaAndMemorySettingsForm(form, local.initialValues);
+
+  const save = (values: Partial<JavaAndMemorySettingsSchemaOutput>) =>
+    revertOnFailure(local.onChangePartial(values), () => revert(values));
 
   return (
     <Form
@@ -57,19 +64,19 @@ export const JavaAndMemorySettingsForm: Component<
         form={form}
         overridable={local.overridable}
         defaultValues={local.defaultValues}
-        onChangePartial={local.onChangePartial}
+        onChangePartial={save}
       />
       <LaunchArgsFieldSection
         form={form}
         overridable={local.overridable}
         defaultValues={local.defaultValues}
-        onChangePartial={local.onChangePartial}
+        onChangePartial={save}
       />
       <EnvVarsFieldSection
         form={form}
         overridable={local.overridable}
         defaultValues={local.defaultValues}
-        onChangePartial={local.onChangePartial}
+        onChangePartial={save}
       />
     </Form>
   );

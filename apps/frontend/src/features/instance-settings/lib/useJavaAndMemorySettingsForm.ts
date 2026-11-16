@@ -1,13 +1,14 @@
 import type { FormStore } from '@formisch/solid';
 import type { Accessor } from 'solid-js';
 
-import { createForm, setInput } from '@formisch/solid';
-import { createEffect } from 'solid-js';
+import { createForm, reset } from '@formisch/solid';
 
 import {
   JavaAndMemorySettingsSchema,
   type JavaAndMemorySettingsSchemaInput,
+  type JavaAndMemorySettingsSchemaOutput,
 } from '../model/javaAndMemorySettingsSchema';
+import { createFieldSync, reapplyFields } from './createFieldSync';
 
 export const useJavaAndMemorySettingsForm = () => {
   const form = createForm({ schema: JavaAndMemorySettingsSchema });
@@ -18,54 +19,36 @@ export const useResetJavaAndMemorySettingsForm = (
   form: FormStore<typeof JavaAndMemorySettingsSchema>,
   settings: Accessor<Partial<JavaAndMemorySettingsSchemaInput> | undefined>,
 ) => {
-  createEffect(() => {
-    const overrideMemory = settings()?.overrideMemory;
+  const reappliers = {
+    overrideMemory: createFieldSync(
+      () => settings()?.overrideMemory,
+      (input) => reset(form, { path: ['overrideMemory'], initialInput: input }),
+    ),
+    overrideLaunchArgs: createFieldSync(
+      () => settings()?.overrideLaunchArgs,
+      (input) =>
+        reset(form, { path: ['overrideLaunchArgs'], initialInput: input }),
+    ),
+    overrideEnvVars: createFieldSync(
+      () => settings()?.overrideEnvVars,
+      (input) =>
+        reset(form, { path: ['overrideEnvVars'], initialInput: input }),
+    ),
+    memory: createFieldSync(
+      () => settings()?.memory?.maximum,
+      (input) =>
+        reset(form, { path: ['memory', 'maximum'], initialInput: input }),
+    ),
+    launchArgs: createFieldSync(
+      () => settings()?.launchArgs,
+      (input) => reset(form, { path: ['launchArgs'], initialInput: input }),
+    ),
+    envVars: createFieldSync(
+      () => settings()?.envVars,
+      (input) => reset(form, { path: ['envVars'], initialInput: input }),
+    ),
+  };
 
-    if (overrideMemory !== undefined) {
-      setInput(form, { path: ['overrideMemory'], input: overrideMemory });
-    }
-  });
-
-  createEffect(() => {
-    const overrideLaunchArgs = settings()?.overrideLaunchArgs;
-
-    if (overrideLaunchArgs !== undefined) {
-      setInput(form, {
-        path: ['overrideLaunchArgs'],
-        input: overrideLaunchArgs,
-      });
-    }
-  });
-
-  createEffect(() => {
-    const overrideEnvVars = settings()?.overrideEnvVars;
-
-    if (overrideEnvVars !== undefined) {
-      setInput(form, { path: ['overrideEnvVars'], input: overrideEnvVars });
-    }
-  });
-
-  createEffect(() => {
-    const maximum = settings()?.memory?.maximum;
-
-    if (maximum !== undefined) {
-      setInput(form, { path: ['memory', 'maximum'], input: maximum });
-    }
-  });
-
-  createEffect(() => {
-    const launchArgs = settings()?.launchArgs;
-
-    if (launchArgs !== undefined) {
-      setInput(form, { path: ['launchArgs'], input: launchArgs });
-    }
-  });
-
-  createEffect(() => {
-    const envVars = settings()?.envVars;
-
-    if (envVars !== undefined) {
-      setInput(form, { path: ['envVars'], input: envVars });
-    }
-  });
+  return (values: Partial<JavaAndMemorySettingsSchemaOutput>) =>
+    reapplyFields(reappliers, values);
 };

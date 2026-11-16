@@ -2,8 +2,6 @@ import { createMemo } from 'solid-js';
 
 import type { WindowSettingsSchemaOutput } from '@/features/instance-settings';
 
-import { logError } from '@/shared/log';
-
 import {
   useDefaultInstanceSettings,
   useEditDefaultInstanceSettings,
@@ -22,7 +20,8 @@ export const useDefaultWindowSettingsHandler = () => {
     defaultInstanceSettingsToWindowSettingsValues(settings.data),
   );
 
-  const onChange = (values: Partial<WindowSettingsSchemaOutput>) => {
+  // The form handles a failed save: it logs it and puts the stored values back.
+  const onChange = async (values: Partial<WindowSettingsSchemaOutput>) => {
     if (!settings.data) {
       return;
     }
@@ -36,7 +35,7 @@ export const useDefaultWindowSettingsHandler = () => {
       return;
     }
 
-    editSettings.mutateAsync(dto).catch(logError);
+    await editSettings.mutateAsync(dto);
   };
 
   return { initialValues, onChange };

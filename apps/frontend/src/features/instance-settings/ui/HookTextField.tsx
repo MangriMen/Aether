@@ -2,6 +2,7 @@ import {
   Field,
   getErrors,
   getInput,
+  isDirty,
   setInput,
   validate,
   type FormStore,
@@ -82,6 +83,11 @@ export const HookTextField: Component<HookTextFieldProps> = (props) => {
                 // A refresh keeps the field as typed when the stored command is unchanged, so
                 // the field shows the trimmed command that is saved.
                 setInput(props.form, { path, input: command });
+
+                if (!isDirty(props.form, { path })) {
+                  return;
+                }
+
                 props.onChangePartial?.({ [props.fieldConfig.key]: command });
               },
             }}

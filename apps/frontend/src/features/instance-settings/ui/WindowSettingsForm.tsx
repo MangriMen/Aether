@@ -10,6 +10,7 @@ import type {
   WindowSettingsSchemaOutput,
 } from '../model/windowSettingsSchema';
 
+import { revertOnFailure } from '../lib/createFieldSync';
 import {
   useResetWindowSettingsFormValues,
   useWindowSettingsForm,
@@ -24,7 +25,10 @@ export type WindowSettingsFormProps = Omit<
   overridable?: boolean;
   initialValues: Accessor<Partial<WindowSettingsSchemaInput> | undefined>;
   defaultValues?: Accessor<Partial<WindowSettingsSchemaInput> | undefined>;
-  onChangePartial?: (values: Partial<WindowSettingsSchemaOutput>) => void;
+  /** A returned promise that rejects puts the stored values back into the fields. */
+  onChangePartial?: (
+    values: Partial<WindowSettingsSchemaOutput>,
+  ) => Promise<unknown> | void;
 };
 
 export const WindowSettingsForm: Component<WindowSettingsFormProps> = (
@@ -41,10 +45,13 @@ export const WindowSettingsForm: Component<WindowSettingsFormProps> = (
   const [{ t }] = useTranslation();
 
   const form = useWindowSettingsForm();
-  useResetWindowSettingsFormValues(form, local.initialValues);
+  const revert = useResetWindowSettingsFormValues(form, local.initialValues);
+
+  const save = (values: Partial<WindowSettingsSchemaOutput>) =>
+    revertOnFailure(local.onChangePartial?.(values), () => revert(values));
 
   const handleResolutionSubmit = (width: number, height: number) => {
-    local.onChangePartial?.({
+    save({
       resolution: {
         width,
         height,
@@ -53,7 +60,7 @@ export const WindowSettingsForm: Component<WindowSettingsFormProps> = (
   };
 
   const handleOverrideChange = (value: boolean) => {
-    local.onChangePartial?.({
+    save({
       overrideWindowSettings: value,
     });
   };

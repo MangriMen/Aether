@@ -40,14 +40,17 @@ export const useJavaAndMemorySettingsHandler = ({
     defaultInstanceSettingsToJavaAndMemorySettingsValues(defaultSettings?.()),
   );
 
-  const onChange = (values: Partial<JavaAndMemorySettingsSchemaOutput>) => {
+  // The form handles a failed save: it logs it and puts the stored values back.
+  const onChange = async (
+    values: Partial<JavaAndMemorySettingsSchemaOutput>,
+  ) => {
     const edit = javaAndMemorySettingsValuesToEditInstanceSettings(values);
 
     if (isEditInstanceSettingsEmpty(edit)) {
       return;
     }
 
-    editInstance()({ id: instance().id, edit });
+    await editInstance()({ id: instance().id, edit });
   };
 
   return { initialValues, defaultValues, onChange };

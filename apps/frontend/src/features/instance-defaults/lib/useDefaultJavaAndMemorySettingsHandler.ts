@@ -2,8 +2,6 @@ import { createMemo } from 'solid-js';
 
 import type { JavaAndMemorySettingsSchemaOutput } from '@/features/instance-settings';
 
-import { logError } from '@/shared/log';
-
 import {
   useDefaultInstanceSettings,
   useEditDefaultInstanceSettings,
@@ -22,7 +20,10 @@ export const useDefaultJavaAndMemorySettingsHandler = () => {
     defaultInstanceSettingsToJavaAndMemorySettingsValues(settings.data),
   );
 
-  const onChange = (values: Partial<JavaAndMemorySettingsSchemaOutput>) => {
+  // The form handles a failed save: it logs it and puts the stored values back.
+  const onChange = async (
+    values: Partial<JavaAndMemorySettingsSchemaOutput>,
+  ) => {
     const dto =
       javaAndMemorySettingsValuesToEditDefaultInstanceSettings(values);
 
@@ -30,7 +31,7 @@ export const useDefaultJavaAndMemorySettingsHandler = () => {
       return;
     }
 
-    editSettings.mutateAsync(dto).catch(logError);
+    await editSettings.mutateAsync(dto);
   };
 
   return { initialValues, onChange };

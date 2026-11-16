@@ -2,8 +2,6 @@ import { createMemo } from 'solid-js';
 
 import type { HooksSettingsSchemaOutput } from '@/features/instance-settings';
 
-import { logError } from '@/shared/log';
-
 import {
   useDefaultInstanceSettings,
   useEditDefaultInstanceSettings,
@@ -22,15 +20,15 @@ export const useDefaultHooksSettingsHandler = () => {
     defaultInstanceSettingsToHooksSettingsValues(settings.data),
   );
 
-  const onChange = (values: Partial<HooksSettingsSchemaOutput>) => {
+  // The form handles a failed save: it logs it and puts the stored values back.
+  const onChange = async (values: Partial<HooksSettingsSchemaOutput>) => {
     const dto = hooksSettingsValuesToEditDefaultInstanceSettings(values);
 
     if (isEditDefaultInstanceSettingsEmpty(dto)) {
       return;
     }
 
-    // The mutation already tells the user; this only keeps the rejection handled.
-    editSettings.mutateAsync(dto).catch(logError);
+    await editSettings.mutateAsync(dto);
   };
 
   return { initialValues, onChange };
