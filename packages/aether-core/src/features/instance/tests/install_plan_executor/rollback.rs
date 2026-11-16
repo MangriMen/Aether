@@ -124,8 +124,7 @@ async fn should_roll_back_an_update_when_removing_a_dropped_file_fails() {
     assert_as_installed(&fixture, &records_before).await;
 }
 
-/// Overrides are applied last: one that cannot be written undoes the files installed, removed
-/// and written over before it.
+/// An override that cannot be written undoes the files installed and written over before it.
 #[tokio::test]
 async fn should_roll_back_an_update_when_applying_an_override_fails() {
     let fixture = Fixture::new().await;
@@ -361,4 +360,49 @@ async fn should_be_a_no_op_when_the_plan_runs_a_second_time() {
         fixture.instance_files(INSTANCE_ID),
         ["mods/a.jar", "mods/b.jar"]
     );
+}
+
+/// A recorded override and then a dropped file that cannot be removed: the override's file and
+/// record are back as they were.
+#[tokio::test]
+async fn should_roll_back_a_recorded_override_when_removing_a_dropped_file_fails() {
+    let fixture = Fixture::new().await;
+    let held = fixture
+        .location_info
+        .instance_dir(&InstanceId::try_from(INSTANCE_ID).unwrap())
+        .join("mods/held.jar");
+    std::fs::create_dir_all(held.join("inner")).unwrap();
+    fixture
+        .record(
+            "mods/held.jar",
+            PackFile {
+                installed_by: Some(pack_of(&plugin("packwiz"))),
+                ..PackFile::from_hash("held.jar".into(), sha1_hash("held"))
+            },
+        )
+        .await;
+    fixture
+        .put_installed("mods/o.jar", "old", Some(pack_of(&plugin("packwiz"))))
+        .await;
+    let archive = zip_archive(&fixture, &[("overrides/mods/o.jar", "new")]);
+
+    let result = fixture
+        .execute(
+            InstallPlan {
+                overrides: archive_overrides(archive),
+                ..existing(vec![])
+            },
+            &plugin("packwiz"),
+        )
+        .await;
+
+    assert!(result.is_err());
+    std::fs::remove_dir_all(&held).unwrap();
+    assert_eq!(
+        fixture.instance_file(INSTANCE_ID, "mods/o.jar").unwrap(),
+        "old"
+    );
+    let records = fixture.records(INSTANCE_ID).await;
+    assert_eq!(records["mods/o.jar"].hash, sha1_hash("old"));
+    assert!(records.contains_key("mods/held.jar"));
 }

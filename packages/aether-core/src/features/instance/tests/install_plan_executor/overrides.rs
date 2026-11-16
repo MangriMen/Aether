@@ -7,7 +7,7 @@ use std::{io::Write, path::PathBuf};
 
 use crate::features::{
     instance::{
-        AnchoredPath, FileSide, InstallPlan, InstallTarget, InstanceError, NewInstance,
+        AnchoredPath, FileSide, InstallPlan, InstallTarget, InstanceError, InstanceId, NewInstance,
         OverrideLocation, OverrideSource,
     },
     minecraft::ModLoader,
@@ -435,8 +435,8 @@ async fn should_apply_overrides_when_the_instance_is_new() {
 }
 
 /// The order: planned files win over overrides at their paths — enabled, disabled, or spelled
-/// in another case — and overrides come after the dropped files are removed, so one may bring
-/// back a path the plan dropped.
+/// in another case — and an override at a path the plan would drop keeps it: the file is written
+/// anew and stays recorded as the pack's.
 #[tokio::test]
 async fn should_apply_overrides_after_planned_files_when_both_name_a_path() {
     let fixture = Fixture::new().await;
@@ -450,7 +450,6 @@ async fn should_apply_overrides_after_planned_files_when_both_name_a_path() {
         &[
             ("overrides/mods/a.jar", "override a"),
             ("overrides/mods/B.jar", "override b"),
-            ("overrides/mods/b.jar.disabled", "override b disabled"),
             ("overrides/mods/dropped.jar", "override dropped"),
         ],
     );
@@ -489,9 +488,15 @@ async fn should_apply_overrides_after_planned_files_when_both_name_a_path() {
             .unwrap(),
         "override dropped"
     );
-    // Removed as the plan's, back as an override — which is not recorded as the plan's.
     let records = fixture.records(INSTANCE_ID).await;
-    assert!(!records.contains_key("mods/dropped.jar"));
+    assert_eq!(
+        records["mods/dropped.jar"].installed_by,
+        Some(pack_of(&plugin("packwiz")))
+    );
+    assert_eq!(
+        records["mods/dropped.jar"].hash,
+        sha1_hash("override dropped")
+    );
 }
 
 /// An override at a path the user disabled replaces the disabled file, never lands next to it.
@@ -546,4 +551,303 @@ async fn should_apply_no_overrides_when_a_download_fails() {
 
     assert!(fixture.instance_files(INSTANCE_ID).is_empty());
     assert!(fixture.staging_is_clean());
+}
+
+/// Run the plan of `plugin("packwiz")` with `entries` as its overrides.
+async fn run_overrides(fixture: &Fixture, entries: &[(&str, &str)]) {
+    let archive = zip_archive(fixture, entries);
+    fixture
+        .execute(
+            InstallPlan {
+                overrides: archive_overrides(archive),
+                ..existing(vec![])
+            },
+            &plugin("packwiz"),
+        )
+        .await
+        .unwrap();
+}
+
+/// The bug: a jar an update renames (`a-1.jar` to `a-2.jar`) is the pack's, so the old one goes
+/// instead of staying next to the new one — two versions of a mod crash the game.
+#[tokio::test]
+async fn should_remove_the_old_override_jar_when_an_update_renames_it() {
+    let fixture = Fixture::new().await;
+    run_overrides(&fixture, &[("overrides/mods/a-1.jar", "one")]).await;
+    assert_eq!(fixture.instance_files(INSTANCE_ID), ["mods/a-1.jar"]);
+
+    run_overrides(&fixture, &[("overrides/mods/a-2.jar", "two")]).await;
+
+    assert_eq!(fixture.instance_files(INSTANCE_ID), ["mods/a-2.jar"]);
+    let records = fixture.records(INSTANCE_ID).await;
+    assert_eq!(records.keys().collect::<Vec<_>>(), ["mods/a-2.jar"]);
+}
+
+/// An override the pack no longer ships is removed with its record.
+#[tokio::test]
+async fn should_remove_an_override_jar_when_the_pack_drops_it() {
+    let fixture = Fixture::new().await;
+    run_overrides(
+        &fixture,
+        &[("overrides/mods/a.jar", "a"), ("overrides/mods/b.jar", "b")],
+    )
+    .await;
+
+    run_overrides(&fixture, &[("overrides/mods/a.jar", "a")]).await;
+
+    assert_eq!(fixture.instance_files(INSTANCE_ID), ["mods/a.jar"]);
+    assert_eq!(fixture.records(INSTANCE_ID).await.len(), 1);
+}
+
+/// An override is recorded as a planned file is: the pack's, with the hash of the file and the
+/// side of the folder it came from.
+#[tokio::test]
+async fn should_record_an_override_jar_as_the_packs_when_it_is_installed() {
+    let fixture = Fixture::new().await;
+    let archive = zip_archive(
+        &fixture,
+        &[
+            ("overrides/mods/a.jar", "a"),
+            ("client-overrides/mods/c.jar", "c"),
+        ],
+    );
+    fixture
+        .execute(
+            InstallPlan {
+                overrides: vec![
+                    archive_subdir(&archive, "overrides", FileSide::Both),
+                    archive_subdir(&archive, "client-overrides", FileSide::Client),
+                ],
+                ..existing(vec![])
+            },
+            &plugin("packwiz"),
+        )
+        .await
+        .unwrap();
+
+    let records = fixture.records(INSTANCE_ID).await;
+    let origin = Some(pack_of(&plugin("packwiz")));
+    assert_eq!(records["mods/a.jar"].installed_by, origin);
+    assert_eq!(records["mods/a.jar"].hash, sha1_hash("a"));
+    assert_eq!(records["mods/a.jar"].side, Some(FileSide::Both));
+    assert_eq!(records["mods/c.jar"].installed_by, origin);
+    assert_eq!(records["mods/c.jar"].side, Some(FileSide::Client));
+}
+
+/// Only a file of a content folder is the pack's to remove: a config, a nested file and a
+/// disabled override stay when the pack drops them, and none is recorded.
+#[tokio::test]
+async fn should_not_record_an_override_when_it_is_not_a_content_file() {
+    let fixture = Fixture::new().await;
+    let files = [
+        ("overrides/config/a.toml", "a"),
+        ("overrides/mods/sub/b.jar", "b"),
+        ("overrides/mods/c.jar.disabled", "c"),
+        ("overrides/options.txt", "o"),
+    ];
+    run_overrides(&fixture, &files).await;
+
+    assert!(fixture.records(INSTANCE_ID).await.is_empty());
+
+    run_overrides(&fixture, &[("overrides/mods/d.jar", "d")]).await;
+
+    assert_eq!(
+        fixture.instance_files(INSTANCE_ID),
+        [
+            "config/a.toml",
+            "mods/c.jar.disabled",
+            "mods/d.jar",
+            "mods/sub/b.jar",
+            "options.txt"
+        ]
+    );
+}
+
+/// A jar the user disabled stays disabled when the pack's override replaces it, and it is
+/// still the pack's: recorded under its enabled path, and removed disabled when dropped.
+#[tokio::test]
+async fn should_keep_the_record_of_a_disabled_override_jar_when_it_is_replaced_and_dropped() {
+    let fixture = Fixture::new().await;
+    run_overrides(&fixture, &[("overrides/mods/a.jar", "one")]).await;
+    let dir = fixture
+        .location_info
+        .instance_dir(&InstanceId::try_from(INSTANCE_ID).unwrap());
+    std::fs::rename(dir.join("mods/a.jar"), dir.join("mods/a.jar.disabled")).unwrap();
+
+    run_overrides(&fixture, &[("overrides/mods/a.jar", "two")]).await;
+
+    assert_eq!(fixture.instance_files(INSTANCE_ID), ["mods/a.jar.disabled"]);
+    assert_eq!(
+        fixture.records(INSTANCE_ID).await["mods/a.jar"].hash,
+        sha1_hash("two")
+    );
+
+    run_overrides(&fixture, &[]).await;
+
+    assert!(fixture.instance_files(INSTANCE_ID).is_empty());
+    assert!(fixture.records(INSTANCE_ID).await.is_empty());
+}
+
+/// A file another plan installed stays that plan's: the override over it is left out.
+#[tokio::test]
+async fn should_leave_out_an_override_when_another_plan_installed_the_file() {
+    let fixture = Fixture::new().await;
+    let other = pack_of(&plugin("other"));
+    fixture
+        .put_installed("mods/a.jar", "other's", Some(other.clone()))
+        .await;
+
+    run_overrides(&fixture, &[("overrides/mods/a.jar", "pack's")]).await;
+
+    assert_eq!(
+        fixture.instance_file(INSTANCE_ID, "mods/a.jar").unwrap(),
+        "other's"
+    );
+    assert_eq!(
+        fixture.records(INSTANCE_ID).await["mods/a.jar"].installed_by,
+        Some(other)
+    );
+}
+
+/// A file found on disk without an owner is taken over by an override at its path.
+#[tokio::test]
+async fn should_take_over_an_unowned_file_when_an_override_names_its_path() {
+    let fixture = Fixture::new().await;
+    fixture.put_installed("mods/a.jar", "by hand", None).await;
+
+    run_overrides(&fixture, &[("overrides/mods/a.jar", "pack's")]).await;
+
+    let record = &fixture.records(INSTANCE_ID).await["mods/a.jar"];
+    assert_eq!(record.installed_by, Some(pack_of(&plugin("packwiz"))));
+    assert_eq!(record.hash, sha1_hash("pack's"));
+}
+
+/// A planned file the pack turns into an override of a path that is no content file loses its
+/// record, and the file stays instead of being removed as dropped.
+#[tokio::test]
+async fn should_unrecord_a_file_when_the_pack_ships_it_as_an_override_instead() {
+    let fixture = Fixture::new().await;
+    fixture
+        .put_installed("config/a.toml", "old", Some(pack_of(&plugin("packwiz"))))
+        .await;
+
+    run_overrides(&fixture, &[("overrides/config/a.toml", "new")]).await;
+
+    assert_eq!(
+        fixture.instance_file(INSTANCE_ID, "config/a.toml").unwrap(),
+        "new"
+    );
+    assert!(fixture.records(INSTANCE_ID).await.is_empty());
+}
+
+/// A planned file takes over a path the pack's override was at: the old file is replaced, the
+/// record is the planned file's.
+#[tokio::test]
+async fn should_record_the_planned_file_when_the_pack_moves_an_override_jar_to_the_plan() {
+    let fixture = Fixture::new().await;
+    run_overrides(&fixture, &[("overrides/mods/a.jar", "override")]).await;
+
+    fixture
+        .execute(
+            existing(vec![hashed("https://cdn.example/a.jar", "mods/a.jar")]),
+            &plugin("packwiz"),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(
+        fixture.instance_file(INSTANCE_ID, "mods/a.jar").unwrap(),
+        "https://cdn.example/a.jar"
+    );
+    assert_eq!(fixture.records(INSTANCE_ID).await.len(), 1);
+}
+
+/// The pack ships a jar it had enabled as disabled now: the enabled file goes, the disabled one
+/// is the only copy, and no record is left for it.
+#[tokio::test]
+async fn should_remove_the_enabled_jar_when_the_pack_ships_it_disabled_instead() {
+    let fixture = Fixture::new().await;
+    run_overrides(&fixture, &[("overrides/mods/a.jar", "one")]).await;
+
+    run_overrides(&fixture, &[("overrides/mods/a.jar.disabled", "two")]).await;
+
+    assert_eq!(fixture.instance_files(INSTANCE_ID), ["mods/a.jar.disabled"]);
+    assert_eq!(
+        fixture
+            .instance_file(INSTANCE_ID, "mods/a.jar.disabled")
+            .unwrap(),
+        "two"
+    );
+    assert!(fixture.records(INSTANCE_ID).await.is_empty());
+}
+
+/// A path is claimed once by a source, enabled or disabled: the two are one file.
+#[tokio::test]
+async fn should_refuse_a_source_when_it_has_a_jar_both_enabled_and_disabled() {
+    let fixture = Fixture::new().await;
+    let archive = zip_archive(
+        &fixture,
+        &[
+            ("overrides/mods/a.jar", "a"),
+            ("overrides/mods/a.jar.disabled", "a"),
+        ],
+    );
+
+    let err = fixture
+        .execute(
+            InstallPlan {
+                overrides: archive_overrides(archive),
+                ..existing(vec![])
+            },
+            &plugin("packwiz"),
+        )
+        .await
+        .unwrap_err();
+
+    assert!(
+        matches!(err, InstanceError::ContentDuplication { .. }),
+        "{err:?}"
+    );
+}
+
+/// An override that differs from the pack's recorded jar only in case is that very file where
+/// the file system ignores case (Windows, macOS): one file, one record, none left stale.
+#[cfg(any(windows, target_os = "macos"))]
+#[tokio::test]
+async fn should_keep_one_file_and_one_record_when_an_override_differs_only_in_case() {
+    let fixture = Fixture::new().await;
+    run_overrides(&fixture, &[("overrides/mods/a.jar", "one")]).await;
+
+    run_overrides(&fixture, &[("overrides/mods/A.jar", "two")]).await;
+
+    assert_eq!(fixture.instance_files(INSTANCE_ID).len(), 1);
+    let records = fixture.records(INSTANCE_ID).await;
+    assert_eq!(records.len(), 1);
+    assert_eq!(records.values().next().unwrap().hash, sha1_hash("two"));
+
+    run_overrides(&fixture, &[]).await;
+
+    assert!(fixture.instance_files(INSTANCE_ID).is_empty());
+    assert!(fixture.records(INSTANCE_ID).await.is_empty());
+}
+
+/// Where the file system tells cases apart (Linux) `mods/A.jar` is another file than the
+/// recorded `mods/a.jar`: the old one is dropped.
+#[cfg(not(any(windows, target_os = "macos")))]
+#[tokio::test]
+async fn should_replace_the_jar_when_an_override_differs_only_in_case_on_a_case_sensitive_system() {
+    let fixture = Fixture::new().await;
+    run_overrides(&fixture, &[("overrides/mods/a.jar", "one")]).await;
+
+    run_overrides(&fixture, &[("overrides/mods/A.jar", "two")]).await;
+
+    assert_eq!(fixture.instance_files(INSTANCE_ID), ["mods/A.jar"]);
+    assert_eq!(
+        fixture
+            .records(INSTANCE_ID)
+            .await
+            .keys()
+            .collect::<Vec<_>>(),
+        ["mods/A.jar"]
+    );
 }

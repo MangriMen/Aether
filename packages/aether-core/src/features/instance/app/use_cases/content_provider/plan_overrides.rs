@@ -28,7 +28,7 @@ use cap_fs_ext::{DirExt, FollowSymlinks, OpenOptionsFollowExt};
 use cap_std::{ambient_authority, fs::Dir};
 
 use crate::features::instance::{
-    AnchoredPath, ContentProviderRejection, InstanceError, OverrideLocation, StorageError,
+    AnchoredPath, ContentProviderRejection, FileSide, InstanceError, OverrideLocation, StorageError,
 };
 use crate::shared::io::IoError;
 
@@ -39,6 +39,9 @@ pub(super) struct OverrideFile {
     /// What the source says the file holds: an archive entry's header, a file's length when it
     /// was listed. Good for refusing early, never for the limit itself.
     pub declared_size: u64,
+    /// The side of the source the file comes from; [`FileSide::Both`] until the plan's checks
+    /// set it ([`InstallPlanExecutor::check_overrides`](super::InstallPlanExecutor)).
+    pub side: FileSide,
     source: OverrideFileSource,
 }
 
@@ -54,6 +57,7 @@ enum OverrideFileSource {
 pub(super) struct StagedOverride {
     pub relative_path: String,
     pub path: PathBuf,
+    pub side: FileSide,
 }
 
 /// The files `source` holds, in the order of the source (sorted for a directory), but no more
@@ -149,6 +153,7 @@ pub(super) async fn stage_overrides(
                 staged.push(StagedOverride {
                     relative_path: file.relative_path,
                     path,
+                    side: file.side,
                 });
             }
         }
@@ -201,6 +206,7 @@ fn list_archive(
         files.push(OverrideFile {
             relative_path: relative_path.to_owned(),
             declared_size: entry.size(),
+            side: FileSide::Both,
             source: OverrideFileSource::ArchiveEntry(index),
         });
         if files.len() > max_files {
@@ -254,6 +260,7 @@ fn list_directory(
                 files.push(OverrideFile {
                     relative_path,
                     declared_size,
+                    side: FileSide::Both,
                     source: OverrideFileSource::DirectoryFile,
                 });
             } else {

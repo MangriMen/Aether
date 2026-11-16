@@ -85,10 +85,13 @@ impl InstallPlanExecutor {
             let mut seen = HashSet::new();
             let mut kept = Vec::with_capacity(listed.len());
 
-            for file in listed {
+            for mut file in listed {
                 ContentPath::parse(&file.relative_path)?;
 
-                if !seen.insert(file.relative_path.clone()) {
+                // `X` and `X.disabled` are one file, as for the planned ones.
+                let key = path_key(&file.relative_path);
+                let key = key.strip_suffix(DISABLED_SUFFIX).unwrap_or(&key).to_owned();
+                if !seen.insert(key) {
                     return Err(InstanceError::ContentDuplication {
                         content_path: file.relative_path,
                     });
@@ -102,6 +105,7 @@ impl InstallPlanExecutor {
                     continue;
                 }
 
+                file.side = side;
                 kept.push(file);
             }
 
