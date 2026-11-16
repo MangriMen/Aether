@@ -7,7 +7,15 @@ pub enum HostResult<T> {
     Err(HostError),
 }
 
-pub type Result<T> = HostResult<T>;
+impl<T> HostResult<T> {
+    /// What a host function returned, as a `Result`.
+    pub fn into_result(self) -> Result<T, HostError> {
+        match self {
+            HostResult::Ok(value) => Ok(value),
+            HostResult::Err(error) => Err(error),
+        }
+    }
+}
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(tag = "type", content = "payload", rename_all = "camelCase")]

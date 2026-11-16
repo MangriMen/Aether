@@ -5,6 +5,7 @@ members = [
     "packages/aether-core",
     "packages/aether-core-gen",
     "packages/aether-core-plugin-api",
+    "packages/aether-core-plugin-pdk",
     "packages/register-schema",
     "packages/register-schema-derive",
 ]
