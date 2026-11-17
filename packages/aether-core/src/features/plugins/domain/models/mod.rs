@@ -52,7 +52,7 @@ pub use plugin_capabilities::{
     PluginCapabilities, PluginContentProviderCapability, PluginImporterCapability,
     PluginUpdaterCapability, ProviderHandlers,
 };
-pub use plugin_dtos::{PluginCheckCompatibilityParams, PluginImportInstance};
+pub use plugin_dtos::PluginCheckCompatibilityParams;
 pub use plugin_error::PluginError;
 pub use plugin_file_path::PluginFilePath;
 pub use plugin_internal_event::PluginInternalEvent;

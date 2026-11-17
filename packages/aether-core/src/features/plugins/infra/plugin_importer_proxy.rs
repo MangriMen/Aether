@@ -1,9 +1,10 @@
 use crate::features::plugins::infra::extism::Wire;
+use aether_core_plugin_api::v0::{ImportSourceDto, PluginImportInstanceDto};
 use async_trait::async_trait;
 
 use crate::features::{
     instance::{Importer, ImporterCapabilityMetadata, InstanceError, InstanceId},
-    plugins::{PluginError, PluginHandle, PluginImportInstance, PluginImporterCapability},
+    plugins::{PluginError, PluginHandle, PluginImporterCapability},
 };
 
 use crate::features::plugins::infra::extism::models::PluginInstanceExt;
@@ -12,7 +13,7 @@ use crate::features::plugins::infra::plugin_utils::to_wasi_path;
 use crate::shared::web_url::{HttpUrl, InvalidUrl};
 
 /// Whether `input` is written as an address, not a path: it starts with `http://` or `https://`
-/// (the scheme in any case). This only classifies; [`import_path`] checks an address is valid.
+/// (the scheme in any case). This only classifies; [`import_source`] checks an address is valid.
 /// Any other `scheme://` is left to the path normalization, as is a Windows drive (`C://`).
 fn is_url(input: &str) -> bool {
     input.split_once("://").is_some_and(|(scheme, _)| {
@@ -23,12 +24,16 @@ fn is_url(input: &str) -> bool {
 /// What the plugin is given for `input`: an address as written (path normalization would turn
 /// `https://` into `https:/`), once it is a valid `http(s)` URL, otherwise the normalized path.
 /// An address that is not valid (credentials, spaces, no host) is an error, not a path.
-fn import_path(input: &str) -> Result<String, InvalidUrl> {
+fn import_source(input: &str) -> Result<ImportSourceDto, InvalidUrl> {
     if is_url(input) {
         HttpUrl::parse(input)?;
-        Ok(input.to_owned())
+        Ok(ImportSourceDto::Url {
+            url: input.to_owned(),
+        })
     } else {
-        Ok(to_wasi_path(input))
+        Ok(ImportSourceDto::File {
+            path: to_wasi_path(input),
+        })
     }
 }
 
@@ -62,9 +67,9 @@ impl Importer for PluginImporterProxy {
 
         // Normalize Windows paths to WASI-compatible /mnt/<letter>/... format; a URL is not a
         // path and goes to the plugin as is
-        let params = PluginImportInstance {
+        let params = PluginImportInstanceDto {
             importer_id: self.capability.id.to_string(),
-            path: import_path(path).map_err(|err| failed(err.to_string()))?,
+            source: import_source(path).map_err(|err| failed(err.to_string()))?,
         };
         let handler = self.capability.handler.clone();
         let deploying = plugin_id.to_owned();
@@ -130,28 +135,43 @@ mod tests {
     #[case::empty_host("https:///pack.toml")]
     fn should_refuse_the_input_when_it_is_an_address_but_not_a_valid_url(#[case] input: &str) {
         assert!(is_url(input));
-        assert!(import_path(input).is_err());
+        assert!(import_source(input).is_err());
     }
 
     #[test]
     fn should_keep_an_uppercase_scheme_address_as_written_when_it_is_valid() {
         let input = "HTTPS://example.com/pack.toml";
 
-        assert_eq!(import_path(input).unwrap(), input);
+        assert_eq!(
+            import_source(input).unwrap(),
+            ImportSourceDto::Url {
+                url: input.to_owned()
+            }
+        );
     }
 
     #[rstest::rstest]
     #[case::drive("C://packs//pack.toml")]
     #[case::file_scheme("file:///c/pack.toml")]
     fn should_normalize_the_input_as_a_path_when_it_is_not_an_http_address(#[case] input: &str) {
-        assert_eq!(import_path(input).unwrap(), to_wasi_path(input));
+        assert_eq!(
+            import_source(input).unwrap(),
+            ImportSourceDto::File {
+                path: to_wasi_path(input)
+            }
+        );
     }
 
     #[test]
     fn should_pass_the_address_through_unchanged_when_it_is_a_valid_https_url() {
         let input = "https://example.com/pack.toml";
 
-        assert_eq!(import_path(input).unwrap(), input);
+        assert_eq!(
+            import_source(input).unwrap(),
+            ImportSourceDto::Url {
+                url: input.to_owned()
+            }
+        );
     }
 
     /// Exports `import`, which calls the host function `create` once, as an importer calls

@@ -130,7 +130,7 @@ the `handler` values of the capabilities; the properties are those of `schemas/p
 | Export | Input | Answer |
 | --- | --- | --- |
 | an event handler | `internalEvent` | none |
-| an importer | `importInstance` | none |
+| an importer | `importInstance` (`{importerId, source}`; `source` is `{"url": {"url": …}}` or `{"file": {"path": …}}`) | none |
 | an updater | `updateInstanceParams` | none |
 | `search` | `contentSearchParams` | `contentSearchResult` |
 | `getContent` | `getContentParams` | `contentItem` |
