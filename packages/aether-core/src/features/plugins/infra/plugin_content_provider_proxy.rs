@@ -35,7 +35,9 @@ use crate::features::{
 };
 
 use crate::features::plugins::infra::extism::models::PluginInstanceExt;
-use crate::features::plugins::infra::extism::{InvalidPlanFile, InvalidResolvedFile, Wire};
+use crate::features::plugins::infra::extism::{
+    InvalidInstanceDescription, InvalidPlanFile, InvalidResolvedFile, Wire,
+};
 use crate::features::plugins::infra::pack_instances::deploying_packs;
 use crate::features::plugins::infra::plugin_utils::{
     MountSet, host_path_to_plugin, parse_plugin_path, resolve_plugin_path,
@@ -154,7 +156,12 @@ impl PluginContentProviderProxy {
         requested: &ResolveTarget,
         dto: InstallPlanDto,
     ) -> Result<InstallPlan, InstanceError> {
-        let mut target = InstallTarget::try_from(dto.target)?;
+        // A value the plugin's API version does not have is an answer to refuse and log; an id
+        // or a version the core refuses is told as the core tells it anywhere else.
+        let mut target = InstallTarget::try_from(dto.target).map_err(|err| match err {
+            InvalidInstanceDescription::Value(err) => self.invalid_answer(handler_name, err),
+            InvalidInstanceDescription::Instance(err) => err,
+        })?;
         if !requested.is_answered_by(&target) {
             tracing::error!(
                 "Plugin '{}' answered '{handler_name}' with a plan for {}, but {} was asked for",

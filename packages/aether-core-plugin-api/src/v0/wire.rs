@@ -37,7 +37,7 @@ mod tests {
     use serde::Deserialize;
 
     use super::*;
-    use crate::v0::{AuthErrorDto, HostError, HostResult};
+    use crate::v0::{HostError, HostResult};
 
     #[derive(Serialize, Deserialize, Debug, PartialEq)]
     struct Old {
@@ -67,7 +67,7 @@ mod tests {
 
     #[test]
     fn field_names_are_camel_case_in_structs_and_in_error_variants() {
-        use crate::v0::{CommandDto, CommandRefusalDto, OutputDto, PluginErrorDto};
+        use crate::v0::{CommandDto, CommandRefusalDto, OutputDto};
 
         let command = serde_json::to_value(CommandDto {
             program: "java".to_owned(),
@@ -83,23 +83,24 @@ mod tests {
             stderr_truncated: false,
         })
         .unwrap();
-        let refusal = serde_json::to_value(PluginErrorDto::CommandNotApproved {
-            plugin_id: "p".to_owned(),
+        let refusal = serde_json::to_value(HostError::CommandNotApproved {
+            message: "m".to_owned(),
             reason: CommandRefusalDto::Denied,
         })
         .unwrap();
 
         assert!(command.get("currentDir").is_some());
         assert!(output.get("stdoutTruncated").is_some());
-        assert!(refusal["data"].get("pluginId").is_some());
+        assert_eq!(refusal["type"], "commandNotApproved");
+        assert_eq!(refusal["data"]["reason"], "denied");
     }
 
     #[test]
     fn a_result_is_a_map_in_both_cases() {
         let ok = encode(&HostResult::Ok(())).unwrap();
-        let err = encode(&HostResult::<()>::Err(HostError::AuthError(
-            AuthErrorDto::TokenExpired,
-        )))
+        let err = encode(&HostResult::<()>::Err(HostError::Internal {
+            message: "disk".to_owned(),
+        }))
         .unwrap();
 
         assert!(is_map(&ok) && is_map(&err));
@@ -109,9 +110,7 @@ mod tests {
         ));
         assert!(matches!(
             decode::<HostResult<()>>(&err),
-            Ok(HostResult::Err(HostError::AuthError(
-                AuthErrorDto::TokenExpired
-            )))
+            Ok(HostResult::Err(HostError::Internal { .. }))
         ));
     }
 }

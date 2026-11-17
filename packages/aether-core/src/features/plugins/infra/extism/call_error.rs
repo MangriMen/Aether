@@ -1,6 +1,4 @@
-use aether_core_plugin_api::v0::{
-    CommandRefusalDto, HostError, PluginCallErrorDto, PluginErrorDto, PluginFailureDto,
-};
+use aether_core_plugin_api::v0::{HostError, PluginFailureDto};
 
 use crate::features::plugins::{CommandApprovalRefusal, PluginCallError};
 
@@ -38,24 +36,23 @@ pub(super) fn classify_call_error(error: &extism::Error, code: i32) -> PluginCal
 }
 
 /// A failure the plugin reported in its envelope: the refusal of a command, either of its own
-/// call of `run_command` or of a call of another plugin that failed that way, else the plugin's
-/// own message. A refusal of a kind this launcher does not know is only the plugin's message.
+/// call of `run_command` or of a call of another plugin that failed that way, with the plugin's
+/// own message; else only that message. A refusal of a kind this launcher does not know is only
+/// the plugin's message.
 fn reported_failure(failure: PluginFailureDto) -> PluginCallError {
-    let refusal = |reason: CommandRefusalDto, details: String| {
-        CommandApprovalRefusal::try_from(reason)
-            .map(|reason| PluginCallError::CommandNotApproved { reason, details })
-    };
     let reported = match failure.host {
-        Some(HostError::PluginError(PluginErrorDto::CommandNotApproved { reason, .. })) => {
-            refusal(reason, failure.message.clone())
+        Some(HostError::CommandNotApproved { reason, .. }) => {
+            CommandApprovalRefusal::try_from(reason)
         }
-        Some(HostError::PluginError(PluginErrorDto::FunctionCallFailed {
-            error: PluginCallErrorDto::CommandNotApproved { reason, details },
-            ..
-        })) => refusal(reason, details),
         _ => return PluginCallError::Plugin(failure.message),
     };
-    reported.unwrap_or(PluginCallError::Plugin(failure.message))
+    match reported {
+        Ok(reason) => PluginCallError::CommandNotApproved {
+            reason,
+            details: failure.message,
+        },
+        Err(_) => PluginCallError::Plugin(failure.message),
+    }
 }
 
 #[cfg(test)]
@@ -131,21 +128,22 @@ mod tests {
     const MESSAGES: &[(&str, &str)] = &[
         (
             "refused",
-            r#"aether-plugin-failure:{"message":"AccessViolation","host":{"type":"pluginError","data":{"type":"commandNotApproved","data":{"pluginId":"packwiz","reason":"timedOut"}}}}"#,
+            r#"aether-plugin-failure:{"message":"AccessViolation","host":{"type":"commandNotApproved","data":{"reason":"timedOut","message":"The command of plugin \"packwiz\" was not approved: timedOut"}}}"#,
         ),
         (
             "refused_with_prefix_and_tail",
-            r#"Error: aether-plugin-failure:{"message":"m","host":{"type":"pluginError","data":{"type":"commandNotApproved","data":{"pluginId":"packwiz","reason":"denied"}}}}
+            r#"Error: aether-plugin-failure:{"message":"m","host":{"type":"commandNotApproved","data":{"reason":"denied","message":"no"}}}
 
 Caused by: x"#,
         ),
+        // What the PDK writes when a plugin passes on the refusal another plugin reported to it.
         (
             "refused_in_a_chain",
-            r#"aether-plugin-failure:{"message":"a","host":{"type":"pluginError","data":{"type":"functionCallFailed","data":{"functionName":"f","pluginId":"b","error":{"type":"commandNotApproved","data":{"reason":"cancelled","details":"b said so"}}}}}}"#,
+            r#"aether-plugin-failure:{"message":"b said so","host":{"type":"commandNotApproved","data":{"reason":"cancelled","message":"b said so"}}}"#,
         ),
         (
             "unknown_reason",
-            r#"aether-plugin-failure:{"message":"m","host":{"type":"pluginError","data":{"type":"commandNotApproved","data":{"pluginId":"p","reason":"because"}}}}"#,
+            r#"aether-plugin-failure:{"message":"m","host":{"type":"commandNotApproved","data":{"reason":"because","message":"m"}}}"#,
         ),
         ("broken_json", "aether-plugin-failure:{not json"),
         (

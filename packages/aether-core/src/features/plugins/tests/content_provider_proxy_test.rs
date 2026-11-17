@@ -1388,6 +1388,36 @@ async fn should_refuse_a_plan_when_its_instance_id_is_not_a_plain_name() {
     );
 }
 
+/// A loader the plugin's API version does not have is an invalid answer, not the provider's own
+/// failure.
+#[tokio::test]
+async fn should_refuse_a_plan_as_an_invalid_answer_when_its_target_names_an_unknown_loader() {
+    let fixture = Fixture::new(
+        RESOLVE_ONLY_CAPABILITIES,
+        vec![(
+            "cf_resolve_install_plan",
+            encode(plan_for(
+                InstallTargetDto::Existing {
+                    instance_id: "instance".into(),
+                    game: Some(InstanceGameDto {
+                        game_version: "1.21.1".into(),
+                        mod_loader: ModLoaderDto::Unknown,
+                        loader_version: None,
+                    }),
+                },
+                Vec::new(),
+            )),
+        )],
+    );
+
+    let result = fixture
+        .proxy
+        .resolve_install_plan(plan_params(existing_target()), &|_| {})
+        .await;
+
+    assert_invalid_answer(result);
+}
+
 /// The keys of the answer name instances; one that is not a plain name is refused.
 #[tokio::test]
 async fn should_refuse_a_compatibility_answer_when_a_key_is_not_a_plain_name() {

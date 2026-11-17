@@ -39,8 +39,8 @@ impl PluginFailureDto {
         format!("{PLUGIN_FAILURE_MARKER}{json}")
     }
 
-    /// The envelope in an error string, if it holds one. A `host` that is not a `HostError` this
-    /// version knows is dropped, the `message` stays.
+    /// The envelope in an error string, if it holds one. A `host` that is no `HostError` at all is
+    /// dropped, one of a kind this version does not know is `Unknown`; the `message` stays.
     #[must_use]
     pub fn parse(raw: &str) -> Option<Self> {
         #[derive(Deserialize)]
@@ -73,23 +73,21 @@ impl PluginFailureDto {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::v0::{CommandRefusalDto, PluginErrorDto};
+    use crate::v0::CommandRefusalDto;
 
     fn refused() -> PluginFailureDto {
         PluginFailureDto {
             message: "refused".to_owned(),
-            host: Some(HostError::PluginError(PluginErrorDto::CommandNotApproved {
-                plugin_id: "packwiz".to_owned(),
+            host: Some(HostError::CommandNotApproved {
                 reason: CommandRefusalDto::Denied,
-            })),
+                message: "the user said no".to_owned(),
+            }),
         }
     }
 
     fn refusal(failure: &PluginFailureDto) -> Option<CommandRefusalDto> {
         match failure.host.as_ref()? {
-            HostError::PluginError(PluginErrorDto::CommandNotApproved { reason, .. }) => {
-                Some(*reason)
-            }
+            HostError::CommandNotApproved { reason, .. } => Some(*reason),
             _ => None,
         }
     }
@@ -128,12 +126,30 @@ mod tests {
 
     #[test]
     fn a_host_error_it_cannot_read_leaves_the_message() {
-        for host in [r#"{"type":"bogus"}"#, r#"{"type":"coreError"}"#] {
+        let parse = |host: &str| {
             let raw = format!(r#"{PLUGIN_FAILURE_MARKER}{{"message":"hi","host":{host}}}"#);
-            let parsed = PluginFailureDto::parse(&raw).expect("envelope");
+            PluginFailureDto::parse(&raw).expect("envelope")
+        };
+
+        for host in [
+            r#"{"kind":"internal"}"#,
+            r#""text""#,
+            r#"{"type":"notFound"}"#,
+        ] {
+            let parsed = parse(host);
 
             assert_eq!(parsed.message, "hi");
-            assert!(parsed.host.is_none());
+            assert!(parsed.host.is_none(), "{host}");
+        }
+        // A kind of a newer launcher, with or without its data.
+        for host in [
+            r#"{"type":"bogus"}"#,
+            r#"{"type":"somethingNew","data":{"message":"m","extra":1}}"#,
+        ] {
+            let parsed = parse(host);
+
+            assert_eq!(parsed.message, "hi");
+            assert_eq!(parsed.host, Some(HostError::Unknown), "{host}");
         }
     }
 

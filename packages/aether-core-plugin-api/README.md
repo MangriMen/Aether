@@ -88,19 +88,18 @@ arguments; an unanswered question is refused after 5 minutes. While it waits, th
 plugin is still running, so the plugin is busy for that long (a stop or restart cancels the
 question first).
 
-A refused command fails the call with `HostError::PluginError(CommandNotApproved { plugin_id,
-reason })` where `reason` is one of `denied`, `timedOut`, `cancelled` or `jarChanged` (on the
-wire: `{"type": "pluginError", "data": {"type": "commandNotApproved", "data": {"pluginId": …,
-"reason": "denied"}}}`). *Deny* is remembered until the plugin is stopped or reloaded: the same
-command is refused again without a new question.
+A refused command fails the call with `HostError::CommandNotApproved { reason, message }` where
+`reason` is one of `denied`, `timedOut`, `cancelled` or `jarChanged` (on the wire: `{"type":
+"commandNotApproved", "data": {"reason": "denied", "message": …}}`). *Deny* is remembered until
+the plugin is stopped or reloaded: the same command is refused again without a new question.
 
 To let the user see why, report the error as a failure envelope (see "Reporting a typed failure"
 below), passing the `HostError` as `host`: the launcher then tells the user that the command was
-not allowed, and why. A plugin that turns the error into plain text still fails, but the user
-only learns that the plugin reported an error. When a plugin calls another through the host and
-the other one reported a refusal this way, the refusal passes through as
-`PluginCallErrorDto::CommandNotApproved { reason, details }` inside `FunctionCallFailed`, and a
-plugin may pass that on the same way.
+not allowed, and why, with the envelope's `message` as the plugin's words. A plugin that turns
+the error into plain text still fails, but the user only learns that the plugin reported an
+error. When a plugin calls another through the host and the other one reported a refusal this
+way, the refusal reaches the caller as the same `commandNotApproved`, its `message` being the
+other plugin's words, and the caller may pass it on the same way.
 
 *Always* is offered only for `java [-Xmx/-Xms/-Xss…] -jar #/cache/<file>.jar <args>`: the jar must be
 a file in the plugin's `/cache` whose manifest has no `Class-Path`, and every option before `-jar`
@@ -125,8 +124,9 @@ side.
 Only four plain enums the launcher sends have a fallback: `ModLoaderDto`, `ContentTypeDto`,
 `CommandRefusalDto` and `InstanceInstallStageDto`. A value a plugin built for an older API does
 not know reads as `unknown` there, so the call still decodes; a plugin must not answer `unknown`,
-the launcher refuses it. Every other enum is strict (an enum with data, `{"type", "data"}`, cannot
-have a fallback at all, and `HashAlgorithmDto` and the host error reasons have none): a new
+the launcher refuses it. `HostError` has one too: a kind a plugin does not know reads as
+`unknown`, whatever its `data` (see "When a host function fails"). Every other enum is strict
+(`HashAlgorithmDto` and the other enums with data, `{"type", "data"}`, have none): a new
 value or variant of it breaks a plugin built for an older API, and `api.version` is matched as a
 caret requirement, so on 0.x it needs a new minor version.
 
@@ -179,6 +179,33 @@ test checks that what the codec writes is listed in it.
 
 **With Rust**, `aether_core_plugin_api::v0::wire` is the codec and `aether-core-plugin-pdk` has
 `Wire<T>` for Extism in place of `Msgpack<T>`.
+
+## When a host function fails
+
+The `data` of an `err` answer is a `HostError`: `{"type": <kind>, "data": {"message": …}}`. The
+kind tells what the plugin can do about the failure; `message` is the launcher's text of it, for
+the log or the user, not something to match on. The kinds:
+
+| Kind | Meaning | Expect it when |
+| --- | --- | --- |
+| `invalidArgument` | What the plugin sent is refused; sending it again fails again. | An id, a path, a game or loader version, a page or a content id is not valid; a value is unknown to the launcher or not supported there. |
+| `notFound` | What the plugin named does not exist. | An instance, a plugin, an importer, an updater, a provider or a content file is not there. |
+| `accessDenied` | The plugin may not do this. | A path leaves the instance or the plugin's folders, a program is not one the plugin may run. The user's refusal of a command is `commandNotApproved` instead. |
+| `commandNotApproved` | The user did not allow the command; `data` also has its `reason`. | See "`run_command` needs the user's consent". |
+| `tooLarge` | A file or an answer is larger than the launcher accepts. | A file to read is over the limit. |
+| `conflict` | The state does not allow it now; it may succeed later. | The instance is running or still installing, a plugin is loading, unloading or busy, the content is there already. |
+| `cancelled` | The work was called off before it finished. | The user called off an install. |
+| `timedOut` | The work did not finish in its time. | Java did not report its properties in time. |
+| `pluginCallFailed` | A call into another plugin failed. | The other plugin crashed, hit a limit or reported an error. |
+| `http` | A network request failed. | The request could not be sent, the answer has an error status or cannot be read, a hash does not match. |
+| `internal` | The launcher failed on its own; nothing the plugin can change. | Storage, the file system, and every failure the launcher has no kind for yet. |
+| `unknown` | A kind this version of the API does not know: a newer launcher sent it. | Never written by the launcher of a plugin's own API version; read it like `internal`. |
+
+The failures `run_command`, `http_get`, `http_post_json` and `download_to_cache` raise themselves
+(the command could not start or ran too long; a refused host, address or header, an oversized body,
+a failed request) have no kind of their own yet: they arrive as `internal`, the `message` saying
+what happened. A plugin writes none of these kinds itself, except to pass one back in a failure
+envelope.
 
 ## Reporting a typed failure (any language)
 
@@ -284,8 +311,8 @@ The host performs the request itself and applies, in this order:
 
    These two failures have no kind of their own: like every error of `http_get`,
    `http_post_json` and `download_to_cache` that the host raises itself (a refused host, address
-   or header, an oversized body, …) they arrive as `HostError::CoreError(String)`, the text being
-   all there is to match on.
+   or header, an oversized body, …) they arrive as `internal` (see "When a host function fails"),
+   the `message` saying what happened.
 
    Downloads from GitHub releases need this: `/releases/latest/download/<file>` answers `302`
    to `/releases/download/<tag>/<file>`, which answers `302` to a signed, expiring URL on

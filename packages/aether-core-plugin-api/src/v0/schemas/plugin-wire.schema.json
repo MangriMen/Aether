@@ -193,130 +193,6 @@
     "checkCompatibilityResult"
   ],
   "$defs": {
-    "AuthErrorDto": {
-      "oneOf": [
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "id": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "id"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "credentialsNotFound"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "type": {
-              "type": "string",
-              "const": "noActiveCredentials"
-            }
-          },
-          "required": [
-            "type"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "max": {
-                  "type": "integer",
-                  "format": "uint",
-                  "minimum": 0
-                },
-                "min": {
-                  "type": "integer",
-                  "format": "uint",
-                  "minimum": 0
-                }
-              },
-              "required": [
-                "min",
-                "max"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "invalidUsernameLength"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "type": {
-              "type": "string",
-              "const": "invalidUsernameChars"
-            }
-          },
-          "required": [
-            "type"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "type": {
-              "type": "string",
-              "const": "invalidAccountType"
-            }
-          },
-          "required": [
-            "type"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "type": {
-              "type": "string",
-              "const": "tokenExpired"
-            }
-          },
-          "required": [
-            "type"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "string"
-            },
-            "type": {
-              "type": "string",
-              "const": "storage"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        }
-      ]
-    },
     "CachedFileDto": {
       "description": "A verified file in the plugin's cache, returned by `download_to_cache`.",
       "type": "object",
@@ -1095,78 +971,6 @@
         "hash"
       ]
     },
-    "EventErrorDto": {
-      "oneOf": [
-        {
-          "type": "object",
-          "properties": {
-            "type": {
-              "type": "string",
-              "const": "notInitialized"
-            }
-          },
-          "required": [
-            "type"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "id": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "id"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "noLoadingBar"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "string"
-            },
-            "type": {
-              "type": "string",
-              "const": "serializeError"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "string"
-            },
-            "type": {
-              "type": "string",
-              "const": "storageError"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        }
-      ]
-    },
     "FileHashDto": {
       "description": "An expected file digest, hex-encoded. Hex case does not matter.",
       "type": "object",
@@ -1190,160 +994,6 @@
         "both",
         "client",
         "server"
-      ]
-    },
-    "FileWatcherErrorDto": {
-      "oneOf": [
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "path": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "path"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "pathNotFound"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "type": {
-              "type": "string",
-              "const": "watchNotFound"
-            }
-          },
-          "required": [
-            "type"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "string"
-            },
-            "type": {
-              "type": "string",
-              "const": "notifyError"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        }
-      ]
-    },
-    "GameLogErrorDto": {
-      "oneOf": [
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "sourceId": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "sourceId"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "invalidSource"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "sourceId": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "sourceId"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "sourceNotFound"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "limit": {
-                  "type": "integer",
-                  "format": "uint64",
-                  "minimum": 0
-                },
-                "sourceId": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "sourceId",
-                "limit"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "tooLarge"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "string"
-            },
-            "type": {
-              "type": "string",
-              "const": "io"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        }
       ]
     },
     "GetAuthorsParamsDto": {
@@ -1486,16 +1136,26 @@
       ]
     },
     "HostError": {
+      "description": "Why a host function failed. The kind tells a plugin what it can do about it; `message` is\ntext for the log or the user, not something to match on.",
       "oneOf": [
         {
+          "description": "What the plugin sent is refused: an invalid id, path, version or page, a value the host\ndoes not know or does not support. Sending it again fails again.",
           "type": "object",
           "properties": {
             "data": {
-              "$ref": "#/$defs/AuthErrorDto"
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "message"
+              ]
             },
             "type": {
               "type": "string",
-              "const": "authError"
+              "const": "invalidArgument"
             }
           },
           "required": [
@@ -1504,14 +1164,23 @@
           ]
         },
         {
+          "description": "What the plugin named does not exist: an instance, a plugin, an importer, a provider.",
           "type": "object",
           "properties": {
             "data": {
-              "$ref": "#/$defs/EventErrorDto"
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "message"
+              ]
             },
             "type": {
               "type": "string",
-              "const": "eventError"
+              "const": "notFound"
             }
           },
           "required": [
@@ -1520,14 +1189,23 @@
           ]
         },
         {
+          "description": "The plugin may not do this: a path outside what it was given, a host or a program it is\nnot allowed.",
           "type": "object",
           "properties": {
             "data": {
-              "$ref": "#/$defs/FileWatcherErrorDto"
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "message"
+              ]
             },
             "type": {
               "type": "string",
-              "const": "fileWatcherError"
+              "const": "accessDenied"
             }
           },
           "required": [
@@ -1536,14 +1214,27 @@
           ]
         },
         {
+          "description": "The user did not allow the plugin's command, or was not there to.",
           "type": "object",
           "properties": {
             "data": {
-              "$ref": "#/$defs/GameLogErrorDto"
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string"
+                },
+                "reason": {
+                  "$ref": "#/$defs/CommandRefusalDto"
+                }
+              },
+              "required": [
+                "reason",
+                "message"
+              ]
             },
             "type": {
               "type": "string",
-              "const": "gameLogError"
+              "const": "commandNotApproved"
             }
           },
           "required": [
@@ -1552,14 +1243,23 @@
           ]
         },
         {
+          "description": "A file or an answer is larger than the host accepts.",
           "type": "object",
           "properties": {
             "data": {
-              "$ref": "#/$defs/InstanceErrorDto"
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "message"
+              ]
             },
             "type": {
               "type": "string",
-              "const": "instanceError"
+              "const": "tooLarge"
             }
           },
           "required": [
@@ -1568,14 +1268,23 @@
           ]
         },
         {
+          "description": "The state does not allow it now: the instance is running or still installing, a plugin\nis loading or busy. It may succeed later.",
           "type": "object",
           "properties": {
             "data": {
-              "$ref": "#/$defs/JavaErrorDto"
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "message"
+              ]
             },
             "type": {
               "type": "string",
-              "const": "javaError"
+              "const": "conflict"
             }
           },
           "required": [
@@ -1584,14 +1293,23 @@
           ]
         },
         {
+          "description": "The work was called off before it finished.",
           "type": "object",
           "properties": {
             "data": {
-              "$ref": "#/$defs/MinecraftErrorDto"
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "message"
+              ]
             },
             "type": {
               "type": "string",
-              "const": "minecraftError"
+              "const": "cancelled"
             }
           },
           "required": [
@@ -1600,14 +1318,23 @@
           ]
         },
         {
+          "description": "The work did not finish in the time it was given.",
           "type": "object",
           "properties": {
             "data": {
-              "$ref": "#/$defs/PluginErrorDto"
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "message"
+              ]
             },
             "type": {
               "type": "string",
-              "const": "pluginError"
+              "const": "timedOut"
             }
           },
           "required": [
@@ -1616,14 +1343,23 @@
           ]
         },
         {
+          "description": "A call into a plugin failed: the other plugin crashed, hit a limit or reported an error.",
           "type": "object",
           "properties": {
             "data": {
-              "$ref": "#/$defs/ProcessErrorDto"
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "message"
+              ]
             },
             "type": {
               "type": "string",
-              "const": "processError"
+              "const": "pluginCallFailed"
             }
           },
           "required": [
@@ -1632,14 +1368,23 @@
           ]
         },
         {
+          "description": "A network request failed.",
           "type": "object",
           "properties": {
             "data": {
-              "$ref": "#/$defs/SettingsErrorDto"
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "message"
+              ]
             },
             "type": {
               "type": "string",
-              "const": "settingsError"
+              "const": "http"
             }
           },
           "required": [
@@ -1648,14 +1393,23 @@
           ]
         },
         {
+          "description": "The host failed on its own: storage, the file system, anything the plugin can do nothing\nabout.",
           "type": "object",
           "properties": {
             "data": {
-              "$ref": "#/$defs/RequestErrorDto"
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "message"
+              ]
             },
             "type": {
               "type": "string",
-              "const": "requestError"
+              "const": "internal"
             }
           },
           "required": [
@@ -1664,19 +1418,16 @@
           ]
         },
         {
+          "description": "A kind this version of the API does not know: a newer launcher sent it. Read it, never\nwrite it.",
           "type": "object",
           "properties": {
-            "data": {
-              "type": "string"
-            },
             "type": {
               "type": "string",
-              "const": "coreError"
+              "const": "unknown"
             }
           },
           "required": [
-            "type",
-            "data"
+            "type"
           ]
         }
       ]
@@ -1980,793 +1731,6 @@
         "path"
       ]
     },
-    "InstanceErrorDto": {
-      "oneOf": [
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "string"
-            },
-            "type": {
-              "type": "string",
-              "const": "storage"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "instanceId": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "instanceId"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "notFound"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "capabilityId": {
-                  "type": "string"
-                },
-                "pluginId": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "pluginId",
-                "capabilityId"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "contentProviderNotFound"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "type": {
-              "type": "string",
-              "const": "capabilityOperationError"
-            }
-          },
-          "required": [
-            "type"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "instanceId": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "instanceId"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "instanceStillInstalling"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "instanceId": {
-                  "type": "string"
-                },
-                "processId": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "instanceId",
-                "processId"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "instanceAlreadyRunning"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "code": {
-                  "type": "integer",
-                  "format": "int32"
-                }
-              },
-              "required": [
-                "code"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "prelaunchCommandError"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "field": {
-                  "$ref": "#/$defs/InstanceFieldDto"
-                },
-                "reason": {
-                  "$ref": "#/$defs/InstanceValidationErrorReasonDto"
-                }
-              },
-              "required": [
-                "field",
-                "reason"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "validationError"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "importerId": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "importerId"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "importerNotFound"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "capabilityId": {
-                  "type": "string"
-                },
-                "pluginId": {
-                  "type": "string"
-                },
-                "reason": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "pluginId",
-                "capabilityId",
-                "reason"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "importFailed"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "type": {
-              "type": "string",
-              "const": "packInfoNotFound"
-            }
-          },
-          "required": [
-            "type"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "modpackId": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "modpackId"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "updaterNotFound"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "modpackId": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "modpackId"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "updateFailed"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "instanceId": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "instanceId"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "unmanagedInstance"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "contentPath": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "contentPath"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "contentDuplication"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "path": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "path"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "contentFilename"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "path": {
-                  "type": "string"
-                },
-                "reason": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "path",
-                "reason"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "invalidRelativePath"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "kind": {
-                  "type": "string"
-                },
-                "value": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "kind",
-                "value"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "invalidContentId"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "reason": {
-                  "type": "string"
-                },
-                "value": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "value",
-                "reason"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "invalidGameVersion"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "field": {
-                  "type": "string"
-                },
-                "reason": {
-                  "type": "string"
-                },
-                "value": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "field",
-                "value",
-                "reason"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "invalidPagination"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "reason": {
-                  "type": "string"
-                },
-                "value": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "value",
-                "reason"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "invalidLoaderVersion"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "instanceId": {
-                  "type": "string"
-                },
-                "path": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "path",
-                "instanceId"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "pathEscapesInstance"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "limit": {
-                  "type": "integer",
-                  "format": "uint64",
-                  "minimum": 0
-                },
-                "path": {
-                  "type": "string"
-                },
-                "size": {
-                  "type": "integer",
-                  "format": "uint64",
-                  "minimum": 0
-                }
-              },
-              "required": [
-                "path",
-                "size",
-                "limit"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "fileTooLarge"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "string"
-            },
-            "type": {
-              "type": "string",
-              "const": "contentDownloadError"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "reason": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "reason"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "contentProviderError"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "gameVersion": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "gameVersion"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "contentForGameVersionNotFound"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "contentType": {
-                  "$ref": "#/$defs/ContentTypeDto"
-                }
-              },
-              "required": [
-                "contentType"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "unsupportedContentType"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "operation": {
-                  "type": "string"
-                },
-                "providerId": {
-                  "$ref": "#/$defs/ProviderIdDto"
-                }
-              },
-              "required": [
-                "providerId",
-                "operation"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "unsupportedOperation"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "platform": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "platform"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "platformProviderNotFound"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "platform": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "platform"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "platformProviderNotChosen"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "contentId": {
-                  "type": "string"
-                },
-                "instanceId": {
-                  "type": "string"
-                },
-                "providerId": {
-                  "$ref": "#/$defs/ProviderIdDto"
-                }
-              },
-              "required": [
-                "instanceId",
-                "providerId",
-                "contentId"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "gameChangeNotAllowed"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        }
-      ]
-    },
-    "InstanceFieldDto": {
-      "type": "string",
-      "enum": [
-        "name"
-      ]
-    },
     "InstanceFileBytesDto": {
       "description": "What `read_instance_file` returns: the file contents as a msgpack `bin`.\n\nA newtype, so that the bytes can be encoded as `bin` — a bare `Vec<u8>` result would be an\narray of numbers.",
       "type": "string",
@@ -2879,12 +1843,6 @@
         "loader"
       ]
     },
-    "InstanceValidationErrorReasonDto": {
-      "type": "string",
-      "enum": [
-        "cannotBeEmpty"
-      ]
-    },
     "JavaDto": {
       "description": "Description of a Java installation known to the launcher.",
       "type": "object",
@@ -2913,298 +1871,6 @@
         "version",
         "architecture",
         "path"
-      ]
-    },
-    "JavaErrorDto": {
-      "oneOf": [
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "version": {
-                  "type": "integer",
-                  "format": "uint32",
-                  "minimum": 0
-                }
-              },
-              "required": [
-                "version"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "notFound"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "path": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "path"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "invalidPath"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "type": {
-              "type": "string",
-              "const": "emptyPath"
-            }
-          },
-          "required": [
-            "type"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "path": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "path"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "relativePath"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "version": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "version"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "invalidVersion"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "reason": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "reason"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "failedToGetProperties"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "arch": {
-                  "type": "string"
-                },
-                "os": {
-                  "type": "string"
-                },
-                "version": {
-                  "type": "integer",
-                  "format": "uint32",
-                  "minimum": 0
-                }
-              },
-              "required": [
-                "version",
-                "os",
-                "arch"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "versionNotAvailable"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "arch": {
-                  "type": "string"
-                },
-                "os": {
-                  "type": "string"
-                },
-                "version": {
-                  "type": "integer",
-                  "format": "uint32",
-                  "minimum": 0
-                }
-              },
-              "required": [
-                "version",
-                "os",
-                "arch"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "versionGetFailed"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "arch": {
-                  "type": "string"
-                },
-                "os": {
-                  "type": "string"
-                },
-                "version": {
-                  "type": "integer",
-                  "format": "uint32",
-                  "minimum": 0
-                }
-              },
-              "required": [
-                "version",
-                "os",
-                "arch"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "failedToInstall"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "path": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "path"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "removeOldInstallationError"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "string"
-            },
-            "type": {
-              "type": "string",
-              "const": "storage"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "type": {
-              "type": "string",
-              "const": "cancelled"
-            }
-          },
-          "required": [
-            "type"
-          ]
-        }
       ]
     },
     "JavaVersionParamsDto": {
@@ -3266,12 +1932,6 @@
         "versions"
       ]
     },
-    "LoadConfigTypeDto": {
-      "type": "string",
-      "enum": [
-        "extism"
-      ]
-    },
     "LoaderVersionPreferenceDto": {
       "anyOf": [
         {
@@ -3311,411 +1971,6 @@
       "required": [
         "level",
         "message"
-      ]
-    },
-    "ManifestErrorDto": {
-      "oneOf": [
-        {
-          "type": "object",
-          "properties": {
-            "type": {
-              "type": "string",
-              "const": "unsupportedApi"
-            }
-          },
-          "required": [
-            "type"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "error": {
-                  "type": "string"
-                },
-                "field": {
-                  "type": "string"
-                },
-                "value": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "field",
-                "value",
-                "error"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "invalidSemver"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "type": {
-              "type": "string",
-              "const": "invalidPathMapping"
-            }
-          },
-          "required": [
-            "type"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            },
-            "type": {
-              "type": "string",
-              "const": "unknownHostFunctions"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "type": {
-              "type": "string",
-              "const": "hostFunctionsNotDeclared"
-            }
-          },
-          "required": [
-            "type"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "field": {
-                  "type": "string"
-                },
-                "value": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "field",
-                "value"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "invalidId"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "type": {
-              "type": "string",
-              "const": "reservedPluginId"
-            }
-          },
-          "required": [
-            "type"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "capabilityId": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "capabilityId"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "platformWithoutResolveFile"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        }
-      ]
-    },
-    "MinecraftErrorDto": {
-      "oneOf": [
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "version": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "version"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "versionNotFound"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "loaderVersionPreference": {
-                  "$ref": "#/$defs/LoaderVersionPreferenceDto"
-                }
-              },
-              "required": [
-                "loaderVersionPreference"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "versionForLoaderNotFound"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "loaderVersionPreference": {
-                  "$ref": "#/$defs/LoaderVersionPreferenceDto"
-                }
-              },
-              "required": [
-                "loaderVersionPreference"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "loaderNotFound"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "type": {
-              "type": "string",
-              "const": "loaderVersionRequired"
-            }
-          },
-          "required": [
-            "type"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "type": {
-              "type": "string",
-              "const": "defaultLoaderNotFound"
-            }
-          },
-          "required": [
-            "type"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "reason": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "reason"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "processorFailed"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "code": {
-                  "type": "integer",
-                  "format": "int32"
-                }
-              },
-              "required": [
-                "code"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "preLaunchFailed"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "code": {
-                  "type": "integer",
-                  "format": "int32"
-                }
-              },
-              "required": [
-                "code"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "postLaunchFailed"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "entityType": {
-                  "type": "string"
-                },
-                "path": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "path",
-                "entityType"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "pathNotFound"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "reason": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "reason"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "parseFailed"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "reason": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "reason"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "storageFailure"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        }
       ]
     },
     "ModLoaderDto": {
@@ -4105,165 +2360,6 @@
         }
       ]
     },
-    "PluginCallErrorDto": {
-      "description": "Why a call into a plugin failed.",
-      "oneOf": [
-        {
-          "type": "object",
-          "properties": {
-            "type": {
-              "type": "string",
-              "const": "missingFunction"
-            }
-          },
-          "required": [
-            "type"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "type": {
-              "type": "string",
-              "const": "timeout"
-            }
-          },
-          "required": [
-            "type"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "type": {
-              "type": "string",
-              "const": "outOfFuel"
-            }
-          },
-          "required": [
-            "type"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "type": {
-              "type": "string",
-              "const": "outOfMemory"
-            }
-          },
-          "required": [
-            "type"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "string"
-            },
-            "type": {
-              "type": "string",
-              "const": "trap"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "integer",
-              "format": "int32"
-            },
-            "type": {
-              "type": "string",
-              "const": "nonZeroExit"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "string"
-            },
-            "type": {
-              "type": "string",
-              "const": "plugin"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "description": "The plugin reported that a command it asked for was not run, with the plugin's own words.",
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "details": {
-                  "type": "string"
-                },
-                "reason": {
-                  "$ref": "#/$defs/CommandRefusalDto"
-                }
-              },
-              "required": [
-                "reason",
-                "details"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "commandNotApproved"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "string"
-            },
-            "type": {
-              "type": "string",
-              "const": "codec"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "type": {
-              "type": "string",
-              "const": "reentrant"
-            }
-          },
-          "required": [
-            "type"
-          ]
-        }
-      ]
-    },
     "PluginCheckCompatibilityParamsDto": {
       "type": "object",
       "properties": {
@@ -4280,643 +2376,6 @@
       "required": [
         "instances",
         "checkParams"
-      ]
-    },
-    "PluginErrorDto": {
-      "oneOf": [
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "pluginId": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "pluginId"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "notFound"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "pluginId": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "pluginId"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "alreadyLoaded"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "pluginId": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "pluginId"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "loadingInProgress"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "pluginId": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "pluginId"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "unloadingInProgress"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "pluginId": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "pluginId"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "alreadyUnloaded"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "pluginId": {
-                  "type": "string"
-                },
-                "reason": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "pluginId",
-                "reason"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "loadFailed"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "pluginId": {
-                  "type": "string"
-                },
-                "reason": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "pluginId",
-                "reason"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "incompatibleApiVersion"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "error": {
-                  "$ref": "#/$defs/PluginCallErrorDto"
-                },
-                "functionName": {
-                  "type": "string"
-                },
-                "pluginId": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "functionName",
-                "pluginId",
-                "error"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "functionCallFailed"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "$ref": "#/$defs/ManifestErrorDto"
-            },
-            "type": {
-              "type": "string",
-              "const": "manifest"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "path": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "path"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "manifestNotFound"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "error": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "error"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "invalidManifestFormat"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "configType": {
-                  "$ref": "#/$defs/LoadConfigTypeDto"
-                }
-              },
-              "required": [
-                "configType"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "loaderNotFound"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "from": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "from"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "extractionFailed"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "type": {
-              "type": "string",
-              "const": "invalidExtractionFormat"
-            }
-          },
-          "required": [
-            "type"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "from": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "from"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "fileExtractionFailed"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "capabilityId": {
-                  "type": "string"
-                },
-                "capabilityType": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "capabilityType",
-                "capabilityId"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "capabilityRegistrationFailed"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "capabilityId": {
-                  "type": "string"
-                },
-                "capabilityType": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "capabilityType",
-                "capabilityId"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "capabilityCancelRegistrationFailed"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "path": {
-                  "type": "string"
-                },
-                "pluginId": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "pluginId",
-                "path"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "accessViolation"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "description": "The user did not allow the plugin's command, or was not there to.",
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "pluginId": {
-                  "type": "string"
-                },
-                "reason": {
-                  "$ref": "#/$defs/CommandRefusalDto"
-                }
-              },
-              "required": [
-                "pluginId",
-                "reason"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "commandNotApproved"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "type": {
-              "type": "string",
-              "const": "hashComputationFailed"
-            }
-          },
-          "required": [
-            "type"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "string"
-            },
-            "type": {
-              "type": "string",
-              "const": "storage"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "details": {
-                  "type": "string"
-                },
-                "sourceType": {
-                  "$ref": "#/$defs/PluginSourceTypeDto"
-                }
-              },
-              "required": [
-                "sourceType",
-                "details"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "providerFetchError"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "sourceType": {
-                  "$ref": "#/$defs/PluginSourceTypeDto"
-                }
-              },
-              "required": [
-                "sourceType"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "providerNoAssets"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "pluginId": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "pluginId"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "noRemoteSource"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "details": {
-                  "type": "string"
-                },
-                "url": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "url",
-                "details"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "downloadFailed"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "retryAfter": {
-                  "type": [
-                    "integer",
-                    "null"
-                  ],
-                  "format": "uint32",
-                  "minimum": 0
-                },
-                "sourceType": {
-                  "$ref": "#/$defs/PluginSourceTypeDto"
-                }
-              },
-              "required": [
-                "sourceType"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "providerRateLimited"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        }
       ]
     },
     "PluginImportInstanceDto": {
@@ -5010,81 +2469,6 @@
         }
       ]
     },
-    "PluginSourceTypeDto": {
-      "type": "string",
-      "enum": [
-        "gitHub",
-        "local"
-      ]
-    },
-    "ProcessErrorDto": {
-      "oneOf": [
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "id": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "id"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "killError"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "id": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "id"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "waitError"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "string"
-            },
-            "type": {
-              "type": "string",
-              "const": "io"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        }
-      ]
-    },
     "ProviderIdDto": {
       "type": "object",
       "properties": {
@@ -5116,219 +2500,6 @@
       "required": [
         "instanceId",
         "relativePath"
-      ]
-    },
-    "RequestErrorDto": {
-      "oneOf": [
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "string"
-            },
-            "type": {
-              "type": "string",
-              "const": "acquire"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "string"
-            },
-            "type": {
-              "type": "string",
-              "const": "requestSend"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "string"
-            },
-            "type": {
-              "type": "string",
-              "const": "middleware"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "actual": {
-                  "type": "string"
-                },
-                "expected": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "actual",
-                "expected"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "hash"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "string"
-            },
-            "type": {
-              "type": "string",
-              "const": "json"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "string"
-            },
-            "type": {
-              "type": "string",
-              "const": "toml"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "string"
-            },
-            "type": {
-              "type": "string",
-              "const": "parse"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "status": {
-                  "type": "integer",
-                  "format": "uint16",
-                  "maximum": 65535,
-                  "minimum": 0
-                },
-                "url": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "status",
-                "url"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "status"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "limit": {
-                  "type": "integer",
-                  "format": "uint64",
-                  "minimum": 0
-                }
-              },
-              "required": [
-                "limit"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "tooLarge"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "object",
-              "properties": {
-                "details": {
-                  "type": "string"
-                },
-                "path": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "path",
-                "details"
-              ]
-            },
-            "type": {
-              "type": "string",
-              "const": "io"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        }
       ]
     },
     "RequestedContentVersionStatusDto": {
@@ -5516,38 +2687,6 @@
         "version",
         "url",
         "fileName"
-      ]
-    },
-    "SettingsErrorDto": {
-      "oneOf": [
-        {
-          "type": "object",
-          "properties": {
-            "type": {
-              "type": "string",
-              "const": "notFound"
-            }
-          },
-          "required": [
-            "type"
-          ]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "string"
-            },
-            "type": {
-              "type": "string",
-              "const": "storage"
-            }
-          },
-          "required": [
-            "type",
-            "data"
-          ]
-        }
       ]
     },
     "UpdateInstanceParamsDto": {

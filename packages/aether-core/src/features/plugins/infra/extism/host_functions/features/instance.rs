@@ -101,7 +101,7 @@ pub(crate) fn new_instance_from_plugin(
         .transpose()?
         .map(|host| host.to_string_lossy().into_owned());
 
-    let mut new_instance = NewInstance::try_from(dto)?;
+    let mut new_instance = NewInstance::try_from(dto).map_err(InstanceError::from)?;
     new_instance.icon_path = icon_path;
     Ok(new_instance)
 }
