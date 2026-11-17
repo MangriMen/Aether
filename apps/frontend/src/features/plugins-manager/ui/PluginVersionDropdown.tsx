@@ -11,9 +11,10 @@ import {
 } from 'solid-js';
 
 import {
+  PluginUpdateDialog,
   useCheckPluginUpdates,
+  useIsUpdatingPlugin,
   useUpdatesData,
-  useUpdatePlugin,
   type Plugin,
 } from '@/features/plugins';
 import { useTranslation } from '@/shared/i18n';
@@ -42,15 +43,19 @@ export const PluginVersionDropdown: Component<PluginVersionDropdownProps> = (
   const pluginId = () => local.plugin.manifest.metadata.id;
   const updates = useUpdatesData(pluginId);
   const checkUpdates = useCheckPluginUpdates();
-  const updatePlugin = useUpdatePlugin();
 
   const [searchQuery, setSearchQuery] = createSignal('');
+
+  // The release the update dialog shows; null while it is closed.
+  const [switchTag, setSwitchTag] = createSignal<string | null>(null);
 
   // Show dropdown for any plugin that has cached updates
   const hasChecked = createMemo(() => updates.data != null);
 
+  const isUpdating = useIsUpdatingPlugin(pluginId);
+
   const isDisabled = createMemo(
-    () => local.disabled || updatePlugin.isPending || checkUpdates.isPending,
+    () => local.disabled || isUpdating() || checkUpdates.isPending,
   );
 
   const filteredVersions = createMemo(() => {
@@ -68,12 +73,18 @@ export const PluginVersionDropdown: Component<PluginVersionDropdownProps> = (
     checkUpdates.mutate(pluginId());
   };
 
+  // Any version, older ones too, goes through the dialog that shows what it asks for.
   const handleSwitchVersion = (tag: string) => {
-    updatePlugin.mutate({ id: pluginId(), targetTag: tag });
+    setSwitchTag(tag);
   };
 
   return (
     <Show when={hasChecked() || checkUpdates.isPending}>
+      <PluginUpdateDialog
+        plugin={local.plugin}
+        tag={switchTag()}
+        onClose={() => setSwitchTag(null)}
+      />
       <DropdownMenu>
         <DropdownMenuTrigger
           as={Button<'button'>}
@@ -83,7 +94,7 @@ export const PluginVersionDropdown: Component<PluginVersionDropdownProps> = (
           aria-label={t('plugins.switchVersion')}
           disabled={isDisabled()}
         >
-          <Show when={updatePlugin.isPending} fallback={<IconMdiChevronDown />}>
+          <Show when={isUpdating()} fallback={<IconMdiChevronDown />}>
             <IconMdiLoading class='animate-spin' />
           </Show>
         </DropdownMenuTrigger>

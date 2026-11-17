@@ -22,4 +22,5 @@ export * from './ui/PluginCardContextMenu';
 export * from './ui/PluginHostFunctionsSection';
 export * from './ui/PluginInfoHeader';
 export * from './ui/PluginUpdateButton';
+export * from './ui/PluginUpdateDialog';
 export * from './ui/TogglePluginButton';

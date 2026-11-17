@@ -22,6 +22,7 @@ mod plugin_provider;
 mod plugin_provider_error;
 mod plugin_settings;
 mod plugin_source;
+mod plugin_update_diff;
 mod plugin_verification;
 mod skipped_plugin_dir;
 
@@ -70,10 +71,13 @@ pub use plugin_network_error::{PluginDownloadError, PluginHttpError};
 pub(crate) use plugin_path::PluginPath;
 pub use plugin_provider::{
     PluginProviderInfo, PluginReleaseListing, PluginReleasePreview, PluginSourceType,
-    ProviderPluginPreview, ProviderReleaseInfo, ProviderUpdateInfo,
+    PluginUpdatePreview, ProviderPluginPreview, ProviderReleaseInfo, ProviderUpdateInfo,
 };
 pub use plugin_provider_error::{ManifestFormatError, PluginProviderError, ProviderFailure};
 pub use plugin_settings::PluginSettings;
 pub use plugin_source::{PluginManifestPreview, PluginSource};
+pub use plugin_update_diff::{
+    AllowedHostChange, CapabilityChange, CapabilityKind, HostFunctionChange, PluginUpdateDiff,
+};
 pub use plugin_verification::PluginVerification;
 pub use skipped_plugin_dir::{SkippedPluginDir, SkippedPluginDirReason};

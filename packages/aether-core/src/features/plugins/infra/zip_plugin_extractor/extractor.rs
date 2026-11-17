@@ -89,25 +89,26 @@ impl ZipPluginExtractor {
         Ok(dto.try_into()?)
     }
 
-    /// Reads and validates `capabilities.json` before any file is copied; returns it as written.
+    /// Reads and validates `capabilities.json` before any file is copied, the way loading the
+    /// plugin reads it.
     fn read_capabilities<R: Read + Seek>(
         &self,
         archive: &mut zip::ZipArchive<R>,
-    ) -> Result<Option<String>, PluginProviderError> {
-        let invalid =
-            |error: ManifestFormatError| PluginProviderError::InvalidManifestFormat { error };
+    ) -> Result<Option<PluginCapabilities>, PluginProviderError> {
         let Some(bytes) = self.read_small_entry(archive, self.constants.capabilities_filename)?
         else {
             return Ok(None);
         };
 
-        let dto: PluginCapabilitiesV1 =
-            serde_json::from_slice(&bytes).map_err(|e| invalid(e.into()))?;
-        PluginCapabilities::try_from(dto)?.validate()?;
+        let dto: PluginCapabilitiesV1 = serde_json::from_slice(&bytes).map_err(|e| {
+            PluginProviderError::InvalidManifestFormat {
+                error: ManifestFormatError::from(e),
+            }
+        })?;
+        let capabilities = PluginCapabilities::try_from(dto)?;
+        capabilities.validate()?;
 
-        String::from_utf8(bytes)
-            .map(Some)
-            .map_err(|e| invalid(e.into()))
+        Ok(Some(capabilities))
     }
 
     fn read_metadata_from<R: Read + Seek>(
@@ -505,7 +506,8 @@ mod tests {
     #[tokio::test]
     async fn should_read_the_manifest_and_capabilities_without_unpacking_the_archive() {
         let source_dir = TempDir::new().unwrap();
-        let capabilities = br#"{"importers": [], "updaters": []}"#;
+        let capabilities =
+            br#"{"importers": [{"id": "packwiz", "name": "Packwiz", "handler": "import"}]}"#;
         let zip_path = write_zip(
             source_dir.path(),
             &[
@@ -523,10 +525,9 @@ mod tests {
             .unwrap();
 
         assert_eq!(metadata.manifest.metadata.id.as_str(), "test-plugin");
-        assert_eq!(
-            metadata.capabilities.as_deref().map(str::as_bytes),
-            Some(&capabilities[..])
-        );
+        let importers = metadata.capabilities.unwrap().importers;
+        assert_eq!(importers.len(), 1);
+        assert_eq!(importers[0].metadata.base.id.as_str(), "packwiz");
     }
 
     #[tokio::test]

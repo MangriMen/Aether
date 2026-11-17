@@ -6,6 +6,7 @@ mod plugin_manifest;
 mod plugin_preview;
 mod plugin_settings;
 mod plugin_source;
+mod plugin_update_preview;
 mod provider_preview;
 mod skipped_plugin_dir;
 
@@ -17,5 +18,6 @@ pub use plugin_manifest::*;
 pub use plugin_preview::*;
 pub use plugin_settings::*;
 pub use plugin_source::*;
+pub use plugin_update_preview::*;
 pub use provider_preview::*;
 pub use skipped_plugin_dir::*;

@@ -130,6 +130,7 @@ macro_rules! plugin_commands {
             get_api_version,
             get_plugin_source,
             check_for_updates,
+            preview_plugin_update,
             update_plugin,
             get_available_providers,
             list_plugin_releases,

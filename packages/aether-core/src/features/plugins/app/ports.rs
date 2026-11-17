@@ -12,7 +12,8 @@ use crate::features::plugins::{
     ArchiveMetadata, CommandApprovalAnswer, CommandApprovalRefusal, CommandApprovalRequest,
     CommandGrant, ExtractedPlugin, PendingCommandApproval, Plugin, PluginError, PluginManifest,
     PluginProviderError, PluginReleaseListing, PluginReleasePreview, PluginSettings, PluginSource,
-    PluginSourceType, PluginVerification, ProviderUpdateInfo, SkippedPluginDir,
+    PluginSourceType, PluginUpdatePreview, PluginVerification, ProviderUpdateInfo,
+    SkippedPluginDir,
 };
 
 #[async_trait]
@@ -250,11 +251,26 @@ pub trait RemovePluginUseCasePort: Send + Sync {
 
 #[async_trait]
 pub trait UpdatePluginUseCasePort: Send + Sync {
+    /// Installs release `tag` over the plugin. Fails with `ArchiveChangedSincePreview` if the
+    /// archive does not hash to `expected_sha256`, the hash `PreviewPluginUpdateUseCasePort` gave
+    /// (hex, case-insensitive).
     async fn execute(
         &self,
         plugin_id: &PluginId,
-        target_tag: Option<&str>,
+        tag: &str,
+        expected_sha256: &str,
     ) -> Result<(), PluginError>;
+}
+
+#[async_trait]
+pub trait PreviewPluginUpdateUseCasePort: Send + Sync {
+    /// Reads the archive of release `tag` from the plugin's recorded source and compares what it
+    /// asks for with the installed version. An archive of another plugin is `IdMismatch`.
+    async fn execute(
+        &self,
+        plugin_id: &PluginId,
+        tag: &str,
+    ) -> Result<PluginUpdatePreview, PluginError>;
 }
 
 #[async_trait]

@@ -4,17 +4,14 @@ use async_trait::async_trait;
 
 use crate::features::instance::PluginId;
 use crate::features::plugins::{
-    PluginError, PluginExtractor, PluginProviderError, PluginRegistry, PluginSettingsStorage,
-    PluginSource, PluginSourceStorage, PluginSourceType, PluginStorage, PluginSyncService,
+    PluginError, PluginExtractor, PluginRegistry, PluginSettingsStorage, PluginSource,
+    PluginSourceStorage, PluginSourceType, PluginStorage, PluginSyncService,
     PluginVerificationStorage,
 };
 
 use super::ports::InstallPluginFromProviderUseCasePort;
-use super::release_archive::download_release_archive;
+use super::release_archive::{ReleaseSource, download_release_archive, ensure_previewed_archive};
 use super::release_installer::ReleaseInstaller;
-use crate::shared::hash::HashAlgorithm;
-use crate::shared::hash::infra::hash_file_hex_async;
-use crate::shared::io::domain::IoError;
 
 use super::{PluginProviderFactory, ReleaseArchiveCache};
 
@@ -76,22 +73,14 @@ impl InstallPluginFromProviderUseCase {
             &self.provider_factory,
             &self.archive_cache,
             &source_type,
-            identifier,
+            ReleaseSource::Entered(identifier),
             tag,
         )
         .await?;
         let release = downloaded.release;
         let identifier = downloaded.identifier;
 
-        // Refused before the archive is read: it has to be the one that was previewed. The file is
-        // hashed again, not trusted to be what it was when it was downloaded: it may have sat in
-        // the cache since.
-        let sha256 = hash_file_hex_async(HashAlgorithm::Sha256, downloaded.archive.path())
-            .await
-            .map_err(|e| PluginError::Storage(IoError::from(e)))?;
-        if !sha256.eq_ignore_ascii_case(expected_sha256.trim()) {
-            return Err(PluginProviderError::ArchiveChangedSincePreview.into());
-        }
+        ensure_previewed_archive(&downloaded.archive, expected_sha256).await?;
 
         let extracted = self
             .plugin_extractor

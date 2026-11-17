@@ -412,13 +412,41 @@ export const usePluginPreview = (
   tag: Accessor<string>,
 ) => useQuery(() => pluginsQueries.preview(provider, url(), tag()));
 
+/** Whether an update of the plugin is under way, from whichever dialog started it. */
+export const useIsUpdatingPlugin = (id: Accessor<PluginId>) => {
+  const pending = useMutationState(() => ({
+    filters: { mutationKey: pluginKeys.updateAll(), status: 'pending' },
+    select: (mutation) => (mutation.state.variables as { id?: string })?.id,
+  }));
+
+  return () => pending().includes(id());
+};
+
+/** What release `tag` of an installed plugin asks for, against the installed version. */
+export const usePluginUpdatePreview = (
+  id: Accessor<PluginId>,
+  tag: Accessor<string>,
+) => useQuery(() => pluginsQueries.updatePreview(id(), tag()));
+
+/**
+ * Installs release `tag` over the plugin. `archiveSha256` is the hash of the archive the user
+ * saw in the update preview: the core installs that archive or nothing.
+ */
 export const useUpdatePlugin = () => {
   const [{ t }] = useTranslation();
   const queryClient = useQueryClient();
 
   return useMutation(() => ({
-    mutationFn: ({ id, targetTag }: { id: string; targetTag?: string }) =>
-      pluginsCommands.updatePlugin(id, targetTag ?? null),
+    mutationKey: pluginKeys.updateAll(),
+    mutationFn: ({
+      id,
+      tag,
+      archiveSha256,
+    }: {
+      id: string;
+      tag: string;
+      archiveSha256: string;
+    }) => pluginsCommands.updatePlugin(id, tag, archiveSha256),
     onSuccess: async (_, { id }) => {
       await pluginsCache.invalidate.full(queryClient, id);
       await queryClient.fetchQuery(pluginsQueries.updates(id));

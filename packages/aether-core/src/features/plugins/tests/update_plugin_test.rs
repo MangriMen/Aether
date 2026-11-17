@@ -17,11 +17,13 @@ use crate::features::instance::PluginId;
 use crate::features::plugins::test_support::SlowPluginSettings;
 use crate::features::{
     plugins::{
-        AllowedPath, ExtractedPlugin, GrantPluginFolderAccessUseCase, Plugin, PluginError,
-        PluginProvider, PluginProviderError, PluginProviderFactory, PluginRegistry, PluginSettings,
-        PluginSettingsStorage, PluginSource, PluginSourceStorage, PluginSourceType, PluginState,
-        PluginStorage, PluginSyncService, PluginVerification, PluginVerificationStorage,
-        ProviderPluginPreview, ProviderUpdateInfo, ReloadPluginUseCasePort, UpdatePluginUseCase,
+        AllowedHostChange, AllowedPath, ExtractedPlugin, GrantPluginFolderAccessUseCase,
+        HostFunctionRisk, Plugin, PluginError, PluginProvider, PluginProviderError,
+        PluginProviderFactory, PluginRegistry, PluginSettings, PluginSettingsStorage, PluginSource,
+        PluginSourceStorage, PluginSourceType, PluginState, PluginStorage, PluginSyncService,
+        PluginUpdatePreview, PluginVerification, PluginVerificationStorage,
+        PreviewPluginUpdateUseCase, ProviderPluginPreview, ProviderUpdateInfo, ReleaseArchiveCache,
+        ReloadPluginUseCasePort, UpdatePluginUseCase,
         domain::ProviderReleaseInfo,
         infra::{
             FsPluginSettingsStorage, FsPluginSourceStorage, FsPluginStorage,
@@ -30,6 +32,7 @@ use crate::features::{
     },
     settings::LocationInfo,
 };
+use crate::shared::hash::infra::sha256_hex;
 
 const PLUGIN_ID: &str = "test-plugin";
 
@@ -80,9 +83,39 @@ fn archive(manifest: &str, wasm: &[u8], extra: &[(&str, &[u8])]) -> Vec<u8> {
     writer.finish().unwrap().into_inner()
 }
 
+/// The manifest of the version installed: `v1`.
+const MANIFEST_V1: &str = r#"{
+    "metadata": {
+        "id": "test-plugin",
+        "name": "Test Plugin",
+        "version": "0.1.0",
+        "description": null,
+        "authors": [],
+        "license": null
+    },
+    "runtime": { "allowedHosts": ["api.example.com"], "allowedPaths": [] },
+    "load": { "type": "extism", "file": "plugin.wasm", "memoryLimit": null },
+    "api": { "version": "*", "hostFunctions": ["log", "http_get"] }
+}"#;
+
 /// A GitHub-like source with one release, `v2`, whose archive is `archive`.
 struct OneRelease {
     archive: Vec<u8>,
+    downloads: Arc<AtomicUsize>,
+}
+
+impl OneRelease {
+    fn factory(archive: Vec<u8>) -> (Arc<PluginProviderFactory>, Arc<AtomicUsize>) {
+        let downloads = Arc::new(AtomicUsize::new(0));
+        let provider = Self {
+            archive,
+            downloads: downloads.clone(),
+        };
+        (
+            Arc::new(PluginProviderFactory::new(vec![Box::new(provider)])),
+            downloads,
+        )
+    }
 }
 
 #[async_trait]
@@ -118,6 +151,7 @@ impl PluginProvider for OneRelease {
     ) -> Result<u64, PluginProviderError> {
         use tokio::io::AsyncWriteExt;
 
+        self.downloads.fetch_add(1, Ordering::SeqCst);
         dest.write_all(&self.archive).await.unwrap();
         Ok(self.archive.len() as u64)
     }
@@ -180,7 +214,7 @@ impl Fixture {
         ));
         let registry = Arc::new(PluginRegistry::new(Arc::new(NoOpEmitter)));
         let manifest: aether_core_plugin_api::v0::PluginManifestDto =
-            serde_json::from_str(MANIFEST).unwrap();
+            serde_json::from_str(MANIFEST_V1).unwrap();
         registry.insert(
             plugin_id(),
             Plugin {
@@ -204,6 +238,9 @@ impl Fixture {
         let plugin_dir = fixture.location_info.plugin_dir(&plugin_id());
         tokio::fs::create_dir_all(&plugin_dir).await.unwrap();
         tokio::fs::write(plugin_dir.join("plugin.wasm"), b"\0asm v1")
+            .await
+            .unwrap();
+        tokio::fs::write(plugin_dir.join("manifest.json"), MANIFEST_V1)
             .await
             .unwrap();
         fixture
@@ -247,12 +284,30 @@ impl Fixture {
         self.update_to_v2_with(archive, Seams::default()).await
     }
 
+    /// Updates to `v2`, expecting the archive the release serves.
     async fn update_to_v2_with(&self, archive: Vec<u8>, seams: Seams) -> Result<(), PluginError> {
-        let storage = Arc::new(FsPluginStorage::new(
+        let sha256 = sha256_hex(&archive);
+        let (factory, _) = OneRelease::factory(archive);
+        self.update_use_case(factory, Arc::new(ReleaseArchiveCache::new()), seams)
+            .execute(&plugin_id(), "v2", &sha256)
+            .await
+    }
+
+    fn storage(&self) -> Arc<FsPluginStorage> {
+        Arc::new(FsPluginStorage::new(
             self.location_info.clone(),
             self.verification.clone(),
             None,
-        ));
+        ))
+    }
+
+    fn update_use_case(
+        &self,
+        factory: Arc<PluginProviderFactory>,
+        cache: Arc<ReleaseArchiveCache>,
+        seams: Seams,
+    ) -> UpdatePluginUseCase {
+        let storage = self.storage();
         UpdatePluginUseCase::new(
             self.registry.clone(),
             Arc::new(ZipPluginExtractor::default()),
@@ -266,12 +321,25 @@ impl Fixture {
                 .verification
                 .unwrap_or_else(|| self.verification.clone()),
             seams.settings.unwrap_or_else(|| self.settings.clone()),
-            Arc::new(PluginProviderFactory::new(vec![Box::new(OneRelease {
-                archive,
-            })])),
+            factory,
             self.sync.clone(),
+            cache,
         )
-        .execute(&plugin_id(), Some("v2"))
+    }
+
+    async fn preview_v2(
+        &self,
+        factory: Arc<PluginProviderFactory>,
+        cache: Arc<ReleaseArchiveCache>,
+    ) -> Result<PluginUpdatePreview, PluginError> {
+        PreviewPluginUpdateUseCase::new(
+            Arc::new(ZipPluginExtractor::default()),
+            self.storage(),
+            self.source.clone(),
+            factory,
+            cache,
+        )
+        .execute(&plugin_id(), "v2")
         .await
     }
 
@@ -645,4 +713,168 @@ async fn should_keep_a_folder_granted_when_it_is_granted_during_an_update() {
         [AllowedPath::read_only_folder(pack.path()).unwrap()]
     );
     assert_eq!(settings.allowed_hosts, ["extra.example.com"]);
+}
+
+/// `v2` as a release that asks for more than `v1`: any site, and running programs.
+fn wider_v2_zip() -> Vec<u8> {
+    let manifest = MANIFEST
+        .replace(
+            r#""allowedHosts": []"#,
+            r#""allowedHosts": ["api.example.com", "*"]"#,
+        )
+        .replace(
+            r#""version": "*" }"#,
+            r#""version": "*", "hostFunctions": ["log", "run_command"] }"#,
+        );
+    archive(&manifest, b"\0asm v2", &[])
+}
+
+#[tokio::test]
+async fn should_show_what_the_new_version_asks_for_when_an_update_is_previewed() {
+    let fixture = Fixture::installed().await;
+    let archive = wider_v2_zip();
+    let sha256 = sha256_hex(&archive);
+    let (factory, _) = OneRelease::factory(archive);
+
+    let preview = fixture
+        .preview_v2(factory, Arc::new(ReleaseArchiveCache::new()))
+        .await
+        .unwrap();
+
+    assert_eq!(preview.installed_version, "0.1.0");
+    assert_eq!(preview.release.tag, "v2");
+    assert_eq!(preview.release.archive_sha256, sha256);
+    let diff = preview.diff;
+    let names = |changes: &[crate::features::plugins::HostFunctionChange]| {
+        changes.iter().map(|c| c.name.clone()).collect::<Vec<_>>()
+    };
+    assert_eq!(names(&diff.added_host_functions), ["run_command"]);
+    assert_eq!(names(&diff.removed_host_functions), ["http_get"]);
+    assert_eq!(diff.added_risks, [HostFunctionRisk::RunsPrograms]);
+    assert_eq!(
+        diff.added_allowed_hosts,
+        [AllowedHostChange {
+            entry: "*".into(),
+            wide: true
+        }]
+    );
+    assert!(diff.adds_risk());
+    fixture.assert_v1_untouched().await;
+}
+
+/// The archive the update installs is the one the preview read, downloaded once.
+#[tokio::test]
+async fn should_install_the_previewed_archive_when_the_update_is_given_its_hash() {
+    let fixture = Fixture::installed().await;
+    let (factory, downloads) = OneRelease::factory(wider_v2_zip());
+    let cache = Arc::new(ReleaseArchiveCache::new());
+
+    let preview = fixture
+        .preview_v2(factory.clone(), cache.clone())
+        .await
+        .unwrap();
+    fixture
+        .update_use_case(factory, cache, Seams::default())
+        .execute(&plugin_id(), "v2", &preview.release.archive_sha256)
+        .await
+        .unwrap();
+
+    assert_eq!(fixture.wasm().await, b"\0asm v2");
+    assert_eq!(downloads.load(Ordering::SeqCst), 1);
+}
+
+#[tokio::test]
+async fn should_refuse_the_update_when_the_archive_does_not_hash_to_the_previewed_one() {
+    let fixture = Fixture::installed().await;
+    let (factory, _) = OneRelease::factory(wider_v2_zip());
+
+    let result = fixture
+        .update_use_case(
+            factory,
+            Arc::new(ReleaseArchiveCache::new()),
+            Seams::default(),
+        )
+        .execute(&plugin_id(), "v2", &sha256_hex(b"the archive previewed"))
+        .await;
+
+    assert!(matches!(
+        result,
+        Err(PluginError::Provider(
+            PluginProviderError::ArchiveChangedSincePreview
+        ))
+    ));
+    fixture.assert_v1_untouched().await;
+    assert_eq!(fixture.sync.0.load(Ordering::SeqCst), 0);
+}
+
+/// The release may be re-uploaded, or the cached file changed, between the preview and the
+/// update: the user agreed to what the previewed archive asks for, not to the new one.
+#[tokio::test]
+async fn should_refuse_the_update_when_the_cached_archive_was_replaced_after_the_preview() {
+    let fixture = Fixture::installed().await;
+    let (factory, _) = OneRelease::factory(plugin_zip(b"\0asm v2"));
+    let cache = Arc::new(ReleaseArchiveCache::new());
+    let preview = fixture
+        .preview_v2(factory.clone(), cache.clone())
+        .await
+        .unwrap();
+
+    let cached = cache
+        .get_or_download("https://example.com/v2.zip", || async {
+            unreachable!("the archive is cached")
+        })
+        .await
+        .unwrap();
+    std::fs::write(cached.path(), wider_v2_zip()).unwrap();
+
+    let result = fixture
+        .update_use_case(factory, cache, Seams::default())
+        .execute(&plugin_id(), "v2", &preview.release.archive_sha256)
+        .await;
+
+    assert!(matches!(
+        result,
+        Err(PluginError::Provider(
+            PluginProviderError::ArchiveChangedSincePreview
+        ))
+    ));
+    fixture.assert_v1_untouched().await;
+}
+
+#[tokio::test]
+async fn should_refuse_to_preview_an_update_when_the_archive_has_another_plugin_id() {
+    let fixture = Fixture::installed().await;
+    let (factory, _) = OneRelease::factory(plugin_zip_of("other-plugin", b"\0asm v2"));
+
+    let result = fixture
+        .preview_v2(factory, Arc::new(ReleaseArchiveCache::new()))
+        .await;
+
+    assert!(matches!(
+        result,
+        Err(PluginError::IdMismatch { archive_id, .. }) if archive_id.as_str() == "other-plugin"
+    ));
+}
+
+#[tokio::test]
+async fn should_refuse_to_preview_an_update_when_the_plugin_was_installed_locally() {
+    let fixture = Fixture::installed().await;
+    fixture
+        .source
+        .save(&plugin_id(), &PluginSource::Local)
+        .await
+        .unwrap();
+    let (factory, downloads) = OneRelease::factory(plugin_zip(b"\0asm v2"));
+
+    let result = fixture
+        .preview_v2(factory, Arc::new(ReleaseArchiveCache::new()))
+        .await;
+
+    assert!(matches!(
+        result,
+        Err(PluginError::Provider(
+            PluginProviderError::NoRemoteSource { .. }
+        ))
+    ));
+    assert_eq!(downloads.load(Ordering::SeqCst), 0);
 }

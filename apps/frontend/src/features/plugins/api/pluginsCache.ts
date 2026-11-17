@@ -129,6 +129,14 @@ export const pluginsQueries = {
     queryFn: () => pluginsCommands.checkForUpdates(id),
     enabled: !!id,
   }),
+  // Compared with the version installed, which can change meanwhile: asked for again each time it
+  // is shown. The core keeps the archive, so that downloads nothing again.
+  updatePreview: (id: PluginId, tag: string) => ({
+    queryKey: pluginKeys.updatePreview(id, tag),
+    queryFn: () => pluginsCommands.previewPluginUpdate(id, tag),
+    enabled: !!id && tag.length > 0,
+    staleTime: 0,
+  }),
   // Registered once at startup and never changed while the app runs.
   providers: () => ({
     queryKey: pluginKeys.providers(),
@@ -206,6 +214,8 @@ export const pluginsCache = {
       await pluginsCache.invalidate.importers(queryClient);
     },
     full: async (queryClient: QueryClient, id: PluginId) => {
+      // Taken against the version that was installed: never shown for another one.
+      queryClient.removeQueries({ queryKey: pluginKeys.updatePreview(id) });
       await pluginsCache.refresh.plugin(queryClient, id);
       await pluginsCache.invalidate.settings(queryClient, id);
       await pluginsCache.invalidate.source(queryClient, id);

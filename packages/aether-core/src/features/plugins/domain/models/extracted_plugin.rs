@@ -1,6 +1,9 @@
 use tempfile::TempDir;
 
-use crate::features::{instance::PluginId, plugins::PluginManifest};
+use crate::features::{
+    instance::PluginId,
+    plugins::{PluginCapabilities, PluginManifest},
+};
 
 pub struct ExtractedPlugin {
     pub plugin_id: PluginId,
@@ -14,6 +17,6 @@ pub enum PluginContent {
 
 pub struct ArchiveMetadata {
     pub manifest: PluginManifest,
-    /// `capabilities.json` as written, already validated; `None` when absent.
-    pub capabilities: Option<String>,
+    /// `capabilities.json`, already validated; `None` when absent.
+    pub capabilities: Option<PluginCapabilities>,
 }

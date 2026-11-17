@@ -23,6 +23,7 @@ mod plugin_enabler;
 mod plugin_provider;
 mod ports;
 mod preview_plugin_release;
+mod preview_plugin_update;
 mod record_plugin_verification;
 mod release_archive;
 mod release_archive_cache;
@@ -73,10 +74,11 @@ pub use ports::{
     InstallPluginFromProviderUseCasePort, ListPluginReleasesUseCasePort, ListPluginsDtoUseCasePort,
     ListSkippedPluginDirsUseCasePort, PluginDisableService, PluginExtractor, PluginLoader,
     PluginSettingsStorage, PluginSourceStorage, PluginStorage, PluginSyncService,
-    PluginVerificationStorage, PreviewPluginReleaseUseCasePort, ReloadPluginUseCasePort,
-    RemovePluginUseCasePort, UpdatePluginUseCasePort,
+    PluginVerificationStorage, PreviewPluginReleaseUseCasePort, PreviewPluginUpdateUseCasePort,
+    ReloadPluginUseCasePort, RemovePluginUseCasePort, UpdatePluginUseCasePort,
 };
 pub(crate) use preview_plugin_release::PreviewPluginReleaseUseCase;
+pub(crate) use preview_plugin_update::PreviewPluginUpdateUseCase;
 pub use record_plugin_verification::record_plugin_verification;
 pub use release_archive_cache::ReleaseArchiveCache;
 pub(crate) use reload_plugin::ReloadPluginUseCase;

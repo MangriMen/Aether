@@ -7,7 +7,7 @@ use crate::features::plugins::{
 };
 
 use super::ports::ListPluginReleasesUseCasePort;
-use super::release_archive::{fetch_release_listing, pick_release};
+use super::release_archive::{ReleaseSource, fetch_release_listing, pick_release};
 use super::{PluginProviderFactory, ReleaseArchiveCache};
 
 /// Lists the releases of a plugin that can be installed. Asks the provider only, never a release
@@ -37,7 +37,7 @@ impl ListPluginReleasesUseCase {
             &self.provider_factory,
             &self.archive_cache,
             &source_type,
-            identifier,
+            ReleaseSource::Entered(identifier),
         )
         .await?;
         let default_tag = pick_release(&listing.releases, None)

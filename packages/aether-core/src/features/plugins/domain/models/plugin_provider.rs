@@ -3,7 +3,7 @@ use std::str::FromStr;
 
 use serde::{Deserialize, Serialize};
 
-use super::PluginManifestPreview;
+use super::{PluginCapabilities, PluginManifestPreview, PluginUpdateDiff};
 
 /// Identifies the source type for a plugin provider.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -57,14 +57,23 @@ pub struct PluginReleaseListing {
 }
 
 /// A release as shown before install, read from its archive rather than from publisher metadata.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct PluginReleasePreview {
     pub tag: String,
     pub manifest: PluginManifestPreview,
-    pub capabilities: Option<String>,
-    /// Lowercase hex SHA-256 of the archive that was read. The install is given it back and
-    /// refuses an archive that hashes differently.
+    pub capabilities: Option<PluginCapabilities>,
+    /// Lowercase hex SHA-256 of the archive that was read. The install or update is given it
+    /// back and refuses an archive that hashes differently.
     pub archive_sha256: String,
+}
+
+/// A release of an installed plugin as shown before the update to it.
+#[derive(Debug, Clone)]
+pub struct PluginUpdatePreview {
+    pub release: PluginReleasePreview,
+    /// The version installed now, which `diff` is taken against.
+    pub installed_version: String,
+    pub diff: PluginUpdateDiff,
 }
 
 /// Information about a single release from a provider.

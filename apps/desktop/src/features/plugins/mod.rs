@@ -23,6 +23,7 @@ pub use infra::tauri::dtos::PluginReleaseListingDto;
 pub use infra::tauri::dtos::PluginSettingsDto;
 pub use infra::tauri::dtos::PluginSourceDto;
 pub use infra::tauri::dtos::PluginUpdateInfoDto;
+pub use infra::tauri::dtos::PluginUpdatePreviewDto;
 pub use infra::tauri::dtos::PluginUpdaterCapabilityDto;
 pub use infra::tauri::dtos::ProviderHandlersDto;
 pub use infra::tauri::dtos::ProviderPluginPreviewDto;
