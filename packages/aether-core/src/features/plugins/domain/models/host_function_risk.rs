@@ -35,7 +35,6 @@ pub(crate) fn classify_host_function(name: &str) -> Option<HostFunctionClass> {
         "write_instance_file" => Risky(HostFunctionRisk::WritesInstanceFiles),
         "install_java" => Risky(HostFunctionRisk::InstallsJava),
         "log"
-        | "get_id"
         | "get_java"
         | "instance_get_dir"
         | "instance_plugin_get_dir"

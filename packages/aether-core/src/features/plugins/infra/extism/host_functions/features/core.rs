@@ -1,4 +1,4 @@
-//! `log`, `get_id` and `run_command` — the core host functions exposed to plugins.
+//! `log` and `run_command` — the core host functions exposed to plugins.
 //!
 //! `run_command` is the one place where a plugin can start a process on the host, so it is
 //! fenced in on four sides:
@@ -325,15 +325,6 @@ pub log(user_data: PluginContext; params: Wire<LogParamsDto>) -> HostReply<()> {
 
     handle_log(&id, params.0.level, &params.0.message);
     to_extism_res::<()>(Ok(()))
-});
-
-host_fn!(
-pub get_id(user_data: PluginContext;) -> String {
-    let context = user_data.get()?;
-    let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
-    let id = ctx.id.to_string();
-
-    Ok(id)
 });
 
 host_fn!(

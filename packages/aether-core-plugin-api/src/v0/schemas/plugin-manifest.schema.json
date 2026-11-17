@@ -32,14 +32,6 @@
     "ApiConfig": {
       "type": "object",
       "properties": {
-        "features": {
-          "description": "List of optional host features requested by the plugin.",
-          "type": "array",
-          "default": [],
-          "items": {
-            "type": "string"
-          }
-        },
         "hostFunctions": {
           "description": "Host functions the plugin calls, by import name (`http_get`, `write_instance_file`, …).\nOnly these are linked into the plugin: a name the host does not know keeps the plugin\nfrom being enabled, and a function the wasm imports without declaring it here keeps it\nfrom loading. An empty list declares that the plugin calls none.\nRequired: a manifest without it is reported as incompatible.",
           "type": "array",

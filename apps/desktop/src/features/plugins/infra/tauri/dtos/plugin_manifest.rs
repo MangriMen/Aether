@@ -100,10 +100,6 @@ pub struct ApiConfigDto {
     #[specta(type = String)]
     pub version: semver::VersionReq,
 
-    /// List of optional host features requested by the plugin.
-    #[serde(default)]
-    pub features: Vec<String>,
-
     /// Host functions the plugin declares and is linked with. `None`: the manifest predates
     /// the declaration, and the plugin is incompatible.
     #[serde(default)]
@@ -172,7 +168,6 @@ impl From<aether_core::features::plugins::ApiConfig> for ApiConfigDto {
     fn from(m: aether_core::features::plugins::ApiConfig) -> Self {
         Self {
             version: m.version,
-            features: m.features,
             host_functions: m.host_functions,
         }
     }

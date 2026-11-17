@@ -34,12 +34,6 @@ pub(crate) const HOST_FUNCTIONS: &[HostFunctionSpec] = &[
         handler: features::log,
     },
     HostFunctionSpec {
-        name: "get_id",
-        params: &[],
-        results: &[PTR],
-        handler: features::get_id,
-    },
-    HostFunctionSpec {
         name: "run_command",
         params: &[PTR],
         results: &[PTR],

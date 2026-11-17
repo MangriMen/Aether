@@ -103,7 +103,6 @@ impl TryFrom<ApiConfigDto> for ApiConfig {
 
         Ok(Self {
             version,
-            features: dto.features,
             host_functions: dto.host_functions,
         })
     }
@@ -166,7 +165,6 @@ impl From<ApiConfig> for ApiConfigDto {
     fn from(v: ApiConfig) -> Self {
         Self {
             version: v.version.to_string(),
-            features: v.features,
             host_functions: v.host_functions,
         }
     }

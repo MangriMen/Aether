@@ -4,6 +4,23 @@ Shared DTOs and the manifest schema for the contract between Aether's core and i
 plugins. Both sides depend on this crate, so every change here is a change to the plugin ABI.
 Release order: core → tag of this crate → plugins.
 
+## The plugin's id and the API version
+
+The host puts two keys in the Extism config of every plugin; the plugin reads them with
+`extism_pdk::config::get` (the pdk wraps them as `plugin_id()` and `host_api_version()`):
+
+| Key | Value |
+| --- | --- |
+| `aether.pluginId` | the id of the plugin, as the host knows it |
+| `aether.apiVersion` | the version of this API the host implements, `MAJOR.MINOR.PATCH` |
+
+`api.version` of the manifest is a [SemVer](https://semver.org) requirement checked against that
+version: `0.5.0` and `^0.5` accept 0.5.x, a plugin that needs a function or a field added in a
+later version writes `^0.5.2` (`>=0.5.2` has no upper bound and would accept a 0.6 host). While the major version is 0, a new minor is a breaking change
+(a changed or removed function, field or value, or a new value of an enum a plugin reads), and a
+patch only adds what an older plugin never meets. There are no optional features: a plugin
+either needs the version or it does not load.
+
 ## Declaring host functions — `api.hostFunctions`
 
 List every host function the plugin imports, by its import name:
@@ -11,7 +28,7 @@ List every host function the plugin imports, by its import name:
 ```json
 "api": {
   "version": "0.5.0",
-  "hostFunctions": ["log", "get_id", "http_get", "write_instance_file"]
+  "hostFunctions": ["log", "http_get", "write_instance_file"]
 }
 ```
 
@@ -115,8 +132,7 @@ caret requirement, so on 0.x it needs a new minor version.
 A host function returns `{"status": "ok", "data": <value>}` or `{"status": "err", "data":
 <HostError>}`; `data` is always there (`nil` for `()`). The arguments and answers of a plugin's exports are the DTOs as maps.
 
-Every host function takes one structured argument and answers a `{"status", "data"}` result, except
-`get_id`, whose answer is the plugin's id as a raw UTF-8 string (not wrapped in a result). The
+Every host function takes one structured argument and answers a `{"status", "data"}` result. The
 host functions, with the properties of `schemas/plugin-wire.schema.json` that describe their
 argument and the `data` of an `ok` answer:
 

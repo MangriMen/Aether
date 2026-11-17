@@ -409,7 +409,6 @@ mod tests {
             },
             api: ApiConfig {
                 version: semver::VersionReq::STAR,
-                features: vec![],
                 host_functions: Some(vec![]),
             },
         }

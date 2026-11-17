@@ -40,7 +40,7 @@ const MANIFEST: &str = r#"{
     },
     "runtime": { "allowedHosts": [], "allowedPaths": [] },
     "load": { "type": "extism", "file": "plugin.wasm", "memoryLimit": null },
-    "api": { "version": "*", "features": [] }
+    "api": { "version": "*" }
 }"#;
 
 fn registry() -> Arc<PluginRegistry> {

@@ -29,7 +29,11 @@
 
 use std::fmt;
 
-use aether_core_plugin_api::v0::{HostError, HostResult, PluginFailureDto, wire};
+use aether_core_plugin_api::v0::{
+    HostError, HostResult, PluginFailureDto,
+    config::{CONFIG_API_VERSION, CONFIG_PLUGIN_ID},
+    wire,
+};
 use extism_convert::{FromBytesOwned, ToBytes};
 use serde::{Serialize, de::DeserializeOwned};
 
@@ -129,6 +133,21 @@ impl<T: DeserializeOwned> FromBytesOwned for HostReply<T> {
     fn from_bytes_owned(data: &[u8]) -> std::result::Result<Self, extism_convert::Error> {
         Ok(Self(Wire::<HostResult<T>>::from_bytes_owned(data)?.0))
     }
+}
+
+/// The id the host knows this plugin by.
+pub fn plugin_id() -> Result<String> {
+    config_value(CONFIG_PLUGIN_ID)
+}
+
+/// The version of the plugin API the host implements (`MAJOR.MINOR.PATCH`).
+pub fn host_api_version() -> Result<String> {
+    config_value(CONFIG_API_VERSION)
+}
+
+fn config_value(key: &str) -> Result<String> {
+    extism_pdk::config::get(key)?
+        .ok_or_else(|| Error::Message(format!("the host did not set `{key}` in the plugin config")))
 }
 
 #[cfg(test)]

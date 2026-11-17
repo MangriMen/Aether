@@ -141,7 +141,6 @@ impl From<aether_core::features::plugins::ApiConfigDto> for ApiConfigDto {
     fn from(dto: aether_core::features::plugins::ApiConfigDto) -> Self {
         Self {
             version: dto.version,
-            features: dto.features,
             host_functions: dto.host_functions,
         }
     }
