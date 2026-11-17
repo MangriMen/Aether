@@ -21,7 +21,7 @@ pub struct ResolveFileParamsDto {
     /// The loader as written in `ResolveTargetDto::Existing` (`fabric`, `neoforge`); absent —
     /// vanilla.
     #[serde(default)]
-    pub loader: Option<String>,
+    pub loader: Option<ModLoaderDto>,
 }
 
 /// The answer of `resolveFile`: which bytes the ref stands for. No path: where the file goes is
@@ -66,7 +66,12 @@ pub struct ResolveInstallPlanParamsDto {
 
 /// Where the resolved plan is going to be applied; the plan's `InstallTargetDto` answers it.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, JsonSchema, Deserialize)]
-#[serde(rename_all = "camelCase", rename_all_fields = "camelCase")]
+#[serde(
+    tag = "type",
+    content = "data",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
 pub enum ResolveTargetDto {
     /// Install into, or update, an existing instance, with the game version and loader it runs
     /// now. For most content they are a requirement: it has to fit what the instance runs. For
@@ -78,7 +83,7 @@ pub enum ResolveTargetDto {
         game_version: String,
         /// `fabric`, `neoforge`, …; absent for a vanilla instance.
         #[serde(default)]
-        loader: Option<String>,
+        loader: Option<ModLoaderDto>,
     },
     /// A new instance, described by the content (a modpack).
     New,
@@ -86,7 +91,12 @@ pub enum ResolveTargetDto {
 
 /// The input of `resolvePackMetadata`: where to read a pack from.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, JsonSchema, Deserialize)]
-#[serde(rename_all = "camelCase", rename_all_fields = "camelCase")]
+#[serde(
+    tag = "type",
+    content = "data",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
 pub enum PackSourceDto {
     /// A pack hosted on the provider's platform; absent `version` — the version an update would
     /// take from `installedVersion`, by the same rule as `ResolveInstallPlanParamsDto::version`,
@@ -100,9 +110,9 @@ pub enum PackSourceDto {
         installed_version: Option<String>,
     },
     /// A pack file to download (a `.mrpack`, a packwiz `pack.toml`).
-    Url(String),
+    Url { url: String },
     /// A pack file the plugin can read: a plugin-side path under `/cache` or `/instances`.
-    File(String),
+    File { path: String },
 }
 
 /// The answer of `resolvePackMetadata`: a pack's description, read without resolving its files.
@@ -140,7 +150,7 @@ mod tests {
     fn should_write_a_unit_target_as_its_name() {
         assert_eq!(
             serde_json::to_string(&ResolveTargetDto::New).unwrap(),
-            r#""new""#
+            r#"{"type":"new"}"#
         );
         assert_eq!(
             serde_json::to_string(&ResolveTargetDto::Existing {
@@ -149,7 +159,7 @@ mod tests {
                 loader: None,
             })
             .unwrap(),
-            r#"{"existing":{"instanceId":"i","gameVersion":"1.21.1","loader":null}}"#
+            r#"{"type":"existing","data":{"instanceId":"i","gameVersion":"1.21.1","loader":null}}"#
         );
     }
 
@@ -157,7 +167,8 @@ mod tests {
     #[test]
     fn should_read_plan_params_without_an_installed_version() {
         let params: ResolveInstallPlanParamsDto =
-            serde_json::from_str(r#"{ "contentId": "AANobbMI", "target": "new" }"#).unwrap();
+            serde_json::from_str(r#"{ "contentId": "AANobbMI", "target": { "type": "new" } }"#)
+                .unwrap();
 
         assert_eq!(params.installed_version, None);
     }
@@ -165,7 +176,8 @@ mod tests {
     #[test]
     fn should_read_a_pack_source_without_a_version() {
         let source: PackSourceDto =
-            serde_json::from_str(r#"{ "content": { "contentId": "1KVo5zza" } }"#).unwrap();
+            serde_json::from_str(r#"{ "type": "content", "data": { "contentId": "1KVo5zza" } }"#)
+                .unwrap();
 
         assert_eq!(
             source,

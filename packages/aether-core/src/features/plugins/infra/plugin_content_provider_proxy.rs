@@ -10,7 +10,7 @@ use aether_core_plugin_api::v0::{
     GetAuthorsResultDto, GetContentParamsDto, GetContentsMetadataParamsDto,
     GetContentsMetadataResultDto, GetVersionParamsDto, GetVersionsMetadataParamsDto,
     GetVersionsMetadataResultDto, InstallPlanDto, ListVersionsParamsDto, ListVersionsResultDto,
-    OverrideLocationDto, OverrideSourceDto, PackMetadataDto, PackSourceDto,
+    ModLoaderDto, OverrideLocationDto, OverrideSourceDto, PackMetadataDto, PackSourceDto,
     PluginCheckCompatibilityParamsDto, ResolveFileParamsDto, ResolveInstallPlanParamsDto,
     ResolvedFileDto,
 };
@@ -27,7 +27,7 @@ use crate::features::{
         OverrideLocation, OverrideSource, PackMetadata, PackSource, PageIndex, PageSize, PluginId,
         ProviderId, ResolveInstallPlanParams, ResolveTarget, ResolvedFile,
     },
-    minecraft::GameVersion,
+    minecraft::{GameVersion, ModLoader},
     plugins::{
         PluginCheckCompatibilityParams, PluginContentProviderCapability, PluginError, PluginHandle,
     },
@@ -268,16 +268,16 @@ impl PluginContentProviderProxy {
                 version: version.map(Into::into),
                 installed_version: installed_version.map(Into::into),
             },
-            PackSource::Url(url) => PackSourceDto::Url(url.into()),
-            PackSource::File(path) => PackSourceDto::File(
-                host_path_to_plugin(&self.location_info, &self.plugin_id, &path).ok_or_else(
+            PackSource::Url(url) => PackSourceDto::Url { url: url.into() },
+            PackSource::File(path) => PackSourceDto::File {
+                path: host_path_to_plugin(&self.location_info, &self.plugin_id, &path).ok_or_else(
                     || InstanceError::ContentProviderError {
                         reason: ContentProviderRejection::PackOutsideProviderReach {
                             path: path.clone(),
                         },
                     },
                 )?,
-            ),
+            },
         })
     }
 
@@ -464,7 +464,15 @@ impl ContentProvider for PluginContentProviderProxy {
             content_id: content_id.to_string(),
             version: version.map(ToString::to_string),
             game_version: game_version.to_string(),
-            loader: loader.map(ToOwned::to_owned),
+            loader: loader
+                .map(|name| {
+                    name.parse::<ModLoader>()
+                        .map(ModLoaderDto::from)
+                        .map_err(|err| InstanceError::ContentProviderError {
+                            reason: ContentProviderRejection::Provider(err.to_string()),
+                        })
+                })
+                .transpose()?,
         };
 
         let result_dto: ResolvedFileDto = self.call_plugin("resolve_file", handler, params).await?;

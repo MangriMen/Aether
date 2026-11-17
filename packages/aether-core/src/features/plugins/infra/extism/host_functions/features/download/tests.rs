@@ -160,7 +160,7 @@ async fn should_download_verify_and_return_a_cache_path_when_the_hash_matches() 
     let addr = serve_once(ok_response(BODY)).await;
 
     let file = perform_download(
-        params(addr, FileHashDto::Sha1(hex.to_ascii_uppercase())),
+        params(addr, FileHashDto::sha1(hex.to_ascii_uppercase())),
         &context(cache.path(), &hosts),
         allow_any_address,
     )
@@ -221,7 +221,7 @@ async fn should_give_up_and_leave_nothing_in_the_cache_when_the_budget_runs_out(
     };
 
     let err = perform_download(
-        params(addr, FileHashDto::Sha1(sha1_of(BODY))),
+        params(addr, FileHashDto::sha1(sha1_of(BODY))),
         &context,
         allow_any_address,
     )
@@ -247,7 +247,7 @@ async fn should_fail_and_leave_nothing_in_the_cache_when_the_hash_does_not_match
     let addr = serve_once(ok_response(BODY)).await;
 
     let err = perform_download(
-        params(addr, FileHashDto::Sha1(wrong.clone())),
+        params(addr, FileHashDto::sha1(wrong.clone())),
         &context(cache.path(), &hosts),
         allow_any_address,
     )
@@ -282,7 +282,7 @@ async fn should_fail_and_leave_nothing_in_the_cache_when_the_hash_does_not_match
 async fn should_verify_sha256_and_sha512_when_the_plugin_gives_either() {
     for (hash, algorithm) in [
         (
-            FileHashDto::Sha256(
+            FileHashDto::sha256(
                 crate::shared::hash::infra::hash_hex_async(HashAlgorithm::Sha256, BODY)
                     .await
                     .unwrap(),
@@ -290,7 +290,7 @@ async fn should_verify_sha256_and_sha512_when_the_plugin_gives_either() {
             "sha256",
         ),
         (
-            FileHashDto::Sha512(
+            FileHashDto::sha512(
                 crate::shared::hash::infra::hash_hex_async(HashAlgorithm::Sha512, BODY)
                     .await
                     .unwrap(),
@@ -327,7 +327,7 @@ async fn should_reuse_a_cached_file_without_touching_the_network_when_it_is_vali
     let addr = serve_once(ok_response(BODY)).await;
 
     perform_download(
-        params(addr, FileHashDto::Sha1(hex.clone())),
+        params(addr, FileHashDto::sha1(hex.clone())),
         &context(cache.path(), &hosts),
         allow_any_address,
     )
@@ -336,7 +336,7 @@ async fn should_reuse_a_cached_file_without_touching_the_network_when_it_is_vali
 
     // The server answered once and is gone: only a cache hit can succeed now.
     let file = perform_download(
-        params(addr, FileHashDto::Sha1(hex.clone())),
+        params(addr, FileHashDto::sha1(hex.clone())),
         &context(cache.path(), &hosts),
         allow_any_address,
     )
@@ -360,7 +360,7 @@ async fn should_replace_a_planted_file_when_it_does_not_match_its_name() {
 
     let addr = serve_once(ok_response(BODY)).await;
     perform_download(
-        params(addr, FileHashDto::Sha1(hex)),
+        params(addr, FileHashDto::sha1(hex)),
         &context(cache.path(), &hosts),
         allow_any_address,
     )
@@ -375,7 +375,7 @@ async fn should_replace_a_planted_file_when_it_does_not_match_its_name() {
 fn download_params(url: String) -> DownloadToCacheParamsDto {
     DownloadToCacheParamsDto {
         url,
-        hash: FileHashDto::Sha1(sha1_of(BODY)),
+        hash: FileHashDto::sha1(sha1_of(BODY)),
     }
 }
 
@@ -568,7 +568,7 @@ async fn should_fail_when_the_status_is_an_error() {
         serve_once(b"HTTP/1.1 404 Not Found\r\nContent-Length: 9\r\n\r\nnot found".to_vec()).await;
 
     let err = perform_download(
-        params(addr, FileHashDto::Sha1(sha1_of(b"not found"))),
+        params(addr, FileHashDto::sha1(sha1_of(b"not found"))),
         &context(cache.path(), &hosts),
         allow_any_address,
     )
@@ -603,7 +603,7 @@ async fn should_refuse_a_body_before_reading_it_when_it_is_over_the_limit() {
     .await;
 
     let err = perform_download(
-        params(addr, FileHashDto::Sha1(sha1_of(BODY))),
+        params(addr, FileHashDto::sha1(sha1_of(BODY))),
         &context(cache.path(), &hosts),
         allow_any_address,
     )
@@ -633,7 +633,7 @@ async fn should_reject_a_host_before_touching_the_cache_when_it_is_outside_allow
         &PluginId::from_static("test"),
         DownloadToCacheParamsDto {
             url: "http://evil.com/mod.jar".to_string(),
-            hash: FileHashDto::Sha1(sha1_of(BODY)),
+            hash: FileHashDto::sha1(sha1_of(BODY)),
         },
         &context(cache.path(), &hosts),
     )
@@ -657,7 +657,7 @@ async fn should_block_non_public_addresses_when_the_production_filter_is_used() 
             &PluginId::from_static("test"),
             DownloadToCacheParamsDto {
                 url: url.to_string(),
-                hash: FileHashDto::Sha1(sha1_of(BODY)),
+                hash: FileHashDto::sha1(sha1_of(BODY)),
             },
             &context(cache.path(), &hosts),
         )
@@ -686,7 +686,7 @@ async fn should_reject_a_hash_before_any_io_when_it_is_not_a_digest() {
             &PluginId::from_static("test"),
             DownloadToCacheParamsDto {
                 url: "https://example.com/mod.jar".to_string(),
-                hash: FileHashDto::Sha1(hex.to_string()),
+                hash: FileHashDto::sha1(hex.to_string()),
             },
             &context(cache.path(), &hosts),
         )
@@ -712,7 +712,7 @@ async fn should_refuse_a_downloads_directory_when_it_links_out_of_the_cache() {
     let hosts = loopback();
     let addr = serve_once(ok_response(BODY)).await;
     let err = perform_download(
-        params(addr, FileHashDto::Sha1(sha1_of(BODY))),
+        params(addr, FileHashDto::sha1(sha1_of(BODY))),
         &context(&cache, &hosts),
         allow_any_address,
     )

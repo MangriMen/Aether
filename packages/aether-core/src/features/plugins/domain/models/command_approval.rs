@@ -227,9 +227,9 @@ impl CommandApprovalRefusal {
     pub fn as_wire(self) -> &'static str {
         match self {
             Self::Denied => "denied",
-            Self::TimedOut => "timed_out",
+            Self::TimedOut => "timedOut",
             Self::Cancelled => "cancelled",
-            Self::JarChanged => "jar_changed",
+            Self::JarChanged => "jarChanged",
         }
     }
 }

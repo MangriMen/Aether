@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 /// Mod loader an instance can run on. Serialized as a lowercase string
 /// (`vanilla`, `forge`, `fabric`, `quilt`, `neoforge`).
-#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum ModLoaderDto {
     Vanilla,

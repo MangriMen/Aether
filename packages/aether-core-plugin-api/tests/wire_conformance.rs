@@ -233,6 +233,87 @@ fn every_field_name_in_the_schema_is_camel_case() {
     assert!(bad.is_empty(), "not camelCase: {bad:?}");
 }
 
+/// Every value of an enum and every tag is `camelCase`, and an enum with data is tagged `type`
+/// (`status` for a result). A `snake_case` value or a `kind` tag passes the codec just as well, so
+/// only this tells a slip from a decision.
+#[test]
+fn every_enum_value_and_tag_in_the_schema_is_camel_case_and_tagged_type() {
+    fn is_camel_case(value: &str) -> bool {
+        value.chars().next().is_some_and(|c| c.is_ascii_lowercase())
+            && value.chars().all(|c| c.is_ascii_alphanumeric())
+    }
+
+    fn walk(schema: &Value, path: &str, bad: &mut Vec<String>) {
+        match schema {
+            Value::Object(object) => {
+                let strings = object.get("const").into_iter().chain(
+                    object
+                        .get("enum")
+                        .and_then(Value::as_array)
+                        .into_iter()
+                        .flatten(),
+                );
+                for value in strings.filter_map(Value::as_str) {
+                    if !is_camel_case(value) {
+                        bad.push(format!("{path}: value `{value}`"));
+                    }
+                }
+                if let Some(Value::Array(branches)) = object.get("oneOf") {
+                    for (index, branch) in branches.iter().enumerate() {
+                        let unit = branch.get("type").and_then(Value::as_str) == Some("string")
+                            && branch.get("const").is_some();
+                        let externally_tagged = branch
+                            .get("properties")
+                            .and_then(Value::as_object)
+                            .is_some_and(|properties| {
+                                properties.len() == 1
+                                    && properties.values().all(|p| p.get("const").is_none())
+                                    && branch.get("additionalProperties")
+                                        == Some(&Value::Bool(false))
+                            });
+                        let mixed = branches
+                            .iter()
+                            .any(|b| b.get("type").and_then(Value::as_str) == Some("object"));
+                        if (unit && mixed) || externally_tagged {
+                            bad.push(format!(
+                                "{path}/oneOf/{index}: a variant not written as {{type, data}}"
+                            ));
+                        }
+                    }
+                }
+                if let Some(Value::Object(properties)) = object.get("properties") {
+                    let tag = properties
+                        .iter()
+                        .find(|(_, property)| property.get("const").is_some());
+                    if let Some((key, _)) = tag
+                        && !["type", "status"].contains(&key.as_str())
+                    {
+                        bad.push(format!("{path}: tag `{key}`"));
+                    }
+                }
+                for (key, value) in object {
+                    walk(value, &format!("{path}/{key}"), bad);
+                }
+            }
+            Value::Array(items) => {
+                for (index, value) in items.iter().enumerate() {
+                    walk(value, &format!("{path}/{index}"), bad);
+                }
+            }
+            _ => {}
+        }
+    }
+
+    let bundle: Value = serde_json::from_str(SCHEMA).expect("schema");
+    let mut bad = Vec::new();
+    walk(&bundle, "", &mut bad);
+
+    assert!(
+        bad.is_empty(),
+        "not camelCase or not tagged `type`: {bad:#?}"
+    );
+}
+
 /// A copy of the schema that refuses a key it does not list. The published schema leaves them
 /// open so that a plugin may be newer than the host, but what the codec *writes* must be listed,
 /// or a renamed field would pass unnoticed.

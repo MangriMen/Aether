@@ -331,7 +331,7 @@ mod tests {
     fn should_lowercase_a_direct_hash_and_keep_its_identity_when_mapping() {
         let source: ContentSource = ContentSourceDto::Direct {
             url: "https://example.com/a.jar".into(),
-            hash: Some(FileHashDto::Sha1(SHA1_ABC.to_ascii_uppercase())),
+            hash: Some(FileHashDto::sha1(SHA1_ABC.to_ascii_uppercase())),
             identity: Some(ContentIdentityDto {
                 platform: "modrinth".into(),
                 content_id: "AANobbMI".into(),
@@ -358,8 +358,8 @@ mod tests {
     #[test]
     fn should_reject_a_hash_when_it_is_malformed() {
         for hash in [
-            FileHashDto::Sha1("abc".into()),
-            FileHashDto::Sha256("z".repeat(64)),
+            FileHashDto::sha1("abc"),
+            FileHashDto::sha256("z".repeat(64)),
         ] {
             let result = InstallFileEntry::try_from(entry(ContentSourceDto::Direct {
                 url: "https://example.com/a.jar".into(),

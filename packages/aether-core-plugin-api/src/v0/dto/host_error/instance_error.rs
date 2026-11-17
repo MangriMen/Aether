@@ -5,7 +5,7 @@ use crate::v0::{ContentTypeDto, ProviderIdDto};
 
 #[derive(Debug, Serialize, JsonSchema, Deserialize, Clone)]
 #[serde(
-    tag = "kind",
+    tag = "type",
     content = "data",
     rename_all = "camelCase",
     rename_all_fields = "camelCase"
@@ -116,13 +116,13 @@ pub enum InstanceErrorDto {
 }
 
 #[derive(Debug, Serialize, JsonSchema, Deserialize, Clone, Copy, PartialEq, Eq)]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "camelCase")]
 pub enum InstanceFieldDto {
     Name,
 }
 
 #[derive(Debug, Serialize, JsonSchema, Deserialize, Clone, Copy, PartialEq, Eq)]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "camelCase")]
 pub enum InstanceValidationErrorReasonDto {
     CannotBeEmpty,
 }

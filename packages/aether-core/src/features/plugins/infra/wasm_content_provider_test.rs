@@ -252,7 +252,7 @@ fn resolved_jei() -> Vec<u8> {
     encode(ResolvedFileDto {
         version: "4512345".into(),
         url: "https://edge.forgecdn.net/files/4512/345/jei.jar".into(),
-        hash: Some(FileHashDto::Sha1(SHA1_ABC.into())),
+        hash: Some(FileHashDto::sha1(SHA1_ABC)),
         file_name: "jei.jar".into(),
         size: Some(3),
         name: Some("JEI 15.2.0".into()),

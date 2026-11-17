@@ -209,26 +209,26 @@
                 "id"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "credentialsNotFound"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
         {
           "type": "object",
           "properties": {
-            "kind": {
+            "type": {
               "type": "string",
               "const": "noActiveCredentials"
             }
           },
           "required": [
-            "kind"
+            "type"
           ]
         },
         {
@@ -253,50 +253,50 @@
                 "max"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "invalidUsernameLength"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
         {
           "type": "object",
           "properties": {
-            "kind": {
+            "type": {
               "type": "string",
               "const": "invalidUsernameChars"
             }
           },
           "required": [
-            "kind"
+            "type"
           ]
         },
         {
           "type": "object",
           "properties": {
-            "kind": {
+            "type": {
               "type": "string",
               "const": "invalidAccountType"
             }
           },
           "required": [
-            "kind"
+            "type"
           ]
         },
         {
           "type": "object",
           "properties": {
-            "kind": {
+            "type": {
               "type": "string",
               "const": "tokenExpired"
             }
           },
           "required": [
-            "kind"
+            "type"
           ]
         },
         {
@@ -305,13 +305,13 @@
             "data": {
               "type": "string"
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "storage"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         }
@@ -408,7 +408,7 @@
         {
           "description": "Nobody answered in time.",
           "type": "string",
-          "const": "timed_out"
+          "const": "timedOut"
         },
         {
           "description": "The plugin was stopped or removed.",
@@ -418,7 +418,7 @@
         {
           "description": "The jar changed while the user was being asked.",
           "type": "string",
-          "const": "jar_changed"
+          "const": "jarChanged"
         }
       ]
     },
@@ -765,7 +765,7 @@
           "description": "An `https` URL to download, checked against the plugin's `allowedHosts` like its own\nrequests; any other refuses the plan. With a hash, the download is verified against it.",
           "type": "object",
           "properties": {
-            "direct": {
+            "data": {
               "type": "object",
               "properties": {
                 "hash": {
@@ -798,18 +798,22 @@
               "required": [
                 "url"
               ]
+            },
+            "type": {
+              "type": "string",
+              "const": "direct"
             }
           },
-          "additionalProperties": false,
           "required": [
-            "direct"
+            "type",
+            "data"
           ]
         },
         {
           "description": "Content hosted on a platform, resolved by the launcher through a provider serving that\nplatform (its `resolveFile`) — how a pack points at content it does not host, without\nknowing which plugin serves it.\n\n`platform` is the platform's name (`modrinth`, `curseforge`), not a plugin id;\n`contentId` the platform's project id (Modrinth `AANobbMI`, `CurseForge` `238222`);\n`version` the platform's id of one file of it (Modrinth version id, `CurseForge` file id),\nabsent — the newest file fitting the instance.",
           "type": "object",
           "properties": {
-            "providerRef": {
+            "data": {
               "type": "object",
               "properties": {
                 "contentId": {
@@ -830,11 +834,15 @@
                 "platform",
                 "contentId"
               ]
+            },
+            "type": {
+              "type": "string",
+              "const": "providerRef"
             }
           },
-          "additionalProperties": false,
           "required": [
-            "providerRef"
+            "type",
+            "data"
           ]
         }
       ]
@@ -844,9 +852,9 @@
       "enum": [
         "modpack",
         "mod",
-        "datapack",
-        "resourcepack",
-        "shaderpack"
+        "dataPack",
+        "resourcePack",
+        "shaderPack"
       ]
     },
     "ContentVersionDependencyDto": {
@@ -1078,13 +1086,13 @@
         {
           "type": "object",
           "properties": {
-            "kind": {
+            "type": {
               "type": "string",
               "const": "notInitialized"
             }
           },
           "required": [
-            "kind"
+            "type"
           ]
         },
         {
@@ -1101,13 +1109,13 @@
                 "id"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "noLoadingBar"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -1117,13 +1125,13 @@
             "data": {
               "type": "string"
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "serializeError"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -1133,60 +1141,32 @@
             "data": {
               "type": "string"
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "storageError"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         }
       ]
     },
     "FileHashDto": {
-      "description": "An expected file digest, hex-encoded. Hex case does not matter.\n\nMd5 is deliberately not offered.",
-      "oneOf": [
-        {
-          "description": "40 hex characters.",
-          "type": "object",
-          "properties": {
-            "sha1": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": false,
-          "required": [
-            "sha1"
-          ]
+      "description": "An expected file digest, hex-encoded. Hex case does not matter.",
+      "type": "object",
+      "properties": {
+        "algorithm": {
+          "$ref": "#/$defs/HashAlgorithmDto"
         },
-        {
-          "description": "64 hex characters.",
-          "type": "object",
-          "properties": {
-            "sha256": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": false,
-          "required": [
-            "sha256"
-          ]
-        },
-        {
-          "description": "128 hex characters.",
-          "type": "object",
-          "properties": {
-            "sha512": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": false,
-          "required": [
-            "sha512"
-          ]
+        "hex": {
+          "type": "string"
         }
+      },
+      "required": [
+        "algorithm",
+        "hex"
       ]
     },
     "FileSideDto": {
@@ -1214,26 +1194,26 @@
                 "path"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "pathNotFound"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
         {
           "type": "object",
           "properties": {
-            "kind": {
+            "type": {
               "type": "string",
               "const": "watchNotFound"
             }
           },
           "required": [
-            "kind"
+            "type"
           ]
         },
         {
@@ -1242,13 +1222,13 @@
             "data": {
               "type": "string"
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "notifyError"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         }
@@ -1270,13 +1250,13 @@
                 "sourceId"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "invalidSource"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -1294,13 +1274,13 @@
                 "sourceId"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "sourceNotFound"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -1324,13 +1304,13 @@
                 "limit"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "tooLarge"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -1340,13 +1320,13 @@
             "data": {
               "type": "string"
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "io"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         }
@@ -1471,12 +1451,32 @@
         "versions"
       ]
     },
+    "HashAlgorithmDto": {
+      "description": "The algorithm of a [`FileHashDto`].\n\nMd5 is deliberately not offered.",
+      "oneOf": [
+        {
+          "description": "40 hex characters.",
+          "type": "string",
+          "const": "sha1"
+        },
+        {
+          "description": "64 hex characters.",
+          "type": "string",
+          "const": "sha256"
+        },
+        {
+          "description": "128 hex characters.",
+          "type": "string",
+          "const": "sha512"
+        }
+      ]
+    },
     "HostError": {
       "oneOf": [
         {
           "type": "object",
           "properties": {
-            "payload": {
+            "data": {
               "$ref": "#/$defs/AuthErrorDto"
             },
             "type": {
@@ -1486,13 +1486,13 @@
           },
           "required": [
             "type",
-            "payload"
+            "data"
           ]
         },
         {
           "type": "object",
           "properties": {
-            "payload": {
+            "data": {
               "$ref": "#/$defs/EventErrorDto"
             },
             "type": {
@@ -1502,13 +1502,13 @@
           },
           "required": [
             "type",
-            "payload"
+            "data"
           ]
         },
         {
           "type": "object",
           "properties": {
-            "payload": {
+            "data": {
               "$ref": "#/$defs/FileWatcherErrorDto"
             },
             "type": {
@@ -1518,13 +1518,13 @@
           },
           "required": [
             "type",
-            "payload"
+            "data"
           ]
         },
         {
           "type": "object",
           "properties": {
-            "payload": {
+            "data": {
               "$ref": "#/$defs/GameLogErrorDto"
             },
             "type": {
@@ -1534,13 +1534,13 @@
           },
           "required": [
             "type",
-            "payload"
+            "data"
           ]
         },
         {
           "type": "object",
           "properties": {
-            "payload": {
+            "data": {
               "$ref": "#/$defs/InstanceErrorDto"
             },
             "type": {
@@ -1550,13 +1550,13 @@
           },
           "required": [
             "type",
-            "payload"
+            "data"
           ]
         },
         {
           "type": "object",
           "properties": {
-            "payload": {
+            "data": {
               "$ref": "#/$defs/JavaErrorDto"
             },
             "type": {
@@ -1566,13 +1566,13 @@
           },
           "required": [
             "type",
-            "payload"
+            "data"
           ]
         },
         {
           "type": "object",
           "properties": {
-            "payload": {
+            "data": {
               "$ref": "#/$defs/MinecraftErrorDto"
             },
             "type": {
@@ -1582,13 +1582,13 @@
           },
           "required": [
             "type",
-            "payload"
+            "data"
           ]
         },
         {
           "type": "object",
           "properties": {
-            "payload": {
+            "data": {
               "$ref": "#/$defs/PluginErrorDto"
             },
             "type": {
@@ -1598,13 +1598,13 @@
           },
           "required": [
             "type",
-            "payload"
+            "data"
           ]
         },
         {
           "type": "object",
           "properties": {
-            "payload": {
+            "data": {
               "$ref": "#/$defs/ProcessErrorDto"
             },
             "type": {
@@ -1614,13 +1614,13 @@
           },
           "required": [
             "type",
-            "payload"
+            "data"
           ]
         },
         {
           "type": "object",
           "properties": {
-            "payload": {
+            "data": {
               "$ref": "#/$defs/SettingsErrorDto"
             },
             "type": {
@@ -1630,13 +1630,13 @@
           },
           "required": [
             "type",
-            "payload"
+            "data"
           ]
         },
         {
           "type": "object",
           "properties": {
-            "payload": {
+            "data": {
               "$ref": "#/$defs/RequestErrorDto"
             },
             "type": {
@@ -1646,13 +1646,13 @@
           },
           "required": [
             "type",
-            "payload"
+            "data"
           ]
         },
         {
           "type": "object",
           "properties": {
-            "payload": {
+            "data": {
               "type": "string"
             },
             "type": {
@@ -1662,7 +1662,7 @@
           },
           "required": [
             "type",
-            "payload"
+            "data"
           ]
         }
       ]
@@ -1752,7 +1752,7 @@
           "description": "A file to download: an `http` or `https` address, already checked to be a valid one.",
           "type": "object",
           "properties": {
-            "url": {
+            "data": {
               "type": "object",
               "properties": {
                 "url": {
@@ -1762,18 +1762,22 @@
               "required": [
                 "url"
               ]
+            },
+            "type": {
+              "type": "string",
+              "const": "url"
             }
           },
-          "additionalProperties": false,
           "required": [
-            "url"
+            "type",
+            "data"
           ]
         },
         {
           "description": "A file the plugin can read: a plugin-side path (`/mnt/<drive>/…` for a Windows path).",
           "type": "object",
           "properties": {
-            "file": {
+            "data": {
               "type": "object",
               "properties": {
                 "path": {
@@ -1783,11 +1787,15 @@
               "required": [
                 "path"
               ]
+            },
+            "type": {
+              "type": "string",
+              "const": "file"
             }
           },
-          "additionalProperties": false,
           "required": [
-            "file"
+            "type",
+            "data"
           ]
         }
       ]
@@ -1882,7 +1890,7 @@
         {
           "type": "object",
           "properties": {
-            "existing": {
+            "data": {
               "type": "object",
               "properties": {
                 "game": {
@@ -1904,23 +1912,31 @@
               "required": [
                 "instanceId"
               ]
+            },
+            "type": {
+              "type": "string",
+              "const": "existing"
             }
           },
-          "additionalProperties": false,
           "required": [
-            "existing"
+            "type",
+            "data"
           ]
         },
         {
           "type": "object",
           "properties": {
-            "new": {
+            "data": {
               "$ref": "#/$defs/NewInstanceDto"
+            },
+            "type": {
+              "type": "string",
+              "const": "new"
             }
           },
-          "additionalProperties": false,
           "required": [
-            "new"
+            "type",
+            "data"
           ]
         }
       ]
@@ -1958,13 +1974,13 @@
             "data": {
               "type": "string"
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "storage"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -1982,13 +1998,13 @@
                 "instanceId"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "notFound"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -2010,26 +2026,26 @@
                 "capabilityId"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "contentProviderNotFound"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
         {
           "type": "object",
           "properties": {
-            "kind": {
+            "type": {
               "type": "string",
               "const": "capabilityOperationError"
             }
           },
           "required": [
-            "kind"
+            "type"
           ]
         },
         {
@@ -2046,13 +2062,13 @@
                 "instanceId"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "instanceStillInstalling"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -2074,13 +2090,13 @@
                 "processId"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "instanceAlreadyRunning"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -2099,13 +2115,13 @@
                 "code"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "prelaunchCommandError"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -2127,13 +2143,13 @@
                 "reason"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "validationError"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -2151,13 +2167,13 @@
                 "importerId"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "importerNotFound"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -2183,26 +2199,26 @@
                 "reason"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "importFailed"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
         {
           "type": "object",
           "properties": {
-            "kind": {
+            "type": {
               "type": "string",
               "const": "packInfoNotFound"
             }
           },
           "required": [
-            "kind"
+            "type"
           ]
         },
         {
@@ -2219,13 +2235,13 @@
                 "modpackId"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "updaterNotFound"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -2243,13 +2259,13 @@
                 "modpackId"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "updateFailed"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -2267,13 +2283,13 @@
                 "instanceId"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "unmanagedInstance"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -2291,13 +2307,13 @@
                 "contentPath"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "contentDuplication"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -2315,13 +2331,13 @@
                 "path"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "contentFilename"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -2343,13 +2359,13 @@
                 "reason"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "invalidRelativePath"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -2371,13 +2387,13 @@
                 "value"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "invalidContentId"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -2399,13 +2415,13 @@
                 "reason"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "invalidGameVersion"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -2431,13 +2447,13 @@
                 "reason"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "invalidPagination"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -2459,13 +2475,13 @@
                 "reason"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "invalidLoaderVersion"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -2487,13 +2503,13 @@
                 "instanceId"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "pathEscapesInstance"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -2523,13 +2539,13 @@
                 "limit"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "fileTooLarge"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -2539,13 +2555,13 @@
             "data": {
               "type": "string"
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "contentDownloadError"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -2563,13 +2579,13 @@
                 "reason"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "contentProviderError"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -2587,13 +2603,13 @@
                 "gameVersion"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "contentForGameVersionNotFound"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -2611,13 +2627,13 @@
                 "contentType"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "unsupportedContentType"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -2639,13 +2655,13 @@
                 "operation"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "unsupportedOperation"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -2663,13 +2679,13 @@
                 "platform"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "platformProviderNotFound"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -2687,13 +2703,13 @@
                 "platform"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "platformProviderNotChosen"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -2719,13 +2735,13 @@
                 "contentId"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "gameChangeNotAllowed"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         }
@@ -2788,8 +2804,8 @@
       "enum": [
         "installed",
         "installing",
-        "pack_installing",
-        "not_installed"
+        "packInstalling",
+        "notInstalled"
       ]
     },
     "InstanceSummaryDto": {
@@ -2843,7 +2859,7 @@
     "InstanceValidationErrorReasonDto": {
       "type": "string",
       "enum": [
-        "cannot_be_empty"
+        "cannotBeEmpty"
       ]
     },
     "JavaDto": {
@@ -2894,13 +2910,13 @@
                 "version"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "notFound"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -2918,26 +2934,26 @@
                 "path"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "invalidPath"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
         {
           "type": "object",
           "properties": {
-            "kind": {
+            "type": {
               "type": "string",
               "const": "emptyPath"
             }
           },
           "required": [
-            "kind"
+            "type"
           ]
         },
         {
@@ -2954,13 +2970,13 @@
                 "path"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "relativePath"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -2978,13 +2994,13 @@
                 "version"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "invalidVersion"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -3002,13 +3018,13 @@
                 "reason"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "failedToGetProperties"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -3036,13 +3052,13 @@
                 "arch"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "versionNotAvailable"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -3070,13 +3086,13 @@
                 "arch"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "versionGetFailed"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -3104,13 +3120,13 @@
                 "arch"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "failedToInstall"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -3128,13 +3144,13 @@
                 "path"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "removeOldInstallationError"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -3144,26 +3160,26 @@
             "data": {
               "type": "string"
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "storage"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
         {
           "type": "object",
           "properties": {
-            "kind": {
+            "type": {
               "type": "string",
               "const": "cancelled"
             }
           },
           "required": [
-            "kind"
+            "type"
           ]
         }
       ]
@@ -3279,13 +3295,13 @@
         {
           "type": "object",
           "properties": {
-            "kind": {
+            "type": {
               "type": "string",
               "const": "unsupportedApi"
             }
           },
           "required": [
-            "kind"
+            "type"
           ]
         },
         {
@@ -3310,26 +3326,26 @@
                 "error"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "invalidSemver"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
         {
           "type": "object",
           "properties": {
-            "kind": {
+            "type": {
               "type": "string",
               "const": "invalidPathMapping"
             }
           },
           "required": [
-            "kind"
+            "type"
           ]
         },
         {
@@ -3341,26 +3357,26 @@
                 "type": "string"
               }
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "unknownHostFunctions"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
         {
           "type": "object",
           "properties": {
-            "kind": {
+            "type": {
               "type": "string",
               "const": "hostFunctionsNotDeclared"
             }
           },
           "required": [
-            "kind"
+            "type"
           ]
         },
         {
@@ -3381,26 +3397,26 @@
                 "value"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "invalidId"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
         {
           "type": "object",
           "properties": {
-            "kind": {
+            "type": {
               "type": "string",
               "const": "reservedPluginId"
             }
           },
           "required": [
-            "kind"
+            "type"
           ]
         },
         {
@@ -3417,13 +3433,13 @@
                 "capabilityId"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "platformWithoutResolveFile"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         }
@@ -3445,13 +3461,13 @@
                 "version"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "versionNotFound"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -3469,13 +3485,13 @@
                 "loaderVersionPreference"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "versionForLoaderNotFound"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -3493,38 +3509,38 @@
                 "loaderVersionPreference"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "loaderNotFound"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
         {
           "type": "object",
           "properties": {
-            "kind": {
+            "type": {
               "type": "string",
               "const": "loaderVersionRequired"
             }
           },
           "required": [
-            "kind"
+            "type"
           ]
         },
         {
           "type": "object",
           "properties": {
-            "kind": {
+            "type": {
               "type": "string",
               "const": "defaultLoaderNotFound"
             }
           },
           "required": [
-            "kind"
+            "type"
           ]
         },
         {
@@ -3541,13 +3557,13 @@
                 "reason"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "processorFailed"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -3566,13 +3582,13 @@
                 "code"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "preLaunchFailed"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -3591,13 +3607,13 @@
                 "code"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "postLaunchFailed"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -3619,13 +3635,13 @@
                 "entityType"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "pathNotFound"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -3643,13 +3659,13 @@
                 "reason"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "parseFailed"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -3667,13 +3683,13 @@
                 "reason"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "storageFailure"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         }
@@ -3803,7 +3819,7 @@
           "description": "The `subdir` directory of a zip archive (`overrides`).",
           "type": "object",
           "properties": {
-            "archive": {
+            "data": {
               "type": "object",
               "properties": {
                 "archivePath": {
@@ -3817,18 +3833,22 @@
                 "archivePath",
                 "subdir"
               ]
+            },
+            "type": {
+              "type": "string",
+              "const": "archive"
             }
           },
-          "additionalProperties": false,
           "required": [
-            "archive"
+            "type",
+            "data"
           ]
         },
         {
           "description": "A directory, copied recursively.",
           "type": "object",
           "properties": {
-            "directory": {
+            "data": {
               "type": "object",
               "properties": {
                 "path": {
@@ -3838,11 +3858,15 @@
               "required": [
                 "path"
               ]
+            },
+            "type": {
+              "type": "string",
+              "const": "directory"
             }
           },
-          "additionalProperties": false,
           "required": [
-            "directory"
+            "type",
+            "data"
           ]
         }
       ]
@@ -3959,7 +3983,7 @@
           "description": "A pack hosted on the provider's platform; absent `version` — the version an update would\ntake from `installedVersion`, by the same rule as `ResolveInstallPlanParamsDto::version`,\nwhich is how a check for updates asks.",
           "type": "object",
           "properties": {
-            "content": {
+            "data": {
               "type": "object",
               "properties": {
                 "contentId": {
@@ -3984,37 +4008,65 @@
               "required": [
                 "contentId"
               ]
+            },
+            "type": {
+              "type": "string",
+              "const": "content"
             }
           },
-          "additionalProperties": false,
           "required": [
-            "content"
+            "type",
+            "data"
           ]
         },
         {
           "description": "A pack file to download (a `.mrpack`, a packwiz `pack.toml`).",
           "type": "object",
           "properties": {
-            "url": {
-              "type": "string"
+            "data": {
+              "type": "object",
+              "properties": {
+                "url": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "url"
+              ]
+            },
+            "type": {
+              "type": "string",
+              "const": "url"
             }
           },
-          "additionalProperties": false,
           "required": [
-            "url"
+            "type",
+            "data"
           ]
         },
         {
           "description": "A pack file the plugin can read: a plugin-side path under `/cache` or `/instances`.",
           "type": "object",
           "properties": {
-            "file": {
-              "type": "string"
+            "data": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "path"
+              ]
+            },
+            "type": {
+              "type": "string",
+              "const": "file"
             }
           },
-          "additionalProperties": false,
           "required": [
-            "file"
+            "type",
+            "data"
           ]
         }
       ]
@@ -4025,49 +4077,49 @@
         {
           "type": "object",
           "properties": {
-            "kind": {
+            "type": {
               "type": "string",
               "const": "missingFunction"
             }
           },
           "required": [
-            "kind"
+            "type"
           ]
         },
         {
           "type": "object",
           "properties": {
-            "kind": {
+            "type": {
               "type": "string",
               "const": "timeout"
             }
           },
           "required": [
-            "kind"
+            "type"
           ]
         },
         {
           "type": "object",
           "properties": {
-            "kind": {
+            "type": {
               "type": "string",
               "const": "outOfFuel"
             }
           },
           "required": [
-            "kind"
+            "type"
           ]
         },
         {
           "type": "object",
           "properties": {
-            "kind": {
+            "type": {
               "type": "string",
               "const": "outOfMemory"
             }
           },
           "required": [
-            "kind"
+            "type"
           ]
         },
         {
@@ -4076,13 +4128,13 @@
             "data": {
               "type": "string"
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "trap"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -4093,13 +4145,13 @@
               "type": "integer",
               "format": "int32"
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "nonZeroExit"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -4109,13 +4161,13 @@
             "data": {
               "type": "string"
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "plugin"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -4138,13 +4190,13 @@
                 "details"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "commandNotApproved"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -4154,26 +4206,26 @@
             "data": {
               "type": "string"
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "codec"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
         {
           "type": "object",
           "properties": {
-            "kind": {
+            "type": {
               "type": "string",
               "const": "reentrant"
             }
           },
           "required": [
-            "kind"
+            "type"
           ]
         }
       ]
@@ -4212,13 +4264,13 @@
                 "pluginId"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "notFound"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -4236,13 +4288,13 @@
                 "pluginId"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "alreadyLoaded"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -4260,13 +4312,13 @@
                 "pluginId"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "loadingInProgress"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -4284,13 +4336,13 @@
                 "pluginId"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "unloadingInProgress"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -4308,13 +4360,13 @@
                 "pluginId"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "alreadyUnloaded"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -4336,13 +4388,13 @@
                 "reason"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "loadFailed"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -4364,13 +4416,13 @@
                 "reason"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "incompatibleApiVersion"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -4396,13 +4448,13 @@
                 "error"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "functionCallFailed"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -4412,13 +4464,13 @@
             "data": {
               "$ref": "#/$defs/ManifestErrorDto"
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "manifest"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -4436,13 +4488,13 @@
                 "path"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "manifestNotFound"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -4460,13 +4512,13 @@
                 "error"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "invalidManifestFormat"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -4484,13 +4536,13 @@
                 "configType"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "loaderNotFound"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -4508,26 +4560,26 @@
                 "from"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "extractionFailed"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
         {
           "type": "object",
           "properties": {
-            "kind": {
+            "type": {
               "type": "string",
               "const": "invalidExtractionFormat"
             }
           },
           "required": [
-            "kind"
+            "type"
           ]
         },
         {
@@ -4544,13 +4596,13 @@
                 "from"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "fileExtractionFailed"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -4572,13 +4624,13 @@
                 "capabilityId"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "capabilityRegistrationFailed"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -4600,13 +4652,13 @@
                 "capabilityId"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "capabilityCancelRegistrationFailed"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -4628,13 +4680,13 @@
                 "path"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "accessViolation"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -4657,26 +4709,26 @@
                 "reason"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "commandNotApproved"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
         {
           "type": "object",
           "properties": {
-            "kind": {
+            "type": {
               "type": "string",
               "const": "hashComputationFailed"
             }
           },
           "required": [
-            "kind"
+            "type"
           ]
         },
         {
@@ -4685,13 +4737,13 @@
             "data": {
               "type": "string"
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "storage"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -4713,13 +4765,13 @@
                 "details"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "providerFetchError"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -4737,13 +4789,13 @@
                 "sourceType"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "providerNoAssets"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -4761,13 +4813,13 @@
                 "pluginId"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "noRemoteSource"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -4789,13 +4841,13 @@
                 "details"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "downloadFailed"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -4821,13 +4873,13 @@
                 "sourceType"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "providerRateLimited"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         }
@@ -4851,16 +4903,33 @@
     "PluginInternalEventDto": {
       "oneOf": [
         {
-          "type": "string",
-          "enum": [
-            "loaded",
-            "unloaded"
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "loaded"
+            }
+          },
+          "required": [
+            "type"
           ]
         },
         {
           "type": "object",
           "properties": {
-            "beforeInstanceLaunch": {
+            "type": {
+              "type": "string",
+              "const": "unloaded"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
               "type": "object",
               "properties": {
                 "instanceId": {
@@ -4870,17 +4939,21 @@
               "required": [
                 "instanceId"
               ]
+            },
+            "type": {
+              "type": "string",
+              "const": "beforeInstanceLaunch"
             }
           },
-          "additionalProperties": false,
           "required": [
-            "beforeInstanceLaunch"
+            "type",
+            "data"
           ]
         },
         {
           "type": "object",
           "properties": {
-            "afterInstanceLaunch": {
+            "data": {
               "type": "object",
               "properties": {
                 "instanceId": {
@@ -4890,11 +4963,15 @@
               "required": [
                 "instanceId"
               ]
+            },
+            "type": {
+              "type": "string",
+              "const": "afterInstanceLaunch"
             }
           },
-          "additionalProperties": false,
           "required": [
-            "afterInstanceLaunch"
+            "type",
+            "data"
           ]
         }
       ]
@@ -4902,7 +4979,7 @@
     "PluginSourceTypeDto": {
       "type": "string",
       "enum": [
-        "git_hub",
+        "gitHub",
         "local"
       ]
     },
@@ -4922,13 +4999,13 @@
                 "id"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "killError"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -4946,13 +5023,13 @@
                 "id"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "waitError"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -4962,13 +5039,13 @@
             "data": {
               "type": "string"
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "io"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         }
@@ -5015,13 +5092,13 @@
             "data": {
               "type": "string"
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "acquire"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -5031,13 +5108,13 @@
             "data": {
               "type": "string"
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "requestSend"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -5047,13 +5124,13 @@
             "data": {
               "type": "string"
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "middleware"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -5075,13 +5152,13 @@
                 "expected"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "hash"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -5091,13 +5168,13 @@
             "data": {
               "type": "string"
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "json"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -5107,13 +5184,13 @@
             "data": {
               "type": "string"
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "toml"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -5123,13 +5200,13 @@
             "data": {
               "type": "string"
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "parse"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -5154,13 +5231,13 @@
                 "url"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "status"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -5180,13 +5257,13 @@
                 "limit"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "tooLarge"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         },
@@ -5208,13 +5285,13 @@
                 "details"
               ]
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "io"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         }
@@ -5241,9 +5318,13 @@
         },
         "loader": {
           "description": "The loader as written in `ResolveTargetDto::Existing` (`fabric`, `neoforge`); absent —\nvanilla.",
-          "type": [
-            "string",
-            "null"
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ModLoaderDto"
+            },
+            {
+              "type": "null"
+            }
           ],
           "default": null
         },
@@ -5300,7 +5381,7 @@
           "description": "Install into, or update, an existing instance, with the game version and loader it runs\nnow. For most content they are a requirement: it has to fit what the instance runs. For\nthe pack the instance was installed from (its `packInfo`) they are only the current\nstate: the plan of an update names the pack's game in `InstallTargetDto::Existing::game`,\nand the launcher moves the instance to it.",
           "type": "object",
           "properties": {
-            "existing": {
+            "data": {
               "type": "object",
               "properties": {
                 "gameVersion": {
@@ -5311,9 +5392,13 @@
                 },
                 "loader": {
                   "description": "`fabric`, `neoforge`, …; absent for a vanilla instance.",
-                  "type": [
-                    "string",
-                    "null"
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/ModLoaderDto"
+                    },
+                    {
+                      "type": "null"
+                    }
                   ],
                   "default": null
                 }
@@ -5322,17 +5407,29 @@
                 "instanceId",
                 "gameVersion"
               ]
+            },
+            "type": {
+              "type": "string",
+              "const": "existing"
             }
           },
-          "additionalProperties": false,
           "required": [
-            "existing"
+            "type",
+            "data"
           ]
         },
         {
           "description": "A new instance, described by the content (a modpack).",
-          "type": "string",
-          "const": "new"
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "new"
+            }
+          },
+          "required": [
+            "type"
+          ]
         }
       ]
     },
@@ -5392,13 +5489,13 @@
         {
           "type": "object",
           "properties": {
-            "kind": {
+            "type": {
               "type": "string",
               "const": "notFound"
             }
           },
           "required": [
-            "kind"
+            "type"
           ]
         },
         {
@@ -5407,13 +5504,13 @@
             "data": {
               "type": "string"
             },
-            "kind": {
+            "type": {
               "type": "string",
               "const": "storage"
             }
           },
           "required": [
-            "kind",
+            "type",
             "data"
           ]
         }
