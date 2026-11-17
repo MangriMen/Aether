@@ -4,6 +4,7 @@ export * from './api/importerQueries';
 export * from './api/pluginQueries';
 export * from './api/pluginsCache';
 export * from './api/usePluginEventListener';
+export * from './lib/useAllowBlockedAddress';
 export * from './lib/useAllowRefusedHost';
 export * from './lib/useForceEnablePluginWithDialog';
 export * from './lib/usePluginStates';

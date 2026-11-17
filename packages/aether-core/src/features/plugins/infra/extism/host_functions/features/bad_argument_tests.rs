@@ -36,7 +36,10 @@ struct NoHosts;
 
 #[async_trait]
 impl AllowedHostsSource for NoHosts {
-    async fn allowed_hosts(&self, _plugin_id: &PluginId) -> crate::Result<Vec<String>> {
+    async fn current(
+        &self,
+        _plugin_id: &PluginId,
+    ) -> crate::Result<crate::features::plugins::PluginHosts> {
         panic!("a request whose argument does not decode must not get this far")
     }
 }

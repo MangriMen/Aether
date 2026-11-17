@@ -14,6 +14,7 @@ import { cn } from '@/shared/utils';
 
 import { usePluginSettingsHandler } from '../lib/usePluginSettingsHandler';
 import { PluginCommandApprovalsSection } from './PluginCommandApprovalsSection';
+import { PluginLocalHostsSection } from './PluginLocalHostsSection';
 import { PluginRestartNotice } from './PluginRestartNotice';
 import { PluginSettingsForm } from './PluginSettingsForm';
 
@@ -29,6 +30,7 @@ export const PluginSettingsTab: Component<PluginSettingsTabProps> = (props) => {
   );
   const editPluginSettings = useEditPluginSettings();
   const commandApprovals = () => pluginSettings.data?.commandApprovals ?? [];
+  const localHosts = () => pluginSettings.data?.localHosts ?? [];
 
   const { initialValues, onChangePartial } = usePluginSettingsHandler({
     pluginId: () => local.plugin.manifest.metadata.id,
@@ -47,6 +49,18 @@ export const PluginSettingsTab: Component<PluginSettingsTabProps> = (props) => {
         initialValues={initialValues}
         onChangePartial={onChangePartial}
       />
+      <Show when={localHosts().length > 0}>
+        <PluginLocalHostsSection
+          localHosts={localHosts()}
+          disabled={editPluginSettings.isPending}
+          onRevoke={(localHost) =>
+            editPluginSettings.mutate({
+              id: local.plugin.manifest.metadata.id,
+              editSettings: { revokeLocalHosts: [localHost] },
+            })
+          }
+        />
+      </Show>
       <Show when={commandApprovals().length > 0}>
         <PluginCommandApprovalsSection
           approvals={commandApprovals()}

@@ -7,25 +7,22 @@ use crate::{
     core::app::AetherContainer,
     features::{
         instance::PluginId,
-        plugins::{
-            PluginError, PluginRegistry, PluginSettingsStorage,
-            infra::plugin_utils::effective_allowed_hosts,
-        },
+        plugins::{PluginError, PluginHosts, PluginRegistry, PluginSettingsStorage},
     },
     shared::limits::PluginSandboxLimits,
 };
 
 /// Where a plugin's network policy comes from, asked on every host function call.
 ///
-/// The list is deliberately not copied into the context when the plugin loads: the user can
+/// The hosts are deliberately not copied into the context when the plugin loads: the user can
 /// change a plugin's hosts in its settings while it is running, and the change must apply to
 /// its very next request without a reload.
 #[async_trait]
 pub(crate) trait AllowedHostsSource: Send + Sync {
-    async fn allowed_hosts(&self, plugin_id: &PluginId) -> crate::Result<Vec<String>>;
+    async fn current(&self, plugin_id: &PluginId) -> crate::Result<PluginHosts>;
 }
 
-/// The manifest in the registry plus the user's settings — what [`effective_allowed_hosts`]
+/// The manifest in the registry plus the user's settings — what [`PluginHosts::effective`]
 /// merges. A plugin that is gone has no policy, so it gets an error rather than an open list.
 pub(crate) struct LiveAllowedHosts {
     registry: Arc<PluginRegistry>,
@@ -34,13 +31,13 @@ pub(crate) struct LiveAllowedHosts {
 
 #[async_trait]
 impl AllowedHostsSource for LiveAllowedHosts {
-    async fn allowed_hosts(&self, plugin_id: &PluginId) -> crate::Result<Vec<String>> {
+    async fn current(&self, plugin_id: &PluginId) -> crate::Result<PluginHosts> {
         let to_error = |err: PluginError| crate::ErrorKind::from(err).as_error();
 
         let manifest = self.registry.get_manifest(plugin_id).map_err(to_error)?;
         let settings = self.settings.get(plugin_id).await.map_err(to_error)?;
 
-        Ok(effective_allowed_hosts(&manifest, settings.as_ref()))
+        Ok(PluginHosts::effective(&manifest, settings.as_ref()))
     }
 }
 
@@ -148,8 +145,8 @@ mod tests {
 
     #[async_trait]
     impl AllowedHostsSource for EditableHosts {
-        async fn allowed_hosts(&self, _plugin_id: &PluginId) -> crate::Result<Vec<String>> {
-            Ok(self.0.lock().unwrap().clone())
+        async fn current(&self, _plugin_id: &PluginId) -> crate::Result<PluginHosts> {
+            Ok(self.0.lock().unwrap().clone().into())
         }
     }
 

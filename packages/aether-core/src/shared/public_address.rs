@@ -5,7 +5,11 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 
 /// Reject everything that is not a public, routable address.
 ///
-/// Fails closed: anything not positively known to be public is blocked.
+/// Fails closed: anything not positively known to be public is blocked. One exception:
+/// `198.18.0.0/15` (benchmarking) passes. VPN and proxy clients in TUN mode with fake-ip DNS
+/// (Clash, sing-box, …) answer every public name with an address from it and route the
+/// connection by that name, so refusing it refused public hosts; only the local VPN client
+/// ever answers there, and it connects to the real destination of the name.
 pub(crate) fn is_blocked_ip(ip: IpAddr) -> bool {
     match ip {
         IpAddr::V4(v4) => is_blocked_ipv4(v4),
@@ -29,8 +33,7 @@ fn is_blocked_ipv4(ip: Ipv4Addr) -> bool {
         || (a == 100 && (64..128).contains(&b))
         // 192.0.0.0/24 — IETF protocol assignments
         || (a == 192 && b == 0 && c == 0)
-        // 198.18.0.0/15 — benchmarking
-        || (a == 198 && (b == 18 || b == 19))
+        // 198.18.0.0/15 (benchmarking) is not here: see above.
         // 240.0.0.0/4 — reserved
         || a >= 240
 }
@@ -89,6 +92,23 @@ fn embedded_ipv4(ip: Ipv6Addr) -> Option<Ipv4Addr> {
         return Some(v4(s[1], s[2]));
     }
     None
+}
+
+/// Whether `ip` is no single host the user could mean when they let a plugin reach a local
+/// address: unspecified and "this network" (which reach the local machine on some systems),
+/// broadcast and multicast, in whatever IPv6 form carries them. Even a granted host is refused
+/// such an address.
+pub(crate) fn is_never_grantable(ip: IpAddr) -> bool {
+    let is_never_v4 = |v4: Ipv4Addr| {
+        v4.octets()[0] == 0 || v4.is_broadcast() || v4.is_multicast() || v4.is_unspecified()
+    };
+    match ip {
+        IpAddr::V4(v4) => is_never_v4(v4),
+        IpAddr::V6(v6) => match embedded_ipv4(v6) {
+            Some(v4) => is_never_v4(v4),
+            None => v6.is_unspecified() || v6.is_multicast(),
+        },
+    }
 }
 
 /// `localhost` and its subdomains always mean the local machine (RFC 6761).
@@ -164,6 +184,58 @@ mod tests {
         }
         for ip in allowed_ips {
             assert!(!blocked(ip), "{ip}");
+        }
+    }
+
+    /// TUN-mode VPN clients answer public names from `198.18.0.0/15` (fake-ip): it passes in
+    /// every form, while the ranges around it and CGNAT stay blocked.
+    #[test]
+    fn should_let_the_fake_ip_range_through_in_every_form() {
+        for ip in [
+            "198.18.0.1",
+            "198.19.255.254",
+            "198.17.255.255",
+            "198.20.0.1",
+            "::ffff:198.18.0.7",
+            "64:ff9b::c612:7",
+            "2002:c612:7::1",
+        ] {
+            assert!(!blocked(ip), "{ip}");
+        }
+        for ip in [
+            "100.64.0.1",
+            "::ffff:100.64.0.1",
+            "64:ff9b::6440:1",
+            "2002:6440:1::1",
+            "192.0.0.1",
+        ] {
+            assert!(blocked(ip), "{ip}");
+        }
+    }
+
+    #[test]
+    fn should_never_grant_an_address_when_it_is_no_single_host() {
+        for ip in [
+            "0.0.0.0",
+            "0.1.2.3",
+            "255.255.255.255",
+            "224.0.0.1",
+            "::",
+            "ff02::1",
+            "::ffff:0.0.0.0",
+            "::ffff:224.0.0.1",
+        ] {
+            assert!(is_never_grantable(ip.parse().unwrap()), "{ip}");
+        }
+        for ip in [
+            "127.0.0.1",
+            "192.168.1.10",
+            "10.0.0.1",
+            "::1",
+            "fd12::1",
+            "fe80::1",
+        ] {
+            assert!(!is_never_grantable(ip.parse().unwrap()), "{ip}");
         }
     }
 }

@@ -4,7 +4,8 @@
 //! to disk and hands back a path the plugin opens through WASI. Decided here, not by the plugin:
 //!
 //! * **Network policy** — exactly `http_get`'s, through the same code ([`super::http`]):
-//!   `allowed_hosts`, public addresses only, pinned connections, every redirect hop vetted.
+//!   `allowed_hosts`, public addresses only (but for a local host the user granted), pinned
+//!   connections, every redirect hop vetted.
 //! * **Transfer** — [`RequestClient::download_to_file`]: the download semaphore, retries, the
 //!   hash checked while streaming, a temporary file renamed only once verified. Redirects are
 //!   followed below that pipeline, so only the final body is hashed and a retry restarts the
@@ -43,7 +44,7 @@ use crate::{
 use super::{
     super::{super::mappers::to_extism_res, PluginContext, block_on},
     http::{
-        AddressFilter, ProxySource, check_target, find_policy_refusal, is_blocked_ip,
+        AddressFilter, PluginHosts, ProxySource, check_target, find_policy_refusal, is_blocked_ip,
         system_lookup, vetted_client,
     },
 };
@@ -63,7 +64,7 @@ fn unusable(path: &Path, reason: &dyn std::fmt::Display) -> PluginDownloadError 
 pub(crate) struct DownloadContext<'a> {
     /// Host side of the plugin's `/cache` (`LocationInfo::plugin_cache_dir`).
     pub cache_dir: &'a Path,
-    pub allowed_hosts: &'a [String],
+    pub hosts: PluginHosts,
     pub semaphore: Arc<FetchSemaphore>,
     pub progress_service: Arc<dyn ProgressService>,
     pub proxy: ProxySource,
@@ -185,7 +186,7 @@ async fn perform_download_unbounded(
 ) -> Result<CachedFileDto, PluginDownloadError> {
     // The digest becomes a file name, so it is validated before anything else happens.
     let hash = FileHash::try_from(params.hash)?;
-    let (url, _) = check_target(&params.url, context.allowed_hosts)?;
+    let (url, _) = check_target(&params.url, &context.hosts)?;
 
     let dir = prepare_download_dir(context.cache_dir, hash.algorithm()).await?;
     let destination = dir.join(hash.hex());
@@ -197,7 +198,7 @@ async fn perform_download_unbounded(
     }
 
     let network = PluginNetwork {
-        allowed_hosts: context.allowed_hosts,
+        hosts: &context.hosts,
         semaphore: context.semaphore.clone(),
         progress_service: context.progress_service.clone(),
         proxy: &context.proxy,
@@ -211,7 +212,7 @@ async fn perform_download_unbounded(
 
 /// A plugin's network, as a download the host makes for it sees it.
 pub(crate) struct PluginNetwork<'a> {
-    pub allowed_hosts: &'a [String],
+    pub hosts: &'a PluginHosts,
     pub semaphore: Arc<FetchSemaphore>,
     pub progress_service: Arc<dyn ProgressService>,
     pub proxy: &'a ProxySource,
@@ -230,12 +231,12 @@ pub(crate) async fn download_vetted(
     destination: &Path,
     network: &PluginNetwork<'_>,
 ) -> Result<u64, PluginDownloadError> {
-    check_target(url, network.allowed_hosts)?;
+    check_target(url, network.hosts)?;
     let client = vetted_download_client(network)?;
 
     download_with(
         &client,
-        network.allowed_hosts,
+        network.hosts,
         url,
         hash,
         destination,
@@ -247,7 +248,7 @@ pub(crate) async fn download_vetted(
 
 /// The client [`download_vetted`] downloads through, for a caller with many files under one
 /// policy. It holds `network`'s policy as it is now: a caller keeping it must build another
-/// when the plugin's `allowed_hosts` change.
+/// when the plugin's hosts change.
 pub(crate) fn vetted_download_client(
     network: &PluginNetwork<'_>,
 ) -> Result<VettedDownloadClient, PluginDownloadError> {
@@ -255,7 +256,7 @@ pub(crate) fn vetted_download_client(
         ExponentialBackoff::builder().build_with_max_retries(DOWNLOAD_MAX_RETRIES),
     );
     let client = vetted_client(
-        network.allowed_hosts,
+        network.hosts,
         system_lookup,
         network.is_blocked,
         network.proxy,
@@ -274,18 +275,18 @@ pub(crate) fn vetted_download_client(
 /// A client from [`vetted_download_client`].
 pub(crate) type VettedDownloadClient = ReqwestClient<dyn ProgressService>;
 
-/// [`download_vetted`] through a client built for `allowed_hosts`. The URL is checked against
+/// [`download_vetted`] through a client built for `hosts`. The URL is checked against
 /// them here as well: the client vets every hop, but the first request's refusal reads better.
 pub(crate) async fn download_with(
     request_client: &VettedDownloadClient,
-    allowed_hosts: &[String],
+    hosts: &PluginHosts,
     url: &str,
     hash: Option<FileHash>,
     destination: &Path,
     max_bytes: u64,
     on_bytes: Option<BytesProgress<'_>>,
 ) -> Result<u64, PluginDownloadError> {
-    let (url, _) = check_target(url, allowed_hosts)?;
+    let (url, _) = check_target(url, hosts)?;
 
     let mut request = Request::get(url.as_str());
     if let Some(hash) = hash {
@@ -332,10 +333,10 @@ pub download_to_cache(user_data: PluginContext; params: Wire<DownloadToCachePara
     let cache_dir = container.location_info().plugin_cache_dir(&id);
 
     Ok(to_extism_res::<CachedFileDto>(block_on(async {
-        let allowed_hosts = hosts.allowed_hosts(&id).await?;
+        let hosts = hosts.current(&id).await?;
         let download = DownloadContext {
             cache_dir: &cache_dir,
-            allowed_hosts: &allowed_hosts,
+            hosts,
             semaphore: container.fetch_semaphore(),
             progress_service: container.progress_service(),
             proxy: ProxySource::System,

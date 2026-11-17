@@ -324,6 +324,7 @@
       "INVALID_ALLOWED_HOST_ENTRY": "Host {{entry}} cannot be saved: write a host name or a pattern such as *.example.com, without a scheme, port or path",
       "COMMAND_NOT_APPROVED": "The command of plugin {{plugin_id}} did not run: {{reason}}",
       "HOST_NOT_ALLOWED": "Plugin {{plugin_id}} may not connect to {{host}}: the host is not in its network access list",
+      "ADDRESS_BLOCKED": "Plugin {{plugin_id}} may not connect to {{host}}:{{port}}: it is an address in your own network or on this computer",
       "COMMAND_APPROVAL_NOT_FOUND": "This question is already closed",
       "COMMAND_APPROVAL_ONCE_ONLY": "This command can be allowed once only",
       "HASH_COMPUTATION_FAILED": "Failed to compute plugin hash",
@@ -1030,6 +1031,16 @@
     "hostAccessGranted": "The plugin can now connect to this host",
     "hostAccessFailed": "Could not give the plugin access to the host",
     "allowHost": "Allow {{host}}",
+    "allowLocalAddress": "Allow this local address",
+    "localHostAccessConfirmTitle": "Let {{name}} reach {{address}}?",
+    "localHostAccessConfirmDescription": "{{address}} is an address in your own network or on this computer, not on the internet. If you allow it, {{name}} will be able to send requests to it, to whatever runs there: a server, a NAS, a service of this computer. Allow it only if you expect this plugin to use something of yours at this address. You can take the access back in the plugin settings.",
+    "localHostAccessGranted": "The plugin can now reach this local address",
+    "localHostAccessFailed": "Could not let the plugin reach the local address",
+    "localHosts": {
+      "title": "Local addresses",
+      "description": "Addresses in your own network or on this computer that this plugin may send requests to. Take one back and its requests there are refused again.",
+      "revoke": "Take back"
+    },
     "ignoredPath": {
       "host_not_absolute": "Not used by the plugin: the host path is not absolute",
       "host_not_a_folder": "Not used by the plugin: the host path is not an existing folder",

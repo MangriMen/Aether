@@ -728,6 +728,34 @@ describe('plugin host refused, reported by the plugin', () => {
   });
 });
 
+describe('plugin local address refused, reported by the plugin', () => {
+  const blocked = {
+    type: 'plugin',
+    payload: {
+      code: 'ADDRESS_BLOCKED',
+      payload: {
+        plugin_id: 'packwiz',
+        host: 'nas.lan',
+        port: 8080,
+        cause: { type: 'unknown', details: 'nas refused' },
+      },
+    },
+  } as LauncherError;
+
+  it('should_name_the_plugin_and_the_local_address_it_may_not_reach', () => {
+    expect(getTranslatedError(blocked, tEn)).toBe(
+      'Plugin packwiz may not connect to nas.lan:8080: it is an address in your own network or on this computer',
+    );
+    expect(getTranslatedError(blocked, tRu)).toBe(
+      'Плагину packwiz не разрешено подключаться к nas.lan:8080: это адрес в вашей собственной сети или на этом компьютере',
+    );
+  });
+
+  it('should_keep_the_text_of_the_plugin_in_the_details', () => {
+    expect(getErrorDetails(blocked)).toBe('nas refused');
+  });
+});
+
 describe('plugin provider failure', () => {
   it('should_translate_the_reason_and_the_category_of_its_cause', () => {
     const error = {

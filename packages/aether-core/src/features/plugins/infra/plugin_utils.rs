@@ -5,9 +5,7 @@ use std::{
 
 use aether_core_plugin_api::v0::CommandDto;
 
-pub(crate) use crate::features::plugins::{
-    PLUGIN_CACHE_MOUNT, effective_allowed_hosts, to_wasi_path,
-};
+pub(crate) use crate::features::plugins::{PLUGIN_CACHE_MOUNT, to_wasi_path};
 
 use crate::{
     features::{

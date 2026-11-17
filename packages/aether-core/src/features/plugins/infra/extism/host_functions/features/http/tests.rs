@@ -6,6 +6,7 @@ use rstest::rstest;
 
 use super::policy::{redirect_target, resolve_public_addrs};
 use super::*;
+use crate::features::plugins::LocalHost;
 
 /// Two loopback addresses: two different hosts for `allowed_hosts`, the address filter and
 /// the origin.
@@ -16,8 +17,12 @@ fn limits() -> PluginSandboxLimits {
     PluginSandboxLimits::default()
 }
 
-fn hosts(values: &[&str]) -> Vec<String> {
-    values.iter().map(|v| (*v).to_string()).collect()
+fn hosts(values: &[&str]) -> PluginHosts {
+    values
+        .iter()
+        .map(|v| (*v).to_string())
+        .collect::<Vec<_>>()
+        .into()
 }
 
 // ── is_host_allowed ──
@@ -56,10 +61,10 @@ fn should_judge_the_host_against_allowed_hosts(
 ) {
     let allowed = hosts(allowed);
     for host in matching {
-        assert!(is_host_allowed(host, &allowed), "{host}");
+        assert!(is_host_allowed(host, &allowed.allowed), "{host}");
     }
     for host in not_matching {
-        assert!(!is_host_allowed(host, &allowed), "{host}");
+        assert!(!is_host_allowed(host, &allowed.allowed), "{host}");
     }
 }
 
@@ -70,8 +75,8 @@ fn should_judge_the_host_against_allowed_hosts(
 #[case::private_range(&["10.0.0.1", "172.16.0.1", "172.31.255.255", "192.168.1.1"], &[])]
 #[case::cloud_metadata(&["169.254.169.254"], &[])]
 #[case::unspecified_or_broadcast(&["0.0.0.0", "255.255.255.255", "::"], &[])]
-#[case::shared_benchmark_or_reserved(
-    &["100.64.0.1", "100.127.255.255", "198.18.0.1", "192.0.0.1", "240.0.0.1"],
+#[case::shared_or_reserved(
+    &["100.64.0.1", "100.127.255.255", "192.0.0.1", "240.0.0.1"],
     &[]
 )]
 #[case::multicast_or_documentation(&["224.0.0.1", "192.0.2.1", "ff02::1", "2001:db8::1"], &[])]
@@ -82,6 +87,11 @@ fn should_judge_the_host_against_allowed_hosts(
 #[case::public(
     &[],
     &["1.1.1.1", "8.8.8.8", "104.16.0.1", "2606:4700:4700::1111", "::ffff:8.8.8.8"]
+)]
+// TUN-mode VPN clients answer public names from 198.18.0.0/15 (fake-ip).
+#[case::fake_ip_benchmark_range(
+    &[],
+    &["198.18.0.1", "198.19.255.255", "::ffff:198.18.0.1"]
 )]
 fn should_judge_the_address(#[case] blocked: &[&str], #[case] allowed: &[&str]) {
     for ip in blocked {
@@ -1062,11 +1072,39 @@ async fn should_drop_plugin_headers_across_origins_when_going_through_a_proxy() 
     );
 }
 
+#[tokio::test]
+async fn should_reach_a_granted_local_literal_when_going_through_a_proxy() {
+    let proxy = TestServer::start(FIRST, |target| ok(target.as_bytes())).await;
+    let url = "http://192.168.1.10:8080/pack.toml";
+    let get = |hosts: PluginHosts| {
+        let request = HttpRequestDto {
+            url: url.to_owned(),
+            headers: HashMap::new(),
+        };
+        let proxy = ProxySource::Fixed(proxy.url(""));
+        async move { perform_get(&request, &hosts, is_blocked_ip, &proxy, limits()).await }
+    };
+
+    let err = get(hosts(&["*"]))
+        .await
+        .expect_err("a private literal that is not granted stays refused behind a proxy");
+    assert!(
+        matches!(err, PluginHttpError::BlockedAddress { port: 8080, .. }),
+        "{err}"
+    );
+
+    let response = get(PluginHosts::new(vec![], vec![local("192.168.1.10:8080")]))
+        .await
+        .expect("a granted local literal goes to the proxy");
+    assert_eq!(response.body, url.as_bytes());
+    assert_eq!(proxy.requests().len(), 1);
+}
+
 // ── Clash fake-ip ──
 //
-// With fake-ip, the DNS Clash serves answers every name with an address from
-// `198.18.0.0/15` and routes by the name later. Without a proxy configured (TUN mode), such
-// a name must be refused; through the proxy, the fake address must not matter at all.
+// With fake-ip, the DNS of a VPN client in TUN mode (Clash, sing-box, …) answers every name
+// with an address from `198.18.0.0/15` and routes by the name later. Such an answer is let
+// through, connecting directly or not; through a proxy, the fake address does not matter.
 
 const FAKE_IP: [u8; 4] = [198, 18, 0, 7];
 
@@ -1096,19 +1134,12 @@ async fn get_with_fake_ip_dns(url: &str, proxy: &ProxySource) -> Result<Vec<u8>,
 }
 
 #[tokio::test]
-async fn should_refuse_a_fake_ip_answer_when_there_is_no_proxy() {
-    let err = get_with_fake_ip_dns("http://github.com/x.jar", &ProxySource::Direct)
+async fn should_let_a_fake_ip_answer_through_when_there_is_no_proxy() {
+    let addrs = resolve_public_addrs("github.com", 443, fake_ip_dns, is_blocked_ip)
         .await
-        .expect_err("a name resolving into 198.18.0.0/15 must be refused when connecting directly");
+        .expect("a name resolving into 198.18.0.0/15 is let through when connecting directly");
 
-    assert!(
-        matches!(
-            err,
-            PluginHttpError::BlockedAddress { ref host, ip }
-                if host == "github.com" && ip == IpAddr::from(FAKE_IP)
-        ),
-        "expected BlockedAddress for the fake-ip address, got: {err}"
-    );
+    assert_eq!(addrs, [SocketAddr::from((FAKE_IP, 443))]);
 }
 
 #[tokio::test]
@@ -1176,7 +1207,7 @@ async fn should_refuse_a_name_when_it_rebinds_to_a_private_address() {
     let refused_as_private = |err: &PluginHttpError| {
         matches!(
             err,
-            PluginHttpError::BlockedAddress { host, ip }
+            PluginHttpError::BlockedAddress { host, ip, .. }
                 if host == REBINDING_HOST && *ip == IpAddr::from(PRIVATE_ANSWER)
         )
     };
@@ -1203,5 +1234,195 @@ async fn should_refuse_a_name_when_it_rebinds_to_a_private_address() {
         REBINDING_LOOKUPS.load(std::sync::atomic::Ordering::SeqCst),
         3,
         "one lookup per check; the connections never resolved the name themselves"
+    );
+}
+
+// ── Local hosts the user granted ──
+//
+// The production filter throughout: the test servers sit on loopback, which only a grant lets
+// a plugin reach. `nas.lan` is answered by a fake DNS, so the name never reaches a resolver.
+
+fn local(entry: &str) -> LocalHost {
+    LocalHost::parse(entry).unwrap()
+}
+
+fn port_of_server(server: &TestServer) -> u16 {
+    Url::parse(&server.url("")).unwrap().port().unwrap()
+}
+
+/// `nas.lan` and every other name resolve to the first test server's address.
+fn lan_dns(_host: String, port: u16) -> BoxFuture<'static, std::io::Result<Vec<SocketAddr>>> {
+    Box::pin(async move { Ok(vec![SocketAddr::from((Ipv4Addr::LOCALHOST, port))]) })
+}
+
+/// GET `url` through a vetted client for `hosts`, with the production address filter and no
+/// proxy.
+async fn get_granted(
+    url: &str,
+    hosts: &PluginHosts,
+    lookup: HostLookup,
+) -> Result<Vec<u8>, PluginHttpError> {
+    let url = Url::parse(url).unwrap();
+    let client = vetted_client(
+        hosts,
+        lookup,
+        is_blocked_ip,
+        &ProxySource::Direct,
+        REQUEST_TIMEOUT,
+        None,
+        limits().max_redirects,
+    )?;
+    let response = client
+        .get(url.clone())
+        .send()
+        .await
+        .map_err(|err| send_error(&url, err))?;
+    Ok(response.bytes().await.expect("test body").to_vec())
+}
+
+#[tokio::test]
+async fn should_reach_a_local_host_when_the_user_granted_its_name_and_port() {
+    let server = TestServer::start(FIRST, |_| ok(b"pack")).await;
+    let port = port_of_server(&server);
+    let url = format!("http://nas.lan:{port}/pack.toml");
+
+    let err = get_granted(&url, &hosts(&["nas.lan"]), lan_dns)
+        .await
+        .expect_err("an allowed host at a local address is refused without a grant");
+    assert!(
+        matches!(err, PluginHttpError::BlockedAddress { ref host, port: p, .. }
+            if host == "nas.lan" && p == port),
+        "{err}"
+    );
+
+    let granted = PluginHosts::new(vec![], vec![local(&format!("nas.lan:{port}"))]);
+    let body = get_granted(&url, &granted, lan_dns)
+        .await
+        .expect("the granted host and port is reached, without an allowed_hosts entry");
+    assert_eq!(body, b"pack");
+    assert_eq!(server.requests().len(), 1);
+}
+
+#[tokio::test]
+async fn should_refuse_a_granted_local_host_when_the_request_is_for_another_port() {
+    let server = TestServer::start(FIRST, |_| ok(b"other service")).await;
+    let port = port_of_server(&server);
+    let url = format!("http://nas.lan:{port}/");
+    let elsewhere = local(&format!("nas.lan:{}", if port == 1 { 2 } else { port - 1 }));
+
+    let err = get_granted(
+        &url,
+        &PluginHosts::new(vec![], vec![elsewhere.clone()]),
+        lan_dns,
+    )
+    .await
+    .expect_err("a grant for another port does not admit the host");
+    assert!(
+        matches!(err, PluginHttpError::HostNotAllowed { .. }),
+        "{err}"
+    );
+
+    let allowed = PluginHosts::new(vec!["nas.lan".to_owned()], vec![elsewhere]);
+    let err = get_granted(&url, &allowed, lan_dns)
+        .await
+        .expect_err("nor lets it reach its local address on this port");
+    assert!(
+        matches!(err, PluginHttpError::BlockedAddress { .. }),
+        "{err}"
+    );
+    assert_eq!(server.connections(), 0);
+}
+
+#[tokio::test]
+async fn should_reach_a_granted_local_address_when_the_url_names_it_as_a_literal() {
+    let server = TestServer::start(FIRST, |_| ok(b"from the literal")).await;
+    let port = port_of_server(&server);
+    let granted = PluginHosts::new(vec![], vec![local(&format!("{FIRST}:{port}"))]);
+
+    let body = get_granted(&server.url("/"), &granted, system_lookup)
+        .await
+        .expect("a granted address literal is reached");
+
+    assert_eq!(body, b"from the literal");
+}
+
+#[tokio::test]
+async fn should_refuse_a_redirect_to_a_local_address_when_only_the_origin_is_granted() {
+    let target = TestServer::start(SECOND, |_| ok(b"final")).await;
+    let location = target.url("/file.jar");
+    let origin = TestServer::start(FIRST, move |_| redirect(302, &location)).await;
+    let origin_grant = local(&format!("{FIRST}:{}", port_of_server(&origin)));
+    let target_grant = local(&format!("{SECOND}:{}", port_of_server(&target)));
+
+    // Every host is allowed: only the address policy stands between the hop and the target.
+    let only_origin = PluginHosts::new(vec!["*".to_owned()], vec![origin_grant.clone()]);
+    let err = get_granted(&origin.url("/latest"), &only_origin, system_lookup)
+        .await
+        .expect_err("a hop to a local address that is not granted is refused");
+    assert!(
+        matches!(err, PluginHttpError::BlockedAddress { ref host, .. } if host == SECOND),
+        "{err}"
+    );
+    assert_eq!(target.connections(), 0, "the refused hop must not connect");
+
+    let both = PluginHosts::new(vec![], vec![origin_grant, target_grant]);
+    let body = get_granted(&origin.url("/latest"), &both, system_lookup)
+        .await
+        .expect("a hop to a granted local address is followed");
+    assert_eq!(body, b"final");
+    assert_eq!(target.requests().len(), 1);
+}
+
+/// Lookups [`granted_rebinding_dns`] has answered. One test only uses it.
+static GRANTED_LOOKUPS: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+
+/// The first answer is the test server; every later one is `0.0.0.0`, which reaches the local
+/// machine on some systems and is no host a grant can mean.
+fn granted_rebinding_dns(
+    _host: String,
+    port: u16,
+) -> BoxFuture<'static, std::io::Result<Vec<SocketAddr>>> {
+    let earlier = GRANTED_LOOKUPS.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+    let ip = if earlier == 0 {
+        Ipv4Addr::LOCALHOST
+    } else {
+        Ipv4Addr::UNSPECIFIED
+    };
+    Box::pin(async move { Ok(vec![SocketAddr::from((ip, port))]) })
+}
+
+#[tokio::test]
+async fn should_keep_a_granted_name_on_the_checked_address_when_it_rebinds() {
+    let server = TestServer::start(FIRST, |path| match path {
+        "/first" => redirect(302, "/second"),
+        _ => ok(b"second"),
+    })
+    .await;
+    let port = port_of_server(&server);
+    let granted = PluginHosts::new(vec![], vec![local(&format!("nas.lan:{port}"))]);
+
+    let err = get_granted(
+        &format!("http://nas.lan:{port}/first"),
+        &granted,
+        granted_rebinding_dns,
+    )
+    .await
+    .expect_err("the hop is checked anew, and its answer is no single host");
+
+    assert!(
+        matches!(err, PluginHttpError::BlockedAddress { ref host, ip, .. }
+            if host == "nas.lan" && ip == IpAddr::V4(Ipv4Addr::UNSPECIFIED)),
+        "{err}"
+    );
+    assert_eq!(
+        server.requests().len(),
+        1,
+        "only the hop checked against the first answer was sent: {:?}",
+        server.requests()
+    );
+    assert_eq!(
+        GRANTED_LOOKUPS.load(std::sync::atomic::Ordering::SeqCst),
+        2,
+        "one lookup per check; the connection never resolved the name itself"
     );
 }

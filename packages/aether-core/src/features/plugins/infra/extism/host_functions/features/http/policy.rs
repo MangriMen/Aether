@@ -17,7 +17,8 @@ use reqwest::{
 use reqwest_middleware::{Middleware, Next};
 use url::Url;
 
-use super::{AddressFilter, HostLookup, PluginHttpError, check_target};
+use super::{AddressFilter, HostLookup, PluginHosts, PluginHttpError, check_target, port_of};
+use crate::shared::public_address::is_never_grantable;
 
 /// The redirect statuses a GET follows. Any other 3xx (`300`, `304`, …) is not a hop: it is
 /// handed back to the caller, which treats it as an error.
@@ -29,7 +30,8 @@ const FOLLOWED_REDIRECTS: &[StatusCode] = &[
     StatusCode::PERMANENT_REDIRECT,
 ];
 
-/// Resolve `host:port` and make sure **every** returned address is public.
+/// Resolve `host:port` and make sure **every** returned address passes `is_blocked`: is public,
+/// unless the host is a granted local one.
 ///
 /// All addresses must pass: a name that resolves to one public and one private address is
 /// rejected outright, since we cannot control which one a later connect would pick.
@@ -37,7 +39,7 @@ pub(super) async fn resolve_public_addrs(
     host: &str,
     port: u16,
     lookup: HostLookup,
-    is_blocked: AddressFilter,
+    is_blocked: impl Fn(IpAddr) -> bool,
 ) -> Result<Vec<SocketAddr>, PluginHttpError> {
     let addrs =
         lookup(host.to_owned(), port)
@@ -57,6 +59,7 @@ pub(super) async fn resolve_public_addrs(
         if is_blocked(addr.ip()) {
             return Err(PluginHttpError::BlockedAddress {
                 host: host.to_owned(),
+                port,
                 ip: addr.ip(),
             });
         }
@@ -143,8 +146,9 @@ static PROXY_NOTICE: Once = Once::new();
 /// [`FOLLOWED_REDIRECTS`] up to `max_redirects` times; any other method gets its 3xx back
 /// untouched. The time budget covers the whole chain, not each hop.
 pub(super) struct VettedHops {
-    pub(super) allowed_hosts: Vec<String>,
+    pub(super) hosts: PluginHosts,
     pub(super) lookup: HostLookup,
+    /// The address policy of a host that is not a granted local one.
     pub(super) is_blocked: AddressFilter,
     /// Whether the client sends a hop through a proxy: the settings the client was built with.
     pub(super) proxies: ProxyMatcher,
@@ -158,19 +162,32 @@ impl VettedHops {
     /// Check `url` exactly like a first request and pin the addresses that passed. Nothing is
     /// sent to the host before this succeeds.
     async fn vet(&self, url: &Url) -> Result<(), PluginHttpError> {
-        let (url, host) = check_target(url.as_str(), &self.allowed_hosts)?;
+        let (url, host) = check_target(url.as_str(), &self.hosts)?;
+        let port = port_of(&url);
+        let is_blocked = self.address_policy(&host, port);
 
         if let Some(proxy) = self.proxy_for(&url) {
-            return self.vet_proxied(&url, &host, &proxy).await;
+            return self
+                .vet_proxied(&url, &host, port, is_blocked, &proxy)
+                .await;
         }
 
-        let port = url
-            .port_or_known_default()
-            .unwrap_or(if url.scheme() == "https" { 443 } else { 80 });
-        let addrs = resolve_public_addrs(&host, port, self.lookup, self.is_blocked).await?;
+        let addrs = resolve_public_addrs(&host, port, self.lookup, is_blocked).await?;
 
         self.resolver.pin(host, addrs);
         Ok(())
+    }
+
+    /// Which addresses a request to `host` on `port` is refused: a local host the user granted
+    /// the plugin may be at any address that is one host ([`is_never_grantable`]); any other
+    /// only at a public one. Every hop is judged anew, so a redirect to a local address that
+    /// is not granted is refused.
+    fn address_policy(&self, host: &str, port: u16) -> AddressFilter {
+        if self.hosts.grants_local(host, port) {
+            is_never_grantable
+        } else {
+            self.is_blocked
+        }
     }
 
     /// The proxy the client will send `url` through, if any. A URL the proxy rules cannot even
@@ -187,6 +204,8 @@ impl VettedHops {
         &self,
         url: &Url,
         host: &str,
+        port: u16,
+        is_blocked: AddressFilter,
         proxy: &Intercept,
     ) -> Result<(), PluginHttpError> {
         let literal = match url.host() {
@@ -195,10 +214,11 @@ impl VettedHops {
             _ => None,
         };
         if let Some(ip) = literal
-            && (self.is_blocked)(ip)
+            && is_blocked(ip)
         {
             return Err(PluginHttpError::BlockedAddress {
                 host: host.to_owned(),
+                port,
                 ip,
             });
         }

@@ -406,6 +406,23 @@ impl InstanceErrorDto {
                     },
                 )));
             }
+            // The same error as a plugin call whose local address was refused: one code for
+            // the frontend, which offers to allow that address.
+            InstanceError::PluginAddressBlocked {
+                plugin_id,
+                host,
+                port,
+                details,
+            } => {
+                return Err(Box::new(FrontendError::Plugin(
+                    PluginErrorDto::AddressBlocked {
+                        plugin_id: plugin_id.clone(),
+                        host: host.clone(),
+                        port: *port,
+                        cause: CauseDto::unknown(details),
+                    },
+                )));
+            }
             // The same error as a plugin call whose command was refused: one code for the
             // frontend, which says why the command did not run.
             InstanceError::PluginCommandNotApproved {
@@ -619,6 +636,26 @@ mod tests {
                 "plugin_id": "packwiz",
                 "host": "cdn.example",
                 "cause": {"type": "unknown", "details": "cdn refused"},
+            }}})
+        );
+    }
+
+    #[test]
+    fn should_report_an_address_blocked_for_a_capability_as_the_plugin_error_of_one() {
+        let err = InstanceError::PluginAddressBlocked {
+            plugin_id: "packwiz".to_owned(),
+            host: "192.168.1.10".to_owned(),
+            port: 8080,
+            details: "nas refused".to_owned(),
+        };
+
+        assert_eq!(
+            serde_json::to_value(FrontendError::from(&err)).unwrap(),
+            json!({"type": "plugin", "payload": {"code": "ADDRESS_BLOCKED", "payload": {
+                "plugin_id": "packwiz",
+                "host": "192.168.1.10",
+                "port": 8080,
+                "cause": {"type": "unknown", "details": "nas refused"},
             }}})
         );
     }

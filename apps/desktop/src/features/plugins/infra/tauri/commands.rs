@@ -326,6 +326,32 @@ async fn grant_host_access(
         .into())
 }
 
+/// Lets the plugin reach the host and port of a URL at a non-public address: a server in the
+/// user's own network or on this machine. Only after the user confirmed it in the UI, which a
+/// plugin cannot do for them; `dry_run` tells the UI whether there is anything to ask. No
+/// restart: the plugin's requests read its hosts on every call.
+#[tauri::command]
+#[specta::specta]
+async fn grant_local_host_access(
+    id: String,
+    url: String,
+    dry_run: bool,
+    request_id: RequestId,
+    idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
+) -> FrontendResult<HostAccessDto> {
+    let _guard = idempotency.lock_cmd(request_id)?;
+
+    let id = parse_id(id)?;
+    let container = container.0.clone();
+    Ok(container
+        .grant_plugin_local_host_access_use_case()
+        .execute(id, url, dry_run)
+        .await
+        .map_err(aether_core::Error::from)?
+        .into())
+}
+
 /// Whether an `allowed_hosts` entry admits far more than one site. The core owns the rule, so
 /// the settings form asks it rather than carrying a copy; a pure check, nothing is stored.
 #[tauri::command]

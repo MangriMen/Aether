@@ -172,7 +172,8 @@ impl From<&PluginCallError> for PluginCallReasonDto {
             // the fallback for a reason read on its own.
             PluginCallError::Plugin(details)
             | PluginCallError::CommandNotApproved { details, .. }
-            | PluginCallError::HostNotAllowed { details, .. } => Self::Plugin {
+            | PluginCallError::HostNotAllowed { details, .. }
+            | PluginCallError::AddressBlocked { details, .. } => Self::Plugin {
                 cause: CauseDto::unknown(details),
             },
             PluginCallError::Codec(details) => Self::Codec {
@@ -342,6 +343,17 @@ pub enum PluginErrorDto {
         host: String,
         cause: CauseDto,
     },
+    /// A call of the plugin failed because one of its network host functions refused `host` on
+    /// `port`: it resolves to a non-public address the user has not let the plugin reach. The
+    /// user can, with `grant_local_host_access`. As `HostNotAllowed`, a failed call of an
+    /// importer, a content provider or an updater (`InstanceError::PluginAddressBlocked`) is
+    /// reported as this too.
+    AddressBlocked {
+        plugin_id: String,
+        host: String,
+        port: u16,
+        cause: CauseDto,
+    },
     /// The question was answered or ended before this answer came.
     CommandApprovalNotFound {
         request_id: String,
@@ -452,6 +464,21 @@ impl PluginErrorDto {
             } => Self::HostNotAllowed {
                 plugin_id: plugin_id.to_string(),
                 host: host.clone(),
+                cause: CauseDto::unknown(details),
+            },
+            PluginError::FunctionCallFailed {
+                plugin_id,
+                error:
+                    PluginCallError::AddressBlocked {
+                        host,
+                        port,
+                        details,
+                    },
+                ..
+            } => Self::AddressBlocked {
+                plugin_id: plugin_id.to_string(),
+                host: host.clone(),
+                port: *port,
                 cause: CauseDto::unknown(details),
             },
             PluginError::FunctionCallFailed {
@@ -807,6 +834,23 @@ mod tests {
                 "plugin_id": "p",
                 "host": "cdn.example",
                 "cause": {"type": "unknown", "details": "cdn refused"},
+            }})
+        );
+    }
+
+    #[test]
+    fn should_report_the_blocked_host_and_port_when_a_plugin_call_failed_that_way() {
+        assert_eq!(
+            call_failed(PluginCallError::AddressBlocked {
+                host: "nas.lan".to_owned(),
+                port: 8080,
+                details: "nas refused".to_owned(),
+            }),
+            json!({"code": "ADDRESS_BLOCKED", "payload": {
+                "plugin_id": "p",
+                "host": "nas.lan",
+                "port": 8080,
+                "cause": {"type": "unknown", "details": "nas refused"},
             }})
         );
     }

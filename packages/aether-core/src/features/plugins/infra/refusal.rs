@@ -5,7 +5,8 @@ use crate::features::{
 
 /// The error of a capability's call (an importer, a content provider, an updater) when the plugin
 /// reported that it was refused something the user decides on: a host one of its network host
-/// functions may not reach (the user can allow it), or a command `run_command` did not run (the
+/// functions may not reach, or the local address of one (the user can allow either), or a
+/// command `run_command` did not run (the
 /// user denied it, or did not answer). Either is told as such, not folded into the text of a
 /// generic failure. `None` for any other error.
 pub(super) fn refusal(err: &PluginError) -> Option<InstanceError> {
@@ -23,6 +24,16 @@ pub(super) fn refusal(err: &PluginError) -> Option<InstanceError> {
                 details: details.clone(),
             })
         }
+        PluginCallError::AddressBlocked {
+            host,
+            port,
+            details,
+        } => Some(InstanceError::PluginAddressBlocked {
+            plugin_id: plugin_id.to_string(),
+            host: host.clone(),
+            port: *port,
+            details: details.clone(),
+        }),
         PluginCallError::CommandNotApproved { reason, details } => {
             Some(InstanceError::PluginCommandNotApproved {
                 plugin_id: plugin_id.to_string(),
@@ -124,6 +135,21 @@ mod tests {
             refusal(&err),
             Some(InstanceError::PluginHostNotAllowed { plugin_id, host, details })
                 if plugin_id == "packwiz" && host == "cdn.example" && details == "cdn refused"
+        ));
+    }
+
+    #[test]
+    fn should_name_the_plugin_the_host_and_the_port_when_a_local_address_was_refused_to_it() {
+        let err = call_failed(PluginCallError::AddressBlocked {
+            host: "nas.lan".to_owned(),
+            port: 8080,
+            details: "nas refused".to_owned(),
+        });
+
+        assert!(matches!(
+            refusal(&err),
+            Some(InstanceError::PluginAddressBlocked { plugin_id, host, port: 8080, details })
+                if plugin_id == "packwiz" && host == "nas.lan" && details == "nas refused"
         ));
     }
 

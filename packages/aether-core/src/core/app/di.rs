@@ -63,8 +63,9 @@ use crate::features::{
         GetPluginDtoUseCase, GetPluginDtoUseCasePort, GetPluginReadmeUseCase,
         GetPluginReadmeUseCasePort, GetPluginSettingsUseCase, GetPluginSettingsUseCasePort,
         GrantPluginFolderAccessUseCase, GrantPluginFolderAccessUseCasePort,
-        GrantPluginHostAccessUseCase, GrantPluginHostAccessUseCasePort, ImportPluginsUseCase,
-        ImportPluginsUseCasePort, InstallPluginFromProviderUseCase,
+        GrantPluginHostAccessUseCase, GrantPluginHostAccessUseCasePort,
+        GrantPluginLocalHostAccessUseCase, GrantPluginLocalHostAccessUseCasePort,
+        ImportPluginsUseCase, ImportPluginsUseCasePort, InstallPluginFromProviderUseCase,
         InstallPluginFromProviderUseCasePort, ListPluginReleasesUseCase,
         ListPluginReleasesUseCasePort, ListPluginsDtoUseCase, ListPluginsDtoUseCasePort,
         ListSkippedPluginDirsUseCase, ListSkippedPluginDirsUseCasePort, LoadConfigType,
@@ -1046,6 +1047,14 @@ impl PluginsFeature for AetherContainer {
     }
     fn grant_plugin_host_access_use_case(&self) -> Arc<dyn GrantPluginHostAccessUseCasePort> {
         Arc::new(GrantPluginHostAccessUseCase::new(
+            self.plugins().registry.clone(),
+            self.plugins().settings_storage.clone(),
+        ))
+    }
+    fn grant_plugin_local_host_access_use_case(
+        &self,
+    ) -> Arc<dyn GrantPluginLocalHostAccessUseCasePort> {
+        Arc::new(GrantPluginLocalHostAccessUseCase::new(
             self.plugins().registry.clone(),
             self.plugins().settings_storage.clone(),
         ))

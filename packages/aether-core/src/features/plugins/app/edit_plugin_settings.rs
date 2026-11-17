@@ -31,6 +31,11 @@ pub struct EditPluginSettings {
     /// answering the question a plugin's command raises, so a form cannot add one, and a stale
     /// list cannot delete an approval given since it was read.
     pub revoke_command_approvals: Vec<CommandIdentity>,
+    /// Local hosts the user takes back, as [`LocalHost`] writes them. Only ever removes, for
+    /// the reasons command approvals do: a local host is granted behind its own confirmation.
+    ///
+    /// [`LocalHost`]: crate::features::plugins::LocalHost
+    pub revoke_local_hosts: Vec<String>,
 }
 
 /// Saves the user's changes to a plugin's settings, running or not. Hosts take effect on the
@@ -210,6 +215,12 @@ fn apply_edit_changes(
         !edit_settings
             .revoke_command_approvals
             .contains(&approval.identity)
+    });
+
+    settings.local_hosts.retain(|local| {
+        !edit_settings
+            .revoke_local_hosts
+            .contains(&local.to_string())
     });
 
     Ok(settings)
@@ -681,6 +692,38 @@ mod tests {
         )
         .unwrap()
         .command_approvals
+    }
+
+    #[test]
+    fn should_take_back_only_the_listed_local_hosts_when_an_edit_revokes_them() {
+        let local = |entry: &str| crate::features::plugins::LocalHost::parse(entry).unwrap();
+        let edit = |revoked: &[&str], allowed_hosts| {
+            apply_edit_changes(
+                &PluginId::from_static("packwiz"),
+                &[],
+                PluginSettings {
+                    local_hosts: vec![local("192.168.1.10:8080"), local("localhost:25565")],
+                    ..PluginSettings::default()
+                },
+                EditPluginSettings {
+                    allowed_hosts,
+                    revoke_local_hosts: revoked.iter().map(ToString::to_string).collect(),
+                    ..EditPluginSettings::default()
+                },
+            )
+            .unwrap()
+            .local_hosts
+        };
+
+        assert_eq!(
+            edit(&["192.168.1.10:8080", "nas.lan"], None),
+            [local("localhost:25565")]
+        );
+        // The form's own fields never touch them: only a revoke does.
+        assert_eq!(
+            edit(&[], Some(vec!["example.com".to_owned()])),
+            [local("192.168.1.10:8080"), local("localhost:25565")]
+        );
     }
 
     #[test]

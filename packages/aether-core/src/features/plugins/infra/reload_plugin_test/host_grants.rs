@@ -179,3 +179,97 @@ async fn should_not_give_a_host_when_the_plugin_could_not_reach_it_anyway() {
         "{unknown:?}"
     );
 }
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn should_give_a_local_host_and_its_port_without_a_restart_when_granted() {
+    let harness = Harness::enabled().await;
+    let settings = Arc::new(MemoryPluginSettings::default());
+    let handle = harness.handle();
+    let use_case = harness.grant_local_host(&settings);
+    let grant = |url: &str, dry_run| use_case.execute(plugin_id(), url.to_owned(), dry_run);
+
+    let asked = grant("http://192.168.1.10:8080/", true).await.unwrap();
+    assert_eq!(
+        asked,
+        HostAccess::Needed {
+            host: "192.168.1.10:8080".into()
+        }
+    );
+    assert!(settings.local_hosts().is_empty(), "a dry run adds nothing");
+
+    let granted = grant("http://192.168.1.10:8080/", false).await.unwrap();
+    assert_eq!(
+        granted,
+        HostAccess::Granted {
+            host: "192.168.1.10:8080".into()
+        }
+    );
+    // The port the URL names, else its scheme's: never every port of the host.
+    grant("https://Localhost/", false).await.unwrap();
+    assert_eq!(
+        settings.local_hosts(),
+        ["192.168.1.10:8080", "localhost:443"]
+    );
+    assert!(
+        settings.hosts().is_empty(),
+        "a local host is not an allowed_hosts entry"
+    );
+    assert!(!handle.is_retired());
+
+    let again = grant("http://192.168.1.10:8080/other", false)
+        .await
+        .unwrap();
+    assert_eq!(
+        again,
+        HostAccess::AlreadyAllowed {
+            host: "192.168.1.10:8080".into()
+        }
+    );
+    let other_port = grant("http://192.168.1.10:9090/", true).await.unwrap();
+    assert!(
+        matches!(other_port, HostAccess::Needed { .. }),
+        "{other_port:?}"
+    );
+    assert_eq!(settings.local_hosts().len(), 2);
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn should_not_give_a_local_host_when_it_is_a_pattern_or_no_local_address() {
+    let harness = Harness::enabled().await;
+    let settings = Arc::new(MemoryPluginSettings::default());
+
+    for (url, expected) in [
+        (
+            "ftp://192.168.1.10/",
+            AllowedHostRejection::UnsupportedScheme,
+        ),
+        ("http://*.lan/", AllowedHostRejection::Wildcard),
+        ("http://8.8.8.8/", AllowedHostRejection::NotLocal),
+        ("http://0.0.0.0:8080/", AllowedHostRejection::NotLocal),
+        ("http://224.0.0.1/", AllowedHostRejection::NotLocal),
+    ] {
+        let result = harness
+            .grant_local_host(&settings)
+            .execute(plugin_id(), url.into(), false)
+            .await;
+
+        assert!(
+            matches!(&result, Err(PluginError::InvalidAllowedHost { reason, .. }) if *reason == expected),
+            "{url}: {result:?}"
+        );
+    }
+    assert!(settings.local_hosts().is_empty());
+
+    let unknown = harness
+        .grant_local_host(&settings)
+        .execute(
+            PluginId::from_static("missing"),
+            "http://192.168.1.10/".into(),
+            false,
+        )
+        .await;
+    assert!(
+        matches!(unknown, Err(PluginError::NotFound { .. })),
+        "{unknown:?}"
+    );
+}

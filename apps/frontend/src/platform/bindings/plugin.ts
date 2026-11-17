@@ -21,6 +21,12 @@ export const commands = {
 	reload: (id: string, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:plugin|reload", { id, requestId }),
 	getSettings: (id: string) => __TAURI_INVOKE<{
 	allowedHosts?: string[],
+	/**
+	 *  Local hosts (`host` or `host:port`) the user let the plugin reach at a non-public
+	 *  address, to take back from the settings screen. Granted only by
+	 *  `grant_local_host_access`, never by an edit.
+	 */
+	localHosts?: string[],
 	allowedPaths?: AllowedPathDto[],
 	/**
 	 *  Saved folders that were left out because they are not valid (for example the plugin side
@@ -45,6 +51,13 @@ export const commands = {
 	 *  tells it whether there is anything to ask.
 	 */
 	grantHostAccess: (id: string, url: string, dryRun: boolean, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<HostAccessDto>("plugin:plugin|grant_host_access", { id, url, dryRun, requestId }),
+	/**
+	 *  Lets the plugin reach the host and port of a URL at a non-public address: a server in the
+	 *  user's own network or on this machine. Only after the user confirmed it in the UI, which a
+	 *  plugin cannot do for them; `dry_run` tells the UI whether there is anything to ask. No
+	 *  restart: the plugin's requests read its hosts on every call.
+	 */
+	grantLocalHostAccess: (id: string, url: string, dryRun: boolean, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<HostAccessDto>("plugin:plugin|grant_local_host_access", { id, url, dryRun, requestId }),
 	/**
 	 *  Whether an `allowed_hosts` entry admits far more than one site. The core owns the rule, so
 	 *  the settings form asks it rather than carrying a copy; a pure check, nothing is stored.
@@ -84,7 +97,7 @@ export const events = {
 /* Types */
 export type AllowedHostEntryRejectionDto = "empty" | "not_a_host_name" | "invalid_pattern";
 
-export type AllowedHostRejectionDto = "invalid_url" | "unsupported_scheme" | "missing_host" | "not_public" | "wildcard";
+export type AllowedHostRejectionDto = "invalid_url" | "unsupported_scheme" | "missing_host" | "not_public" | "not_local" | "wildcard";
 
 /**  A folder of the user's given to a plugin. */
 export type AllowedPathDto = {
@@ -295,6 +308,8 @@ export type EditPluginSettingsDto = {
 	ignoredPaths?: AllowedPathDto[] | null,
 	/**  The approvals to take back. Never adds one. */
 	revokeCommandApprovals?: CommandApprovalKeyDto[] | null,
+	/**  The local hosts to take back, as `localHosts` lists them. Never adds one. */
+	revokeLocalHosts?: string[] | null,
 };
 
 export type EventErrorDto = { code: "NOT_INITIALIZED" } | { code: "NO_LOADING_BAR"; payload: {
@@ -752,6 +767,19 @@ export type PluginErrorDto = { code: "NOT_FOUND"; payload: {
 	host: string,
 	cause: CauseDto,
 } } | 
+/**
+ *  A call of the plugin failed because one of its network host functions refused `host` on
+ *  `port`: it resolves to a non-public address the user has not let the plugin reach. The
+ *  user can, with `grant_local_host_access`. As `HostNotAllowed`, a failed call of an
+ *  importer, a content provider or an updater (`InstanceError::PluginAddressBlocked`) is
+ *  reported as this too.
+ */
+{ code: "ADDRESS_BLOCKED"; payload: {
+	plugin_id: string,
+	host: string,
+	port: number,
+	cause: CauseDto,
+} } | 
 /**  The question was answered or ended before this answer came. */
 { code: "COMMAND_APPROVAL_NOT_FOUND"; payload: {
 	request_id: string,
@@ -867,6 +895,12 @@ export type PluginReleaseListingDto = {
 
 export type PluginSettingsDto = {
 	allowedHosts?: string[],
+	/**
+	 *  Local hosts (`host` or `host:port`) the user let the plugin reach at a non-public
+	 *  address, to take back from the settings screen. Granted only by
+	 *  `grant_local_host_access`, never by an edit.
+	 */
+	localHosts?: string[],
 	allowedPaths?: AllowedPathDto[],
 	/**
 	 *  Saved folders that were left out because they are not valid (for example the plugin side

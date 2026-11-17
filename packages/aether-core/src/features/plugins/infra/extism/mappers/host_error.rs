@@ -122,9 +122,9 @@ fn instance(value: &InstanceError) -> HostError {
 
         // The host was refused to the plugin behind the capability, not to the one that asked
         // for it: as `http` / `hostNotAllowed` it would read as the caller's own refusal.
-        InstanceError::ImportFailed { .. } | InstanceError::PluginHostNotAllowed { .. } => {
-            Kind::PluginCallFailed
-        }
+        InstanceError::ImportFailed { .. }
+        | InstanceError::PluginHostNotAllowed { .. }
+        | InstanceError::PluginAddressBlocked { .. } => Kind::PluginCallFailed,
 
         InstanceError::Storage(err) if storage_is_missing(err) => Kind::NotFound,
 
@@ -338,6 +338,7 @@ fn plugin_call(value: &PluginError, error: &PluginCallError) -> HostError {
             message: details.clone(),
         },
         PluginCallError::HostNotAllowed { .. }
+        | PluginCallError::AddressBlocked { .. }
         | PluginCallError::MissingFunction
         | PluginCallError::Timeout
         | PluginCallError::OutOfFuel
@@ -466,9 +467,10 @@ fn plugin_http(value: &PluginHttpError) -> HttpErrorDto {
         PluginHttpError::HostNotAllowed { host } => {
             HttpErrorDto::HostNotAllowed { host: host.clone() }
         }
-        PluginHttpError::BlockedAddress { host, .. } | PluginHttpError::NoAddresses { host } => {
-            HttpErrorDto::AddressBlocked { host: host.clone() }
-        }
+        PluginHttpError::BlockedAddress { host, port, .. } => HttpErrorDto::AddressBlocked {
+            host: host.clone(),
+            port: *port,
+        },
         PluginHttpError::InvalidUrl { .. }
         | PluginHttpError::UnsupportedScheme { .. }
         | PluginHttpError::MissingHost { .. }
@@ -485,9 +487,10 @@ fn plugin_http(value: &PluginHttpError) -> HttpErrorDto {
         PluginHttpError::ResponseTooLarge { limit } => HttpErrorDto::ResponseTooLarge {
             limit: u64::try_from(*limit).unwrap_or(u64::MAX),
         },
-        PluginHttpError::ResolveFailed { .. } | PluginHttpError::RequestFailed { .. } => {
-            HttpErrorDto::Network { reason: reason() }
-        }
+        // A name with no address is one that could not be resolved: no grant would help.
+        PluginHttpError::ResolveFailed { .. }
+        | PluginHttpError::NoAddresses { .. }
+        | PluginHttpError::RequestFailed { .. } => HttpErrorDto::Network { reason: reason() },
     }
 }
 
@@ -742,10 +745,17 @@ mod tests {
     #[case::blocked_address(
         PluginHttpError::BlockedAddress {
             host: "intranet.example".to_owned(),
+            port: 8080,
             ip: std::net::Ipv4Addr::new(10, 0, 0, 1).into(),
         }
         .into(),
-        HttpErrorDto::AddressBlocked { host: "intranet.example".to_owned() }
+        HttpErrorDto::AddressBlocked { host: "intranet.example".to_owned(), port: 8080 }
+    )]
+    #[case::no_addresses(
+        PluginHttpError::NoAddresses { host: "cdn.example".to_owned() }.into(),
+        HttpErrorDto::Network {
+            reason: "Host `cdn.example` resolved to no addresses".to_owned()
+        }
     )]
     #[case::redirect_of_a_download(
         PluginDownloadError::Http(PluginHttpError::TooManyRedirects { limit: 5 }).into(),
@@ -897,6 +907,36 @@ mod tests {
                 message: message(capability)
             }
         );
+    }
+
+    /// The same for a local address refused to the other plugin: the caller is not offered a
+    /// grant for a plugin it is not.
+    #[test]
+    fn should_tell_a_failed_plugin_call_when_an_address_was_blocked_for_the_other_plugin() {
+        let call = PluginError::FunctionCallFailed {
+            function_name: "install".to_owned(),
+            plugin_id: PluginId::from_static("b"),
+            error: PluginCallError::AddressBlocked {
+                host: "nas.lan".to_owned(),
+                port: 80,
+                details: "b refused".to_owned(),
+            },
+        };
+        let capability = InstanceError::PluginAddressBlocked {
+            plugin_id: "b".to_owned(),
+            host: "nas.lan".to_owned(),
+            port: 80,
+            details: "b refused".to_owned(),
+        };
+
+        for error in [ErrorKind::from(call), ErrorKind::from(capability)] {
+            assert_eq!(
+                host(error.clone()),
+                HostError::PluginCallFailed {
+                    message: message(error)
+                }
+            );
+        }
     }
 
     #[test]

@@ -276,6 +276,44 @@ export const useGrantPluginHostAccess = () => {
   });
 };
 
+/**
+ * Lets a plugin reach the host and port of a URL at a local address (in the user's network or
+ * on this computer), which its requests are refused otherwise. Only after the user confirmed
+ * it. No restart: the plugin's requests read its hosts on every call.
+ */
+export const useGrantPluginLocalHostAccess = () => {
+  const [{ t }] = useTranslation();
+
+  return useGrantPluginAccess({
+    grant: ({
+      id,
+      url,
+      dryRun,
+    }: {
+      id: PluginId;
+      url: string;
+      dryRun: boolean;
+    }) => pluginsCommands.grantLocalHostAccess(id, url, dryRun),
+    onGranted: (access, id, queryClient) => {
+      queryClient.invalidateQueries({ queryKey: pluginKeys.settings(id) });
+
+      return {
+        title: t('pluginSettings.localHostAccessGranted'),
+        description: access.host,
+      };
+    },
+    failedTitle: t('pluginSettings.localHostAccessFailed'),
+  });
+};
+
+/**
+ * A dry run of the local grant that shows nothing: whether the plugin would need the host and
+ * port of `url` as a local address. Rejects when the URL is no local address to grant (a public
+ * address literal, say), which the caller reads as "ask for it as an ordinary host".
+ */
+export const checkPluginLocalHostAccess = (id: PluginId, url: string) =>
+  pluginsCommands.grantLocalHostAccess(id, url, true);
+
 export const useOpenPluginFolder = () => {
   const [{ t }] = useTranslation();
 
