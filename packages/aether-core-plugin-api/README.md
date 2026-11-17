@@ -162,6 +162,12 @@ may stop being accepted in any version. A reader ignores a key it does not know 
 missing key its default when the DTO has one, so a field can be added without breaking the other
 side.
 
+A value that may be missing (an id, a version, a link, a description, a hash) has one spelling
+for "none": it is optional in the schema, and none is `nil` (`null` in JSON). Never an empty
+string, `0` or another stand-in. The launcher writes none as `nil` with the key present; a plugin
+may write `nil` or leave the key out, both read as none. A field that is not optional always has
+a value: an empty string there is that empty string, not "none".
+
 Only four plain enums the launcher sends have a fallback: `ModLoaderDto`, `ContentTypeDto`,
 `CommandRefusalDto` and `InstanceInstallStageDto`. A value a plugin built for an older API does
 not know reads as `unknown` there, so the call still decodes; a plugin must not write the

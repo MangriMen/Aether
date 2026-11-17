@@ -35,7 +35,9 @@ pub struct ContentFileDto {
 pub struct ContentFileUpdateInfoDto {
     pub provider_id: ProviderIdDto,
     pub content_id: String,
-    pub version: String,
+    /// The provider's id of the installed version; absent when it is not known.
+    #[serde(default)]
+    pub version: Option<String>,
 }
 
 #[cfg(test)]
@@ -81,7 +83,7 @@ mod tests {
             update: Some(vec![ContentFileUpdateInfoDto {
                 provider_id: provider_id.clone(),
                 content_id: "AANobbMI".into(),
-                version: "IZskON6d".into(),
+                version: Some("IZskON6d".into()),
             }]),
         };
 

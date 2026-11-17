@@ -115,6 +115,93 @@ mod tests {
     }
 }
 
+/// "No value" has one spelling: an `Option` that is absent, written as `nil` and read from `nil`
+/// or a missing key, never an empty string.
+#[cfg(test)]
+mod absent_value_tests {
+    use serde_json::json;
+
+    use super::*;
+    use crate::v0::{
+        ContentFileUpdateInfoDto, ContentItemDto, ContentTypeDto, ContentVersionDto, ProviderIdDto,
+    };
+
+    fn item() -> ContentItemDto {
+        ContentItemDto {
+            id: "238222".to_owned(),
+            slug: "jei".to_owned(),
+            name: "JEI".to_owned(),
+            description: None,
+            long_description: None,
+            author: "mezz".to_owned(),
+            url: None,
+            icon_url: None,
+            versions: Vec::new(),
+            content_type: ContentTypeDto::Mod,
+        }
+    }
+
+    /// The value of `key` in the map `bytes` hold.
+    fn field(bytes: &[u8], key: &str) -> Option<rmpv::Value> {
+        let value = rmpv::decode::read_value(&mut &bytes[..]).unwrap();
+        value
+            .as_map()
+            .expect("a struct is a map")
+            .iter()
+            .find(|(k, _)| k.as_str() == Some(key))
+            .map(|(_, v)| v.clone())
+    }
+
+    #[test]
+    fn an_absent_value_is_written_as_nil_and_read_back_as_absent() {
+        let bytes = encode(&item()).unwrap();
+
+        assert_eq!(field(&bytes, "url"), Some(rmpv::Value::Nil));
+        assert_eq!(field(&bytes, "iconUrl"), Some(rmpv::Value::Nil));
+        let back: ContentItemDto = decode(&bytes).unwrap();
+        assert_eq!((back.url, back.icon_url), (None, None));
+
+        let info = ContentFileUpdateInfoDto {
+            provider_id: ProviderIdDto {
+                plugin_id: "curseforge".to_owned(),
+                capability_id: "curseforge".to_owned(),
+            },
+            content_id: "238222".to_owned(),
+            version: None,
+        };
+        let bytes = encode(&info).unwrap();
+
+        assert_eq!(field(&bytes, "version"), Some(rmpv::Value::Nil));
+        assert_eq!(decode::<ContentFileUpdateInfoDto>(&bytes).unwrap(), info);
+    }
+
+    /// What a plugin answers may leave an optional key out.
+    #[test]
+    fn a_missing_key_of_an_optional_value_reads_as_absent() {
+        let item: ContentItemDto = decode(
+            &encode(&json!({
+                "id": "238222", "slug": "jei", "name": "JEI", "author": "mezz",
+                "versions": [], "contentType": "mod"
+            }))
+            .unwrap(),
+        )
+        .unwrap();
+        let version: ContentVersionDto = decode(
+            &encode(&json!({
+                "id": "IZskON6d", "contentId": "AANobbMI", "authorId": "a", "name": "Sodium",
+                "versionNumber": "0.6.0", "dependencies": [], "gameVersions": [],
+                "versionType": "release", "loaders": [], "featured": false, "status": "listed",
+                "datePublished": "2024-01-01T00:00:00Z", "downloads": 0
+            }))
+            .unwrap(),
+        )
+        .unwrap();
+
+        assert_eq!((item.url, item.icon_url), (None, None));
+        assert_eq!(version.web_url, None);
+    }
+}
+
 #[cfg(test)]
 mod forward_compatibility_tests {
     use super::*;

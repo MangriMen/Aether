@@ -78,9 +78,10 @@ pub struct ContentVersionDto {
     pub requested_status: Option<RequestedContentVersionStatusDto>,
     pub date_published: String,
     pub downloads: u64,
-    /// The version's page, an `http` or `https` URL; empty when it has none. Any other value is
+    /// The version's page, an `http` or `https` URL; absent when it has none. Any other value is
     /// dropped by the host.
-    pub web_url: String,
+    #[serde(default)]
+    pub web_url: Option<String>,
     /// The files of the version. A plugin built before it existed leaves it out and decodes with
     /// an empty list.
     #[serde(default)]
