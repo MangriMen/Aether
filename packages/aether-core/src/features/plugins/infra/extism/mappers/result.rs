@@ -49,14 +49,12 @@ impl<T> HostArg<T> {
     }
 }
 
-#[allow(clippy::unnecessary_wraps)]
-pub(crate) fn to_extism_res<T>(res: crate::Result<T>) -> Result<HostReply<T>, extism::Error> {
-    let host_res = match res {
+/// The answer to give the plugin for what a host function's handler returned.
+pub(crate) fn to_extism_res<T>(res: crate::Result<T>) -> HostReply<T> {
+    Wire(match res {
         Ok(v) => HostResult::Ok(v),
         Err(e) => HostResult::Err(HostError::from(e.raw.as_ref())),
-    };
-
-    Ok(Wire(host_res))
+    })
 }
 
 #[cfg(test)]
@@ -76,10 +74,7 @@ mod tests {
     /// What the plugin sees: the error after the msgpack the host function returns.
     fn through_msgpack(kind: ErrorKind) -> HostError {
         let res: crate::Result<()> = Err(kind.as_error());
-        let bytes = to_extism_res(res)
-            .expect("mapping never fails")
-            .to_bytes()
-            .expect("encodes");
+        let bytes = to_extism_res(res).to_bytes().expect("encodes");
         assert!(
             wire::is_map(bytes.as_ref()),
             "the result is not a msgpack map"

@@ -178,7 +178,7 @@ async fn should_reject_when_the_host_is_outside_allowed_hosts() {
     )
     .await;
 
-    let bytes = to_extism_res(res).unwrap().to_bytes().unwrap();
+    let bytes = to_extism_res(res).to_bytes().unwrap();
     let HostResult::Err(error) =
         wire::decode::<HostResult<HttpResponseDto>>(bytes.as_ref()).unwrap()
     else {
