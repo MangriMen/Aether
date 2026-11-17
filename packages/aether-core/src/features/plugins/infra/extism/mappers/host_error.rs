@@ -282,7 +282,9 @@ fn plugin(value: &PluginError) -> HostError {
             Kind::NotFound
         }
 
-        PluginError::AccessViolation { .. } => Kind::AccessDenied,
+        PluginError::AccessViolation { .. } | PluginError::ForeignProvider { .. } => {
+            Kind::AccessDenied
+        }
 
         PluginError::AlreadyLoaded { .. }
         | PluginError::LoadingInProgress { .. }

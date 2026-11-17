@@ -16,11 +16,11 @@ use crate::{
         ListContentUseCasePort, NewInstance, PluginId,
         infra::{check_plugin_write_allowed, check_size},
     },
-    features::plugins::LoadConfig,
     features::plugins::infra::{
         pack_instances::{is_deploying_packs, record_pack_instance},
         plugin_utils::{MountSet, parse_plugin_path, resolve_plugin_path},
     },
+    features::plugins::{LoadConfig, PluginError},
     features::settings::LocationInfo,
 };
 
@@ -85,6 +85,11 @@ pub(crate) async fn handle_instance_create(
 /// would have the core copy any file of the user's into the asset store, where the UI reads it.
 /// Checked here only: the icon is read later by path, so a link the plugin swaps in meanwhile
 /// is followed (see `resolve_plugin_path`).
+///
+/// The pack of the instance, when it names one, comes from a provider of the plugin itself: the
+/// provider id decides which plugin updates the instance and is told of its launches, so one of
+/// another plugin's would hand the instance over to that plugin. The capability is the plugin's
+/// to choose among its own.
 pub(crate) fn new_instance_from_plugin(
     plugin_id: &PluginId,
     dto: NewInstanceDto,
@@ -101,6 +106,16 @@ pub(crate) fn new_instance_from_plugin(
         .map(|host| host.to_string_lossy().into_owned());
 
     let mut new_instance = NewInstance::try_from(dto).map_err(InstanceError::from)?;
+    if let Some(pack_info) = &new_instance.pack_info
+        && pack_info.provider_id.plugin_id != *plugin_id
+    {
+        return Err(PluginError::ForeignProvider {
+            plugin_id: plugin_id.clone(),
+            provider_id: pack_info.provider_id.clone(),
+        }
+        .into());
+    }
+
     new_instance.icon_path = icon_path;
     Ok(new_instance)
 }
@@ -1120,6 +1135,74 @@ mod tests {
                 "{icon}: {err:?}"
             );
         }
+    }
+
+    fn dto_with_pack_of(provider_plugin_id: &str, capability_id: &str) -> NewInstanceDto {
+        NewInstanceDto {
+            pack_info: Some(aether_core_plugin_api::v0::PackInfoDto {
+                provider_id: aether_core_plugin_api::v0::ProviderIdDto {
+                    plugin_id: provider_plugin_id.to_owned(),
+                    capability_id: capability_id.to_owned(),
+                },
+                modpack_id: "pack".to_owned(),
+                version_id: "1.0.0".to_owned(),
+            }),
+            ..dto_with_icon(None)
+        }
+    }
+
+    /// The provider id picks the plugin that updates the instance and hears of its launches: one
+    /// of another plugin's, or of the launcher's own providers, would hand the instance to it.
+    #[tokio::test]
+    async fn should_refuse_a_pack_as_access_denied_when_its_provider_is_another_plugins() {
+        let (_temp_dir, location_info, _service) = setup().await;
+
+        for (other_plugin, capability) in [("other-plugin", "packwiz"), ("aether", "modrinth")] {
+            let err = new_instance_from_plugin(
+                &plugin_id(),
+                dto_with_pack_of(other_plugin, capability),
+                &location_info,
+            )
+            .expect_err(other_plugin);
+
+            assert!(
+                matches!(
+                    err.raw.as_ref(),
+                    crate::ErrorKind::PluginError(PluginError::ForeignProvider {
+                        plugin_id,
+                        provider_id,
+                    }) if plugin_id.as_str() == PLUGIN_ID
+                        && provider_id.to_string() == format!("{other_plugin}#{capability}")
+                ),
+                "{other_plugin}: {err:?}"
+            );
+            assert!(
+                matches!(
+                    aether_core_plugin_api::v0::HostError::from(err.raw.as_ref()),
+                    aether_core_plugin_api::v0::HostError::AccessDenied { .. }
+                ),
+                "{other_plugin}: {err:?}"
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn should_keep_the_pack_when_its_provider_is_the_plugins_own() {
+        let (_temp_dir, location_info, _service) = setup().await;
+
+        let new_instance = new_instance_from_plugin(
+            &plugin_id(),
+            dto_with_pack_of(PLUGIN_ID, "packwiz"),
+            &location_info,
+        )
+        .expect("a provider of the plugin's own is accepted");
+
+        let pack_info = new_instance.pack_info.expect("the pack is kept");
+        assert_eq!(
+            pack_info.provider_id.to_string(),
+            format!("{PLUGIN_ID}#packwiz")
+        );
+        assert_eq!(pack_info.modpack_id.as_str(), "pack");
     }
 
     #[tokio::test]

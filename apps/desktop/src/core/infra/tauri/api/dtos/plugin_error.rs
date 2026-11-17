@@ -305,6 +305,10 @@ pub enum PluginErrorDto {
         plugin_id: String,
         path: String,
     },
+    ForeignProvider {
+        plugin_id: String,
+        provider_id: String,
+    },
     InvalidAllowedPath {
         plugin_id: String,
         path: String,
@@ -479,6 +483,13 @@ impl PluginErrorDto {
             PluginError::AccessViolation { plugin_id, path } => Self::AccessViolation {
                 plugin_id: plugin_id.to_string(),
                 path: path.clone(),
+            },
+            PluginError::ForeignProvider {
+                plugin_id,
+                provider_id,
+            } => Self::ForeignProvider {
+                plugin_id: plugin_id.to_string(),
+                provider_id: provider_id.to_string(),
             },
             PluginError::InvalidAllowedPath {
                 plugin_id,
