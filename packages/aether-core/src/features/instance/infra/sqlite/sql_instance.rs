@@ -111,7 +111,10 @@ impl From<LoaderVersionPreference> for LoaderVersionPreferenceDto {
 }
 
 #[derive(Debug, sqlx::FromRow)]
-#[allow(clippy::struct_excessive_bools)]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "a row maps one column to one field"
+)]
 pub struct SqlInstance {
     pub id: String,
     pub name: String,

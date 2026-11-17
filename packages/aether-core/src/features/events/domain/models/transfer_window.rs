@@ -40,7 +40,7 @@ impl TransferWindow {
         if elapsed <= 0.0 {
             return None;
         }
-        #[allow(clippy::cast_precision_loss)] // a speed to show
+        #[expect(clippy::cast_precision_loss, reason = "a speed to show")]
         let bytes = last_bytes.saturating_sub(first_bytes) as f64;
         Some(bytes / elapsed)
     }

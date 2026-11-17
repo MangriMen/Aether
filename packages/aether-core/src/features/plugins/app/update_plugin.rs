@@ -37,7 +37,10 @@ pub(crate) struct UpdatePluginUseCase {
 impl UpdatePluginUseCase {
     // One port per collaborator, wired once in the DI container; a parameter struct would only
     // repeat the field list.
-    #[allow(clippy::too_many_arguments)]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "the use case is built from its ports"
+    )]
     pub(crate) fn new(
         plugin_registry: Arc<PluginRegistry>,
         plugin_extractor: Arc<dyn PluginExtractor>,

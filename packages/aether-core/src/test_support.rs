@@ -63,8 +63,13 @@ pub(crate) fn link_file(target: &Path, link: &Path) {
 /// until the guard is dropped. `None` where this cannot be done: on Unix a read-only directory
 /// stops nobody running as root, and a test that went on would not prove anything.
 #[must_use = "the rename works again once the guard is dropped"]
-// Windows can always hold the file; only Unix may have to give up.
-#[cfg_attr(windows, expect(clippy::unnecessary_wraps))]
+#[cfg_attr(
+    windows,
+    expect(
+        clippy::unnecessary_wraps,
+        reason = "Windows can always hold the file; only Unix may have to give up"
+    )
+)]
 pub(crate) fn block_rename(path: &Path) -> Option<RenameBlock> {
     #[cfg(windows)]
     {
@@ -102,7 +107,9 @@ pub(crate) fn block_rename(path: &Path) -> Option<RenameBlock> {
 }
 
 #[cfg(windows)]
-pub(crate) struct RenameBlock(#[allow(dead_code)] std::fs::File);
+pub(crate) struct RenameBlock(
+    #[expect(dead_code, reason = "held open until dropped")] std::fs::File,
+);
 
 #[cfg(unix)]
 pub(crate) struct RenameBlock {

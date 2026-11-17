@@ -202,7 +202,6 @@ pub struct PluginParams {
     pub command_approver: Arc<dyn CommandApprover>,
 }
 
-#[allow(clippy::too_many_lines)]
 pub struct AetherContainerParams {
     pub storage: StorageParams,
     pub minecraft: MinecraftParams,

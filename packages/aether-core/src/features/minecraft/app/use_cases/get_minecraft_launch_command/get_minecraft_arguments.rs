@@ -11,7 +11,10 @@ use crate::{
     shared::io::infra::canonicalize,
 };
 
-#[allow(clippy::too_many_arguments)]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "every value the game takes is a separate argument"
+)]
 pub(super) fn get_minecraft_arguments(
     arguments: Option<&[vanilla::Argument]>,
     legacy_arguments: Option<&str>,
@@ -59,7 +62,10 @@ fn canonical_dir(path: &Path, entity_type: GamePathKind) -> Result<String, Minec
         })
 }
 
-#[allow(clippy::too_many_arguments)]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "every placeholder the game takes is a separate argument"
+)]
 fn replace_placeholders_in_argument_string(
     argument: &str,
     access_token: &str,

@@ -1,4 +1,3 @@
-#![allow(clippy::needless_pass_by_value)]
 use tauri::{AppHandle, WebviewUrl, WebviewWindow, WebviewWindowBuilder};
 use tauri_plugin_window_state::StateFlags;
 

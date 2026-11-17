@@ -131,7 +131,11 @@ impl SqlJava {
             }
         };
 
-        #[allow(clippy::cast_sign_loss, clippy::cast_possible_truncation)]
+        #[expect(
+            clippy::cast_sign_loss,
+            clippy::cast_possible_truncation,
+            reason = "a Java major version fits in a u32"
+        )]
         Some(Java::new(
             self.major_version as u32,
             self.version,

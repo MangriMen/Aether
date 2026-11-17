@@ -6,7 +6,10 @@ use crate::{
 pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(thiserror::Error, Debug)]
-#[allow(clippy::enum_variant_names)]
+#[expect(
+    clippy::enum_variant_names,
+    reason = "each variant is named after the error it wraps"
+)]
 pub enum Error {
     #[error(transparent)]
     AppSettingsError(#[from] AppSettingsError),

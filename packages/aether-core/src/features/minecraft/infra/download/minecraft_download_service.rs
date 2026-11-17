@@ -134,7 +134,7 @@ impl<RC: RequestClient, PS: ProgressService, C: Cache, FS: FileStore>
             + libraries.iter().map(|library| library.size).sum::<u64>()
             + assets.iter().map(PendingAsset::size).sum::<u64>()
             + log_config.map_or(0, |file| u64::from(file.size));
-        #[allow(clippy::cast_precision_loss)] // a progress total
+        #[expect(clippy::cast_precision_loss, reason = "a progress total")]
         // Called off (the future dropped) it ends cancelled, not done.
         let bar = CancellableBar::new(
             self.progress_service

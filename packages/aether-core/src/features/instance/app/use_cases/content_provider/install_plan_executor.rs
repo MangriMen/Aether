@@ -203,7 +203,10 @@ impl PlanProgress {
         let Some(bar) = &self.bar else {
             return;
         };
-        #[allow(clippy::cast_precision_loss)] // a count of files
+        #[expect(
+            clippy::cast_precision_loss,
+            reason = "a count of files, far below the precision of an f64"
+        )]
         let total = (3 * to_download + overrides + 1) as f64;
         let sized = self
             .service
@@ -538,7 +541,7 @@ impl FileProgress<'_> {
 
                 // A tenth of a percent of the file at a time: a bar does not need more, and
                 // every report is an event for the frontend.
-                #[allow(clippy::cast_precision_loss)] // a progress fraction
+                #[expect(clippy::cast_precision_loss, reason = "a progress fraction")]
                 let fraction = pending as f64 / expected as f64;
                 if fraction >= 0.001 {
                     let share = fraction.min(1.0 - reported);
@@ -824,7 +827,10 @@ impl FileChange {
 impl InstallPlanExecutor {
     // One port per collaborator, wired once in the DI container; a parameter struct would only
     // repeat the field list.
-    #[allow(clippy::too_many_arguments)]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "the executor is built from its ports"
+    )]
     pub fn new(
         provider_registry: Arc<dyn CapabilityRegistry<Arc<dyn ContentProvider>>>,
         platform_selection: Arc<dyn PlatformProviderSelection>,

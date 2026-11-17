@@ -402,7 +402,10 @@ async fn perform_post_json(
 /// [`check_target`].
 // Every argument is a distinct part of the one request policy; grouping them would add a type
 // used only here.
-#[allow(clippy::too_many_arguments)]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "every part of the request is checked on its own"
+)]
 async fn send_checked(
     method: reqwest::Method,
     url: Url,

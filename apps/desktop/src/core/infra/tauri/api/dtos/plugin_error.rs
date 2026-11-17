@@ -411,7 +411,7 @@ impl PluginErrorDto {
     /// The DTO of an error the plugin feature raises itself; an error of another domain it
     /// wraps comes back as that domain's own `FrontendError`.
     // One flat arm per variant; splitting an exhaustive mapping only hides which ones are covered.
-    #[allow(clippy::too_many_lines)]
+    #[expect(clippy::too_many_lines, reason = "one arm per error variant")]
     fn own(value: &PluginError) -> Result<Self, Box<FrontendError>> {
         Ok(match value {
             PluginError::NotFound { plugin_id } => Self::NotFound {

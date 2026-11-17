@@ -75,7 +75,10 @@ impl From<PendingCommandApproval> for PendingCommandApprovalDto {
 }
 
 impl From<CommandJar> for CommandJarDto {
-    #[allow(clippy::cast_precision_loss)]
+    #[expect(
+        clippy::cast_precision_loss,
+        reason = "a jar size shown as a number; the loss is far below what is displayed"
+    )]
     fn from(jar: CommandJar) -> Self {
         Self {
             plugin_path: jar.plugin_path,

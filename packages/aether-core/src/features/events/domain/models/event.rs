@@ -3,7 +3,6 @@ use crate::features::events::{
 };
 
 // Progress events are throttled and short-lived, so their size is not worth a box on every match.
-#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Clone)]
 pub enum Event {
     Instance(InstanceEvent),

@@ -52,7 +52,10 @@ pub struct LaunchInstanceUseCase {
 }
 
 impl LaunchInstanceUseCase {
-    #[allow(clippy::type_complexity, clippy::too_many_arguments)]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "the use case is built from its ports"
+    )]
     pub fn new(
         event_emitter: SharedEventEmitter,
         plugin_registry: Arc<PluginRegistry>,
@@ -172,7 +175,7 @@ impl LaunchInstanceUseCase {
 
     /// The launch itself, from the install to the start of the game. Leaves the registry when it
     /// returns, so that the end of the launch is told once nobody can call it off any more.
-    #[allow(clippy::too_many_lines)]
+    #[expect(clippy::too_many_lines, reason = "the launch is one sequence of steps")]
     async fn launch(
         &self,
         instance_id: InstanceId,
@@ -503,7 +506,6 @@ mod tests {
             grandchild.wait().unwrap();
         }
         // Left running on purpose when the hook leaves: the test kills it.
-        #[allow(clippy::zombie_processes)]
         drop(grandchild);
     }
 
