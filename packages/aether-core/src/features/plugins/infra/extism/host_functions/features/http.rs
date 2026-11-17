@@ -31,17 +31,13 @@ use std::{
 };
 
 use aether_core_plugin_api::v0::{HttpPostJsonRequestDto, HttpRequestDto, HttpResponseDto};
-use extism::host_fn;
 use futures::future::BoxFuture;
 use hyper_util::client::proxy::matcher::Matcher as ProxyMatcher;
 use reqwest::redirect;
 use reqwest_middleware::{ClientWithMiddleware, Middleware};
 use url::Url;
 
-use super::super::{
-    super::mappers::{Wire, to_extism_res},
-    PluginContext, block_on,
-};
+use super::super::{super::mappers::to_extism_res, PluginContext, block_on};
 use policy::{PinnedResolver, VettedHops};
 pub(super) use policy::{find_policy_refusal, policy_error};
 // The allowlist match and the address policy are the domain's: giving a host to a plugin
@@ -502,7 +498,7 @@ pub(crate) async fn handle_http_post_json(
 
 // ── Extism host function wrappers ──
 
-host_fn!(
+plugin_host_fn!(
 pub http_post_json(user_data: PluginContext; request: Wire<HttpPostJsonRequestDto>) -> HostReply<HttpResponseDto> {
     let context = user_data.get()?;
     let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
@@ -517,7 +513,7 @@ pub http_post_json(user_data: PluginContext; request: Wire<HttpPostJsonRequestDt
     }))
 });
 
-host_fn!(
+plugin_host_fn!(
 pub http_get(user_data: PluginContext; request: Wire<HttpRequestDto>) -> HostReply<HttpResponseDto> {
     let context = user_data.get()?;
     let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;

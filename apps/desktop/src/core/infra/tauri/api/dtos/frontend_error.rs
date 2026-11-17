@@ -133,6 +133,11 @@ impl From<&aether_core::ErrorKind> for FrontendError {
                     cause: CauseDto::unknown(err),
                 })
             }
+            aether_core::ErrorKind::PluginCommandError(err) => {
+                Self::Application(ApplicationErrorDto::Internal {
+                    cause: CauseDto::unknown(err),
+                })
+            }
             aether_core::ErrorKind::CoreError(err) => {
                 Self::Application(ApplicationErrorDto::Internal {
                     cause: CauseDto::unknown(err),

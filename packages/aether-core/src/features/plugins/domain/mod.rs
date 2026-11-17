@@ -11,7 +11,7 @@ pub use models::{
     Compatibility, ExtractedPlugin, FolderMounts, HostFunctionRisk, IgnoredAllowedPath, JarLaunch,
     LoadConfig, LoadConfigType, MAX_APPROVED_JAR_BYTES, ManifestError, ManifestFormatError,
     OnceOnlyReason, PathMapping, PendingCommandApproval, Plugin, PluginCallError,
-    PluginCapabilities, PluginCheckCompatibilityParams, PluginContent,
+    PluginCapabilities, PluginCheckCompatibilityParams, PluginCommandError, PluginContent,
     PluginContentProviderCapability, PluginDownloadError, PluginError, PluginHttpError,
     PluginImporterCapability, PluginInternalEvent, PluginLoadFailure, PluginManifest,
     PluginManifestPreview, PluginMetadata, PluginProviderError, PluginProviderInfo,

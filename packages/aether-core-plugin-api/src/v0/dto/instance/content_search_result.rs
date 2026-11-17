@@ -12,6 +12,8 @@ pub struct ContentSearchResultDto {
     pub page_size: u32,
     /// How many pages the search has; `0` for no results.
     pub page_count: u32,
+    /// Not read by the host: the result is always the provider's that was searched, whatever
+    /// this names. Echo the `providerId` of the search.
     pub provider_id: ProviderIdDto,
     pub items: Vec<ContentItemDto>,
 }

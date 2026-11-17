@@ -13,7 +13,6 @@
 use std::{process::Stdio, time::Duration};
 
 use aether_core_plugin_api::v0::{CommandDto, LogLevelDto, LogParamsDto, OutputDto};
-use extism::host_fn;
 use process_wrap::tokio::{ChildWrapper, CommandWrap};
 use tokio::io::{AsyncRead, AsyncReadExt};
 
@@ -22,7 +21,7 @@ use crate::{
     features::{
         instance::PluginId,
         java::{Java, JavaFeature},
-        plugins::PluginsFeature,
+        plugins::{PluginCommandError, PluginsFeature},
     },
     shared::{
         limits::COMMAND_TIMEOUT, process_tree::wrap_tree,
@@ -33,7 +32,7 @@ use crate::{
 use super::super::{
     super::{
         super::plugin_utils,
-        mappers::{OutputDtoExt, Wire, to_extism_res},
+        mappers::{OutputDtoExt, to_extism_res},
     },
     PluginContext, block_on,
 };
@@ -123,9 +122,9 @@ impl ProcessTree {
         // A safety net on Windows too: the job dies with its last handle, even if the launcher does.
         wrapped.wrap(process_wrap::tokio::KillOnDrop);
 
-        let child = wrapped.spawn().map_err(|err| {
-            crate::ErrorKind::CoreError(format!("Failed to run `{}`: {err}", command.program))
-                .as_error()
+        let child = wrapped.spawn().map_err(|err| PluginCommandError::Spawn {
+            program: command.program.clone(),
+            reason: err.to_string(),
         })?;
 
         Ok(Self {
@@ -177,12 +176,16 @@ async fn collect_capped(
     timeout: Duration,
     max_output_bytes: usize,
 ) -> crate::Result<CappedOutput> {
-    let stdout = tree.child.stdout().take().ok_or_else(|| {
-        crate::ErrorKind::CoreError("Failed to capture command stdout".to_owned()).as_error()
-    })?;
-    let stderr = tree.child.stderr().take().ok_or_else(|| {
-        crate::ErrorKind::CoreError("Failed to capture command stderr".to_owned()).as_error()
-    })?;
+    let stdout = tree
+        .child
+        .stdout()
+        .take()
+        .ok_or(PluginCommandError::OutputNotCaptured { stream: "stdout" })?;
+    let stderr = tree
+        .child
+        .stderr()
+        .take()
+        .ok_or(PluginCommandError::OutputNotCaptured { stream: "stderr" })?;
 
     let collect = async {
         tokio::try_join!(
@@ -205,17 +208,16 @@ async fn collect_capped(
                 stderr_truncated,
             })
         }
-        Ok(Err(err)) => Err(crate::ErrorKind::CoreError(format!(
-            "Failed to read output of `{}`: {err}",
-            command.program
-        ))
-        .as_error()),
-        Err(_elapsed) => Err(crate::ErrorKind::CoreError(format!(
-            "Command `{}` exceeded the {} second time limit and was killed",
-            command.program,
-            timeout.as_secs()
-        ))
-        .as_error()),
+        Ok(Err(err)) => Err(PluginCommandError::ReadOutput {
+            program: command.program.clone(),
+            reason: err.to_string(),
+        }
+        .into()),
+        Err(_elapsed) => Err(PluginCommandError::TimedOut {
+            program: command.program.clone(),
+            seconds: timeout.as_secs(),
+        }
+        .into()),
     }
 }
 
@@ -299,7 +301,7 @@ pub(crate) async fn handle_run_command(
 
 // ── Extism host function wrappers ──
 
-host_fn!(
+plugin_host_fn!(
 pub log(user_data: PluginContext; params: Wire<LogParamsDto>) -> HostReply<()> {
     let context = user_data.get()?;
     let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
@@ -309,7 +311,7 @@ pub log(user_data: PluginContext; params: Wire<LogParamsDto>) -> HostReply<()> {
     to_extism_res::<()>(Ok(()))
 });
 
-host_fn!(
+plugin_host_fn!(
 pub run_command(user_data: PluginContext; command: Wire<CommandDto>) -> HostReply<OutputDto> {
     let context = user_data.get()?;
     let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;

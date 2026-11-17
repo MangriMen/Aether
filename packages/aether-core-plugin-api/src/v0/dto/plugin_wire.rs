@@ -3,13 +3,12 @@ use schemars::JsonSchema;
 
 use super::{
     CachedFileDto, ChangeContentsParamsDto, CheckCompatibilityResultDto, CommandDto,
-    ContentCompatibilityCheckParamsDto, ContentItemDto, ContentSearchParamsDto,
-    ContentSearchResultDto, ContentVersionDto, DownloadToCacheParamsDto, GetAuthorsParamsDto,
-    GetAuthorsResultDto, GetContentParamsDto, GetContentsMetadataParamsDto,
-    GetContentsMetadataResultDto, GetVersionParamsDto, GetVersionsMetadataParamsDto,
-    GetVersionsMetadataResultDto, HostError, HttpPostJsonRequestDto, HttpRequestDto,
-    HttpResponseDto, InstallPlanDto, InstanceCreatedDto, InstanceDirDto, InstanceFileBytesDto,
-    InstanceIdParamsDto, JavaDto, JavaVersionParamsDto, ListContentResultDto,
+    ContentItemDto, ContentSearchParamsDto, ContentSearchResultDto, ContentVersionDto,
+    DownloadToCacheParamsDto, GetAuthorsParamsDto, GetAuthorsResultDto, GetContentParamsDto,
+    GetContentsMetadataParamsDto, GetContentsMetadataResultDto, GetVersionParamsDto,
+    GetVersionsMetadataParamsDto, GetVersionsMetadataResultDto, HostError, HttpPostJsonRequestDto,
+    HttpRequestDto, HttpResponseDto, InstallPlanDto, InstanceCreatedDto, InstanceDirDto,
+    InstanceFileBytesDto, InstanceIdParamsDto, JavaDto, JavaVersionParamsDto, ListContentResultDto,
     ListVersionsParamsDto, ListVersionsResultDto, LogParamsDto, NewInstanceDto, OutputDto,
     PackMetadataDto, PackSourceDto, PluginCheckCompatibilityParamsDto, PluginImportInstanceDto,
     PluginInternalEventDto, ReadInstanceFileParamsDto, ResolveFileParamsDto,
@@ -70,7 +69,6 @@ pub struct PluginWireDto {
     pub get_versions_metadata_params: GetVersionsMetadataParamsDto,
     pub get_authors_params: GetAuthorsParamsDto,
     pub check_compatibility_params: PluginCheckCompatibilityParamsDto,
-    pub content_compatibility_check_params: ContentCompatibilityCheckParamsDto,
 
     // Exports the host calls: what they answer.
     pub content_search_result: ContentSearchResultDto,

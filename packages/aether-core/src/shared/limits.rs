@@ -53,7 +53,8 @@ pub const MAX_MRPACK_FILES: usize = 10_000;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PluginSandboxLimits {
     /// Hard cap on the response body a plugin may receive in one `http_get` /
-    /// `http_post_json` call.
+    /// `http_post_json` call; for a plugin with a memory limit of its own see
+    /// [`Self::max_response_bytes_within`].
     pub max_response_bytes: usize,
     /// Hard cap on the JSON body a plugin may send in one `http_post_json` call.
     pub max_request_body_bytes: usize,
@@ -67,7 +68,7 @@ pub struct PluginSandboxLimits {
     /// full pipe; a stream that hit it is reported as truncated.
     pub max_output_bytes: usize,
     /// Largest file a plugin may write into, or read out of, an instance in one call. The bytes
-    /// pass through the plugin's memory [`INSTANCE_FILE_MEMORY_COPIES`] times over, so it must
+    /// pass through the plugin's memory [`PLUGIN_MEMORY_COPIES`] times over, so it must
     /// fit that many times in [`Self::default_memory_limit_bytes`] ([`Self::assert_consistent`]);
     /// for a plugin with a memory limit of its own see [`Self::max_instance_file_bytes_within`].
     pub max_instance_file_bytes: u64,
@@ -93,10 +94,10 @@ impl Default for PluginSandboxLimits {
     }
 }
 
-/// How many copies of a file's bytes a plugin's linear memory holds at once while it passes
-/// through `read_instance_file` / `write_instance_file`: the plugin's buffer, the encoded
-/// message and the decoded one.
-pub const INSTANCE_FILE_MEMORY_COPIES: u64 = 3;
+/// How many copies of the bytes a plugin's linear memory holds at once while they pass through
+/// `read_instance_file` / `write_instance_file`, or come back from `http_get` /
+/// `http_post_json`: the plugin's buffer, the encoded message and the decoded one.
+pub const PLUGIN_MEMORY_COPIES: u64 = 3;
 
 /// Fallback execution timeout for a single plugin call (30 minutes).
 pub(crate) const DEFAULT_TIMEOUT: Duration = Duration::from_mins(30);
@@ -139,19 +140,19 @@ pub(crate) const READ_TIMEOUT: Duration = Duration::from_secs(30);
 
 impl PluginSandboxLimits {
     /// Refuses limits that contradict each other, rather than letting a plugin find out at run
-    /// time: a file the host accepts must fit, [`INSTANCE_FILE_MEMORY_COPIES`] times over, in the
+    /// time: a file the host accepts must fit, [`PLUGIN_MEMORY_COPIES`] times over, in the
     /// memory a plugin gets by default.
     ///
     /// # Panics
     ///
-    /// When `max_instance_file_bytes` times [`INSTANCE_FILE_MEMORY_COPIES`] is not below
+    /// When `max_instance_file_bytes` times [`PLUGIN_MEMORY_COPIES`] is not below
     /// `default_memory_limit_bytes`.
     pub fn assert_consistent(&self) {
         assert!(
             self.max_instance_file_bytes
-                .saturating_mul(INSTANCE_FILE_MEMORY_COPIES)
+                .saturating_mul(PLUGIN_MEMORY_COPIES)
                 < self.default_memory_limit_bytes as u64,
-            "max_instance_file_bytes ({}) times {INSTANCE_FILE_MEMORY_COPIES} must stay below \
+            "max_instance_file_bytes ({}) times {PLUGIN_MEMORY_COPIES} must stay below \
              default_memory_limit_bytes ({}): instance file bytes pass through the plugin's \
              linear memory",
             self.max_instance_file_bytes,
@@ -167,7 +168,20 @@ impl PluginSandboxLimits {
         let memory_limit = declared_memory_limit.unwrap_or(self.default_memory_limit_bytes);
 
         self.max_instance_file_bytes
-            .min(memory_limit as u64 / INSTANCE_FILE_MEMORY_COPIES)
+            .min(memory_limit as u64 / PLUGIN_MEMORY_COPIES)
+    }
+
+    /// The largest response body `http_get` / `http_post_json` hand a plugin given the memory
+    /// limit its manifest declares (`None`: the default one): [`Self::max_response_bytes`], or
+    /// less when the plugin's memory could not hold the copies of it. A body over it fails the
+    /// call as too large instead of running the plugin out of memory.
+    pub fn max_response_bytes_within(&self, declared_memory_limit: Option<usize>) -> usize {
+        let memory_limit = declared_memory_limit.unwrap_or(self.default_memory_limit_bytes);
+        let per_copy = memory_limit as u64 / PLUGIN_MEMORY_COPIES;
+
+        usize::try_from(per_copy).map_or(self.max_response_bytes, |per_copy| {
+            self.max_response_bytes.min(per_copy)
+        })
     }
 }
 
@@ -206,6 +220,23 @@ mod tests {
         assert_eq!(
             limits.max_instance_file_bytes_within(declared_memory),
             expected.unwrap_or(limits.max_instance_file_bytes)
+        );
+    }
+
+    #[rstest]
+    #[case::default_memory(None, None)]
+    #[case::manifest_declares_less_memory(Some(30 * 1024 * 1024), Some(10 * 1024 * 1024))]
+    #[case::manifest_declares_just_enough_memory(Some(48 * 1024 * 1024), None)]
+    #[case::manifest_declares_more_memory(Some(1024 * 1024 * 1024), None)]
+    fn should_size_the_response_cap_when_the_manifest_declares_memory(
+        #[case] declared_memory: Option<usize>,
+        #[case] expected: Option<usize>,
+    ) {
+        let limits = PluginSandboxLimits::default();
+
+        assert_eq!(
+            limits.max_response_bytes_within(declared_memory),
+            expected.unwrap_or(limits.max_response_bytes)
         );
     }
 }

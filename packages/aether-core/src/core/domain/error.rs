@@ -42,6 +42,10 @@ pub enum ErrorKind {
     #[error(transparent)]
     PluginDownloadError(#[from] plugins::PluginDownloadError),
 
+    /// A command `run_command` started for a plugin failed.
+    #[error(transparent)]
+    PluginCommandError(#[from] plugins::PluginCommandError),
+
     #[error(transparent)]
     ProcessError(#[from] process::ProcessError),
 

@@ -393,10 +393,8 @@ impl ContentProvider for PluginContentProviderProxy {
             page_size: PageSize::parse(i64::from(result_dto.page_size))
                 .map_err(|err| self.invalid_answer("search", err))?,
             page_count: result_dto.page_count,
-            provider_id: result_dto
-                .provider_id
-                .try_into()
-                .map_err(|err| self.invalid_answer("search", err))?,
+            // The provider that was searched, not the one the plugin names: it could name another.
+            provider_id: self.provider_id.clone(),
             items: result_dto
                 .items
                 .into_iter()

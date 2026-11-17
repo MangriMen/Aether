@@ -53,7 +53,9 @@ pub(crate) struct PluginContext {
     /// `http_request` refuses everything.
     pub hosts: Arc<dyn AllowedHostsSource>,
     /// The sandbox limits the container was built with, taken once here so a host function
-    /// does not have to reach back into the container for them.
+    /// does not have to reach back into the container for them. The response cap is already
+    /// narrowed to what the plugin's memory holds
+    /// ([`PluginSandboxLimits::max_response_bytes_within`]).
     pub limits: PluginSandboxLimits,
     /// Sha256 of the wasm this instance was built from. What the user approves for a command is
     /// bound to it: the file on disk may already be another build (an update waiting for the
@@ -62,8 +64,16 @@ pub(crate) struct PluginContext {
 }
 
 impl PluginContext {
-    pub(crate) fn new(id: PluginId, container: &Arc<AetherContainer>, wasm_sha256: String) -> Self {
+    /// `memory_limit` is the one the plugin's manifest declares, `None` for the default: the
+    /// plugin is built with it, so it holds for as long as this context does.
+    pub(crate) fn new(
+        id: PluginId,
+        container: &Arc<AetherContainer>,
+        wasm_sha256: String,
+        memory_limit: Option<usize>,
+    ) -> Self {
         let plugins = container.plugins();
+        let limits = container.sandbox_limits();
 
         Self {
             id,
@@ -72,7 +82,10 @@ impl PluginContext {
                 registry: plugins.registry.clone(),
                 settings: plugins.settings_storage.clone(),
             }),
-            limits: container.sandbox_limits(),
+            limits: PluginSandboxLimits {
+                max_response_bytes: limits.max_response_bytes_within(memory_limit),
+                ..limits
+            },
             wasm_sha256,
         }
     }

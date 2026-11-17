@@ -19,9 +19,6 @@
     "command": {
       "$ref": "#/$defs/CommandDto"
     },
-    "contentCompatibilityCheckParams": {
-      "$ref": "#/$defs/ContentCompatibilityCheckParamsDto"
-    },
     "contentItem": {
       "$ref": "#/$defs/ContentItemDto"
     },
@@ -179,7 +176,6 @@
     "getVersionsMetadataParams",
     "getAuthorsParams",
     "checkCompatibilityParams",
-    "contentCompatibilityCheckParams",
     "contentSearchResult",
     "contentItem",
     "contentVersion",
@@ -628,6 +624,7 @@
           "minimum": 0
         },
         "providerId": {
+          "description": "Not read by the host: the result is always the provider's that was searched, whatever\nthis names. Echo the `providerId` of the search.",
           "$ref": "#/$defs/ProviderIdDto"
         }
       },

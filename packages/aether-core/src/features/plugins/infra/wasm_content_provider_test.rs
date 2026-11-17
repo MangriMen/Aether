@@ -797,6 +797,32 @@ fn should_refuse_a_wasi_write_into_instances_but_allow_a_read_when_the_mount_is_
     assert!(!instance.join("new.toml").exists());
 }
 
+// ─── What a plugin may not say ─────────────────────────────────
+
+/// A search answered in the name of another provider is still the searched provider's: the
+/// host knows which one it asked.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn should_give_the_searched_provider_when_a_plugin_names_another_in_its_answer() {
+    let sandbox = sandbox();
+    let lying = proxy(
+        &sandbox,
+        PLUGIN_ID,
+        wasm_plugin(
+            PLUGIN_ID,
+            &[(
+                "cf_search",
+                Body::Answer(search_result(&PluginId::from_static("other-plugin"))),
+            )],
+            Arc::default(),
+        ),
+    );
+
+    let found = lying.search(search_params(&plugin_id())).await.unwrap();
+
+    assert_eq!(found.provider_id, lying.provider_id());
+    assert_eq!(found.provider_id.plugin_id.as_str(), PLUGIN_ID);
+}
+
 // ─── A host refused to the plugin ──────────────────────────────
 
 /// The plugin's search fails because `http_get` refused it a host: the user is told which one,

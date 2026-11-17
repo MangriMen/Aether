@@ -425,7 +425,6 @@ conforms! {
     get_versions_metadata_params: "getVersionsMetadataParams" => v0::GetVersionsMetadataParamsDto,
     get_authors_params: "getAuthorsParams" => v0::GetAuthorsParamsDto,
     check_compatibility_params: "checkCompatibilityParams" => v0::PluginCheckCompatibilityParamsDto,
-    content_compatibility_check_params: "contentCompatibilityCheckParams" => v0::ContentCompatibilityCheckParamsDto,
     content_search_result: "contentSearchResult" => v0::ContentSearchResultDto,
     content_item: "contentItem" => v0::ContentItemDto,
     content_version: "contentVersion" => v0::ContentVersionDto,
