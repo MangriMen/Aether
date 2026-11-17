@@ -15,6 +15,8 @@ impl From<ContentType> for ContentTypeDto {
     }
 }
 
+const CONTENT_TYPES: [&str; 5] = ["modpack", "mod", "dataPack", "resourcePack", "shaderPack"];
+
 impl TryFrom<ContentTypeDto> for ContentType {
     type Error = UnknownValue;
 
@@ -27,6 +29,7 @@ impl TryFrom<ContentTypeDto> for ContentType {
             ContentTypeDto::ShaderPack => Ok(Self::ShaderPack),
             ContentTypeDto::Unknown => Err(UnknownValue {
                 kind: "content type",
+                expected: &CONTENT_TYPES,
             }),
         }
     }
@@ -41,7 +44,8 @@ mod tests {
         assert_eq!(
             ContentType::try_from(ContentTypeDto::Unknown),
             Err(UnknownValue {
-                kind: "content type"
+                kind: "content type",
+                expected: &CONTENT_TYPES,
             })
         );
     }

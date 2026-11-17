@@ -600,6 +600,7 @@ impl TryFrom<CommandRefusalDto> for CommandApprovalRefusal {
             CommandRefusalDto::JarChanged => Ok(Self::JarChanged),
             CommandRefusalDto::Unknown => Err(super::instance::UnknownValue {
                 kind: "command refusal",
+                expected: &["denied", "timedOut", "cancelled", "jarChanged"],
             }),
         }
     }

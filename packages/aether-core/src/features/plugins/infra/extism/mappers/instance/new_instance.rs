@@ -60,3 +60,26 @@ mod tests {
         );
     }
 }
+
+#[cfg(test)]
+mod unknown_loader_tests {
+    use aether_core_plugin_api::v0::ModLoaderDto;
+
+    use super::*;
+
+    #[test]
+    fn should_refuse_a_new_instance_when_its_loader_is_unknown() {
+        let err = NewInstance::try_from(NewInstanceDto {
+            name: "Pack".into(),
+            game_version: "1.21.1".into(),
+            mod_loader: ModLoaderDto::Unknown,
+            loader_version: None,
+            icon_path: None,
+            skip_install_instance: None,
+            pack_info: None,
+        })
+        .unwrap_err();
+
+        assert!(err.to_string().contains("unknown mod loader"), "{err}");
+    }
+}

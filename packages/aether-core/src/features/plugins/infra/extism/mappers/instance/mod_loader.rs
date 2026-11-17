@@ -13,7 +13,10 @@ impl TryFrom<ModLoaderDto> for ModLoader {
             ModLoaderDto::Fabric => Ok(Self::Fabric),
             ModLoaderDto::Quilt => Ok(Self::Quilt),
             ModLoaderDto::NeoForge => Ok(Self::NeoForge),
-            ModLoaderDto::Unknown => Err(UnknownValue { kind: "mod loader" }),
+            ModLoaderDto::Unknown => Err(UnknownValue {
+                kind: "mod loader",
+                expected: &["vanilla", "forge", "fabric", "quilt", "neoforge"],
+            }),
         }
     }
 }
@@ -38,7 +41,10 @@ mod tests {
     fn should_refuse_a_loader_the_api_does_not_know() {
         assert_eq!(
             ModLoader::try_from(ModLoaderDto::Unknown),
-            Err(UnknownValue { kind: "mod loader" })
+            Err(UnknownValue {
+                kind: "mod loader",
+                expected: &["vanilla", "forge", "fabric", "quilt", "neoforge"],
+            })
         );
     }
 
