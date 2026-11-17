@@ -208,11 +208,16 @@ pub struct CommandApprovalRequest {
     /// The arguments as the plugin sent them. They can hold a token (a pack URL), so they travel
     /// to the UI only when it asks for the request, never in an event or the log.
     pub arguments: Vec<String>,
-    /// The same arguments split as the approval key is built from them.
-    pub line: CommandLine,
     pub jar: Option<CommandJar>,
     /// `Ok` when the user may answer "always".
     pub always: Result<(), OnceOnlyReason>,
+}
+
+impl CommandApprovalRequest {
+    /// The arguments split as the approval key is built from them, so the two cannot differ.
+    pub fn line(&self) -> CommandLine {
+        CommandLine::of(&self.arguments)
+    }
 }
 
 /// A question that waits for the user.

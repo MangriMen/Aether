@@ -122,8 +122,9 @@ describe('CommandApprovalDialog', () => {
   it('should_keep_an_option_value_out_of_the_open_text', () => {
     state.approvals = [
       approval({
-        options: ['-Dapi.token=abc123'],
-        target: '#/cache/a.jar',
+        options: [],
+        target: null,
+        rest: ['-Dapi.token=abc123', '-jar', '#/cache/a.jar'],
         once_only: { code: 'UNLISTED_OPTION', option: '-Dapi.token=abc123' },
       }),
     ];

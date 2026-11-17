@@ -58,14 +58,15 @@ pub enum CommandAnswerDto {
 impl From<PendingCommandApproval> for PendingCommandApprovalDto {
     fn from(pending: PendingCommandApproval) -> Self {
         let request = pending.request;
+        let line = request.line();
         Self {
             request_id: request.id.to_string(),
             plugin_id: request.plugin_id.into(),
             java: request.java,
             current_dir: request.current_dir,
-            options: request.line.options,
-            target: request.line.target,
-            rest: request.line.rest,
+            options: line.options,
+            target: line.target,
+            rest: line.rest,
             jar: request.jar.map(Into::into),
             once_only: request.always.err().map(Into::into),
             expires_at: pending.expires_at,

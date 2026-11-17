@@ -354,8 +354,8 @@ mod tests {
         events::test_support::NoOpEmitter,
         plugins::{
             ApiConfig, CommandApprovalAnswer, CommandApprovalRefusal, CommandApprovalRequest,
-            CommandGrant, CommandLine, LoadConfig, PluginInstance, PluginInternalEvent,
-            PluginMetadata, RuntimeConfig,
+            CommandGrant, LoadConfig, PluginInstance, PluginInternalEvent, PluginMetadata,
+            RuntimeConfig,
         },
     };
 
@@ -421,7 +421,6 @@ mod tests {
             java: "java".into(),
             current_dir: "/cache".into(),
             arguments: vec!["-jar".into(), "#/cache/a.jar".into()],
-            line: CommandLine::default(),
             jar: None,
             always: Ok(()),
         }
