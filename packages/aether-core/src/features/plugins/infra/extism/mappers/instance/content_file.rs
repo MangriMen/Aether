@@ -158,7 +158,7 @@ mod tests {
 
     #[test]
     fn should_keep_the_algorithm_when_a_sha256_hash_crosses_the_plugin_boundary() {
-        let hash = FileHashDto::Sha256("ab".repeat(32));
+        let hash = FileHashDto::sha256("ab".repeat(32));
         let dto = ContentFileDto::from(
             ContentFile::try_from(ContentFileDto {
                 hash: hash.clone(),
@@ -196,7 +196,7 @@ mod tests {
             update: None,
         };
         let mut dto = ContentFileDto::from(file);
-        dto.hash = FileHashDto::Sha1("123".into());
+        dto.hash = FileHashDto::sha1("123");
 
         let err = ContentFile::try_from(dto).unwrap_err();
 

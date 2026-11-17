@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use crate::v0::ModLoaderDto;
 
 #[derive(Debug, Clone, Serialize, JsonSchema, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "camelCase")]
 pub enum ContentVersionDependencyTypeDto {
     Required,
     Optional,
@@ -22,7 +22,7 @@ pub struct ContentVersionDependencyDto {
 }
 
 #[derive(Debug, Clone, Serialize, JsonSchema, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "camelCase")]
 pub enum ContentVersionTypeDto {
     Release,
     Beta,
@@ -30,7 +30,7 @@ pub enum ContentVersionTypeDto {
 }
 
 #[derive(Debug, Clone, Serialize, JsonSchema, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "camelCase")]
 pub enum ContentVersionStatusDto {
     Listed,
     Archived,
@@ -41,7 +41,7 @@ pub enum ContentVersionStatusDto {
 }
 
 #[derive(Debug, Clone, Serialize, JsonSchema, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "camelCase")]
 pub enum RequestedContentVersionStatusDto {
     Listed,
     Archived,

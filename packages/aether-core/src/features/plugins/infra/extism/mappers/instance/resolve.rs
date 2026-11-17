@@ -3,7 +3,7 @@
 //! `PluginContentProviderProxy`: its host path has to be renamed into the plugin's mounts.
 
 use aether_core_plugin_api::v0::{
-    PackMetadataDto, ResolveInstallPlanParamsDto, ResolveTargetDto, ResolvedFileDto,
+    ModLoaderDto, PackMetadataDto, ResolveInstallPlanParamsDto, ResolveTargetDto, ResolvedFileDto,
 };
 
 use crate::{
@@ -42,7 +42,7 @@ impl From<ResolveTarget> for ResolveTargetDto {
             } => Self::Existing {
                 instance_id: instance_id.to_string(),
                 game_version: game_version.into(),
-                loader: loader.map(|loader| loader.as_str().to_owned()),
+                loader: loader.map(ModLoaderDto::from),
             },
             ResolveTarget::New => Self::New,
         }

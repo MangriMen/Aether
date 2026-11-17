@@ -1,26 +1,40 @@
-use aether_core_plugin_api::v0::FileHashDto;
+use aether_core_plugin_api::v0::{FileHashDto, HashAlgorithmDto};
 
 use crate::shared::hash::{FileHash, HashAlgorithm, InvalidFileHash};
+
+impl From<HashAlgorithmDto> for HashAlgorithm {
+    fn from(value: HashAlgorithmDto) -> Self {
+        match value {
+            HashAlgorithmDto::Sha1 => Self::Sha1,
+            HashAlgorithmDto::Sha256 => Self::Sha256,
+            HashAlgorithmDto::Sha512 => Self::Sha512,
+        }
+    }
+}
+
+impl From<HashAlgorithm> for HashAlgorithmDto {
+    fn from(value: HashAlgorithm) -> Self {
+        match value {
+            HashAlgorithm::Sha1 => Self::Sha1,
+            HashAlgorithm::Sha256 => Self::Sha256,
+            HashAlgorithm::Sha512 => Self::Sha512,
+        }
+    }
+}
 
 impl TryFrom<FileHashDto> for FileHash {
     type Error = InvalidFileHash;
 
     fn try_from(value: FileHashDto) -> Result<Self, Self::Error> {
-        match value {
-            FileHashDto::Sha1(hex) => Self::new(HashAlgorithm::Sha1, hex),
-            FileHashDto::Sha256(hex) => Self::new(HashAlgorithm::Sha256, hex),
-            FileHashDto::Sha512(hex) => Self::new(HashAlgorithm::Sha512, hex),
-        }
+        Self::new(value.algorithm.into(), value.hex)
     }
 }
 
 impl From<FileHash> for FileHashDto {
     fn from(value: FileHash) -> Self {
-        let hex = value.hex().to_owned();
-        match value.algorithm() {
-            HashAlgorithm::Sha1 => Self::Sha1(hex),
-            HashAlgorithm::Sha256 => Self::Sha256(hex),
-            HashAlgorithm::Sha512 => Self::Sha512(hex),
+        Self {
+            algorithm: value.algorithm().into(),
+            hex: value.hex().to_owned(),
         }
     }
 }
@@ -38,9 +52,9 @@ mod tests {
     }
 
     #[rstest]
-    #[case::sha1(FileHashDto::Sha1(SHA1_HEX.into()), HashAlgorithm::Sha1, SHA1_HEX.to_owned())]
-    #[case::sha256(FileHashDto::Sha256(SHA256_HEX.into()), HashAlgorithm::Sha256, SHA256_HEX.to_owned())]
-    #[case::sha512(FileHashDto::Sha512(sha512_hex()), HashAlgorithm::Sha512, sha512_hex())]
+    #[case::sha1(FileHashDto::sha1(SHA1_HEX), HashAlgorithm::Sha1, SHA1_HEX.to_owned())]
+    #[case::sha256(FileHashDto::sha256(SHA256_HEX), HashAlgorithm::Sha256, SHA256_HEX.to_owned())]
+    #[case::sha512(FileHashDto::sha512(sha512_hex()), HashAlgorithm::Sha512, sha512_hex())]
     fn should_map_to_the_matching_algorithm_when_the_digest_is_valid(
         #[case] dto: FileHashDto,
         #[case] algorithm: HashAlgorithm,
@@ -54,7 +68,7 @@ mod tests {
 
     #[test]
     fn should_lowercase_the_digest_when_it_is_uppercase() {
-        let hash = FileHash::try_from(FileHashDto::Sha1(SHA1_HEX.to_ascii_uppercase())).unwrap();
+        let hash = FileHash::try_from(FileHashDto::sha1(SHA1_HEX.to_ascii_uppercase())).unwrap();
 
         assert_eq!(hash.hex(), SHA1_HEX);
     }
@@ -62,7 +76,7 @@ mod tests {
     #[test]
     fn should_reject_the_digest_when_it_has_the_wrong_length() {
         // A sha1-length digest labelled sha256.
-        let err = FileHash::try_from(FileHashDto::Sha256(SHA1_HEX.into())).unwrap_err();
+        let err = FileHash::try_from(FileHashDto::sha256(SHA1_HEX)).unwrap_err();
 
         assert_eq!(
             err,
@@ -76,7 +90,7 @@ mod tests {
 
     #[test]
     fn should_reject_the_digest_when_it_is_not_hex() {
-        let err = FileHash::try_from(FileHashDto::Sha1("z".repeat(40))).unwrap_err();
+        let err = FileHash::try_from(FileHashDto::sha1("z".repeat(40))).unwrap_err();
 
         assert_eq!(
             err,

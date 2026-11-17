@@ -356,7 +356,7 @@ async fn should_call_the_resolve_file_handler_the_file_names_when_resolving_a_fi
             encode(ResolvedFileDto {
                 version: "4512345".into(),
                 url: "https://edge.forgecdn.net/files/4512/345/jei.jar".into(),
-                hash: Some(FileHashDto::Sha1(SHA1_ABC.to_ascii_uppercase())),
+                hash: Some(FileHashDto::sha1(SHA1_ABC.to_ascii_uppercase())),
                 file_name: "jei.jar".into(),
                 size: Some(3),
                 name: Some("JEI 15.2.0".into()),
@@ -382,7 +382,7 @@ async fn should_call_the_resolve_file_handler_the_file_names_when_resolving_a_fi
             content_id: "238222".into(),
             version: None,
             game_version: "1.21.1".into(),
-            loader: Some("fabric".into()),
+            loader: Some(ModLoaderDto::Fabric),
         }
     );
     assert_eq!(
@@ -464,7 +464,7 @@ async fn should_call_the_resolve_install_plan_handler_the_file_names_when_resolv
             target: ResolveTargetDto::Existing {
                 instance_id: "instance".into(),
                 game_version: "1.21.1".into(),
-                loader: Some("fabric".into()),
+                loader: Some(ModLoaderDto::Fabric),
             },
         }
     );
@@ -1259,7 +1259,7 @@ async fn should_refuse_a_hash_when_it_is_malformed() {
     let mut entry = jei_entry();
     entry.source = ContentSourceDto::Direct {
         url: "https://edge.forgecdn.net/files/4512/345/jei.jar".into(),
-        hash: Some(FileHashDto::Sha1("not-a-digest".into())),
+        hash: Some(FileHashDto::sha1("not-a-digest")),
         identity: None,
     };
     let fixture = Fixture::new(
@@ -1732,7 +1732,9 @@ async fn should_hand_a_pack_file_over_under_the_plugin_path_when_the_plugin_can_
 
     assert_eq!(
         fixture.arguments_of_last_call::<PackSourceDto>(),
-        PackSourceDto::File("/cache/pack.zip".into())
+        PackSourceDto::File {
+            path: "/cache/pack.zip".into()
+        }
     );
 }
 

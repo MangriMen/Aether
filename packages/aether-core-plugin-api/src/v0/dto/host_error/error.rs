@@ -19,7 +19,7 @@ impl<T> HostResult<T> {
 }
 
 #[derive(Debug, Serialize, JsonSchema, Deserialize, Clone)]
-#[serde(tag = "type", content = "payload", rename_all = "camelCase")]
+#[serde(tag = "type", content = "data", rename_all = "camelCase")]
 pub enum HostError {
     AuthError(super::AuthErrorDto),
     EventError(super::EventErrorDto),

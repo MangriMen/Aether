@@ -5,7 +5,7 @@ use crate::v0::LoadConfigTypeDto;
 
 #[derive(Debug, Serialize, JsonSchema, Deserialize, Clone)]
 #[serde(
-    tag = "kind",
+    tag = "type",
     content = "data",
     rename_all = "camelCase",
     rename_all_fields = "camelCase"
@@ -96,7 +96,7 @@ pub enum PluginErrorDto {
 }
 
 #[derive(Debug, Serialize, JsonSchema, Deserialize, Clone, Copy, PartialEq, Eq)]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "camelCase")]
 pub enum PluginSourceTypeDto {
     GitHub,
     Local,
@@ -104,7 +104,7 @@ pub enum PluginSourceTypeDto {
 
 /// Why a command was not run.
 #[derive(Debug, Serialize, JsonSchema, Deserialize, Clone, Copy, PartialEq, Eq)]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "camelCase")]
 pub enum CommandRefusalDto {
     /// The user said no, or said it earlier and the plugin has not been reloaded since.
     Denied,
@@ -119,7 +119,7 @@ pub enum CommandRefusalDto {
 /// Why a call into a plugin failed.
 #[derive(Debug, Serialize, JsonSchema, Deserialize, Clone)]
 #[serde(
-    tag = "kind",
+    tag = "type",
     content = "data",
     rename_all = "camelCase",
     rename_all_fields = "camelCase"
@@ -143,7 +143,7 @@ pub enum PluginCallErrorDto {
 
 #[derive(Debug, Serialize, JsonSchema, Deserialize, Clone)]
 #[serde(
-    tag = "kind",
+    tag = "type",
     content = "data",
     rename_all = "camelCase",
     rename_all_fields = "camelCase"

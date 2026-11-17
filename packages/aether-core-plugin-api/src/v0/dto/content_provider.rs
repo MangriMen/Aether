@@ -16,7 +16,12 @@ pub struct PluginImportInstanceDto {
 
 /// What an importer reads an instance from: the input of `importInstance` names it.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, JsonSchema, Deserialize)]
-#[serde(rename_all = "camelCase", rename_all_fields = "camelCase")]
+#[serde(
+    tag = "type",
+    content = "data",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
 pub enum ImportSourceDto {
     /// A file to download: an `http` or `https` address, already checked to be a valid one.
     Url { url: String },
@@ -109,14 +114,14 @@ mod import_source_tests {
                 url: "https://example.com/pack.toml".into()
             })
             .unwrap(),
-            r#"{"url":{"url":"https://example.com/pack.toml"}}"#
+            r#"{"type":"url","data":{"url":"https://example.com/pack.toml"}}"#
         );
         assert_eq!(
             serde_json::to_string(&ImportSourceDto::File {
                 path: "/mnt/c/pack.zip".into()
             })
             .unwrap(),
-            r#"{"file":{"path":"/mnt/c/pack.zip"}}"#
+            r#"{"type":"file","data":{"path":"/mnt/c/pack.zip"}}"#
         );
     }
 }

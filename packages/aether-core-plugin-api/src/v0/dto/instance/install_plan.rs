@@ -28,7 +28,12 @@ pub struct InstallPlanDto {
 /// the instance the content needs (a modpack's game version and loader). A plan for any other
 /// instance is rejected.
 #[derive(Debug, Clone, Serialize, JsonSchema, Deserialize)]
-#[serde(rename_all = "camelCase", rename_all_fields = "camelCase")]
+#[serde(
+    tag = "type",
+    content = "data",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
 pub enum InstallTargetDto {
     Existing {
         instance_id: String,
@@ -103,7 +108,12 @@ pub enum FileSideDto {
 
 /// Where the bytes of a file come from.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, JsonSchema, Deserialize)]
-#[serde(rename_all = "camelCase", rename_all_fields = "camelCase")]
+#[serde(
+    tag = "type",
+    content = "data",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
 pub enum ContentSourceDto {
     /// An `https` URL to download, checked against the plugin's `allowedHosts` like its own
     /// requests; any other refuses the plan. With a hash, the download is verified against it.
@@ -160,7 +170,12 @@ pub struct OverrideSourceDto {
 /// Paths are plugin-side and must lie in the plugin's `/cache` (where `download_to_cache` puts
 /// files); the launcher refuses anything else.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, JsonSchema, Deserialize)]
-#[serde(rename_all = "camelCase", rename_all_fields = "camelCase")]
+#[serde(
+    tag = "type",
+    content = "data",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
 pub enum OverrideLocationDto {
     /// The `subdir` directory of a zip archive (`overrides`).
     Archive {
@@ -179,7 +194,7 @@ mod tests {
     fn should_default_optional_side_and_size_when_absent() {
         let entry: InstallFileEntryDto = serde_json::from_str(
             r#"{
-                "source": { "providerRef": { "platform": "modrinth", "contentId": "AANobbMI" } },
+                "source": { "type": "providerRef", "data": { "platform": "modrinth", "contentId": "AANobbMI" } },
                 "relativePath": "mods/sodium.jar",
                 "contentType": "mod"
             }"#,
@@ -207,7 +222,8 @@ mod tests {
     #[test]
     fn should_keep_the_game_of_an_existing_instance_when_absent() {
         let target: InstallTargetDto =
-            serde_json::from_str(r#"{ "existing": { "instanceId": "instance" } }"#).unwrap();
+            serde_json::from_str(r#"{ "type": "existing", "data": { "instanceId": "instance" } }"#)
+                .unwrap();
 
         assert!(matches!(
             target,
@@ -218,7 +234,7 @@ mod tests {
     #[test]
     fn should_read_the_game_of_an_existing_instance() {
         let target: InstallTargetDto = serde_json::from_str(
-            r#"{ "existing": {
+            r#"{ "type": "existing", "data": {
                 "instanceId": "instance",
                 "game": { "gameVersion": "1.21.4", "modLoader": "fabric" }
             } }"#,
@@ -241,7 +257,7 @@ mod tests {
         let entry = InstallFileEntryDto {
             source: ContentSourceDto::Direct {
                 url: "https://example.com/a.jar".into(),
-                hash: Some(FileHashDto::Sha1("a".repeat(40))),
+                hash: Some(FileHashDto::sha1("a".repeat(40))),
                 identity: Some(ContentIdentityDto {
                     platform: "modrinth".into(),
                     content_id: "AANobbMI".into(),
@@ -269,7 +285,10 @@ mod tests {
         let entry_json = serde_json::to_string(&entry).unwrap();
         let overrides_json = serde_json::to_string(&overrides).unwrap();
 
-        assert!(entry_json.contains(r#""direct":{"url""#), "{entry_json}");
+        assert!(
+            entry_json.contains(r#""type":"direct","data":{"url""#),
+            "{entry_json}"
+        );
         assert!(
             entry_json.contains(r#""defaultEnabled":false"#),
             "{entry_json}"
@@ -280,7 +299,7 @@ mod tests {
             "{entry_json}"
         );
         assert!(
-            overrides_json.contains(r#""location":{"archive":{"archivePath""#),
+            overrides_json.contains(r#""location":{"type":"archive","data":{"archivePath""#),
             "{overrides_json}"
         );
         assert!(
@@ -293,11 +312,11 @@ mod tests {
     fn should_read_overrides_in_order_with_both_sides_by_default() {
         let plan: InstallPlanDto = serde_json::from_str(
             r#"{
-                "target": { "existing": { "instanceId": "instance" } },
+                "target": { "type": "existing", "data": { "instanceId": "instance" } },
                 "files": [],
                 "overrides": [
-                    { "location": { "archive": { "archivePath": "/cache/p.zip", "subdir": "overrides" } } },
-                    { "location": { "directory": { "path": "/cache/client" } }, "side": "client" }
+                    { "location": { "type": "archive", "data": { "archivePath": "/cache/p.zip", "subdir": "overrides" } } },
+                    { "location": { "type": "directory", "data": { "path": "/cache/client" } }, "side": "client" }
                 ]
             }"#,
         )
@@ -326,7 +345,7 @@ mod tests {
     #[test]
     fn should_have_no_overrides_when_absent() {
         let plan: InstallPlanDto = serde_json::from_str(
-            r#"{ "target": { "existing": { "instanceId": "instance" } }, "files": [] }"#,
+            r#"{ "target": { "type": "existing", "data": { "instanceId": "instance" } }, "files": [] }"#,
         )
         .unwrap();
 

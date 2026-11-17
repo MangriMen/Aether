@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, JsonSchema, Deserialize, Clone)]
 #[serde(
-    tag = "kind",
+    tag = "type",
     content = "data",
     rename_all = "camelCase",
     rename_all_fields = "camelCase"

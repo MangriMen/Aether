@@ -71,8 +71,8 @@ plugin is still running, so the plugin is busy for that long (a stop or restart 
 question first).
 
 A refused command fails the call with `HostError::PluginError(CommandNotApproved { plugin_id,
-reason })` where `reason` is one of `denied`, `timed_out`, `cancelled` or `jar_changed` (on the
-wire: `{"type": "pluginError", "payload": {"kind": "commandNotApproved", "data": {"pluginId": …,
+reason })` where `reason` is one of `denied`, `timedOut`, `cancelled` or `jarChanged` (on the
+wire: `{"type": "pluginError", "data": {"type": "commandNotApproved", "data": {"pluginId": …,
 "reason": "denied"}}}`). *Deny* is remembered until the plugin is stopped or reloaded: the same
 command is refused again without a new question.
 
@@ -95,7 +95,10 @@ and the plugin's choice of arguments; a new build of the plugin starts over. Any
 
 Every structured value that crosses the boundary, in both directions, is **msgpack with structs
 written as maps keyed by field name (camelCase)**; byte fields (`Vec<u8>`) are msgpack `bin`, and enums have
-their JSON shape (`{"type": …, "payload": …}`, `{"status": …, "data": …}`). Arrays are not part
+their JSON shape: a plain enum is its value as a string, an enum with data is `{"type": …, "data": …}`
+(`data` absent for a variant without any), and a result is `{"status": …, "data": …}`. The values
+and tags are `camelCase` (`dataPack`, `timedOut`), with one exception: the loader is `neoforge`, not
+`neoForge`. A hash is `{"algorithm": "sha1", "hex": …}`. Arrays are not part
 of the contract: they make the field order carry the meaning, and an adjacently tagged enum such
 as `HostError` cannot be read back from one. A reader ignores a key it does not know and gives a
 missing key its default when the DTO has one, so a field can be added without breaking the other
