@@ -23,6 +23,13 @@ Any slice inside `src/features/` or `src/shared/` must follow this structure if 
 - **`app/`** — **Application Layer**: Inbound Ports (Use Cases), Outbound Ports (Traits for Storage, Network, OS APIs), Data Transfer Objects (DTOs), and internal application services (coordination logic).
 - **`infra/`** — **Infrastructure Layer**: Technical details and outbound adapters. Low-level implementations binding third-party crates (SQLx, reqwest, Tauri) to ports defined in `app/`.
 
+### Use cases and ports
+
+- A use case is `pub struct <Verb><Noun>UseCase` holding its dependencies as `Arc<dyn Port>`, with a constructor `new(…)` and one entry point, `execute(…)`.
+- It implements an inbound port `<Verb><Noun>UseCasePort` when a caller has to substitute it (a Tauri command, a test double); when another feature calls it, the port is named for the role (`*Service`).
+- Outbound ports are named for the role, without a `Port` suffix: `*Storage`, `*Provider`, `*Service`.
+- A use case file is named after the use case (`create_offline_account.rs`), without a `_uc` suffix.
+
 ---
 
 ## 2. Dependency Rule
@@ -84,7 +91,8 @@ Improper re-exports break architectural boundaries and ruin automated linting.
 2. **Respect Encapsulation**: Never reference `infra` types inside `domain` or `app` (except when writing the actual adapter implementations inside `infra/`). Cross-feature communication must happen exclusively by invoking another feature's public Use Cases or accessing explicitly exposed safe domain models.
 3. **UI Boundary DTOs**: DTO conversion for presentation layers (e.g., Tauri Commands delivering data to the frontend) must live at the boundary interface (the Tauri/API layer itself), separating presentation serializability from internal Rust core communication.
 4. **Code Comments**: Follow the rules in [section 8](#8-code-comments).
-5. **Backend errors (6.3)**: A DTO carries the error code, typed arguments (id, path, URL without query, version, status, limit), translatable `reason` codes and a `cause` category. Raw error text may cross the boundary only as `cause: { type: "unknown", details }`, which the frontend shows only in a collapsible details block. Never put `to_string()` into any other field. The cause of every failed command is logged.
+5. **Backend errors**: Follow [section 12](#12-the-tauri-boundary), in particular how an error crosses the boundary.
+6. **New rules**: Sections 9–12 apply to new and edited code. Existing code is brought in line slice by slice, when a file is touched anyway.
 
 ## 7. Testing Strategy & Guidelines
 
@@ -93,7 +101,8 @@ This section defines how the codebase must be covered by tests. These rules appl
 ### 7.1. Test Placement ("Keep it Close")
 
 - **Domain & Application Layers**: Use **inline test modules** (`mod tests`) at the bottom of the implementation file. This preserves encapsulation, allowing you to test `pub(crate)` types and functions without bloating the file tree.
-  - _Exception_: If the implementation file exceeds ~400 lines, you may move tests to a peer file (e.g., `logic.rs` and `logic_tests.rs`) within the same directory.
+  - _Exception_: If the implementation file exceeds ~400 lines, you may move tests to a peer file named `<module>_test.rs` (e.g., `logic.rs` and `logic_test.rs`) within the same directory. A module that is a directory keeps them in `tests.rs`.
+- **Use case tests with fixtures** live in `features/<feature>/tests/<use_case>_test.rs`, included from the feature's `mod.rs` with `#[cfg(test)] mod tests;`.
 - **Infrastructure Layer**: For complex adapters (e.g., network clients, heavy file system interaction), prefer a separate peer test file next to the adapter to keep production code readable.
 
 ### 7.2. Layer-Specific Testing Rules
@@ -122,3 +131,90 @@ These rules apply equally to human developers and AI agents.
 4. **No task, ticket, finding or question numbers.** `T-1.2`, `F-49`, `Q17` and the like go stale and point nowhere once the planning documents are gone. If the reason matters, write the reason; the link to the task belongs in the commit message or the pull request.
 5. **Do not leave history in code.** Not "was changed from X", not "temporary until Y" without a concrete condition. Describe the code as it is now.
 6. **English only.**
+
+## 9. Domain Types and Errors
+
+Each rule names one example to copy (paths are under `packages/aether-core/src/` unless they start with `apps/`); see [section 6](#6-instructions-for-ai-agents), item 6, for how they apply to existing code.
+
+### 9.1. Validated newtypes
+
+- The field of a validated newtype is private. The check lives in one constructor, and every other way in delegates to it.
+- A value is built by `parse(&str) -> Result<Self, Invalid<Type>>`, a number by `new(n) -> Result<…>`. `TryFrom<String>` is added when the type is stored or sent through serde, with `#[serde(try_from = "String", into = "String")]`.
+- A literal in code is built by a panicking `from_static`.
+- A lenient read of a stored value (log it and fall back) belongs to the infra storage code that reads the row (`parse_stored_*`), not to the type.
+- The error is an `Invalid<Type>` of its own, not the error of the whole feature.
+- Do not implement `Deref<Target = str>`: it leaks every `str` method into the public API of a type whose point is its invariant. Hand out `as_str()`, `AsRef<str>`, `Display` and `From<Type> for String`. Existing `Deref` impls are not examples to copy.
+- Example: `PluginPath` (`features/plugins/domain/models/plugin_path.rs`); `new` in `features/settings/domain/models/bounded_numbers.rs`.
+
+### 9.2. Paths from external data
+
+A path segment that comes from outside (Mojang or Modrinth metadata, a maven coordinate, a version id, a plugin manifest, an API answer) becomes part of a path only as a value of a type that checks segments (`InstanceRelativePath`, `ContentPath`, `PluginPath`) or through the shared "plain file name" helper. A bare `dir.join(external_string)` is not allowed. Example: `LocationInfo::log_config_path` in `features/settings/domain/models/location_info.rs`.
+
+### 9.3. Errors
+
+- Errors are `thiserror` types. `anyhow` is allowed only where a third-party crate hands it out (Extism host functions, `reqwest-middleware`) and in the composition root of the desktop app, never in `domain`.
+- A variant has no `Error` suffix: `Storage(…)`, not `StorageError(…)`. An error about a value is `Invalid<Value>`, carrying the value; when there are several reasons, they are an enum `<Value>Rejection`.
+- The cause goes through `#[source]`, not through `to_string()`. A log prints the whole chain (`error_chain` / `display_chain` in `core/domain/error.rs`), so a cause kept in `source` is not lost from the log.
+
+---
+
+## 10. Storage
+
+### 10.1. Storage formats are separate from the domain
+
+- A domain model does not derive `Serialize`/`Deserialize` for the sake of storage. A file on disk is described by an infra type `<Name>V<n>` with `From`/`TryFrom` both ways; a SQLite row by `Sql<Name>`, whose columns are parsed by `parse_stored_*` functions.
+  The exception is an identifier with `serde(try_from)`.
+- The suffix `Dto` is only for the Tauri or plugin boundary.
+- Example: `ModLoaderV1` in `features/instance/infra/fs/instance.rs`; `SqlPackInfo` in `features/instance/infra/sqlite/sql_pack_info.rs`.
+
+### 10.2. SQL
+
+- Production SQL is written with `sqlx::query!` / `query_as!`, which are checked against `.sqlx`. The runtime form `sqlx::query(…).bind(…)` is allowed in tests, for sqlx's own tables and for text that is built dynamically, with a comment saying why.
+- SQL lives in the slice's `infra/sqlite/` and nowhere else.
+- Example: `features/instance/infra/sqlite/sqlite_instance_storage.rs`.
+
+### 10.3. Files that are read back
+
+A file that the app reads back later (settings, metadata, a cache entry, a manifest, an instance file) is written by replacing it as a whole: through `write_json_async` or `write_toml_async` from `shared::io`, or, inside `aether-core`, `write_replacing_async` for raw bytes. A crash or a full disk then leaves the previous content, not a truncated file that no longer parses. A plain `fs::write` or `File::create` is fine in tests and in a staging directory that is moved into place as a whole. The non-atomic `write_async` is not for such files. Example: `write_replacing_async` in `shared/io/infra/fs.rs`.
+
+---
+
+## 11. Limits and Untrusted Input
+
+### 11.1. Limits and timeouts
+
+- Every limit on size or count, and every timeout, that protects against external input (network, archives, plugin calls) is declared in `packages/aether-core/src/shared/limits.rs` with a comment on what it protects against. The adapter gets it from there: through the limits struct built in the composition root, or by importing the constant.
+- Two constants with the same name and different values are not allowed.
+- Not covered: a bound that is part of a value type's invariant (`MAX_USERNAME_LENGTH`) stays next to the type, and so do the settings of a feature that do not guard against outside input (concurrency, UI paging).
+
+### 11.2. HTTP clients for untrusted URLs
+
+A URL that comes from a plugin, from provider metadata or from Markdown is fetched only by a client whose redirect policy is `Policy::none()` or a `Policy::custom` that checks every hop by the same rule as the first URL (https, public host, allowlist). A shared client with the default policy is for fixed, trusted hosts only. Examples: `VettedHops` in the plugin `http_*` host functions; `icon_redirect_policy` in `features/instance/infra/fs_content_icon_cache.rs`.
+
+---
+
+## 12. The Tauri Boundary
+
+### 12.1. Commands
+
+- Every feature is a Tauri plugin with `init()` and a `#[must_use] get_specta_commands()`, plus `get_specta_events()` when it has events. Commands are listed in a `<x>_commands!` macro (`apps/desktop/src/shared/commands.rs`), not registered by hand.
+- A command is a private `async fn` with `#[tauri::command] #[specta::specta]`, named `verb[_object]` without the feature prefix. It returns `FrontendResult<T>` and converts a core error with `.map_err(aether_core::Error::from)?`.
+- A command that changes state takes `request_id: RequestId` and starts with `idempotency.lock_cmd(request_id)?`.
+- A synchronous command is not allowed: it runs on the main thread.
+- Example: `apps/desktop/src/features/instance/infra/tauri/api/commands.rs`.
+
+### 12.2. Events
+
+- A backend event is `<Name>EventDto` deriving `Type, Event`, with a field `pub seq: u32`, taken from the one shared counter. It is registered through `get_specta_events()`.
+- When an event has several kinds, the kind is a field `#[serde(flatten)] kind: <Name>EventKindDto`.
+- The frontend listens only through `useEventListener`, which drops a `seq` it has seen.
+- Example: `apps/desktop/src/features/events/infra/tauri/dtos/cache_event.rs`, `apps/desktop/src/features/plugins/infra/tauri/dtos/plugin_event.rs`.
+
+### 12.3. DTOs
+
+- Boundary types are named `<Name>Dto` and live in `infra/tauri/dtos/` (`infra/tauri/api/dtos/` in the instance feature) of the desktop app. A conversion is a `From`/`TryFrom` in the same file; there are no `to_dto` functions.
+- Structs have `#[serde(rename_all = "camelCase")]`, enums `"snake_case"`. Any other case is only for a value that must match an external format, with a comment saying so.
+
+### 12.4. Errors
+
+A DTO carries the error code, typed arguments (id, path, URL without query, version, status, limit), translatable `reason` codes and a `cause` category. Raw error text may cross the boundary only as `cause: { type: "unknown", details }`, which the frontend shows only in a collapsible details block. Never put `to_string()` into any other field. The cause of every failed command is logged. The frontend side is in `apps/frontend/ARCHITECTURE.md`, rule 9.
