@@ -1,6 +1,6 @@
 use aether_core_plugin_api::v0::NewInstanceDto;
 
-use super::pack_info::InvalidPackInfo;
+use super::{UnknownValue, pack_info::InvalidPackInfo};
 use crate::features::{
     instance::{ContentProviderRejection, InstanceError, InstanceName, NewInstance},
     minecraft::GameVersion,
@@ -22,7 +22,10 @@ impl TryFrom<NewInstanceDto> for NewInstance {
         Ok(Self {
             name: InstanceName::try_from(value.name)?,
             game_version: GameVersion::try_from(value.game_version)?,
-            mod_loader: value.mod_loader.into(),
+            mod_loader: value
+                .mod_loader
+                .try_into()
+                .map_err(|err: UnknownValue| ContentProviderRejection::Provider(err.to_string()))?,
             loader_version: value.loader_version.map(TryInto::try_into).transpose()?,
             icon_path: value.icon_path,
             skip_install_instance: value.skip_install_instance,

@@ -311,7 +311,7 @@ mod tests {
             serde_json::to_value(dto).unwrap(),
             serde_json::json!(reason.as_wire())
         );
-        assert_eq!(CommandApprovalRefusal::from(dto), reason);
+        assert_eq!(CommandApprovalRefusal::try_from(dto), Ok(reason));
     }
 
     #[test]

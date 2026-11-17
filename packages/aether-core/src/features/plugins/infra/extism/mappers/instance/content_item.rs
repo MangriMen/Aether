@@ -1,5 +1,6 @@
 use aether_core_plugin_api::v0::ContentItemDto;
 
+use super::UnknownValue;
 use crate::features::instance::ContentItem;
 use crate::shared::web_url::{display_icon_url, display_url};
 
@@ -21,9 +22,11 @@ impl From<ContentItem> for ContentItemDto {
     }
 }
 
-impl From<ContentItemDto> for ContentItem {
-    fn from(value: ContentItemDto) -> Self {
-        Self {
+impl TryFrom<ContentItemDto> for ContentItem {
+    type Error = UnknownValue;
+
+    fn try_from(value: ContentItemDto) -> Result<Self, Self::Error> {
+        Ok(Self {
             url: display_url("page of a plugin's content item", Some(value.url)),
             icon_url: display_icon_url("icon of a plugin's content item", Some(value.icon_url)),
             id: value.id,
@@ -33,8 +36,8 @@ impl From<ContentItemDto> for ContentItem {
             long_description: value.long_description,
             author: value.author,
             versions: value.versions,
-            content_type: value.content_type.into(),
-        }
+            content_type: value.content_type.try_into()?,
+        })
     }
 }
 
@@ -62,10 +65,11 @@ mod tests {
 
     #[test]
     fn should_keep_the_links_when_they_are_web_urls() {
-        let item = ContentItem::from(dto(
+        let item = ContentItem::try_from(dto(
             "http://example.com/jei",
             "https://media.forgecdn.net/jei.png",
-        ));
+        ))
+        .unwrap();
 
         assert_eq!(
             item.url.as_ref().map(HttpUrl::as_str),
@@ -89,7 +93,7 @@ mod tests {
             ),
             ("", ""),
         ] {
-            let item = ContentItem::from(dto(url, icon_url));
+            let item = ContentItem::try_from(dto(url, icon_url)).unwrap();
 
             assert_eq!(item.name, "JEI");
             assert_eq!(item.url, None, "{url}");
@@ -99,7 +103,7 @@ mod tests {
 
     #[test]
     fn should_send_no_link_as_an_empty_string_when_mapped_for_a_plugin() {
-        let item = ContentItem::from(dto("", ""));
+        let item = ContentItem::try_from(dto("", "")).unwrap();
 
         let dto = ContentItemDto::from(item);
 

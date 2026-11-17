@@ -115,3 +115,55 @@ mod tests {
         ));
     }
 }
+
+#[cfg(test)]
+mod forward_compatibility_tests {
+    use super::*;
+    use crate::v0::{CommandRefusalDto, ContentTypeDto, InstanceInstallStageDto, ModLoaderDto};
+
+    /// A name a newer launcher has and this version does not: the value is read as `Unknown`, not
+    /// refused, so the rest of the call can still be read.
+    fn read_unknown<T: DeserializeOwned>() -> T {
+        decode(&encode("somethingNew").unwrap()).unwrap()
+    }
+
+    #[test]
+    fn a_new_value_of_a_plain_enum_is_read_as_unknown() {
+        assert_eq!(read_unknown::<ModLoaderDto>(), ModLoaderDto::Unknown);
+        assert_eq!(read_unknown::<ContentTypeDto>(), ContentTypeDto::Unknown);
+        assert_eq!(
+            read_unknown::<CommandRefusalDto>(),
+            CommandRefusalDto::Unknown
+        );
+        assert_eq!(
+            read_unknown::<InstanceInstallStageDto>(),
+            InstanceInstallStageDto::Unknown
+        );
+    }
+
+    #[test]
+    fn a_new_value_is_read_inside_a_struct_without_failing_the_struct() {
+        #[derive(Serialize, serde::Deserialize)]
+        struct New {
+            loader: &'static str,
+            name: &'static str,
+        }
+        #[derive(serde::Deserialize)]
+        struct Old {
+            loader: ModLoaderDto,
+            name: String,
+        }
+
+        let old: Old = decode(
+            &encode(&New {
+                loader: "somethingNew",
+                name: "x",
+            })
+            .unwrap(),
+        )
+        .unwrap();
+
+        assert_eq!(old.loader, ModLoaderDto::Unknown);
+        assert_eq!(old.name, "x");
+    }
+}

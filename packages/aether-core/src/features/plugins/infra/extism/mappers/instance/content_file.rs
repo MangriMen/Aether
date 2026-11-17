@@ -1,5 +1,6 @@
 use aether_core_plugin_api::v0::{ContentFileDto, ContentFileUpdateInfoDto, ProviderIdDto};
 
+use super::UnknownValue;
 use crate::features::instance::{
     ContentFile, ContentFileUpdateInfo, ContentPath, ContentVersionId, InvalidContentId, InvalidId,
     InvalidRelativePath, ProviderId,
@@ -45,6 +46,9 @@ pub enum InvalidContentFile {
 
     #[error(transparent)]
     Hash(#[from] InvalidFileHash),
+
+    #[error(transparent)]
+    Value(#[from] UnknownValue),
 }
 
 impl TryFrom<ContentFileDto> for ContentFile {
@@ -53,7 +57,7 @@ impl TryFrom<ContentFileDto> for ContentFile {
     fn try_from(value: ContentFileDto) -> Result<Self, Self::Error> {
         Ok(Self {
             content_path: ContentPath::parse(&value.content_path)?,
-            content_type: value.content_type.into(),
+            content_type: value.content_type.try_into()?,
             disabled: value.disabled,
             file_name: value.file_name,
             hash: value.hash.try_into()?,

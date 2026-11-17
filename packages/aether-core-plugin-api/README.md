@@ -104,6 +104,12 @@ as `HostError` cannot be read back from one. A reader ignores a key it does not 
 missing key its default when the DTO has one, so a field can be added without breaking the other
 side.
 
+A new value of a plain enum the launcher sends (`ModLoaderDto`, `ContentTypeDto`, `CommandRefusalDto`,
+`InstanceInstallStageDto`) reads as `unknown` in a plugin built for an older API, so the call still
+decodes; a plugin must not answer `unknown`, the launcher refuses it. An enum with data
+(`{"type", "data"}`) has no such fallback: a new variant of it is a breaking change, a new value of a
+plain enum is a minor one.
+
 A host function returns `{"status": "ok", "data": <value>}` or `{"status": "err", "data":
 <HostError>}`; `data` is always there (`nil` for `()`). The arguments and answers of a plugin's exports are the DTOs as maps.
 

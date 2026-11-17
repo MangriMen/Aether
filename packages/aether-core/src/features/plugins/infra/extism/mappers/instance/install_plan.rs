@@ -7,12 +7,13 @@ use aether_core_plugin_api::v0::{
     InstanceGameDto, OptionalFileDto,
 };
 
+use super::UnknownValue;
 use crate::{
     features::{
         instance::{
-            ContentIdentity, ContentPath, ContentSource, FileSide, InstallFileEntry, InstallTarget,
-            InstanceError, InstanceGame, InstanceId, InvalidContentId, InvalidId,
-            InvalidRelativePath, OptionalFile, PlatformId,
+            ContentIdentity, ContentPath, ContentProviderRejection, ContentSource, FileSide,
+            InstallFileEntry, InstallTarget, InstanceError, InstanceGame, InstanceId,
+            InvalidContentId, InvalidId, InvalidRelativePath, OptionalFile, PlatformId,
         },
         minecraft::GameVersion,
     },
@@ -44,7 +45,10 @@ impl TryFrom<InstanceGameDto> for InstanceGame {
     fn try_from(value: InstanceGameDto) -> Result<Self, Self::Error> {
         Ok(Self {
             game_version: GameVersion::try_from(value.game_version)?,
-            mod_loader: value.mod_loader.into(),
+            mod_loader: value
+                .mod_loader
+                .try_into()
+                .map_err(|err: UnknownValue| ContentProviderRejection::Provider(err.to_string()))?,
             loader_version: value.loader_version.map(TryInto::try_into).transpose()?,
         })
     }
@@ -67,6 +71,9 @@ pub enum InvalidPlanFile {
 
     #[error(transparent)]
     Url(#[from] InvalidUrl),
+
+    #[error(transparent)]
+    Value(#[from] UnknownValue),
 }
 
 impl InvalidPlanFile {
@@ -132,7 +139,7 @@ impl TryFrom<InstallFileEntryDto> for InstallFileEntry {
             ..Self::new(
                 value.source.try_into()?,
                 ContentPath::parse(&value.relative_path)?,
-                value.content_type.into(),
+                value.content_type.try_into()?,
             )
         })
     }

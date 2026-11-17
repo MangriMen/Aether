@@ -10,6 +10,7 @@ use crate::features::instance::{
 };
 use crate::features::minecraft::{GameVersion, ModLoader};
 
+use super::UnknownValue;
 use crate::shared::web_url::display_url;
 
 impl From<ContentVersion> for ContentVersionDto {
@@ -112,8 +113,18 @@ impl From<RequestedContentVersionStatus> for RequestedContentVersionStatusDto {
     }
 }
 
+/// What is wrong with a version a plugin returned.
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+pub enum InvalidContentVersion {
+    #[error(transparent)]
+    ContentId(#[from] InvalidContentId),
+
+    #[error(transparent)]
+    Value(#[from] UnknownValue),
+}
+
 impl TryFrom<ContentVersionDto> for ContentVersion {
-    type Error = InvalidContentId;
+    type Error = InvalidContentVersion;
 
     fn try_from(value: ContentVersionDto) -> Result<Self, Self::Error> {
         Ok(Self {
@@ -130,7 +141,11 @@ impl TryFrom<ContentVersionDto> for ContentVersion {
                 .collect::<Result<_, _>>()?,
             game_versions: GameVersion::parse_list(value.game_versions, "plugin content version"),
             version_type: value.version_type.into(),
-            loaders: value.loaders.into_iter().map(ModLoader::from).collect(),
+            loaders: value
+                .loaders
+                .into_iter()
+                .map(ModLoader::try_from)
+                .collect::<Result<_, _>>()?,
             featured: value.featured,
             status: value.status.into(),
             requested_status: value.requested_status.map(Into::into),
