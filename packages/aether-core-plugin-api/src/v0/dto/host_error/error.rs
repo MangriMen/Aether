@@ -3,7 +3,7 @@ use std::fmt;
 use schemars::JsonSchema;
 use serde::{Deserialize, Deserializer, Serialize, de::IgnoredAny};
 
-use super::CommandRefusalDto;
+use super::{CommandRefusalDto, HttpErrorDto};
 
 #[derive(Serialize, JsonSchema, Deserialize, Debug, Clone)]
 #[serde(tag = "status", content = "data", rename_all = "camelCase")]
@@ -38,14 +38,15 @@ pub enum HostError {
     /// What the plugin named does not exist: an instance, a plugin, an importer, a provider.
     NotFound { message: String },
     /// The plugin may not do this: a path outside what it was given, a program it is not
-    /// allowed. (A host refused by an HTTP function arrives as `internal` until it is typed.)
+    /// allowed. A host an HTTP function refuses is `http` with `hostNotAllowed` instead.
     AccessDenied { message: String },
     /// The user did not allow the plugin's command, or was not there to.
     CommandNotApproved {
         reason: CommandRefusalDto,
         message: String,
     },
-    /// A file or an answer is larger than the host accepts.
+    /// A file the plugin asked to read is larger than the host accepts (an over-long network
+    /// answer is `http` / `responseTooLarge`).
     TooLarge { message: String },
     /// The state does not allow it now: the instance is running or still installing, a plugin
     /// is loading or busy. It may succeed later.
@@ -56,8 +57,11 @@ pub enum HostError {
     TimedOut { message: String },
     /// A call into a plugin failed: the other plugin crashed, hit a limit or reported an error.
     PluginCallFailed { message: String },
-    /// A network request failed.
-    Http { message: String },
+    /// A network request failed; `error` tells how.
+    Http {
+        message: String,
+        error: HttpErrorDto,
+    },
     /// The host failed on its own: storage, the file system, anything the plugin can do nothing
     /// about.
     Internal { message: String },
@@ -84,7 +88,7 @@ impl HostError {
             | Self::Cancelled { message }
             | Self::TimedOut { message }
             | Self::PluginCallFailed { message }
-            | Self::Http { message }
+            | Self::Http { message, .. }
             | Self::Internal { message } => Some(message),
             Self::Unknown => None,
         }
@@ -100,7 +104,7 @@ impl fmt::Display for HostError {
     }
 }
 
-/// The `data` of a kind this version does not know: whatever it holds.
-fn ignore_data<'de, D: Deserializer<'de>>(deserializer: D) -> Result<(), D::Error> {
+/// The `data` of a kind this version does not know: whatever it holds, or none.
+pub(super) fn ignore_data<'de, D: Deserializer<'de>>(deserializer: D) -> Result<(), D::Error> {
     IgnoredAny::deserialize(deserializer).map(|_| ())
 }

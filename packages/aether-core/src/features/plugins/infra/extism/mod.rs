@@ -9,7 +9,7 @@ pub use extism_plugin_loader::ExtismPluginLoader;
 #[cfg(test)]
 pub(crate) use host_functions::test_server;
 pub(crate) use host_functions::{
-    AddressFilter, PluginDownloadError, PluginNetwork, ProxySource, VettedDownloadClient,
-    download_with, is_blocked_ip, vetted_download_client,
+    AddressFilter, PluginNetwork, ProxySource, VettedDownloadClient, download_with, is_blocked_ip,
+    vetted_download_client,
 };
 pub(crate) use mappers::{InvalidInstanceDescription, InvalidPlanFile, InvalidResolvedFile, Wire};

@@ -90,6 +90,7 @@ impl GitHubPluginFetcher {
         if Self::check_rate_limit(status, headers) {
             return PluginProviderError::ProviderRateLimited {
                 source_type: PluginSourceType::GitHub,
+                status: status.as_u16(),
                 retry_after: Self::retry_after_from(headers),
             };
         }

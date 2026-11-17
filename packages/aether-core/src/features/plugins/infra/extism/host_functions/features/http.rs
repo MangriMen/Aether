@@ -48,6 +48,8 @@ pub(super) use policy::{find_policy_refusal, policy_error};
 // (`GrantPluginHostAccessUseCase`) is decided by the same rules its requests are held to.
 use crate::features::instance::PluginId;
 pub(crate) use crate::features::plugins::{is_blocked_ip, is_host_allowed};
+// The domain's, so that it reaches the plugin typed through `ErrorKind`.
+use crate::features::plugins::PluginHttpError;
 use crate::shared::limits::{CONNECT_TIMEOUT, PluginSandboxLimits, READ_TIMEOUT, REQUEST_TIMEOUT};
 
 mod policy;
@@ -76,70 +78,6 @@ const FORBIDDEN_HEADERS: &[&str] = &[
     "transfer-encoding",
     "upgrade",
 ];
-
-#[derive(Debug, Clone, thiserror::Error)]
-pub enum PluginHttpError {
-    #[error("Invalid URL `{url}`: {reason}")]
-    InvalidUrl { url: String, reason: String },
-
-    #[error("URL scheme `{scheme}` is not allowed, only `http` and `https` are supported")]
-    UnsupportedScheme { scheme: String },
-
-    #[error("URL `{url}` has no host")]
-    MissingHost { url: String },
-
-    #[error("Host `{host}` is not listed in the plugin's allowed_hosts")]
-    HostNotAllowed { host: String },
-
-    #[error("Failed to resolve host `{host}`: {reason}")]
-    ResolveFailed { host: String, reason: String },
-
-    #[error("Host `{host}` resolved to no addresses")]
-    NoAddresses { host: String },
-
-    #[error("Host `{host}` resolves to non-public address {ip}, which is not allowed")]
-    BlockedAddress { host: String, ip: IpAddr },
-
-    #[error("Request body is not valid JSON: {reason}")]
-    InvalidJsonBody { reason: String },
-
-    #[error("Request body exceeds the {limit} byte limit")]
-    RequestBodyTooLarge { limit: usize },
-
-    #[error("Header `{name}` may not be set by a plugin")]
-    ForbiddenHeader { name: String },
-
-    #[error("Invalid header `{name}`: {reason}")]
-    InvalidHeader { name: String, reason: String },
-
-    #[error("Redirect with status {status} from `{url}` is not followed")]
-    RedirectNotAllowed { status: u16, url: String },
-
-    #[error("Redirect with status {status} from `{url}` has no usable Location: {reason}")]
-    InvalidRedirect {
-        status: u16,
-        url: String,
-        reason: String,
-    },
-
-    #[error("Redirect from `{from}` to `{to}` would downgrade https to http")]
-    SchemeDowngrade { from: String, to: String },
-
-    #[error("Too many redirects: more than {limit}")]
-    TooManyRedirects { limit: usize },
-
-    #[error("Response body exceeds the {limit} byte limit")]
-    ResponseTooLarge { limit: usize },
-
-    #[error("Request to `{url}` failed: {reason}")]
-    RequestFailed { url: String, reason: String },
-}
-
-impl From<PluginHttpError> for crate::ErrorKind {
-    fn from(value: PluginHttpError) -> Self {
-        Self::CoreError(value.to_string())
-    }
-}
 
 // ── Address filtering ──
 

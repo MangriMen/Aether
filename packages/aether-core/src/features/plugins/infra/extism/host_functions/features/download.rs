@@ -27,12 +27,13 @@ use reqwest_retry::{RetryTransientMiddleware, policies::ExponentialBackoff};
 
 use crate::{
     features::{
-        events::ProgressService, instance::PluginId,
-        plugins::infra::plugin_utils::PLUGIN_CACHE_MOUNT,
+        events::ProgressService,
+        instance::PluginId,
+        plugins::{PluginDownloadError, infra::plugin_utils::PLUGIN_CACHE_MOUNT},
     },
     shared::{
         fetch::FetchSemaphore,
-        hash::{FileHash, HashAlgorithm, InvalidFileHash, infra::hash_file_hex_async},
+        hash::{FileHash, HashAlgorithm, infra::hash_file_hex_async},
         limits::{DOWNLOAD_BUDGET, DOWNLOAD_MAX_RETRIES, DOWNLOAD_TIMEOUT, PluginSandboxLimits},
         request_client::{
             BytesProgress, Request, RequestClient, RequestError, infra::ReqwestClient,
@@ -46,37 +47,13 @@ use super::{
         PluginContext, block_on,
     },
     http::{
-        AddressFilter, PluginHttpError, ProxySource, check_target, find_policy_refusal,
-        is_blocked_ip, system_lookup, vetted_client,
+        AddressFilter, ProxySource, check_target, find_policy_refusal, is_blocked_ip,
+        system_lookup, vetted_client,
     },
 };
 
 /// Subdirectory of the plugin cache the host downloads into.
 const DOWNLOADS_DIR: &str = "downloads";
-
-#[derive(Clone, Debug, thiserror::Error)]
-pub enum PluginDownloadError {
-    #[error("Invalid hash: {0}")]
-    InvalidHash(#[from] InvalidFileHash),
-
-    #[error(transparent)]
-    Http(#[from] PluginHttpError),
-
-    #[error("Download failed: {0}")]
-    Request(#[from] RequestError),
-
-    #[error("Plugin cache path `{}` cannot be used: {reason}", path.display())]
-    UnusableCache { path: PathBuf, reason: String },
-
-    #[error("Download did not finish within {} seconds", .0.as_secs())]
-    OutOfTime(Duration),
-}
-
-impl From<PluginDownloadError> for crate::ErrorKind {
-    fn from(value: PluginDownloadError) -> Self {
-        Self::CoreError(value.to_string())
-    }
-}
 
 fn unusable(path: &Path, reason: &dyn std::fmt::Display) -> PluginDownloadError {
     PluginDownloadError::UnusableCache {

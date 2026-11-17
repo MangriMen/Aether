@@ -14,6 +14,7 @@ mod plugin_file_path;
 mod plugin_internal_event;
 mod plugin_load_failure;
 mod plugin_manifest;
+mod plugin_network_error;
 mod plugin_path;
 mod plugin_provider;
 mod plugin_provider_error;
@@ -61,6 +62,7 @@ pub use plugin_manifest::{
     ApiConfig, Compatibility, LoadConfig, LoadConfigType, PathMapping, PluginManifest,
     PluginMetadata, RuntimeConfig,
 };
+pub use plugin_network_error::{PluginDownloadError, PluginHttpError};
 pub(crate) use plugin_path::PluginPath;
 pub use plugin_provider::{
     PluginProviderInfo, PluginReleaseListing, PluginReleasePreview, PluginSourceType,

@@ -34,6 +34,14 @@ pub enum ErrorKind {
     #[error(transparent)]
     PluginError(#[from] plugins::PluginError),
 
+    /// A request `http_get` or `http_post_json` makes for a plugin failed.
+    #[error(transparent)]
+    PluginHttpError(#[from] plugins::PluginHttpError),
+
+    /// A download `download_to_cache` makes for a plugin failed.
+    #[error(transparent)]
+    PluginDownloadError(#[from] plugins::PluginDownloadError),
+
     #[error(transparent)]
     ProcessError(#[from] process::ProcessError),
 

@@ -108,7 +108,7 @@
           ]
         },
         {
-          "description": "The plugin may not do this: a path outside what it was given, a program it is not\nallowed. (A host refused by an HTTP function arrives as `internal` until it is typed.)",
+          "description": "The plugin may not do this: a path outside what it was given, a program it is not\nallowed. A host an HTTP function refuses is `http` with `hostNotAllowed` instead.",
           "type": "object",
           "properties": {
             "data": {
@@ -162,7 +162,7 @@
           ]
         },
         {
-          "description": "A file or an answer is larger than the host accepts.",
+          "description": "A file the plugin asked to read is larger than the host accepts (an over-long network\nanswer is `http` / `responseTooLarge`).",
           "type": "object",
           "properties": {
             "data": {
@@ -287,18 +287,22 @@
           ]
         },
         {
-          "description": "A network request failed.",
+          "description": "A network request failed; `error` tells how.",
           "type": "object",
           "properties": {
             "data": {
               "type": "object",
               "properties": {
+                "error": {
+                  "$ref": "#/$defs/HttpErrorDto"
+                },
                 "message": {
                   "type": "string"
                 }
               },
               "required": [
-                "message"
+                "message",
+                "error"
               ]
             },
             "type": {
@@ -329,6 +333,242 @@
             "type": {
               "type": "string",
               "const": "internal"
+            }
+          },
+          "required": [
+            "type",
+            "data"
+          ]
+        },
+        {
+          "description": "A kind this version of the API does not know: a newer launcher sent it. Read it, never\nwrite it.",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "unknown"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        }
+      ]
+    },
+    "HttpErrorDto": {
+      "description": "How a network request failed: the `error` of the `http` kind of `HostError`. A plugin matches\non the kind; a `reason` is text for the log or the user, like the `message`.",
+      "oneOf": [
+        {
+          "description": "The host is not in the plugin's `allowedHosts`: the URL asked for, or a redirect to it.\nThe user can allow it in the plugin's settings.",
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "host": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "host"
+              ]
+            },
+            "type": {
+              "type": "string",
+              "const": "hostNotAllowed"
+            }
+          },
+          "required": [
+            "type",
+            "data"
+          ]
+        },
+        {
+          "description": "The host resolves to an address a plugin may not reach (loopback, private, link-local,\n…), or to none at all.",
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "host": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "host"
+              ]
+            },
+            "type": {
+              "type": "string",
+              "const": "addressBlocked"
+            }
+          },
+          "required": [
+            "type",
+            "data"
+          ]
+        },
+        {
+          "description": "The request itself is refused before anything is sent: the URL, its scheme or host, a\nheader, the JSON body or its size, the expected hash of a download. Sending it again fails\nagain.",
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "reason": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "reason"
+              ]
+            },
+            "type": {
+              "type": "string",
+              "const": "invalidRequest"
+            }
+          },
+          "required": [
+            "type",
+            "data"
+          ]
+        },
+        {
+          "description": "A redirect that is not followed: to `http` from `https`, without a usable `Location`, more\nthan the limit, or any 3xx where none is followed (`http_post_json`, `304`, …).",
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "reason": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "reason"
+              ]
+            },
+            "type": {
+              "type": "string",
+              "const": "redirect"
+            }
+          },
+          "required": [
+            "type",
+            "data"
+          ]
+        },
+        {
+          "description": "The answer is larger than the host accepts, in bytes.",
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "limit": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "limit"
+              ]
+            },
+            "type": {
+              "type": "string",
+              "const": "responseTooLarge"
+            }
+          },
+          "required": [
+            "type",
+            "data"
+          ]
+        },
+        {
+          "description": "The final answer has an error status. `http_get` and `http_post_json` hand a status back\nas an answer instead; a download, and the launcher's own requests for a plugin, fail with it.",
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "integer",
+                  "format": "uint16",
+                  "maximum": 65535,
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "status"
+              ]
+            },
+            "type": {
+              "type": "string",
+              "const": "status"
+            }
+          },
+          "required": [
+            "type",
+            "data"
+          ]
+        },
+        {
+          "description": "The downloaded file is not the one the hash names.",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "hashMismatch"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "description": "The answer could not be read as what was expected: not the JSON, TOML or text the launcher\nasked for, or a URL in it that cannot be used.",
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "reason": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "reason"
+              ]
+            },
+            "type": {
+              "type": "string",
+              "const": "invalidResponse"
+            }
+          },
+          "required": [
+            "type",
+            "data"
+          ]
+        },
+        {
+          "description": "No usable answer came back: the host could not be resolved or reached, the connection or\nTLS failed, the request timed out or broke off. It may succeed later.",
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "properties": {
+                "reason": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "reason"
+              ]
+            },
+            "type": {
+              "type": "string",
+              "const": "network"
             }
           },
           "required": [

@@ -141,6 +141,55 @@ mod forward_compatibility_tests {
     }
 
     #[test]
+    fn an_http_error_crosses_with_its_kind_and_a_new_kind_reads_as_unknown() {
+        use serde_json::json;
+
+        use crate::v0::{HostError, HttpErrorDto};
+
+        let refused = HostError::Http {
+            message: "Host `cdn.example` is not listed in the plugin's allowed_hosts".to_owned(),
+            error: HttpErrorDto::HostNotAllowed {
+                host: "cdn.example".to_owned(),
+            },
+        };
+        let mismatch = HostError::Http {
+            message: "m".to_owned(),
+            error: HttpErrorDto::HashMismatch,
+        };
+        let http = |error: serde_json::Value| {
+            encode(&json!({"type": "http", "data": {"message": "m", "error": error}})).unwrap()
+        };
+
+        assert_eq!(
+            decode::<HostError>(&encode(&refused).unwrap()).unwrap(),
+            refused
+        );
+        assert_eq!(
+            decode::<HostError>(&encode(&mismatch).unwrap()).unwrap(),
+            mismatch
+        );
+        assert_eq!(
+            decode::<HostError>(&http(
+                json!({"type": "somethingNew", "data": {"host": "x", "port": 1}})
+            ))
+            .unwrap(),
+            HostError::Http {
+                message: "m".to_owned(),
+                error: HttpErrorDto::Unknown,
+            }
+        );
+        assert_eq!(
+            decode::<HostError>(&http(json!({"type": "somethingNew"}))).unwrap(),
+            HostError::Http {
+                message: "m".to_owned(),
+                error: HttpErrorDto::Unknown,
+            }
+        );
+        // A kind this version knows, with what it needs missing, is an error, not `unknown`.
+        assert!(decode::<HostError>(&http(json!({"type": "hostNotAllowed", "data": {}}))).is_err());
+    }
+
+    #[test]
     fn a_new_value_is_read_inside_a_struct_without_failing_the_struct() {
         #[derive(Serialize, serde::Deserialize)]
         struct New {
