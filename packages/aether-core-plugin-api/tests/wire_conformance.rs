@@ -258,6 +258,29 @@ fn every_enum_value_and_tag_in_the_schema_is_camel_case_and_tagged_type() {
                         bad.push(format!("{path}: value `{value}`"));
                     }
                 }
+                if let Some(Value::Array(branches)) = object.get("oneOf") {
+                    for (index, branch) in branches.iter().enumerate() {
+                        let unit = branch.get("type").and_then(Value::as_str) == Some("string")
+                            && branch.get("const").is_some();
+                        let externally_tagged = branch
+                            .get("properties")
+                            .and_then(Value::as_object)
+                            .is_some_and(|properties| {
+                                properties.len() == 1
+                                    && properties.values().all(|p| p.get("const").is_none())
+                                    && branch.get("additionalProperties")
+                                        == Some(&Value::Bool(false))
+                            });
+                        let mixed = branches
+                            .iter()
+                            .any(|b| b.get("type").and_then(Value::as_str) == Some("object"));
+                        if (unit && mixed) || externally_tagged {
+                            bad.push(format!(
+                                "{path}/oneOf/{index}: a variant not written as {{type, data}}"
+                            ));
+                        }
+                    }
+                }
                 if let Some(Value::Object(properties)) = object.get("properties") {
                     let tag = properties
                         .iter()

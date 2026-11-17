@@ -97,7 +97,7 @@ Every structured value that crosses the boundary, in both directions, is **msgpa
 written as maps keyed by field name (camelCase)**; byte fields (`Vec<u8>`) are msgpack `bin`, and enums have
 their JSON shape: a plain enum is its value as a string, an enum with data is `{"type": …, "data": …}`
 (`data` absent for a variant without any), and a result is `{"status": …, "data": …}`. The values
-and tags are `camelCase` (`dataPack`, `timedOut`), with one exception: the loader is `neoforge`, not
+and tags are `camelCase` (`dataPack`, `resourcePack`, `shaderPack`, `timedOut`), with one exception: the loader is `neoforge`, not
 `neoForge`. A hash is `{"algorithm": "sha1", "hex": …}`. Arrays are not part
 of the contract: they make the field order carry the meaning, and an adjacently tagged enum such
 as `HostError` cannot be read back from one. A reader ignores a key it does not know and gives a
@@ -133,7 +133,7 @@ the `handler` values of the capabilities; the properties are those of `schemas/p
 | Export | Input | Answer |
 | --- | --- | --- |
 | an event handler | `internalEvent` | none |
-| an importer | `importInstance` (`{importerId, source}`; `source` is `{"url": {"url": …}}` or `{"file": {"path": …}}`) | none |
+| an importer | `importInstance` (`{importerId, source}`; `source` is `{"type": "url", "data": {"url": …}}` or `{"type": "file", "data": {"path": …}}`) | none |
 | an updater | `updateInstanceParams` | none |
 | `search` | `contentSearchParams` | `contentSearchResult` |
 | `getContent` | `getContentParams` | `contentItem` |
@@ -316,7 +316,7 @@ the plugin can open through WASI:
 // plugin side
 let file: HostReply<CachedFileDto> = unsafe { download_to_cache(Wire(DownloadToCacheParamsDto {
     url: "https://cdn.modrinth.com/data/AANobbMI/versions/x/sodium.jar".to_string(),
-    hash: FileHashDto::Sha1("…40 hex characters…".to_string()),
+    hash: FileHashDto::sha1("…40 hex characters…"),
 })) }?;
 // file.path == "/cache/downloads/sha1/<hex digest>"
 ```
