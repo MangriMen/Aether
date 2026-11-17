@@ -19,10 +19,14 @@ const CAMEL_CASE = /^[a-z][a-zA-Z0-9]*$/;
 const ENUM_VALUE = /^[A-Za-z][A-Za-z0-9]*(?:_[A-Za-z0-9]+)*$/;
 const ERROR_CODE = /^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$/;
 
-const keyPaths = (value: unknown, path: string[] = []): string[][] =>
-  value !== null && typeof value === 'object'
-    ? Object.entries(value).flatMap(([k, v]) => keyPaths(v, [...path, k]))
+const keyPaths = (value: unknown, path: string[] = []): string[][] => {
+  const entries =
+    value !== null && typeof value === 'object' ? Object.entries(value) : [];
+
+  return entries.length > 0
+    ? entries.flatMap(([k, v]) => keyPaths(v, [...path, k]))
     : [path];
+};
 
 const isAllowed = (path: string[], index: number): boolean => {
   const segment = path[index] ?? '';
@@ -37,7 +41,8 @@ const isAllowed = (path: string[], index: number): boolean => {
     return true;
   }
 
-  // errors.<domain>.<CODE> and errors.<domain>.reason.<CODE>.<REASON>
+  // Under errors.<domain>: error codes, their reasons and the enum values that
+  // name an argument (errors.<domain>.field.<VALUE>).
   return path[0] === 'errors' && index >= 2 && ERROR_CODE.test(segment);
 };
 
