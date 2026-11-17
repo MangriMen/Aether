@@ -8,7 +8,10 @@ import {
 } from '@/features/events';
 import { useInstanceEventsListener } from '@/features/instance';
 import { useJavaInstallationListener } from '@/features/java';
-import { usePluginEventListener } from '@/features/plugins';
+import {
+  useAllowRefusedHost,
+  usePluginEventListener,
+} from '@/features/plugins';
 import {
   usePostExitHookFailedListener,
   useProcessCrashListener,
@@ -21,6 +24,8 @@ export const useSetupListeners = () => {
   useWarningEventsListener();
   useProgressEventsListener();
   usePluginEventListener();
+  // Error toasts of a refused host offer to allow it.
+  useAllowRefusedHost();
   useProcessCrashListener();
   usePostExitHookFailedListener();
   useJavaInstallationListener();

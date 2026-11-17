@@ -206,7 +206,7 @@ The `error` of `http` is `{"type": <kind>, "data": …}` (`data` absent for `has
 
 | `error` kind | `data` | Expect it when |
 | --- | --- | --- |
-| `hostNotAllowed` | `host` | The host is not in the plugin's `allowedHosts`: the URL's, or a redirect's. The user can add it in the plugin's settings. |
+| `hostNotAllowed` | `host` | The host is not in the plugin's `allowedHosts`: the URL's, or a redirect's. The user can add it in the plugin's settings. Passed back in a failure envelope, it makes the launcher offer the user to allow that host. |
 | `addressBlocked` | `host` | The host resolves to an address a plugin may not reach (loopback, private, link-local, …), or to none. |
 | `invalidRequest` | `reason` | The request is refused before anything is sent: a malformed URL, a scheme other than `http`/`https`, no host, a forbidden or invalid header, a body that is not JSON or is over 4 MiB, a malformed expected hash of a download. Sending it again fails again. |
 | `redirect` | `reason` | A redirect is not followed: `https` → `http`, no usable `Location`, more than 5, or any 3xx where none is followed by `http_post_json`. (A redirect to a scheme other than `http`/`https` arrives as `invalidRequest`.) |
@@ -227,7 +227,7 @@ writes none of these kinds itself, except to pass one back in a failure envelope
 ## Reporting a typed failure (any language)
 
 A plugin call that fails reaches the host as text. To let the host tell *why* — a refused command
-is the case today — the plugin sets that text to a failure envelope:
+or host is the case today — the plugin sets that text to a failure envelope:
 
 ```
 aether-plugin-failure:{"message":"...","host":{...}}
@@ -256,7 +256,8 @@ an example.
 3. Return a non-zero code.
 
 What the host makes of `host` is described where the error is documented: for `run_command`, see
-"`run_command` needs the user's consent" above.
+"`run_command` needs the user's consent" above. An `http` error of kind `hostNotAllowed` passed
+back makes the launcher offer the user to allow that host.
 
 ## Ids
 

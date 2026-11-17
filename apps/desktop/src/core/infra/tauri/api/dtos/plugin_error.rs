@@ -168,10 +168,11 @@ impl From<&PluginCallError> for PluginCallReasonDto {
                 cause: CauseDto::unknown(details),
             },
             PluginCallError::NonZeroExit(code) => Self::NonZeroExit { code: *code },
-            // `PluginErrorDto` lifts a refused command out of the failed call; this is the
-            // fallback for a reason read on its own.
+            // `PluginErrorDto` lifts a refused command or host out of the failed call; this is
+            // the fallback for a reason read on its own.
             PluginCallError::Plugin(details)
-            | PluginCallError::CommandNotApproved { details, .. } => Self::Plugin {
+            | PluginCallError::CommandNotApproved { details, .. }
+            | PluginCallError::HostNotAllowed { details, .. } => Self::Plugin {
                 cause: CauseDto::unknown(details),
             },
             PluginCallError::Codec(details) => Self::Codec {
@@ -327,6 +328,14 @@ pub enum PluginErrorDto {
         reason: CommandRefusalDto,
         cause: Option<CauseDto>,
     },
+    /// A call of the plugin failed because one of its network host functions refused `host`: it
+    /// is not among the plugin's allowed hosts. `plugin_id` is the plugin that was called,
+    /// `cause` holds that plugin's own words.
+    HostNotAllowed {
+        plugin_id: String,
+        host: String,
+        cause: CauseDto,
+    },
     /// The question was answered or ended before this answer came.
     CommandApprovalNotFound {
         request_id: String,
@@ -429,6 +438,15 @@ impl PluginErrorDto {
                 plugin_id: plugin_id.to_string(),
                 reason: (*reason).into(),
                 cause: Some(CauseDto::unknown(details)),
+            },
+            PluginError::FunctionCallFailed {
+                plugin_id,
+                error: PluginCallError::HostNotAllowed { host, details },
+                ..
+            } => Self::HostNotAllowed {
+                plugin_id: plugin_id.to_string(),
+                host: host.clone(),
+                cause: CauseDto::unknown(details),
             },
             PluginError::FunctionCallFailed {
                 function_name,

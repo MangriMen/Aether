@@ -309,13 +309,18 @@ fn plugin(value: &PluginError) -> HostError {
     kind.of(value)
 }
 
-/// A call into another plugin that failed. A refused command keeps its reason, and the words
-/// of the plugin that reported it, so that a plugin passing the error on passes them on too.
+/// A call into another plugin that failed. A refused command keeps its reason, a refused host
+/// its name, and both the words of the plugin that reported them, so that a plugin passing the
+/// error on passes them on too.
 fn plugin_call(value: &PluginError, error: &PluginCallError) -> HostError {
     match error {
         PluginCallError::CommandNotApproved { reason, details } => HostError::CommandNotApproved {
             reason: (*reason).into(),
             message: details.clone(),
+        },
+        PluginCallError::HostNotAllowed { host, details } => HostError::Http {
+            message: details.clone(),
+            error: HttpErrorDto::HostNotAllowed { host: host.clone() },
         },
         PluginCallError::MissingFunction
         | PluginCallError::Timeout

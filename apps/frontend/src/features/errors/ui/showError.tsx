@@ -4,6 +4,7 @@ import type { ShowToastParams } from '@/shared/ui-kit';
 import { logError } from '@/shared/log';
 import { showToast } from '@/shared/ui-kit';
 
+import { findErrorAction } from '../model/errorActions';
 import {
   getErrorDetails,
   getTranslatedError,
@@ -30,18 +31,28 @@ export const showError = ({
     : undefined;
 
   const details = getErrorDetails(err);
+  const renderDetails = details
+    ? () => (
+        <ErrorDetails
+          details={details}
+          defaultOpen={isInternalError(err)}
+          t={t}
+        />
+      )
+    : undefined;
+  // A way to fix the error that a feature registered, shown above the raw text.
+  const fix = isTranslationError ? findErrorAction(err) : undefined;
 
   showToast({
     description,
-    action: details
+    action: fix
       ? () => (
-          <ErrorDetails
-            details={details}
-            defaultOpen={isInternalError(err)}
-            t={t}
-          />
+          <div class='gap-2 flex flex-col'>
+            {fix()}
+            {renderDetails?.()}
+          </div>
         )
-      : undefined,
+      : renderDetails,
     variant,
     ...params,
   });
