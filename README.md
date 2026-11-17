@@ -41,7 +41,7 @@ The Windows installer is not code-signed, so Windows SmartScreen will show a war
 
 ### License
 
-Aether is licensed under the [GNU General Public License v3.0 only](LICENSE). The plugin API crates in `packages` (`aether-core-plugin-api`, `register-schema`, `register-schema-derive`) are dual-licensed under [MIT](packages/aether-core-plugin-api/LICENSE-MIT) or [Apache-2.0](packages/aether-core-plugin-api/LICENSE-APACHE) (each of these crates carries its own copy of both license files), so plugins that depend on them are not subject to the GPL because of that dependency. Licenses of bundled third-party dependencies are shipped with the application (`THIRD_PARTY_LICENSES.md`).
+Aether is licensed under the [GNU General Public License v3.0 only](LICENSE). The plugin API crates in `packages` (`aether-core-plugin-api`, `aether-core-plugin-pdk`, `register-schema`, `register-schema-derive`) are dual-licensed under [MIT](packages/aether-core-plugin-api/LICENSE-MIT) or [Apache-2.0](packages/aether-core-plugin-api/LICENSE-APACHE) (each of these crates carries its own copy of both license files), so plugins that depend on them are not subject to the GPL because of that dependency. Licenses of bundled third-party dependencies are shipped with the application (`THIRD_PARTY_LICENSES.md`).
 
 ### Architecture
 
@@ -97,7 +97,7 @@ Aether Launcher - это удобный лаунчер для управлени
 
 ### Лицензия
 
-Aether распространяется под лицензией [GNU General Public License v3.0 only](LICENSE). Крейты API плагинов в `packages` (`aether-core-plugin-api`, `register-schema`, `register-schema-derive`) имеют двойную лицензию [MIT](packages/aether-core-plugin-api/LICENSE-MIT) или [Apache-2.0](packages/aether-core-plugin-api/LICENSE-APACHE) (каждый из этих крейтов содержит собственные копии обоих файлов лицензий), поэтому плагины, которые от них зависят, не подпадают под GPL из-за этой зависимости. Лицензии сторонних зависимостей поставляются вместе с приложением (`THIRD_PARTY_LICENSES.md`).
+Aether распространяется под лицензией [GNU General Public License v3.0 only](LICENSE). Крейты API плагинов в `packages` (`aether-core-plugin-api`, `aether-core-plugin-pdk`, `register-schema`, `register-schema-derive`) имеют двойную лицензию [MIT](packages/aether-core-plugin-api/LICENSE-MIT) или [Apache-2.0](packages/aether-core-plugin-api/LICENSE-APACHE) (каждый из этих крейтов содержит собственные копии обоих файлов лицензий), поэтому плагины, которые от них зависят, не подпадают под GPL из-за этой зависимости. Лицензии сторонних зависимостей поставляются вместе с приложением (`THIRD_PARTY_LICENSES.md`).
 
 ### Архитектура
 
