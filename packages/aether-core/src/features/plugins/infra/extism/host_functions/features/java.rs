@@ -1,15 +1,11 @@
 use aether_core_plugin_api::v0::{JavaDto, JavaVersionParamsDto};
-use extism::host_fn;
 
 use crate::{
     core::app::AetherContainer,
     features::java::{InstallJava, JavaFeature},
 };
 
-use super::super::{
-    super::mappers::{Wire, to_extism_res},
-    PluginContext, block_on,
-};
+use super::super::{super::mappers::to_extism_res, PluginContext, block_on};
 
 // ── Testable business logic ──
 
@@ -39,7 +35,7 @@ pub(crate) async fn handle_install_java(
 
 // ── Extism host function wrappers ──
 
-host_fn!(
+plugin_host_fn!(
 pub get_java(user_data: PluginContext; params: Wire<JavaVersionParamsDto>) -> HostReply<JavaDto> {
     let context = user_data.get()?;
     let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
@@ -51,7 +47,7 @@ pub get_java(user_data: PluginContext; params: Wire<JavaVersionParamsDto>) -> Ho
     )
 });
 
-host_fn!(
+plugin_host_fn!(
 pub install_java(user_data: PluginContext; params: Wire<JavaVersionParamsDto>) -> HostReply<JavaDto> {
     let context = user_data.get()?;
     let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;

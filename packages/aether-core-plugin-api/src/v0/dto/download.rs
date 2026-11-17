@@ -9,6 +9,7 @@ use super::FileHashDto;
 /// then makes it visible. The network policy is the one of `http_get` (host `allowed_hosts`,
 /// public addresses only, at most 5 redirects, each hop checked like the first request).
 #[derive(Serialize, JsonSchema, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct DownloadToCacheParamsDto {
     /// Absolute URL. Only the `http` and `https` schemes are accepted.
     pub url: String,
@@ -19,6 +20,7 @@ pub struct DownloadToCacheParamsDto {
 
 /// A verified file in the plugin's cache, returned by `download_to_cache`.
 #[derive(Serialize, JsonSchema, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct CachedFileDto {
     /// Plugin-side path, readable through WASI: `/cache/downloads/<algorithm>/<hex digest>`.
     /// The name is derived from the hash by the host, never from the plugin.

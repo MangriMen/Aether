@@ -4,7 +4,6 @@ use aether_core_plugin_api::v0::{
     ReadInstanceFileParamsDto, WriteInstanceFileParamsDto,
 };
 use dashmap::DashMap;
-use extism::host_fn;
 use path_slash::PathBufExt;
 
 use crate::{
@@ -24,10 +23,7 @@ use crate::{
     features::settings::LocationInfo,
 };
 
-use super::super::{
-    super::mappers::{Wire, to_extism_res},
-    PluginContext, block_on,
-};
+use super::super::{super::mappers::to_extism_res, PluginContext, block_on};
 
 // ── Testable business logic ──
 
@@ -296,7 +292,7 @@ pub(crate) async fn handle_read_instance_file(
 
 // ── Extism host function wrappers ──
 
-host_fn!(
+plugin_host_fn!(
 pub instance_get_dir(user_data: PluginContext; params: Wire<InstanceIdParamsDto>) -> HostReply<InstanceDirDto> {
     let context = user_data.get()?;
     let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
@@ -314,7 +310,7 @@ pub instance_get_dir(user_data: PluginContext; params: Wire<InstanceIdParamsDto>
     )
 });
 
-host_fn!(
+plugin_host_fn!(
 pub instance_plugin_get_dir(user_data: PluginContext; params: Wire<InstanceIdParamsDto>) -> HostReply<InstanceDirDto> {
     let context = user_data.get()?;
     let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
@@ -334,7 +330,7 @@ pub instance_plugin_get_dir(user_data: PluginContext; params: Wire<InstanceIdPar
     )
 });
 
-host_fn!(
+plugin_host_fn!(
     pub instance_create(
         user_data: PluginContext;
         new_instance_dto: Wire<NewInstanceDto>
@@ -359,7 +355,7 @@ host_fn!(
     }
 );
 
-host_fn!(
+plugin_host_fn!(
 pub list_content(user_data: PluginContext; params: Wire<InstanceIdParamsDto>) -> HostReply<ListContentResultDto> {
     let context = user_data.get()?;
     let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
@@ -378,7 +374,7 @@ pub list_content(user_data: PluginContext; params: Wire<InstanceIdParamsDto>) ->
     )
 });
 
-host_fn!(
+plugin_host_fn!(
 pub enable_contents(user_data: PluginContext; params: Wire<ChangeContentsParamsDto>) -> HostReply<()> {
     let context = user_data.get()?;
     let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
@@ -396,7 +392,7 @@ pub enable_contents(user_data: PluginContext; params: Wire<ChangeContentsParamsD
     )
 });
 
-host_fn!(
+plugin_host_fn!(
 pub disable_contents(user_data: PluginContext; params: Wire<ChangeContentsParamsDto>) -> HostReply<()> {
     let context = user_data.get()?;
     let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
@@ -414,7 +410,7 @@ pub disable_contents(user_data: PluginContext; params: Wire<ChangeContentsParams
     )
 });
 
-host_fn!(
+plugin_host_fn!(
 pub write_instance_file(user_data: PluginContext; params: Wire<WriteInstanceFileParamsDto>) -> HostReply<()> {
     let context = user_data.get()?;
     let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
@@ -427,7 +423,7 @@ pub write_instance_file(user_data: PluginContext; params: Wire<WriteInstanceFile
     )
 });
 
-host_fn!(
+plugin_host_fn!(
 pub read_instance_file(user_data: PluginContext; params: Wire<ReadInstanceFileParamsDto>) -> HostReply<InstanceFileBytesDto> {
     let context = user_data.get()?;
     let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;

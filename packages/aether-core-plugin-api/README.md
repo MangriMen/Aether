@@ -111,7 +111,8 @@ to the bytes themselves.
 signal). A non-zero code is the program's answer, not a failed call: the plugin gets the
 `OutputDto` with the code, `stdout` and `stderr`, and decides what it means (`OutputDto::success()`
 of the api crate is `exitCode == 0`). The call fails only when the command did not run to its end:
-the host or the user refused it, it could not start, or it ran past 15 minutes and was killed.
+the host or the user refused it, it could not start (`internal`), or it ran past 15 minutes and
+was killed (`timedOut`).
 
 ## `run_command` needs the user's consent
 
@@ -151,7 +152,9 @@ their JSON shape: a plain enum is its value as a string, an enum with data is `{
 and tags are `camelCase` (`dataPack`, `resourcePack`, `shaderPack`, `timedOut`), with one exception: the loader is `neoforge`, not
 `neoForge`. A hash is `{"algorithm": "sha1", "hex": …}`. Arrays are not part
 of the contract: they make the field order carry the meaning, and an adjacently tagged enum such
-as `HostError` cannot be read back from one. A reader ignores a key it does not know and gives a
+as `HostError` cannot be read back from one. The launcher's decoder still happens to read a struct
+written as an array, so a plugin that writes arrays may half-work today; do not rely on it, it
+may stop being accepted in any version. A reader ignores a key it does not know and gives a
 missing key its default when the DTO has one, so a field can be added without breaking the other
 side.
 
@@ -170,7 +173,10 @@ caret requirement, so on 0.x it needs a new minor version.
 A host function returns `{"status": "ok", "data": <value>}` or `{"status": "err", "data":
 <HostError>}`; `data` is always there (`nil` for `()`). The arguments and answers of a plugin's exports are the DTOs as maps.
 
-Every host function takes one structured argument and answers a `{"status", "data"}` result. The
+Every host function takes one structured argument and answers a `{"status", "data"}` result. An
+argument the host cannot read as its DTO (not msgpack, no argument at all, a missing field, a
+renamed key, a value of an enum the launcher does not know) is answered with
+`invalidArgument`, naming the host function; the plugin's call goes on. The
 host functions, with the properties of `schemas/plugin-wire.schema.json` that describe their
 argument and the `data` of an `ok` answer:
 
@@ -225,14 +231,14 @@ the log or the user, not something to match on. The kinds:
 
 | Kind | Meaning | Expect it when |
 | --- | --- | --- |
-| `invalidArgument` | What the plugin sent is refused; sending it again fails again. | An id, a path, a game or loader version, a page or a content id is not valid; a value is unknown to the launcher or not supported there. |
+| `invalidArgument` | What the plugin sent is refused; sending it again fails again. | The argument of a host function cannot be read as its DTO (see "Wire format"); an id, a path, a game or loader version, a page or a content id is not valid; a value is unknown to the launcher or not supported there. |
 | `notFound` | What the plugin named does not exist. | An instance, a plugin, an importer, an updater, a provider or a content file is not there. |
 | `accessDenied` | The plugin may not do this. | A path leaves the instance or the plugin's folders, a program is not one the plugin may run. The user's refusal of a command is `commandNotApproved` instead. |
 | `commandNotApproved` | The user did not allow the command; `data` also has its `reason`. | See "`run_command` needs the user's consent". |
 | `tooLarge` | Something is over a size or count limit of the launcher: a file the plugin writes or reads, or what an install brings in (the files of a plan, its overrides, the index of a pack). An over-long answer from the network is `http` / `responseTooLarge` instead. | `write_instance_file` or `read_instance_file` with a file over the instance-file cap (see "Instance files"). |
 | `conflict` | The state does not allow it now; it may succeed later. | The instance is running or still installing, a plugin is loading, unloading or busy, the content is there already. |
 | `cancelled` | The work was called off before it finished. | The user called off an install. |
-| `timedOut` | The work did not finish in its time. | Java did not report its properties in time. |
+| `timedOut` | The work did not finish in its time. | A command of `run_command` ran past 15 minutes and was killed; Java did not report its properties in time. |
 | `pluginCallFailed` | A call into another plugin failed. | The other plugin crashed, hit a limit or reported an error. |
 | `http` | A network request failed; `data` also has its `error`, which tells how (below). | `http_get`, `http_post_json` or `download_to_cache` failed, or a request the launcher made for the call (a Java download, a content provider). |
 | `internal` | The launcher failed on its own; nothing the plugin can change. | Storage, the file system, and every failure the launcher has no kind for yet. |
@@ -246,7 +252,7 @@ The `error` of `http` is `{"type": <kind>, "data": …}` (`data` absent for `has
 | `addressBlocked` | `host` | The host resolves to an address a plugin may not reach (loopback, private, link-local, …), or to none. |
 | `invalidRequest` | `reason` | The request is refused before anything is sent: a malformed URL, a scheme other than `http`/`https`, no host, a forbidden or invalid header, a body that is not JSON or is over 4 MiB, a malformed expected hash of a download. Sending it again fails again. |
 | `redirect` | `reason` | A redirect is not followed: `https` → `http`, no usable `Location`, more than 5, or any 3xx where none is followed by `http_post_json`. (A redirect to a scheme other than `http`/`https` arrives as `invalidRequest`.) |
-| `responseTooLarge` | `limit` | The answer is over the limit, in bytes: 16 MiB for `http_get` and `http_post_json`, 1 GiB for a download. |
+| `responseTooLarge` | `limit` | The answer is over the limit, in bytes: 16 MiB for `http_get` and `http_post_json` (or a third of the plugin's `load.memoryLimit` when that is less, see "Networking from a plugin"), 1 GiB for a download. |
 | `status` | `status` | A final answer that is not 2xx and not handed back as an answer: a download's (a final `304` is one too), a provider's API. `http_get` and `http_post_json` hand any non-3xx status back as an answer instead. |
 | `hashMismatch` | none | A downloaded file is not the one its hash names. |
 | `invalidResponse` | `reason` | An answer the launcher reads itself (a content provider's, say) is not the JSON, TOML or text it expects. |
@@ -256,8 +262,8 @@ The `error` of `http` is `{"type": <kind>, "data": …}` (`data` absent for `has
 `reason` is text for the log or the user, like `message`. A failure the launcher has on its own
 while it makes a request (writing a download to the cache, say) is `internal`, not `http`.
 
-The failures `run_command` raises itself (the command could not start or ran too long) have no
-kind of their own yet: they arrive as `internal`, the `message` saying what happened. A plugin
+Of the failures `run_command` raises itself, a command that ran past its time is `timedOut`; one
+that could not start, or whose output the launcher could not read, is `internal`. A plugin
 writes none of these kinds itself, except to pass one back in a failure envelope.
 
 ## Reporting a typed failure (any language)
@@ -411,7 +417,10 @@ The host performs the request itself and applies, in this order:
    `release-assets.githubusercontent.com` in `allowedHosts`; without the second, the call fails
    at that hop as `http` / `hostNotAllowed` with that host.
 7. **Limits** — 30 s total for the whole chain of hops, 10 s to connect, 16 MiB of response
-   body. An oversized body fails the call; it is never silently truncated.
+   body, or a third of the plugin's `load.memoryLimit` when that is less (the body is in the
+   plugin's memory three times while it passes; without a `memoryLimit` the plugin gets
+   256 MiB, so 16 MiB). An oversized body fails the call as `http` / `responseTooLarge`; it is
+   never silently truncated.
 
 **Rule for plugin authors: use `https://`, and do not expect headers to cross origins.** A key
 sent to an `http://` URL is exposed on the very first request, and your headers are never
@@ -437,7 +446,8 @@ Repeated response headers collapse to the last value.
 
 `http_post_json(HttpPostJsonRequestDto { url, headers, body }) -> HostResult<HttpResponseDto>`
 goes through the same pipeline as `http_get` (shared code, so the policy cannot drift): scheme,
-`allowedHosts`, public-address check, pinned resolution, 30 s / 16 MiB response limits.
+`allowedHosts`, public-address check, pinned resolution, 30 s / 16 MiB response limits (the
+same `memoryLimit` rule).
 Differences:
 
 * **No redirects** — any 3xx is an error, never followed: what to do with a POST body on

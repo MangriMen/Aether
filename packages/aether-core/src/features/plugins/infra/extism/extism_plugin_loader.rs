@@ -258,8 +258,14 @@ impl PluginLoader for ExtismPluginLoader {
         let wasm_manifest =
             self.build_wasm_manifest(manifest, allowed_paths, Some(wasm_sha256.clone()));
 
-        let host_functions =
-            get_host_functions(plugin_id, &container, declared_host_functions, wasm_sha256);
+        let LoadConfig::Extism { memory_limit, .. } = &manifest.load;
+        let host_functions = get_host_functions(
+            plugin_id,
+            &container,
+            declared_host_functions,
+            wasm_sha256,
+            *memory_limit,
+        );
 
         // Compiling the module is seconds of CPU work, kept off the runtime workers just like
         // the calls into the plugin (see `PluginHandle`).

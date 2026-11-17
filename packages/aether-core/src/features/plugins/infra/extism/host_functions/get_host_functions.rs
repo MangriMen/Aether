@@ -7,7 +7,7 @@ use crate::{core::app::AetherContainer, features::instance::PluginId};
 use super::{PluginContext, features};
 
 /// The shape `extism::host_fn!` gives every host function.
-type HostFn = fn(
+pub(super) type HostFn = fn(
     &mut CurrentPlugin,
     &[Val],
     &mut [Val],
@@ -146,8 +146,9 @@ pub(crate) fn get_host_functions(
     container: &Arc<AetherContainer>,
     declared: &[String],
     wasm_sha256: String,
+    memory_limit: Option<usize>,
 ) -> Vec<Function> {
-    let context = PluginContext::new(plugin_id.clone(), container, wasm_sha256);
+    let context = PluginContext::new(plugin_id.clone(), container, wasm_sha256, memory_limit);
 
     select_host_functions(declared)
         .into_iter()

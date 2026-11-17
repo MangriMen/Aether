@@ -8,6 +8,7 @@ mod manifest_error;
 mod plugin;
 mod plugin_call_error;
 mod plugin_capabilities;
+mod plugin_command_error;
 mod plugin_dtos;
 mod plugin_error;
 mod plugin_file_path;
@@ -53,6 +54,7 @@ pub use plugin_capabilities::{
     PluginCapabilities, PluginContentProviderCapability, PluginImporterCapability,
     PluginUpdaterCapability, ProviderHandlers,
 };
+pub use plugin_command_error::PluginCommandError;
 pub use plugin_dtos::PluginCheckCompatibilityParams;
 pub use plugin_error::PluginError;
 pub use plugin_file_path::PluginFilePath;

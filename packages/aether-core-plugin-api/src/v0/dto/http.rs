@@ -10,6 +10,7 @@ use serde_with::{Bytes, serde_as};
 /// were the first request (`allowed_hosts`, public addresses, no `https` → `http`) and follows
 /// at most 5 of them. The request headers are not sent on to another origin.
 #[derive(Serialize, JsonSchema, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct HttpRequestDto {
     /// Absolute URL. Only the `http` and `https` schemes are accepted.
     pub url: String,
@@ -25,6 +26,7 @@ pub struct HttpRequestDto {
 /// addresses), except that redirects are never followed: any 3xx is an error. The host always
 /// sends `Content-Type: application/json`.
 #[derive(Serialize, JsonSchema, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct HttpPostJsonRequestDto {
     /// Absolute URL. Only the `http` and `https` schemes are accepted.
     pub url: String,
@@ -44,6 +46,7 @@ pub struct HttpPostJsonRequestDto {
 /// the plugin's fuel.
 #[serde_as]
 #[derive(Serialize, JsonSchema, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct HttpResponseDto {
     /// HTTP status code of the final response, after any redirects the host followed.
     pub status: u16,

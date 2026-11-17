@@ -16,8 +16,8 @@ use crate::{
         java::{JavaApplicationError, JavaDomainError},
         minecraft::{MinecraftApplicationError, MinecraftDomainError},
         plugins::{
-            CommandApprovalRefusal, PluginCallError, PluginDownloadError, PluginError,
-            PluginHttpError, PluginProviderError, ProviderFailure,
+            CommandApprovalRefusal, PluginCallError, PluginCommandError, PluginDownloadError,
+            PluginError, PluginHttpError, PluginProviderError, ProviderFailure,
         },
         settings::SettingsError,
     },
@@ -66,6 +66,7 @@ impl From<&ErrorKind> for HostError {
             ErrorKind::RequestError(err) => request(err),
             ErrorKind::PluginHttpError(err) => http(err, plugin_http(err)),
             ErrorKind::PluginDownloadError(err) => http_or_internal(err, plugin_download(err)),
+            ErrorKind::PluginCommandError(err) => plugin_command(err),
             // No host function reaches these: should one, the plugin can do nothing about it.
             ErrorKind::AuthError(err) => Kind::Internal.of(err),
             ErrorKind::EventError(err) => Kind::Internal.of(err),
@@ -334,6 +335,19 @@ fn plugin_call(value: &PluginError, error: &PluginCallError) -> HostError {
         | PluginCallError::Codec(_)
         | PluginCallError::Reentrant => Kind::PluginCallFailed.of(value),
     }
+}
+
+/// A command `run_command` was allowed to run. Only running out of time is the plugin's to know
+/// about; the rest is the host failing to start or watch the process.
+fn plugin_command(value: &PluginCommandError) -> HostError {
+    let kind = match value {
+        PluginCommandError::TimedOut { .. } => Kind::TimedOut,
+        PluginCommandError::Spawn { .. }
+        | PluginCommandError::OutputNotCaptured { .. }
+        | PluginCommandError::ReadOutput { .. } => Kind::Internal,
+    };
+
+    kind.of(value)
 }
 
 /// Only the user installs or updates a plugin; a host function never gets here.
@@ -605,6 +619,37 @@ mod tests {
             host(error.clone()),
             HostError::AccessDenied {
                 message: message(error)
+            }
+        );
+    }
+
+    #[test]
+    fn should_tell_timed_out_when_a_command_ran_past_its_time() {
+        let error = PluginCommandError::TimedOut {
+            program: "java".to_owned(),
+            seconds: 900,
+        };
+
+        assert_eq!(
+            host(error),
+            HostError::TimedOut {
+                message: "Command `java` exceeded the 900 second time limit and was killed"
+                    .to_owned()
+            }
+        );
+    }
+
+    #[test]
+    fn should_tell_internal_when_a_command_could_not_be_started() {
+        let error = PluginCommandError::Spawn {
+            program: "java".to_owned(),
+            reason: "denied".to_owned(),
+        };
+
+        assert_eq!(
+            host(error),
+            HostError::Internal {
+                message: "Failed to run `java`: denied".to_owned()
             }
         );
     }

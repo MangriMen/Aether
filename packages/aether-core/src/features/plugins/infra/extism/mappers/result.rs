@@ -25,6 +25,30 @@ impl<T: DeserializeOwned> FromBytesOwned for Wire<T> {
 /// What a host function returns to the plugin.
 pub(crate) type HostReply<T> = Wire<HostResult<T>>;
 
+/// The argument of a host function as the plugin sent it: decoded, or why it is not. Reading it
+/// never fails, so that a wrong shape (a missing field, a renamed key, an unknown value) can be
+/// answered with `invalidArgument` instead of trapping the plugin's call, as [`Wire`] would.
+#[derive(Debug)]
+pub(crate) struct HostArg<T>(Result<T, wire::DecodeError>);
+
+impl<T: DeserializeOwned> FromBytesOwned for HostArg<T> {
+    fn from_bytes_owned(data: &[u8]) -> Result<Self, extism_convert::Error> {
+        Ok(Self(wire::decode(data)))
+    }
+}
+
+impl<T> HostArg<T> {
+    /// The argument, or the answer to give the plugin when it did not decode. `function` names
+    /// the host function in the message, next to the decoder's text (which holds no host path).
+    pub(crate) fn decode<R>(self, function: &str) -> Result<Wire<T>, HostReply<R>> {
+        self.0.map(Wire).map_err(|err| {
+            Wire(HostResult::Err(HostError::InvalidArgument {
+                message: format!("The argument of `{function}` is not valid: {err}"),
+            }))
+        })
+    }
+}
+
 #[allow(clippy::unnecessary_wraps)]
 pub(crate) fn to_extism_res<T>(res: crate::Result<T>) -> Result<HostReply<T>, extism::Error> {
     let host_res = match res {
