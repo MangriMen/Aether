@@ -1,4 +1,5 @@
 use std::{
+    collections::HashMap,
     fs,
     io::{Read, Seek, copy},
     path::Path,
@@ -17,6 +18,24 @@ use crate::{
 
 use super::ZipPluginExtractorConstants;
 
+/// The entries of an archive by the path each is unpacked to, lowercased.
+struct EntryIndex(HashMap<String, usize>);
+
+impl EntryIndex {
+    fn key(path: &Path) -> String {
+        path.components()
+            .map(|component| component.as_os_str().to_string_lossy())
+            .collect::<Vec<_>>()
+            .join("/")
+            .to_lowercase()
+    }
+
+    /// The entry unpacked to `name`, a path relative to the plugin root written with `/`.
+    fn get(&self, name: &str) -> Option<usize> {
+        self.0.get(&name.to_lowercase()).copied()
+    }
+}
+
 #[derive(Default)]
 pub struct ZipPluginExtractor {
     constants: ZipPluginExtractorConstants,
@@ -28,16 +47,24 @@ impl ZipPluginExtractor {
     }
 
     /// Reads a small JSON entry whole, refusing one over `max_metadata_bytes`; `None` if absent.
+    /// The entry is found by the path it is unpacked to (see [`EntryIndex`]), so what is read
+    /// is the file that ends up on disk under `name`.
     fn read_small_entry<R: Read + Seek>(
         &self,
         archive: &mut zip::ZipArchive<R>,
+        entries: &EntryIndex,
         name: &str,
     ) -> Result<Option<Vec<u8>>, PluginProviderError> {
-        let entry = match archive.by_name(name) {
-            Ok(entry) => entry,
-            Err(zip::result::ZipError::FileNotFound) => return Ok(None),
-            Err(_) => return Err(PluginProviderError::InvalidExtractionFormat),
+        let Some(index) = entries.get(name) else {
+            return Ok(None);
         };
+        let entry = archive
+            .by_index(index)
+            .map_err(|_| PluginProviderError::InvalidExtractionFormat)?;
+        // Neither is unpacked as a file holding what would be read here.
+        if entry.is_dir() || entry.is_symlink() {
+            return Err(PluginProviderError::InvalidExtractionFormat);
+        }
 
         let limit = self.constants.max_metadata_bytes;
         let mut bytes = Vec::new();
@@ -56,33 +83,38 @@ impl ZipPluginExtractor {
         Ok(Some(bytes))
     }
 
-    /// Refuses an archive that names one path twice, also when only the letter case differs:
-    /// on a case-insensitive file system the later entry would replace the earlier one, so the
-    /// files unpacked would not be the ones the manifest was read from.
-    fn check_unique_names<R: Read + Seek>(
-        archive: &zip::ZipArchive<R>,
-    ) -> Result<(), PluginProviderError> {
-        let mut seen = std::collections::HashSet::new();
-        for name in archive.file_names() {
-            let name = name.map_err(|_| PluginProviderError::InvalidExtractionFormat)?;
-            let key = name.replace('\\', "/").trim_end_matches('/').to_lowercase();
-            if !seen.insert(key) {
-                return Err(PluginProviderError::InvalidExtractionFormat);
+    /// Indexes the entries by the path each is unpacked to, refusing an archive where two land on
+    /// one path. The path is the one `extract_entries` writes to (`enclosed_name`, which resolves
+    /// `./`, `x/../` and a leading `/`), compared without regard to letter case: on a
+    /// case-insensitive file system the later entry replaces the earlier one. Either way the
+    /// files unpacked would not be the ones the manifest was read from. An entry that has no
+    /// such path is refused too: it could not be unpacked.
+    fn index_entries<R: Read + Seek>(
+        archive: &mut zip::ZipArchive<R>,
+    ) -> Result<EntryIndex, PluginProviderError> {
+        let invalid = || PluginProviderError::InvalidExtractionFormat;
+        let mut paths = HashMap::new();
+        for index in 0..archive.len() {
+            let entry = archive.by_index_raw(index).map_err(|_| invalid())?;
+            let path = entry.enclosed_name().ok_or_else(invalid)?;
+            if paths.insert(EntryIndex::key(&path), index).is_some() {
+                return Err(invalid());
             }
         }
-        Ok(())
+        Ok(EntryIndex(paths))
     }
 
     fn read_manifest<R: Read + Seek>(
         &self,
         archive: &mut zip::ZipArchive<R>,
+        entries: &EntryIndex,
     ) -> Result<PluginManifest, PluginProviderError> {
         let name = self.constants.manifest_filename;
-        let bytes = self.read_small_entry(archive, name)?.ok_or_else(|| {
-            PluginProviderError::ManifestNotFound {
+        let bytes = self
+            .read_small_entry(archive, entries, name)?
+            .ok_or_else(|| PluginProviderError::ManifestNotFound {
                 path: name.to_string(),
-            }
-        })?;
+            })?;
 
         let dto: aether_core_plugin_api::v0::PluginManifestDto = serde_json::from_slice(&bytes)
             .map_err(|e| PluginProviderError::InvalidManifestFormat { error: e.into() })?;
@@ -93,10 +125,12 @@ impl ZipPluginExtractor {
     fn read_capabilities<R: Read + Seek>(
         &self,
         archive: &mut zip::ZipArchive<R>,
+        entries: &EntryIndex,
     ) -> Result<Option<String>, PluginProviderError> {
         let invalid =
             |error: ManifestFormatError| PluginProviderError::InvalidManifestFormat { error };
-        let Some(bytes) = self.read_small_entry(archive, self.constants.capabilities_filename)?
+        let Some(bytes) =
+            self.read_small_entry(archive, entries, self.constants.capabilities_filename)?
         else {
             return Ok(None);
         };
@@ -114,9 +148,9 @@ impl ZipPluginExtractor {
         &self,
         archive: &mut zip::ZipArchive<R>,
     ) -> Result<ArchiveMetadata, PluginProviderError> {
-        Self::check_unique_names(archive)?;
-        let manifest = self.read_manifest(archive)?;
-        let capabilities = self.read_capabilities(archive)?;
+        let entries = Self::index_entries(archive)?;
+        let manifest = self.read_manifest(archive, &entries)?;
+        let capabilities = self.read_capabilities(archive, &entries)?;
         Ok(ArchiveMetadata {
             manifest,
             capabilities,
@@ -321,13 +355,178 @@ mod tests {
         .await;
 
         let result = ZipPluginExtractor::default().extract(&zip_path).await;
-        eprintln!("RESULT {:?}", result.as_ref().map(|_| ()));
+
+        // Refused while the archive is read, before anything is unpacked.
+        assert!(matches!(
+            result,
+            Err(PluginProviderError::InvalidExtractionFormat)
+        ));
+        assert!(!escaped.exists());
+    }
+
+    #[tokio::test]
+    async fn should_refuse_to_read_metadata_when_an_entry_escapes_the_root() {
+        let source_dir = TempDir::new().unwrap();
+        let zip_path = write_zip(
+            source_dir.path(),
+            &[
+                ("manifest.json", MANIFEST.as_bytes()),
+                ("../escape.txt", b"x"),
+            ],
+        )
+        .await;
+
+        let result = ZipPluginExtractor::default().read_metadata(&zip_path).await;
 
         assert!(matches!(
             result,
-            Err(PluginProviderError::FileExtractionFailed { .. })
+            Err(PluginProviderError::InvalidExtractionFormat)
         ));
-        assert!(!escaped.exists());
+    }
+
+    /// The manifest of another plugin, the one an alias would put in place of the first.
+    fn evil_manifest() -> String {
+        MANIFEST
+            .replace("test-plugin", "evil-plugin")
+            .replace(r#""allowedHosts": []"#, r#""allowedHosts": ["*"]"#)
+    }
+
+    const CAPABILITIES: &str =
+        r#"{"importers": [{"id": "benign", "name": "B", "handler": "import"}]}"#;
+    const EVIL_CAPABILITIES: &str =
+        r#"{"importers": [{"id": "evil", "name": "E", "handler": "import"}]}"#;
+
+    /// An entry under a second name that unpacks over the first one: what would be read is the
+    /// first entry, what would be installed the second. Such an archive is refused.
+    #[rstest]
+    #[case::current_dir("./{}")]
+    #[case::parent_of_a_dir("x/../{}")]
+    #[case::absolute("/{}")]
+    #[case::backslash(".\\{}")]
+    #[case::other_case("X/../{}")]
+    #[tokio::test]
+    async fn should_refuse_an_archive_when_an_entry_unpacks_over_the_manifest(#[case] alias: &str) {
+        let source_dir = TempDir::new().unwrap();
+        let evil = evil_manifest();
+        let alias = alias.replace("{}", "manifest.json");
+        let zip_path = write_zip(
+            source_dir.path(),
+            &[
+                ("manifest.json", MANIFEST.as_bytes()),
+                ("plugin.wasm", b"\0asm"),
+                (alias.as_str(), evil.as_bytes()),
+            ],
+        )
+        .await;
+
+        let extractor = ZipPluginExtractor::default();
+
+        assert!(matches!(
+            extractor.read_metadata(&zip_path).await,
+            Err(PluginProviderError::InvalidExtractionFormat)
+        ));
+        assert!(matches!(
+            extractor.extract(&zip_path).await,
+            Err(PluginProviderError::InvalidExtractionFormat)
+        ));
+    }
+
+    #[rstest]
+    #[case::current_dir("./{}")]
+    #[case::parent_of_a_dir("x/../{}")]
+    #[case::absolute("/{}")]
+    #[case::backslash(".\\{}")]
+    #[case::other_case("{}")]
+    #[tokio::test]
+    async fn should_refuse_an_archive_when_an_entry_unpacks_over_the_capabilities(
+        #[case] alias: &str,
+    ) {
+        let source_dir = TempDir::new().unwrap();
+        // The other-case alias is of the upper-case name, so the two differ in case only.
+        let alias = if alias == "{}" {
+            "CAPABILITIES.JSON".to_owned()
+        } else {
+            alias.replace("{}", "capabilities.json")
+        };
+        let zip_path = write_zip(
+            source_dir.path(),
+            &[
+                ("manifest.json", MANIFEST.as_bytes()),
+                ("capabilities.json", CAPABILITIES.as_bytes()),
+                ("plugin.wasm", b"\0asm"),
+                (alias.as_str(), EVIL_CAPABILITIES.as_bytes()),
+            ],
+        )
+        .await;
+
+        let extractor = ZipPluginExtractor::default();
+
+        assert!(matches!(
+            extractor.read_metadata(&zip_path).await,
+            Err(PluginProviderError::InvalidExtractionFormat)
+        ));
+        assert!(matches!(
+            extractor.extract(&zip_path).await,
+            Err(PluginProviderError::InvalidExtractionFormat)
+        ));
+    }
+
+    /// With no plain entry beside it, an entry unpacked to `manifest.json` is the manifest: what
+    /// is read is what is unpacked.
+    #[rstest]
+    #[case::current_dir("./manifest.json")]
+    #[case::absolute("/manifest.json")]
+    #[case::other_case("Manifest.JSON")]
+    #[tokio::test]
+    async fn should_read_the_manifest_from_the_entry_unpacked_to_it(#[case] name: &str) {
+        let source_dir = TempDir::new().unwrap();
+        let zip_path = write_zip(
+            source_dir.path(),
+            &[(name, MANIFEST.as_bytes()), ("plugin.wasm", b"\0asm")],
+        )
+        .await;
+
+        let metadata = ZipPluginExtractor::default()
+            .read_metadata(&zip_path)
+            .await
+            .unwrap();
+
+        assert_eq!(metadata.manifest.metadata.id.as_str(), "test-plugin");
+    }
+
+    /// Unpacked as `CAPABILITIES.JSON`, it is what a case-insensitive file system gives the
+    /// launcher as `capabilities.json`: it is read and checked like that name.
+    #[tokio::test]
+    async fn should_read_the_capabilities_when_their_entry_differs_in_case() {
+        let source_dir = TempDir::new().unwrap();
+        let zip_path = write_zip(
+            source_dir.path(),
+            &[
+                ("manifest.json", MANIFEST.as_bytes()),
+                ("CAPABILITIES.JSON", EVIL_CAPABILITIES.as_bytes()),
+            ],
+        )
+        .await;
+
+        let metadata = ZipPluginExtractor::default()
+            .read_metadata(&zip_path)
+            .await
+            .unwrap();
+
+        assert!(metadata.capabilities.unwrap().contains("evil"));
+    }
+
+    #[tokio::test]
+    async fn should_refuse_a_manifest_when_its_entry_is_a_directory() {
+        let source_dir = TempDir::new().unwrap();
+        let zip_path = write_zip(source_dir.path(), &[("manifest.json/", b"")]).await;
+
+        let result = ZipPluginExtractor::default().read_metadata(&zip_path).await;
+
+        assert!(matches!(
+            result,
+            Err(PluginProviderError::InvalidExtractionFormat)
+        ));
     }
 
     #[tokio::test]
@@ -511,8 +710,6 @@ mod tests {
             &[
                 ("manifest.json", MANIFEST.as_bytes()),
                 ("capabilities.json", capabilities),
-                // Not a plugin file the reading would touch: it would fail on an unpack.
-                ("../escape.txt", b"x"),
             ],
         )
         .await;
