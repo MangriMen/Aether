@@ -16,7 +16,7 @@ The host puts two keys in the Extism config of every plugin; the plugin reads th
 
 `api.version` of the manifest is a [SemVer](https://semver.org) requirement checked against that
 version: `0.5.0` and `^0.5` accept 0.5.x, a plugin that needs a function or a field added in a
-later version writes `>=0.5.2`. While the major version is 0, a new minor is a breaking change
+later version writes `^0.5.2` (`>=0.5.2` has no upper bound and would accept a 0.6 host). While the major version is 0, a new minor is a breaking change
 (a changed or removed function, field or value, or a new value of an enum a plugin reads), and a
 patch only adds what an older plugin never meets. There are no optional features: a plugin
 either needs the version or it does not load.

@@ -39,7 +39,6 @@ impl PluginEnabler {
             return Err(PluginError::Manifest(err));
         }
 
-
         Ok(())
     }
 

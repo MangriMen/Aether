@@ -4,9 +4,9 @@ use std::{
     sync::{Arc, OnceLock, Weak},
 };
 
+use aether_core_plugin_api::v0::config::{CONFIG_API_VERSION, CONFIG_PLUGIN_ID};
 use async_trait::async_trait;
 use extism::{Function, Manifest, Plugin, PluginBuilder, Wasm};
-use aether_core_plugin_api::v0::config::{CONFIG_API_VERSION, CONFIG_PLUGIN_ID};
 
 use crate::{
     core::app::AetherContainer,
@@ -14,9 +14,9 @@ use crate::{
         instance::PluginId,
         plugins::{
             CoreMount, FolderMounts, LoadConfig, ManifestError, PLUGIN_API_VERSION, PathMapping,
-            PluginError,
-            PluginHandle, PluginInternalEvent, PluginLoadFailure, PluginLoader, PluginManifest,
-            PluginSettings, PluginVerificationStorage, core_folders, partition_mountable,
+            PluginError, PluginHandle, PluginInternalEvent, PluginLoadFailure, PluginLoader,
+            PluginManifest, PluginSettings, PluginVerificationStorage, core_folders,
+            partition_mountable,
         },
         settings::LocationInfo,
     },
