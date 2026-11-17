@@ -25,8 +25,8 @@ Any slice inside `src/features/` or `src/shared/` must follow this structure if 
 
 ### Use cases and ports
 
-- A use case is `pub struct <Verb><Noun>UseCase` holding its dependencies as `Arc<dyn Port>`, with a constructor `new(…)` and one method, `execute(…)`.
-- When Tauri calls it, it implements an inbound port `<Verb><Noun>UseCasePort`; when another feature calls it, a port named for the role (`*Service`).
+- A use case is `pub struct <Verb><Noun>UseCase` holding its dependencies as `Arc<dyn Port>`, with a constructor `new(…)` and one entry point, `execute(…)`.
+- It implements an inbound port `<Verb><Noun>UseCasePort` when a caller has to substitute it (a Tauri command, a test double); when another feature calls it, the port is named for the role (`*Service`).
 - Outbound ports are named for the role, without a `Port` suffix: `*Storage`, `*Provider`, `*Service`.
 - A use case file is named after the use case (`create_offline_account.rs`), without a `_uc` suffix.
 
@@ -139,12 +139,12 @@ Each rule names one example to copy (paths are under `packages/aether-core/src/`
 ### 9.1. Validated newtypes
 
 - The field of a validated newtype is private. The check lives in one constructor, and every other way in delegates to it.
-- Names, paths and hashes are built by `parse(&str) -> Result<Self, Invalid<Type>>`, numbers by `new(n) -> Result<…>`, identifiers by `TryFrom<String>` (plus `TryFrom<&str>` or `FromStr`) with `#[serde(try_from = "String", into = "String")]`.
-- A literal in code is built by a panicking `from_static`. A lenient read from storage goes through `from_stored_or_<fallback>`, which logs the bad value.
+- A value is built by `parse(&str) -> Result<Self, Invalid<Type>>`, a number by `new(n) -> Result<…>`. `TryFrom<String>` is added when the type is stored or sent through serde, with `#[serde(try_from = "String", into = "String")]`.
+- A literal in code is built by a panicking `from_static`.
+- A lenient read of a stored value (log it and fall back) belongs to the infra storage code that reads the row (`parse_stored_*`), not to the type.
 - The error is an `Invalid<Type>` of its own, not the error of the whole feature.
-- Do not implement `Deref<Target = str>`: it leaks every `str` method into the public API of a type whose point is its invariant. Hand out `as_str()`, `AsRef<str>`, `Display` and `From<Type> for String`.
-- Existing `Deref` impls (`InstanceId`, `JavaPath`, `GameVersion`) are not examples to copy.
-- Example: `PluginPath` (`features/plugins/domain/models/plugin_path.rs`); `from_static` in `shared/capability/domain/ids.rs`; `new` in `features/settings/domain/models/bounded_numbers.rs`.
+- Do not implement `Deref<Target = str>`: it leaks every `str` method into the public API of a type whose point is its invariant. Hand out `as_str()`, `AsRef<str>`, `Display` and `From<Type> for String`. Existing `Deref` impls are not examples to copy.
+- Example: `PluginPath` (`features/plugins/domain/models/plugin_path.rs`); `new` in `features/settings/domain/models/bounded_numbers.rs`.
 
 ### 9.2. Paths from external data
 
@@ -153,8 +153,8 @@ A path segment that comes from outside (Mojang or Modrinth metadata, a maven coo
 ### 9.3. Errors
 
 - Errors are `thiserror` types. `anyhow` is allowed only where a third-party crate hands it out (Extism host functions, `reqwest-middleware`) and in the composition root of the desktop app, never in `domain`.
-- A variant has no `Error` suffix: `Storage(…)`, not `StorageError(…)`. An error about a value is `Invalid<Value>`; a reason for a refusal is `<X>Rejection`.
-- The cause goes through `#[source]`, not through `to_string()`.
+- A variant has no `Error` suffix: `Storage(…)`, not `StorageError(…)`. An error about a value is `Invalid<Value>`, carrying the value; when there are several reasons, they are an enum `<Value>Rejection`.
+- The cause goes through `#[source]`, not through `to_string()`. A log prints the whole chain (`error_chain` / `display_chain` in `core/domain/error.rs`), so a cause kept in `source` is not lost from the log.
 
 ---
 
@@ -163,7 +163,8 @@ A path segment that comes from outside (Mojang or Modrinth metadata, a maven coo
 ### 10.1. Storage formats are separate from the domain
 
 - A domain model does not derive `Serialize`/`Deserialize` for the sake of storage. A file on disk is described by an infra type `<Name>V<n>` with `From`/`TryFrom` both ways; a SQLite row by `Sql<Name>`, whose columns are parsed by `parse_stored_*` functions.
-- The suffix `Dto` is only for the Tauri or plugin boundary. The exception is an identifier with `serde(try_from)`.
+  The exception is an identifier with `serde(try_from)`.
+- The suffix `Dto` is only for the Tauri or plugin boundary.
 - Example: `ModLoaderV1` in `features/instance/infra/fs/instance.rs`; `SqlPackInfo` in `features/instance/infra/sqlite/sql_pack_info.rs`.
 
 ### 10.2. SQL
@@ -178,9 +179,9 @@ A path segment that comes from outside (Mojang or Modrinth metadata, a maven coo
 
 ### 11.1. Limits and timeouts
 
-- Every limit on size or count, and every timeout, that protects against external input (network, archives, plugins) is declared in `packages/aether-core/src/shared/limits.rs` with a comment on what it protects against. An adapter only imports it.
+- Every limit on size or count, and every timeout, that protects against external input (network, archives, plugin calls) is declared in `packages/aether-core/src/shared/limits.rs` with a comment on what it protects against. The adapter gets it from there: through the limits struct built in the composition root, or by importing the constant.
 - Two constants with the same name and different values are not allowed.
-- Not covered: the bounds of a value type's own validation (`MAX_USERNAME_LENGTH` stays in `Username`: `domain` must not depend on `shared`) and the limits of the plugin archive extractor (`ZipPluginExtractorConstants`).
+- Not covered: a bound that is part of a value type's invariant (`MAX_USERNAME_LENGTH`) stays next to the type, and so do the settings of a feature that do not guard against outside input (concurrency, UI paging).
 
 ### 11.2. HTTP clients for untrusted URLs
 
@@ -200,7 +201,7 @@ A URL that comes from a plugin, from provider metadata or from Markdown is fetch
 
 ### 12.2. Events
 
-- A backend event is `<Name>EventDto` deriving `Type, Event`, with `pub seq: u32` as the first field, taken from the one shared counter. It is registered through `get_specta_events()`.
+- A backend event is `<Name>EventDto` deriving `Type, Event`, with a field `pub seq: u32`, taken from the one shared counter. It is registered through `get_specta_events()`.
 - When an event has several kinds, the kind is a field `#[serde(flatten)] kind: <Name>EventKindDto`.
 - The frontend listens only through `useEventListener`, which drops a `seq` it has seen.
 - Example: `apps/desktop/src/features/events/infra/tauri/dtos/cache_event.rs`, `apps/desktop/src/features/plugins/infra/tauri/dtos/plugin_event.rs`.
@@ -208,7 +209,7 @@ A URL that comes from a plugin, from provider metadata or from Markdown is fetch
 ### 12.3. DTOs
 
 - Boundary types are named `<Name>Dto` and live in `infra/tauri/dtos/` (`infra/tauri/api/dtos/` in the instance feature) of the desktop app. A conversion is a `From`/`TryFrom` in the same file; there are no `to_dto` functions.
-- Structs have `#[serde(rename_all = "camelCase")]`, plain enums `"snake_case"`; an internally tagged enum (`tag = "type"`, such as an event kind or an error cause) is `"camelCase"`, like the structs it carries. Any other case is only for a value that must match an external format, with a comment saying so.
+- Structs have `#[serde(rename_all = "camelCase")]`, enums `"snake_case"`. Any other case is only for a value that must match an external format, with a comment saying so.
 
 ### 12.4. Errors
 
