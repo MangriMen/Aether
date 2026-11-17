@@ -162,7 +162,7 @@
           ]
         },
         {
-          "description": "A file or an answer is larger than the host accepts.",
+          "description": "A file the plugin asked to read is larger than the host accepts (an over-long network\nanswer is `http` / `responseTooLarge`).",
           "type": "object",
           "properties": {
             "data": {
@@ -486,7 +486,7 @@
           ]
         },
         {
-          "description": "The final answer has an error status. `http_get` and `http_post_json` hand a status back\nas an answer instead; only a download fails with it.",
+          "description": "The final answer has an error status. `http_get` and `http_post_json` hand a status back\nas an answer instead; a download, and the launcher's own requests for a plugin, fail with it.",
           "type": "object",
           "properties": {
             "data": {

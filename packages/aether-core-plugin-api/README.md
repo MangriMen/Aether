@@ -193,7 +193,7 @@ the log or the user, not something to match on. The kinds:
 | `notFound` | What the plugin named does not exist. | An instance, a plugin, an importer, an updater, a provider or a content file is not there. |
 | `accessDenied` | The plugin may not do this. | A path leaves the instance or the plugin's folders, a program is not one the plugin may run. The user's refusal of a command is `commandNotApproved` instead. |
 | `commandNotApproved` | The user did not allow the command; `data` also has its `reason`. | See "`run_command` needs the user's consent". |
-| `tooLarge` | A file or an answer is larger than the launcher accepts. | A file to read is over the limit. |
+| `tooLarge` | A file the plugin asked to read is larger than the launcher accepts (an over-long answer from the network is `http` / `responseTooLarge`). | A file to read is over the limit. |
 | `conflict` | The state does not allow it now; it may succeed later. | The instance is running or still installing, a plugin is loading, unloading or busy, the content is there already. |
 | `cancelled` | The work was called off before it finished. | The user called off an install. |
 | `timedOut` | The work did not finish in its time. | Java did not report its properties in time. |
@@ -209,9 +209,9 @@ The `error` of `http` is `{"type": <kind>, "data": …}` (`data` absent for `has
 | `hostNotAllowed` | `host` | The host is not in the plugin's `allowedHosts`: the URL's, or a redirect's. The user can add it in the plugin's settings. |
 | `addressBlocked` | `host` | The host resolves to an address a plugin may not reach (loopback, private, link-local, …), or to none. |
 | `invalidRequest` | `reason` | The request is refused before anything is sent: a malformed URL, a scheme other than `http`/`https`, no host, a forbidden or invalid header, a body that is not JSON or is over 4 MiB, a malformed expected hash of a download. Sending it again fails again. |
-| `redirect` | `reason` | A redirect is not followed: `https` → `http`, no usable `Location`, more than 5, or any 3xx where none is followed (`http_post_json`, `304`, …). |
+| `redirect` | `reason` | A redirect is not followed: `https` → `http`, no usable `Location`, more than 5, or any 3xx where none is followed by `http_post_json`. (A redirect to a scheme other than `http`/`https` arrives as `invalidRequest`.) |
 | `responseTooLarge` | `limit` | The answer is over the limit, in bytes: 16 MiB for `http_get` and `http_post_json`, 1 GiB for a download. |
-| `status` | `status` | A download's final answer is not 2xx. `http_get` and `http_post_json` hand any non-3xx status back as an answer instead. |
+| `status` | `status` | A final answer that is not 2xx and not handed back as an answer: a download's (a final `304` is one too), a provider's API. `http_get` and `http_post_json` hand any non-3xx status back as an answer instead. |
 | `hashMismatch` | none | A downloaded file is not the one its hash names. |
 | `invalidResponse` | `reason` | An answer the launcher reads itself (a content provider's, say) is not the JSON, TOML or text it expects. |
 | `network` | `reason` | No usable answer came: the host could not be resolved or reached, the connection or TLS failed, the request timed out or broke off, a download ran out of time. It may succeed later. |

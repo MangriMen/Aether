@@ -29,7 +29,7 @@ pub enum HttpErrorDto {
     /// The answer is larger than the host accepts, in bytes.
     ResponseTooLarge { limit: u64 },
     /// The final answer has an error status. `http_get` and `http_post_json` hand a status back
-    /// as an answer instead; only a download fails with it.
+    /// as an answer instead; a download, and the launcher's own requests for a plugin, fail with it.
     Status { status: u16 },
     /// The downloaded file is not the one the hash names.
     HashMismatch,

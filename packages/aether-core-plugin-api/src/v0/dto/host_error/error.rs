@@ -45,7 +45,8 @@ pub enum HostError {
         reason: CommandRefusalDto,
         message: String,
     },
-    /// A file or an answer is larger than the host accepts.
+    /// A file the plugin asked to read is larger than the host accepts (an over-long network
+    /// answer is `http` / `responseTooLarge`).
     TooLarge { message: String },
     /// The state does not allow it now: the instance is running or still installing, a plugin
     /// is loading or busy. It may succeed later.
