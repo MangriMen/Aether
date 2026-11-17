@@ -28,10 +28,10 @@ pub use domain::{
 pub(crate) use domain::{
     ArchiveMetadata, AsCapabilityMetadata, Compatibility, CoreMount, ExtractedPlugin, FolderMounts,
     GrantableHost, PLUGIN_API_VERSION, PLUGIN_CACHE_MOUNT, Plugin, PluginCheckCompatibilityParams,
-    PluginContent, PluginHandle, PluginImportInstance, PluginInstance, PluginInternalEvent,
-    PluginPath, PluginState, PluginStateReason, PluginVerification, core_folders,
-    effective_allowed_hosts, is_blocked_ip, is_filesystem_root, is_host_allowed,
-    partition_mountable, to_wasi_path, validate_allowed_host_entry,
+    PluginContent, PluginHandle, PluginInstance, PluginInternalEvent, PluginPath, PluginState,
+    PluginStateReason, PluginVerification, core_folders, effective_allowed_hosts, is_blocked_ip,
+    is_filesystem_root, is_host_allowed, partition_mountable, to_wasi_path,
+    validate_allowed_host_entry,
 };
 
 pub use app::{

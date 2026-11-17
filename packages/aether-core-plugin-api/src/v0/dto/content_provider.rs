@@ -11,7 +11,17 @@ use crate::v0::{
 #[serde(rename_all = "camelCase")]
 pub struct PluginImportInstanceDto {
     pub importer_id: String,
-    pub path: String,
+    pub source: ImportSourceDto,
+}
+
+/// What an importer reads an instance from: the input of `importInstance` names it.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, JsonSchema, Deserialize)]
+#[serde(rename_all = "camelCase", rename_all_fields = "camelCase")]
+pub enum ImportSourceDto {
+    /// A file to download: an `http` or `https` address, already checked to be a valid one.
+    Url { url: String },
+    /// A file the plugin can read: a plugin-side path (`/mnt/<drive>/…` for a Windows path).
+    File { path: String },
 }
 
 #[derive(Debug, Clone, Serialize, JsonSchema, Deserialize)]
@@ -86,4 +96,27 @@ pub struct CheckCompatibilityResultDto {
 #[serde(rename_all = "camelCase")]
 pub struct UpdateInstanceParamsDto {
     pub instance_id: String,
+}
+
+#[cfg(test)]
+mod import_source_tests {
+    use super::*;
+
+    #[test]
+    fn should_write_an_import_source_as_its_kind_around_its_fields() {
+        assert_eq!(
+            serde_json::to_string(&ImportSourceDto::Url {
+                url: "https://example.com/pack.toml".into()
+            })
+            .unwrap(),
+            r#"{"url":{"url":"https://example.com/pack.toml"}}"#
+        );
+        assert_eq!(
+            serde_json::to_string(&ImportSourceDto::File {
+                path: "/mnt/c/pack.zip".into()
+            })
+            .unwrap(),
+            r#"{"file":{"path":"/mnt/c/pack.zip"}}"#
+        );
+    }
 }
