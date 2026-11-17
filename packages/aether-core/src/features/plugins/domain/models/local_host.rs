@@ -3,7 +3,7 @@
 //!
 //! A plugin's requests are refused every address that is not public
 //! (`shared::public_address`). A grant lifts that for one host, and one port when it names one,
-//! for one plugin; one for an address literal or `localhost` admits that host past its
+//! for one plugin; one for an address literal or `localhost` itself admits that host past its
 //! `allowed_hosts` too, one for a DNS name does not (see [`LocalHost::is_local_by_name`]). Only
 //! the user makes one
 //! (`GrantPluginLocalHostAccessUseCase`, behind a confirmation), never a manifest, and never by
@@ -15,7 +15,7 @@ use url::{Host, Url};
 
 use super::AllowedHostRejection;
 use crate::shared::{
-    public_address::{is_blocked_ip, is_localhost, is_never_grantable},
+    public_address::{is_blocked_ip, is_never_grantable},
     web_url::{HttpUrl, InvalidUrlReason},
 };
 
@@ -49,13 +49,15 @@ impl LocalHost {
     }
 
     /// Whether the host is local by how it is written: an address literal (a grant only names a
-    /// local one) or `localhost`. Only such a grant admits its host past `allowed_hosts`: what a
-    /// DNS name resolves to is the name's owner's to say, so a grant for one lets its local
-    /// addresses through only once `allowed_hosts` already admits the name.
+    /// local one) or exactly `localhost`. Only such a grant admits its host past
+    /// `allowed_hosts`: what a DNS name resolves to is the name's owner's to say, so a grant for
+    /// one lets its local addresses through only once `allowed_hosts` already admits the name.
+    /// A name under `localhost` (`app.localhost`) is such a DNS name: some resolvers (Windows,
+    /// macOS, a fake-ip VPN client) send it to DNS like any other.
     pub(crate) fn is_local_by_name(&self) -> bool {
         self.host.starts_with('[')
             || self.host.parse::<std::net::Ipv4Addr>().is_ok()
-            || is_localhost(&self.host)
+            || matches!(self.host.as_str(), "localhost" | "localhost.")
     }
 
     /// The grant for the host of `raw_url` and its port (the scheme's when the URL names none).
@@ -238,14 +240,20 @@ mod tests {
             "[::1]",
             "[fd12::1]:443",
             "localhost",
-            "a.localhost",
+            "localhost.:8080",
         ] {
             assert!(
                 LocalHost::parse(entry).unwrap().is_local_by_name(),
                 "{entry}"
             );
         }
-        for entry in ["nas.lan:8080", "nas", "localhost.example"] {
+        for entry in [
+            "nas.lan:8080",
+            "nas",
+            "localhost.example",
+            "a.localhost",
+            "a.localhost:80",
+        ] {
             assert!(
                 !LocalHost::parse(entry).unwrap().is_local_by_name(),
                 "{entry}"

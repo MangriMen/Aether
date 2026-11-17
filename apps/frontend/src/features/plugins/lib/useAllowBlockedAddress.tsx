@@ -11,6 +11,16 @@ import { AllowHostButton } from '../ui/AllowHostButton';
 
 const MAX_PORT = 65_535;
 
+/** Four dotted numbers: how a URL writes back every IPv4 host it parses. */
+const IPV4_HOST = /^\d{1,3}(?:\.\d{1,3}){3}$/;
+
+/** An address literal or `localhost` itself: a host that stays the one it names. */
+const isAddressOrLocalhost = (host: string) =>
+  host === 'localhost' ||
+  host === 'localhost.' ||
+  host.startsWith('[') ||
+  IPV4_HOST.test(host);
+
 /**
  * The URL the local grant is given for `host` on `port`, or `undefined` when that URL would not
  * name exactly them (a `/`, `?`, `#`, `@` or `\` in the host, a port in it, a host not in
@@ -73,13 +83,19 @@ export const useAllowBlockedAddress = () => {
         address: `${host}:${port}`,
       };
 
+      // A name is not tied to the address it has now: its owner can point it at another
+      // address of the user's network later, so the user is told before allowing it.
+      const nameNote = isAddressOrLocalhost(host)
+        ? ''
+        : ` ${t('pluginSettings.localHostAccessConfirmNameNote', texts)}`;
+
       const allow = async () => {
         const confirmed = await askConfirmation({
           header: t('pluginSettings.localHostAccessConfirmTitle', texts),
-          description: t(
+          description: `${t(
             'pluginSettings.localHostAccessConfirmDescription',
             texts,
-          ),
+          )}${nameNote}`,
           allow: t('pluginSettings.accessConfirmAllow'),
           deny: t('pluginSettings.accessConfirmDeny'),
         });

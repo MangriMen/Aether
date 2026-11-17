@@ -1035,6 +1035,7 @@
     "allowLocalAddress": "Allow this local address",
     "localHostAccessConfirmTitle": "Let {{name}} reach {{address}}?",
     "localHostAccessConfirmDescription": "{{address}} is an address in your own network or on this computer, not on the internet. If you allow it, {{name}} will be able to send requests to it, to whatever runs there: a server, a NAS, a service of this computer. Allow it only if you expect this plugin to use something of yours at this address. You can take the access back in the plugin settings.",
+    "localHostAccessConfirmNameNote": "{{address}} is a name, not a fixed address: whoever controls its DNS can later point it at another address in your network or at this computer, and the plugin will reach that too. Allow a name only if it is yours.",
     "localHostAccessGranted": "The plugin can now reach this local address",
     "localHostAccessFailed": "Could not let the plugin reach the local address",
     "localHosts": {

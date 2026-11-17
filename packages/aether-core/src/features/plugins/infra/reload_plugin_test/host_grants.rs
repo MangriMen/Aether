@@ -275,7 +275,8 @@ async fn should_not_give_a_local_host_when_it_is_a_pattern_or_no_local_address()
 }
 
 /// `nas.lan` is in the user's network, `cdn.example` on the internet, `split.example` both,
-/// `meta.example` the cloud metadata service; `gone.example` does not resolve.
+/// `meta.example` the cloud metadata service; `gone.example` does not resolve. A name under
+/// `localhost` is resolved like any other: `app.localhost` is sent to a public address.
 fn fake_dns(
     host: String,
     _port: u16,
@@ -288,6 +289,8 @@ fn fake_dns(
             "split.example" => answer(&["192.168.1.10", "93.184.215.14"]),
             "meta.example" => answer(&["169.254.169.254"]),
             "empty.example" => answer(&[]),
+            "app.localhost" => answer(&["1.1.1.1"]),
+            "dev.localhost" => answer(&["127.0.0.1"]),
             _ => Err(std::io::Error::other("no such host")),
         }
     })
@@ -305,6 +308,7 @@ async fn should_give_a_name_as_a_local_host_only_when_it_resolves_to_local_addre
         ("https://meta.example/", AllowedHostRejection::NotLocal),
         ("https://gone.example/", AllowedHostRejection::Unresolved),
         ("https://empty.example/", AllowedHostRejection::Unresolved),
+        ("http://app.localhost/", AllowedHostRejection::NotLocal),
     ] {
         for dry_run in [true, false] {
             let result = use_case.execute(plugin_id(), url.into(), dry_run).await;
@@ -328,4 +332,13 @@ async fn should_give_a_name_as_a_local_host_only_when_it_resolves_to_local_addre
         }
     );
     assert_eq!(settings.local_hosts(), ["nas.lan:8080"]);
+
+    use_case
+        .execute(plugin_id(), "http://dev.localhost:3000/".into(), false)
+        .await
+        .unwrap();
+    assert_eq!(
+        settings.local_hosts(),
+        ["nas.lan:8080", "dev.localhost:3000"]
+    );
 }

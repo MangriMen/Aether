@@ -18,7 +18,7 @@ use reqwest_middleware::{Middleware, Next};
 use url::Url;
 
 use super::{AddressFilter, HostLookup, PluginHosts, PluginHttpError, check_target, port_of};
-use crate::shared::public_address::is_never_grantable;
+use crate::shared::public_address::is_refused_for_local_grant;
 
 /// The redirect statuses a GET follows. Any other 3xx (`300`, `304`, …) is not a hop: it is
 /// handed back to the caller, which treats it as an error.
@@ -179,12 +179,13 @@ impl VettedHops {
     }
 
     /// Which addresses a request to `host` on `port` is refused: a local host the user granted
-    /// the plugin may be at any address that is one host ([`is_never_grantable`]); any other
-    /// only at a public one. Every hop is judged anew, so a redirect to a local address that
-    /// is not granted is refused.
+    /// the plugin may be only at a local address that is one host
+    /// ([`is_refused_for_local_grant`]), never at a public one; any other host only at a public
+    /// one. Every hop is judged anew, so a redirect to a local address that is not granted is
+    /// refused, and a granted name that now points at the internet is too.
     fn address_policy(&self, host: &str, port: u16) -> AddressFilter {
         if self.hosts.grants_local(host, port) {
-            is_never_grantable
+            is_refused_for_local_grant
         } else {
             self.is_blocked
         }

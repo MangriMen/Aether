@@ -7,7 +7,7 @@ use crate::features::instance::PluginId;
 use crate::features::plugins::{
     AllowedHostRejection, LocalHost, PluginError, PluginRegistry, PluginSettingsStorage,
 };
-use crate::shared::public_address::{is_blocked_ip, is_never_grantable};
+use crate::shared::public_address::is_refused_for_local_grant;
 
 use super::{
     grant_plugin_host_access::HostAccess,
@@ -27,10 +27,17 @@ use super::{
 /// functions read the plugin's hosts on every call.
 ///
 /// The plugin names the host the grant is offered for (in the refusal it reports), so a DNS
-/// name is resolved here, dry run or not, and refused unless every address it has is a local
-/// one: the confirmation tells the user it is in their own network, and that must be true. A
-/// granted name still has to be in the plugin's `allowed_hosts` to be reached at all
+/// name (a name under `localhost` included) is resolved here, dry run or not, and refused
+/// unless every address it has is a local one: the confirmation tells the user it is in their
+/// own network, and that must be true. A granted name still has to be in the plugin's
+/// `allowed_hosts` to be reached at all
 /// ([`PluginHosts::admits`](crate::features::plugins::PluginHosts::admits)).
+///
+/// The limit of a name grant: it is judged again on every request (local addresses only, never
+/// a public one), but it is not tied to the address the name had when it was granted. Whoever
+/// controls the name's DNS can later point it at another local address, this machine
+/// included, on that port. Only an address literal is tied to one host; grant a name only for
+/// a host whose DNS the user controls.
 pub(crate) struct GrantPluginLocalHostAccessUseCase {
     plugin_registry: Arc<PluginRegistry>,
     plugin_settings_storage: Arc<dyn PluginSettingsStorage>,
@@ -70,7 +77,8 @@ impl GrantPluginLocalHostAccessUseCase {
     }
 
     /// Refuses a DNS name that does not resolve, or resolves to an address that is public or
-    /// no single host. A literal was judged by [`LocalHost::from_url`]; `localhost` is local.
+    /// no single host. A literal was judged by [`LocalHost::from_url`]; `localhost` itself is
+    /// local.
     async fn check_resolves_locally(&self, local: &LocalHost) -> Result<(), AllowedHostRejection> {
         if local.is_local_by_name() {
             return Ok(());
@@ -81,10 +89,7 @@ impl GrantPluginLocalHostAccessUseCase {
         if addrs.is_empty() {
             return Err(AllowedHostRejection::Unresolved);
         }
-        if addrs
-            .iter()
-            .any(|&ip| !is_blocked_ip(ip) || is_never_grantable(ip))
-        {
+        if addrs.iter().any(|&ip| is_refused_for_local_grant(ip)) {
             return Err(AllowedHostRejection::NotLocal);
         }
         Ok(())

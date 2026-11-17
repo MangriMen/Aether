@@ -411,9 +411,10 @@ The host performs the request itself and applies, in this order:
      public name with an address from it and route the connection by the name, so refusing it
      refused public hosts. `198.18.0.0/30` stays blocked: TUN clients keep their own interface
      there (mihomo and Clash Verge take `198.18.0.1`), and that address reaches this computer;
-   * a host and port the user allowed as a local address may resolve to non-public addresses
-     too, but never to an unspecified (`0.0.0.0`, `::`), broadcast or multicast one, nor to a
-     cloud metadata service (`169.254.169.254`, `100.100.100.200`, `fd00:ec2::254`).
+   * a host and port the user allowed as a local address must resolve to non-public addresses
+     instead (a public one is refused), but never to an unspecified (`0.0.0.0`, `::`),
+     broadcast or multicast one, nor to a cloud metadata service (`169.254.169.254`,
+     `169.254.0.23`, `100.100.100.200`, `192.0.0.192`, `fd00:ec2::254`).
 5. **Pinned connection** — the request is pinned to the addresses that were just checked, so a
    second DNS answer cannot swap in a private address between the check and the connect
    (DNS rebinding).
@@ -473,14 +474,18 @@ literal typed into an importer's field is asked for the same way before the impo
 manifest cannot ask for one, and nothing a plugin sends can give one. A grant:
 
 * names exactly one host as the request names it — a local IP literal (`192.168.1.10`,
-  `[fd12::1]`), `localhost` or a DNS name — and the port the refused request was for; never a
-  pattern. A DNS name is resolved when the user allows it, and refused unless every address
-  it has is a local one;
-* lets that host's addresses on that port be non-public; every other check stays, and the
-  connection is still pinned to the addresses just checked. A grant for an IP literal or
-  `localhost` also admits the host past `allowedHosts`; one for a DNS name does not: the name
-  must be in `allowedHosts` as well (the plugin reports the refusal the grant is offered for,
-  so it cannot get a host it was never allowed by calling it local);
+  `[fd12::1]`), `localhost` itself or a DNS name — and the port the refused request was for;
+  never a pattern. A DNS name, a name under `localhost` (`app.localhost`) included, is
+  resolved when the user allows it, and refused unless every address it has is a local one;
+* lets that host's addresses on that port be non-public, and only non-public; every other
+  check stays, and the connection is still pinned to the addresses just checked. A grant for
+  an IP literal or `localhost` itself also admits the host past `allowedHosts`; one for a DNS
+  name does not: the name must be in `allowedHosts` as well (the plugin reports the refusal
+  the grant is offered for, so it cannot get a host it was never allowed by calling it local);
+* for a DNS name, is judged again on every request but is not tied to the address the name
+  had when it was granted: whoever controls the name's DNS can later point it at another
+  local address, this computer included, on that port. Only an IP literal stays one host, so
+  grant names only of hosts whose DNS you control (the confirmation says so for a name);
 * is checked on every hop: a redirect to a local address that is not allowed is refused, one
   to an allowed one is followed;
 * is listed under "Local addresses" in the plugin's settings, where the user can take it back.

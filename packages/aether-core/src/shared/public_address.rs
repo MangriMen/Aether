@@ -99,10 +99,13 @@ fn embedded_ipv4(ip: Ipv6Addr) -> Option<Ipv4Addr> {
 }
 
 /// The instance metadata services of the clouds, which hand out the machine's credentials:
-/// AWS, GCP, Azure and others at `169.254.169.254`, Alibaba at `100.100.100.200`.
-const METADATA_V4: [Ipv4Addr; 2] = [
+/// AWS, GCP, Azure and others at `169.254.169.254`, Alibaba at `100.100.100.200`, Tencent at
+/// `169.254.0.23`, Oracle's legacy endpoint at `192.0.0.192`.
+const METADATA_V4: [Ipv4Addr; 4] = [
     Ipv4Addr::new(169, 254, 169, 254),
     Ipv4Addr::new(100, 100, 100, 200),
+    Ipv4Addr::new(169, 254, 0, 23),
+    Ipv4Addr::new(192, 0, 0, 192),
 ];
 
 /// AWS's metadata service over IPv6 (`fd00:ec2::254`).
@@ -127,6 +130,13 @@ pub(crate) fn is_never_grantable(ip: IpAddr) -> bool {
             None => v6.is_unspecified() || v6.is_multicast() || v6 == METADATA_V6,
         },
     }
+}
+
+/// The address policy of a host the user granted a plugin as a local one: only a local address
+/// passes, never a public one (a granted name that now points at the internet is refused, as
+/// the user was told it is in their own network), nor one [`is_never_grantable`] refuses.
+pub(crate) fn is_refused_for_local_grant(ip: IpAddr) -> bool {
+    !is_blocked_ip(ip) || is_never_grantable(ip)
 }
 
 /// `localhost` and its subdomains always mean the local machine (RFC 6761).
@@ -260,11 +270,40 @@ mod tests {
             "64:ff9b::a9fe:a9fe",
             "2002:a9fe:a9fe::1",
             "::ffff:100.100.100.200",
+            "169.254.0.23",
+            "::ffff:169.254.0.23",
+            "64:ff9b::a9fe:17",
+            "2002:a9fe:17::1",
+            "192.0.0.192",
+            "::ffff:192.0.0.192",
+            "64:ff9b::c000:c0",
+            "2002:c000:c0::1",
         ] {
             assert!(is_never_grantable(ip.parse().unwrap()), "{ip}");
         }
-        for ip in ["169.254.169.253", "100.100.100.201", "fd00:ec2::253"] {
+        for ip in [
+            "169.254.169.253",
+            "100.100.100.201",
+            "fd00:ec2::253",
+            "169.254.0.24",
+            "192.0.0.193",
+        ] {
             assert!(!is_never_grantable(ip.parse().unwrap()), "{ip}");
+        }
+    }
+
+    #[test]
+    fn should_let_a_local_grant_reach_only_local_addresses() {
+        for ip in ["192.168.1.50", "127.0.0.1", "::1", "fd12::1", "10.0.0.7"] {
+            assert!(!is_refused_for_local_grant(ip.parse().unwrap()), "{ip}");
+        }
+        for ip in [
+            "93.184.215.14",
+            "2606:4700:4700::1111",
+            "198.18.0.46",
+            "169.254.169.254",
+        ] {
+            assert!(is_refused_for_local_grant(ip.parse().unwrap()), "{ip}");
         }
     }
 

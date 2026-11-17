@@ -12,9 +12,9 @@ const ABSOLUTE_PATH = /^(?:[a-zA-Z]:[\\/]|\\\\|\/)/;
 const IPV4_HOSTNAME = /^\d{1,3}(?:\.\d{1,3}){3}$/;
 
 /**
- * Whether the host of `url` is `localhost` (or a name under it) or an address literal: a host
- * the core can tell is local from the URL alone, without resolving it. Whether a literal is
- * local, the core decides.
+ * Whether the host of `url` is `localhost` itself or an address literal: a host the core can
+ * tell is local from the URL alone, without resolving it. Whether a literal is local, the core
+ * decides. A name under `localhost` is a DNS name like any other: it is asked for as one.
  */
 export const namesLocalhostOrAddress = (url: string): boolean => {
   try {
@@ -22,7 +22,7 @@ export const namesLocalhostOrAddress = (url: string): boolean => {
 
     return (
       hostname === 'localhost' ||
-      hostname.endsWith('.localhost') ||
+      hostname === 'localhost.' ||
       hostname.startsWith('[') ||
       IPV4_HOSTNAME.test(hostname)
     );

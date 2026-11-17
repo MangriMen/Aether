@@ -1316,6 +1316,53 @@ async fn should_reach_a_local_host_when_the_user_granted_its_name_and_port() {
     assert_eq!(server.requests().len(), 1);
 }
 
+/// Every name resolves to a public address.
+fn public_dns(_host: String, port: u16) -> BoxFuture<'static, std::io::Result<Vec<SocketAddr>>> {
+    Box::pin(async move { Ok(vec![SocketAddr::from(([93, 184, 215, 14], port))]) })
+}
+
+#[tokio::test]
+async fn should_refuse_a_granted_name_when_it_now_points_at_a_public_address() {
+    let granted = PluginHosts::new(vec!["nas.lan".to_owned()], vec![local("nas.lan:8080")]);
+
+    let err = get_granted("http://nas.lan:8080/pack.toml", &granted, public_dns)
+        .await
+        .expect_err("the user was told the name is in their own network");
+
+    assert!(
+        matches!(err, PluginHttpError::BlockedAddress { ref host, port: 8080, ip }
+            if host == "nas.lan" && ip == IpAddr::from([93, 184, 215, 14])),
+        "{err}"
+    );
+}
+
+#[tokio::test]
+async fn should_not_admit_a_granted_name_under_localhost_when_it_is_outside_allowed_hosts() {
+    let server = TestServer::start(FIRST, |_| ok(b"pack")).await;
+    let port = port_of_server(&server);
+    let url = format!("http://app.localhost:{port}/");
+    let grant = local(&format!("app.localhost:{port}"));
+
+    let err = get_granted(
+        &url,
+        &PluginHosts::new(vec![], vec![grant.clone()]),
+        lan_dns,
+    )
+    .await
+    .expect_err("a name under localhost is a DNS name like any other");
+    assert!(
+        matches!(err, PluginHttpError::HostNotAllowed { .. }),
+        "{err}"
+    );
+    assert_eq!(server.connections(), 0);
+
+    let allowed = PluginHosts::new(vec!["app.localhost".to_owned()], vec![grant]);
+    let body = get_granted(&url, &allowed, lan_dns)
+        .await
+        .expect("in allowed_hosts and granted, it is reached at its local address");
+    assert_eq!(body, b"pack");
+}
+
 #[tokio::test]
 async fn should_reach_a_granted_literal_or_localhost_without_an_allowed_hosts_entry() {
     let server = TestServer::start(FIRST, |_| ok(b"pack")).await;

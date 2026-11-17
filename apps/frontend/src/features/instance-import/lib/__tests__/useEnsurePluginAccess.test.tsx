@@ -134,17 +134,20 @@ describe('useEnsurePluginAccess', () => {
     expect(askConfirmation).not.toHaveBeenCalled();
   });
 
-  it('should_not_ask_about_a_local_address_when_the_host_is_a_name', async () => {
-    commands.grantHostAccess.mockResolvedValue({
-      type: 'alreadyAllowed',
-      host: 'nas.lan',
-    });
-    const ensure = mountEnsure();
+  it.each(['nas.lan', 'app.localhost'])(
+    'should_not_ask_about_a_local_address_when_the_host_is_the_name_%s',
+    async (host) => {
+      commands.grantHostAccess.mockResolvedValue({
+        type: 'alreadyAllowed',
+        host,
+      });
+      const ensure = mountEnsure();
 
-    await expect(ensure('packwiz', 'http://nas.lan/pack.toml')).resolves.toBe(
-      true,
-    );
+      await expect(ensure('packwiz', `http://${host}/pack.toml`)).resolves.toBe(
+        true,
+      );
 
-    expect(commands.grantLocalHostAccess).not.toHaveBeenCalled();
-  });
+      expect(commands.grantLocalHostAccess).not.toHaveBeenCalled();
+    },
+  );
 });

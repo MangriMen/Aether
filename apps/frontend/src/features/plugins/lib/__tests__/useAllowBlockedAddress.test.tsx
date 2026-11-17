@@ -124,10 +124,29 @@ describe('useAllowBlockedAddress', () => {
     expect(texts.description).toContain(
       'packwiz will be able to send requests to it',
     );
+    expect(texts.description).not.toContain('is a name');
 
     await vi.waitFor(() => expect(isBusy(button)).toBe(false));
     expect(button.disabled).toBe(true);
   });
+
+  it.each(['nas.lan', 'app.localhost'])(
+    'should_warn_that_the_name_%s_can_later_point_elsewhere',
+    async (host) => {
+      askConfirmation.mockResolvedValue(false);
+      mountHook();
+
+      buttonOf(blocked(host, 8080)).click();
+
+      await vi.waitFor(() => expect(askConfirmation).toHaveBeenCalledOnce());
+      const [texts] = askConfirmation.mock.calls[0] as [
+        { description: string },
+      ];
+      expect(texts.description).toContain(
+        `${host}:8080 is a name, not a fixed address`,
+      );
+    },
+  );
 
   it('should_give_nothing_and_offer_the_button_again_when_the_user_does_not_confirm', async () => {
     askConfirmation.mockResolvedValue(false);
