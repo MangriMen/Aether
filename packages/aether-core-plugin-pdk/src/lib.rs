@@ -7,26 +7,20 @@
 //!
 //! ```ignore
 //! use aether_core_plugin_pdk::{
-//!     self as pdk, HostReply, ResultExt, Wire,
+//!     self as pdk, ResultExt,
 //!     api::v0::{CommandDto, OutputDto},
 //! };
-//! use extism_pdk::{FnResult, host_fn, plugin_fn};
-//!
-//! #[host_fn]
-//! extern "ExtismHost" {
-//!     fn run_command(command: Wire<CommandDto>) -> HostReply<OutputDto>;
-//! }
+//! use extism_pdk::{FnResult, plugin_fn};
 //!
 //! // `#[plugin_fn]` wants `FnResult`; `?` turns a `pdk::Error` into it.
-//! // `Wire` is `Msgpack` with named fields, which is what the host reads and writes; the
-//! // plugin's own inputs and outputs (`#[plugin_fn] fn f(Wire(x): Wire<X>) -> FnResult<Wire<Y>>`)
-//! // use it the same way.
+//! // `pdk::host` has one function per host function; a refusal of the host comes back as
+//! // `pdk::Error::Host`. `Wire` is `Msgpack` with named fields, which is what the host reads and
+//! // writes; the plugin's own inputs and outputs
+//! // (`#[plugin_fn] fn f(Wire(x): Wire<X>) -> FnResult<Wire<Y>>`) use it.
 //! // `context` puts the plugin's words before the host's message; the host error itself goes
 //! // back to the host unchanged.
 //! fn run(command: CommandDto) -> pdk::Result<OutputDto> {
-//!     unsafe { run_command(Wire(command)) }?
-//!         .into_result()
-//!         .context("running the pack installer")
+//!     pdk::host::run_command(command).context("running the pack installer")
 //! }
 //!
 //! #[plugin_fn]
@@ -37,6 +31,8 @@
 //! ```
 
 use std::fmt;
+
+pub mod host;
 
 pub use aether_core_plugin_api as api;
 use aether_core_plugin_api::v0::{
@@ -118,7 +114,7 @@ impl Error {
 }
 
 /// [`Error::context`] on a [`Result`]:
-/// `unsafe { f(Wire(arg)) }?.into_result().context("downloading the pack")?`.
+/// `pdk::host::download_to_cache(params).context("downloading the pack")?`.
 pub trait ResultExt<T> {
     /// The error, if any, with `context` put in front of its message.
     ///
@@ -234,6 +230,8 @@ impl From<Error> for anyhow::Error {
 }
 
 /// The return type to declare a host function with: what the host wrote, decoded with [`Wire`].
+/// The functions of [`host`] declare and read it already; it is for a plugin that declares its
+/// own `#[host_fn]` imports.
 #[derive(Debug)]
 pub struct HostReply<T>(pub HostResult<T>);
 

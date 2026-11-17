@@ -53,8 +53,9 @@ Names are matched exactly (case included), without the `extism:host/user` namesp
 own built-ins (`http_request`, `config_get`, `var_get`, …) live in a different namespace and are
 not covered by the list.
 
-With an Extism Rust PDK, the list is the set of functions in your `#[host_fn] extern
-"ExtismHost"` blocks that the plugin actually calls.
+With `aether-core-plugin-pdk`, the list is the set of `pdk::host` functions the plugin actually
+calls (the linker drops the imports of the others); with your own `#[host_fn] extern
+"ExtismHost"` blocks, it is the set of functions in them that the plugin calls.
 
 ## Restarts lose the plugin's memory
 
@@ -284,9 +285,11 @@ JSON. A string without a valid envelope is an ordinary failure with that text as
 `host` is the `HostError` a host function returned to the plugin, passed back untouched.
 
 **With Rust**, use `aether-core-plugin-pdk`; it re-exports this crate as
-`aether_core_plugin_pdk::api`, so a plugin needs only that one dependency. Declare a host
-function as returning `HostReply<T>` and read it with `unsafe { f(Wire(arg)) }?.into_result()?`
-inside a function that returns `aether_core_plugin_pdk::Result`. `#[plugin_fn]` itself must
+`aether_core_plugin_pdk::api`, so a plugin needs only that one dependency. Call a host function
+through `aether_core_plugin_pdk::host` (`pdk::host::http_get(request)?`) inside a function that
+returns `aether_core_plugin_pdk::Result`: the answer comes back decoded, a host's refusal as
+`pdk::Error::Host`. (A plugin that declares its own `#[host_fn]` import returns `HostReply<T>`
+from it and reads it with `unsafe { f(Wire(arg)) }?.into_result()?`.) `#[plugin_fn]` itself must
 return `FnResult`, so call that function from it with `?`, which turns the error into the
 envelope. The envelope's `message` is the host's message, or the plugin's words before it when
 the plugin adds them with `.context("downloading the pack")` (`ResultExt`); `host` is the host
@@ -368,13 +371,10 @@ A plugin has two ways to make an HTTP request. They are **not** equally safe.
 ```rust
 // plugin side
 // in a function that returns `aether_core_plugin_pdk::Result`
-let response: HttpResponseDto = unsafe {
-    http_get(Wire(HttpRequestDto {
-        url: "https://example.com/pack.toml".to_string(),
-        headers: HashMap::new(),
-    }))
-}?
-.into_result()?;
+let response: HttpResponseDto = pdk::host::http_get(HttpRequestDto {
+    url: "https://example.com/pack.toml".to_string(),
+    headers: HashMap::new(),
+})?;
 ```
 
 The host performs the request itself and applies, in this order:
@@ -468,13 +468,10 @@ the plugin can open through WASI:
 ```rust
 // plugin side
 // in a function that returns `aether_core_plugin_pdk::Result`
-let file: CachedFileDto = unsafe {
-    download_to_cache(Wire(DownloadToCacheParamsDto {
-        url: "https://cdn.modrinth.com/data/AANobbMI/versions/x/sodium.jar".to_string(),
-        hash: FileHashDto::sha1("…40 hex characters…"),
-    }))
-}?
-.into_result()?;
+let file: CachedFileDto = pdk::host::download_to_cache(DownloadToCacheParamsDto {
+    url: "https://cdn.modrinth.com/data/AANobbMI/versions/x/sodium.jar".to_string(),
+    hash: FileHashDto::sha1("…40 hex characters…"),
+})?;
 // file.path == "/cache/downloads/sha1/<hex digest>"
 ```
 
