@@ -17,7 +17,9 @@ pub struct CommandDto {
 #[derive(Serialize, JsonSchema, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct OutputDto {
-    pub status: u32,
+    /// The exit code. `None` when the program did not exit with one: it was killed by a signal.
+    /// A non-zero code is an answer like any other, not a failed call.
+    pub exit_code: Option<i32>,
     #[serde_as(as = "Bytes")]
     #[schemars(schema_with = "crate::v0::schema::bytes")]
     pub stdout: Vec<u8>,
@@ -32,6 +34,13 @@ pub struct OutputDto {
     /// `stderr` hit the host's per-stream cap and was cut short.
     #[serde(default)]
     pub stderr_truncated: bool,
+}
+
+impl OutputDto {
+    /// The program exited with code 0.
+    pub fn success(&self) -> bool {
+        self.exit_code == Some(0)
+    }
 }
 
 /// Parse a command string into parts, respecting single and double quotes.
