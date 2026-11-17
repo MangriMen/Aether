@@ -626,8 +626,12 @@ export type PendingCommandApprovalDto = {
 	/**  The Java launcher the command starts. */
 	java: string,
 	current_dir: string,
-	/**  The whole argument list, the JVM options and the jar included. */
-	arguments: string[],
+	/**  The JVM options before the jar, as the core builds the approval key from them. */
+	options: string[],
+	/**  The jar as the plugin wrote it; `None` when the command is not a plain `-jar` launch. */
+	target: string | null,
+	/**  The arguments after the jar (every argument when the launch was not told apart). */
+	rest: string[],
 	jar: CommandJarDto | null,
 	/**  Why "always" is not offered; `None` when it is. */
 	once_only: OnceOnlyReasonDto | null,

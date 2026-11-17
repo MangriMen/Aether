@@ -14,9 +14,9 @@ use crate::{
         instance::PluginId,
         plugins::{
             CommandApproval, CommandApprovalRefusal, CommandApprovalRequest, CommandApprover,
-            CommandGrant, CommandIdentity, CommandJar, MAX_APPROVED_JAR_BYTES, OnceOnlyReason,
-            PluginError, PluginPath, PluginRegistry, PluginSettings, PluginSettingsStorage,
-            manifest_has_class_path, parse_jar_launch,
+            CommandGrant, CommandIdentity, CommandJar, CommandLine, MAX_APPROVED_JAR_BYTES,
+            OnceOnlyReason, PluginError, PluginPath, PluginRegistry, PluginSettings,
+            PluginSettingsStorage, manifest_has_class_path, parse_jar_launch,
         },
         settings::LocationInfo,
     },
@@ -108,6 +108,7 @@ async fn authorize(
             .map(|dir| dir.to_string_lossy().into_owned())
             .unwrap_or_default(),
         arguments: command.args.clone(),
+        line: CommandLine::of(&command.args),
         jar: inspected.jar.clone(),
         always: inspected.always.clone(),
     };

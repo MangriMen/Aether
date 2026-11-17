@@ -236,7 +236,7 @@ mod tests {
 
     use super::*;
     use crate::features::events::{CommandApprovalOutcome, Event, EventEmitter, EventError};
-    use crate::features::plugins::OnceOnlyReason;
+    use crate::features::plugins::{CommandLine, OnceOnlyReason};
 
     struct NullEmitter;
 
@@ -262,6 +262,7 @@ mod tests {
             java: "java".to_owned(),
             current_dir: "/cache".to_owned(),
             arguments: vec!["-jar".to_owned(), "#/cache/a.jar".to_owned()],
+            line: CommandLine::default(),
             jar: None,
             always: if once_only {
                 Err(OnceOnlyReason::ArgFile)
