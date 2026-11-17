@@ -216,7 +216,7 @@ These apply to new and edited code; older code is brought in line when a file is
 
 ### Tests
 
-- A test lives in `__tests__/` next to the code it covers, named `<file>.test.ts(x)`.
+- A test lives in `__tests__/` next to the code it covers, named `<file>.test.ts(x)` after the file it covers, or after the invariant it checks when it covers no single file (`keyFormat.test.ts`).
 - A test is `it(...)`, never `test(...)`; `vitest/consistent-test-it` in `.oxlintrc.json` enforces it. The description says what happens (`it('keeps stored values of the right type')`); the wording is not checked.
 
 ### Form schemas
@@ -235,7 +235,7 @@ These apply to new and edited code; older code is brought in line when a file is
 
 The checks cover every file under `src/`.
 
-- oxlint (`bun lint:code`, also shown in the editor): core ESLint, TypeScript, jsx-a11y and
+- oxlint (`bun lint:code`, also shown in the editor): core ESLint, TypeScript, vitest, jsx-a11y and
   react rules, plus the import boundaries: no deep imports into another module, no `@/app`
   outside `app/`, no feature imports from `shared/` or `platform/`, no `platform/` in
   `shared/`, nothing but `shared/utils` in `shared/ui-kit`, no `@tauri-apps/*` (except types, static or `import('...')`)
