@@ -1,6 +1,6 @@
 import type { Component } from 'solid-js';
 
-import { createMemo, createSignal, onCleanup, onMount, Show } from 'solid-js';
+import { createSignal, onCleanup, onMount, Show } from 'solid-js';
 
 import { formatBytes } from '@/shared/format';
 import { useTranslation } from '@/shared/i18n';
@@ -23,7 +23,7 @@ import {
   useAnswerCommandApproval,
   useCommandApprovals,
 } from '../api/commandApprovalQueries';
-import { secondsLeft, splitCommandLine } from '../model/commandApproval';
+import { secondsLeft } from '../model/commandApproval';
 
 /** How long an allow stays out of reach once a question shows. */
 const ARM_DELAY_MS = 700;
@@ -50,8 +50,6 @@ const CommandApprovalBody: Component<{
   const [now, setNow] = createSignal(Date.now());
   const timer = setInterval(() => setNow(Date.now()), 1000);
   onCleanup(() => clearInterval(timer));
-
-  const line = createMemo(() => splitCommandLine(props.approval.arguments));
 
   // The next question takes the place of this one at once, so a second click meant for the
   // last one must not reach it: an allow waits a moment after a question appears.
@@ -109,7 +107,8 @@ const CommandApprovalBody: Component<{
               <Detail
                 label={t('plugin.commandApproval.program')}
                 value={
-                  line().target ?? t('plugin.commandApproval.unknownProgram')
+                  props.approval.target ??
+                  t('plugin.commandApproval.unknownProgram')
                 }
               />
             }
@@ -139,18 +138,18 @@ const CommandApprovalBody: Component<{
             label={t('plugin.commandApproval.folder')}
             value={props.approval.current_dir}
           />
-          <Show when={line().options.length > 0}>
+          <Show when={props.approval.options.length > 0}>
             <Detail
               label={t('plugin.commandApproval.options')}
-              value={line().options.join(' ')}
+              value={props.approval.options.join(' ')}
             />
           </Show>
-          <Show when={line().rest.length > 0}>
+          <Show when={props.approval.rest.length > 0}>
             <Detail
               label={t('plugin.commandApproval.arguments', {
-                count: line().rest.length,
+                count: props.approval.rest.length,
               })}
-              value={line().rest.join(' ')}
+              value={props.approval.rest.join(' ')}
             />
           </Show>
         </dl>

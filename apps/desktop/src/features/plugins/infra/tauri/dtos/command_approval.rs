@@ -13,8 +13,12 @@ pub struct PendingCommandApprovalDto {
     /// The Java launcher the command starts.
     pub java: String,
     pub current_dir: String,
-    /// The whole argument list, the JVM options and the jar included.
-    pub arguments: Vec<String>,
+    /// The JVM options before the jar, as the core builds the approval key from them.
+    pub options: Vec<String>,
+    /// The jar as the plugin wrote it; `None` when the command is not a plain `-jar` launch.
+    pub target: Option<String>,
+    /// The arguments after the jar (every argument when the launch was not told apart).
+    pub rest: Vec<String>,
     pub jar: Option<CommandJarDto>,
     /// Why "always" is not offered; `None` when it is.
     pub once_only: Option<OnceOnlyReasonDto>,
@@ -54,12 +58,15 @@ pub enum CommandAnswerDto {
 impl From<PendingCommandApproval> for PendingCommandApprovalDto {
     fn from(pending: PendingCommandApproval) -> Self {
         let request = pending.request;
+        let line = request.line();
         Self {
             request_id: request.id.to_string(),
             plugin_id: request.plugin_id.into(),
             java: request.java,
             current_dir: request.current_dir,
-            arguments: request.arguments,
+            options: line.options,
+            target: line.target,
+            rest: line.rest,
             jar: request.jar.map(Into::into),
             once_only: request.always.err().map(Into::into),
             expires_at: pending.expires_at,

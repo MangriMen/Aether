@@ -71,6 +71,8 @@ pub struct JarLaunch {
     pub jvm_options: Vec<String>,
     /// The token after the options, as the plugin wrote it.
     pub target: String,
+    /// What follows the target: the tool's own arguments, never part of the identity.
+    pub rest: Vec<String>,
 }
 
 /// Reads `args` (everything after the program) as `[options] -jar <target> [arguments]`.
@@ -83,7 +85,7 @@ pub fn parse_jar_launch(args: &[String]) -> Result<JarLaunch, OnceOnlyReason> {
     let mut jar_flags = 0_u32;
     let mut jvm_options = Vec::new();
 
-    for arg in args {
+    for (index, arg) in args.iter().enumerate() {
         if arg.starts_with('@') {
             return Err(OnceOnlyReason::ArgFile);
         }
@@ -93,6 +95,7 @@ pub fn parse_jar_launch(args: &[String]) -> Result<JarLaunch, OnceOnlyReason> {
                 1 => Ok(JarLaunch {
                     jvm_options,
                     target: arg.clone(),
+                    rest: args[index + 1..].to_vec(),
                 }),
                 _ => Err(OnceOnlyReason::RepeatedJarFlag),
             };
@@ -164,6 +167,36 @@ pub fn manifest_has_class_path(manifest: &str) -> bool {
     false
 }
 
+/// The command line split the way the approval key is built, for showing: what the dialog lists is
+/// what an "always" answer is remembered by.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct CommandLine {
+    /// The JVM options before the jar; empty when the command is not a plain `-jar` launch.
+    pub options: Vec<String>,
+    /// The jar as the plugin wrote it; `None` when the command is not a plain `-jar` launch.
+    pub target: Option<String>,
+    /// The arguments after the jar, or every argument when the launch was not told apart. Can hold
+    /// a token (a pack URL), so the UI shows it folded.
+    pub rest: Vec<String>,
+}
+
+impl CommandLine {
+    pub fn of(args: &[String]) -> Self {
+        match parse_jar_launch(args) {
+            Ok(launch) => Self {
+                options: launch.jvm_options,
+                target: Some(launch.target),
+                rest: launch.rest,
+            },
+            Err(_) => Self {
+                options: Vec::new(),
+                target: None,
+                rest: args.to_vec(),
+            },
+        }
+    }
+}
+
 /// What the user is shown.
 #[derive(Debug, Clone)]
 pub struct CommandApprovalRequest {
@@ -178,6 +211,13 @@ pub struct CommandApprovalRequest {
     pub jar: Option<CommandJar>,
     /// `Ok` when the user may answer "always".
     pub always: Result<(), OnceOnlyReason>,
+}
+
+impl CommandApprovalRequest {
+    /// The arguments split as the approval key is built from them, so the two cannot differ.
+    pub fn line(&self) -> CommandLine {
+        CommandLine::of(&self.arguments)
+    }
 }
 
 /// A question that waits for the user.
@@ -256,6 +296,24 @@ mod tests {
 
         assert_eq!(launch.target, "#/cache/tool.jar");
         assert_eq!(launch.jvm_options, ["-Xmx1G", "-Dfile.encoding=UTF-8"]);
+    }
+
+    #[test]
+    fn should_split_the_line_the_way_the_key_is_built_for_showing() {
+        let line = CommandLine::of(&args(&["-Xmx1G", "-jar", "#/cache/a.jar", "-Xmx9G", "url"]));
+
+        assert_eq!(line.options, ["-Xmx1G"]);
+        assert_eq!(line.target.as_deref(), Some("#/cache/a.jar"));
+        assert_eq!(line.rest, ["-Xmx9G", "url"]);
+    }
+
+    #[test]
+    fn should_show_every_argument_as_one_list_when_the_launch_is_not_told_apart() {
+        let line = CommandLine::of(&args(&["-javaagent:x", "-jar", "#/cache/a.jar"]));
+
+        assert_eq!(line.options, Vec::<String>::new());
+        assert_eq!(line.target, None);
+        assert_eq!(line.rest, ["-javaagent:x", "-jar", "#/cache/a.jar"]);
     }
 
     #[test]

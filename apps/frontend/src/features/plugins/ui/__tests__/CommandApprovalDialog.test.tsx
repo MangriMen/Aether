@@ -32,7 +32,9 @@ const approval = (
   plugin_id: 'packwiz',
   java: 'C:/java/bin/java.exe',
   current_dir: 'C:/cache',
-  arguments: ['-jar', '#/cache/a.jar', '--token', 'secret-token'],
+  options: [],
+  target: '#/cache/a.jar',
+  rest: ['--token', 'secret-token'],
   jar: { plugin_path: '/cache/a.jar', sha256: 'abc', size: 100 },
   once_only: null,
   expires_at: new Date(Date.now() + 300_000).toISOString(),
@@ -120,7 +122,9 @@ describe('CommandApprovalDialog', () => {
   it('should_keep_an_option_value_out_of_the_open_text', () => {
     state.approvals = [
       approval({
-        arguments: ['-Dapi.token=abc123', '-jar', '#/cache/a.jar'],
+        options: [],
+        target: null,
+        rest: ['-Dapi.token=abc123', '-jar', '#/cache/a.jar'],
         once_only: { code: 'UNLISTED_OPTION', option: '-Dapi.token=abc123' },
       }),
     ];

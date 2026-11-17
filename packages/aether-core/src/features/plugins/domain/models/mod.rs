@@ -39,8 +39,8 @@ pub(crate) use allowed_path::{
 };
 pub use command_approval::{
     CommandApproval, CommandApprovalAnswer, CommandApprovalRefusal, CommandApprovalRequest,
-    CommandGrant, CommandIdentity, CommandJar, JarLaunch, MAX_APPROVED_JAR_BYTES, OnceOnlyReason,
-    PendingCommandApproval, manifest_has_class_path, parse_jar_launch,
+    CommandGrant, CommandIdentity, CommandJar, CommandLine, JarLaunch, MAX_APPROVED_JAR_BYTES,
+    OnceOnlyReason, PendingCommandApproval, manifest_has_class_path, parse_jar_launch,
 };
 pub(crate) use constants::PLUGIN_API_VERSION;
 pub use extracted_plugin::{ArchiveMetadata, ExtractedPlugin, PluginContent};
