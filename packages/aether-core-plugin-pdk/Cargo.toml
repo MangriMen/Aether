@@ -9,6 +9,7 @@ publish = false
 aether-core-plugin-api = { path = "../aether-core-plugin-api" }
 anyhow.workspace = true
 extism-convert = "1.30"
+extism-pdk = "1.4.1"
 serde.workspace = true
 
 [lints]

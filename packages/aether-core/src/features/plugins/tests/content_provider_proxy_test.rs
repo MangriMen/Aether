@@ -1870,7 +1870,6 @@ fn manifest() -> PluginManifest {
         },
         api: ApiConfig {
             version: semver::VersionReq::STAR,
-            features: vec![],
             host_functions: Some(vec![]),
         },
     }

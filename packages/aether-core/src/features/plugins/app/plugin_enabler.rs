@@ -39,14 +39,6 @@ impl PluginEnabler {
             return Err(PluginError::Manifest(err));
         }
 
-        // `api.features` is not enforced: requesting plugins load, but the gap is logged.
-        if !manifest.api.features.is_empty() {
-            tracing::warn!(
-                %plugin_id,
-                features = ?manifest.api.features,
-                "Plugin requests optional API features that are not yet enforced by the host",
-            );
-        }
 
         Ok(())
     }

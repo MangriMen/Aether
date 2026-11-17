@@ -56,7 +56,6 @@ pub enum LoadConfigDto {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ApiConfigDto {
     pub version: semver::VersionReq,
-    pub features: Vec<String>,
     /// `None`: the manifest predates `api.hostFunctions`, so the plugin is incompatible.
     pub host_functions: Option<Vec<String>>,
 }
@@ -232,7 +231,6 @@ impl From<ApiConfig> for ApiConfigDto {
     fn from(v: ApiConfig) -> Self {
         Self {
             version: v.version,
-            features: v.features,
             host_functions: v.host_functions,
         }
     }

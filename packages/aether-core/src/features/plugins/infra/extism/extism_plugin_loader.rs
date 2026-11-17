@@ -6,13 +6,15 @@ use std::{
 
 use async_trait::async_trait;
 use extism::{Function, Manifest, Plugin, PluginBuilder, Wasm};
+use aether_core_plugin_api::v0::config::{CONFIG_API_VERSION, CONFIG_PLUGIN_ID};
 
 use crate::{
     core::app::AetherContainer,
     features::{
         instance::PluginId,
         plugins::{
-            CoreMount, FolderMounts, LoadConfig, ManifestError, PathMapping, PluginError,
+            CoreMount, FolderMounts, LoadConfig, ManifestError, PLUGIN_API_VERSION, PathMapping,
+            PluginError,
             PluginHandle, PluginInternalEvent, PluginLoadFailure, PluginLoader, PluginManifest,
             PluginSettings, PluginVerificationStorage, core_folders, partition_mountable,
         },
@@ -162,6 +164,8 @@ impl ExtismPluginLoader {
             .with_allowed_paths(allowed_paths.into_iter().map(Into::into))
             .with_memory_max(bytes_to_pages(memory_limit_bytes))
             .with_timeout(DEFAULT_TIMEOUT)
+            .with_config_key(CONFIG_PLUGIN_ID, manifest.metadata.id.to_string())
+            .with_config_key(CONFIG_API_VERSION, PLUGIN_API_VERSION.to_string())
     }
 
     /// Links exactly `host_functions`: wasmtime refuses a module with an unsatisfied import, so
@@ -481,7 +485,6 @@ mod tests {
             },
             api: ApiConfig {
                 version: semver::VersionReq::STAR,
-                features: vec![],
                 host_functions: Some(vec![]),
             },
         }
@@ -879,6 +882,18 @@ mod tests {
         assert!(json["wasm"][0]["hash"].is_null());
     }
 
+    /// The plugin reads its own id and the API version from the config, not from a host function.
+    #[test]
+    fn should_give_the_plugin_its_id_and_the_api_version_in_the_extism_config() {
+        let json = manifest_json(&manifest_with_memory_limit(None));
+
+        assert_eq!(json["config"][CONFIG_PLUGIN_ID], "test");
+        assert_eq!(
+            json["config"][CONFIG_API_VERSION],
+            PLUGIN_API_VERSION.to_string()
+        );
+    }
+
     // ── host function declaration ──
 
     /// Stand-ins for the real host functions: same names and signatures, no container behind
@@ -913,9 +928,9 @@ mod tests {
     }
 
     /// Imports two host functions, with the signatures the core registers them under.
-    const IMPORTS_LOG_AND_GET_ID: &str = r#"(module
+    const IMPORTS_LOG_AND_GET_JAVA: &str = r#"(module
         (import "extism:host/user" "log" (func (param i64) (result i64)))
-        (import "extism:host/user" "get_id" (func (result i64))))"#;
+        (import "extism:host/user" "get_java" (func (param i64) (result i64))))"#;
 
     fn load_failure(result: Result<Plugin, PluginError>) -> String {
         match result {
@@ -930,7 +945,7 @@ mod tests {
 
     #[test]
     fn should_load_a_plugin_when_it_declares_every_host_function_it_imports() {
-        build_declaring(IMPORTS_LOG_AND_GET_ID, &["log", "get_id"])
+        build_declaring(IMPORTS_LOG_AND_GET_JAVA, &["log", "get_java"])
             .expect("every import is declared and linked");
     }
 
@@ -938,7 +953,7 @@ mod tests {
     /// simply never called.
     #[test]
     fn should_load_a_plugin_when_it_declares_more_than_it_imports() {
-        build_declaring(IMPORTS_LOG_AND_GET_ID, &["log", "get_id", "http_get"])
+        build_declaring(IMPORTS_LOG_AND_GET_JAVA, &["log", "get_java", "http_get"])
             .expect("unused declared functions must not block loading");
     }
 
@@ -946,10 +961,10 @@ mod tests {
     /// module over the import nobody provided.
     #[test]
     fn should_refuse_a_plugin_when_it_imports_an_undeclared_host_function() {
-        let reason = load_failure(build_declaring(IMPORTS_LOG_AND_GET_ID, &["log"]));
+        let reason = load_failure(build_declaring(IMPORTS_LOG_AND_GET_JAVA, &["log"]));
 
         assert!(
-            reason.contains("`get_id`")
+            reason.contains("`get_java`")
                 && reason.contains("does not declare it in `api.hostFunctions`"),
             "the reason should name the undeclared import, got: {reason}"
         );
@@ -957,7 +972,7 @@ mod tests {
 
     #[test]
     fn should_refuse_any_host_import_when_the_declaration_is_empty() {
-        let reason = load_failure(build_declaring(IMPORTS_LOG_AND_GET_ID, &[]));
+        let reason = load_failure(build_declaring(IMPORTS_LOG_AND_GET_JAVA, &[]));
 
         assert!(reason.contains("api.hostFunctions"), "{reason}");
     }
@@ -996,8 +1011,8 @@ mod tests {
     #[test]
     fn should_pass_other_link_errors_through_when_the_import_is_not_a_missing_host_function() {
         let reason = load_failure(build_declaring(
-            r#"(module (import "extism:host/user" "get_id" (func (param i32))))"#,
-            &["get_id"],
+            r#"(module (import "extism:host/user" "get_java" (func (param i32))))"#,
+            &["get_java"],
         ));
 
         assert!(!reason.contains("api.hostFunctions"), "{reason}");

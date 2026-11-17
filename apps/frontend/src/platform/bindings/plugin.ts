@@ -104,8 +104,6 @@ export type AllowedPathRejectionDto = "host_not_absolute" | "host_not_a_folder" 
 export type ApiConfigDto = {
 	/**  Required API version range (`SemVer` requirement). */
 	version: string,
-	/**  List of optional host features requested by the plugin. */
-	features?: string[],
 	/**
 	 *  Host functions the plugin declares and is linked with. `None`: the manifest predates
 	 *  the declaration, and the plugin is incompatible.

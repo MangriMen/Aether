@@ -29,7 +29,7 @@ fn manifest(version: &str, hosts: &str) -> String {
     }},
     "runtime": {{ "allowedHosts": [{hosts}], "allowedPaths": [] }},
     "load": {{ "type": "extism", "file": "plugin.wasm", "memoryLimit": null }},
-    "api": {{ "version": "*", "features": [], "hostFunctions": [] }}
+    "api": {{ "version": "*", "hostFunctions": [] }}
 }}"#
     )
 }

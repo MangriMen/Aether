@@ -116,7 +116,7 @@ impl PluginLoader for AlwaysSucceedsLoader {
     }
 
     fn host_functions(&self) -> Vec<&'static str> {
-        vec!["log", "get_id", "http_get"]
+        vec!["log", "get_java", "http_get"]
     }
 }
 
@@ -145,7 +145,6 @@ fn manifest_with(
         },
         api: ApiConfig {
             version: api_version,
-            features: vec![],
             host_functions: Some(vec![]),
         },
     }

@@ -113,10 +113,6 @@ pub struct ApiConfigDto {
     #[schemars(with = "String")]
     pub version: String,
 
-    /// List of optional host features requested by the plugin.
-    #[serde(default)]
-    pub features: Vec<String>,
-
     /// Host functions the plugin calls, by import name (`http_get`, `write_instance_file`, …).
     /// Only these are linked into the plugin: a name the host does not know keeps the plugin
     /// from being enabled, and a function the wasm imports without declaring it here keeps it

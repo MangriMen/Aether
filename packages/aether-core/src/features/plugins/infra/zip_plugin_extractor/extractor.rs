@@ -286,7 +286,7 @@ mod tests {
         },
         "runtime": { "allowedHosts": [], "allowedPaths": [] },
         "load": { "type": "extism", "file": "plugin.wasm", "memoryLimit": null },
-        "api": { "version": "*", "features": [] }
+        "api": { "version": "*" }
     }"#;
 
     fn build_zip(entries: &[(&str, &[u8])]) -> Vec<u8> {

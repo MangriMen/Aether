@@ -86,9 +86,6 @@ pub struct ApiConfig {
     /// Required API version range (`SemVer` requirement).
     pub version: semver::VersionReq,
 
-    /// List of optional host features requested by the plugin.
-    pub features: Vec<String>,
-
     /// Host functions the plugin declares it calls (`api.hostFunctions`).
     ///
     /// The plugin is linked with exactly these. Required: `None` (a manifest older than the
@@ -317,7 +314,6 @@ mod tests {
     fn should_reject_a_manifest_when_the_api_version_does_not_match() {
         let config = ApiConfig {
             version: semver::VersionReq::parse(">=1.0.0").unwrap(),
-            features: vec![],
             host_functions: None,
         };
         assert!(matches!(
@@ -331,7 +327,6 @@ mod tests {
     fn api_requiring(version: &str) -> ApiConfig {
         ApiConfig {
             version: semver::VersionReq::parse(version).unwrap(),
-            features: vec![],
             host_functions: None,
         }
     }
@@ -368,12 +363,11 @@ mod tests {
 
     // ── ApiConfig::validate_host_functions ──
 
-    const AVAILABLE: &[&str] = &["log", "get_id", "http_get"];
+    const AVAILABLE: &[&str] = &["log", "get_java", "http_get"];
 
     fn api_declaring(host_functions: Option<Vec<&str>>) -> ApiConfig {
         ApiConfig {
             version: semver::VersionReq::STAR,
-            features: vec![],
             host_functions: host_functions
                 .map(|names| names.into_iter().map(str::to_owned).collect()),
         }
