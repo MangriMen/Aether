@@ -4,7 +4,8 @@
     "typescript",
     "unicorn",
     "jsx-a11y",
-    "react"
+    "react",
+    "vitest"
   ],
   "categories": {
     "correctness": "off"
@@ -30,6 +31,7 @@
     "src/platform/bindings/**"
   ],
   "rules": {
+    "vitest/consistent-test-it": ["error", { "fn": "it", "withinDescribe": "it" }],
     "no-unused-vars": [
       "error",
       {
