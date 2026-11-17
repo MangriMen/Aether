@@ -66,6 +66,7 @@ export const pluginsCommands = {
   answerCommandApproval: pluginsRawCommands.answerCommandApproval,
   getPluginSource: pluginsRawCommands.getPluginSource,
   checkForUpdates: pluginsRawCommands.checkForUpdates,
+  previewPluginUpdate: pluginsRawCommands.previewPluginUpdate,
   updatePlugin: withIdempotency(pluginsRawCommands.updatePlugin),
   getAvailableProviders: pluginsRawCommands.getAvailableProviders,
   listPluginReleases: pluginsRawCommands.listPluginReleases,

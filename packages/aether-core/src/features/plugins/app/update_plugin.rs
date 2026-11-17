@@ -4,17 +4,20 @@ use async_trait::async_trait;
 
 use crate::features::instance::PluginId;
 use crate::features::plugins::{
-    PluginError, PluginExtractor, PluginProviderError, PluginRegistry, PluginSettingsStorage,
-    PluginSource, PluginSourceStorage, PluginStorage, PluginSyncService, PluginVerificationStorage,
-    ProviderFailure,
+    PluginError, PluginExtractor, PluginRegistry, PluginSettingsStorage, PluginSource,
+    PluginSourceStorage, PluginStorage, PluginSyncService, PluginVerificationStorage,
 };
 
 use super::ports::UpdatePluginUseCasePort;
+use super::release_archive::{
+    ReleaseSource, download_release_archive, ensure_previewed_archive, recorded_source,
+};
 use super::release_installer::ReleaseInstaller;
-use super::{PluginProviderFactory, download_to_temp_file};
+use super::{PluginProviderFactory, ReleaseArchiveCache};
 
-/// Updates a plugin to a specific version (or latest) using the provider factory.
-/// Works with any provider type (GitHub, Modrinth, etc.).
+/// Updates a plugin to the release the user previewed, provided its archive hashes to what the
+/// preview showed: the user agreed to what that archive asks for, not to whatever the release
+/// holds by the time of the update. Works with any provider type.
 ///
 /// The new release replaces the plugin's files, and the user's settings of it carry over — all
 /// but a force-enable, which confirms one specific build. An update that fails at any
@@ -28,6 +31,7 @@ pub(crate) struct UpdatePluginUseCase {
     installer: ReleaseInstaller,
     provider_factory: Arc<PluginProviderFactory>,
     sync_plugins_service: Arc<dyn PluginSyncService>,
+    archive_cache: Arc<ReleaseArchiveCache>,
 }
 
 impl UpdatePluginUseCase {
@@ -43,6 +47,7 @@ impl UpdatePluginUseCase {
         plugin_settings_storage: Arc<dyn PluginSettingsStorage>,
         provider_factory: Arc<PluginProviderFactory>,
         sync_plugins_service: Arc<dyn PluginSyncService>,
+        archive_cache: Arc<ReleaseArchiveCache>,
     ) -> Self {
         Self {
             plugin_extractor,
@@ -56,70 +61,36 @@ impl UpdatePluginUseCase {
             },
             provider_factory,
             sync_plugins_service,
+            archive_cache,
         }
     }
 
     pub(crate) async fn execute(
         &self,
         plugin_id: &PluginId,
-        target_tag: Option<&str>,
+        tag: &str,
+        expected_sha256: &str,
     ) -> Result<(), PluginError> {
-        let source = self
-            .plugin_source_storage
-            .get(plugin_id)
-            .await?
-            .ok_or_else(|| PluginProviderError::NoRemoteSource {
-                plugin_id: plugin_id.clone(),
-            })?;
+        let (source_type, identifier) =
+            recorded_source(self.plugin_source_storage.as_ref(), plugin_id).await?;
 
-        let source_type = source.to_source_type();
-        let identifier = source_identifier(&source);
+        let downloaded = download_release_archive(
+            &self.provider_factory,
+            &self.archive_cache,
+            &source_type,
+            ReleaseSource::Recorded(&identifier),
+            tag,
+        )
+        .await?;
 
-        let provider = self
-            .provider_factory
-            .get_provider(&source_type)
-            .ok_or_else(|| PluginProviderError::NoRemoteSource {
-                plugin_id: plugin_id.clone(),
-            })?;
-
-        let (tag, latest_releases) = if let Some(t) = target_tag {
-            (t.to_string(), None)
-        } else {
-            let current_tag = source.current_tag().unwrap_or_default();
-            let current_version = source_version(&source);
-            let updates = provider
-                .fetch_latest_version(&identifier, current_tag, current_version)
-                .await?;
-
-            let latest_tag =
-                updates
-                    .latest_tag
-                    .ok_or_else(|| PluginProviderError::ProviderFetchError {
-                        source_type: source_type.clone(),
-                        reason: ProviderFailure::NoReleases,
-                    })?;
-            // The update check listed the releases already.
-            (latest_tag, Some(updates.all_releases))
-        };
-
-        let releases = match latest_releases {
-            Some(releases) => releases,
-            None => provider.fetch_preview(&identifier).await?.releases,
-        };
-
-        let release = releases
-            .into_iter()
-            .find(|r| r.tag_name == tag)
-            .ok_or_else(|| PluginProviderError::ProviderNoAssets {
-                source_type: source_type.clone(),
-            })?;
-
-        // Download zip to temp file, reuse PluginExtractor
-        let archive = download_to_temp_file(provider, &release.download_url).await?;
+        ensure_previewed_archive(&downloaded.archive, expected_sha256).await?;
 
         // Unpacked before anything is removed: an archive that cannot be read, or that is of
         // another plugin, leaves the installed version in place.
-        let extracted = self.plugin_extractor.extract(archive.path()).await?;
+        let extracted = self
+            .plugin_extractor
+            .extract(downloaded.archive.path())
+            .await?;
         if &extracted.plugin_id != plugin_id {
             return Err(PluginError::IdMismatch {
                 plugin_id: plugin_id.clone(),
@@ -129,9 +100,9 @@ impl UpdatePluginUseCase {
 
         let updated_source = PluginSource::Remote {
             source_type,
-            identifier,
-            current_tag: release.tag_name,
-            current_version: release.version,
+            identifier: downloaded.identifier,
+            current_tag: downloaded.release.tag_name,
+            current_version: downloaded.release.version,
         };
 
         self.installer
@@ -140,27 +111,9 @@ impl UpdatePluginUseCase {
 
         // Once replaced, so that enabling the new build, which can take seconds, holds nothing.
         if let Err(err) = self.sync_plugins_service.execute().await {
-            log::warn!("Plugin '{plugin_id}' was updated but the sync after it failed: {err}");
+            tracing::warn!("Plugin '{plugin_id}' was updated but the sync after it failed: {err}");
         }
         Ok(())
-    }
-}
-
-/// Build a provider identifier from a `PluginSource`.
-fn source_identifier(source: &PluginSource) -> String {
-    match source {
-        PluginSource::Remote { identifier, .. } => identifier.clone(),
-        PluginSource::Local => String::new(),
-    }
-}
-
-/// Build a provider version from a `PluginSource`.
-fn source_version(source: &PluginSource) -> &str {
-    match source {
-        PluginSource::Remote {
-            current_version, ..
-        } => current_version,
-        PluginSource::Local => "",
     }
 }
 
@@ -169,8 +122,9 @@ impl UpdatePluginUseCasePort for UpdatePluginUseCase {
     async fn execute(
         &self,
         plugin_id: &PluginId,
-        target_tag: Option<&str>,
+        tag: &str,
+        expected_sha256: &str,
     ) -> Result<(), PluginError> {
-        self.execute(plugin_id, target_tag).await
+        self.execute(plugin_id, tag, expected_sha256).await
     }
 }

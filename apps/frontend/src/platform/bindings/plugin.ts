@@ -67,7 +67,16 @@ export const commands = {
 	getApiVersion: () => __TAURI_INVOKE<string>("plugin:plugin|get_api_version"),
 	getPluginSource: (id: string) => __TAURI_INVOKE<{ source: "remote"; source_type: PluginSourceTypeDto; identifier: string; current_tag: string; current_version: string } | { source: "local" } | null>("plugin:plugin|get_plugin_source", { id }),
 	checkForUpdates: (id: string) => __TAURI_INVOKE<PluginUpdateInfoDto>("plugin:plugin|check_for_updates", { id }),
-	updatePlugin: (id: string, targetTag: string | null, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:plugin|update_plugin", { id, targetTag, requestId }),
+	/**
+	 *  What release `tag` of an installed plugin asks for, and how that differs from the version
+	 *  installed. The tag is one `check_for_updates` listed.
+	 */
+	previewPluginUpdate: (id: string, tag: string) => __TAURI_INVOKE<PluginUpdatePreviewDto>("plugin:plugin|preview_plugin_update", { id, tag }),
+	/**
+	 *  Installs release `tag` over the plugin, provided its archive is the one
+	 *  `preview_plugin_update` read: `archive_sha256` is the hash that preview gave.
+	 */
+	updatePlugin: (id: string, tag: string, archiveSha256: string, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:plugin|update_plugin", { id, tag, archiveSha256, requestId }),
 	getAvailableProviders: () => __TAURI_INVOKE<PluginProviderDto[]>("plugin:plugin|get_available_providers"),
 	/**
 	 *  The releases of a plugin that can be installed. Downloads nothing: the archive of a release is
@@ -95,6 +104,12 @@ export const events = {
 };
 
 /* Types */
+export type AllowedHostChangeDto = {
+	entry: string,
+	/**  The entry admits far more than one site. */
+	wide: boolean,
+};
+
 export type AllowedHostEntryRejectionDto = "empty" | "not_a_host_name" | "invalid_pattern";
 
 export type AllowedHostRejectionDto = "invalid_url" | "unsupported_scheme" | "missing_host" | "not_public" | "not_local" | "unresolved" | "wildcard";
@@ -161,6 +176,14 @@ export type BrokenInstanceReasonDto = { code: "INVALID_ID" } | { code: "INVALID_
 } } | { code: "LEGACY_ID_MISMATCH"; payload: {
 	file_id: string,
 } } | { code: "NOT_MIGRATED" };
+
+export type CapabilityChangeDto = {
+	kind: CapabilityKindDto,
+	id: string,
+	name: string,
+};
+
+export type CapabilityKindDto = "importer" | "updater" | "content_provider";
 
 export type CapabilityMetadataDto = {
 	/**  Identifier for the capability (lowercase, kebab/underscore allowed). */
@@ -381,6 +404,11 @@ export type HostAccessDto =
 { type: "needed"; host: string } | 
 /**  The host was added to the plugin's allowed hosts. */
 { type: "granted"; host: string };
+
+export type HostFunctionChangeDto = {
+	name: string,
+	risk: HostFunctionRiskDto | null,
+};
 
 /**  What a plugin can do through a host function it declares that the user is warned about. */
 export type HostFunctionRiskDto = "runs_programs" | "writes_instance_files" | "installs_java";
@@ -941,6 +969,30 @@ export type PluginStateReasonDto = { code: "INCOMPATIBLE_API_VERSION"; payload: 
 } };
 
 /**
+ *  What the release asks for that the installed version does not ("added"), and what it gives up
+ *  ("removed"). Computed and classified by the core: the frontend only shows it.
+ */
+export type PluginUpdateDiffDto = {
+	added_host_functions: HostFunctionChangeDto[],
+	removed_host_functions: HostFunctionChangeDto[],
+	/**  Risks the release carries that the installed version does not. */
+	added_risks: HostFunctionRiskDto[],
+	added_allowed_hosts: AllowedHostChangeDto[],
+	removed_allowed_hosts: string[],
+	added_capabilities: CapabilityChangeDto[],
+	removed_capabilities: CapabilityChangeDto[],
+	/**
+	 *  Capabilities both have under the same kind and id but declare differently, such as a
+	 *  content provider that now serves another platform.
+	 */
+	changed_capabilities: CapabilityChangeDto[],
+	/**  The release may do something the user is warned about that the installed version may not. */
+	adds_risk: boolean,
+	/**  Both versions ask for the same. */
+	is_empty: boolean,
+};
+
+/**
  *  Provider-agnostic plugin update info.
  *  Uses `ProviderReleaseInfoDto` for releases so it works with any source type.
  */
@@ -951,6 +1003,17 @@ export type PluginUpdateInfoDto = {
 	latest_tag: string | null,
 	has_update: boolean,
 	all_releases: ProviderReleaseInfoDto[],
+};
+
+/**
+ *  A release of an installed plugin as shown before the update to it. The update is given
+ *  `release.archive_sha256` back, so it installs the archive shown here or nothing.
+ */
+export type PluginUpdatePreviewDto = {
+	release: ProviderPluginPreviewDto,
+	/**  The version installed now, which `diff` is taken against. */
+	installed_version: string,
+	diff: PluginUpdateDiffDto,
 };
 
 export type PluginUpdaterCapabilityDto = {
@@ -1040,6 +1103,7 @@ export type ProviderIdReasonDto =
 export type ProviderPluginPreviewDto = {
 	tag: string,
 	manifest: PluginManifestPreviewDto,
+	/**  As the launcher would register them (handlers, flags derived from them, platform). */
 	capabilities: PluginCapabilitiesDto | null,
 	archive_sha256: string,
 };

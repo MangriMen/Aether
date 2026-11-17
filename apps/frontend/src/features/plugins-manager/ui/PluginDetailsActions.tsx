@@ -12,8 +12,8 @@ import {
   TogglePluginButton,
   useDisablePlugin,
   useEnablePlugin,
+  useIsUpdatingPlugin,
   useRemovePlugin,
-  useUpdatePlugin,
   useUpdatesData,
   type Plugin,
 } from '@/features/plugins';
@@ -33,15 +33,17 @@ export const PluginDetailsActions: Component<PluginDetailsActionsProps> = (
   const [local, others] = splitProps(props, ['plugin', 'class']);
   const [{ t }] = useTranslation();
 
+  const pluginId = () => local.plugin.manifest.metadata.id;
+
   const removePlugin = useRemovePlugin();
-  const updatePlugin = useUpdatePlugin();
+  const isUpdating = useIsUpdatingPlugin(pluginId);
   const disablePlugin = useDisablePlugin();
   const enablePlugin = useEnablePlugin();
 
   // Block ALL actions while any mutation is in-flight
   const isMutating = createMemo(
     () =>
-      updatePlugin.isPending ||
+      isUpdating() ||
       removePlugin.isPending ||
       disablePlugin.isPending ||
       enablePlugin.isPending,
@@ -51,7 +53,6 @@ export const PluginDetailsActions: Component<PluginDetailsActionsProps> = (
     removePlugin.mutate(local.plugin.manifest.metadata.id);
   };
 
-  const pluginId = () => local.plugin.manifest.metadata.id;
   const updates = useUpdatesData(pluginId);
   const hasChecked = createMemo(() => updates.data != null);
 

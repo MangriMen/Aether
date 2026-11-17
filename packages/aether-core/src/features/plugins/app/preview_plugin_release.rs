@@ -3,11 +3,12 @@ use std::sync::Arc;
 use async_trait::async_trait;
 
 use crate::features::plugins::{
-    PluginError, PluginExtractor, PluginManifestPreview, PluginReleasePreview, PluginSourceType,
+    PluginError, PluginExtractor, PluginManifest, PluginManifestPreview, PluginReleasePreview,
+    PluginSourceType,
 };
 
 use super::ports::PreviewPluginReleaseUseCasePort;
-use super::release_archive::download_release_archive;
+use super::release_archive::{ReleaseSource, download_release_archive};
 use super::{PluginProviderFactory, ReleaseArchiveCache};
 
 /// Describes a release from its archive, not from what the publisher states beside it.
@@ -36,26 +37,38 @@ impl PreviewPluginReleaseUseCase {
         identifier: &str,
         tag: &str,
     ) -> Result<PluginReleasePreview, PluginError> {
-        let downloaded = download_release_archive(
+        let (preview, _) = read_release(
+            self.plugin_extractor.as_ref(),
             &self.provider_factory,
             &self.archive_cache,
             &source_type,
-            identifier,
+            ReleaseSource::Entered(identifier),
             tag,
         )
         .await?;
-        let metadata = self
-            .plugin_extractor
-            .read_metadata(downloaded.archive.path())
-            .await?;
-
-        Ok(PluginReleasePreview {
-            tag: downloaded.release.tag_name,
-            manifest: PluginManifestPreview::from(&metadata.manifest),
-            capabilities: metadata.capabilities,
-            archive_sha256: downloaded.archive.sha256().to_owned(),
-        })
+        Ok(preview)
     }
+}
+
+/// The preview of release `tag`, read from its archive, with the manifest it was made from.
+pub(super) async fn read_release(
+    extractor: &dyn PluginExtractor,
+    factory: &PluginProviderFactory,
+    cache: &Arc<ReleaseArchiveCache>,
+    source_type: &PluginSourceType,
+    identifier: ReleaseSource<'_>,
+    tag: &str,
+) -> Result<(PluginReleasePreview, PluginManifest), PluginError> {
+    let downloaded = download_release_archive(factory, cache, source_type, identifier, tag).await?;
+    let metadata = extractor.read_metadata(downloaded.archive.path()).await?;
+
+    let preview = PluginReleasePreview {
+        tag: downloaded.release.tag_name,
+        manifest: PluginManifestPreview::from(&metadata.manifest),
+        capabilities: metadata.capabilities,
+        archive_sha256: downloaded.archive.sha256().to_owned(),
+    };
+    Ok((preview, metadata.manifest))
 }
 
 #[async_trait]

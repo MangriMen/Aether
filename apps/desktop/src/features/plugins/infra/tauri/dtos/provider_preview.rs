@@ -1,4 +1,3 @@
-use aether_core::features::plugins::{PluginCapabilities, infra::PluginCapabilitiesV1};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
@@ -9,31 +8,17 @@ use super::{PluginCapabilitiesDto, PluginManifestPreviewDto};
 pub struct ProviderPluginPreviewDto {
     pub tag: String,
     pub manifest: PluginManifestPreviewDto,
+    /// As the launcher would register them (handlers, flags derived from them, platform).
     pub capabilities: Option<PluginCapabilitiesDto>,
     pub archive_sha256: String,
 }
 
 impl From<aether_core::features::plugins::PluginReleasePreview> for ProviderPluginPreviewDto {
     fn from(value: aether_core::features::plugins::PluginReleasePreview) -> Self {
-        // Read the raw file the way loading the plugin does, so the preview shows what the
-        // launcher would register (handlers, flags derived from them, platform).
-        let capabilities = value
-            .capabilities
-            .as_deref()
-            .and_then(|raw| serde_json::from_str::<PluginCapabilitiesV1>(raw).ok())
-            .and_then(|v1| {
-                PluginCapabilities::try_from(v1)
-                    .inspect_err(|err| {
-                        tracing::warn!("Dropping the capabilities of a plugin preview: {err}");
-                    })
-                    .ok()
-            })
-            .map(PluginCapabilitiesDto::from);
-
         Self {
             tag: value.tag,
             manifest: PluginManifestPreviewDto::from(value.manifest),
-            capabilities,
+            capabilities: value.capabilities.map(PluginCapabilitiesDto::from),
             archive_sha256: value.archive_sha256,
         }
     }

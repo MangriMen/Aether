@@ -1,5 +1,6 @@
 import {
   createMemo,
+  createSignal,
   Show,
   type Component,
   type ComponentProps,
@@ -12,9 +13,10 @@ import type { Plugin } from '../model/plugin';
 
 import {
   useCheckPluginUpdates,
+  useIsUpdatingPlugin,
   useUpdatesData,
-  useUpdatePlugin,
 } from '../api/pluginQueries';
+import { PluginUpdateDialog } from './PluginUpdateDialog';
 
 export type PluginUpdateButtonProps = ComponentProps<'div'> & {
   plugin: Plugin;
@@ -23,7 +25,8 @@ export type PluginUpdateButtonProps = ComponentProps<'div'> & {
 /**
  * Update button shown in plugin details action bar.
  * Reads cached update data; user must click "Check for updates" to fetch.
- * The core reloads an enabled plugin itself once it is updated.
+ * The update goes through a dialog that shows what the latest release asks for; the core reloads
+ * an enabled plugin itself once it is updated.
  */
 export const PluginUpdateButton: Component<PluginUpdateButtonProps> = (
   props,
@@ -33,22 +36,22 @@ export const PluginUpdateButton: Component<PluginUpdateButtonProps> = (
   const pluginId = () => props.plugin.manifest.metadata.id;
   const updates = useUpdatesData(pluginId);
   const checkUpdates = useCheckPluginUpdates();
-  const updatePlugin = useUpdatePlugin();
+  const isUpdating = useIsUpdatingPlugin(pluginId);
+
+  // The release the dialog shows; null while it is closed.
+  const [updateTag, setUpdateTag] = createSignal<string | null>(null);
 
   const hasChecked = createMemo(() => updates.data != null);
-  const hasUpdate = createMemo(() => updates.data?.has_update ?? false);
-
-  const isBusy = createMemo(
-    () => checkUpdates.isPending || updatePlugin.isPending,
+  const latestTag = createMemo(() =>
+    updates.data?.has_update ? (updates.data.latest_tag ?? null) : null,
   );
 
   const handleCheckUpdates = () => {
     checkUpdates.mutate(pluginId());
   };
 
-  // Errors are shown by the mutation itself.
   const handleUpdate = () => {
-    updatePlugin.mutate({ id: pluginId() });
+    setUpdateTag(latestTag());
   };
 
   return (
@@ -57,35 +60,41 @@ export const PluginUpdateButton: Component<PluginUpdateButtonProps> = (
         <Button
           size='sm'
           onClick={handleCheckUpdates}
-          disabled={isBusy()}
+          disabled={checkUpdates.isPending}
           loading={checkUpdates.isPending}
         >
           {t('plugins.checkUpdates')}
         </Button>
       </Show>
 
-      <Show when={hasUpdate()}>
+      <Show when={latestTag()}>
         <Button
           size='sm'
           onClick={handleUpdate}
-          disabled={isBusy()}
-          loading={isBusy()}
+          disabled={checkUpdates.isPending || isUpdating()}
+          loading={isUpdating()}
         >
           {t('plugins.update')}
         </Button>
       </Show>
 
-      <Show when={hasChecked() && !hasUpdate()}>
+      <Show when={hasChecked() && !latestTag()}>
         <Button
           size='sm'
           variant='ghost'
           onClick={handleCheckUpdates}
-          disabled={isBusy()}
+          disabled={checkUpdates.isPending}
           loading={checkUpdates.isPending}
         >
           {t('plugins.upToDate')}
         </Button>
       </Show>
+
+      <PluginUpdateDialog
+        plugin={props.plugin}
+        tag={updateTag()}
+        onClose={() => setUpdateTag(null)}
+      />
     </>
   );
 };

@@ -9,8 +9,8 @@ use crate::features::plugins::app::ports::{
     InstallPluginFromProviderUseCasePort, ListPluginReleasesUseCasePort, ListPluginsDtoUseCasePort,
     ListSkippedPluginDirsUseCasePort, PluginDisableService, PluginExtractor, PluginLoader,
     PluginSettingsStorage, PluginSourceStorage, PluginStorage, PluginSyncService,
-    PluginVerificationStorage, PreviewPluginReleaseUseCasePort, ReloadPluginUseCasePort,
-    RemovePluginUseCasePort, UpdatePluginUseCasePort,
+    PluginVerificationStorage, PreviewPluginReleaseUseCasePort, PreviewPluginUpdateUseCasePort,
+    ReloadPluginUseCasePort, RemovePluginUseCasePort, UpdatePluginUseCasePort,
 };
 use crate::features::plugins::app::services::{PluginLoaderRegistry, PluginRegistry};
 use crate::features::plugins::app::{PluginProviderFactory, ReleaseArchiveCache};
@@ -39,6 +39,7 @@ pub trait PluginsFeature {
         &self,
     ) -> Arc<dyn InstallPluginFromProviderUseCasePort>;
     fn preview_plugin_release_use_case(&self) -> Arc<dyn PreviewPluginReleaseUseCasePort>;
+    fn preview_plugin_update_use_case(&self) -> Arc<dyn PreviewPluginUpdateUseCasePort>;
     fn list_plugin_releases_use_case(&self) -> Arc<dyn ListPluginReleasesUseCasePort>;
     fn list_plugins_dto_use_case(&self) -> Arc<dyn ListPluginsDtoUseCasePort>;
     fn list_skipped_plugin_dirs_use_case(&self) -> Arc<dyn ListSkippedPluginDirsUseCasePort>;

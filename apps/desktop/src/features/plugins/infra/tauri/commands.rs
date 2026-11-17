@@ -13,7 +13,7 @@ use crate::{
         CommandAnswerDto, EditPluginSettingsDto, FolderAccessDto, HostAccessDto,
         PendingCommandApprovalDto, PluginDto, PluginEventDto, PluginProviderDto,
         PluginReleaseListingDto, PluginSettingsDto, PluginSourceDto, PluginSourceTypeDto,
-        PluginUpdateInfoDto, ProviderPluginPreviewDto, SkippedPluginDirDto,
+        PluginUpdateInfoDto, PluginUpdatePreviewDto, ProviderPluginPreviewDto, SkippedPluginDirDto,
     },
     shared::reveal_in_explorer::infra::reveal_in_explorer,
     shared::{
@@ -440,11 +440,33 @@ async fn check_for_updates(
         .into())
 }
 
+/// What release `tag` of an installed plugin asks for, and how that differs from the version
+/// installed. The tag is one `check_for_updates` listed.
+#[tauri::command]
+#[specta::specta]
+async fn preview_plugin_update(
+    id: String,
+    tag: String,
+    container: State<'_, ContainerState>,
+) -> FrontendResult<PluginUpdatePreviewDto> {
+    let id = parse_id(id)?;
+    let container = container.0.clone();
+    Ok(container
+        .preview_plugin_update_use_case()
+        .execute(&id, &tag)
+        .await
+        .map_err(aether_core::Error::from)?
+        .into())
+}
+
+/// Installs release `tag` over the plugin, provided its archive is the one
+/// `preview_plugin_update` read: `archive_sha256` is the hash that preview gave.
 #[tauri::command]
 #[specta::specta]
 async fn update_plugin(
     id: String,
-    target_tag: Option<String>,
+    tag: String,
+    archive_sha256: String,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
     container: State<'_, ContainerState>,
@@ -455,7 +477,7 @@ async fn update_plugin(
     let container = container.0.clone();
     Ok(container
         .update_plugin_use_case()
-        .execute(&id, target_tag.as_deref())
+        .execute(&id, &tag, &archive_sha256)
         .await
         .map_err(aether_core::Error::from)?)
 }

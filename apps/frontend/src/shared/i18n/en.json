@@ -800,7 +800,28 @@
     "upToDate": "Up to date",
     "updateCheckError": "Failed to check for updates",
     "importTitle": "Import plugin",
-    "packageFilter": "Plugin package"
+    "packageFilter": "Plugin package",
+    "updateDialog": {
+      "title": "Update {{name}}?",
+      "description": "Version {{from}} will be replaced with {{to}}. Check what the new version asks for before you update.",
+      "previewError": "Could not read the new version",
+      "addsRisk": "The new version asks for more than the installed one. Update only if you trust the plugin.",
+      "noChanges": "The new version asks for the same as the installed one.",
+      "addedHostFunctions": "New host functions",
+      "removedHostFunctions": "Host functions it no longer uses",
+      "addedHosts": "New network access",
+      "removedHosts": "Network access it no longer needs",
+      "addedCapabilities": "New capabilities",
+      "removedCapabilities": "Capabilities it no longer has",
+      "changedCapabilities": "Capabilities that work differently now",
+      "capabilityKind": {
+        "importer": "importer",
+        "updater": "updater",
+        "content_provider": "content provider"
+      },
+      "allPermissions": "Everything the new version asks for",
+      "confirm": "Update"
+    }
   },
   "progress": {
     "seeDetails": "See details",

@@ -72,9 +72,10 @@ use crate::features::{
         PluginDisableService, PluginExtractor, PluginLoader, PluginLoaderRegistry,
         PluginProviderFactory, PluginRegistry, PluginSettingsStorage, PluginSourceStorage,
         PluginStorage, PluginSyncService, PluginVerificationStorage, PluginsFeature,
-        PreviewPluginReleaseUseCase, PreviewPluginReleaseUseCasePort, ReleaseArchiveCache,
-        ReloadPluginUseCase, ReloadPluginUseCasePort, RemovePluginUseCase, RemovePluginUseCasePort,
-        SyncPluginsUseCase, UpdatePluginUseCase, UpdatePluginUseCasePort,
+        PreviewPluginReleaseUseCase, PreviewPluginReleaseUseCasePort, PreviewPluginUpdateUseCase,
+        PreviewPluginUpdateUseCasePort, ReleaseArchiveCache, ReloadPluginUseCase,
+        ReloadPluginUseCasePort, RemovePluginUseCase, RemovePluginUseCasePort, SyncPluginsUseCase,
+        UpdatePluginUseCase, UpdatePluginUseCasePort,
     },
     process::{
         KillProcessUseCase, KillProcessUseCasePort, ListProcessMetadataUseCase,
@@ -1127,6 +1128,16 @@ impl PluginsFeature for AetherContainer {
             self.plugins().settings_storage.clone(),
             self.plugins().provider_factory.clone(),
             self.sync_plugins_service(),
+            self.release_archive_cache(),
+        ))
+    }
+    fn preview_plugin_update_use_case(&self) -> Arc<dyn PreviewPluginUpdateUseCasePort> {
+        Arc::new(PreviewPluginUpdateUseCase::new(
+            self.plugins().extractor.clone(),
+            self.plugins().storage.clone(),
+            self.plugins().source_storage.clone(),
+            self.plugins().provider_factory.clone(),
+            self.release_archive_cache(),
         ))
     }
     fn plugin_registry(&self) -> Arc<PluginRegistry> {
