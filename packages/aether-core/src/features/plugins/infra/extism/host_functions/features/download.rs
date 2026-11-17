@@ -325,17 +325,13 @@ pub(crate) async fn handle_download_to_cache(
 
 plugin_host_fn!(
 pub download_to_cache(user_data: PluginContext; params: Wire<DownloadToCacheParamsDto>) -> HostReply<CachedFileDto> {
-    let context = user_data.get()?;
-    let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
-    let id = ctx.id.clone();
-    let hosts = ctx.hosts.clone();
-    let limits = ctx.limits;
-    let container = ctx.upgrade_container().ok_or_else(|| anyhow::Error::msg("AetherContainer dropped before plugin call"))?;
-    drop(ctx);
+    let context = PluginContext::snapshot(&user_data)?;
+    let container = context.upgrade_container()?;
+    let PluginContext { id, hosts, limits, .. } = context;
 
     let cache_dir = container.location_info().plugin_cache_dir(&id);
 
-    to_extism_res::<CachedFileDto>(block_on(async {
+    Ok(to_extism_res::<CachedFileDto>(block_on(async {
         let allowed_hosts = hosts.allowed_hosts(&id).await?;
         let download = DownloadContext {
             cache_dir: &cache_dir,
@@ -348,7 +344,7 @@ pub download_to_cache(user_data: PluginContext; params: Wire<DownloadToCachePara
         };
 
         handle_download_to_cache(&id, params.0, &download).await
-    }))
+    })))
 });
 
 #[cfg(test)]

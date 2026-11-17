@@ -3,7 +3,8 @@ use aether_core_plugin_api::v0::{
     InstanceFileBytesDto, InstanceIdParamsDto, ListContentResultDto, NewInstanceDto,
     ReadInstanceFileParamsDto, WriteInstanceFileParamsDto,
 };
-use dashmap::DashMap;
+use std::{collections::HashMap, path::Path};
+
 use path_slash::PathBufExt;
 
 use crate::{
@@ -33,13 +34,8 @@ pub(crate) async fn handle_instance_get_dir(
     get_instance: &dyn GetInstanceUseCasePort,
 ) -> crate::Result<String> {
     let id = require_instance(id, get_instance).await?;
-    let dir = location_info.instance_dir(&id);
-    let relative_path = dir
-        .strip_prefix(location_info.config_dir())
-        .map_err(|_| crate::ErrorKind::CoreError("Strip prefix error".to_owned()))?
-        .to_path_buf();
 
-    Ok(format!("/{}", relative_path.to_slash_lossy()))
+    plugin_dir_path(&location_info.instance_dir(&id), location_info)
 }
 
 pub(crate) async fn handle_instance_plugin_get_dir(
@@ -50,7 +46,14 @@ pub(crate) async fn handle_instance_plugin_get_dir(
 ) -> crate::Result<String> {
     let instance_id = require_instance(instance_id, get_instance).await?;
 
-    let dir = location_info.instance_plugin_dir(&instance_id, plugin_id);
+    plugin_dir_path(
+        &location_info.instance_plugin_dir(&instance_id, plugin_id),
+        location_info,
+    )
+}
+
+/// `dir`, a directory under the config directory, as the plugin's WASI path spells it.
+fn plugin_dir_path(dir: &Path, location_info: &LocationInfo) -> crate::Result<String> {
     let relative_path = dir
         .strip_prefix(location_info.config_dir())
         .map_err(|_| crate::ErrorKind::CoreError("Strip prefix error".to_owned()))?
@@ -106,7 +109,7 @@ pub(crate) async fn handle_list_content(
     id: String,
     get_instance: &dyn GetInstanceUseCasePort,
     list_content: &dyn ListContentUseCasePort,
-) -> crate::Result<DashMap<String, ContentFileDto>> {
+) -> crate::Result<HashMap<String, ContentFileDto>> {
     let id = require_instance(&id, get_instance).await?;
 
     list_content
@@ -294,40 +297,32 @@ pub(crate) async fn handle_read_instance_file(
 
 plugin_host_fn!(
 pub instance_get_dir(user_data: PluginContext; params: Wire<InstanceIdParamsDto>) -> HostReply<InstanceDirDto> {
-    let context = user_data.get()?;
-    let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
-    let container = ctx.upgrade_container().ok_or_else(|| anyhow::Error::msg("AetherContainer dropped before plugin call"))?;
-    let location_info = container.location_info();
-    drop(ctx);
+    let container = PluginContext::snapshot(&user_data)?.upgrade_container()?;
 
-    to_extism_res::<InstanceDirDto>(
+    Ok(to_extism_res::<InstanceDirDto>(
         block_on(handle_instance_get_dir(
             &params.0.instance_id,
-            &location_info,
+            &container.location_info(),
             &*container.get_instance_use_case(),
         ))
         .map(|path| InstanceDirDto { path })
-    )
+    ))
 });
 
 plugin_host_fn!(
 pub instance_plugin_get_dir(user_data: PluginContext; params: Wire<InstanceIdParamsDto>) -> HostReply<InstanceDirDto> {
-    let context = user_data.get()?;
-    let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
-    let plugin_id = ctx.id.clone();
-    let container = ctx.upgrade_container().ok_or_else(|| anyhow::Error::msg("AetherContainer dropped before plugin call"))?;
-    let location_info = container.location_info();
-    drop(ctx);
+    let context = PluginContext::snapshot(&user_data)?;
+    let container = context.upgrade_container()?;
 
-    to_extism_res::<InstanceDirDto>(
+    Ok(to_extism_res::<InstanceDirDto>(
         block_on(handle_instance_plugin_get_dir(
-            &plugin_id,
+            &context.id,
             &params.0.instance_id,
-            &location_info,
+            &container.location_info(),
             &*container.get_instance_use_case(),
         ))
         .map(|path| InstanceDirDto { path })
-    )
+    ))
 });
 
 plugin_host_fn!(
@@ -335,11 +330,9 @@ plugin_host_fn!(
         user_data: PluginContext;
         new_instance_dto: Wire<NewInstanceDto>
     ) -> HostReply<InstanceCreatedDto> {
-        let context = user_data.get()?;
-        let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
-        let container = ctx.upgrade_container().ok_or_else(|| anyhow::Error::msg("AetherContainer dropped before plugin call"))?;
-        let plugin_id = ctx.id.clone();
-        drop(ctx);
+        let context = PluginContext::snapshot(&user_data)?;
+        let container = context.upgrade_container()?;
+        let plugin_id = context.id;
 
         // Checked and recorded on this thread, the one of the plugin's call: `block_on` drives
         // the creation here too.
@@ -349,39 +342,31 @@ plugin_host_fn!(
             record_pack_instance(&plugin_id, instance_id);
         }
 
-        to_extism_res::<InstanceCreatedDto>(result.map(|id| InstanceCreatedDto {
+        Ok(to_extism_res::<InstanceCreatedDto>(result.map(|id| InstanceCreatedDto {
             instance_id: String::from(id),
-        }))
+        })))
     }
 );
 
 plugin_host_fn!(
 pub list_content(user_data: PluginContext; params: Wire<InstanceIdParamsDto>) -> HostReply<ListContentResultDto> {
-    let context = user_data.get()?;
-    let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
-    let container = ctx.upgrade_container().ok_or_else(|| anyhow::Error::msg("AetherContainer dropped before plugin call"))?;
-    drop(ctx);
+    let container = PluginContext::snapshot(&user_data)?.upgrade_container()?;
 
-    to_extism_res::<ListContentResultDto>(
+    Ok(to_extism_res::<ListContentResultDto>(
         block_on(handle_list_content(
             params.0.instance_id,
             &*container.get_instance_use_case(),
             &*container.list_content_use_case(),
         ))
-        .map(|files| ListContentResultDto {
-            files: files.into_iter().collect(),
-        })
-    )
+        .map(|files| ListContentResultDto { files })
+    ))
 });
 
 plugin_host_fn!(
 pub enable_contents(user_data: PluginContext; params: Wire<ChangeContentsParamsDto>) -> HostReply<()> {
-    let context = user_data.get()?;
-    let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
-    let container = ctx.upgrade_container().ok_or_else(|| anyhow::Error::msg("AetherContainer dropped before plugin call"))?;
-    drop(ctx);
+    let container = PluginContext::snapshot(&user_data)?.upgrade_container()?;
 
-    to_extism_res::<()>(
+    Ok(to_extism_res::<()>(
         block_on(handle_change_contents(
             params.0.instance_id,
             params.0.paths,
@@ -389,17 +374,14 @@ pub enable_contents(user_data: PluginContext; params: Wire<ChangeContentsParamsD
             &*container.get_instance_use_case(),
             &*container.change_content_state_use_case(),
         ))
-    )
+    ))
 });
 
 plugin_host_fn!(
 pub disable_contents(user_data: PluginContext; params: Wire<ChangeContentsParamsDto>) -> HostReply<()> {
-    let context = user_data.get()?;
-    let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
-    let container = ctx.upgrade_container().ok_or_else(|| anyhow::Error::msg("AetherContainer dropped before plugin call"))?;
-    drop(ctx);
+    let container = PluginContext::snapshot(&user_data)?.upgrade_container()?;
 
-    to_extism_res::<()>(
+    Ok(to_extism_res::<()>(
         block_on(handle_change_contents(
             params.0.instance_id,
             params.0.paths,
@@ -407,33 +389,27 @@ pub disable_contents(user_data: PluginContext; params: Wire<ChangeContentsParams
             &*container.get_instance_use_case(),
             &*container.change_content_state_use_case(),
         ))
-    )
+    ))
 });
 
 plugin_host_fn!(
 pub write_instance_file(user_data: PluginContext; params: Wire<WriteInstanceFileParamsDto>) -> HostReply<()> {
-    let context = user_data.get()?;
-    let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
-    let id = ctx.id.clone();
-    let container = ctx.upgrade_container().ok_or_else(|| anyhow::Error::msg("AetherContainer dropped before plugin call"))?;
-    drop(ctx);
+    let context = PluginContext::snapshot(&user_data)?;
+    let container = context.upgrade_container()?;
 
-    to_extism_res::<()>(
-        block_on(handle_write_instance_file(&id, params.0, &container))
-    )
+    Ok(to_extism_res::<()>(
+        block_on(handle_write_instance_file(&context.id, params.0, &container))
+    ))
 });
 
 plugin_host_fn!(
 pub read_instance_file(user_data: PluginContext; params: Wire<ReadInstanceFileParamsDto>) -> HostReply<InstanceFileBytesDto> {
-    let context = user_data.get()?;
-    let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
-    let id = ctx.id.clone();
-    let container = ctx.upgrade_container().ok_or_else(|| anyhow::Error::msg("AetherContainer dropped before plugin call"))?;
-    drop(ctx);
+    let context = PluginContext::snapshot(&user_data)?;
+    let container = context.upgrade_container()?;
 
-    to_extism_res::<InstanceFileBytesDto>(
-        block_on(handle_read_instance_file(&id, params.0, &container)).map(InstanceFileBytesDto)
-    )
+    Ok(to_extism_res::<InstanceFileBytesDto>(
+        block_on(handle_read_instance_file(&context.id, params.0, &container)).map(InstanceFileBytesDto)
+    ))
 });
 
 #[cfg(test)]
@@ -446,6 +422,7 @@ mod tests {
 
     use aether_core_plugin_api::v0::ModLoaderDto;
     use async_trait::async_trait;
+    use dashmap::DashMap;
     use tempfile::TempDir;
 
     use crate::features::instance::{

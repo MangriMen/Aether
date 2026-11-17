@@ -37,24 +37,18 @@ pub(crate) async fn handle_install_java(
 
 plugin_host_fn!(
 pub get_java(user_data: PluginContext; params: Wire<JavaVersionParamsDto>) -> HostReply<JavaDto> {
-    let context = user_data.get()?;
-    let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
-    let container = ctx.upgrade_container().ok_or_else(|| anyhow::Error::msg("AetherContainer dropped before plugin call"))?;
-    drop(ctx);
+    let container = PluginContext::snapshot(&user_data)?.upgrade_container()?;
 
-    to_extism_res::<JavaDto>(
+    Ok(to_extism_res::<JavaDto>(
         block_on(handle_get_java(params.0.version, &container))
-    )
+    ))
 });
 
 plugin_host_fn!(
 pub install_java(user_data: PluginContext; params: Wire<JavaVersionParamsDto>) -> HostReply<JavaDto> {
-    let context = user_data.get()?;
-    let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
-    let container = ctx.upgrade_container().ok_or_else(|| anyhow::Error::msg("AetherContainer dropped before plugin call"))?;
-    drop(ctx);
+    let container = PluginContext::snapshot(&user_data)?.upgrade_container()?;
 
-    to_extism_res::<JavaDto>(
+    Ok(to_extism_res::<JavaDto>(
         block_on(handle_install_java(params.0.version, &container))
-    )
+    ))
 });

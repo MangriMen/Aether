@@ -500,32 +500,22 @@ pub(crate) async fn handle_http_post_json(
 
 plugin_host_fn!(
 pub http_post_json(user_data: PluginContext; request: Wire<HttpPostJsonRequestDto>) -> HostReply<HttpResponseDto> {
-    let context = user_data.get()?;
-    let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
-    let id = ctx.id.clone();
-    let hosts = ctx.hosts.clone();
-    let limits = ctx.limits;
-    drop(ctx);
+    let PluginContext { id, hosts, limits, .. } = PluginContext::snapshot(&user_data)?;
 
-    to_extism_res::<HttpResponseDto>(block_on(async {
+    Ok(to_extism_res::<HttpResponseDto>(block_on(async {
         let allowed_hosts = hosts.allowed_hosts(&id).await?;
         handle_http_post_json(&id, request.0, &allowed_hosts, limits).await
-    }))
+    })))
 });
 
 plugin_host_fn!(
 pub http_get(user_data: PluginContext; request: Wire<HttpRequestDto>) -> HostReply<HttpResponseDto> {
-    let context = user_data.get()?;
-    let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
-    let id = ctx.id.clone();
-    let hosts = ctx.hosts.clone();
-    let limits = ctx.limits;
-    drop(ctx);
+    let PluginContext { id, hosts, limits, .. } = PluginContext::snapshot(&user_data)?;
 
-    to_extism_res::<HttpResponseDto>(block_on(async {
+    Ok(to_extism_res::<HttpResponseDto>(block_on(async {
         let allowed_hosts = hosts.allowed_hosts(&id).await?;
         handle_http_get(&id, request.0, &allowed_hosts, limits).await
-    }))
+    })))
 });
 
 #[cfg(test)]

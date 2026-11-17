@@ -1,6 +1,7 @@
 use std::sync::{Arc, Weak};
 
 use async_trait::async_trait;
+use extism::UserData;
 
 use crate::{
     core::app::AetherContainer,
@@ -90,8 +91,23 @@ impl PluginContext {
         }
     }
 
-    pub(crate) fn upgrade_container(&self) -> Option<Arc<AetherContainer>> {
-        self.container.upgrade()
+    /// A copy of the context a host function was given, taken under its lock and released at
+    /// once: nothing holds the lock while the call runs.
+    pub(crate) fn snapshot(user_data: &UserData<Self>) -> Result<Self, extism::Error> {
+        let context = user_data.get()?;
+        let ctx = context
+            .lock()
+            .map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
+
+        Ok(ctx.clone())
+    }
+
+    /// The container, for a host function that needs it: one that outlives the application
+    /// fails its call instead of answering the plugin.
+    pub(crate) fn upgrade_container(&self) -> Result<Arc<AetherContainer>, extism::Error> {
+        self.container
+            .upgrade()
+            .ok_or_else(|| anyhow::Error::msg("AetherContainer dropped before plugin call"))
     }
 }
 

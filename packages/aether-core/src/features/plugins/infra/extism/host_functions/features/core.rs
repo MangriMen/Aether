@@ -303,26 +303,20 @@ pub(crate) async fn handle_run_command(
 
 plugin_host_fn!(
 pub log(user_data: PluginContext; params: Wire<LogParamsDto>) -> HostReply<()> {
-    let context = user_data.get()?;
-    let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
-    let id = ctx.id.clone();
+    let context = PluginContext::snapshot(&user_data)?;
 
-    handle_log(&id, params.0.level, &params.0.message);
-    to_extism_res::<()>(Ok(()))
+    handle_log(&context.id, params.0.level, &params.0.message);
+    Ok(to_extism_res::<()>(Ok(())))
 });
 
 plugin_host_fn!(
 pub run_command(user_data: PluginContext; command: Wire<CommandDto>) -> HostReply<OutputDto> {
-    let context = user_data.get()?;
-    let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
-    let id = ctx.id.clone();
-    let wasm_sha256 = ctx.wasm_sha256.clone();
-    let container = ctx.upgrade_container().ok_or_else(|| anyhow::Error::msg("AetherContainer dropped before plugin call"))?;
-    drop(ctx);
+    let context = PluginContext::snapshot(&user_data)?;
+    let container = context.upgrade_container()?;
 
-    to_extism_res::<OutputDto>(
-        block_on(handle_run_command(&id, &wasm_sha256, command.0, &container))
-    )
+    Ok(to_extism_res::<OutputDto>(
+        block_on(handle_run_command(&context.id, &context.wasm_sha256, command.0, &container))
+    ))
 });
 
 #[cfg(test)]
