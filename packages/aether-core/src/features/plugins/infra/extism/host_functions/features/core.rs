@@ -280,9 +280,9 @@ pub(crate) async fn handle_run_command(
     }
 
     if !output.status.success() {
-        // The code and the program only: the arguments are the plugin's, and the plugin has
+        // The code and the program only (a warning, so a failed command is in the log): the arguments are the plugin's, and the plugin has
         // the stderr in its answer.
-        tracing::debug!(
+        tracing::warn!(
             target: "plugin",
             "[{plugin_id}]: command `{}` exited with {}",
             host_command.program,

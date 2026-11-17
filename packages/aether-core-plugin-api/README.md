@@ -78,7 +78,7 @@ to the bytes themselves.
 signal). A non-zero code is the program's answer, not a failed call: the plugin gets the
 `OutputDto` with the code, `stdout` and `stderr`, and decides what it means (`OutputDto::success()`
 of the api crate is `exitCode == 0`). The call fails only when the command did not run to its end:
-the user refused it, it could not start, or it ran past 15 minutes and was killed.
+the host or the user refused it, it could not start, or it ran past 15 minutes and was killed.
 
 ## `run_command` needs the user's consent
 
