@@ -212,6 +212,7 @@ These apply to new and edited code; older code is brought in line when a file is
 
 - Key segments are camelCase. UPPER_SNAKE is only for backend error codes in `errors.<domain>.<CODE>`; they match `#[serde(tag = "code", rename_all = "SCREAMING_SNAKE_CASE")]` in the DTO.
 - A segment that equals a value of a backend enum keeps that value's case, so the key can be built from the value.
+- Check: `shared/i18n/__tests__/keyFormat.test.ts`. Under `errors.<domain>` any depth may be UPPER_SNAKE; elsewhere the parent of enum-value segments must be listed in `ENUM_VALUE_PARENTS` there.
 
 ### Form schemas
 
