@@ -838,3 +838,28 @@ async fn should_install_no_file_of_a_plan_when_one_fails() {
     assert_refused_by_the_hash(&err);
     assert!(fixture.instance_is_empty());
 }
+
+/// A client pins a host by its name alone: with a local host granted on one port, the files of
+/// a plan, downloaded at once, must not share one, or a hop to the granted port could re-pin
+/// the name for a hop to another port vetted the strict way.
+#[tokio::test]
+async fn should_not_share_a_client_between_files_when_the_plugin_has_a_local_host() {
+    use crate::features::plugins::{LocalHost, PluginHosts};
+
+    let fixture = Fixture::new().await;
+    let downloader = fixture.downloader();
+    let id = plugin_id();
+    let client = |hosts: &PluginHosts| downloader.plugin_client(&id, hosts).unwrap();
+
+    let public = PluginHosts::from(vec![ALLOWED.to_owned()]);
+    assert!(
+        Arc::ptr_eq(&client(&public), &client(&public)),
+        "the files of a plan share connections"
+    );
+
+    let with_local = PluginHosts::new(
+        vec![ALLOWED.to_owned()],
+        vec![LocalHost::parse("nas.lan:8080").unwrap()],
+    );
+    assert!(!Arc::ptr_eq(&client(&with_local), &client(&with_local)));
+}

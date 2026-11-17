@@ -125,7 +125,7 @@ impl ProviderContentDownloader {
 
     /// The plugin's client for `hosts`: the kept one, or a new one when there is none
     /// yet or the hosts changed since it was built.
-    fn plugin_client(
+    pub(crate) fn plugin_client(
         &self,
         plugin_id: &PluginId,
         hosts: &PluginHosts,
@@ -150,6 +150,17 @@ impl ProviderContentDownloader {
             limits: self.sandbox_limits,
         };
         let client = Arc::new(vetted_download_client(&network).map_err(|err| err.to_string())?);
+
+        // A client pins the addresses of a host by its name alone, and the files of a plan
+        // download at once. With a local host granted on one port, a hop to that port could
+        // re-pin the name to a local address while a hop to another port of the same name,
+        // vetted strictly, has yet to connect, and it would then connect there. Each download
+        // gets a client of its own instead, so no pin is shared between two policies.
+        if !hosts.local.is_empty() {
+            clients.remove(plugin_id);
+            return Ok(client);
+        }
+
         clients.insert(
             plugin_id.clone(),
             PluginClient {
