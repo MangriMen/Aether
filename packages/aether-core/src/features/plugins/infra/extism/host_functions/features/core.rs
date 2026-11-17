@@ -219,22 +219,6 @@ async fn collect_capped(
     }
 }
 
-/// How much of a failed command's stderr goes to the error log.
-const LOGGED_STDERR_BYTES: usize = 4 * 1024;
-
-/// The start of `stderr` for the log, cut at a character boundary.
-fn stderr_excerpt(stderr: &[u8]) -> String {
-    let text = String::from_utf8_lossy(stderr);
-    if text.len() <= LOGGED_STDERR_BYTES {
-        return text.into_owned();
-    }
-    let mut end = LOGGED_STDERR_BYTES;
-    while !text.is_char_boundary(end) {
-        end -= 1;
-    }
-    format!("{}… [{} bytes more]", &text[..end], text.len() - end)
-}
-
 /// Handle `run_command` — execute a command on behalf of a plugin.
 pub(crate) async fn handle_run_command(
     plugin_id: &PluginId,
@@ -296,16 +280,14 @@ pub(crate) async fn handle_run_command(
     }
 
     if !output.status.success() {
-        // The program and the exit code only, with the start of stderr: the log is what a user
-        // is asked to attach to a bug report, and the arguments are the plugin's.
-        tracing::error!(
+        // The code and the program only (a warning, so a failed command is in the log): the arguments are the plugin's, and the plugin has
+        // the stderr in its answer.
+        tracing::warn!(
             target: "plugin",
-            "[{plugin_id}]: command `{}` failed with {}, stderr: {:?}",
+            "[{plugin_id}]: command `{}` exited with {}",
             host_command.program,
-            output.status,
-            stderr_excerpt(&output.stderr)
+            output.status
         );
-        return Err(crate::ErrorKind::CoreError("Command execution failed".to_string()).as_error());
     }
 
     Ok(OutputDto::from_output(
@@ -345,23 +327,6 @@ pub run_command(user_data: PluginContext; command: Wire<CommandDto>) -> HostRepl
 mod tests {
     use super::*;
     use rstest::rstest;
-
-    #[test]
-    fn should_keep_the_whole_stderr_when_it_is_short() {
-        assert_eq!(stderr_excerpt(b"boom"), "boom");
-    }
-
-    #[test]
-    fn should_cut_stderr_at_a_character_boundary_when_it_is_long() {
-        // "é" is two bytes, so the limit falls inside one.
-        let stderr = "é".repeat(LOGGED_STDERR_BYTES);
-
-        let excerpt = stderr_excerpt(stderr.as_bytes());
-
-        assert!(excerpt.starts_with(&"é".repeat(LOGGED_STDERR_BYTES / 2)));
-        assert!(excerpt.len() < LOGGED_STDERR_BYTES + 64);
-        assert!(excerpt.ends_with("bytes more]"));
-    }
 
     fn max_output_bytes() -> usize {
         crate::shared::limits::PluginSandboxLimits::default().max_output_bytes
@@ -425,6 +390,25 @@ mod tests {
         } else {
             format!("i=0; while [ $i -lt {repeat} ]; do echo {line}; i=$((i+1)); done")
         }
+    }
+
+    /// A non-zero exit is the program's answer: the code and the stderr reach the plugin.
+    #[tokio::test]
+    async fn should_give_the_exit_code_and_stderr_when_a_real_process_fails() {
+        let script = if cfg!(windows) {
+            "echo boom 1>&2 & exit 3"
+        } else {
+            "echo boom >&2; exit 3"
+        };
+        let captured = run_capped(&shell_command(script), COMMAND_TIMEOUT, 512)
+            .await
+            .expect("a failing child still ran");
+
+        let dto = OutputDto::from_output(&captured.output, false, false);
+
+        assert_eq!(dto.exit_code, Some(3));
+        assert!(!dto.success());
+        assert!(String::from_utf8_lossy(&dto.stderr).contains("boom"));
     }
 
     #[tokio::test]

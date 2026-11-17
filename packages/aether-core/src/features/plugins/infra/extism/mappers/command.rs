@@ -15,7 +15,7 @@ impl OutputDtoExt for OutputDto {
         stderr_truncated: bool,
     ) -> Self {
         Self {
-            status: u32::try_from(output.status.code().unwrap_or(0)).unwrap_or(0),
+            exit_code: output.status.code(),
             stdout: output.stdout.clone(),
             stderr: output.stderr.clone(),
             stdout_truncated,
@@ -35,7 +35,7 @@ mod tests {
     /// `OutputDto` without the truncation flags.
     #[derive(Serialize, Deserialize, Debug)]
     struct OutputDtoWithoutFlags {
-        status: u32,
+        exit_code: Option<i32>,
         stdout: Vec<u8>,
         stderr: Vec<u8>,
     }
@@ -45,7 +45,7 @@ mod tests {
     #[test]
     fn should_decode_a_response_as_not_truncated_when_it_has_no_flags() {
         let bytes = wire::encode(&OutputDtoWithoutFlags {
-            status: 0,
+            exit_code: Some(0),
             stdout: b"out".to_vec(),
             stderr: b"err".to_vec(),
         })
@@ -60,7 +60,7 @@ mod tests {
     #[test]
     fn should_carry_each_flag_across_the_boundary_when_encoded_and_decoded() {
         let bytes = wire::encode(&OutputDto {
-            status: 0,
+            exit_code: Some(0),
             stdout: vec![],
             stderr: vec![],
             stdout_truncated: false,
@@ -79,7 +79,7 @@ mod tests {
     #[test]
     fn should_be_readable_by_a_plugin_built_before_the_flags_when_the_flags_are_present() {
         let bytes = wire::encode(&OutputDto {
-            status: 0,
+            exit_code: Some(0),
             stdout: vec![],
             stderr: vec![],
             stdout_truncated: false,

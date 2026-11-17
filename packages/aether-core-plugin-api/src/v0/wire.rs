@@ -76,7 +76,7 @@ mod tests {
         })
         .unwrap();
         let output = serde_json::to_value(OutputDto {
-            status: 0,
+            exit_code: Some(0),
             stdout: vec![],
             stderr: vec![],
             stdout_truncated: false,

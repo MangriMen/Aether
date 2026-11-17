@@ -74,10 +74,11 @@ call short.
 the cap is cut there and flagged — `stdoutTruncated` / `stderrTruncated` — with nothing added
 to the bytes themselves.
 
-A command that exits with a non-zero code is an error, not an `OutputDto`: the call fails with
-`HostError::CoreError("Command execution failed")`, and the command's `stderr` is only written
-to the launcher's log. So `status` of a returned `OutputDto` is always `0`: the code of a command
-that succeeded. A command that runs past 15 minutes is killed and fails the call too.
+`exitCode` is the code the program exited with, and `null` when it has none (it was killed by a
+signal). A non-zero code is the program's answer, not a failed call: the plugin gets the
+`OutputDto` with the code, `stdout` and `stderr`, and decides what it means (`OutputDto::success()`
+of the api crate is `exitCode == 0`). The call fails only when the command did not run to its end:
+the host or the user refused it, it could not start, or it ran past 15 minutes and was killed.
 
 ## `run_command` needs the user's consent
 

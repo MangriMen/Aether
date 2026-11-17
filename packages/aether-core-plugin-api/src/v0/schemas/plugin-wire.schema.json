@@ -3812,10 +3812,13 @@
       "description": "Output of a command run through `run_command`. The streams travel as msgpack `bin`.",
       "type": "object",
       "properties": {
-        "status": {
-          "type": "integer",
-          "format": "uint32",
-          "minimum": 0
+        "exitCode": {
+          "description": "The exit code. `None` when the program did not exit with one: it was killed by a signal.\nA non-zero code is an answer like any other, not a failed call.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "int32"
         },
         "stderr": {
           "type": "string",
@@ -3839,7 +3842,6 @@
         }
       },
       "required": [
-        "status",
         "stdout",
         "stderr"
       ]
