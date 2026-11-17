@@ -560,6 +560,7 @@ impl From<&PluginProviderError> for PluginErrorDto {
             PluginProviderError::ProviderRateLimited {
                 source_type,
                 retry_after,
+                ..
             } => Self::ProviderRateLimited {
                 source_type: source_type.to_string(),
                 retry_after: *retry_after,

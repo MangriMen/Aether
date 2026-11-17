@@ -122,6 +122,17 @@ impl From<&aether_core::ErrorKind> for FrontendError {
             aether_core::ErrorKind::ProcessError(err) => Self::Process(err.into()),
             aether_core::ErrorKind::SettingsError(err) => Self::Settings(err.into()),
             aether_core::ErrorKind::RequestError(err) => Self::Request(err.into()),
+            // Raised only by the host functions of a plugin, which answer the plugin, not the UI.
+            aether_core::ErrorKind::PluginHttpError(err) => {
+                Self::Application(ApplicationErrorDto::Internal {
+                    cause: CauseDto::unknown(err),
+                })
+            }
+            aether_core::ErrorKind::PluginDownloadError(err) => {
+                Self::Application(ApplicationErrorDto::Internal {
+                    cause: CauseDto::unknown(err),
+                })
+            }
             aether_core::ErrorKind::CoreError(err) => {
                 Self::Application(ApplicationErrorDto::Internal {
                     cause: CauseDto::unknown(err),

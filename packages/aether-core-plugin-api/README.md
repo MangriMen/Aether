@@ -124,8 +124,9 @@ side.
 Only four plain enums the launcher sends have a fallback: `ModLoaderDto`, `ContentTypeDto`,
 `CommandRefusalDto` and `InstanceInstallStageDto`. A value a plugin built for an older API does
 not know reads as `unknown` there, so the call still decodes; a plugin must not answer `unknown`,
-the launcher refuses it. `HostError` has one too: a kind a plugin does not know reads as
-`unknown`, whatever its `data` (see "When a host function fails"). Every other enum is strict
+the launcher refuses it. `HostError` and the `error` of its `http` kind (`HttpErrorDto`) have one
+too: a kind a plugin does not know reads as `unknown`, whatever its `data` (see "When a host
+function fails"). Every other enum is strict
 (`HashAlgorithmDto` and the other enums with data, `{"type", "data"}`, have none): a new
 value or variant of it breaks a plugin built for an older API, and `api.version` is matched as a
 caret requirement, so on 0.x it needs a new minor version.
@@ -197,15 +198,31 @@ the log or the user, not something to match on. The kinds:
 | `cancelled` | The work was called off before it finished. | The user called off an install. |
 | `timedOut` | The work did not finish in its time. | Java did not report its properties in time. |
 | `pluginCallFailed` | A call into another plugin failed. | The other plugin crashed, hit a limit or reported an error. |
-| `http` | A network request failed. | The request could not be sent, the answer has an error status or cannot be read, a hash does not match. |
+| `http` | A network request failed; `data` also has its `error`, which tells how (below). | `http_get`, `http_post_json` or `download_to_cache` failed, or a request the launcher made for the call (a Java download, a content provider). |
 | `internal` | The launcher failed on its own; nothing the plugin can change. | Storage, the file system, and every failure the launcher has no kind for yet. |
 | `unknown` | A kind this version of the API does not know: a newer launcher sent it. | Never written by the launcher of a plugin's own API version; read it like `internal`. |
 
-The failures `run_command`, `http_get`, `http_post_json` and `download_to_cache` raise themselves
-(the command could not start or ran too long; a refused host, address or header, an oversized body,
-a failed request) have no kind of their own yet: they arrive as `internal`, the `message` saying
-what happened. A plugin writes none of these kinds itself, except to pass one back in a failure
-envelope.
+The `error` of `http` is `{"type": <kind>, "data": …}` (`data` absent for `hashMismatch`):
+
+| `error` kind | `data` | Expect it when |
+| --- | --- | --- |
+| `hostNotAllowed` | `host` | The host is not in the plugin's `allowedHosts`: the URL's, or a redirect's. The user can add it in the plugin's settings. |
+| `addressBlocked` | `host` | The host resolves to an address a plugin may not reach (loopback, private, link-local, …), or to none. |
+| `invalidRequest` | `reason` | The request is refused before anything is sent: a malformed URL, a scheme other than `http`/`https`, no host, a forbidden or invalid header, a body that is not JSON or is over 4 MiB, a malformed expected hash of a download. Sending it again fails again. |
+| `redirect` | `reason` | A redirect is not followed: `https` → `http`, no usable `Location`, more than 5, or any 3xx where none is followed (`http_post_json`, `304`, …). |
+| `responseTooLarge` | `limit` | The answer is over the limit, in bytes: 16 MiB for `http_get` and `http_post_json`, 1 GiB for a download. |
+| `status` | `status` | A download's final answer is not 2xx. `http_get` and `http_post_json` hand any non-3xx status back as an answer instead. |
+| `hashMismatch` | none | A downloaded file is not the one its hash names. |
+| `invalidResponse` | `reason` | An answer the launcher reads itself (a content provider's, say) is not the JSON, TOML or text it expects. |
+| `network` | `reason` | No usable answer came: the host could not be resolved or reached, the connection or TLS failed, the request timed out or broke off, a download ran out of time. It may succeed later. |
+| `unknown` | none | A kind this version of the API does not know: a newer launcher sent it. Read it as a failed request with no more detail. |
+
+`reason` is text for the log or the user, like `message`. A failure the launcher has on its own
+while it makes a request (writing a download to the cache, say) is `internal`, not `http`.
+
+The failures `run_command` raises itself (the command could not start or ran too long) have no
+kind of their own yet: they arrive as `internal`, the `message` saying what happened. A plugin
+writes none of these kinds itself, except to pass one back in a failure envelope.
 
 ## Reporting a typed failure (any language)
 
@@ -309,10 +326,9 @@ The host performs the request itself and applies, in this order:
    * the redirect's own body is never read; `status`, `headers` and `body` describe the final
      response. Any other 3xx (`300`, `304`, …) is an error, not a response.
 
-   These two failures have no kind of their own: like every error of `http_get`,
-   `http_post_json` and `download_to_cache` that the host raises itself (a refused host, address
-   or header, an oversized body, …) they arrive as `internal` (see "When a host function fails"),
-   the `message` saying what happened.
+   A redirect the host does not follow fails the call as `http` with the `error` `redirect`; a
+   hop to a host outside `allowedHosts` as `hostNotAllowed` with that host, one to a non-public
+   address as `addressBlocked` (see "When a host function fails" for every kind).
 
    Downloads from GitHub releases need this: `/releases/latest/download/<file>` answers `302`
    to `/releases/download/<tag>/<file>`, which answers `302` to a signed, expiring URL on
@@ -375,11 +391,12 @@ let file: HostReply<CachedFileDto> = unsafe { download_to_cache(Wire(DownloadToC
 
 * **Network policy** — the same code as `http_get`: scheme, `allowedHosts` in the host,
   public addresses only, pinned resolution, **at most 5 redirects, each hop checked** like the
-  first request (see `http_get`, step 6). Any other non-2xx final status is an error. No custom
-  headers.
+  first request (see `http_get`, step 6). Any other non-2xx final status is an error, `http` with
+  the `error` `status`. No custom headers.
 * **Hash** — required: `sha1`, `sha256` or `sha512` (no md5). It must be a well-formed hex
-  digest of that algorithm (case does not matter). The body is hashed while it streams; on a
-  mismatch the call fails and **nothing** is left in the cache, not even a partial file.
+  digest of that algorithm (case does not matter); a malformed one fails the call as `http` with
+  the `error` `invalidRequest`. The body is hashed while it streams; on a mismatch the call fails
+  with `hashMismatch` and **nothing** is left in the cache, not even a partial file.
 * **Name** — chosen by the host from the hash: `/cache/downloads/<algorithm>/<lowercase hex>`.
   The plugin cannot pick it. Calling again with the same hash returns the cached file without
   a network request, after re-hashing it — a file under that name that no longer matches is

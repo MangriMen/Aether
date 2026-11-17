@@ -40,10 +40,11 @@ use crate::{
         },
         minecraft::ModLoader,
         plugins::{
-            ApiConfig, LoadConfig, Plugin, PluginError, PluginManifest, PluginMetadata,
-            PluginRegistry, PluginSettings, PluginSettingsStorage, PluginState, RuntimeConfig,
+            ApiConfig, LoadConfig, Plugin, PluginDownloadError, PluginError, PluginManifest,
+            PluginMetadata, PluginRegistry, PluginSettings, PluginSettingsStorage, PluginState,
+            RuntimeConfig,
             infra::{
-                PluginDownloadError, ProviderContentDownloader,
+                ProviderContentDownloader,
                 test_server::{TestServer, ok, redirect},
             },
         },

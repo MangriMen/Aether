@@ -5,9 +5,9 @@
 //! to be placed here before it compiles. An error that wraps another feature's error is
 //! classified by the wrapped one. The message is the core's own text of the error.
 
-use std::fmt::Display;
+use std::{error::Error, fmt::Display};
 
-use aether_core_plugin_api::v0::{CommandRefusalDto, HostError};
+use aether_core_plugin_api::v0::{CommandRefusalDto, HostError, HttpErrorDto};
 
 use crate::{
     ErrorKind,
@@ -15,7 +15,10 @@ use crate::{
         instance::{ContentDownloadFailure, ContentProviderRejection, InstanceError, StorageError},
         java::{JavaApplicationError, JavaDomainError},
         minecraft::{MinecraftApplicationError, MinecraftDomainError},
-        plugins::{CommandApprovalRefusal, PluginCallError, PluginError, PluginProviderError},
+        plugins::{
+            CommandApprovalRefusal, PluginCallError, PluginDownloadError, PluginError,
+            PluginHttpError, PluginProviderError, ProviderFailure,
+        },
         settings::SettingsError,
     },
     shared::{io::IoError, request_client::RequestError},
@@ -32,7 +35,6 @@ enum Kind {
     Cancelled,
     TimedOut,
     PluginCallFailed,
-    Http,
     Internal,
 }
 
@@ -48,7 +50,6 @@ impl Kind {
             Self::Cancelled => HostError::Cancelled { message },
             Self::TimedOut => HostError::TimedOut { message },
             Self::PluginCallFailed => HostError::PluginCallFailed { message },
-            Self::Http => HostError::Http { message },
             Self::Internal => HostError::Internal { message },
         }
     }
@@ -63,6 +64,8 @@ impl From<&ErrorKind> for HostError {
             ErrorKind::PluginError(err) => plugin(err),
             ErrorKind::SettingsError(err) => settings(err),
             ErrorKind::RequestError(err) => request(err),
+            ErrorKind::PluginHttpError(err) => http(err, plugin_http(err)),
+            ErrorKind::PluginDownloadError(err) => http_or_internal(err, plugin_download(err)),
             // No host function reaches these: should one, the plugin can do nothing about it.
             ErrorKind::AuthError(err) => Kind::Internal.of(err),
             ErrorKind::EventError(err) => Kind::Internal.of(err),
@@ -129,8 +132,8 @@ fn instance(value: &InstanceError) -> HostError {
         | InstanceError::UpdateFailed { .. }
         | InstanceError::CredentialsError(_) => Kind::Internal,
 
-        InstanceError::ContentDownloadError(failure) => content_download(failure),
-        InstanceError::ContentProviderError { reason } => content_provider(reason),
+        InstanceError::ContentDownloadError(failure) => return content_download(value, failure),
+        InstanceError::ContentProviderError { reason } => return content_provider(value, reason),
 
         // Their own text: the wrapper's names only the step that failed.
         InstanceError::ProcessError(err) => return Kind::Internal.of(err),
@@ -155,19 +158,23 @@ fn storage_is_missing(value: &StorageError) -> bool {
     }
 }
 
-fn content_download(value: &ContentDownloadFailure) -> Kind {
-    match value {
+fn content_download(value: &InstanceError, failure: &ContentDownloadFailure) -> HostError {
+    let kind = match failure {
         ContentDownloadFailure::NoFiles { .. } | ContentDownloadFailure::NoVersions { .. } => {
             Kind::NotFound
         }
         ContentDownloadFailure::NotAModpackFile { .. } => Kind::InvalidArgument,
-        ContentDownloadFailure::Download { .. } => Kind::Http,
+        ContentDownloadFailure::Download { source, .. } => {
+            return http_or_internal(value, from_source(&**source));
+        }
         ContentDownloadFailure::NoNetworkPolicy { .. } => Kind::Conflict,
-    }
+    };
+
+    kind.of(value)
 }
 
-fn content_provider(value: &ContentProviderRejection) -> Kind {
-    match value {
+fn content_provider(value: &InstanceError, rejection: &ContentProviderRejection) -> HostError {
+    let kind = match rejection {
         ContentProviderRejection::InvalidRequest(_)
         | ContentProviderRejection::NotAModpack { .. } => Kind::InvalidArgument,
 
@@ -178,7 +185,9 @@ fn content_provider(value: &ContentProviderRejection) -> Kind {
         | ContentProviderRejection::TooManyOverrides { .. }
         | ContentProviderRejection::PackIndexTooLarge { .. } => Kind::TooLarge,
 
-        ContentProviderRejection::Request(_) => Kind::Http,
+        ContentProviderRejection::Request(source) => {
+            return http_or_internal(value, from_source(&**source));
+        }
 
         // What a provider plugin answered: not the caller's to fix.
         ContentProviderRejection::InvalidAnswer { .. } | ContentProviderRejection::Provider(_) => {
@@ -201,7 +210,9 @@ fn content_provider(value: &ContentProviderRejection) -> Kind {
         | ContentProviderRejection::PackIndexMalformed(_)
         | ContentProviderRejection::PackWrongGame { .. }
         | ContentProviderRejection::InvalidHash(_) => Kind::Internal,
-    }
+    };
+
+    kind.of(value)
 }
 
 fn java(value: &JavaApplicationError) -> HostError {
@@ -292,7 +303,7 @@ fn plugin(value: &PluginError) -> HostError {
         }
         PluginError::FunctionCallFailed { error, .. } => return plugin_call(value, error),
         PluginError::Settings(err) => return settings(err),
-        PluginError::Provider(err) => plugin_provider(err),
+        PluginError::Provider(err) => return plugin_provider(value, err),
     };
 
     kind.of(value)
@@ -319,8 +330,8 @@ fn plugin_call(value: &PluginError, error: &PluginCallError) -> HostError {
 }
 
 /// Only the user installs or updates a plugin; a host function never gets here.
-fn plugin_provider(value: &PluginProviderError) -> Kind {
-    match value {
+fn plugin_provider(value: &PluginError, provider: &PluginProviderError) -> HostError {
+    let kind = match provider {
         PluginProviderError::ManifestNotFound { .. }
         | PluginProviderError::InvalidManifestFormat { .. }
         | PluginProviderError::ExtractionFailed { .. }
@@ -330,11 +341,34 @@ fn plugin_provider(value: &PluginProviderError) -> Kind {
         PluginProviderError::ProviderNoAssets { .. }
         | PluginProviderError::NoRemoteSource { .. } => Kind::NotFound,
         PluginProviderError::ArchiveChangedSincePreview => Kind::Conflict,
-        PluginProviderError::ProviderFetchError { .. }
-        | PluginProviderError::DownloadFailed { .. }
-        | PluginProviderError::ProviderRateLimited { .. } => Kind::Http,
+        PluginProviderError::ProviderFetchError { reason, .. }
+        | PluginProviderError::DownloadFailed { reason, .. } => {
+            return provider_failure(value, reason);
+        }
+        PluginProviderError::ProviderRateLimited { status, .. } => {
+            return http(value, HttpErrorDto::Status { status: *status });
+        }
         PluginProviderError::Storage(_) => Kind::Internal,
-    }
+    };
+
+    kind.of(value)
+}
+
+fn provider_failure(value: &PluginError, failure: &ProviderFailure) -> HostError {
+    let error = match failure {
+        ProviderFailure::Request(source) => return http_or_internal(value, from_source(&**source)),
+        ProviderFailure::Status { status, .. } => HttpErrorDto::Status { status: *status },
+        ProviderFailure::TooLarge { limit } => HttpErrorDto::ResponseTooLarge { limit: *limit },
+        ProviderFailure::UrlNotAllowed => HttpErrorDto::InvalidResponse {
+            reason: failure.to_string(),
+        },
+        ProviderFailure::InvalidUrl { .. } => return Kind::InvalidArgument.of(value),
+        ProviderFailure::NoReleases | ProviderFailure::NotRegistered => {
+            return Kind::NotFound.of(value);
+        }
+    };
+
+    http(value, error)
 }
 
 fn settings(value: &SettingsError) -> HostError {
@@ -350,21 +384,112 @@ fn settings(value: &SettingsError) -> HostError {
 }
 
 fn request(value: &RequestError) -> HostError {
-    let kind = match value {
-        RequestError::RequestSend(_)
-        | RequestError::Middleware(_)
-        | RequestError::Status { .. }
-        | RequestError::Hash { .. }
-        | RequestError::Json(_)
-        | RequestError::Toml(_)
-        | RequestError::Parse(_) => Kind::Http,
-        RequestError::TooLarge { .. } => Kind::TooLarge,
-        RequestError::Acquire(_) | RequestError::Io { .. } => Kind::Internal,
-    };
-
-    kind.of(value)
+    http_or_internal(value, request_kind(value))
 }
 
+/// A network request failed: `message` is the text of `error`, `kind` what the plugin needs to
+/// tell how.
+fn http(error: &impl Display, kind: HttpErrorDto) -> HostError {
+    HostError::Http {
+        message: error.to_string(),
+        error: kind,
+    }
+}
+
+/// [`http`], or `internal` when there is no `kind`: the host failed on its own while it made the
+/// request (the disk, the download slots, the cache).
+fn http_or_internal(error: &impl Display, kind: Option<HttpErrorDto>) -> HostError {
+    match kind {
+        Some(kind) => http(error, kind),
+        None => Kind::Internal.of(error),
+    }
+}
+
+/// A request of the core's own client; `None` when it failed in the host, not on the network.
+fn request_kind(value: &RequestError) -> Option<HttpErrorDto> {
+    let reason = || value.to_string();
+    let kind = match value {
+        RequestError::RequestSend(_) | RequestError::Middleware(_) => {
+            HttpErrorDto::Network { reason: reason() }
+        }
+        RequestError::Status { status, .. } => HttpErrorDto::Status { status: *status },
+        // The body that came is not the file the expected hash names.
+        RequestError::Hash { .. } => HttpErrorDto::HashMismatch,
+        RequestError::Json(_) | RequestError::Toml(_) | RequestError::Parse(_) => {
+            HttpErrorDto::InvalidResponse { reason: reason() }
+        }
+        RequestError::TooLarge { limit } => HttpErrorDto::ResponseTooLarge { limit: *limit },
+        RequestError::Acquire(_) | RequestError::Io { .. } => return None,
+    };
+
+    Some(kind)
+}
+
+/// A request `http_get` or `http_post_json` makes for a plugin, or a hop of a download.
+fn plugin_http(value: &PluginHttpError) -> HttpErrorDto {
+    let reason = || value.to_string();
+    match value {
+        PluginHttpError::HostNotAllowed { host } => {
+            HttpErrorDto::HostNotAllowed { host: host.clone() }
+        }
+        PluginHttpError::BlockedAddress { host, .. } | PluginHttpError::NoAddresses { host } => {
+            HttpErrorDto::AddressBlocked { host: host.clone() }
+        }
+        PluginHttpError::InvalidUrl { .. }
+        | PluginHttpError::UnsupportedScheme { .. }
+        | PluginHttpError::MissingHost { .. }
+        | PluginHttpError::InvalidJsonBody { .. }
+        | PluginHttpError::RequestBodyTooLarge { .. }
+        | PluginHttpError::ForbiddenHeader { .. }
+        | PluginHttpError::InvalidHeader { .. } => {
+            HttpErrorDto::InvalidRequest { reason: reason() }
+        }
+        PluginHttpError::RedirectNotAllowed { .. }
+        | PluginHttpError::InvalidRedirect { .. }
+        | PluginHttpError::SchemeDowngrade { .. }
+        | PluginHttpError::TooManyRedirects { .. } => HttpErrorDto::Redirect { reason: reason() },
+        PluginHttpError::ResponseTooLarge { limit } => HttpErrorDto::ResponseTooLarge {
+            limit: u64::try_from(*limit).unwrap_or(u64::MAX),
+        },
+        PluginHttpError::ResolveFailed { .. } | PluginHttpError::RequestFailed { .. } => {
+            HttpErrorDto::Network { reason: reason() }
+        }
+    }
+}
+
+/// A download made for a plugin; `None` when the host could not use the plugin's cache.
+fn plugin_download(value: &PluginDownloadError) -> Option<HttpErrorDto> {
+    match value {
+        // The hash the plugin sent is no digest at all: not a mismatch.
+        PluginDownloadError::InvalidHash(err) => Some(HttpErrorDto::InvalidRequest {
+            reason: err.to_string(),
+        }),
+        PluginDownloadError::Http(err) => Some(plugin_http(err)),
+        PluginDownloadError::Request(err) => request_kind(err),
+        PluginDownloadError::OutOfTime(_) => Some(HttpErrorDto::Network {
+            reason: value.to_string(),
+        }),
+        PluginDownloadError::UnusableCache { .. } => None,
+    }
+}
+
+/// A request failure kept as an opaque source: told by the error under it when it is one of the
+/// core's, otherwise a request that got no usable answer.
+fn from_source(source: &(dyn Error + 'static)) -> Option<HttpErrorDto> {
+    if let Some(err) = source.downcast_ref::<RequestError>() {
+        return request_kind(err);
+    }
+    if let Some(err) = source.downcast_ref::<PluginDownloadError>() {
+        return plugin_download(err);
+    }
+    if let Some(err) = source.downcast_ref::<PluginHttpError>() {
+        return Some(plugin_http(err));
+    }
+
+    Some(HttpErrorDto::Network {
+        reason: source.to_string(),
+    })
+}
 impl From<CommandApprovalRefusal> for CommandRefusalDto {
     fn from(value: CommandApprovalRefusal) -> Self {
         match value {
@@ -406,6 +531,7 @@ mod tests {
         instance::{PageSize, PluginId},
         process::ProcessError,
     };
+    use crate::shared::hash::{FileHash, HashAlgorithm};
 
     fn host(error: impl Into<ErrorKind>) -> HostError {
         HostError::from(&error.into())
@@ -523,14 +649,81 @@ mod tests {
         );
     }
 
-    #[test]
-    fn should_tell_too_large_when_a_response_is_over_the_limit() {
-        let error = RequestError::TooLarge { limit: 7 };
-
+    /// A request the host makes for a plugin keeps its kind, and the error's own text.
+    #[rstest]
+    #[case::refused_host(
+        PluginHttpError::HostNotAllowed { host: "cdn.example".to_owned() }.into(),
+        HttpErrorDto::HostNotAllowed { host: "cdn.example".to_owned() }
+    )]
+    #[case::blocked_address(
+        PluginHttpError::BlockedAddress {
+            host: "intranet.example".to_owned(),
+            ip: std::net::Ipv4Addr::new(10, 0, 0, 1).into(),
+        }
+        .into(),
+        HttpErrorDto::AddressBlocked { host: "intranet.example".to_owned() }
+    )]
+    #[case::redirect_of_a_download(
+        PluginDownloadError::Http(PluginHttpError::TooManyRedirects { limit: 5 }).into(),
+        HttpErrorDto::Redirect { reason: "Too many redirects: more than 5".to_owned() }
+    )]
+    #[case::response_too_large(
+        PluginHttpError::ResponseTooLarge { limit: 16 }.into(),
+        HttpErrorDto::ResponseTooLarge { limit: 16 }
+    )]
+    #[case::download_too_large(
+        PluginDownloadError::Request(RequestError::TooLarge { limit: 7 }).into(),
+        HttpErrorDto::ResponseTooLarge { limit: 7 }
+    )]
+    #[case::core_response_too_large(
+        RequestError::TooLarge { limit: 7 }.into(),
+        HttpErrorDto::ResponseTooLarge { limit: 7 }
+    )]
+    #[case::network(
+        PluginHttpError::ResolveFailed {
+            host: "cdn.example".to_owned(),
+            reason: "no such host".to_owned(),
+        }
+        .into(),
+        HttpErrorDto::Network {
+            reason: "Failed to resolve host `cdn.example`: no such host".to_owned()
+        }
+    )]
+    fn should_tell_http_with_its_kind_when_a_plugin_request_failed(
+        #[case] error: ErrorKind,
+        #[case] kind: HttpErrorDto,
+    ) {
         assert_eq!(
             host(error.clone()),
-            HostError::TooLarge {
-                message: message(error)
+            HostError::Http {
+                message: error.to_string(),
+                error: kind,
+            }
+        );
+    }
+
+    #[test]
+    fn should_tell_a_hash_mismatch_from_a_malformed_hash_when_a_download_failed() {
+        let malformed = FileHash::new(HashAlgorithm::Sha1, "zz").unwrap_err();
+        let mismatch = PluginDownloadError::Request(RequestError::Hash {
+            actual: "aa".to_owned(),
+            expected: "bb".to_owned(),
+        });
+
+        assert_eq!(
+            host(mismatch.clone()),
+            HostError::Http {
+                message: message(mismatch),
+                error: HttpErrorDto::HashMismatch,
+            }
+        );
+        assert_eq!(
+            host(PluginDownloadError::InvalidHash(malformed.clone())),
+            HostError::Http {
+                message: message(PluginDownloadError::InvalidHash(malformed.clone())),
+                error: HttpErrorDto::InvalidRequest {
+                    reason: malformed.to_string()
+                },
             }
         );
     }
@@ -600,7 +793,8 @@ mod tests {
         assert_eq!(
             host(error),
             HostError::Http {
-                message: "Unexpected HTTP status 404 from `https://example.com/jre`".to_owned()
+                message: "Unexpected HTTP status 404 from `https://example.com/jre`".to_owned(),
+                error: HttpErrorDto::Status { status: 404 },
             }
         );
     }

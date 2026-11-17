@@ -13,7 +13,7 @@ use crate::{
             BoxedSource, ContentDownloadFailure, ContentDownloader, InstanceError, PluginId,
             ProviderId, StorageError,
         },
-        plugins::{PluginRegistry, PluginSettingsStorage},
+        plugins::{PluginDownloadError, PluginRegistry, PluginSettingsStorage},
     },
     shared::{
         fetch::FetchSemaphore,
@@ -26,8 +26,8 @@ use crate::{
 
 use super::{
     extism::{
-        AddressFilter, PluginDownloadError, PluginNetwork, ProxySource, VettedDownloadClient,
-        download_with, is_blocked_ip, vetted_download_client,
+        AddressFilter, PluginNetwork, ProxySource, VettedDownloadClient, download_with,
+        is_blocked_ip, vetted_download_client,
     },
     plugin_utils::effective_allowed_hosts,
 };

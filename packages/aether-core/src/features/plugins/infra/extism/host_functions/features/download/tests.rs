@@ -4,6 +4,7 @@ use aether_core_plugin_api::v0::FileHashDto;
 use async_trait::async_trait;
 
 use crate::features::events::{EventError, ProgressBarId, ProgressEventType};
+use crate::features::plugins::PluginHttpError;
 use crate::test_support::link_dir;
 
 use super::super::test_server::{TestServer, ok, redirect, status};

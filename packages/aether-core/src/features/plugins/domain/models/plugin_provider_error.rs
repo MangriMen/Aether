@@ -106,6 +106,8 @@ pub enum PluginProviderError {
     #[error("Provider {source_type} rate limit exceeded. Retry after {retry_after:?}")]
     ProviderRateLimited {
         source_type: PluginSourceType,
+        /// The status the provider refused with.
+        status: u16,
         retry_after: Option<u32>,
     },
 }

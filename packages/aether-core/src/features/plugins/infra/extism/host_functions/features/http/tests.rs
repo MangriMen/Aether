@@ -160,21 +160,39 @@ fn should_reject_when_a_header_has_an_invalid_value() {
 
 // ── handle_http_get: host allowlist enforced before any network access ──
 
+/// What the plugin reads: the refusal crosses as `http` / `hostNotAllowed`, with the host.
 #[tokio::test]
 async fn should_reject_when_the_host_is_outside_allowed_hosts() {
+    use aether_core_plugin_api::v0::{HostError, HostResult, HttpErrorDto, wire};
+    use extism_convert::ToBytes;
+
     let request = HttpRequestDto {
         url: "http://evil.com/".to_string(),
         headers: HashMap::new(),
     };
-    let err = handle_http_get(
+    let res = handle_http_get(
         &PluginId::from_static("test"),
         request,
         &hosts(&["example.com"]),
         limits(),
     )
-    .await
-    .expect_err("request to a host outside allowed_hosts must fail");
-    assert!(err.to_string().contains("allowed_hosts"), "{err}");
+    .await;
+
+    let bytes = to_extism_res(res).unwrap().to_bytes().unwrap();
+    let HostResult::Err(error) =
+        wire::decode::<HostResult<HttpResponseDto>>(bytes.as_ref()).unwrap()
+    else {
+        panic!("request to a host outside allowed_hosts must fail");
+    };
+    assert_eq!(
+        error,
+        HostError::Http {
+            message: "Host `evil.com` is not listed in the plugin's allowed_hosts".to_owned(),
+            error: HttpErrorDto::HostNotAllowed {
+                host: "evil.com".to_owned()
+            },
+        }
+    );
 }
 
 #[tokio::test]
