@@ -4,7 +4,10 @@ import { Button } from '@/shared/ui-kit';
 
 export interface AllowHostButtonProps {
   label: string;
-  /** Gives the plugin the host; rejects when the grant failed, which the grant reports itself. */
+  /**
+   * Gives the plugin the host; rejects when nothing was given: the grant failed (it reports that
+   * itself) or the user did not confirm.
+   */
   onAllow: () => Promise<unknown>;
 }
 

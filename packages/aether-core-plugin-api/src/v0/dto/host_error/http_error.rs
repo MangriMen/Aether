@@ -17,8 +17,9 @@ pub enum HttpErrorDto {
     /// The user can allow it in the plugin's settings.
     HostNotAllowed { host: String },
     /// The host resolves to an address a plugin may not reach (loopback, private, link-local,
-    /// …), or to none at all.
-    AddressBlocked { host: String },
+    /// …): the URL asked for, or a redirect to it. `port` is the port the request was for. The
+    /// user can let the plugin reach that host and port as a local address.
+    AddressBlocked { host: String, port: u16 },
     /// The request itself is refused before anything is sent: the URL, its scheme or host, a
     /// header, the JSON body or its size, the expected hash of a download. Sending it again fails
     /// again.

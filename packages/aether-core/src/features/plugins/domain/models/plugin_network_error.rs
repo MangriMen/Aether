@@ -26,8 +26,9 @@ pub enum PluginHttpError {
     #[error("Host `{host}` resolved to no addresses")]
     NoAddresses { host: String },
 
+    /// `port` is the one the request was for: what a local host grant for it would name.
     #[error("Host `{host}` resolves to non-public address {ip}, which is not allowed")]
-    BlockedAddress { host: String, ip: IpAddr },
+    BlockedAddress { host: String, port: u16, ip: IpAddr },
 
     #[error("Request body is not valid JSON: {reason}")]
     InvalidJsonBody { reason: String },

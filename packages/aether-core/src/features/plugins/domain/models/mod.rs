@@ -4,6 +4,7 @@ mod command_approval;
 mod constants;
 mod extracted_plugin;
 mod host_function_risk;
+mod local_host;
 mod manifest_error;
 mod plugin;
 mod plugin_call_error;
@@ -26,7 +27,7 @@ mod skipped_plugin_dir;
 
 pub use allowed_host::{AllowedHostEntryRejection, AllowedHostRejection, is_wide_allowed_host};
 pub(crate) use allowed_host::{
-    GrantableHost, effective_allowed_hosts, is_blocked_ip, is_host_allowed,
+    GrantableHost, PluginHosts, effective_allowed_hosts, is_blocked_ip, is_host_allowed,
     validate_allowed_host_entry,
 };
 pub use allowed_path::{
@@ -46,6 +47,7 @@ pub use extracted_plugin::{ArchiveMetadata, ExtractedPlugin, PluginContent};
 #[cfg(test)]
 pub(crate) use host_function_risk::classify_host_function;
 pub use host_function_risk::{HostFunctionRisk, host_function_risks};
+pub use local_host::{InvalidLocalHost, LocalHost};
 pub use manifest_error::ManifestError;
 pub use plugin::{Plugin, PluginState, PluginStateReason};
 pub use plugin_call_error::PluginCallError;

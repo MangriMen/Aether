@@ -497,6 +497,34 @@ impl Harness {
             Arc::clone(settings) as Arc<dyn PluginSettingsStorage>,
         )
     }
+
+    pub(super) fn grant_local_host(
+        &self,
+        settings: &Arc<MemoryPluginSettings>,
+    ) -> crate::features::plugins::GrantPluginLocalHostAccessUseCase {
+        crate::features::plugins::GrantPluginLocalHostAccessUseCase::new(
+            Arc::clone(&self.plugins),
+            Arc::clone(settings) as Arc<dyn PluginSettingsStorage>,
+        )
+    }
+}
+
+impl MemoryPluginSettings {
+    /// The local hosts as the settings write them.
+    pub(super) fn local_hosts(&self) -> Vec<String> {
+        self.0
+            .lock()
+            .unwrap()
+            .as_ref()
+            .map(|settings| {
+                settings
+                    .local_hosts
+                    .iter()
+                    .map(ToString::to_string)
+                    .collect()
+            })
+            .unwrap_or_default()
+    }
 }
 
 impl Harness {

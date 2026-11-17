@@ -259,14 +259,14 @@ The `error` of `http` is `{"type": <kind>, "data": …}` (`data` absent for `has
 | `error` kind | `data` | Expect it when |
 | --- | --- | --- |
 | `hostNotAllowed` | `host` | The host is not in the plugin's `allowedHosts`: the URL's, or a redirect's. The user can add it in the plugin's settings. Passed back in a failure envelope from an importer or updater call, or a content provider call during an install or an update, it makes the launcher offer the user to allow that host (see "Reporting a typed failure"). |
-| `addressBlocked` | `host` | The host resolves to an address a plugin may not reach (loopback, private, link-local, …), or to none. |
+| `addressBlocked` | `host`, `port` | The host resolves to an address a plugin may not reach (loopback, private, link-local, …), and the user has not let the plugin reach that host on that port (the port the request was for) as a local address. Passed back in a failure envelope the way `hostNotAllowed` is, it makes the launcher offer the user to allow that address (see "Local addresses the user allows"). A host that resolves to no address at all is `network`. |
 | `invalidRequest` | `reason` | The request is refused before anything is sent: a malformed URL, a scheme other than `http`/`https`, no host, a forbidden or invalid header, a body that is not JSON or is over 4 MiB, a malformed expected hash of a download. Sending it again fails again. |
 | `redirect` | `reason` | A redirect is not followed: `https` → `http`, no usable `Location`, more than 5, or any 3xx where none is followed by `http_post_json`. (A redirect to a scheme other than `http`/`https` arrives as `invalidRequest`.) |
 | `responseTooLarge` | `limit` | The answer is over the limit, in bytes: 16 MiB for `http_get` and `http_post_json` (or a third of the plugin's `load.memoryLimit` when that is less, see "Networking from a plugin"), 1 GiB for a download. |
 | `status` | `status` | A final answer that is not 2xx and not handed back as an answer: a download's (a final `304` is one too), a provider's API. `http_get` and `http_post_json` hand any non-3xx status back as an answer instead. |
 | `hashMismatch` | none | A downloaded file is not the one its hash names. |
 | `invalidResponse` | `reason` | An answer the launcher reads itself (a content provider's, say) is not the JSON, TOML or text it expects. |
-| `network` | `reason` | No usable answer came: the host could not be resolved or reached, the connection or TLS failed, the request timed out or broke off, a download ran out of time. It may succeed later. |
+| `network` | `reason` | No usable answer came: the host could not be resolved (or resolved to no address) or reached, the connection or TLS failed, the request timed out or broke off, a download ran out of time. It may succeed later. |
 | `unknown` | none | A kind this version of the API does not know: a newer launcher sent it. Read it as a failed request with no more detail. |
 
 `reason` is text for the log or the user, like `message`. A failure the launcher has on its own
@@ -319,10 +319,12 @@ What the host makes of `host` is described where the error is documented: for `r
 "`run_command` needs the user's consent" above. An `http` error of kind `hostNotAllowed` passed
 back from a call of an importer or an updater, or of a content provider while content is installed
 or an instance is updated, makes the launcher tell the user which host the plugin was refused and
-offer to allow it. It does nothing more where the launcher only logs the failure
+offer to allow it. An `addressBlocked` passed back the same way makes it tell the user which
+host and port resolved to a local address and offer to let the plugin reach it, behind a
+warning (see "Local addresses the user allows"). It does nothing more where the launcher only logs the failure
 (`handle_event`) or shows no toast (searching and browsing content), and a plugin that calls another one through the
-host gets the other one's refused host as `pluginCallFailed`, not `hostNotAllowed`: it is not a
-host of its own to ask for.
+host gets the other one's refused host or address as `pluginCallFailed`, not `hostNotAllowed` or
+`addressBlocked`: it is not a host of its own to ask for.
 
 ## Ids
 
@@ -394,23 +396,35 @@ The host performs the request itself and applies, in this order:
 
 1. **Scheme check** — only `http` and `https`.
 2. **Allowlist check in the host** — the URL's host must match the plugin's `allowedHosts`
-   (manifest entries plus whatever the user added in the plugin's settings). Matching uses
-   glob semantics.
+   (manifest entries plus whatever the user added in the plugin's settings), or be a local
+   address the user allowed on that port (see "Local addresses the user allows"). Matching
+   uses glob semantics.
 3. **Header check** — connection-control and virtual-host headers (`host`, `content-length`,
    `connection`, `transfer-encoding`, …) are rejected.
 4. **Address check** — the host name is resolved and **every** returned address must be public.
    Loopback, private, link-local (including the cloud metadata address `169.254.169.254`),
-   CGNAT, multicast, documentation and reserved ranges are refused, in both IPv4 and IPv6
-   (including the `::ffff:a.b.c.d` form). If a name resolves to a mix of public and non-public
-   addresses, the whole request is refused.
+   CGNAT (`100.64.0.0/10`), multicast, documentation and reserved ranges are refused, in both
+   IPv4 and IPv6 (including the `::ffff:a.b.c.d` form). If a name resolves to a mix of public
+   and non-public addresses, the whole request is refused. Two exceptions:
+   * `198.18.0.0/15` (reserved for benchmarking) passes, but for its first four addresses:
+     VPN and proxy clients in TUN mode with fake-ip DNS (Clash, sing-box, …) answer every
+     public name with an address from it and route the connection by the name, so refusing it
+     refused public hosts. `198.18.0.0/30` stays blocked: TUN clients keep their own interface
+     there (mihomo and Clash Verge take `198.18.0.1`), and that address reaches this computer;
+   * a host and port the user allowed as a local address must resolve to non-public addresses
+     instead (a public one is refused), but never to an unspecified (`0.0.0.0`, `::`),
+     broadcast or multicast one, nor to a cloud metadata service (`169.254.169.254`,
+     `169.254.0.23`, `100.100.100.200`, `192.0.0.192`, `fd00:ec2::254`).
 5. **Pinned connection** — the request is pinned to the addresses that were just checked, so a
    second DNS answer cannot swap in a private address between the check and the connect
    (DNS rebinding).
 6. **Checked redirects** — `301`, `302`, `303`, `307` and `308` are followed, **at most 5**
    times; a sixth redirect fails the call ("Too many redirects: more than 5"). Every hop goes
    through steps 1, 2, 4 and 5 again **before** anything is sent to the new host: the target must be
-   `http`/`https`, its host must be in `allowedHosts`, all its addresses must be public, and
-   the connection is pinned to them. On top of that:
+   `http`/`https`, its host must be in `allowedHosts`, all its addresses must be public (or
+   the hop's host and port allowed as a local address: a hop to a local address that is not
+   allowed is refused, whatever the first host was), and the connection is pinned to them. On
+   top of that:
    * `https` → `http` is refused ("Redirect from `…` to `…` would downgrade https to http");
    * a relative `Location` is resolved against the URL that answered; a missing or
      unparseable one fails the call;
@@ -422,7 +436,8 @@ The host performs the request itself and applies, in this order:
 
    A redirect the host does not follow fails the call as `http` with the `error` `redirect`; a
    hop to a host outside `allowedHosts` as `hostNotAllowed` with that host, one to a non-public
-   address as `addressBlocked` (see "When a host function fails" for every kind).
+   address as `addressBlocked` with that host and port (see "When a host function fails" for
+   every kind).
 
    Downloads from GitHub releases need this: `/releases/latest/download/<file>` answers `302`
    to `/releases/download/<tag>/<file>`, which answers `302` to a signed, expiring URL on
@@ -445,8 +460,38 @@ same source the launcher's own requests use — the host functions go through it
 then resolves host names and connects itself, so steps 4 and 5 cannot apply to a host *name*:
 it is passed to the proxy unresolved. Everything else stays: the scheme check, `allowedHosts`
 on every hop, the redirect limit and rules, the header drop, and the address check of a host
-given as an IP literal. The proxy's own address is not filtered — the user set it up, not the
-plugin. The launcher logs once that plugin requests go through the proxy.
+given as an IP literal (a local address the user allowed passes it). The proxy's own address is
+not filtered — the user set it up, not the plugin. The launcher logs once that plugin requests
+go through the proxy.
+
+**Local addresses the user allows.** A pack or a jar on a server in the user's own network, on
+a NAS or on this computer is refused by step 4. The user, and only the user, can let one plugin
+reach one such host on one port: when an importer, updater or content provider call fails with
+`addressBlocked` passed back (see "Reporting a typed failure"), the error toast offers "Allow
+this local address", and a confirmation warns that the address is in the user's own network and
+that the plugin will be able to send requests to it. A URL on `localhost` or a local address
+literal typed into an importer's field is asked for the same way before the import starts. A
+manifest cannot ask for one, and nothing a plugin sends can give one. A grant:
+
+* names exactly one host as the request names it — a local IP literal (`192.168.1.10`,
+  `[fd12::1]`), `localhost` itself or a DNS name — and the port the refused request was for;
+  never a pattern. A DNS name, a name under `localhost` (`app.localhost`) included, is
+  resolved when the user allows it, and refused unless every address it has is a local one;
+* lets that host's addresses on that port be non-public, and only non-public; every other
+  check stays, and the connection is still pinned to the addresses just checked. A grant for
+  an IP literal or `localhost` itself also admits the host past `allowedHosts`; one for a DNS
+  name does not: the name must be in `allowedHosts` as well (the plugin reports the refusal
+  the grant is offered for, so it cannot get a host it was never allowed by calling it local);
+* for a DNS name, is judged again on every request but is not tied to the address the name
+  had when it was granted: whoever controls the name's DNS can later point it at another
+  local address, this computer included, on that port. Only an IP literal stays one host, so
+  grant names only of hosts whose DNS you control (the confirmation says so for a name);
+* is checked on every hop: a redirect to a local address that is not allowed is refused, one
+  to an allowed one is followed;
+* is listed under "Local addresses" in the plugin's settings, where the user can take it back.
+  It is kept with the plugin's settings (`localHosts`, `host:port` each; one written there by
+  hand as a bare `host` admits every port of it, and one in any other form is dropped, not
+  granted).
 
 The response body is a `Vec<u8>` sent as a msgpack `bin` (so a plugin decodes it with a copy, not
 an instruction per byte — a multi-megabyte body would otherwise use up the plugin's fuel); the same

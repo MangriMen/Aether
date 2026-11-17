@@ -335,6 +335,19 @@ pub enum InstanceError {
         details: String,
     },
 
+    /// The plugin behind a capability failed because one of its network host functions refused
+    /// `host` on `port`: it resolves to a non-public address, which the user can let the plugin
+    /// reach as a local one. `details` is the plugin's own text.
+    #[error(
+        "Plugin \"{plugin_id}\" may not connect to {host}:{port}: it resolves to a local address"
+    )]
+    PluginAddressBlocked {
+        plugin_id: String,
+        host: String,
+        port: u16,
+        details: String,
+    },
+
     /// The plugin behind a capability (an importer, a content provider, an updater) failed
     /// because a command it asked `run_command` for was not run: the user denied it (now or
     /// earlier), or nobody answered. `details` is the plugin's own text.

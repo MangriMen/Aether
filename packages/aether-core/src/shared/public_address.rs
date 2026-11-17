@@ -5,7 +5,13 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 
 /// Reject everything that is not a public, routable address.
 ///
-/// Fails closed: anything not positively known to be public is blocked.
+/// Fails closed: anything not positively known to be public is blocked. One exception: most of
+/// `198.18.0.0/15` (benchmarking) passes. VPN and proxy clients in TUN mode with fake-ip DNS
+/// (Clash, sing-box, …) answer every public name with an address from it and route the
+/// connection by that name, so refusing it refused public hosts. Its first four addresses,
+/// `198.18.0.0/30`, stay blocked: TUN clients give their own adapter one of them (mihomo and
+/// Clash Verge take `198.18.0.1`), and a connection to an address of one's own interface
+/// reaches every service of this machine listening on all addresses.
 pub(crate) fn is_blocked_ip(ip: IpAddr) -> bool {
     match ip {
         IpAddr::V4(v4) => is_blocked_ipv4(v4),
@@ -14,7 +20,7 @@ pub(crate) fn is_blocked_ip(ip: IpAddr) -> bool {
 }
 
 fn is_blocked_ipv4(ip: Ipv4Addr) -> bool {
-    let [a, b, c, _] = ip.octets();
+    let [a, b, c, d] = ip.octets();
 
     ip.is_unspecified()
         || ip.is_loopback()
@@ -29,8 +35,9 @@ fn is_blocked_ipv4(ip: Ipv4Addr) -> bool {
         || (a == 100 && (64..128).contains(&b))
         // 192.0.0.0/24 — IETF protocol assignments
         || (a == 192 && b == 0 && c == 0)
-        // 198.18.0.0/15 — benchmarking
-        || (a == 198 && (b == 18 || b == 19))
+        // 198.18.0.0/30 — where TUN clients put their own interface; the rest of
+        // 198.18.0.0/15 (benchmarking, fake-ip) passes: see above.
+        || (a == 198 && b == 18 && c == 0 && d < 4)
         // 240.0.0.0/4 — reserved
         || a >= 240
 }
@@ -89,6 +96,47 @@ fn embedded_ipv4(ip: Ipv6Addr) -> Option<Ipv4Addr> {
         return Some(v4(s[1], s[2]));
     }
     None
+}
+
+/// The instance metadata services of the clouds, which hand out the machine's credentials:
+/// AWS, GCP, Azure and others at `169.254.169.254`, Alibaba at `100.100.100.200`, Tencent at
+/// `169.254.0.23`, Oracle's legacy endpoint at `192.0.0.192`.
+const METADATA_V4: [Ipv4Addr; 4] = [
+    Ipv4Addr::new(169, 254, 169, 254),
+    Ipv4Addr::new(100, 100, 100, 200),
+    Ipv4Addr::new(169, 254, 0, 23),
+    Ipv4Addr::new(192, 0, 0, 192),
+];
+
+/// AWS's metadata service over IPv6 (`fd00:ec2::254`).
+const METADATA_V6: Ipv6Addr = Ipv6Addr::new(0xfd00, 0x0ec2, 0, 0, 0, 0, 0, 0x0254);
+
+/// Whether `ip` is no single host the user could mean when they let a plugin reach a local
+/// address: unspecified and "this network" (which reach the local machine on some systems),
+/// broadcast and multicast; or a cloud metadata service. In whatever IPv6 form carries them.
+/// Even a granted host is refused such an address.
+pub(crate) fn is_never_grantable(ip: IpAddr) -> bool {
+    let is_never_v4 = |v4: Ipv4Addr| {
+        v4.octets()[0] == 0
+            || v4.is_broadcast()
+            || v4.is_multicast()
+            || v4.is_unspecified()
+            || METADATA_V4.contains(&v4)
+    };
+    match ip {
+        IpAddr::V4(v4) => is_never_v4(v4),
+        IpAddr::V6(v6) => match embedded_ipv4(v6) {
+            Some(v4) => is_never_v4(v4),
+            None => v6.is_unspecified() || v6.is_multicast() || v6 == METADATA_V6,
+        },
+    }
+}
+
+/// The address policy of a host the user granted a plugin as a local one: only a local address
+/// passes, never a public one (a granted name that now points at the internet is refused, as
+/// the user was told it is in their own network), nor one [`is_never_grantable`] refuses.
+pub(crate) fn is_refused_for_local_grant(ip: IpAddr) -> bool {
+    !is_blocked_ip(ip) || is_never_grantable(ip)
 }
 
 /// `localhost` and its subdomains always mean the local machine (RFC 6761).
@@ -164,6 +212,124 @@ mod tests {
         }
         for ip in allowed_ips {
             assert!(!blocked(ip), "{ip}");
+        }
+    }
+
+    /// TUN-mode VPN clients answer public names from `198.18.0.0/15` (fake-ip): it passes in
+    /// every form, while the ranges around it and CGNAT stay blocked.
+    #[test]
+    fn should_let_the_fake_ip_range_through_in_every_form() {
+        for ip in [
+            "198.18.0.4",
+            "198.18.0.46",
+            "198.19.255.254",
+            "198.19.255.255",
+            "198.17.255.255",
+            "198.20.0.1",
+            "::ffff:198.18.0.7",
+            "64:ff9b::c612:7",
+            "2002:c612:7::1",
+        ] {
+            assert!(!blocked(ip), "{ip}");
+        }
+        for ip in [
+            "100.64.0.1",
+            "::ffff:100.64.0.1",
+            "64:ff9b::6440:1",
+            "2002:6440:1::1",
+            "192.0.0.1",
+        ] {
+            assert!(blocked(ip), "{ip}");
+        }
+    }
+
+    /// TUN clients give their own adapter an address of `198.18.0.0/30` (mihomo takes
+    /// `198.18.0.1`): a connection there reaches this machine.
+    #[test]
+    fn should_block_the_tun_interface_addresses_in_every_form() {
+        for ip in [
+            "198.18.0.0",
+            "198.18.0.1",
+            "198.18.0.2",
+            "198.18.0.3",
+            "::ffff:198.18.0.1",
+            "64:ff9b::c612:1",
+            "2002:c612:2::1",
+        ] {
+            assert!(blocked(ip), "{ip}");
+        }
+    }
+
+    #[test]
+    fn should_never_grant_a_cloud_metadata_address_in_any_form() {
+        for ip in [
+            "169.254.169.254",
+            "100.100.100.200",
+            "fd00:ec2::254",
+            "::ffff:169.254.169.254",
+            "64:ff9b::a9fe:a9fe",
+            "2002:a9fe:a9fe::1",
+            "::ffff:100.100.100.200",
+            "169.254.0.23",
+            "::ffff:169.254.0.23",
+            "64:ff9b::a9fe:17",
+            "2002:a9fe:17::1",
+            "192.0.0.192",
+            "::ffff:192.0.0.192",
+            "64:ff9b::c000:c0",
+            "2002:c000:c0::1",
+        ] {
+            assert!(is_never_grantable(ip.parse().unwrap()), "{ip}");
+        }
+        for ip in [
+            "169.254.169.253",
+            "100.100.100.201",
+            "fd00:ec2::253",
+            "169.254.0.24",
+            "192.0.0.193",
+        ] {
+            assert!(!is_never_grantable(ip.parse().unwrap()), "{ip}");
+        }
+    }
+
+    #[test]
+    fn should_let_a_local_grant_reach_only_local_addresses() {
+        for ip in ["192.168.1.50", "127.0.0.1", "::1", "fd12::1", "10.0.0.7"] {
+            assert!(!is_refused_for_local_grant(ip.parse().unwrap()), "{ip}");
+        }
+        for ip in [
+            "93.184.215.14",
+            "2606:4700:4700::1111",
+            "198.18.0.46",
+            "169.254.169.254",
+        ] {
+            assert!(is_refused_for_local_grant(ip.parse().unwrap()), "{ip}");
+        }
+    }
+
+    #[test]
+    fn should_never_grant_an_address_when_it_is_no_single_host() {
+        for ip in [
+            "0.0.0.0",
+            "0.1.2.3",
+            "255.255.255.255",
+            "224.0.0.1",
+            "::",
+            "ff02::1",
+            "::ffff:0.0.0.0",
+            "::ffff:224.0.0.1",
+        ] {
+            assert!(is_never_grantable(ip.parse().unwrap()), "{ip}");
+        }
+        for ip in [
+            "127.0.0.1",
+            "192.168.1.10",
+            "10.0.0.1",
+            "::1",
+            "fd12::1",
+            "fe80::1",
+        ] {
+            assert!(!is_never_grantable(ip.parse().unwrap()), "{ip}");
         }
     }
 }

@@ -1,8 +1,12 @@
-use super::{AllowedPath, CommandApproval, IgnoredAllowedPath};
+use super::{AllowedPath, CommandApproval, IgnoredAllowedPath, LocalHost};
 
 #[derive(Debug, Default, Clone)]
 pub struct PluginSettings {
     pub allowed_hosts: Vec<String>,
+    /// Local hosts the user let the plugin reach at a non-public address (see [`LocalHost`]).
+    /// Never edited from the settings form: one is added by confirming the offer an
+    /// `addressBlocked` failure makes, and only taken back.
+    pub local_hosts: Vec<LocalHost>,
     /// Folders the user gave the plugin, on top of the ones the core mounts for every plugin.
     pub allowed_paths: Vec<AllowedPath>,
     /// Saved folders that were not read, each with why. Never mounted or granted, but written

@@ -6,7 +6,8 @@
 //!
 //! * check the host against the plugin's `allowed_hosts` in the host;
 //! * refuse any non-public resolved address (loopback, private, link-local such as
-//!   `169.254.169.254`) — SSRF;
+//!   `169.254.169.254`) — SSRF — unless the user granted the plugin that host and port as a
+//!   local host ([`PluginHosts::grants_local`]), which a manifest never can;
 //! * pin the connection to the addresses that were checked, so a second DNS answer cannot swap
 //!   in a private one (DNS rebinding);
 //! * follow at most `max_redirects` redirects, GET only, each hop vetted like the first request
@@ -43,7 +44,9 @@ pub(super) use policy::{find_policy_refusal, policy_error};
 // The allowlist match and the address policy are the domain's: giving a host to a plugin
 // (`GrantPluginHostAccessUseCase`) is decided by the same rules its requests are held to.
 use crate::features::instance::PluginId;
-pub(crate) use crate::features::plugins::{is_blocked_ip, is_host_allowed};
+#[cfg(test)]
+pub(crate) use crate::features::plugins::is_host_allowed;
+pub(crate) use crate::features::plugins::{PluginHosts, is_blocked_ip};
 // The domain's, so that it reaches the plugin typed through `ErrorKind`.
 use crate::features::plugins::PluginHttpError;
 use crate::shared::limits::{CONNECT_TIMEOUT, PluginSandboxLimits, READ_TIMEOUT, REQUEST_TIMEOUT};
@@ -206,18 +209,25 @@ async fn read_limited_body(
 }
 
 /// Shared first step of every request: the URL must be http(s) and its host must be in
-/// the plugin's `allowed_hosts`. Nothing touches the network before this passes.
+/// the plugin's `allowed_hosts`, or be a local host the user granted it on that port. Nothing
+/// touches the network before this passes.
 pub(super) fn check_target(
     raw_url: &str,
-    allowed_hosts: &[String],
+    hosts: &PluginHosts,
 ) -> Result<(Url, String), PluginHttpError> {
     let (url, host) = parse_url(raw_url)?;
 
-    if !is_host_allowed(&host, allowed_hosts) {
+    if !hosts.admits(&host, port_of(&url)) {
         return Err(PluginHttpError::HostNotAllowed { host });
     }
 
     Ok((url, host))
+}
+
+/// The port a request to `url` connects to. `url` is `http` or `https` ([`parse_url`]).
+pub(super) fn port_of(url: &Url) -> u16 {
+    url.port_or_known_default()
+        .unwrap_or(if url.scheme() == "https" { 443 } else { 80 })
 }
 
 /// Where the proxy settings of a plugin's requests come from.
@@ -265,7 +275,7 @@ impl ProxySource {
 /// wraps the hop loop, so a retry starts over from the first URL and vets it all again. A hop
 /// sent through a proxy is vetted the relaxed way described in the module docs.
 pub(super) fn vetted_client(
-    allowed_hosts: &[String],
+    hosts: &PluginHosts,
     lookup: HostLookup,
     is_blocked: AddressFilter,
     proxy: &ProxySource,
@@ -290,7 +300,7 @@ pub(super) fn vetted_client(
     let client = proxy.configure(builder).build().map_err(build_failed)?;
 
     let hops = VettedHops {
-        allowed_hosts: allowed_hosts.to_vec(),
+        hosts: hosts.clone(),
         lookup,
         is_blocked,
         proxies: proxy.matcher(),
@@ -311,12 +321,12 @@ pub(super) fn vetted_client(
 /// that tests can point it at a loopback server without relaxing the production policy.
 async fn perform_get(
     request: &HttpRequestDto,
-    allowed_hosts: &[String],
+    hosts: &PluginHosts,
     is_blocked: AddressFilter,
     proxy: &ProxySource,
     limits: PluginSandboxLimits,
 ) -> Result<HttpResponseDto, PluginHttpError> {
-    let (url, _) = check_target(&request.url, allowed_hosts)?;
+    let (url, _) = check_target(&request.url, hosts)?;
     let headers = build_headers(&request.headers)?;
 
     send_checked(
@@ -324,7 +334,7 @@ async fn perform_get(
         url,
         headers,
         None,
-        allowed_hosts,
+        hosts,
         is_blocked,
         proxy,
         limits,
@@ -360,12 +370,12 @@ fn validate_json_body(body: &str, max_bytes: usize) -> Result<(), PluginHttpErro
 /// The whole `http_post_json` pipeline; same test seams as [`perform_get`].
 async fn perform_post_json(
     request: &HttpPostJsonRequestDto,
-    allowed_hosts: &[String],
+    hosts: &PluginHosts,
     is_blocked: AddressFilter,
     proxy: &ProxySource,
     limits: PluginSandboxLimits,
 ) -> Result<HttpResponseDto, PluginHttpError> {
-    let (url, _) = check_target(&request.url, allowed_hosts)?;
+    let (url, _) = check_target(&request.url, hosts)?;
     let mut headers = filter_post_headers(&request.headers)?;
     validate_json_body(&request.body, limits.max_request_body_bytes)?;
 
@@ -379,7 +389,7 @@ async fn perform_post_json(
         url,
         headers,
         Some(request.body.clone()),
-        allowed_hosts,
+        hosts,
         is_blocked,
         proxy,
         limits,
@@ -398,13 +408,13 @@ async fn send_checked(
     url: Url,
     headers: reqwest::header::HeaderMap,
     body: Option<String>,
-    allowed_hosts: &[String],
+    hosts: &PluginHosts,
     is_blocked: AddressFilter,
     proxy: &ProxySource,
     limits: PluginSandboxLimits,
 ) -> Result<HttpResponseDto, PluginHttpError> {
     let client = vetted_client(
-        allowed_hosts,
+        hosts,
         system_lookup,
         is_blocked,
         proxy,
@@ -454,46 +464,34 @@ async fn send_checked(
 pub(crate) async fn handle_http_get(
     plugin_id: &PluginId,
     request: HttpRequestDto,
-    allowed_hosts: &[String],
+    hosts: &PluginHosts,
     limits: PluginSandboxLimits,
 ) -> crate::Result<HttpResponseDto> {
     log::debug!(target: "plugin", "[{plugin_id}]: http_get {}", request.url);
 
-    perform_get(
-        &request,
-        allowed_hosts,
-        is_blocked_ip,
-        &ProxySource::System,
-        limits,
-    )
-    .await
-    .map_err(|err| {
-        log::warn!(target: "plugin", "[{plugin_id}]: http_get failed: {err}");
-        crate::ErrorKind::from(err).as_error()
-    })
+    perform_get(&request, hosts, is_blocked_ip, &ProxySource::System, limits)
+        .await
+        .map_err(|err| {
+            log::warn!(target: "plugin", "[{plugin_id}]: http_get failed: {err}");
+            crate::ErrorKind::from(err).as_error()
+        })
 }
 
 /// Handle `http_post_json` — perform an allowlisted, redirect-free JSON POST on behalf of a plugin.
 pub(crate) async fn handle_http_post_json(
     plugin_id: &PluginId,
     request: HttpPostJsonRequestDto,
-    allowed_hosts: &[String],
+    hosts: &PluginHosts,
     limits: PluginSandboxLimits,
 ) -> crate::Result<HttpResponseDto> {
     log::debug!(target: "plugin", "[{plugin_id}]: http_post_json {}", request.url);
 
-    perform_post_json(
-        &request,
-        allowed_hosts,
-        is_blocked_ip,
-        &ProxySource::System,
-        limits,
-    )
-    .await
-    .map_err(|err| {
-        log::warn!(target: "plugin", "[{plugin_id}]: http_post_json failed: {err}");
-        crate::ErrorKind::from(err).as_error()
-    })
+    perform_post_json(&request, hosts, is_blocked_ip, &ProxySource::System, limits)
+        .await
+        .map_err(|err| {
+            log::warn!(target: "plugin", "[{plugin_id}]: http_post_json failed: {err}");
+            crate::ErrorKind::from(err).as_error()
+        })
 }
 
 // ── Extism host function wrappers ──
@@ -503,8 +501,8 @@ pub http_post_json(user_data: PluginContext; request: Wire<HttpPostJsonRequestDt
     let PluginContext { id, hosts, limits, .. } = PluginContext::snapshot(&user_data)?;
 
     Ok(to_extism_res::<HttpResponseDto>(block_on(async {
-        let allowed_hosts = hosts.allowed_hosts(&id).await?;
-        handle_http_post_json(&id, request.0, &allowed_hosts, limits).await
+        let hosts = hosts.current(&id).await?;
+        handle_http_post_json(&id, request.0, &hosts, limits).await
     })))
 });
 
@@ -513,8 +511,8 @@ pub http_get(user_data: PluginContext; request: Wire<HttpRequestDto>) -> HostRep
     let PluginContext { id, hosts, limits, .. } = PluginContext::snapshot(&user_data)?;
 
     Ok(to_extism_res::<HttpResponseDto>(block_on(async {
-        let allowed_hosts = hosts.allowed_hosts(&id).await?;
-        handle_http_get(&id, request.0, &allowed_hosts, limits).await
+        let hosts = hosts.current(&id).await?;
+        handle_http_get(&id, request.0, &hosts, limits).await
     })))
 });
 

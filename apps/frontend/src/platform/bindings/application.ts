@@ -10,7 +10,7 @@ export const commands = {
 /* Types */
 export type AllowedHostEntryRejectionDto = "empty" | "not_a_host_name" | "invalid_pattern";
 
-export type AllowedHostRejectionDto = "invalid_url" | "unsupported_scheme" | "missing_host" | "not_public" | "wildcard";
+export type AllowedHostRejectionDto = "invalid_url" | "unsupported_scheme" | "missing_host" | "not_public" | "not_local" | "unresolved" | "wildcard";
 
 export type AllowedPathRejectionDto = "host_not_absolute" | "host_not_a_folder" | "host_is_root" | "plugin_not_absolute" | "plugin_not_normalized" | "plugin_is_root" | "plugin_reserved" | "host_overlaps_core";
 
@@ -469,6 +469,15 @@ export type PluginErrorDto = { code: "NOT_FOUND"; payload: {
 	plugin_id: string,
 	url: string,
 	reason: AllowedHostRejectionDto,
+} } | 
+/**
+ *  The host of `url` cannot be given to the plugin as a local address: not one host, a
+ *  public address literal, or a name that does not resolve only to local addresses.
+ */
+{ code: "INVALID_LOCAL_HOST"; payload: {
+	plugin_id: string,
+	url: string,
+	reason: AllowedHostRejectionDto,
 } } | { code: "INVALID_ALLOWED_HOST_ENTRY"; payload: {
 	plugin_id: string,
 	entry: string,
@@ -494,6 +503,19 @@ export type PluginErrorDto = { code: "NOT_FOUND"; payload: {
 { code: "HOST_NOT_ALLOWED"; payload: {
 	plugin_id: string,
 	host: string,
+	cause: CauseDto,
+} } | 
+/**
+ *  A call of the plugin failed because one of its network host functions refused `host` on
+ *  `port`: it resolves to a non-public address the user has not let the plugin reach. The
+ *  user can, with `grant_local_host_access`. As `HostNotAllowed`, a failed call of an
+ *  importer, a content provider or an updater (`InstanceError::PluginAddressBlocked`) is
+ *  reported as this too.
+ */
+{ code: "ADDRESS_BLOCKED"; payload: {
+	plugin_id: string,
+	host: string,
+	port: number,
 	cause: CauseDto,
 } } | 
 /**  The question was answered or ended before this answer came. */

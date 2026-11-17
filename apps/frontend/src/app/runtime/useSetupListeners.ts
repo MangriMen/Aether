@@ -9,6 +9,7 @@ import {
 import { useInstanceEventsListener } from '@/features/instance';
 import { useJavaInstallationListener } from '@/features/java';
 import {
+  useAllowBlockedAddress,
   useAllowRefusedHost,
   usePluginEventListener,
 } from '@/features/plugins';
@@ -26,6 +27,8 @@ export const useSetupListeners = () => {
   usePluginEventListener();
   // Error toasts of a refused host offer to allow it.
   useAllowRefusedHost();
+  // ... and of a blocked local address offer to allow it, behind a warning.
+  useAllowBlockedAddress();
   useProcessCrashListener();
   usePostExitHookFailedListener();
   useJavaInstallationListener();

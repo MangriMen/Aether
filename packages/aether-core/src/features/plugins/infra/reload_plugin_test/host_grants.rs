@@ -179,3 +179,166 @@ async fn should_not_give_a_host_when_the_plugin_could_not_reach_it_anyway() {
         "{unknown:?}"
     );
 }
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn should_give_a_local_host_and_its_port_without_a_restart_when_granted() {
+    let harness = Harness::enabled().await;
+    let settings = Arc::new(MemoryPluginSettings::default());
+    let handle = harness.handle();
+    let use_case = harness.grant_local_host(&settings);
+    let grant = |url: &str, dry_run| use_case.execute(plugin_id(), url.to_owned(), dry_run);
+
+    let asked = grant("http://192.168.1.10:8080/", true).await.unwrap();
+    assert_eq!(
+        asked,
+        HostAccess::Needed {
+            host: "192.168.1.10:8080".into()
+        }
+    );
+    assert!(settings.local_hosts().is_empty(), "a dry run adds nothing");
+
+    let granted = grant("http://192.168.1.10:8080/", false).await.unwrap();
+    assert_eq!(
+        granted,
+        HostAccess::Granted {
+            host: "192.168.1.10:8080".into()
+        }
+    );
+    // The port the URL names, else its scheme's: never every port of the host.
+    grant("https://Localhost/", false).await.unwrap();
+    assert_eq!(
+        settings.local_hosts(),
+        ["192.168.1.10:8080", "localhost:443"]
+    );
+    assert!(
+        settings.hosts().is_empty(),
+        "a local host is not an allowed_hosts entry"
+    );
+    assert!(!handle.is_retired());
+
+    let again = grant("http://192.168.1.10:8080/other", false)
+        .await
+        .unwrap();
+    assert_eq!(
+        again,
+        HostAccess::AlreadyAllowed {
+            host: "192.168.1.10:8080".into()
+        }
+    );
+    let other_port = grant("http://192.168.1.10:9090/", true).await.unwrap();
+    assert!(
+        matches!(other_port, HostAccess::Needed { .. }),
+        "{other_port:?}"
+    );
+    assert_eq!(settings.local_hosts().len(), 2);
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn should_not_give_a_local_host_when_it_is_a_pattern_or_no_local_address() {
+    let harness = Harness::enabled().await;
+    let settings = Arc::new(MemoryPluginSettings::default());
+
+    for (url, expected) in [
+        (
+            "ftp://192.168.1.10/",
+            AllowedHostRejection::UnsupportedScheme,
+        ),
+        ("http://*.lan/", AllowedHostRejection::Wildcard),
+        ("http://8.8.8.8/", AllowedHostRejection::NotLocal),
+        ("http://0.0.0.0:8080/", AllowedHostRejection::NotLocal),
+        ("http://224.0.0.1/", AllowedHostRejection::NotLocal),
+    ] {
+        let result = harness
+            .grant_local_host(&settings)
+            .execute(plugin_id(), url.into(), false)
+            .await;
+
+        assert!(
+            matches!(&result, Err(PluginError::InvalidLocalHost { reason, .. }) if *reason == expected),
+            "{url}: {result:?}"
+        );
+    }
+    assert!(settings.local_hosts().is_empty());
+
+    let unknown = harness
+        .grant_local_host(&settings)
+        .execute(
+            PluginId::from_static("missing"),
+            "http://192.168.1.10/".into(),
+            false,
+        )
+        .await;
+    assert!(
+        matches!(unknown, Err(PluginError::NotFound { .. })),
+        "{unknown:?}"
+    );
+}
+
+/// `nas.lan` is in the user's network, `cdn.example` on the internet, `split.example` both,
+/// `meta.example` the cloud metadata service; `gone.example` does not resolve. A name under
+/// `localhost` is resolved like any other: `app.localhost` is sent to a public address.
+fn fake_dns(
+    host: String,
+    _port: u16,
+) -> futures::future::BoxFuture<'static, std::io::Result<Vec<std::net::IpAddr>>> {
+    Box::pin(async move {
+        let answer = |ips: &[&str]| Ok(ips.iter().map(|ip| ip.parse().unwrap()).collect());
+        match host.as_str() {
+            "nas.lan" => answer(&["192.168.1.10", "fd12::10"]),
+            "cdn.example" => answer(&["93.184.215.14"]),
+            "split.example" => answer(&["192.168.1.10", "93.184.215.14"]),
+            "meta.example" => answer(&["169.254.169.254"]),
+            "empty.example" => answer(&[]),
+            "app.localhost" => answer(&["1.1.1.1"]),
+            "dev.localhost" => answer(&["127.0.0.1"]),
+            _ => Err(std::io::Error::other("no such host")),
+        }
+    })
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn should_give_a_name_as_a_local_host_only_when_it_resolves_to_local_addresses_only() {
+    let harness = Harness::enabled().await;
+    let settings = Arc::new(MemoryPluginSettings::default());
+    let use_case = harness.grant_local_host(&settings).with_lookup(fake_dns);
+
+    for (url, expected) in [
+        ("https://cdn.example/", AllowedHostRejection::NotLocal),
+        ("https://split.example/", AllowedHostRejection::NotLocal),
+        ("https://meta.example/", AllowedHostRejection::NotLocal),
+        ("https://gone.example/", AllowedHostRejection::Unresolved),
+        ("https://empty.example/", AllowedHostRejection::Unresolved),
+        ("http://app.localhost/", AllowedHostRejection::NotLocal),
+    ] {
+        for dry_run in [true, false] {
+            let result = use_case.execute(plugin_id(), url.into(), dry_run).await;
+
+            assert!(
+                matches!(&result, Err(PluginError::InvalidLocalHost { reason, .. }) if *reason == expected),
+                "{url}: {result:?}"
+            );
+        }
+    }
+    assert!(settings.local_hosts().is_empty());
+
+    let granted = use_case
+        .execute(plugin_id(), "http://nas.lan:8080/".into(), false)
+        .await
+        .unwrap();
+    assert_eq!(
+        granted,
+        HostAccess::Granted {
+            host: "nas.lan:8080".into()
+        }
+    );
+    assert_eq!(settings.local_hosts(), ["nas.lan:8080"]);
+
+    use_case
+        .execute(plugin_id(), "http://dev.localhost:3000/".into(), false)
+        .await
+        .unwrap();
+    assert_eq!(
+        settings.local_hosts(),
+        ["nas.lan:8080", "dev.localhost:3000"]
+    );
+}

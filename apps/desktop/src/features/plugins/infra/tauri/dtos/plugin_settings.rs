@@ -14,6 +14,12 @@ pub struct PluginSettingsDto {
     #[serde(default)]
     pub allowed_hosts: Vec<String>,
 
+    /// Local hosts (`host` or `host:port`) the user let the plugin reach at a non-public
+    /// address, to take back from the settings screen. Granted only by
+    /// `grant_local_host_access`, never by an edit.
+    #[serde(default)]
+    pub local_hosts: Vec<String>,
+
     #[serde(default)]
     pub allowed_paths: Vec<AllowedPathDto>,
 
@@ -41,6 +47,9 @@ pub struct EditPluginSettingsDto {
     /// The approvals to take back. Never adds one.
     #[specta(optional)]
     pub revoke_command_approvals: Option<Vec<CommandApprovalKeyDto>>,
+    /// The local hosts to take back, as `localHosts` lists them. Never adds one.
+    #[specta(optional)]
+    pub revoke_local_hosts: Option<Vec<String>>,
 }
 
 /// A program the user let a plugin run for good.
@@ -121,6 +130,8 @@ pub enum AllowedHostRejectionDto {
     UnsupportedScheme,
     MissingHost,
     NotPublic,
+    NotLocal,
+    Unresolved,
     Wildcard,
 }
 
@@ -141,6 +152,7 @@ impl From<PluginSettings> for PluginSettingsDto {
     fn from(value: PluginSettings) -> Self {
         Self {
             allowed_hosts: value.allowed_hosts,
+            local_hosts: value.local_hosts.iter().map(ToString::to_string).collect(),
             allowed_paths: value.allowed_paths.into_iter().map(Into::into).collect(),
             ignored_paths: value.ignored_paths.into_iter().map(Into::into).collect(),
             command_approvals: value
@@ -178,6 +190,7 @@ impl From<EditPluginSettingsDto> for EditPluginSettings {
                     jvm_options: key.jvm_options,
                 })
                 .collect(),
+            revoke_local_hosts: value.revoke_local_hosts.unwrap_or_default(),
         }
     }
 }
@@ -252,6 +265,8 @@ impl From<AllowedHostRejection> for AllowedHostRejectionDto {
             AllowedHostRejection::UnsupportedScheme => Self::UnsupportedScheme,
             AllowedHostRejection::MissingHost => Self::MissingHost,
             AllowedHostRejection::NotPublic => Self::NotPublic,
+            AllowedHostRejection::NotLocal => Self::NotLocal,
+            AllowedHostRejection::Unresolved => Self::Unresolved,
             AllowedHostRejection::Wildcard => Self::Wildcard,
         }
     }

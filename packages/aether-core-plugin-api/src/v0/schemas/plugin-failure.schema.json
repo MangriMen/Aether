@@ -384,7 +384,7 @@
           ]
         },
         {
-          "description": "The host resolves to an address a plugin may not reach (loopback, private, link-local,\n…), or to none at all.",
+          "description": "The host resolves to an address a plugin may not reach (loopback, private, link-local,\n…): the URL asked for, or a redirect to it. `port` is the port the request was for. The\nuser can let the plugin reach that host and port as a local address.",
           "type": "object",
           "properties": {
             "data": {
@@ -392,10 +392,17 @@
               "properties": {
                 "host": {
                   "type": "string"
+                },
+                "port": {
+                  "type": "integer",
+                  "format": "uint16",
+                  "maximum": 65535,
+                  "minimum": 0
                 }
               },
               "required": [
-                "host"
+                "host",
+                "port"
               ]
             },
             "type": {

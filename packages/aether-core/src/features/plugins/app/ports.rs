@@ -194,6 +194,16 @@ pub trait GrantPluginHostAccessUseCasePort: Send + Sync {
 }
 
 #[async_trait]
+pub trait GrantPluginLocalHostAccessUseCasePort: Send + Sync {
+    async fn execute(
+        &self,
+        plugin_id: PluginId,
+        url: String,
+        dry_run: bool,
+    ) -> Result<HostAccess, PluginError>;
+}
+
+#[async_trait]
 pub trait ForceEnablePluginUseCasePort: Send + Sync {
     async fn execute(&self, plugin_id: PluginId) -> Result<(), PluginError>;
 }

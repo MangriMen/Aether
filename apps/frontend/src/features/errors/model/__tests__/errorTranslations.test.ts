@@ -728,6 +728,55 @@ describe('plugin host refused, reported by the plugin', () => {
   });
 });
 
+describe('plugin local address refused, reported by the plugin', () => {
+  const blocked = {
+    type: 'plugin',
+    payload: {
+      code: 'ADDRESS_BLOCKED',
+      payload: {
+        plugin_id: 'packwiz',
+        host: 'nas.lan',
+        port: 8080,
+        cause: { type: 'unknown', details: 'nas refused' },
+      },
+    },
+  } as LauncherError;
+
+  it('should_name_the_plugin_and_the_local_address_it_may_not_reach', () => {
+    expect(getTranslatedError(blocked, tEn)).toBe(
+      'Plugin packwiz may not connect to nas.lan:8080: it is an address in your own network or on this computer',
+    );
+    expect(getTranslatedError(blocked, tRu)).toBe(
+      'Плагину packwiz не разрешено подключаться к nas.lan:8080: это адрес в вашей собственной сети или на этом компьютере',
+    );
+  });
+
+  it('should_keep_the_text_of_the_plugin_in_the_details', () => {
+    expect(getErrorDetails(blocked)).toBe('nas refused');
+  });
+
+  it('should_say_why_a_host_cannot_be_a_local_address', () => {
+    const refused = {
+      type: 'plugin',
+      payload: {
+        code: 'INVALID_LOCAL_HOST',
+        payload: {
+          plugin_id: 'packwiz',
+          url: 'https://cdn.example/',
+          reason: 'not_local',
+        },
+      },
+    } as LauncherError;
+
+    expect(getTranslatedError(refused, tEn)).toBe(
+      'The host of https://cdn.example/ cannot be given to the plugin as a local address: it must be one host in your own network or on this computer, and a name must resolve to such addresses only',
+    );
+    expect(getTranslatedError(refused, tRu)).toContain(
+      'нельзя выдать плагину как локальный адрес',
+    );
+  });
+});
+
 describe('plugin provider failure', () => {
   it('should_translate_the_reason_and_the_category_of_its_cause', () => {
     const error = {

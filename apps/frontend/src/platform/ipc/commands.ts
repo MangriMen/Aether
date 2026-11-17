@@ -55,6 +55,9 @@ export const pluginsCommands = {
   editSettings: withIdempotency(pluginsRawCommands.editSettings),
   grantFolderAccess: withIdempotency(pluginsRawCommands.grantFolderAccess),
   grantHostAccess: withIdempotency(pluginsRawCommands.grantHostAccess),
+  grantLocalHostAccess: withIdempotency(
+    pluginsRawCommands.grantLocalHostAccess,
+  ),
   isWideAllowedHost: pluginsRawCommands.isWideAllowedHost,
   openPluginsFolder: pluginsRawCommands.openPluginsFolder,
   getApiVersion: pluginsRawCommands.getApiVersion,

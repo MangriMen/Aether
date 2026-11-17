@@ -7,7 +7,7 @@ use crate::features::{
     },
     plugins::{
         AllowedPath, AllowedPathInput, CommandApproval, CommandIdentity, IgnoredAllowedPath,
-        ManifestError, PluginCapabilities, PluginContentProviderCapability,
+        LocalHost, ManifestError, PluginCapabilities, PluginContentProviderCapability,
         PluginImporterCapability, PluginSettings, PluginUpdaterCapability, ProviderHandlers,
     },
 };
@@ -87,6 +87,9 @@ pub struct ProviderHandlersV1 {
 #[serde(rename_all = "camelCase")]
 pub struct PluginSettingsV1 {
     pub allowed_hosts: Vec<String>,
+    /// `host` or `host:port`, as [`LocalHost`] writes it.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub local_hosts: Vec<String>,
     pub allowed_paths: Vec<AllowedPathV1>,
 
     #[serde(default)]
@@ -312,8 +315,25 @@ impl From<PluginSettingsV1> for PluginSettings {
             }
         }
 
+        // A local host this launcher did not write is not granted: it might admit more than
+        // the user confirmed. Dropped, so the next save does not keep it either.
+        let local_hosts = v1
+            .local_hosts
+            .iter()
+            .filter_map(|entry| match LocalHost::parse(entry) {
+                Ok(local) => Some(local),
+                Err(reason) => {
+                    tracing::warn!(
+                        "Ignoring local host '{entry}' in the plugin settings: {reason}"
+                    );
+                    None
+                }
+            })
+            .collect();
+
         Self {
             allowed_hosts: v1.allowed_hosts,
+            local_hosts,
             allowed_paths,
             ignored_paths,
             force_enabled_at_api_version: v1.force_enabled_at_api_version,
@@ -386,6 +406,7 @@ impl From<PluginSettings> for PluginSettingsV1 {
     fn from(v: PluginSettings) -> Self {
         Self {
             allowed_hosts: v.allowed_hosts,
+            local_hosts: v.local_hosts.iter().map(ToString::to_string).collect(),
             // Ignored entries are written back as they were read: a hand-edited folder is not
             // lost by an unrelated save.
             allowed_paths: v

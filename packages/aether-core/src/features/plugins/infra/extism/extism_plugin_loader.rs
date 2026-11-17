@@ -787,10 +787,7 @@ mod tests {
             ..PluginSettings::default()
         };
 
-        let hosts = crate::features::plugins::infra::plugin_utils::effective_allowed_hosts(
-            &manifest,
-            Some(&settings),
-        );
+        let hosts = crate::features::plugins::effective_allowed_hosts(&manifest, Some(&settings));
 
         assert_eq!(hosts, vec!["github.com", "*.example.com"]);
     }

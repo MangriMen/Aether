@@ -42,6 +42,15 @@ pub enum PluginCallError {
     #[error("the host is not allowed: {host}")]
     HostNotAllowed { host: String, details: String },
 
+    /// The plugin reported that a network host function refused `host` on `port`: it resolves
+    /// to a non-public address the user has not granted it. `details` is the plugin's own text.
+    #[error("the address of the host is not allowed: {host}:{port}")]
+    AddressBlocked {
+        host: String,
+        port: u16,
+        details: String,
+    },
+
     /// The call input did not serialize or the plugin's output did not deserialize.
     #[error("the plugin exchanged malformed data: {0}")]
     Codec(String),

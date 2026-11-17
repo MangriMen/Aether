@@ -3,54 +3,19 @@ import { useQueryClient } from '@tanstack/solid-query';
 import type { PluginId } from '@/features/plugins';
 
 import {
+  checkPluginLocalHostAccess,
   pluginsCache,
   useGrantPluginFolderAccess,
   useGrantPluginHostAccess,
+  useGrantPluginLocalHostAccess,
 } from '@/features/plugins';
-import { closeDialog, showDialog } from '@/shared/dialogs';
+import { askConfirmation } from '@/shared/dialogs';
 import { useTranslation } from '@/shared/i18n';
-import { CombinedDialog } from '@/shared/ui-kit';
 
-import { pluginAccessTargetOf } from '../model/accessTarget';
-
-// Every dialog gets its own id, so several can be open at once without replacing each other.
-let dialogCounter = 0;
-
-/** Resolves with the user's answer; closing the dialog any other way is a "no". */
-const askUser = (texts: {
-  header?: string;
-  description?: string;
-  allow?: string;
-  deny?: string;
-}) =>
-  new Promise<boolean>((resolve) => {
-    const dialogId = `confirmPluginAccess-${++dialogCounter}`;
-    let answered = false;
-
-    const answer = (allowed: boolean) => {
-      if (answered) {
-        return;
-      }
-
-      answered = true;
-      closeDialog(dialogId);
-      resolve(allowed);
-    };
-
-    showDialog(dialogId, CombinedDialog, {
-      header: texts.header,
-      description: texts.description,
-      buttonOkText: texts.allow,
-      buttonCancelText: texts.deny,
-      onOk: () => answer(true),
-      onCancel: () => answer(false),
-      onOpenChange: (open: boolean) => {
-        if (!open) {
-          answer(false);
-        }
-      },
-    });
-  });
+import {
+  namesLocalhostOrAddress,
+  pluginAccessTargetOf,
+} from '../model/accessTarget';
 
 // One check per (plugin, value) at a time: the pick and the submit of the same value wait for
 // the same answer instead of asking twice.
@@ -69,6 +34,7 @@ export const useEnsurePluginAccess = () => {
   const queryClient = useQueryClient();
   const grantFolderAccess = useGrantPluginFolderAccess();
   const grantHostAccess = useGrantPluginHostAccess();
+  const grantLocalHostAccess = useGrantPluginLocalHostAccess();
 
   const pluginName = (id: PluginId) =>
     pluginsCache.getData.detail(queryClient, id)?.manifest.metadata.name ?? id;
@@ -79,7 +45,7 @@ export const useEnsurePluginAccess = () => {
     subjectOf: (
       access: Extract<Access, { type: 'needed' }>,
     ) => Record<string, string>,
-    keyPrefix: 'host' | 'folder',
+    keyPrefix: 'host' | 'localHost' | 'folder',
   ) => {
     const access = await grant(true);
 
@@ -91,7 +57,7 @@ export const useEnsurePluginAccess = () => {
       name: pluginName(id),
       ...subjectOf(access as Extract<Access, { type: 'needed' }>),
     };
-    const allowed = await askUser({
+    const allowed = await askConfirmation({
       header: t(`pluginSettings.${keyPrefix}AccessConfirmTitle`, texts),
       description: t(
         `pluginSettings.${keyPrefix}AccessConfirmDescription`,
@@ -117,6 +83,39 @@ export const useEnsurePluginAccess = () => {
       'host',
     );
 
+  /**
+   * A URL on `localhost` or a local address literal can never be an allowed host: it is asked
+   * for as a local address, behind the warning that says so. `undefined` when the URL is not
+   * one (a public literal, a name): the core judges, so a name on the user's network is asked
+   * for as an ordinary host and offered as a local address once the plugin's request is refused.
+   */
+  const ensureLocalHost = async (
+    id: PluginId,
+    url: string,
+  ): Promise<boolean | undefined> => {
+    if (!namesLocalhostOrAddress(url)) {
+      return undefined;
+    }
+
+    const needed = await checkPluginLocalHostAccess(id, url).catch(
+      () => undefined,
+    );
+
+    if (!needed) {
+      return undefined;
+    }
+
+    return ensureAccess(
+      id,
+      (dryRun) =>
+        dryRun
+          ? Promise.resolve(needed)
+          : grantLocalHostAccess.mutateAsync({ id, url, dryRun }),
+      (access) => ({ address: access.host }),
+      'localHost',
+    );
+  };
+
   const ensureFolder = (id: PluginId, filePath: string) =>
     ensureAccess(
       id,
@@ -131,7 +130,10 @@ export const useEnsurePluginAccess = () => {
     try {
       switch (target?.kind) {
         case 'host':
-          return await ensureHost(id, target.url);
+          return (
+            (await ensureLocalHost(id, target.url)) ??
+            (await ensureHost(id, target.url))
+          );
         case 'folder':
           return await ensureFolder(id, target.filePath);
         default:

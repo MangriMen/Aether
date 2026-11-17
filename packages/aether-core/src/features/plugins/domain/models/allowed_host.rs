@@ -7,7 +7,7 @@
 
 use url::Host;
 
-use super::{PluginManifest, PluginSettings};
+use super::{LocalHost, PluginManifest, PluginSettings};
 pub(crate) use crate::shared::public_address::is_blocked_ip;
 use crate::shared::web_url::{HttpUrl, InvalidUrlReason};
 
@@ -28,6 +28,57 @@ pub(crate) fn effective_allowed_hosts(
     }
 
     allowed_hosts
+}
+
+/// Everything a plugin's network may reach: the `allowed_hosts` it matches a host against, and
+/// the local hosts the user granted it, whose non-public addresses it may then connect to.
+///
+/// What the network host functions and the downloads of an install plan hold every request
+/// to, read anew for each one.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub(crate) struct PluginHosts {
+    pub allowed: Vec<String>,
+    pub local: Vec<LocalHost>,
+}
+
+impl PluginHosts {
+    pub(crate) fn new(allowed: Vec<String>, local: Vec<LocalHost>) -> Self {
+        Self { allowed, local }
+    }
+
+    /// The plugin's hosts as the manifest and the user's settings give them: see
+    /// [`effective_allowed_hosts`]. Local hosts only come from the settings.
+    pub(crate) fn effective(manifest: &PluginManifest, settings: Option<&PluginSettings>) -> Self {
+        Self {
+            allowed: effective_allowed_hosts(manifest, settings),
+            local: settings.map(|s| s.local_hosts.clone()).unwrap_or_default(),
+        }
+    }
+
+    /// Whether a request may go to `host` on `port` at all: the host is in `allowed_hosts`, or
+    /// the user granted it as a local host that is local by how it is written (an address
+    /// literal, `localhost`). A granted DNS name must be in `allowed_hosts` as well: the plugin
+    /// reports the refusal the grant is offered for, so it must not get a public name it was
+    /// never allowed past the allowlist by calling it local.
+    pub(crate) fn admits(&self, host: &str, port: u16) -> bool {
+        is_host_allowed(host, &self.allowed)
+            || self
+                .local
+                .iter()
+                .any(|local| local.is_local_by_name() && local.admits(host, port))
+    }
+
+    /// Whether the user let the plugin reach `host` on `port` at a non-public address.
+    pub(crate) fn grants_local(&self, host: &str, port: u16) -> bool {
+        self.local.iter().any(|local| local.admits(host, port))
+    }
+}
+
+impl From<Vec<String>> for PluginHosts {
+    /// Only `allowed_hosts`, no local host.
+    fn from(allowed: Vec<String>) -> Self {
+        Self::new(allowed, Vec::new())
+    }
 }
 
 /// Match a host against the plugin's `allowed_hosts`.
@@ -121,6 +172,11 @@ pub enum AllowedHostRejection {
     /// The host name holds a glob wildcard: as an `allowed_hosts` entry it would admit more
     /// than the host the user saw.
     Wildcard,
+    /// Given as a local host, an address literal that is public (`allowed_hosts` gives it), or
+    /// one that is no single host (unspecified, broadcast, multicast).
+    NotLocal,
+    /// Given as a local host, a name that could not be resolved, or resolved to no address.
+    Unresolved,
 }
 
 impl std::fmt::Display for AllowedHostRejection {
@@ -131,6 +187,8 @@ impl std::fmt::Display for AllowedHostRejection {
             Self::MissingHost => "the URL has no host",
             Self::NotPublic => "the host is local or not a public address",
             Self::Wildcard => "the host name contains a wildcard",
+            Self::NotLocal => "the address is not one local host",
+            Self::Unresolved => "the host name does not resolve",
         })
     }
 }

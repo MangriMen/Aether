@@ -37,8 +37,9 @@ pub(super) fn classify_call_error(error: &extism::Error, code: i32) -> PluginCal
 
 /// A failure the plugin reported in its envelope, with the plugin's own message: the refusal of a
 /// command, either of its own call of `run_command` or of a call of another plugin that failed
-/// that way; or the refusal of a host by one of its own network host functions (a host refused
-/// to another plugin it called reaches it as a failed call, not as this); else only that
+/// that way; or the refusal of a host, or of the local address of one, by one of its own network
+/// host functions (a host refused to another plugin it called reaches it as a failed call, not
+/// as this); else only that
 /// message. A refusal of a kind this launcher does not know is only the plugin's message.
 fn reported_failure(failure: PluginFailureDto) -> PluginCallError {
     let reported = match failure.host {
@@ -51,6 +52,16 @@ fn reported_failure(failure: PluginFailureDto) -> PluginCallError {
         }) => {
             return PluginCallError::HostNotAllowed {
                 host,
+                details: failure.message,
+            };
+        }
+        Some(HostError::Http {
+            error: HttpErrorDto::AddressBlocked { host, port },
+            ..
+        }) => {
+            return PluginCallError::AddressBlocked {
+                host,
+                port,
                 details: failure.message,
             };
         }
@@ -158,6 +169,10 @@ Caused by: x"#,
         (
             "host_refused",
             r#"aether-plugin-failure:{"message":"cdn refused","host":{"type":"http","data":{"message":"Host `cdn.example` is not allowed","error":{"type":"hostNotAllowed","data":{"host":"cdn.example"}}}}}"#,
+        ),
+        (
+            "address_blocked",
+            r#"aether-plugin-failure:{"message":"nas refused","host":{"type":"http","data":{"message":"Host `nas.lan` resolves to non-public address","error":{"type":"addressBlocked","data":{"host":"nas.lan","port":8080}}}}}"#,
         ),
         (
             "http_status",
@@ -351,6 +366,18 @@ Caused by: x"#,
             PluginCallError::HostNotAllowed {
                 host: "cdn.example".to_owned(),
                 details: "cdn refused".to_owned(),
+            }
+        );
+    }
+
+    #[test]
+    fn should_report_the_blocked_host_and_port_when_the_plugin_reports_an_address_blocked() {
+        assert_eq!(
+            call_error(&mut unlimited(), "address_blocked"),
+            PluginCallError::AddressBlocked {
+                host: "nas.lan".to_owned(),
+                port: 8080,
+                details: "nas refused".to_owned(),
             }
         );
     }

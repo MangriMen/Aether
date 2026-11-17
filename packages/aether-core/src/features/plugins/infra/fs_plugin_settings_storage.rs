@@ -158,5 +158,39 @@ mod tests {
 
         let text = std::fs::read_to_string(storage.get_plugin_settings_path(&plugin_id)).unwrap();
         assert!(!text.contains("commandApprovals"), "{text}");
+        assert!(!text.contains("localHosts"), "{text}");
+    }
+
+    #[tokio::test]
+    async fn should_keep_local_hosts_and_drop_one_it_did_not_write_when_read_again() {
+        let root = tempfile::tempdir().unwrap();
+        let storage = FsPluginSettingsStorage::new(Arc::new(LocationInfo::new(
+            root.path().join("settings"),
+            root.path().join("config"),
+        )));
+        let plugin_id = PluginId::from_static("packwiz");
+        let file = storage.get_plugin_settings_path(&plugin_id);
+        std::fs::create_dir_all(file.parent().unwrap()).unwrap();
+        std::fs::write(
+            &file,
+            "allowedHosts = []\nallowedPaths = []\n\
+             localHosts = [\"192.168.1.10:8080\", \"*.lan\", \"[::1]\", \"8.8.8.8\"]\n",
+        )
+        .unwrap();
+
+        let settings = storage.get(&plugin_id).await.unwrap().unwrap();
+        let local_hosts: Vec<String> = settings
+            .local_hosts
+            .iter()
+            .map(ToString::to_string)
+            .collect();
+        assert_eq!(local_hosts, ["192.168.1.10:8080", "[::1]"]);
+
+        storage.upsert(&plugin_id, &settings).await.unwrap();
+        let text = std::fs::read_to_string(&file).unwrap();
+        assert!(
+            text.contains(r#"localHosts = ["192.168.1.10:8080", "[::1]"]"#),
+            "{text}"
+        );
     }
 }

@@ -72,7 +72,7 @@ fn loopback() -> Vec<String> {
 fn context<'a>(cache_dir: &'a Path, allowed_hosts: &'a [String]) -> DownloadContext<'a> {
     DownloadContext {
         cache_dir,
-        allowed_hosts,
+        hosts: allowed_hosts.to_vec().into(),
         semaphore: Arc::new(FetchSemaphore(tokio::sync::Semaphore::new(4))),
         progress_service: Arc::new(NoProgress),
         proxy: ProxySource::Direct,
