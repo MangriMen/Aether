@@ -1,6 +1,8 @@
-use aether_core_plugin_api::v0::{HostError, PluginCallErrorDto, PluginErrorDto, PluginFailureDto};
+use aether_core_plugin_api::v0::{
+    CommandRefusalDto, HostError, PluginCallErrorDto, PluginErrorDto, PluginFailureDto,
+};
 
-use crate::features::plugins::PluginCallError;
+use crate::features::plugins::{CommandApprovalRefusal, PluginCallError};
 
 // Extism hands back an untyped `anyhow::Error` and builds these messages itself
 // (`extism-1.41.0/src/plugin.rs`, `raw_call`; `current_plugin.rs`, `memory_growing`). Text is
@@ -37,24 +39,23 @@ pub(super) fn classify_call_error(error: &extism::Error, code: i32) -> PluginCal
 
 /// A failure the plugin reported in its envelope: the refusal of a command, either of its own
 /// call of `run_command` or of a call of another plugin that failed that way, else the plugin's
-/// own message.
+/// own message. A refusal of a kind this launcher does not know is only the plugin's message.
 fn reported_failure(failure: PluginFailureDto) -> PluginCallError {
-    match failure.host {
+    let refusal = |reason: CommandRefusalDto, details: String| {
+        CommandApprovalRefusal::try_from(reason)
+            .map(|reason| PluginCallError::CommandNotApproved { reason, details })
+    };
+    let reported = match failure.host {
         Some(HostError::PluginError(PluginErrorDto::CommandNotApproved { reason, .. })) => {
-            PluginCallError::CommandNotApproved {
-                reason: reason.into(),
-                details: failure.message,
-            }
+            refusal(reason, failure.message.clone())
         }
         Some(HostError::PluginError(PluginErrorDto::FunctionCallFailed {
             error: PluginCallErrorDto::CommandNotApproved { reason, details },
             ..
-        })) => PluginCallError::CommandNotApproved {
-            reason: reason.into(),
-            details,
-        },
-        _ => PluginCallError::Plugin(failure.message),
-    }
+        })) => refusal(reason, details),
+        _ => return PluginCallError::Plugin(failure.message),
+    };
+    reported.unwrap_or(PluginCallError::Plugin(failure.message))
 }
 
 #[cfg(test)]

@@ -104,6 +104,14 @@ as `HostError` cannot be read back from one. A reader ignores a key it does not 
 missing key its default when the DTO has one, so a field can be added without breaking the other
 side.
 
+Only four plain enums the launcher sends have a fallback: `ModLoaderDto`, `ContentTypeDto`,
+`CommandRefusalDto` and `InstanceInstallStageDto`. A value a plugin built for an older API does
+not know reads as `unknown` there, so the call still decodes; a plugin must not answer `unknown`,
+the launcher refuses it. Every other enum is strict (an enum with data, `{"type", "data"}`, cannot
+have a fallback at all, and `HashAlgorithmDto` and the host error reasons have none): a new
+value or variant of it breaks a plugin built for an older API, and `api.version` is matched as a
+caret requirement, so on 0.x it needs a new minor version.
+
 A host function returns `{"status": "ok", "data": <value>}` or `{"status": "err", "data":
 <HostError>}`; `data` is always there (`nil` for `()`). The arguments and answers of a plugin's exports are the DTOs as maps.
 

@@ -6,6 +6,7 @@ use aether_core_plugin_api::v0::{
     ModLoaderDto, PackMetadataDto, ResolveInstallPlanParamsDto, ResolveTargetDto, ResolvedFileDto,
 };
 
+use super::UnknownValue;
 use crate::{
     features::{
         instance::{
@@ -98,6 +99,9 @@ pub enum InvalidPackMetadata {
 
     #[error(transparent)]
     LoaderVersion(#[from] InvalidLoaderVersionId),
+
+    #[error(transparent)]
+    Value(#[from] UnknownValue),
 }
 
 impl TryFrom<PackMetadataDto> for PackMetadata {
@@ -110,7 +114,7 @@ impl TryFrom<PackMetadataDto> for PackMetadata {
             version_name: value.version_name,
             description: value.description,
             game_version: GameVersion::try_from(value.game_version)?,
-            mod_loader: value.mod_loader.into(),
+            mod_loader: value.mod_loader.try_into()?,
             loader_version: value.loader_version.map(TryInto::try_into).transpose()?,
             // Informational; a count beyond `usize` is as good as unknown.
             file_count: value

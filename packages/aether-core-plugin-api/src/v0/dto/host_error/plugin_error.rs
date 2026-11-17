@@ -114,6 +114,10 @@ pub enum CommandRefusalDto {
     Cancelled,
     /// The jar changed while the user was being asked.
     JarChanged,
+    /// A value this version of the API does not know: a newer launcher sent it. Read it, never
+    /// write it.
+    #[serde(other)]
+    Unknown,
 }
 
 /// Why a call into a plugin failed.

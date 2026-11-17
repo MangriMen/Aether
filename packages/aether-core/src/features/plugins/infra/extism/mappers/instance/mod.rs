@@ -11,6 +11,8 @@ mod mod_loader;
 mod new_instance;
 mod pack_info;
 mod resolve;
+mod unknown_value;
 
 pub(crate) use install_plan::InvalidPlanFile;
 pub(crate) use resolve::InvalidResolvedFile;
+pub(crate) use unknown_value::UnknownValue;

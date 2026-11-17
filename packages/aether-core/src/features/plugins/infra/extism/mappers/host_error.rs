@@ -589,13 +589,19 @@ impl From<CommandApprovalRefusal> for CommandRefusalDto {
     }
 }
 
-impl From<CommandRefusalDto> for CommandApprovalRefusal {
-    fn from(value: CommandRefusalDto) -> Self {
+impl TryFrom<CommandRefusalDto> for CommandApprovalRefusal {
+    type Error = super::instance::UnknownValue;
+
+    fn try_from(value: CommandRefusalDto) -> Result<Self, Self::Error> {
         match value {
-            CommandRefusalDto::Denied => Self::Denied,
-            CommandRefusalDto::TimedOut => Self::TimedOut,
-            CommandRefusalDto::Cancelled => Self::Cancelled,
-            CommandRefusalDto::JarChanged => Self::JarChanged,
+            CommandRefusalDto::Denied => Ok(Self::Denied),
+            CommandRefusalDto::TimedOut => Ok(Self::TimedOut),
+            CommandRefusalDto::Cancelled => Ok(Self::Cancelled),
+            CommandRefusalDto::JarChanged => Ok(Self::JarChanged),
+            CommandRefusalDto::Unknown => Err(super::instance::UnknownValue {
+                kind: "command refusal",
+                expected: &["denied", "timedOut", "cancelled", "jarChanged"],
+            }),
         }
     }
 }

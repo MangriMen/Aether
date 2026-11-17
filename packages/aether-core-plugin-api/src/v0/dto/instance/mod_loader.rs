@@ -11,6 +11,10 @@ pub enum ModLoaderDto {
     Fabric,
     Quilt,
     NeoForge,
+    /// A value this version of the API does not know: a newer launcher sent it. Read it, never
+    /// write it.
+    #[serde(other)]
+    Unknown,
 }
 
 #[cfg(test)]

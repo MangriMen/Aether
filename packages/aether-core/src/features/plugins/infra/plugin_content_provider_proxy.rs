@@ -389,8 +389,9 @@ impl ContentProvider for PluginContentProviderProxy {
             items: result_dto
                 .items
                 .into_iter()
-                .map(ContentItem::from)
-                .collect(),
+                .map(ContentItem::try_from)
+                .collect::<Result<_, _>>()
+                .map_err(|err| self.invalid_answer("search", err))?,
         })
     }
 
@@ -404,7 +405,7 @@ impl ContentProvider for PluginContentProviderProxy {
                 },
             )
             .await?;
-        Ok(result_dto.into())
+        ContentItem::try_from(result_dto).map_err(|err| self.invalid_answer("get_content", err))
     }
 
     async fn list_versions(

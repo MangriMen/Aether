@@ -1,5 +1,6 @@
 use aether_core_plugin_api::v0::ContentTypeDto;
 
+use super::UnknownValue;
 use crate::features::instance::ContentType;
 
 impl From<ContentType> for ContentTypeDto {
@@ -14,14 +15,46 @@ impl From<ContentType> for ContentTypeDto {
     }
 }
 
-impl From<ContentTypeDto> for ContentType {
-    fn from(value: ContentTypeDto) -> Self {
+const CONTENT_TYPES: [&str; 5] = ["modpack", "mod", "dataPack", "resourcePack", "shaderPack"];
+
+impl TryFrom<ContentTypeDto> for ContentType {
+    type Error = UnknownValue;
+
+    fn try_from(value: ContentTypeDto) -> Result<Self, Self::Error> {
         match value {
-            ContentTypeDto::Modpack => Self::Modpack,
-            ContentTypeDto::Mod => Self::Mod,
-            ContentTypeDto::DataPack => Self::DataPack,
-            ContentTypeDto::ResourcePack => Self::ResourcePack,
-            ContentTypeDto::ShaderPack => Self::ShaderPack,
+            ContentTypeDto::Modpack => Ok(Self::Modpack),
+            ContentTypeDto::Mod => Ok(Self::Mod),
+            ContentTypeDto::DataPack => Ok(Self::DataPack),
+            ContentTypeDto::ResourcePack => Ok(Self::ResourcePack),
+            ContentTypeDto::ShaderPack => Ok(Self::ShaderPack),
+            ContentTypeDto::Unknown => Err(UnknownValue {
+                kind: "content type",
+                expected: &CONTENT_TYPES,
+            }),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn should_refuse_a_content_type_the_api_does_not_know() {
+        assert_eq!(
+            ContentType::try_from(ContentTypeDto::Unknown),
+            Err(UnknownValue {
+                kind: "content type",
+                expected: &CONTENT_TYPES,
+            })
+        );
+    }
+
+    #[test]
+    fn should_keep_a_known_content_type() {
+        assert_eq!(
+            ContentType::try_from(ContentTypeDto::DataPack),
+            Ok(ContentType::DataPack)
+        );
     }
 }

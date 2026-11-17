@@ -419,6 +419,11 @@
           "description": "The jar changed while the user was being asked.",
           "type": "string",
           "const": "jarChanged"
+        },
+        {
+          "description": "A value this version of the API does not know: a newer launcher sent it. Read it, never\nwrite it.",
+          "type": "string",
+          "const": "unknown"
         }
       ]
     },
@@ -848,13 +853,22 @@
       ]
     },
     "ContentTypeDto": {
-      "type": "string",
-      "enum": [
-        "modpack",
-        "mod",
-        "dataPack",
-        "resourcePack",
-        "shaderPack"
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "modpack",
+            "mod",
+            "dataPack",
+            "resourcePack",
+            "shaderPack"
+          ]
+        },
+        {
+          "description": "A value this version of the API does not know: a newer launcher sent it. Read it, never\nwrite it.",
+          "type": "string",
+          "const": "unknown"
+        }
       ]
     },
     "ContentVersionDependencyDto": {
@@ -2800,12 +2814,21 @@
       ]
     },
     "InstanceInstallStageDto": {
-      "type": "string",
-      "enum": [
-        "installed",
-        "installing",
-        "packInstalling",
-        "notInstalled"
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "installed",
+            "installing",
+            "packInstalling",
+            "notInstalled"
+          ]
+        },
+        {
+          "description": "A value this version of the API does not know: a newer launcher sent it. Read it, never\nwrite it.",
+          "type": "string",
+          "const": "unknown"
+        }
       ]
     },
     "InstanceSummaryDto": {
@@ -3697,13 +3720,22 @@
     },
     "ModLoaderDto": {
       "description": "Mod loader an instance can run on. Serialized as a lowercase string\n(`vanilla`, `forge`, `fabric`, `quilt`, `neoforge`).",
-      "type": "string",
-      "enum": [
-        "vanilla",
-        "forge",
-        "fabric",
-        "quilt",
-        "neoforge"
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "vanilla",
+            "forge",
+            "fabric",
+            "quilt",
+            "neoforge"
+          ]
+        },
+        {
+          "description": "A value this version of the API does not know: a newer launcher sent it. Read it, never\nwrite it.",
+          "type": "string",
+          "const": "unknown"
+        }
       ]
     },
     "NewInstanceDto": {
