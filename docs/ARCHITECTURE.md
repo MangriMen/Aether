@@ -23,7 +23,7 @@ Any slice inside `src/features/` or `src/shared/` must follow this structure if 
 - **`app/`** — **Application Layer**: Inbound Ports (Use Cases), Outbound Ports (Traits for Storage, Network, OS APIs), Data Transfer Objects (DTOs), and internal application services (coordination logic).
 - **`infra/`** — **Infrastructure Layer**: Technical details and outbound adapters. Low-level implementations binding third-party crates (SQLx, reqwest, Tauri) to ports defined in `app/`.
 
-### Use cases and ports:
+### Use cases and ports
 
 - A use case is `pub struct <Verb><Noun>UseCase` holding its dependencies as `Arc<dyn Port>`, with a constructor `new(…)` and one method, `execute(…)`.
 - When Tauri calls it, it implements an inbound port `<Verb><Noun>UseCasePort`; when another feature calls it, a port named for the role (`*Service`).
@@ -134,7 +134,7 @@ These rules apply equally to human developers and AI agents.
 
 ## 9. Domain Types and Errors
 
-Sections 9–12 apply to new and edited code; each rule names one example to copy.
+Each rule names one example to copy (paths are under `packages/aether-core/src/` unless they start with `apps/`); see [section 6](#6-instructions-for-ai-agents), item 6, for how they apply to existing code.
 
 ### 9.1. Validated newtypes
 
@@ -143,11 +143,12 @@ Sections 9–12 apply to new and edited code; each rule names one example to cop
 - A literal in code is built by a panicking `from_static`. A lenient read from storage goes through `from_stored_or_<fallback>`, which logs the bad value.
 - The error is an `Invalid<Type>` of its own, not the error of the whole feature.
 - Do not implement `Deref<Target = str>`: it leaks every `str` method into the public API of a type whose point is its invariant. Hand out `as_str()`, `AsRef<str>`, `Display` and `From<Type> for String`.
-- Example: `PluginPath` (`features/plugins/domain/models/plugin_path.rs`); `from_static` in `shared/capability/domain/ids.rs`; `new` in `settings/domain/models/bounded_numbers.rs`.
+- Existing `Deref` impls (`InstanceId`, `JavaPath`, `GameVersion`) are not examples to copy.
+- Example: `PluginPath` (`features/plugins/domain/models/plugin_path.rs`); `from_static` in `shared/capability/domain/ids.rs`; `new` in `features/settings/domain/models/bounded_numbers.rs`.
 
 ### 9.2. Paths from external data
 
-A path segment that comes from outside (Mojang or Modrinth metadata, a maven coordinate, a version id, a plugin manifest, an API answer) becomes part of a path only as a value of a type that checks segments (`InstanceRelativePath`, `ContentPath`, `PluginPath`) or through the shared "plain file name" helper. A bare `dir.join(external_string)` is not allowed. Example: `LocationInfo::log_config_path` in `settings/domain/models/location_info.rs`.
+A path segment that comes from outside (Mojang or Modrinth metadata, a maven coordinate, a version id, a plugin manifest, an API answer) becomes part of a path only as a value of a type that checks segments (`InstanceRelativePath`, `ContentPath`, `PluginPath`) or through the shared "plain file name" helper. A bare `dir.join(external_string)` is not allowed. Example: `LocationInfo::log_config_path` in `features/settings/domain/models/location_info.rs`.
 
 ### 9.3. Errors
 
@@ -163,13 +164,13 @@ A path segment that comes from outside (Mojang or Modrinth metadata, a maven coo
 
 - A domain model does not derive `Serialize`/`Deserialize` for the sake of storage. A file on disk is described by an infra type `<Name>V<n>` with `From`/`TryFrom` both ways; a SQLite row by `Sql<Name>`, whose columns are parsed by `parse_stored_*` functions.
 - The suffix `Dto` is only for the Tauri or plugin boundary. The exception is an identifier with `serde(try_from)`.
-- Example: `ModLoaderV1` in `instance/infra/fs/instance.rs`; `SqlPackInfo` in `instance/infra/sqlite/sql_pack_info.rs`.
+- Example: `ModLoaderV1` in `features/instance/infra/fs/instance.rs`; `SqlPackInfo` in `features/instance/infra/sqlite/sql_pack_info.rs`.
 
 ### 10.2. SQL
 
 - Production SQL is written with `sqlx::query!` / `query_as!`, which are checked against `.sqlx`. The runtime form `sqlx::query(…).bind(…)` is allowed in tests, for sqlx's own tables and for text that is built dynamically, with a comment saying why.
 - SQL lives in the slice's `infra/sqlite/` and nowhere else.
-- Example: `instance/infra/sqlite/sqlite_instance_storage.rs`.
+- Example: `features/instance/infra/sqlite/sqlite_instance_storage.rs`.
 
 ---
 
@@ -183,7 +184,7 @@ A path segment that comes from outside (Mojang or Modrinth metadata, a maven coo
 
 ### 11.2. HTTP clients for untrusted URLs
 
-A URL that comes from a plugin, from provider metadata or from Markdown is fetched only by a client whose redirect policy is `Policy::none()` or a `Policy::custom` that checks every hop by the same rule as the first URL (https, public host, allowlist). A shared client with the default policy is for fixed, trusted hosts only. Examples: `VettedHops` in the plugin `http_*` host functions; `icon_redirect_policy` in `instance/infra/fs_content_icon_cache.rs`.
+A URL that comes from a plugin, from provider metadata or from Markdown is fetched only by a client whose redirect policy is `Policy::none()` or a `Policy::custom` that checks every hop by the same rule as the first URL (https, public host, allowlist). A shared client with the default policy is for fixed, trusted hosts only. Examples: `VettedHops` in the plugin `http_*` host functions; `icon_redirect_policy` in `features/instance/infra/fs_content_icon_cache.rs`.
 
 ---
 
@@ -202,12 +203,12 @@ A URL that comes from a plugin, from provider metadata or from Markdown is fetch
 - A backend event is `<Name>EventDto` deriving `Type, Event`, with `pub seq: u32` as the first field, taken from the one shared counter. It is registered through `get_specta_events()`.
 - When an event has several kinds, the kind is a field `#[serde(flatten)] kind: <Name>EventKindDto`.
 - The frontend listens only through `useEventListener`, which drops a `seq` it has seen.
-- Example: `events/infra/tauri/dtos/cache_event.rs`, `plugins/infra/tauri/dtos/plugin_event.rs`.
+- Example: `apps/desktop/src/features/events/infra/tauri/dtos/cache_event.rs`, `apps/desktop/src/features/plugins/infra/tauri/dtos/plugin_event.rs`.
 
 ### 12.3. DTOs
 
-- Boundary types are named `<Name>Dto` and live in `infra/tauri/dtos/`. A conversion is a `From`/`TryFrom` in the same file; there are no `to_dto` functions.
-- Structs have `#[serde(rename_all = "camelCase")]`, enums `"snake_case"`. Any other case is only for a value that must match an external format, with a comment saying so.
+- Boundary types are named `<Name>Dto` and live in `infra/tauri/dtos/` (`infra/tauri/api/dtos/` in the instance feature) of the desktop app. A conversion is a `From`/`TryFrom` in the same file; there are no `to_dto` functions.
+- Structs have `#[serde(rename_all = "camelCase")]`, plain enums `"snake_case"`; an internally tagged enum (`tag = "type"`, such as an event kind or an error cause) is `"camelCase"`, like the structs it carries. Any other case is only for a value that must match an external format, with a comment saying so.
 
 ### 12.4. Errors
 

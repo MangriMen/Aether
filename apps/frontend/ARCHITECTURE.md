@@ -199,19 +199,19 @@ These apply to new and edited code; older code is brought in line when a file is
 - The keys of a feature are in `api/<domain>QueryKeys.ts`:
   `export const <domain>Keys = { all: ['<domain>'] as const, list: () => [...<domain>Keys.all, 'list'] as const, … }`.
   Segments are camelCase.
-- `invalidateQueries`, `setQueryData` and `getQueryData` are called only through the `<domain>Cache` object from `api/<domain>Cache.ts`, so a component never builds a key by hand.
+- `invalidateQueries`, `setQueryData` and `getQueryData` are called only through the `<domain>Cache` object from `api/<domain>Cache.ts`, one function per operation (`accountCache.invalidate.list(queryClient)`; `set` and `get` the same way), so a component never builds a key by hand.
 - Example: `features/account/api/accountQueryKeys.ts` and `accountCache.ts`.
 
 ### Mutation errors
 
-- Every `useMutation` in `api/` gets `onError: (err) => showError({ title: t('<ns>.<verb>Error'), err, t })`.
+- Every `useMutation` in `api/` gets `onError: (err) => showError({ title: t('<ns>.<verb>Error'), err, t })`, unless the form shows that error itself (a validation error next to its field).
 - The title key is `<verb>Error`. `<x>Failed` is only for the text of a loading state.
 - Example: `features/account/api/accountQueries.ts`.
 
 ### i18n keys
 
 - Key segments are camelCase. UPPER_SNAKE is only for backend error codes in `errors.<domain>.<CODE>`; they match `#[serde(tag = "code", rename_all = "SCREAMING_SNAKE_CASE")]` in the DTO.
-- A segment that equals a value of a backend enum keeps that value's case (the enums are `snake_case` on the wire), so the key can be built from the value.
+- A segment that equals a value of a backend enum keeps that value's case (plain enums are `snake_case` on the wire, tagged ones `camelCase`), so the key can be built from the value.
 
 ### Form schemas
 
