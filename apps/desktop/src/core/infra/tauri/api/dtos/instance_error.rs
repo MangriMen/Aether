@@ -406,6 +406,21 @@ impl InstanceErrorDto {
                     },
                 )));
             }
+            // The same error as a plugin call whose command was refused: one code for the
+            // frontend, which says why the command did not run.
+            InstanceError::PluginCommandNotApproved {
+                plugin_id,
+                reason,
+                details,
+            } => {
+                return Err(Box::new(FrontendError::Plugin(
+                    PluginErrorDto::CommandNotApproved {
+                        plugin_id: plugin_id.clone(),
+                        reason: (*reason).into(),
+                        cause: Some(CauseDto::unknown(details)),
+                    },
+                )));
+            }
         })
     }
 }
@@ -575,6 +590,7 @@ mod tests {
     use aether_core::features::auth::{AuthApplicationError, AuthDomainError};
     use aether_core::features::instance::{BrokenInstanceReason, ContentFileFailure, ContentPath};
     use aether_core::features::minecraft::MinecraftApplicationError;
+    use aether_core::features::plugins::CommandApprovalRefusal;
     use aether_core::features::process::ProcessError;
     use aether_core::features::settings::SettingsError;
     use aether_core::shared::error::DatabaseError;
@@ -605,6 +621,31 @@ mod tests {
                 "cause": {"type": "unknown", "details": "cdn refused"},
             }}})
         );
+    }
+
+    #[test]
+    fn should_report_a_command_refused_to_a_capability_as_the_plugin_error_of_a_refused_command() {
+        for (reason, code) in [
+            (CommandApprovalRefusal::Denied, "DENIED"),
+            (CommandApprovalRefusal::TimedOut, "TIMED_OUT"),
+            (CommandApprovalRefusal::Cancelled, "CANCELLED"),
+            (CommandApprovalRefusal::JarChanged, "JAR_CHANGED"),
+        ] {
+            let err = InstanceError::PluginCommandNotApproved {
+                plugin_id: "packwiz".to_owned(),
+                reason,
+                details: "java refused".to_owned(),
+            };
+
+            assert_eq!(
+                serde_json::to_value(FrontendError::from(&err)).unwrap(),
+                json!({"type": "plugin", "payload": {"code": "COMMAND_NOT_APPROVED", "payload": {
+                    "plugin_id": "packwiz",
+                    "reason": {"code": code},
+                    "cause": {"type": "unknown", "details": "java refused"},
+                }}})
+            );
+        }
     }
 
     #[test]

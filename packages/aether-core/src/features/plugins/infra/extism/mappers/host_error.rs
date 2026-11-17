@@ -137,6 +137,17 @@ fn instance(value: &InstanceError) -> HostError {
         | InstanceError::UpdateFailed { .. }
         | InstanceError::CredentialsError(_) => Kind::Internal,
 
+        // As a refused command of a plugin call: the reason, and the words of the plugin that
+        // reported it, pass on to the plugin that asked for the capability.
+        InstanceError::PluginCommandNotApproved {
+            reason, details, ..
+        } => {
+            return HostError::CommandNotApproved {
+                reason: (*reason).into(),
+                message: details.clone(),
+            };
+        }
+
         InstanceError::ContentDownloadError(failure) => return content_download(value, failure),
         InstanceError::ContentProviderError { reason } => return content_provider(value, reason),
 
@@ -696,6 +707,25 @@ mod tests {
             host(error),
             HostError::CommandNotApproved {
                 reason: CommandRefusalDto::Cancelled,
+                message: "b said so".to_owned(),
+            }
+        );
+    }
+
+    /// A command refused to the plugin behind a capability passes on the way a command refused
+    /// in a call of that plugin does.
+    #[test]
+    fn should_keep_the_words_of_the_plugin_behind_a_capability_when_its_command_was_refused() {
+        let error = InstanceError::PluginCommandNotApproved {
+            plugin_id: "b".to_owned(),
+            reason: CommandApprovalRefusal::Denied,
+            details: "b said so".to_owned(),
+        };
+
+        assert_eq!(
+            host(error),
+            HostError::CommandNotApproved {
+                reason: CommandRefusalDto::Denied,
                 message: "b said so".to_owned(),
             }
         );

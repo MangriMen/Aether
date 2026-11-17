@@ -636,8 +636,37 @@ describe('plugin command not approved', () => {
     } as unknown as LauncherError;
 
     expect(getTranslatedError(error, tEn)).toBe(
-      'The command of plugin packwiz did not run: it was not allowed',
+      'The command of plugin packwiz did not run: it was not allowed; the same command is refused without asking until the plugin is restarted',
     );
+  });
+});
+
+describe('plugin command refused to an importer, a content provider or an updater', () => {
+  // How the desktop reports `InstanceError::PluginCommandNotApproved`: the plugin error of a
+  // refused command, with the plugin's own words as its cause.
+  const refused = {
+    type: 'plugin',
+    payload: {
+      code: 'COMMAND_NOT_APPROVED',
+      payload: {
+        plugin_id: 'packwiz',
+        reason: { code: 'DENIED' },
+        cause: { type: 'unknown', details: 'java refused' },
+      },
+    },
+  } as LauncherError;
+
+  it('should_say_that_the_command_was_refused_and_why', () => {
+    expect(getTranslatedError(refused, tEn)).toBe(
+      'The command of plugin packwiz did not run: it was not allowed; the same command is refused without asking until the plugin is restarted',
+    );
+    expect(getTranslatedError(refused, tRu)).toBe(
+      'Команда плагина packwiz не выполнена: её не разрешили; до перезапуска плагина та же команда отклоняется без вопроса',
+    );
+  });
+
+  it('should_keep_the_text_of_the_plugin_in_the_details', () => {
+    expect(getErrorDetails(refused)).toBe('java refused');
   });
 });
 
