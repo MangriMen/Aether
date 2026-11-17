@@ -12,13 +12,13 @@ use aether_core_plugin_api::v0::{CommandRefusalDto, HostError};
 use crate::{
     ErrorKind,
     features::{
-        instance::{ContentDownloadFailure, ContentProviderRejection, InstanceError},
+        instance::{ContentDownloadFailure, ContentProviderRejection, InstanceError, StorageError},
         java::{JavaApplicationError, JavaDomainError},
         minecraft::{MinecraftApplicationError, MinecraftDomainError},
         plugins::{CommandApprovalRefusal, PluginCallError, PluginError, PluginProviderError},
         settings::SettingsError,
     },
-    shared::request_client::RequestError,
+    shared::{io::IoError, request_client::RequestError},
 };
 
 /// The kinds of [`HostError`] that carry nothing but the message.
@@ -118,6 +118,8 @@ fn instance(value: &InstanceError) -> HostError {
 
         InstanceError::ImportFailed { .. } => Kind::PluginCallFailed,
 
+        InstanceError::Storage(err) if storage_is_missing(err) => Kind::NotFound,
+
         InstanceError::Storage(_)
         | InstanceError::InvalidRecord { .. }
         | InstanceError::ContentStateChangeFailed { .. }
@@ -125,18 +127,32 @@ fn instance(value: &InstanceError) -> HostError {
         | InstanceError::PrelaunchCommandError { .. }
         | InstanceError::Hook(_)
         | InstanceError::UpdateFailed { .. }
-        | InstanceError::ProcessError(_)
         | InstanceError::CredentialsError(_) => Kind::Internal,
 
         InstanceError::ContentDownloadError(failure) => content_download(failure),
         InstanceError::ContentProviderError { reason } => content_provider(reason),
 
         // Their own text: the wrapper's names only the step that failed.
+        InstanceError::ProcessError(err) => return Kind::Internal.of(err),
         InstanceError::SettingsLoadError(err) => return settings(err),
         InstanceError::MinecraftError(err) => return minecraft(err),
     };
 
     kind.of(value)
+}
+
+/// A file or folder the storage looked for is not there: the plugin asked for something absent,
+/// the disk is not broken.
+fn storage_is_missing(value: &StorageError) -> bool {
+    use std::io::ErrorKind::NotFound;
+
+    match value {
+        StorageError::Io(err)
+        | StorageError::SharedIo(
+            IoError::IoPathError { source: err, .. } | IoError::IoError(err),
+        ) => err.kind() == NotFound,
+        _ => false,
+    }
 }
 
 fn content_download(value: &ContentDownloadFailure) -> Kind {
@@ -397,6 +413,26 @@ mod tests {
 
     fn message(error: impl Into<ErrorKind>) -> String {
         error.into().to_string()
+    }
+
+    #[test]
+    fn should_tell_not_found_when_the_storage_has_no_such_file() {
+        let error = InstanceError::storage(std::io::Error::from(std::io::ErrorKind::NotFound));
+
+        assert_eq!(
+            host(error.clone()),
+            HostError::NotFound {
+                message: message(error)
+            }
+        );
+    }
+
+    #[test]
+    fn should_tell_internal_when_the_storage_failed_for_another_reason() {
+        let error =
+            InstanceError::storage(std::io::Error::from(std::io::ErrorKind::PermissionDenied));
+
+        assert!(matches!(host(error), HostError::Internal { .. }));
     }
 
     #[test]

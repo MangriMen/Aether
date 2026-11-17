@@ -37,8 +37,8 @@ pub enum HostError {
     InvalidArgument { message: String },
     /// What the plugin named does not exist: an instance, a plugin, an importer, a provider.
     NotFound { message: String },
-    /// The plugin may not do this: a path outside what it was given, a host or a program it is
-    /// not allowed.
+    /// The plugin may not do this: a path outside what it was given, a program it is not
+    /// allowed. (A host refused by an HTTP function arrives as `internal` until it is typed.)
     AccessDenied { message: String },
     /// The user did not allow the plugin's command, or was not there to.
     CommandNotApproved {

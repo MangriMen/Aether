@@ -108,7 +108,7 @@
           ]
         },
         {
-          "description": "The plugin may not do this: a path outside what it was given, a host or a program it is\nnot allowed.",
+          "description": "The plugin may not do this: a path outside what it was given, a program it is not\nallowed. (A host refused by an HTTP function arrives as `internal` until it is typed.)",
           "type": "object",
           "properties": {
             "data": {
