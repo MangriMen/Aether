@@ -39,7 +39,7 @@ impl UpdatePluginUseCase {
     // repeat the field list.
     #[expect(
         clippy::too_many_arguments,
-        reason = "the use case is built from its ports"
+        reason = "one collaborator per argument, wired once in the DI container"
     )]
     pub(crate) fn new(
         plugin_registry: Arc<PluginRegistry>,

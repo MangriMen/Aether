@@ -8,7 +8,7 @@ pub(crate) const MODRINTH_API_URL: &str = "https://api.modrinth.com/v2";
 pub(crate) const MODRINTH_API_V3_URL: &str = "https://api.modrinth.com/v3";
 pub(crate) const MODRINTH_WEB_URL: &str = "https://modrinth.com";
 
-#[expect(unused, reason = "kept for requests that will send the user agent")]
+#[expect(unused, reason = "not used yet")]
 pub(crate) static DEFAULT_HEADERS: LazyLock<HeaderMap> = LazyLock::new(|| {
     let mut headers = HeaderMap::new();
     headers.insert("User-Agent", HeaderValue::from_static("MangriMen/aether"));

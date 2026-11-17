@@ -404,7 +404,7 @@ async fn perform_post_json(
 // used only here.
 #[expect(
     clippy::too_many_arguments,
-    reason = "every part of the request is checked on its own"
+    reason = "each argument is a distinct part of the one request policy"
 )]
 async fn send_checked(
     method: reqwest::Method,

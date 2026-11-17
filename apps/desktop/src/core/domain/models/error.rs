@@ -8,7 +8,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 #[derive(thiserror::Error, Debug)]
 #[expect(
     clippy::enum_variant_names,
-    reason = "each variant is named after the error it wraps"
+    reason = "variants carry the `Error` suffix of the type they wrap"
 )]
 pub enum Error {
     #[error(transparent)]

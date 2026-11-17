@@ -21,7 +21,7 @@ pub struct WarningEventDto {
 // The codes are the translation keys; the warnings of other kinds will not share the prefix.
 #[expect(
     clippy::enum_variant_names,
-    reason = "the variants name the warning, and several happen to start with the same word"
+    reason = "the codes are translation keys; other kinds of warning will not share the prefix"
 )]
 pub enum WarningDto {
     InstanceIconNotImported {

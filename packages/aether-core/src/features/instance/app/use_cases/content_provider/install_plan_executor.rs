@@ -829,7 +829,7 @@ impl InstallPlanExecutor {
     // repeat the field list.
     #[expect(
         clippy::too_many_arguments,
-        reason = "the executor is built from its ports"
+        reason = "one collaborator per argument, wired once in the DI container"
     )]
     pub fn new(
         provider_registry: Arc<dyn CapabilityRegistry<Arc<dyn ContentProvider>>>,

@@ -66,7 +66,7 @@ pub struct InstallMinecraftUseCase {
 impl InstallMinecraftUseCase {
     #[expect(
         clippy::too_many_arguments,
-        reason = "the use case is built from its ports"
+        reason = "one collaborator per argument, wired once in the DI container"
     )]
     pub fn new(
         loader_version_resolver: Arc<dyn LoaderVersionService>,
