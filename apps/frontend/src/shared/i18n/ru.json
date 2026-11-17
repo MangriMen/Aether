@@ -813,6 +813,7 @@
       "removedHosts": "Доступ к сети, который больше не нужен",
       "addedCapabilities": "Новые возможности",
       "removedCapabilities": "Возможности, которых больше нет",
+      "changedCapabilities": "Возможности, которые теперь работают иначе",
       "capabilityKind": {
         "importer": "импортёр",
         "updater": "апдейтер",

@@ -22,8 +22,13 @@ import {
 
 import type { Plugin, PluginUpdateDiff } from '../model/plugin';
 
-import { usePluginUpdatePreview, useUpdatePlugin } from '../api/pluginQueries';
+import {
+  useIsUpdatingPlugin,
+  usePluginUpdatePreview,
+  useUpdatePlugin,
+} from '../api/pluginQueries';
 import { PluginAllowedHostsSection } from './PluginAllowedHostsSection';
+import { PluginCapabilitiesSection } from './PluginCapabilitiesSection';
 import { PluginHostFunctionsSection } from './PluginHostFunctionsSection';
 
 const ChangeList: Component<{
@@ -107,6 +112,10 @@ const PluginUpdateDiffView: Component<{ diff: PluginUpdateDiff }> = (props) => {
           items={props.diff.added_capabilities.map(capability)}
         />
         <ChangeList
+          label={t('plugins.updateDialog.changedCapabilities')}
+          items={props.diff.changed_capabilities.map(capability)}
+        />
+        <ChangeList
           label={t('plugins.updateDialog.removedHostFunctions')}
           items={props.diff.removed_host_functions.map((f) => ({
             text: f.name,
@@ -141,11 +150,15 @@ const PluginUpdateBody: Component<{
   const updatePlugin = useUpdatePlugin();
 
   // Only a preview of this tag, read to the end, can be confirmed: the update is given the hash
-  // of the archive it shows and installs that archive or nothing.
+  // of the archive it shows and installs that archive or nothing. A read that failed leaves the
+  // previous answer in `data`, which may no longer be what the release holds.
   const ready = createMemo(() => {
     const data = preview.data;
 
-    return data && data.release.tag === props.tag && !preview.isFetching
+    return data &&
+      data.release.tag === props.tag &&
+      !preview.isFetching &&
+      !preview.error
       ? data
       : undefined;
   });
@@ -229,6 +242,11 @@ const PluginUpdateBody: Component<{
                 {t('plugins.updateDialog.allPermissions')}
               </summary>
               <div class='mt-3 gap-4 flex flex-col'>
+                <Show when={data().release.capabilities}>
+                  {(capabilities) => (
+                    <PluginCapabilitiesSection capabilities={capabilities()} />
+                  )}
+                </Show>
                 <PluginAllowedHostsSection
                   allowedHosts={data().release.manifest.allowed_hosts}
                   wideHosts={data().release.manifest.wide_allowed_hosts}
@@ -244,7 +262,11 @@ const PluginUpdateBody: Component<{
       </Show>
 
       <DialogFooter>
-        <Button variant='outline' onClick={() => props.onClose()}>
+        <Button
+          variant='outline'
+          disabled={updatePlugin.isPending}
+          onClick={() => props.onClose()}
+        >
           {t('common.cancel')}
         </Button>
         <Button
@@ -273,25 +295,33 @@ export type PluginUpdateDialogProps = {
  */
 export const PluginUpdateDialog: Component<PluginUpdateDialogProps> = (
   props,
-) => (
-  <Dialog
-    open={props.tag !== null}
-    onOpenChange={(open) => {
-      if (!open) {
-        props.onClose();
-      }
-    }}
-  >
-    <DialogContent>
-      <Show when={props.tag} keyed>
-        {(tag) => (
-          <PluginUpdateBody
-            plugin={props.plugin}
-            tag={tag}
-            onClose={props.onClose}
-          />
-        )}
-      </Show>
-    </DialogContent>
-  </Dialog>
-);
+) => {
+  const isUpdating = useIsUpdatingPlugin(
+    () => props.plugin.manifest.metadata.id,
+  );
+
+  return (
+    <Dialog
+      open={props.tag !== null}
+      onOpenChange={(open) => {
+        // Closed while the update runs, the dialog would read as a declined update: it stays
+        // until the update is done.
+        if (!open && !isUpdating()) {
+          props.onClose();
+        }
+      }}
+    >
+      <DialogContent>
+        <Show when={props.tag} keyed>
+          {(tag) => (
+            <PluginUpdateBody
+              plugin={props.plugin}
+              tag={tag}
+              onClose={props.onClose}
+            />
+          )}
+        </Show>
+      </DialogContent>
+    </Dialog>
+  );
+};

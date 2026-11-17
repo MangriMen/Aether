@@ -2,7 +2,7 @@ use std::ops::Deref;
 
 use super::{CapabilityId, PlatformId};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CapabilityMetadata {
     pub id: CapabilityId,
 
@@ -16,7 +16,7 @@ pub struct CapabilityMetadata {
     pub icon: Option<String>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ImporterCapabilityMetadata {
     pub base: CapabilityMetadata,
 
@@ -27,12 +27,12 @@ pub struct ImporterCapabilityMetadata {
     pub supported_extensions: Vec<String>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UpdaterCapabilityMetadata {
     pub base: CapabilityMetadata,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ContentProviderCapabilityMetadata {
     pub base: CapabilityMetadata,
 

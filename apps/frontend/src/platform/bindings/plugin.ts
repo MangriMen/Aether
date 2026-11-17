@@ -981,6 +981,11 @@ export type PluginUpdateDiffDto = {
 	removed_allowed_hosts: string[],
 	added_capabilities: CapabilityChangeDto[],
 	removed_capabilities: CapabilityChangeDto[],
+	/**
+	 *  Capabilities both have under the same kind and id but declare differently, such as a
+	 *  content provider that now serves another platform.
+	 */
+	changed_capabilities: CapabilityChangeDto[],
 	/**  The release may do something the user is warned about that the installed version may not. */
 	adds_risk: boolean,
 	/**  Both versions ask for the same. */

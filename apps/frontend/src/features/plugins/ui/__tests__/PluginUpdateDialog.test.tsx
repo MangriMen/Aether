@@ -46,6 +46,7 @@ vi.mock('../../api/pluginQueries', () => ({
       return state.pending;
     },
   }),
+  useIsUpdatingPlugin: () => () => state.pending,
 }));
 
 const { PluginUpdateDialog } = await import('../PluginUpdateDialog');
@@ -62,6 +63,7 @@ const noChanges = (): PluginUpdateDiff => ({
   removed_allowed_hosts: [],
   added_capabilities: [],
   removed_capabilities: [],
+  changed_capabilities: [],
   adds_risk: false,
   is_empty: true,
 });
@@ -247,6 +249,85 @@ describe('PluginUpdateDialog', () => {
     await vi.waitFor(() => expect(state.refetch).toHaveBeenCalled());
 
     expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('should offer no update when reading the preview again failed after an earlier read', () => {
+    state.preview.data = preview();
+    state.preview.error = new Error('network');
+    mount(() => (
+      <PluginUpdateDialog plugin={plugin} tag='v2' onClose={() => {}} />
+    ));
+
+    confirmButton()?.click();
+
+    expect(confirmButton()?.disabled).toBe(true);
+    expect(document.body.textContent).toContain(
+      'Could not read the new version',
+    );
+    expect(state.mutateAsync).not.toHaveBeenCalled();
+  });
+
+  it('should stay open and keep cancel out of reach while the update runs', () => {
+    state.preview.data = preview();
+    state.pending = true;
+    const onClose = vi.fn();
+    mount(() => (
+      <PluginUpdateDialog plugin={plugin} tag='v2' onClose={onClose} />
+    ));
+
+    const cancel = [...document.querySelectorAll('button')].find(
+      (b) => b.textContent?.trim() === 'Cancel',
+    );
+    expect(cancel?.disabled).toBe(true);
+
+    document.activeElement?.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+    );
+    document.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+    );
+
+    expect(onClose).not.toHaveBeenCalled();
+    expect(confirmButton()).toBeDefined();
+  });
+
+  it('should close on escape when no update runs', () => {
+    state.preview.data = preview();
+    const onClose = vi.fn();
+    mount(() => (
+      <PluginUpdateDialog plugin={plugin} tag='v2' onClose={onClose} />
+    ));
+
+    document.activeElement?.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+    );
+
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('should list a changed capability and the capabilities of the new version', () => {
+    state.preview.data = {
+      ...preview({
+        ...noChanges(),
+        changed_capabilities: [
+          { kind: 'content_provider', id: 'mods', name: 'Mods' },
+        ],
+        is_empty: false,
+      }),
+    };
+    (state.preview.data as PluginUpdatePreview).release.capabilities = {
+      importers: [],
+      updaters: [],
+      contentProviders: [],
+    } as unknown as PluginUpdatePreview['release']['capabilities'];
+    mount(() => (
+      <PluginUpdateDialog plugin={plugin} tag='v2' onClose={() => {}} />
+    ));
+
+    expect(document.body.textContent).toContain(
+      'Capabilities that work differently now',
+    );
+    expect(document.body.textContent).toContain('Mods (content provider)');
   });
 
   it('should show nothing when no release is picked', () => {

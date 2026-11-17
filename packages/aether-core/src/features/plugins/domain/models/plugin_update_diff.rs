@@ -7,8 +7,8 @@ use std::collections::BTreeSet;
 
 use super::host_function_risk::{HostFunctionClass, classify_host_function};
 use super::{
-    AsCapabilityMetadata, HostFunctionRisk, PluginCapabilities, PluginManifest,
-    is_wide_allowed_host,
+    AsCapabilityMetadata, HostFunctionRisk, PluginCapabilities, PluginContentProviderCapability,
+    PluginImporterCapability, PluginManifest, PluginUpdaterCapability, is_wide_allowed_host,
 };
 
 /// A host function one version declares and the other does not.
@@ -35,7 +35,8 @@ pub enum CapabilityKind {
     ContentProvider,
 }
 
-/// A capability one version registers and the other does not, told apart by kind and id.
+/// A capability, told apart by kind and id, that one version registers and the other does not,
+/// or registers differently.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CapabilityChange {
     pub kind: CapabilityKind,
@@ -60,6 +61,9 @@ pub struct PluginUpdateDiff {
     pub removed_allowed_hosts: Vec<String>,
     pub added_capabilities: Vec<CapabilityChange>,
     pub removed_capabilities: Vec<CapabilityChange>,
+    /// Capabilities both versions have under the same kind and id but declare differently, such
+    /// as a content provider that now serves another platform.
+    pub changed_capabilities: Vec<CapabilityChange>,
 }
 
 impl PluginUpdateDiff {
@@ -100,6 +104,7 @@ impl PluginUpdateDiff {
                 .collect(),
             added_capabilities: capability_changes(&other_caps, &installed_caps),
             removed_capabilities: capability_changes(&installed_caps, &other_caps),
+            changed_capabilities: changed_capabilities(&installed_caps, &other_caps),
         }
     }
 
@@ -147,48 +152,96 @@ fn function_changes(from: &BTreeSet<&str>, to: &BTreeSet<&str>) -> Vec<HostFunct
         .collect()
 }
 
-fn capability_entries<T: AsCapabilityMetadata>(
+/// One capability as a whole, so that two of the same kind and id can be told apart.
+#[derive(PartialEq)]
+enum CapabilityRef<'a> {
+    Importer(&'a PluginImporterCapability),
+    Updater(&'a PluginUpdaterCapability),
+    ContentProvider(&'a PluginContentProviderCapability),
+}
+
+struct CapabilityEntry<'a> {
     kind: CapabilityKind,
-    list: &[T],
-) -> impl Iterator<Item = (CapabilityKind, &str, &str)> {
+    id: &'a str,
+    name: &'a str,
+    whole: CapabilityRef<'a>,
+}
+
+impl CapabilityEntry<'_> {
+    fn is_same(&self, other: &Self) -> bool {
+        self.kind == other.kind && self.id == other.id
+    }
+
+    fn change(&self) -> CapabilityChange {
+        CapabilityChange {
+            kind: self.kind,
+            id: self.id.to_owned(),
+            name: self.name.to_owned(),
+        }
+    }
+}
+
+fn capability_entries<'a, T: AsCapabilityMetadata>(
+    kind: CapabilityKind,
+    list: &'a [T],
+    whole: fn(&'a T) -> CapabilityRef<'a>,
+) -> impl Iterator<Item = CapabilityEntry<'a>> {
     list.iter().map(move |c| {
         let metadata = c.as_metadata();
-        (kind, metadata.id.as_str(), metadata.name.as_str())
+        CapabilityEntry {
+            kind,
+            id: metadata.id.as_str(),
+            name: metadata.name.as_str(),
+            whole: whole(c),
+        }
     })
 }
 
-/// Kind and id, with the name the capability carries.
-fn capabilities(capabilities: Option<&PluginCapabilities>) -> Vec<(CapabilityKind, &str, &str)> {
+/// Sorted by kind and id, the first of each kept: the one the launcher registers.
+fn capabilities(capabilities: Option<&PluginCapabilities>) -> Vec<CapabilityEntry<'_>> {
     let Some(capabilities) = capabilities else {
         return Vec::new();
     };
 
-    let mut all: Vec<_> = capability_entries(CapabilityKind::Importer, &capabilities.importers)
-        .chain(capability_entries(
-            CapabilityKind::Updater,
-            &capabilities.updaters,
-        ))
-        .chain(capability_entries(
-            CapabilityKind::ContentProvider,
-            &capabilities.content_providers,
-        ))
-        .collect();
-    all.sort_unstable();
-    all.dedup_by(|a, b| (a.0, a.1) == (b.0, b.1));
+    let mut all: Vec<_> = capability_entries(
+        CapabilityKind::Importer,
+        &capabilities.importers,
+        CapabilityRef::Importer,
+    )
+    .chain(capability_entries(
+        CapabilityKind::Updater,
+        &capabilities.updaters,
+        CapabilityRef::Updater,
+    ))
+    .chain(capability_entries(
+        CapabilityKind::ContentProvider,
+        &capabilities.content_providers,
+        CapabilityRef::ContentProvider,
+    ))
+    .collect();
+    all.sort_by(|a, b| (a.kind, a.id).cmp(&(b.kind, b.id)));
+    all.dedup_by(|a, b| a.is_same(b));
     all
 }
 
-fn capability_changes(
-    from: &[(CapabilityKind, &str, &str)],
-    to: &[(CapabilityKind, &str, &str)],
-) -> Vec<CapabilityChange> {
+/// What `from` has that `to` lacks.
+fn capability_changes(from: &[CapabilityEntry], to: &[CapabilityEntry]) -> Vec<CapabilityChange> {
     from.iter()
-        .filter(|(kind, id, _)| !to.iter().any(|(k, i, _)| k == kind && i == id))
-        .map(|(kind, id, name)| CapabilityChange {
-            kind: *kind,
-            id: (*id).to_owned(),
-            name: (*name).to_owned(),
-        })
+        .filter(|c| !to.iter().any(|o| c.is_same(o)))
+        .map(CapabilityEntry::change)
+        .collect()
+}
+
+/// What both have under the same kind and id but declare differently: a content provider that
+/// now serves another platform, other file extensions, other handlers. Named as `other` has it.
+fn changed_capabilities(
+    installed: &[CapabilityEntry],
+    other: &[CapabilityEntry],
+) -> Vec<CapabilityChange> {
+    other
+        .iter()
+        .filter(|c| installed.iter().any(|i| c.is_same(i) && c.whole != i.whole))
+        .map(CapabilityEntry::change)
         .collect()
 }
 
@@ -196,9 +249,10 @@ fn capability_changes(
 mod tests {
     use super::*;
     use crate::features::instance::{
-        CapabilityId, CapabilityMetadata, ImporterCapabilityMetadata, UpdaterCapabilityMetadata,
+        CapabilityId, CapabilityMetadata, ContentProviderCapabilityMetadata,
+        ImporterCapabilityMetadata, PlatformId, UpdaterCapabilityMetadata,
     };
-    use crate::features::plugins::{PluginImporterCapability, PluginUpdaterCapability};
+    use crate::features::plugins::ProviderHandlers;
 
     fn manifest(hosts: &[&str], functions: Option<&[&str]>) -> PluginManifest {
         let json = serde_json::json!({
@@ -408,5 +462,70 @@ mod tests {
 
         assert_eq!(diff.added_capabilities.len(), 1);
         assert!(diff.removed_capabilities.is_empty());
+    }
+
+    fn content_provider(platform: Option<&str>) -> PluginContentProviderCapability {
+        PluginContentProviderCapability {
+            metadata: ContentProviderCapabilityMetadata {
+                base: base("mods", "Mods"),
+                platform: platform.map(|p| p.parse::<PlatformId>().unwrap()),
+            },
+            handlers: ProviderHandlers {
+                search: "search".to_owned(),
+                get_content: "get_content".to_owned(),
+                list_version: None,
+                check_compatibility: None,
+                resolve_file: Some("resolve_file".to_owned()),
+                resolve_install_plan: None,
+                resolve_pack_metadata: None,
+                get_contents_metadata: None,
+                get_versions_metadata: None,
+                get_authors: None,
+                get_version: None,
+            },
+        }
+    }
+
+    /// Same id, another platform: the provider is then asked for every reference to that
+    /// platform, so it is not the same capability any more.
+    #[test]
+    fn should_report_a_changed_capability_when_a_provider_keeps_its_id_and_changes_platform() {
+        let plain = manifest(&[], Some(&[]));
+        let installed = PluginCapabilities {
+            content_providers: vec![content_provider(Some("curseforge"))],
+            ..Default::default()
+        };
+        let other = PluginCapabilities {
+            content_providers: vec![content_provider(Some("modrinth"))],
+            ..Default::default()
+        };
+
+        let diff = PluginUpdateDiff::between(&plain, Some(&installed), &plain, Some(&other));
+
+        assert_eq!(
+            diff.changed_capabilities,
+            [CapabilityChange {
+                kind: CapabilityKind::ContentProvider,
+                id: "mods".into(),
+                name: "Mods".into()
+            }]
+        );
+        assert!(diff.added_capabilities.is_empty());
+        assert!(diff.removed_capabilities.is_empty());
+        assert!(!diff.is_empty());
+    }
+
+    #[test]
+    fn should_report_no_changed_capability_when_it_is_declared_the_same() {
+        let plain = manifest(&[], Some(&[]));
+        let capabilities = PluginCapabilities {
+            content_providers: vec![content_provider(Some("curseforge"))],
+            ..Default::default()
+        };
+
+        let diff =
+            PluginUpdateDiff::between(&plain, Some(&capabilities), &plain, Some(&capabilities));
+
+        assert!(diff.is_empty());
     }
 }

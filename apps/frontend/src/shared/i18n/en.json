@@ -813,6 +813,7 @@
       "removedHosts": "Network access it no longer needs",
       "addedCapabilities": "New capabilities",
       "removedCapabilities": "Capabilities it no longer has",
+      "changedCapabilities": "Capabilities that work differently now",
       "capabilityKind": {
         "importer": "importer",
         "updater": "updater",

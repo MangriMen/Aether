@@ -39,19 +39,19 @@ impl PluginCapabilities {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PluginImporterCapability {
     pub metadata: ImporterCapabilityMetadata,
     pub handler: String,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PluginUpdaterCapability {
     pub metadata: UpdaterCapabilityMetadata,
     pub handler: String,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PluginContentProviderCapability {
     pub metadata: ContentProviderCapabilityMetadata,
     pub handlers: ProviderHandlers,
@@ -59,7 +59,7 @@ pub struct PluginContentProviderCapability {
 
 /// Names of the plugin functions behind a content provider. An operation without a handler is
 /// unsupported: the proxy answers it with `InstanceError::UnsupportedOperation`.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProviderHandlers {
     pub search: String,
     pub get_content: String,

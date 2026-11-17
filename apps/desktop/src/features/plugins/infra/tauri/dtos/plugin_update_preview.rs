@@ -39,6 +39,9 @@ pub struct PluginUpdateDiffDto {
     pub removed_allowed_hosts: Vec<String>,
     pub added_capabilities: Vec<CapabilityChangeDto>,
     pub removed_capabilities: Vec<CapabilityChangeDto>,
+    /// Capabilities both have under the same kind and id but declare differently, such as a
+    /// content provider that now serves another platform.
+    pub changed_capabilities: Vec<CapabilityChangeDto>,
     /// The release may do something the user is warned about that the installed version may not.
     pub adds_risk: bool,
     /// Both versions ask for the same.
@@ -74,6 +77,11 @@ impl From<PluginUpdateDiff> for PluginUpdateDiffDto {
                 .collect(),
             removed_capabilities: value
                 .removed_capabilities
+                .into_iter()
+                .map(Into::into)
+                .collect(),
+            changed_capabilities: value
+                .changed_capabilities
                 .into_iter()
                 .map(Into::into)
                 .collect(),
