@@ -79,7 +79,7 @@ the consent below); what it refuses fails the call as `accessDenied`.
   launcher next to it. It is judged on the canonical path, with links and `..` resolved, and that
   canonical path is what runs. A shell, any other binary, a jar or a file in `/cache` is refused,
   and with no Java registered nothing runs at all.
-* **`currentDir`** is mandatory. It must be an existing folder inside the plugin's `/cache` or
+* **`currentDir`** is mandatory. It must be an existing path inside the plugin's `/cache` or
   `/instances` (on the canonical path), written in the `#` form below (`#/instances/<id>`) or as
   the host path. A folder the user granted in the plugin's settings does not count.
 * **`#<mount path>`**: a value that starts with `#` (a whole argument, `program` or `currentDir`)
@@ -332,8 +332,8 @@ path; a plugin cannot tell an ignored folder from one that was never granted.
 
 ## Instance files
 
-`/instances` is mounted read-only: a plugin reads an instance through WASI and writes into it
-only through `write_instance_file`.
+`/instances` is mounted read-only: a plugin reads an instance through WASI and its own code writes into it
+only through `write_instance_file` (a command it runs there may write too).
 
 * `instance_get_dir` answers the sandbox path of the instance, `/instances/<id>`, and
   `instance_plugin_get_dir` that of the plugin's own folder in it,
@@ -348,7 +348,7 @@ only through `write_instance_file`.
   `load.memoryLimit` when that is less (the bytes are in the plugin's memory three times while
   they pass; without a `memoryLimit` the plugin gets 256 MiB, so 64 MiB). A bigger file fails
   the call as `tooLarge`.
-* The `iconPath` of `instance_create` is an existing file in the plugin's `/cache`
+* The `iconPath` of `instance_create` is a file in the plugin's `/cache`
   (`/cache/icon.png`); any other path fails the call as `accessDenied`. An icon the launcher
   cannot import (not an image, or over 4 MiB) does not fail the call: the instance is created
   without one, with a warning.
