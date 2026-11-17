@@ -8,15 +8,15 @@ import { cn } from '@/shared/utils';
 
 const KIND_STYLE = {
   minecraft: {
-    label: 'settings.storage.disk_kind.minecraft',
+    label: 'settings.storage.diskKind.minecraft',
     color: 'bg-[oklch(0.72_0.14_165)]',
   },
   java: {
-    label: 'settings.storage.disk_kind.java',
+    label: 'settings.storage.diskKind.java',
     color: 'bg-[oklch(0.78_0.15_70)]',
   },
   instances: {
-    label: 'settings.storage.disk_kind.instances',
+    label: 'settings.storage.diskKind.instances',
     color: 'bg-[oklch(0.68_0.15_285)]',
   },
 } as const satisfies Record<StorageKind, { label: string; color: string }>;

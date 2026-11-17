@@ -211,7 +211,7 @@ These apply to new and edited code; older code is brought in line when a file is
 ### i18n keys
 
 - Key segments are camelCase. UPPER_SNAKE is only for backend error codes in `errors.<domain>.<CODE>`; they match `#[serde(tag = "code", rename_all = "SCREAMING_SNAKE_CASE")]` in the DTO.
-- A segment that equals a value of a backend enum keeps that value's case, so the key can be built from the value.
+- A segment that equals a value of a backend enum keeps that value's case, so the key can be built from the value. Such a map is listed in `ENUM_VALUE_PARENTS` in `shared/i18n/__tests__/keyFormat.test.ts`, which checks every other key.
 
 ### Form schemas
 

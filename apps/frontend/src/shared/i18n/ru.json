@@ -899,7 +899,7 @@
         "own": "Принадлежит инстансам",
         "ownDescription": "Моды, миры и настройки каждого инстанса"
       },
-      "disk_kind": {
+      "diskKind": {
         "minecraft": "Minecraft",
         "java": "Java",
         "instances": "Инстансы"

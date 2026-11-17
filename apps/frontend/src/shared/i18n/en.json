@@ -899,7 +899,7 @@
         "own": "Belongs to instances",
         "ownDescription": "Mods, worlds and settings of each instance"
       },
-      "disk_kind": {
+      "diskKind": {
         "minecraft": "Minecraft",
         "java": "Java",
         "instances": "Instances"
