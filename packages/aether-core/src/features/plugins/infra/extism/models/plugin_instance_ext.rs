@@ -1,7 +1,8 @@
 use crate::features::plugins::{PluginCallError, PluginError, PluginInstance};
 
 /// Typed call helper for Extism plugins.
-/// Converts args/result using extism's `ToBytes`/`FromBytes` (`MessagePack`).
+/// Converts args/result with their extism `ToBytes`/`FromBytes`: the callers pass `Wire`, msgpack
+/// with named fields (see `aether_core_plugin_api::v0::wire`).
 /// This lives in the infra layer because it depends on extism serialization.
 pub(crate) trait PluginInstanceExt: PluginInstance {
     fn call<'a, 'b, T: extism::ToBytes<'a>, U: extism::FromBytes<'b>>(
