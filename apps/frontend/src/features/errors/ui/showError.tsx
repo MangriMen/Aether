@@ -22,6 +22,7 @@ export const showError = ({
   err,
   t,
   variant = 'destructive',
+  action: callerAction,
   ...params
 }: ShowErrorParams) => {
   const isTranslationError = isLauncherError(err);
@@ -45,14 +46,17 @@ export const showError = ({
 
   showToast({
     description,
-    action: fix
-      ? () => (
-          <div class='gap-2 flex flex-col'>
-            {fix()}
-            {renderDetails?.()}
-          </div>
-        )
-      : renderDetails,
+    // The caller's own action wins; `action: undefined` from a caller must not wipe the others.
+    action:
+      callerAction ??
+      (fix
+        ? () => (
+            <div class='gap-2 flex flex-col'>
+              {fix()}
+              {renderDetails?.()}
+            </div>
+          )
+        : renderDetails),
     variant,
     ...params,
   });
