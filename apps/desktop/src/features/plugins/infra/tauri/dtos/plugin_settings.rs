@@ -131,6 +131,7 @@ pub enum AllowedHostRejectionDto {
     MissingHost,
     NotPublic,
     NotLocal,
+    Unresolved,
     Wildcard,
 }
 
@@ -265,6 +266,7 @@ impl From<AllowedHostRejection> for AllowedHostRejectionDto {
             AllowedHostRejection::MissingHost => Self::MissingHost,
             AllowedHostRejection::NotPublic => Self::NotPublic,
             AllowedHostRejection::NotLocal => Self::NotLocal,
+            AllowedHostRejection::Unresolved => Self::Unresolved,
             AllowedHostRejection::Wildcard => Self::Wildcard,
         }
     }

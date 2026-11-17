@@ -754,6 +754,27 @@ describe('plugin local address refused, reported by the plugin', () => {
   it('should_keep_the_text_of_the_plugin_in_the_details', () => {
     expect(getErrorDetails(blocked)).toBe('nas refused');
   });
+
+  it('should_say_why_a_host_cannot_be_a_local_address', () => {
+    const refused = {
+      type: 'plugin',
+      payload: {
+        code: 'INVALID_LOCAL_HOST',
+        payload: {
+          plugin_id: 'packwiz',
+          url: 'https://cdn.example/',
+          reason: 'not_local',
+        },
+      },
+    } as LauncherError;
+
+    expect(getTranslatedError(refused, tEn)).toBe(
+      'The host of https://cdn.example/ cannot be given to the plugin as a local address: it must be one host in your own network or on this computer, and a name must resolve to such addresses only',
+    );
+    expect(getTranslatedError(refused, tRu)).toContain(
+      'нельзя выдать плагину как локальный адрес',
+    );
+  });
 });
 
 describe('plugin provider failure', () => {

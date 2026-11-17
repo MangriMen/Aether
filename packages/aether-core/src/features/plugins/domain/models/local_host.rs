@@ -3,7 +3,9 @@
 //!
 //! A plugin's requests are refused every address that is not public
 //! (`shared::public_address`). A grant lifts that for one host, and one port when it names one,
-//! for one plugin, and admits that host past its `allowed_hosts` too. Only the user makes one
+//! for one plugin; one for an address literal or `localhost` admits that host past its
+//! `allowed_hosts` too, one for a DNS name does not (see [`LocalHost::is_local_by_name`]). Only
+//! the user makes one
 //! (`GrantPluginLocalHostAccessUseCase`, behind a confirmation), never a manifest, and never by
 //! a pattern: a grant names one host as the plugin's requests name it.
 
@@ -13,7 +15,7 @@ use url::{Host, Url};
 
 use super::AllowedHostRejection;
 use crate::shared::{
-    public_address::{is_blocked_ip, is_never_grantable},
+    public_address::{is_blocked_ip, is_localhost, is_never_grantable},
     web_url::{HttpUrl, InvalidUrlReason},
 };
 
@@ -46,12 +48,22 @@ impl LocalHost {
         self.host == host && self.port.is_none_or(|own| own == port)
     }
 
+    /// Whether the host is local by how it is written: an address literal (a grant only names a
+    /// local one) or `localhost`. Only such a grant admits its host past `allowed_hosts`: what a
+    /// DNS name resolves to is the name's owner's to say, so a grant for one lets its local
+    /// addresses through only once `allowed_hosts` already admits the name.
+    pub(crate) fn is_local_by_name(&self) -> bool {
+        self.host.starts_with('[')
+            || self.host.parse::<std::net::Ipv4Addr>().is_ok()
+            || is_localhost(&self.host)
+    }
+
     /// The grant for the host of `raw_url` and its port (the scheme's when the URL names none).
     ///
-    /// Refused: not `http(s)`, no host, a wildcard in the name, and an address literal that is
-    /// public (it needs no grant: `allowed_hosts` gives it) or that no grant may name
-    /// ([`is_never_grantable`]). A name is not resolved here: what it resolves to is judged when
-    /// the plugin's requests are made.
+    /// Refused: not `http(s)`, no host, port 0, a wildcard in the name, and an address literal
+    /// that is public (it needs no grant: `allowed_hosts` gives it) or that no grant may name
+    /// ([`is_never_grantable`]). A name is not resolved here: the grant does that
+    /// (`GrantPluginLocalHostAccessUseCase`), and the plugin's requests judge it again.
     pub(crate) fn from_url(raw_url: &str) -> Result<Self, AllowedHostRejection> {
         let url = HttpUrl::parse(raw_url.trim()).map_err(|err| match err.reason {
             InvalidUrlReason::Scheme { .. } => AllowedHostRejection::UnsupportedScheme,
@@ -61,10 +73,15 @@ impl LocalHost {
         let url = url.as_url();
         Self::check_host(url)
             .map_err(|reason| reason.unwrap_or(AllowedHostRejection::InvalidUrl))?;
+        // No request goes to port 0, and the settings would not read such a grant back.
+        let port = url
+            .port_or_known_default()
+            .filter(|&port| port != 0)
+            .ok_or(AllowedHostRejection::InvalidUrl)?;
 
         Ok(Self {
             host: url.host_str().unwrap_or_default().to_owned(),
-            port: url.port_or_known_default(),
+            port: Some(port),
         })
     }
 
@@ -166,6 +183,10 @@ mod tests {
             ("http://255.255.255.255/", AllowedHostRejection::NotLocal),
             ("http://224.0.0.1/", AllowedHostRejection::NotLocal),
             ("http://[ff02::1]/", AllowedHostRejection::NotLocal),
+            ("http://169.254.169.254/", AllowedHostRejection::NotLocal),
+            ("http://[fd00:ec2::254]/", AllowedHostRejection::NotLocal),
+            ("http://localhost:0/", AllowedHostRejection::InvalidUrl),
+            ("http://192.168.1.10:0/", AllowedHostRejection::InvalidUrl),
         ] {
             assert_eq!(LocalHost::from_url(url), Err(expected), "{url}");
         }
@@ -207,6 +228,28 @@ mod tests {
             "0x7f.1",
         ] {
             assert_eq!(LocalHost::parse(entry), Err(InvalidLocalHost), "{entry}");
+        }
+    }
+
+    #[test]
+    fn should_tell_a_host_local_by_its_name_from_a_dns_name() {
+        for entry in [
+            "192.168.1.10:8080",
+            "[::1]",
+            "[fd12::1]:443",
+            "localhost",
+            "a.localhost",
+        ] {
+            assert!(
+                LocalHost::parse(entry).unwrap().is_local_by_name(),
+                "{entry}"
+            );
+        }
+        for entry in ["nas.lan:8080", "nas", "localhost.example"] {
+            assert!(
+                !LocalHost::parse(entry).unwrap().is_local_by_name(),
+                "{entry}"
+            );
         }
     }
 

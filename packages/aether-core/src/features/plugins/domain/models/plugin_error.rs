@@ -124,6 +124,17 @@ pub enum PluginError {
         reason: AllowedHostRejection,
     },
 
+    /// The host of `url` cannot be given to the plugin as a local address
+    /// (`GrantPluginLocalHostAccessUseCase`).
+    #[error(
+        "The host of \"{url}\" cannot be given to plugin \"{plugin_id}\" as a local address: {reason}"
+    )]
+    InvalidLocalHost {
+        plugin_id: PluginId,
+        url: String,
+        reason: AllowedHostRejection,
+    },
+
     #[error("Host entry \"{entry}\" cannot be given to plugin \"{plugin_id}\": {reason}")]
     InvalidAllowedHostEntry {
         plugin_id: PluginId,

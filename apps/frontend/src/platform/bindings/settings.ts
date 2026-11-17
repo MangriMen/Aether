@@ -24,7 +24,7 @@ export type ActionOnInstanceLaunchDto = "nothing" | "hide" | "close";
 
 export type AllowedHostEntryRejectionDto = "empty" | "not_a_host_name" | "invalid_pattern";
 
-export type AllowedHostRejectionDto = "invalid_url" | "unsupported_scheme" | "missing_host" | "not_public" | "not_local" | "wildcard";
+export type AllowedHostRejectionDto = "invalid_url" | "unsupported_scheme" | "missing_host" | "not_public" | "not_local" | "unresolved" | "wildcard";
 
 export type AllowedPathRejectionDto = "host_not_absolute" | "host_not_a_folder" | "host_is_root" | "plugin_not_absolute" | "plugin_not_normalized" | "plugin_is_root" | "plugin_reserved" | "host_overlaps_core";
 
@@ -551,6 +551,15 @@ export type PluginErrorDto = { code: "NOT_FOUND"; payload: {
 	path: string,
 	reason: AllowedPathRejectionDto,
 } } | { code: "INVALID_ALLOWED_HOST"; payload: {
+	plugin_id: string,
+	url: string,
+	reason: AllowedHostRejectionDto,
+} } | 
+/**
+ *  The host of `url` cannot be given to the plugin as a local address: not one host, a
+ *  public address literal, or a name that does not resolve only to local addresses.
+ */
+{ code: "INVALID_LOCAL_HOST"; payload: {
 	plugin_id: string,
 	url: string,
 	reason: AllowedHostRejectionDto,

@@ -254,7 +254,7 @@ async fn should_not_give_a_local_host_when_it_is_a_pattern_or_no_local_address()
             .await;
 
         assert!(
-            matches!(&result, Err(PluginError::InvalidAllowedHost { reason, .. }) if *reason == expected),
+            matches!(&result, Err(PluginError::InvalidLocalHost { reason, .. }) if *reason == expected),
             "{url}: {result:?}"
         );
     }
@@ -272,4 +272,60 @@ async fn should_not_give_a_local_host_when_it_is_a_pattern_or_no_local_address()
         matches!(unknown, Err(PluginError::NotFound { .. })),
         "{unknown:?}"
     );
+}
+
+/// `nas.lan` is in the user's network, `cdn.example` on the internet, `split.example` both,
+/// `meta.example` the cloud metadata service; `gone.example` does not resolve.
+fn fake_dns(
+    host: String,
+    _port: u16,
+) -> futures::future::BoxFuture<'static, std::io::Result<Vec<std::net::IpAddr>>> {
+    Box::pin(async move {
+        let answer = |ips: &[&str]| Ok(ips.iter().map(|ip| ip.parse().unwrap()).collect());
+        match host.as_str() {
+            "nas.lan" => answer(&["192.168.1.10", "fd12::10"]),
+            "cdn.example" => answer(&["93.184.215.14"]),
+            "split.example" => answer(&["192.168.1.10", "93.184.215.14"]),
+            "meta.example" => answer(&["169.254.169.254"]),
+            "empty.example" => answer(&[]),
+            _ => Err(std::io::Error::other("no such host")),
+        }
+    })
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn should_give_a_name_as_a_local_host_only_when_it_resolves_to_local_addresses_only() {
+    let harness = Harness::enabled().await;
+    let settings = Arc::new(MemoryPluginSettings::default());
+    let use_case = harness.grant_local_host(&settings).with_lookup(fake_dns);
+
+    for (url, expected) in [
+        ("https://cdn.example/", AllowedHostRejection::NotLocal),
+        ("https://split.example/", AllowedHostRejection::NotLocal),
+        ("https://meta.example/", AllowedHostRejection::NotLocal),
+        ("https://gone.example/", AllowedHostRejection::Unresolved),
+        ("https://empty.example/", AllowedHostRejection::Unresolved),
+    ] {
+        for dry_run in [true, false] {
+            let result = use_case.execute(plugin_id(), url.into(), dry_run).await;
+
+            assert!(
+                matches!(&result, Err(PluginError::InvalidLocalHost { reason, .. }) if *reason == expected),
+                "{url}: {result:?}"
+            );
+        }
+    }
+    assert!(settings.local_hosts().is_empty());
+
+    let granted = use_case
+        .execute(plugin_id(), "http://nas.lan:8080/".into(), false)
+        .await
+        .unwrap();
+    assert_eq!(
+        granted,
+        HostAccess::Granted {
+            host: "nas.lan:8080".into()
+        }
+    );
+    assert_eq!(settings.local_hosts(), ["nas.lan:8080"]);
 }

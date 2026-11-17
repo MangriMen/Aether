@@ -286,6 +286,7 @@ fn plugin(value: &PluginError) -> HostError {
         PluginError::IdMismatch { .. }
         | PluginError::InvalidAllowedPath { .. }
         | PluginError::InvalidAllowedHost { .. }
+        | PluginError::InvalidLocalHost { .. }
         | PluginError::InvalidAllowedHostEntry { .. }
         | PluginError::CommandApprovalOnceOnly { .. } => Kind::InvalidArgument,
 

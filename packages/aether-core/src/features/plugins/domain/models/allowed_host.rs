@@ -56,9 +56,16 @@ impl PluginHosts {
     }
 
     /// Whether a request may go to `host` on `port` at all: the host is in `allowed_hosts`, or
-    /// the user granted it as a local host.
+    /// the user granted it as a local host that is local by how it is written (an address
+    /// literal, `localhost`). A granted DNS name must be in `allowed_hosts` as well: the plugin
+    /// reports the refusal the grant is offered for, so it must not get a public name it was
+    /// never allowed past the allowlist by calling it local.
     pub(crate) fn admits(&self, host: &str, port: u16) -> bool {
-        is_host_allowed(host, &self.allowed) || self.grants_local(host, port)
+        is_host_allowed(host, &self.allowed)
+            || self
+                .local
+                .iter()
+                .any(|local| local.is_local_by_name() && local.admits(host, port))
     }
 
     /// Whether the user let the plugin reach `host` on `port` at a non-public address.
@@ -168,6 +175,8 @@ pub enum AllowedHostRejection {
     /// Given as a local host, an address literal that is public (`allowed_hosts` gives it), or
     /// one that is no single host (unspecified, broadcast, multicast).
     NotLocal,
+    /// Given as a local host, a name that could not be resolved, or resolved to no address.
+    Unresolved,
 }
 
 impl std::fmt::Display for AllowedHostRejection {
@@ -179,6 +188,7 @@ impl std::fmt::Display for AllowedHostRejection {
             Self::NotPublic => "the host is local or not a public address",
             Self::Wildcard => "the host name contains a wildcard",
             Self::NotLocal => "the address is not one local host",
+            Self::Unresolved => "the host name does not resolve",
         })
     }
 }

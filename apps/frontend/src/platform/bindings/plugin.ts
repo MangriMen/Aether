@@ -97,7 +97,7 @@ export const events = {
 /* Types */
 export type AllowedHostEntryRejectionDto = "empty" | "not_a_host_name" | "invalid_pattern";
 
-export type AllowedHostRejectionDto = "invalid_url" | "unsupported_scheme" | "missing_host" | "not_public" | "not_local" | "wildcard";
+export type AllowedHostRejectionDto = "invalid_url" | "unsupported_scheme" | "missing_host" | "not_public" | "not_local" | "unresolved" | "wildcard";
 
 /**  A folder of the user's given to a plugin. */
 export type AllowedPathDto = {
@@ -737,6 +737,15 @@ export type PluginErrorDto = { code: "NOT_FOUND"; payload: {
 	path: string,
 	reason: AllowedPathRejectionDto,
 } } | { code: "INVALID_ALLOWED_HOST"; payload: {
+	plugin_id: string,
+	url: string,
+	reason: AllowedHostRejectionDto,
+} } | 
+/**
+ *  The host of `url` cannot be given to the plugin as a local address: not one host, a
+ *  public address literal, or a name that does not resolve only to local addresses.
+ */
+{ code: "INVALID_LOCAL_HOST"; payload: {
 	plugin_id: string,
 	url: string,
 	reason: AllowedHostRejectionDto,

@@ -321,6 +321,7 @@
       "FOREIGN_PROVIDER": "Plugin {{plugin_id}} cannot create an instance of a pack from {{provider_id}}: only from a provider of its own",
       "INVALID_ALLOWED_PATH": "Folder {{path}} cannot be given to the plugin: the host path must be an absolute path to a folder other than a whole drive, and the plugin path must start with / and stay clear of /cache and /instances. The folder itself must not be the plugin's own cache or the instances folder, nor lie inside or contain either",
       "INVALID_ALLOWED_HOST": "The host of {{url}} cannot be given to the plugin: only http and https addresses of public hosts are allowed, without wildcards",
+      "INVALID_LOCAL_HOST": "The host of {{url}} cannot be given to the plugin as a local address: it must be one host in your own network or on this computer, and a name must resolve to such addresses only",
       "INVALID_ALLOWED_HOST_ENTRY": "Host {{entry}} cannot be saved: write a host name or a pattern such as *.example.com, without a scheme, port or path",
       "COMMAND_NOT_APPROVED": "The command of plugin {{plugin_id}} did not run: {{reason}}",
       "HOST_NOT_ALLOWED": "Plugin {{plugin_id}} may not connect to {{host}}: the host is not in its network access list",

@@ -320,6 +320,13 @@ pub enum PluginErrorDto {
         url: String,
         reason: AllowedHostRejectionDto,
     },
+    /// The host of `url` cannot be given to the plugin as a local address: not one host, a
+    /// public address literal, or a name that does not resolve only to local addresses.
+    InvalidLocalHost {
+        plugin_id: String,
+        url: String,
+        reason: AllowedHostRejectionDto,
+    },
     InvalidAllowedHostEntry {
         plugin_id: String,
         entry: String,
@@ -533,6 +540,15 @@ impl PluginErrorDto {
                 url,
                 reason,
             } => Self::InvalidAllowedHost {
+                plugin_id: plugin_id.to_string(),
+                url: url.clone(),
+                reason: (*reason).into(),
+            },
+            PluginError::InvalidLocalHost {
+                plugin_id,
+                url,
+                reason,
+            } => Self::InvalidLocalHost {
                 plugin_id: plugin_id.to_string(),
                 url: url.clone(),
                 reason: (*reason).into(),

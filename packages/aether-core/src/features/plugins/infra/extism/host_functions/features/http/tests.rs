@@ -76,7 +76,7 @@ fn should_judge_the_host_against_allowed_hosts(
 #[case::cloud_metadata(&["169.254.169.254"], &[])]
 #[case::unspecified_or_broadcast(&["0.0.0.0", "255.255.255.255", "::"], &[])]
 #[case::shared_or_reserved(
-    &["100.64.0.1", "100.127.255.255", "192.0.0.1", "240.0.0.1"],
+    &["100.64.0.1", "100.127.255.255", "192.0.0.1", "198.18.0.1", "240.0.0.1"],
     &[]
 )]
 #[case::multicast_or_documentation(&["224.0.0.1", "192.0.2.1", "ff02::1", "2001:db8::1"], &[])]
@@ -88,10 +88,11 @@ fn should_judge_the_host_against_allowed_hosts(
     &[],
     &["1.1.1.1", "8.8.8.8", "104.16.0.1", "2606:4700:4700::1111", "::ffff:8.8.8.8"]
 )]
-// TUN-mode VPN clients answer public names from 198.18.0.0/15 (fake-ip).
+// TUN-mode VPN clients answer public names from 198.18.0.0/15 (fake-ip), less the /30 of
+// their own interface.
 #[case::fake_ip_benchmark_range(
     &[],
-    &["198.18.0.1", "198.19.255.255", "::ffff:198.18.0.1"]
+    &["198.18.0.4", "198.19.255.255", "::ffff:198.18.0.46"]
 )]
 fn should_judge_the_address(#[case] blocked: &[&str], #[case] allowed: &[&str]) {
     for ip in blocked {
@@ -1295,12 +1296,38 @@ async fn should_reach_a_local_host_when_the_user_granted_its_name_and_port() {
         "{err}"
     );
 
-    let granted = PluginHosts::new(vec![], vec![local(&format!("nas.lan:{port}"))]);
+    let grant = local(&format!("nas.lan:{port}"));
+    let granted = PluginHosts::new(vec!["nas.lan".to_owned()], vec![grant.clone()]);
     let body = get_granted(&url, &granted, lan_dns)
         .await
-        .expect("the granted host and port is reached, without an allowed_hosts entry");
+        .expect("the granted host and port is reached at its local address");
     assert_eq!(body, b"pack");
     assert_eq!(server.requests().len(), 1);
+
+    // The plugin reports the refusal a grant is offered for: a name it was never allowed is
+    // not let past `allowed_hosts` by calling it local.
+    let err = get_granted(&url, &PluginHosts::new(vec![], vec![grant]), lan_dns)
+        .await
+        .expect_err("a granted name outside allowed_hosts is refused");
+    assert!(
+        matches!(err, PluginHttpError::HostNotAllowed { ref host } if host == "nas.lan"),
+        "{err}"
+    );
+    assert_eq!(server.requests().len(), 1);
+}
+
+#[tokio::test]
+async fn should_reach_a_granted_literal_or_localhost_without_an_allowed_hosts_entry() {
+    let server = TestServer::start(FIRST, |_| ok(b"pack")).await;
+    let port = port_of_server(&server);
+
+    for host in [FIRST, "localhost"] {
+        let granted = PluginHosts::new(vec![], vec![local(&format!("{host}:{port}"))]);
+        let body = get_granted(&format!("http://{host}:{port}/"), &granted, lan_dns)
+            .await
+            .unwrap_or_else(|err| panic!("{host}: {err}"));
+        assert_eq!(body, b"pack", "{host}");
+    }
 }
 
 #[tokio::test]
@@ -1399,7 +1426,10 @@ async fn should_keep_a_granted_name_on_the_checked_address_when_it_rebinds() {
     })
     .await;
     let port = port_of_server(&server);
-    let granted = PluginHosts::new(vec![], vec![local(&format!("nas.lan:{port}"))]);
+    let granted = PluginHosts::new(
+        vec!["nas.lan".to_owned()],
+        vec![local(&format!("nas.lan:{port}"))],
+    );
 
     let err = get_granted(
         &format!("http://nas.lan:{port}/first"),
