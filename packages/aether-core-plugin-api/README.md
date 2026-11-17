@@ -237,7 +237,7 @@ the log or the user, not something to match on. The kinds:
 | --- | --- | --- |
 | `invalidArgument` | What the plugin sent is refused; sending it again fails again. | The argument of a host function cannot be read as its DTO (see "Wire format"); an id, a path, a game or loader version, a page or a content id is not valid; a value is unknown to the launcher or not supported there. |
 | `notFound` | What the plugin named does not exist. | An instance, a plugin, an importer, an updater, a provider or a content file is not there. |
-| `accessDenied` | The plugin may not do this. | A path leaves the instance or the plugin's folders, a program is not one the plugin may run. The user's refusal of a command is `commandNotApproved` instead. |
+| `accessDenied` | The plugin may not do this. | A path leaves the instance or the plugin's folders, a program is not one the plugin may run, `instance_create` names a provider of another plugin. The user's refusal of a command is `commandNotApproved` instead. |
 | `commandNotApproved` | The user did not allow the command; `data` also has its `reason`. | See "`run_command` needs the user's consent". |
 | `tooLarge` | Something is over a size or count limit of the launcher: a file the plugin writes or reads, or what an install brings in (the files of a plan, its overrides, the index of a pack). An over-long answer from the network is `http` / `responseTooLarge` instead. | `write_instance_file` or `read_instance_file` with a file over the instance-file cap (see "Instance files"). |
 | `conflict` | The state does not allow it now; it may succeed later. | The instance is running or still installing, a plugin is loading, unloading or busy, the content is there already. |
@@ -364,6 +364,10 @@ only through `write_instance_file` (a command it runs there may write too).
   (`/cache/icon.png`); any other path fails the call as `accessDenied`. An icon the launcher
   cannot import (not an image, or over 4 MiB) does not fail the call: the instance is created
   without one, with a warning.
+* The `packInfo.providerId` of `instance_create` names a provider of the calling plugin: its
+  `pluginId` is the plugin's own id, its `capabilityId` any of the plugin's capabilities (the
+  one that updates the pack). The provider decides which plugin updates the instance and is told
+  of its launches, so another plugin's id, `aether` included, fails the call as `accessDenied`.
 
 ## Networking from a plugin
 

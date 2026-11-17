@@ -1,6 +1,6 @@
 use crate::{
     features::{
-        instance::{CapabilityId, PluginId},
+        instance::{CapabilityId, PluginId, ProviderId},
         plugins::{
             AllowedHostEntryRejection, AllowedHostRejection, AllowedPathRejection,
             CommandApprovalRefusal, LoadConfigType, ManifestError, PluginCallError,
@@ -99,6 +99,16 @@ pub enum PluginError {
     // Security & access errors
     #[error("Plugin \"{plugin_id}\" attempted to access restricted path: {path}")]
     AccessViolation { plugin_id: PluginId, path: String },
+
+    /// The plugin named a provider of another plugin as the one its new instance's pack comes
+    /// from: that plugin would then update the instance and be told of its launches.
+    #[error(
+        "Plugin \"{plugin_id}\" cannot bind an instance to provider \"{provider_id}\": only to a provider of its own"
+    )]
+    ForeignProvider {
+        plugin_id: PluginId,
+        provider_id: ProviderId,
+    },
 
     #[error("Folder \"{path}\" cannot be given to plugin \"{plugin_id}\": {reason}")]
     InvalidAllowedPath {

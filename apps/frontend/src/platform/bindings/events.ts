@@ -491,6 +491,9 @@ export type PluginErrorDto = { code: "NOT_FOUND"; payload: {
 } } | { code: "ACCESS_VIOLATION"; payload: {
 	plugin_id: string,
 	path: string,
+} } | { code: "FOREIGN_PROVIDER"; payload: {
+	plugin_id: string,
+	provider_id: string,
 } } | { code: "INVALID_ALLOWED_PATH"; payload: {
 	plugin_id: string,
 	path: string,
