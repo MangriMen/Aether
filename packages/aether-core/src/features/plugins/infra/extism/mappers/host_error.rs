@@ -119,7 +119,11 @@ fn instance(value: &InstanceError) -> HostError {
 
         InstanceError::PrelaunchCommandTimeout { .. } => Kind::TimedOut,
 
-        InstanceError::ImportFailed { .. } => Kind::PluginCallFailed,
+        // The host was refused to the plugin behind the capability, not to the one that asked
+        // for it: as `http` / `hostNotAllowed` it would read as the caller's own refusal.
+        InstanceError::ImportFailed { .. } | InstanceError::PluginHostNotAllowed { .. } => {
+            Kind::PluginCallFailed
+        }
 
         InstanceError::Storage(err) if storage_is_missing(err) => Kind::NotFound,
 
@@ -309,20 +313,18 @@ fn plugin(value: &PluginError) -> HostError {
     kind.of(value)
 }
 
-/// A call into another plugin that failed. A refused command keeps its reason, a refused host
-/// its name, and both the words of the plugin that reported them, so that a plugin passing the
-/// error on passes them on too.
+/// A call into another plugin that failed. A refused command keeps its reason, and the words
+/// of the plugin that reported it, so that a plugin passing the error on passes them on too. A
+/// host refused to the other plugin is only a failed call: as `http` / `hostNotAllowed` it would
+/// read as a refusal of the caller's own, and the user would be offered to allow the host to it.
 fn plugin_call(value: &PluginError, error: &PluginCallError) -> HostError {
     match error {
         PluginCallError::CommandNotApproved { reason, details } => HostError::CommandNotApproved {
             reason: (*reason).into(),
             message: details.clone(),
         },
-        PluginCallError::HostNotAllowed { host, details } => HostError::Http {
-            message: details.clone(),
-            error: HttpErrorDto::HostNotAllowed { host: host.clone() },
-        },
-        PluginCallError::MissingFunction
+        PluginCallError::HostNotAllowed { .. }
+        | PluginCallError::MissingFunction
         | PluginCallError::Timeout
         | PluginCallError::OutOfFuel
         | PluginCallError::OutOfMemory
@@ -784,6 +786,38 @@ mod tests {
             host(error.clone()),
             HostError::PluginCallFailed {
                 message: message(error)
+            }
+        );
+    }
+
+    /// A host refused to the plugin that was called is not the caller's own refusal: told as
+    /// `http` / `hostNotAllowed`, the caller would pass it back as its own.
+    #[test]
+    fn should_tell_a_failed_plugin_call_when_a_host_was_refused_to_the_other_plugin() {
+        let call = PluginError::FunctionCallFailed {
+            function_name: "install".to_owned(),
+            plugin_id: PluginId::from_static("b"),
+            error: PluginCallError::HostNotAllowed {
+                host: "cdn.example".to_owned(),
+                details: "b refused".to_owned(),
+            },
+        };
+        let capability = InstanceError::PluginHostNotAllowed {
+            plugin_id: "b".to_owned(),
+            host: "cdn.example".to_owned(),
+            details: "b refused".to_owned(),
+        };
+
+        assert_eq!(
+            host(call.clone()),
+            HostError::PluginCallFailed {
+                message: message(call)
+            }
+        );
+        assert_eq!(
+            host(capability.clone()),
+            HostError::PluginCallFailed {
+                message: message(capability)
             }
         );
     }

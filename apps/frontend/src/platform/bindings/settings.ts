@@ -569,7 +569,8 @@ export type PluginErrorDto = { code: "NOT_FOUND"; payload: {
 /**
  *  A call of the plugin failed because one of its network host functions refused `host`: it
  *  is not among the plugin's allowed hosts. `plugin_id` is the plugin that was called,
- *  `cause` holds that plugin's own words.
+ *  `cause` holds that plugin's own words. A failed call of an importer, a content provider
+ *  or an updater (`InstanceError::PluginHostNotAllowed`) is reported as this too.
  */
 { code: "HOST_NOT_ALLOWED"; payload: {
 	plugin_id: string,

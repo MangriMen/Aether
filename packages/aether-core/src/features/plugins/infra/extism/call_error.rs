@@ -35,10 +35,11 @@ pub(super) fn classify_call_error(error: &extism::Error, code: i32) -> PluginCal
     }
 }
 
-/// A failure the plugin reported in its envelope: the refusal of a command, or of a host one of
-/// its network host functions asked for, either in its own call or in a call of another plugin
-/// that failed that way, with the plugin's own message; else only that message. A refusal of a
-/// kind this launcher does not know is only the plugin's message.
+/// A failure the plugin reported in its envelope, with the plugin's own message: the refusal of a
+/// command, either of its own call of `run_command` or of a call of another plugin that failed
+/// that way; or the refusal of a host by one of its own network host functions (a host refused
+/// to another plugin it called reaches it as a failed call, not as this); else only that
+/// message. A refusal of a kind this launcher does not know is only the plugin's message.
 fn reported_failure(failure: PluginFailureDto) -> PluginCallError {
     let reported = match failure.host {
         Some(HostError::CommandNotApproved { reason, .. }) => {

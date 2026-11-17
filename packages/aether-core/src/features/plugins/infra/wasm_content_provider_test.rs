@@ -42,6 +42,7 @@ use crate::{
                 PluginCapabilitiesV1, PluginContentProviderProxy, PluginInfrastructureListener,
                 extism::models::ExtismPluginInstance,
                 plugin_utils::{get_default_allowed_paths, to_extism_mount_key},
+                refused_host::failing_plugin::{HOST_REFUSED, NOT_FOUND, failing},
             },
         },
         settings::LocationInfo,
@@ -794,4 +795,35 @@ fn should_refuse_a_wasi_write_into_instances_but_allow_a_read_when_the_mount_is_
         "creating a file is refused"
     );
     assert!(!instance.join("new.toml").exists());
+}
+
+// ─── A host refused to the plugin ──────────────────────────────
+
+/// The plugin's search fails because `http_get` refused it a host: the user is told which one,
+/// so it can be allowed; any other failure keeps its text, as before.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn should_name_the_refused_host_when_a_wasm_plugin_reports_one() {
+    let sandbox = sandbox();
+    let failing_search = |message| {
+        proxy(
+            &sandbox,
+            PLUGIN_ID,
+            failing(&plugin_id(), &["cf_search"], message),
+        )
+    };
+
+    let refused = failing_search(HOST_REFUSED)
+        .search(search_params(&plugin_id()))
+        .await
+        .unwrap_err();
+    let other = failing_search(NOT_FOUND)
+        .search(search_params(&plugin_id()))
+        .await;
+
+    assert!(
+        matches!(&refused, InstanceError::PluginHostNotAllowed { plugin_id, host, details }
+            if plugin_id == PLUGIN_ID && host == "cdn.example" && details == "cdn refused"),
+        "{refused:?}"
+    );
+    assert!(provider_error(other).contains("got 404"));
 }

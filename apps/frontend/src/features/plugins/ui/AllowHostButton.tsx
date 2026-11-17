@@ -33,6 +33,7 @@ export const AllowHostButton: Component<AllowHostButtonProps> = (props) => {
       size='sm'
       class='w-fit'
       loading={state() === 'pending'}
+      aria-busy={state() === 'pending'}
       disabled={state() === 'allowed'}
       onClick={() => void allow()}
     >

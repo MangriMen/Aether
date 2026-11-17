@@ -10,7 +10,9 @@ use serde::Serialize;
 use specta::Type;
 use uuid::Uuid;
 
-use super::{CauseDto, ContentDownloadReasonDto, ContentProviderReasonDto, FrontendError};
+use super::{
+    CauseDto, ContentDownloadReasonDto, ContentProviderReasonDto, FrontendError, PluginErrorDto,
+};
 use crate::features::instance::infra::{BrokenInstanceReasonDto, ContentTypeDto};
 
 #[derive(Clone, Debug, Serialize, Type)]
@@ -389,6 +391,21 @@ impl InstanceErrorDto {
             InstanceError::CredentialsError(err) => {
                 return Err(Box::new(FrontendError::Auth(err.into())));
             }
+            // The same error as a plugin call the host was refused in: one code for the frontend,
+            // which offers to allow the host.
+            InstanceError::PluginHostNotAllowed {
+                plugin_id,
+                host,
+                details,
+            } => {
+                return Err(Box::new(FrontendError::Plugin(
+                    PluginErrorDto::HostNotAllowed {
+                        plugin_id: plugin_id.clone(),
+                        host: host.clone(),
+                        cause: CauseDto::unknown(details),
+                    },
+                )));
+            }
         })
     }
 }
@@ -570,6 +587,24 @@ mod tests {
             FrontendError::Instance(dto) => serde_json::to_value(dto).unwrap(),
             other => panic!("not an instance error: {other:?}"),
         }
+    }
+
+    #[test]
+    fn should_report_a_host_refused_to_a_capability_as_the_plugin_error_of_a_refused_host() {
+        let err = InstanceError::PluginHostNotAllowed {
+            plugin_id: "packwiz".to_owned(),
+            host: "cdn.example".to_owned(),
+            details: "cdn refused".to_owned(),
+        };
+
+        assert_eq!(
+            serde_json::to_value(FrontendError::from(&err)).unwrap(),
+            json!({"type": "plugin", "payload": {"code": "HOST_NOT_ALLOWED", "payload": {
+                "plugin_id": "packwiz",
+                "host": "cdn.example",
+                "cause": {"type": "unknown", "details": "cdn refused"},
+            }}})
+        );
     }
 
     #[test]

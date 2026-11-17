@@ -206,7 +206,7 @@ The `error` of `http` is `{"type": <kind>, "data": …}` (`data` absent for `has
 
 | `error` kind | `data` | Expect it when |
 | --- | --- | --- |
-| `hostNotAllowed` | `host` | The host is not in the plugin's `allowedHosts`: the URL's, or a redirect's. The user can add it in the plugin's settings. Passed back in a failure envelope, it makes the launcher offer the user to allow that host. |
+| `hostNotAllowed` | `host` | The host is not in the plugin's `allowedHosts`: the URL's, or a redirect's. The user can add it in the plugin's settings. Passed back in a failure envelope from an importer, content provider or updater call, it makes the launcher offer the user to allow that host (see "Reporting a typed failure"). |
 | `addressBlocked` | `host` | The host resolves to an address a plugin may not reach (loopback, private, link-local, …), or to none. |
 | `invalidRequest` | `reason` | The request is refused before anything is sent: a malformed URL, a scheme other than `http`/`https`, no host, a forbidden or invalid header, a body that is not JSON or is over 4 MiB, a malformed expected hash of a download. Sending it again fails again. |
 | `redirect` | `reason` | A redirect is not followed: `https` → `http`, no usable `Location`, more than 5, or any 3xx where none is followed by `http_post_json`. (A redirect to a scheme other than `http`/`https` arrives as `invalidRequest`.) |
@@ -257,7 +257,11 @@ an example.
 
 What the host makes of `host` is described where the error is documented: for `run_command`, see
 "`run_command` needs the user's consent" above. An `http` error of kind `hostNotAllowed` passed
-back makes the launcher offer the user to allow that host.
+back from a call of an importer, a content provider or an updater makes the launcher tell the
+user which host the plugin was refused and offer to allow it. It does nothing more where the
+launcher only logs the failure (`handle_event`), and a plugin that calls another one through the
+host gets the other one's refused host as `pluginCallFailed`, not `hostNotAllowed`: it is not a
+host of its own to ask for.
 
 ## Ids
 
