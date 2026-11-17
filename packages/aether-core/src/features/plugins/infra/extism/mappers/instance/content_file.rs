@@ -24,7 +24,7 @@ impl From<ContentFile> for ContentFileDto {
                     .map(|(provider_id, info)| ContentFileUpdateInfoDto {
                         provider_id: provider_id.into(),
                         content_id: info.content_id.into(),
-                        version: info.version.map(String::from).unwrap_or_default(),
+                        version: info.version.map(String::from),
                     })
                     .collect()
             }),
@@ -78,7 +78,10 @@ impl TryFrom<ContentFileDto> for ContentFile {
                                 info.provider_id.try_into()?,
                                 ContentFileUpdateInfo {
                                     content_id: info.content_id.try_into()?,
-                                    version: Some(info.version)
+                                    // A blank id from a plugin written for the old shape,
+                                    // which spelt "unknown" as `""`, is still no version.
+                                    version: info
+                                        .version
                                         .filter(|v| !v.is_empty())
                                         .map(ContentVersionId::try_from)
                                         .transpose()?,

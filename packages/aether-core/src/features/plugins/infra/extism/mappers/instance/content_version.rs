@@ -32,7 +32,7 @@ impl From<ContentVersion> for ContentVersionDto {
             date_published: value.date_published,
             downloads: value.downloads,
             files: value.files.into_iter().map(Into::into).collect(),
-            web_url: value.web_url.map(String::from).unwrap_or_default(),
+            web_url: value.web_url.map(String::from),
         }
     }
 }
@@ -152,7 +152,7 @@ impl TryFrom<ContentVersionDto> for ContentVersion {
             date_published: value.date_published,
             downloads: value.downloads,
             files: value.files.into_iter().map(Into::into).collect(),
-            web_url: display_url("page of a plugin's content version", Some(value.web_url)),
+            web_url: display_url("page of a plugin's content version", value.web_url),
         })
     }
 }
@@ -238,7 +238,7 @@ mod tests {
             date_published: "2024-01-01T00:00:00Z".into(),
             downloads: 0,
             files: Vec::new(),
-            web_url: String::new(),
+            web_url: None,
         };
 
         let version = ContentVersion::try_from(dto).unwrap();
@@ -264,7 +264,7 @@ mod tests {
             date_published: "2024-01-01T00:00:00Z".into(),
             downloads,
             files: Vec::new(),
-            web_url: String::new(),
+            web_url: None,
         }
     }
 

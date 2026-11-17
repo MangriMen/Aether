@@ -413,13 +413,17 @@
           "$ref": "#/$defs/ProviderIdDto"
         },
         "version": {
-          "type": "string"
+          "description": "The provider's id of the installed version; absent when it is not known.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
         }
       },
       "required": [
         "providerId",
-        "contentId",
-        "version"
+        "contentId"
       ]
     },
     "ContentIdentityDto": {
@@ -458,8 +462,12 @@
           ]
         },
         "iconUrl": {
-          "description": "An `https` URL of the icon on a public host; empty when it has none. Any other value, or\none naming `localhost` or a private address, is dropped by the host.",
-          "type": "string"
+          "description": "An `https` URL of the icon on a public host; absent when it has none. Any other value, or\none naming `localhost` or a private address, is dropped by the host.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
         },
         "id": {
           "type": "string"
@@ -477,8 +485,12 @@
           "type": "string"
         },
         "url": {
-          "description": "The content's page, an `http` or `https` URL; empty when it has none. Any other value is\ndropped by the host.",
-          "type": "string"
+          "description": "The content's page, an `http` or `https` URL; absent when it has none. Any other value is\ndropped by the host.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
         },
         "versions": {
           "type": "array",
@@ -492,8 +504,6 @@
         "slug",
         "name",
         "author",
-        "url",
-        "iconUrl",
         "versions",
         "contentType"
       ]
@@ -860,8 +870,12 @@
           "$ref": "#/$defs/ContentVersionTypeDto"
         },
         "webUrl": {
-          "description": "The version's page, an `http` or `https` URL; empty when it has none. Any other value is\ndropped by the host.",
-          "type": "string"
+          "description": "The version's page, an `http` or `https` URL; absent when it has none. Any other value is\ndropped by the host.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
         }
       },
       "required": [
@@ -877,8 +891,7 @@
         "featured",
         "status",
         "datePublished",
-        "downloads",
-        "webUrl"
+        "downloads"
       ]
     },
     "ContentVersionFileDto": {
