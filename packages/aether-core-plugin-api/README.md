@@ -68,6 +68,39 @@ that cannot be rebuilt; what must survive belongs on disk (`/cache`, the instanc
 A restart is refused while a call into the plugin is under way or waiting, so it never cuts a
 call short.
 
+## `run_command` input
+
+`CommandDto` is `{program, args, currentDir}`. The host checks it before it asks the user (see
+the consent below); what it refuses fails the call as `accessDenied`.
+
+* **`program`** must be a Java launcher, `java` or `javaw` (`java.exe`/`javaw.exe` on Windows),
+  in the `bin` folder of a Java runtime registered with the launcher: the `path` of a `JavaDto`
+  that `get_java` or `install_java` returned (a host path, passed as it is), or the other
+  launcher next to it. It is judged on the canonical path, with links and `..` resolved, and that
+  canonical path is what runs. A shell, any other binary, a jar or a file in `/cache` is refused,
+  and with no Java registered nothing runs at all.
+* **`currentDir`** is mandatory. It must be an existing path inside the plugin's `/cache` or
+  `/instances` (on the canonical path), written in the `#` form below (`#/instances/<id>`) or as
+  the host path. A folder the user granted in the plugin's settings does not count.
+* **`#<mount path>`**: a value that starts with `#` (a whole argument, `program` or `currentDir`)
+  names a file or folder in the sandbox and is replaced by its host path:
+  `#/cache/<file>.jar` becomes the path of that file in the plugin's cache, `#/instances/<id>`
+  that of the instance. After the `#` comes a plain path under `/cache` or `/instances` (`/` and
+  names: no empty, `.` or `..` part, no `\`, no trailing `/`, no device name such as `nul`), and
+  what it names must exist and stay inside that mount once links are resolved; otherwise the
+  call is refused. Only a value that starts with `#` is resolved: `--file=#/cache/x` is passed as
+  written.
+* **`/mnt/<drive>/…`**: a value that starts with `/mnt/` is turned back into the drive path it
+  spells on Windows (`/mnt/d/packs/x` → `D:\packs\x`), by its text alone, whatever is mounted
+  there; on other systems it is passed as written.
+* Every other argument is passed as written. The host does not check arguments: a URL, a flag or
+  a host path reaches the program unchanged.
+* The process gets its own minimal environment, not the launcher's: `COMSPEC`,
+  `NUMBER_OF_PROCESSORS`, `OS`, `PATH`, `PATHEXT`, `PROCESSOR_ARCHITECTURE`, `SystemDrive`,
+  `SystemRoot`, `TEMP`, `TMP` and `windir` on Windows; `HOME`, `LANG`, `LC_ALL`, `PATH`, `TMPDIR`
+  and `TZ` elsewhere, each copied from the launcher when it has it. A plugin cannot set a
+  variable. Standard input is empty.
+
 ## `run_command` output
 
 `OutputDto` carries `stdout` and `stderr` as raw bytes, each capped at 1 MiB. A stream that hit
@@ -101,8 +134,9 @@ error. When a plugin calls another through the host and the other one reported a
 way, the refusal reaches the caller as the same `commandNotApproved`, its `message` being the
 other plugin's words, and the caller may pass it on the same way.
 
-*Always* is offered only for `java [-Xmx/-Xms/-Xss…] -jar #/cache/<file>.jar <args>`: the jar must be
-a file in the plugin's `/cache` whose manifest has no `Class-Path`, and every option before `-jar`
+*Always* is offered only for `java [-Xmx/-Xms/-Xss…] -jar #/cache/<file>.jar <args>` (the `#`
+form of a path, see "`run_command` input"): the jar must be a file in the plugin's `/cache`
+whose manifest has no `Class-Path`, and every option before `-jar`
 must be a memory size, `-Dfile.encoding=…` or `-Djava.awt.headless=…`. What is remembered is the jar's
 content (sha256) and those options, not the arguments after the jar, so the user trusts the tool
 and the plugin's choice of arguments; a new build of the plugin starts over. Anything else
@@ -123,9 +157,11 @@ side.
 
 Only four plain enums the launcher sends have a fallback: `ModLoaderDto`, `ContentTypeDto`,
 `CommandRefusalDto` and `InstanceInstallStageDto`. A value a plugin built for an older API does
-not know reads as `unknown` there, so the call still decodes; a plugin must not answer `unknown`,
-the launcher refuses it. `HostError` and the `error` of its `http` kind (`HttpErrorDto`) have one
-too: a kind a plugin does not know reads as `unknown`, whatever its `data` (see "When a host
+not know reads as `unknown` there, so the call still decodes; a plugin must not write the
+`unknown` of these four, the launcher refuses it. (`unknown` of `ContentVersionStatusDto`, the
+`status` of a content version, is not a fallback but an ordinary value a provider may write and
+the launcher accepts; that enum has no fallback.) `HostError` and the `error` of its `http` kind
+(`HttpErrorDto`) have one too: a kind a plugin does not know reads as `unknown`, whatever its `data` (see "When a host
 function fails"). Every other enum is strict
 (`HashAlgorithmDto` and the other enums with data, `{"type", "data"}`, have none): a new
 value or variant of it breaks a plugin built for an older API, and `api.version` is matched as a
@@ -179,7 +215,7 @@ with `x-msgpack: "bin"`, since JSON has none). The schema leaves unknown keys op
 test checks that what the codec writes is listed in it.
 
 **With Rust**, `aether_core_plugin_api::v0::wire` is the codec and `aether-core-plugin-pdk` has
-`Wire<T>` for Extism in place of `Msgpack<T>`.
+`Wire<T>` for Extism in place of `Msgpack<T>` (and re-exports this crate as its `api`).
 
 ## When a host function fails
 
@@ -193,7 +229,7 @@ the log or the user, not something to match on. The kinds:
 | `notFound` | What the plugin named does not exist. | An instance, a plugin, an importer, an updater, a provider or a content file is not there. |
 | `accessDenied` | The plugin may not do this. | A path leaves the instance or the plugin's folders, a program is not one the plugin may run. The user's refusal of a command is `commandNotApproved` instead. |
 | `commandNotApproved` | The user did not allow the command; `data` also has its `reason`. | See "`run_command` needs the user's consent". |
-| `tooLarge` | A file the plugin asked to read is larger than the launcher accepts (an over-long answer from the network is `http` / `responseTooLarge`). | A file to read is over the limit. |
+| `tooLarge` | Something is over a size or count limit of the launcher: a file the plugin writes or reads, or what an install brings in (the files of a plan, its overrides, the index of a pack). An over-long answer from the network is `http` / `responseTooLarge` instead. | `write_instance_file` or `read_instance_file` with a file over the instance-file cap (see "Instance files"). |
 | `conflict` | The state does not allow it now; it may succeed later. | The instance is running or still installing, a plugin is loading, unloading or busy, the content is there already. |
 | `cancelled` | The work was called off before it finished. | The user called off an install. |
 | `timedOut` | The work did not finish in its time. | Java did not report its properties in time. |
@@ -241,18 +277,24 @@ JSON. A string without a valid envelope is an ordinary failure with that text as
 
 `host` is the `HostError` a host function returned to the plugin, passed back untouched.
 
-**With Rust**, use `aether-core-plugin-pdk`. Declare a host function as returning
-`HostReply<T>` and read it with `.into_result()?` inside a function that returns
-`aether_core_plugin_pdk::Result`. `#[plugin_fn]` itself must return `FnResult`, so call that
-function from it with `?`, which turns the error into the envelope. The crate documentation has
-an example.
+**With Rust**, use `aether-core-plugin-pdk`; it re-exports this crate as
+`aether_core_plugin_pdk::api`, so a plugin needs only that one dependency. Declare a host
+function as returning `HostReply<T>` and read it with `unsafe { f(Wire(arg)) }?.into_result()?`
+inside a function that returns `aether_core_plugin_pdk::Result`. `#[plugin_fn]` itself must
+return `FnResult`, so call that function from it with `?`, which turns the error into the
+envelope. The envelope's `message` is the host's message, or the plugin's words before it when
+the plugin adds them with `.context("downloading the pack")` (`ResultExt`); `host` is the host
+error unchanged either way. An envelope that went through `anyhow` and back (a helper returning
+`FnResult` called with `?`) is read back into the same error, not wrapped in a second one. The
+crate documentation has an example.
 
 **In another language**, do the steps by hand:
 
 1. Decode the msgpack response of the host function (see "Wire format"): `{"status": "ok",
    "data": <value>}` or `{"status": "err", "data": <HostError>}`.
-2. On `err`, build `{"message": <any text>, "host": <that HostError>}`, prefix it with the
-   marker and call `error_set` with it.
+2. On `err`, build `{"message": <the plugin's words>, "host": <that HostError>}` (the
+   `message` is any text: what the plugin was doing, the host's `message`, or both), prefix it
+   with the marker and call `error_set` with it.
 3. Return a non-zero code.
 
 What the host makes of `host` is described where the error is documented: for `run_command`, see
@@ -288,6 +330,29 @@ settings file: it moves it to `ignoredPaths` with the reason, shows it in the pl
 with a warning, and the user can edit or remove it. Check what is mounted by trying to open the
 path; a plugin cannot tell an ignored folder from one that was never granted.
 
+## Instance files
+
+`/instances` is mounted read-only: a plugin reads an instance through WASI and its own code writes into it
+only through `write_instance_file` (a command it runs there may write too).
+
+* `instance_get_dir` answers the sandbox path of the instance, `/instances/<id>`, and
+  `instance_plugin_get_dir` that of the plugin's own folder in it,
+  `/instances/<id>/.metadata/plugins/<plugin id>`: paths to open through WASI, not host paths.
+* `write_instance_file` and `read_instance_file` take the instance id and a path relative to the
+  instance, `/`-separated plain names (`config/pack.toml`); a sandbox path such as
+  `/instances/<id>/…` or `/mnt/…` is refused. A write replaces the whole file.
+* `.metadata` is the launcher's: a write anywhere in it (in any case) is refused as
+  `invalidArgument`, except into the plugin's own `.metadata/plugins/<plugin id>/`, spelled
+  exactly so. Reading it is allowed.
+* One file read or written in one call is at most 64 MiB, or a third of the plugin's
+  `load.memoryLimit` when that is less (the bytes are in the plugin's memory three times while
+  they pass; without a `memoryLimit` the plugin gets 256 MiB, so 64 MiB). A bigger file fails
+  the call as `tooLarge`.
+* The `iconPath` of `instance_create` is a file in the plugin's `/cache`
+  (`/cache/icon.png`); any other path fails the call as `accessDenied`. An icon the launcher
+  cannot import (not an image, or over 4 MiB) does not fail the call: the instance is created
+  without one, with a warning.
+
 ## Networking from a plugin
 
 A plugin has two ways to make an HTTP request. They are **not** equally safe.
@@ -296,10 +361,14 @@ A plugin has two ways to make an HTTP request. They are **not** equally safe.
 
 ```rust
 // plugin side
-let response: HostReply<HttpResponseDto> = unsafe { http_get(Wire(HttpRequestDto {
-    url: "https://example.com/pack.toml".to_string(),
-    headers: HashMap::new(),
-})) }?;
+// in a function that returns `aether_core_plugin_pdk::Result`
+let response: HttpResponseDto = unsafe {
+    http_get(Wire(HttpRequestDto {
+        url: "https://example.com/pack.toml".to_string(),
+        headers: HashMap::new(),
+    }))
+}?
+.into_result()?;
 ```
 
 The host performs the request itself and applies, in this order:
@@ -340,7 +409,7 @@ The host performs the request itself and applies, in this order:
    to `/releases/download/<tag>/<file>`, which answers `302` to a signed, expiring URL on
    `release-assets.githubusercontent.com`. Put **both** `github.com` and
    `release-assets.githubusercontent.com` in `allowedHosts`; without the second, the call fails
-   at that hop with "not listed in the plugin's allowedHosts".
+   at that hop as `http` / `hostNotAllowed` with that host.
 7. **Limits** — 30 s total for the whole chain of hops, 10 s to connect, 16 MiB of response
    body. An oversized body fails the call; it is never silently truncated.
 
@@ -388,10 +457,14 @@ the plugin can open through WASI:
 
 ```rust
 // plugin side
-let file: HostReply<CachedFileDto> = unsafe { download_to_cache(Wire(DownloadToCacheParamsDto {
-    url: "https://cdn.modrinth.com/data/AANobbMI/versions/x/sodium.jar".to_string(),
-    hash: FileHashDto::sha1("…40 hex characters…"),
-})) }?;
+// in a function that returns `aether_core_plugin_pdk::Result`
+let file: CachedFileDto = unsafe {
+    download_to_cache(Wire(DownloadToCacheParamsDto {
+        url: "https://cdn.modrinth.com/data/AANobbMI/versions/x/sodium.jar".to_string(),
+        hash: FileHashDto::sha1("…40 hex characters…"),
+    }))
+}?
+.into_result()?;
 // file.path == "/cache/downloads/sha1/<hex digest>"
 ```
 

@@ -142,7 +142,8 @@ impl PluginContentProviderProxy {
             .collect();
         if kept.len() != total {
             tracing::warn!(
-                "Plugin '{}' answered '{}' with {total} items, dropped {} of them as unasked,                  repeated or too poorly described",
+                "Plugin '{}' answered '{}' with {total} items, dropped {} of them as unasked, \
+                 repeated or too poorly described",
                 self.plugin_id,
                 handler_name,
                 total - kept.len()

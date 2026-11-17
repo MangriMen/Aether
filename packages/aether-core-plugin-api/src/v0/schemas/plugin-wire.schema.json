@@ -1243,7 +1243,7 @@
           ]
         },
         {
-          "description": "A file the plugin asked to read is larger than the host accepts (an over-long network\nanswer is `http` / `responseTooLarge`).",
+          "description": "Something is over a size or count limit of the host: a file the plugin writes into or\nreads out of an instance, or what an install brings in (the files of a plan, its\noverrides, the index of a pack). An over-long network answer is `http` /\n`responseTooLarge` instead.",
           "type": "object",
           "properties": {
             "data": {
