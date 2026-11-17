@@ -1,9 +1,12 @@
 use aether_core_plugin_api::v0::NewInstanceDto;
 
 use super::{UnknownValue, pack_info::InvalidPackInfo};
-use crate::features::{
-    instance::{ContentProviderRejection, InstanceError, InstanceName, NewInstance},
-    minecraft::GameVersion,
+use crate::{
+    features::{
+        instance::{ContentProviderRejection, InstanceError, InstanceName, NewInstance},
+        minecraft::{GameVersion, LoaderVersionPreference},
+    },
+    shared::error::shared_source,
 };
 
 impl From<InvalidPackInfo> for ContentProviderRejection {
@@ -15,25 +18,49 @@ impl From<InvalidPackInfo> for ContentProviderRejection {
     }
 }
 
+/// What is wrong with an instance a plugin described: a new one, or the game of an existing one.
+#[derive(Debug, Clone, thiserror::Error)]
+pub enum InvalidInstanceDescription {
+    /// A value the core checks the same way wherever it comes from: the name, an id, a version.
+    #[error(transparent)]
+    Instance(#[from] InstanceError),
+
+    /// A value of an enum the plugin's API version does not have.
+    #[error(transparent)]
+    Value(#[from] UnknownValue),
+}
+
+/// As the argument of a host function: a value the plugin's API version does not have makes the
+/// request invalid.
+impl From<InvalidInstanceDescription> for InstanceError {
+    fn from(err: InvalidInstanceDescription) -> Self {
+        match err {
+            InvalidInstanceDescription::Instance(err) => err,
+            InvalidInstanceDescription::Value(err) => {
+                ContentProviderRejection::InvalidRequest(shared_source(err)).into()
+            }
+        }
+    }
+}
+
 impl TryFrom<NewInstanceDto> for NewInstance {
-    type Error = InstanceError;
+    type Error = InvalidInstanceDescription;
 
     fn try_from(value: NewInstanceDto) -> Result<Self, Self::Error> {
         Ok(Self {
             name: InstanceName::try_from(value.name)?,
-            game_version: GameVersion::try_from(value.game_version)?,
-            mod_loader: value
-                .mod_loader
-                .try_into()
-                .map_err(|err: UnknownValue| ContentProviderRejection::Provider(err.to_string()))?,
-            loader_version: value.loader_version.map(TryInto::try_into).transpose()?,
+            game_version: GameVersion::try_from(value.game_version).map_err(InstanceError::from)?,
+            mod_loader: value.mod_loader.try_into()?,
+            loader_version: value
+                .loader_version
+                .map(LoaderVersionPreference::try_from)
+                .transpose()
+                .map_err(InstanceError::from)?,
             icon_path: value.icon_path,
             skip_install_instance: value.skip_install_instance,
-            pack_info: value
-                .pack_info
-                .map(TryInto::try_into)
-                .transpose()
-                .map_err(|err: InvalidPackInfo| ContentProviderRejection::from(err))?,
+            pack_info: value.pack_info.map(TryInto::try_into).transpose().map_err(
+                |err: InvalidPackInfo| InstanceError::from(ContentProviderRejection::from(err)),
+            )?,
         })
     }
 }
@@ -80,6 +107,15 @@ mod unknown_loader_tests {
         })
         .unwrap_err();
 
-        assert!(err.to_string().contains("unknown mod loader"), "{err}");
+        assert!(
+            matches!(
+                err,
+                InvalidInstanceDescription::Value(UnknownValue {
+                    kind: "mod loader",
+                    ..
+                })
+            ),
+            "{err}"
+        );
     }
 }

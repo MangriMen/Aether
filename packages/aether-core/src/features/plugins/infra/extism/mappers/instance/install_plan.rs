@@ -7,15 +7,15 @@ use aether_core_plugin_api::v0::{
     InstanceGameDto, OptionalFileDto,
 };
 
-use super::UnknownValue;
+use super::{InvalidInstanceDescription, UnknownValue};
 use crate::{
     features::{
         instance::{
-            ContentIdentity, ContentPath, ContentProviderRejection, ContentSource, FileSide,
-            InstallFileEntry, InstallTarget, InstanceError, InstanceGame, InstanceId,
-            InvalidContentId, InvalidId, InvalidRelativePath, OptionalFile, PlatformId,
+            ContentIdentity, ContentPath, ContentSource, FileSide, InstallFileEntry, InstallTarget,
+            InstanceError, InstanceGame, InstanceId, InvalidContentId, InvalidId,
+            InvalidRelativePath, OptionalFile, PlatformId,
         },
-        minecraft::GameVersion,
+        minecraft::{GameVersion, LoaderVersionPreference},
     },
     shared::{
         hash::{FileHash, InvalidFileHash},
@@ -26,7 +26,7 @@ use crate::{
 /// The id a plugin names is parsed here: one that is not a plain directory name names no
 /// instance ([`InstanceError::NotFound`]).
 impl TryFrom<InstallTargetDto> for InstallTarget {
-    type Error = InstanceError;
+    type Error = InvalidInstanceDescription;
 
     fn try_from(value: InstallTargetDto) -> Result<Self, Self::Error> {
         Ok(match value {
@@ -40,16 +40,17 @@ impl TryFrom<InstallTargetDto> for InstallTarget {
 }
 
 impl TryFrom<InstanceGameDto> for InstanceGame {
-    type Error = InstanceError;
+    type Error = InvalidInstanceDescription;
 
     fn try_from(value: InstanceGameDto) -> Result<Self, Self::Error> {
         Ok(Self {
-            game_version: GameVersion::try_from(value.game_version)?,
-            mod_loader: value
-                .mod_loader
-                .try_into()
-                .map_err(|err: UnknownValue| ContentProviderRejection::Provider(err.to_string()))?,
-            loader_version: value.loader_version.map(TryInto::try_into).transpose()?,
+            game_version: GameVersion::try_from(value.game_version).map_err(InstanceError::from)?,
+            mod_loader: value.mod_loader.try_into()?,
+            loader_version: value
+                .loader_version
+                .map(LoaderVersionPreference::try_from)
+                .transpose()
+                .map_err(InstanceError::from)?,
         })
     }
 }
@@ -245,7 +246,7 @@ mod tests {
         .unwrap_err();
 
         assert!(
-            matches!(err, InstanceError::InvalidGameVersion { ref value, .. } if value == "../../x"),
+            matches!(err, InvalidInstanceDescription::Instance(InstanceError::InvalidGameVersion { ref value, .. }) if value == "../../x"),
             "{err}"
         );
     }
@@ -279,7 +280,7 @@ mod tests {
 
         for err in [existing, new] {
             assert!(
-                matches!(err, InstanceError::InvalidLoaderVersion { ref value, .. } if value == "0.16 .5"),
+                matches!(err, InvalidInstanceDescription::Instance(InstanceError::InvalidLoaderVersion { ref value, .. }) if value == "0.16 .5"),
                 "{err}"
             );
         }
@@ -295,7 +296,7 @@ mod tests {
         .unwrap_err();
 
         assert!(
-            matches!(&err, InstanceError::NotFound { instance_id } if instance_id == "../x"),
+            matches!(&err, InvalidInstanceDescription::Instance(InstanceError::NotFound { instance_id }) if instance_id == "../x"),
             "{err}"
         );
     }

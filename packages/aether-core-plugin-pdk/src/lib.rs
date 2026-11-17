@@ -95,7 +95,7 @@ impl From<&str> for Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Host(error) => write!(f, "{error:?}"),
+            Self::Host(error) => write!(f, "{error}"),
             Self::Message(message) => f.write_str(message),
         }
     }
@@ -152,26 +152,27 @@ fn config_value(key: &str) -> Result<String> {
 
 #[cfg(test)]
 mod tests {
-    use aether_core_plugin_api::v0::{CommandRefusalDto, PluginErrorDto};
+    use aether_core_plugin_api::v0::CommandRefusalDto;
 
     use super::*;
 
     #[test]
     fn a_host_error_survives_the_trip_through_anyhow() {
-        let host = HostError::PluginError(PluginErrorDto::CommandNotApproved {
-            plugin_id: "p".to_owned(),
+        let host = HostError::CommandNotApproved {
             reason: CommandRefusalDto::TimedOut,
-        });
+            message: "nobody answered".to_owned(),
+        };
 
         let raw = format!("{:?}", anyhow::Error::from(Error::from(host)));
         let failure = PluginFailureDto::parse(&raw).expect("envelope");
 
+        assert_eq!(failure.message, "nobody answered");
         assert!(matches!(
             failure.host,
-            Some(HostError::PluginError(PluginErrorDto::CommandNotApproved {
+            Some(HostError::CommandNotApproved {
                 reason: CommandRefusalDto::TimedOut,
                 ..
-            }))
+            })
         ));
     }
 
@@ -187,9 +188,9 @@ mod tests {
     #[test]
     fn a_reply_is_read_from_what_the_host_writes() {
         let ok = wire::encode(&HostResult::Ok(7_u32)).unwrap();
-        let err = wire::encode(&HostResult::<u32>::Err(HostError::CoreError(
-            "x".to_owned(),
-        )))
+        let err = wire::encode(&HostResult::<u32>::Err(HostError::Internal {
+            message: "x".to_owned(),
+        }))
         .unwrap();
 
         let value = HostReply::<u32>::from_bytes_owned(&ok)
@@ -200,6 +201,9 @@ mod tests {
         let refused = HostReply::<u32>::from_bytes_owned(&err)
             .unwrap()
             .into_result();
-        assert!(matches!(refused, Err(Error::Host(HostError::CoreError(_)))));
+        assert!(matches!(
+            refused,
+            Err(Error::Host(HostError::Internal { .. }))
+        ));
     }
 }

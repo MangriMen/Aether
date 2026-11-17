@@ -11,5 +11,5 @@ mod plugin_manifest;
 mod result;
 
 pub(crate) use command::*;
-pub(crate) use instance::{InvalidPlanFile, InvalidResolvedFile};
+pub(crate) use instance::{InvalidInstanceDescription, InvalidPlanFile, InvalidResolvedFile};
 pub(crate) use result::*;

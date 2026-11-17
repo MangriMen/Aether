@@ -1,581 +1,368 @@
-//! Maps the core's errors onto the typed errors a plugin receives from a host function.
+//! Maps the core's errors onto the [`HostError`] a plugin receives from a host function.
 //!
-//! An error that wraps another feature's error (`InstanceError::MinecraftError`, a download
-//! failure inside Java) is handed over as that feature's [`HostError`], so a plugin matches one
-//! variant per cause instead of reading it out of text.
+//! This is the one place that decides what kind an error is for a plugin: what it can do about
+//! it, not which feature failed. Each enum is matched variant by variant, so a new variant has
+//! to be placed here before it compiles. An error that wraps another feature's error is
+//! classified by the wrapped one. The message is the core's own text of the error.
 
-use aether_core_plugin_api::v0::{
-    AuthErrorDto, CommandRefusalDto, EventErrorDto, FileWatcherErrorDto, GameLogErrorDto,
-    HostError, InstanceErrorDto, InstanceFieldDto, InstanceValidationErrorReasonDto, JavaErrorDto,
-    LoadConfigTypeDto, ManifestErrorDto, MinecraftErrorDto, PluginCallErrorDto, PluginErrorDto,
-    PluginSourceTypeDto, ProcessErrorDto, RequestErrorDto, SettingsErrorDto,
-};
+use std::fmt::Display;
+
+use aether_core_plugin_api::v0::{CommandRefusalDto, HostError};
 
 use crate::{
     ErrorKind,
     features::{
-        auth::{AuthApplicationError, AuthDomainError},
-        events::EventError,
-        file_watcher::FileWatcherError,
-        game_log::GameLogError,
-        instance::{InstanceError, InstanceField, InstanceValidationErrorReason},
+        instance::{ContentDownloadFailure, ContentProviderRejection, InstanceError, StorageError},
         java::{JavaApplicationError, JavaDomainError},
         minecraft::{MinecraftApplicationError, MinecraftDomainError},
-        plugins::{
-            CommandApprovalRefusal, LoadConfigType, ManifestError, PluginCallError, PluginError,
-            PluginProviderError, PluginSourceType,
-        },
-        process::ProcessError,
+        plugins::{CommandApprovalRefusal, PluginCallError, PluginError, PluginProviderError},
         settings::SettingsError,
     },
-    shared::request_client::RequestError,
+    shared::{io::IoError, request_client::RequestError},
 };
+
+/// The kinds of [`HostError`] that carry nothing but the message.
+#[derive(Debug, Clone, Copy)]
+enum Kind {
+    InvalidArgument,
+    NotFound,
+    AccessDenied,
+    TooLarge,
+    Conflict,
+    Cancelled,
+    TimedOut,
+    PluginCallFailed,
+    Http,
+    Internal,
+}
+
+impl Kind {
+    fn of(self, error: &impl Display) -> HostError {
+        let message = error.to_string();
+        match self {
+            Self::InvalidArgument => HostError::InvalidArgument { message },
+            Self::NotFound => HostError::NotFound { message },
+            Self::AccessDenied => HostError::AccessDenied { message },
+            Self::TooLarge => HostError::TooLarge { message },
+            Self::Conflict => HostError::Conflict { message },
+            Self::Cancelled => HostError::Cancelled { message },
+            Self::TimedOut => HostError::TimedOut { message },
+            Self::PluginCallFailed => HostError::PluginCallFailed { message },
+            Self::Http => HostError::Http { message },
+            Self::Internal => HostError::Internal { message },
+        }
+    }
+}
 
 impl From<&ErrorKind> for HostError {
     fn from(value: &ErrorKind) -> Self {
         match value {
-            ErrorKind::AuthError(err) => err.into(),
-            ErrorKind::EventError(err) => err.into(),
-            ErrorKind::FileWatcherError(err) => err.into(),
-            ErrorKind::GameLogError(err) => err.into(),
-            ErrorKind::InstanceError(err) => err.into(),
-            ErrorKind::JavaError(err) => err.into(),
-            ErrorKind::MinecraftError(err) => err.into(),
-            ErrorKind::PluginError(err) => err.into(),
-            ErrorKind::ProcessError(err) => err.into(),
-            ErrorKind::SettingsError(err) => err.into(),
-            ErrorKind::RequestError(err) => err.into(),
-            // The inner message: `ErrorKind::CoreError`'s `Display` adds a "Core error: "
-            // prefix, and the variant already says as much.
-            ErrorKind::CoreError(message) => Self::CoreError(message.clone()),
+            ErrorKind::InstanceError(err) => instance(err),
+            ErrorKind::JavaError(err) => java(err),
+            ErrorKind::MinecraftError(err) => minecraft(err),
+            ErrorKind::PluginError(err) => plugin(err),
+            ErrorKind::SettingsError(err) => settings(err),
+            ErrorKind::RequestError(err) => request(err),
+            // No host function reaches these: should one, the plugin can do nothing about it.
+            ErrorKind::AuthError(err) => Kind::Internal.of(err),
+            ErrorKind::EventError(err) => Kind::Internal.of(err),
+            ErrorKind::FileWatcherError(err) => Kind::Internal.of(err),
+            ErrorKind::GameLogError(err) => Kind::Internal.of(err),
+            ErrorKind::ProcessError(err) => Kind::Internal.of(err),
+            // The inner message: `ErrorKind::CoreError`'s `Display` adds a "Core error: " prefix.
+            ErrorKind::CoreError(message) => Kind::Internal.of(message),
         }
     }
 }
 
-// --- auth ---
-
-impl From<&AuthApplicationError> for HostError {
-    fn from(value: &AuthApplicationError) -> Self {
-        Self::AuthError(match value {
-            AuthApplicationError::Domain(err) => err.into(),
-            AuthApplicationError::Storage(details) => AuthErrorDto::Storage(details.clone()),
-        })
-    }
-}
-
-impl From<&AuthDomainError> for AuthErrorDto {
-    fn from(value: &AuthDomainError) -> Self {
-        match value {
-            AuthDomainError::CredentialsNotFound { id } => {
-                Self::CredentialsNotFound { id: id.to_string() }
-            }
-            AuthDomainError::NoActiveCredentials => Self::NoActiveCredentials,
-            AuthDomainError::InvalidUsernameLength { min, max } => Self::InvalidUsernameLength {
-                min: *min,
-                max: *max,
-            },
-            AuthDomainError::InvalidUsernameChars => Self::InvalidUsernameChars,
-            AuthDomainError::InvalidAccountType => Self::InvalidAccountType,
-            AuthDomainError::TokenExpired => Self::TokenExpired,
-        }
-    }
-}
-
-// --- events ---
-
-impl From<&EventError> for HostError {
-    fn from(value: &EventError) -> Self {
-        Self::EventError(match value {
-            EventError::NotInitialized => EventErrorDto::NotInitialized,
-            EventError::NoLoadingBar(id) => EventErrorDto::NoLoadingBar { id: id.to_string() },
-            EventError::SerializeError(err) => EventErrorDto::SerializeError(err.to_string()),
-            EventError::StorageError(err) => EventErrorDto::StorageError(err.to_string()),
-        })
-    }
-}
-
-// --- file watcher ---
-
-impl From<&FileWatcherError> for HostError {
-    fn from(value: &FileWatcherError) -> Self {
-        Self::FileWatcherError(match value {
-            FileWatcherError::PathNotFound { path } => FileWatcherErrorDto::PathNotFound {
-                path: path.to_string_lossy().into_owned(),
-            },
-            FileWatcherError::WatchNotFound => FileWatcherErrorDto::WatchNotFound,
-            FileWatcherError::NotifyError(err) => FileWatcherErrorDto::NotifyError(err.clone()),
-        })
-    }
-}
-
-// --- instance ---
-
-impl From<&InstanceError> for HostError {
-    fn from(value: &InstanceError) -> Self {
-        match value {
-            InstanceError::SettingsLoadError(err) => err.into(),
-            InstanceError::MinecraftError(err) => err.into(),
-            InstanceError::ProcessError(err) => err.into(),
-            InstanceError::CredentialsError(err) => err.into(),
-            other => Self::InstanceError(instance_dto(other)),
-        }
-    }
-}
-
-// One flat arm per variant; splitting an exhaustive mapping only hides which ones are covered.
-#[allow(clippy::too_many_lines)]
-fn instance_dto(value: &InstanceError) -> InstanceErrorDto {
-    use InstanceErrorDto as Dto;
-
-    match value {
-        InstanceError::Storage(err) => Dto::Storage(err.to_string()),
-        // Storage failures until they had kinds of their own; the wire keeps them so.
-        InstanceError::InvalidRecord { .. }
-        | InstanceError::PackFileNotFound { .. }
+fn instance(value: &InstanceError) -> HostError {
+    let kind = match value {
+        InstanceError::ValidationError { .. }
+        | InstanceError::InvalidRelativePath { .. }
+        | InstanceError::InvalidContentId { .. }
+        | InstanceError::InvalidGameVersion { .. }
+        | InstanceError::InvalidPagination { .. }
+        | InstanceError::InvalidLoaderVersion { .. }
+        | InstanceError::ContentFilename { .. }
         | InstanceError::NotAContentFile { .. }
-        | InstanceError::ContentStateChangeFailed { .. } => Dto::Storage(value.to_string()),
-        InstanceError::NotFound { instance_id } => Dto::NotFound {
-            instance_id: instance_id.clone(),
-        },
-        InstanceError::ContentProviderNotFound {
-            plugin_id,
-            capability_id,
-        } => Dto::ContentProviderNotFound {
-            plugin_id: plugin_id.clone(),
-            capability_id: capability_id.clone(),
-        },
-        InstanceError::CapabilityOperationError => Dto::CapabilityOperationError,
-        InstanceError::InstanceStillInstalling { instance_id } => Dto::InstanceStillInstalling {
-            instance_id: instance_id.clone(),
-        },
-        InstanceError::InstanceAlreadyRunning {
-            instance_id,
-            process_id,
-        } => Dto::InstanceAlreadyRunning {
-            instance_id: instance_id.clone(),
-            process_id: process_id.to_string(),
-        },
-        InstanceError::PrelaunchCommandError { code } => Dto::PrelaunchCommandError { code: *code },
-        InstanceError::ValidationError { field, reason } => Dto::ValidationError {
-            field: match field {
-                InstanceField::Name => InstanceFieldDto::Name,
-            },
-            reason: match reason {
-                InstanceValidationErrorReason::CannotBeEmpty => {
-                    InstanceValidationErrorReasonDto::CannotBeEmpty
-                }
-            },
-        },
-        InstanceError::ImporterNotFound { importer_id } => Dto::ImporterNotFound {
-            importer_id: importer_id.clone(),
-        },
-        InstanceError::ImportFailed {
-            plugin_id,
-            capability_id,
-            reason,
-        } => Dto::ImportFailed {
-            plugin_id: plugin_id.clone(),
-            capability_id: capability_id.clone(),
-            reason: reason.clone(),
-        },
-        // No kind of its own, so as not to break decoding in plugins built without it.
-        InstanceError::PluginNotRunning { .. }
-        | InstanceError::CachesBeingCleared
-        | InstanceError::IconTooLarge { .. }
         | InstanceError::IconNotSupported
-        | InstanceError::Hook(_)
-        | InstanceError::PrelaunchCommandTimeout { .. }
+        | InstanceError::UnsupportedContentType { .. }
+        | InstanceError::UnsupportedOperation { .. }
+        | InstanceError::UnmanagedInstance { .. }
+        | InstanceError::GameChangeNotAllowed { .. } => Kind::InvalidArgument,
+
+        InstanceError::NotFound { .. }
+        | InstanceError::ContentProviderNotFound { .. }
+        | InstanceError::ImporterNotFound { .. }
+        | InstanceError::UpdaterNotFound { .. }
+        | InstanceError::PackInfoNotFound
+        | InstanceError::PackFileNotFound { .. }
+        | InstanceError::ContentForGameVersionNotFound { .. }
+        | InstanceError::PlatformProviderNotFound { .. } => Kind::NotFound,
+
+        InstanceError::PathEscapesInstance { .. } => Kind::AccessDenied,
+
+        InstanceError::FileTooLarge { .. } | InstanceError::IconTooLarge { .. } => Kind::TooLarge,
+
+        InstanceError::InstanceStillInstalling { .. }
+        | InstanceError::InstanceAlreadyRunning { .. }
+        | InstanceError::ContentDuplication { .. }
+        | InstanceError::PluginNotRunning { .. }
+        | InstanceError::CachesBeingCleared
         | InstanceError::NotBroken { .. }
-        | InstanceError::Cancelled => Dto::ContentProviderError {
-            reason: value.to_string(),
-        },
-        InstanceError::PackInfoNotFound => Dto::PackInfoNotFound,
-        InstanceError::UpdaterNotFound { modpack_id } => Dto::UpdaterNotFound {
-            modpack_id: modpack_id.clone(),
-        },
-        InstanceError::UpdateFailed { modpack_id } => Dto::UpdateFailed {
-            modpack_id: modpack_id.clone(),
-        },
-        InstanceError::UnmanagedInstance { instance_id } => Dto::UnmanagedInstance {
-            instance_id: instance_id.clone(),
-        },
-        InstanceError::ContentDuplication { content_path } => Dto::ContentDuplication {
-            content_path: content_path.clone(),
-        },
-        InstanceError::ContentFilename { path } => Dto::ContentFilename {
-            path: path.to_string_lossy().into_owned(),
-        },
-        InstanceError::InvalidRelativePath { path, reason } => Dto::InvalidRelativePath {
-            path: path.clone(),
-            reason: reason.to_string(),
-        },
-        InstanceError::InvalidContentId { kind, value } => Dto::InvalidContentId {
-            kind: kind.clone(),
-            value: value.clone(),
-        },
-        InstanceError::InvalidGameVersion { value, reason } => Dto::InvalidGameVersion {
-            value: value.clone(),
-            reason: reason.to_string(),
-        },
-        InstanceError::InvalidPagination {
-            field,
-            value,
-            reason,
-        } => Dto::InvalidPagination {
-            field: field.to_string(),
-            value: value.to_string(),
-            reason: reason.to_string(),
-        },
-        InstanceError::InvalidLoaderVersion { value, reason } => Dto::InvalidLoaderVersion {
-            value: value.clone(),
-            reason: reason.to_string(),
-        },
-        InstanceError::PathEscapesInstance { path, instance_id } => Dto::PathEscapesInstance {
-            path: path.clone(),
-            instance_id: instance_id.clone(),
-        },
-        InstanceError::FileTooLarge { path, size, limit } => Dto::FileTooLarge {
-            path: path.clone(),
-            size: *size,
-            limit: *limit,
-        },
-        InstanceError::ContentDownloadError(err) => Dto::ContentDownloadError(err.to_string()),
-        InstanceError::ContentProviderError { reason } => Dto::ContentProviderError {
-            reason: reason.to_string(),
-        },
-        InstanceError::ContentForGameVersionNotFound { game_version } => {
-            Dto::ContentForGameVersionNotFound {
-                game_version: game_version.clone(),
-            }
-        }
-        InstanceError::UnsupportedContentType { content_type } => Dto::UnsupportedContentType {
-            content_type: (*content_type).into(),
-        },
-        InstanceError::UnsupportedOperation {
-            provider_id,
-            operation,
-        } => Dto::UnsupportedOperation {
-            provider_id: provider_id.clone().into(),
-            operation: (*operation).to_owned(),
-        },
-        InstanceError::PlatformProviderNotFound { platform } => Dto::PlatformProviderNotFound {
-            platform: platform.to_string(),
-        },
-        InstanceError::PlatformProviderNotChosen { platform } => Dto::PlatformProviderNotChosen {
-            platform: platform.to_string(),
-        },
-        InstanceError::GameChangeNotAllowed {
-            instance_id,
-            provider_id,
-            content_id,
-        } => Dto::GameChangeNotAllowed {
-            instance_id: instance_id.clone(),
-            provider_id: provider_id.clone().into(),
-            content_id: content_id.clone(),
-        },
-        // Errors of other features are handed over by `From<&InstanceError> for HostError`.
-        InstanceError::SettingsLoadError(_)
-        | InstanceError::MinecraftError(_)
-        | InstanceError::ProcessError(_)
-        | InstanceError::CredentialsError(_) => {
-            unreachable!("wrapped errors are mapped by their own feature")
-        }
-    }
+        | InstanceError::PlatformProviderNotChosen { .. } => Kind::Conflict,
+
+        InstanceError::Cancelled => Kind::Cancelled,
+
+        InstanceError::PrelaunchCommandTimeout { .. } => Kind::TimedOut,
+
+        InstanceError::ImportFailed { .. } => Kind::PluginCallFailed,
+
+        InstanceError::Storage(err) if storage_is_missing(err) => Kind::NotFound,
+
+        InstanceError::Storage(_)
+        | InstanceError::InvalidRecord { .. }
+        | InstanceError::ContentStateChangeFailed { .. }
+        | InstanceError::CapabilityOperationError
+        | InstanceError::PrelaunchCommandError { .. }
+        | InstanceError::Hook(_)
+        | InstanceError::UpdateFailed { .. }
+        | InstanceError::CredentialsError(_) => Kind::Internal,
+
+        InstanceError::ContentDownloadError(failure) => content_download(failure),
+        InstanceError::ContentProviderError { reason } => content_provider(reason),
+
+        // Their own text: the wrapper's names only the step that failed.
+        InstanceError::ProcessError(err) => return Kind::Internal.of(err),
+        InstanceError::SettingsLoadError(err) => return settings(err),
+        InstanceError::MinecraftError(err) => return minecraft(err),
+    };
+
+    kind.of(value)
 }
 
-// --- java ---
-
-impl From<&JavaApplicationError> for HostError {
-    fn from(value: &JavaApplicationError) -> Self {
-        match value {
-            JavaApplicationError::Domain(err) => Self::JavaError(err.into()),
-            JavaApplicationError::DownloadFailed(err) => err.into(),
-        }
-    }
-}
-
-impl From<&JavaDomainError> for JavaErrorDto {
-    fn from(value: &JavaDomainError) -> Self {
-        match value {
-            JavaDomainError::NotFound { version } => Self::NotFound { version: *version },
-            JavaDomainError::InvalidPath { path } => Self::InvalidPath {
-                path: path.to_string_lossy().into_owned(),
-            },
-            JavaDomainError::EmptyPath => Self::EmptyPath,
-            JavaDomainError::RelativePath { path } => Self::RelativePath { path: path.clone() },
-            JavaDomainError::InvalidVersion { version } => Self::InvalidVersion {
-                version: version.clone(),
-            },
-            JavaDomainError::FailedToGetProperties { .. }
-            | JavaDomainError::PropertiesTimeout { .. } => Self::FailedToGetProperties {
-                reason: value.to_string(),
-            },
-            JavaDomainError::VersionNotAvailable { version, os, arch } => {
-                Self::VersionNotAvailable {
-                    version: *version,
-                    os: os.clone(),
-                    arch: arch.clone(),
-                }
-            }
-            JavaDomainError::VersionGetFailed { version, os, arch } => Self::VersionGetFailed {
-                version: *version,
-                os: os.clone(),
-                arch: arch.clone(),
-            },
-            JavaDomainError::FailedToInstall {
-                version, os, arch, ..
-            } => Self::FailedToInstall {
-                version: *version,
-                os: os.clone(),
-                arch: arch.clone(),
-            },
-            JavaDomainError::RemoveOldInstallationError { path, .. } => {
-                Self::RemoveOldInstallationError {
-                    path: path.to_string_lossy().into_owned(),
-                }
-            }
-            JavaDomainError::Storage(err) => Self::Storage(err.to_string()),
-            JavaDomainError::Cancelled => Self::Cancelled,
-        }
-    }
-}
-
-// --- minecraft ---
-
-impl From<&MinecraftApplicationError> for HostError {
-    fn from(value: &MinecraftApplicationError) -> Self {
-        match value {
-            MinecraftApplicationError::Domain(err) => Self::MinecraftError(err.into()),
-            MinecraftApplicationError::JavaError(err) => err.into(),
-            MinecraftApplicationError::Storage(err) => {
-                Self::MinecraftError(MinecraftErrorDto::StorageFailure {
-                    reason: err.to_string(),
-                })
-            }
-        }
-    }
-}
-
-impl From<&MinecraftDomainError> for MinecraftErrorDto {
-    fn from(value: &MinecraftDomainError) -> Self {
-        match value {
-            MinecraftDomainError::VersionNotFound { version } => Self::VersionNotFound {
-                version: version.clone(),
-            },
-            MinecraftDomainError::VersionForLoaderNotFound {
-                loader_version_preference,
-            } => Self::VersionForLoaderNotFound {
-                loader_version_preference: loader_version_preference.clone().into(),
-            },
-            MinecraftDomainError::LoaderNotFound {
-                loader_version_preference,
-            } => Self::LoaderNotFound {
-                loader_version_preference: loader_version_preference.clone().into(),
-            },
-            MinecraftDomainError::LoaderVersionRequired => Self::LoaderVersionRequired,
-            MinecraftDomainError::DefaultLoaderNotFound => Self::DefaultLoaderNotFound,
-            MinecraftDomainError::ProcessorFailed { reason } => Self::ProcessorFailed {
-                reason: reason.to_string(),
-            },
-            MinecraftDomainError::PreLaunchFailed { code } => Self::PreLaunchFailed { code: *code },
-            MinecraftDomainError::PostLaunchFailed { code } => {
-                Self::PostLaunchFailed { code: *code }
-            }
-            MinecraftDomainError::PathNotFound { path, entity_type } => Self::PathNotFound {
-                path: path.to_string_lossy().into_owned(),
-                entity_type: entity_type.as_str().to_owned(),
-            },
-            MinecraftDomainError::ParseFailed { reason } => Self::ParseFailed {
-                reason: reason.clone(),
-            },
-            MinecraftDomainError::StorageFailure(err) => Self::StorageFailure {
-                reason: err.to_string(),
-            },
-            MinecraftDomainError::InvalidLogConfigName { .. }
-            | MinecraftDomainError::UnsafeMetadataPath { .. } => Self::StorageFailure {
-                reason: value.to_string(),
-            },
-        }
-    }
-}
-
-// --- plugins ---
-
-impl From<&PluginError> for HostError {
-    fn from(value: &PluginError) -> Self {
-        match value {
-            PluginError::Settings(err) => err.into(),
-            PluginError::Provider(err) => Self::PluginError(err.into()),
-            other => Self::PluginError(plugin_dto(other)),
-        }
-    }
-}
-
-fn plugin_dto(value: &PluginError) -> PluginErrorDto {
-    use PluginErrorDto as Dto;
+/// A file or folder the storage looked for is not there: the plugin asked for something absent,
+/// the disk is not broken.
+fn storage_is_missing(value: &StorageError) -> bool {
+    use std::io::ErrorKind::NotFound;
 
     match value {
-        PluginError::NotFound { plugin_id } => Dto::NotFound {
-            plugin_id: plugin_id.clone(),
-        },
-        PluginError::AlreadyLoaded { plugin_id } => Dto::AlreadyLoaded {
-            plugin_id: plugin_id.to_string(),
-        },
-        PluginError::LoadingInProgress { plugin_id } => Dto::LoadingInProgress {
-            plugin_id: plugin_id.to_string(),
-        },
-        // `Busy` and `Stopped` reach a plugin only through a host function that reaches another
-        // plugin. They map to the closest kinds the ABI has: a new kind would not decode in
-        // plugins built before it.
-        PluginError::UnloadingInProgress { plugin_id } | PluginError::Busy { plugin_id } => {
-            Dto::UnloadingInProgress {
-                plugin_id: plugin_id.to_string(),
-            }
+        StorageError::Io(err)
+        | StorageError::SharedIo(
+            IoError::IoPathError { source: err, .. } | IoError::IoError(err),
+        ) => err.kind() == NotFound,
+        _ => false,
+    }
+}
+
+fn content_download(value: &ContentDownloadFailure) -> Kind {
+    match value {
+        ContentDownloadFailure::NoFiles { .. } | ContentDownloadFailure::NoVersions { .. } => {
+            Kind::NotFound
         }
-        PluginError::AlreadyUnloaded { plugin_id } | PluginError::Stopped { plugin_id } => {
-            Dto::AlreadyUnloaded {
-                plugin_id: plugin_id.to_string(),
-            }
+        ContentDownloadFailure::NotAModpackFile { .. } => Kind::InvalidArgument,
+        ContentDownloadFailure::Download { .. } => Kind::Http,
+        ContentDownloadFailure::NoNetworkPolicy { .. } => Kind::Conflict,
+    }
+}
+
+fn content_provider(value: &ContentProviderRejection) -> Kind {
+    match value {
+        ContentProviderRejection::InvalidRequest(_)
+        | ContentProviderRejection::NotAModpack { .. } => Kind::InvalidArgument,
+
+        ContentProviderRejection::PackOutsideProviderReach { .. }
+        | ContentProviderRejection::NoAllowedDownload { .. } => Kind::AccessDenied,
+
+        ContentProviderRejection::TooManyFiles { .. }
+        | ContentProviderRejection::TooManyOverrides { .. }
+        | ContentProviderRejection::PackIndexTooLarge { .. } => Kind::TooLarge,
+
+        ContentProviderRejection::Request(_) => Kind::Http,
+
+        // What a provider plugin answered: not the caller's to fix.
+        ContentProviderRejection::InvalidAnswer { .. } | ContentProviderRejection::Provider(_) => {
+            Kind::PluginCallFailed
         }
-        PluginError::LoadFailed { plugin_id, reason } => Dto::LoadFailed {
-            plugin_id: plugin_id.to_string(),
-            reason: reason.to_string(),
-        },
-        PluginError::IncompatibleApiVersion {
-            plugin_id,
-            required,
-            host,
-        } => Dto::IncompatibleApiVersion {
-            plugin_id: plugin_id.to_string(),
-            reason: format!("Plugin requires API {required}, host API version is {host}"),
-        },
-        PluginError::FunctionCallFailed {
-            function_name,
-            plugin_id,
-            error,
-        } => Dto::FunctionCallFailed {
-            function_name: function_name.clone(),
-            plugin_id: plugin_id.to_string(),
-            error: error.into(),
-        },
-        PluginError::Manifest(err) => Dto::Manifest(err.into()),
-        PluginError::LoaderNotFound { config_type } => Dto::LoaderNotFound {
-            config_type: match config_type {
-                LoadConfigType::Extism => LoadConfigTypeDto::Extism,
-            },
-        },
-        PluginError::CapabilityRegistrationFailed {
-            capability_type,
-            capability_id,
-        } => Dto::CapabilityRegistrationFailed {
-            capability_type: (*capability_type).to_owned(),
-            capability_id: capability_id.to_string(),
-        },
-        PluginError::CapabilityCancelRegistrationFailed {
-            capability_type,
-            capability_id,
-        } => Dto::CapabilityCancelRegistrationFailed {
-            capability_type: (*capability_type).to_owned(),
-            capability_id: capability_id.to_string(),
-        },
-        // Only the user's settings, the import dialog and an update produce the last ones; the ABI's closest kind,
-        // as a new one would not decode in plugins built before it.
-        PluginError::IdMismatch {
-            plugin_id,
-            archive_id,
-        } => Dto::AccessViolation {
-            plugin_id: plugin_id.to_string(),
-            path: archive_id.to_string(),
-        },
-        PluginError::AccessViolation { plugin_id, path }
-        | PluginError::InvalidAllowedPath {
-            plugin_id, path, ..
+
+        // A provider's answer, or a pack, that cannot be used.
+        ContentProviderRejection::WrongTarget { .. }
+        | ContentProviderRejection::ForeignPack { .. }
+        | ContentProviderRejection::InvalidOverridesArchive(_)
+        | ContentProviderRejection::VersionOfAnotherContent { .. }
+        | ContentProviderRejection::NoGameVersion { .. }
+        | ContentProviderRejection::UnknownContentType { .. }
+        | ContentProviderRejection::ResponseInvalidId { .. }
+        | ContentProviderRejection::ResponseInvalidUrl(_)
+        | ContentProviderRejection::ResponseInvalidPagination(_)
+        | ContentProviderRejection::PackUnreadable(_)
+        | ContentProviderRejection::PackInvalidArchive(_)
+        | ContentProviderRejection::PackNoIndex { .. }
+        | ContentProviderRejection::PackIndexMalformed(_)
+        | ContentProviderRejection::PackWrongGame { .. }
+        | ContentProviderRejection::InvalidHash(_) => Kind::Internal,
+    }
+}
+
+fn java(value: &JavaApplicationError) -> HostError {
+    let domain = match value {
+        JavaApplicationError::Domain(err) => err,
+        JavaApplicationError::DownloadFailed(err) => return request(err),
+    };
+    let kind = match domain {
+        JavaDomainError::InvalidPath { .. }
+        | JavaDomainError::EmptyPath
+        | JavaDomainError::RelativePath { .. }
+        | JavaDomainError::InvalidVersion { .. } => Kind::InvalidArgument,
+        JavaDomainError::NotFound { .. } | JavaDomainError::VersionNotAvailable { .. } => {
+            Kind::NotFound
         }
-        | PluginError::InvalidAllowedHost {
-            plugin_id,
-            url: path,
-            ..
+        JavaDomainError::Cancelled => Kind::Cancelled,
+        JavaDomainError::PropertiesTimeout { .. } => Kind::TimedOut,
+        JavaDomainError::FailedToGetProperties { .. }
+        | JavaDomainError::VersionGetFailed { .. }
+        | JavaDomainError::FailedToInstall { .. }
+        | JavaDomainError::RemoveOldInstallationError { .. }
+        | JavaDomainError::Storage(_) => Kind::Internal,
+    };
+
+    kind.of(domain)
+}
+
+fn minecraft(value: &MinecraftApplicationError) -> HostError {
+    let domain = match value {
+        MinecraftApplicationError::Domain(err) => err,
+        MinecraftApplicationError::JavaError(err) => return java(err),
+        MinecraftApplicationError::Storage(_) => return Kind::Internal.of(value),
+    };
+    let kind = match domain {
+        MinecraftDomainError::LoaderVersionRequired => Kind::InvalidArgument,
+        MinecraftDomainError::VersionNotFound { .. }
+        | MinecraftDomainError::VersionForLoaderNotFound { .. }
+        | MinecraftDomainError::LoaderNotFound { .. }
+        | MinecraftDomainError::DefaultLoaderNotFound => Kind::NotFound,
+        MinecraftDomainError::ProcessorFailed { .. }
+        | MinecraftDomainError::PreLaunchFailed { .. }
+        | MinecraftDomainError::PostLaunchFailed { .. }
+        | MinecraftDomainError::PathNotFound { .. }
+        | MinecraftDomainError::ParseFailed { .. }
+        | MinecraftDomainError::StorageFailure(_)
+        | MinecraftDomainError::UnsafeMetadataPath { .. }
+        | MinecraftDomainError::InvalidLogConfigName { .. } => Kind::Internal,
+    };
+
+    kind.of(domain)
+}
+
+fn plugin(value: &PluginError) -> HostError {
+    let kind = match value {
+        PluginError::IdMismatch { .. }
+        | PluginError::InvalidAllowedPath { .. }
+        | PluginError::InvalidAllowedHost { .. }
+        | PluginError::InvalidAllowedHostEntry { .. }
+        | PluginError::CommandApprovalOnceOnly { .. } => Kind::InvalidArgument,
+
+        PluginError::NotFound { .. } | PluginError::CommandApprovalNotFound { .. } => {
+            Kind::NotFound
         }
-        | PluginError::InvalidAllowedHostEntry {
-            plugin_id,
-            entry: path,
-            ..
-        } => Dto::AccessViolation {
-            plugin_id: plugin_id.to_string(),
-            path: path.clone(),
-        },
-        PluginError::CommandNotApproved { plugin_id, reason } => Dto::CommandNotApproved {
-            plugin_id: plugin_id.to_string(),
+
+        PluginError::AccessViolation { .. } => Kind::AccessDenied,
+
+        PluginError::AlreadyLoaded { .. }
+        | PluginError::LoadingInProgress { .. }
+        | PluginError::UnloadingInProgress { .. }
+        | PluginError::AlreadyUnloaded { .. }
+        | PluginError::Busy { .. }
+        | PluginError::Stopped { .. } => Kind::Conflict,
+
+        PluginError::LoadFailed { .. }
+        | PluginError::IncompatibleApiVersion { .. }
+        | PluginError::Manifest(_)
+        | PluginError::LoaderNotFound { .. }
+        | PluginError::CapabilityRegistrationFailed { .. }
+        | PluginError::CapabilityCancelRegistrationFailed { .. }
+        | PluginError::HashComputationFailed
+        | PluginError::Storage(_) => Kind::Internal,
+
+        PluginError::CommandNotApproved { reason, .. } => {
+            return HostError::CommandNotApproved {
+                reason: (*reason).into(),
+                message: value.to_string(),
+            };
+        }
+        PluginError::FunctionCallFailed { error, .. } => return plugin_call(value, error),
+        PluginError::Settings(err) => return settings(err),
+        PluginError::Provider(err) => plugin_provider(err),
+    };
+
+    kind.of(value)
+}
+
+/// A call into another plugin that failed. A refused command keeps its reason, and the words
+/// of the plugin that reported it, so that a plugin passing the error on passes them on too.
+fn plugin_call(value: &PluginError, error: &PluginCallError) -> HostError {
+    match error {
+        PluginCallError::CommandNotApproved { reason, details } => HostError::CommandNotApproved {
             reason: (*reason).into(),
+            message: details.clone(),
         },
-        // Only the launcher's own UI answers a question; a plugin never sees these.
-        PluginError::CommandApprovalNotFound { .. }
-        | PluginError::CommandApprovalOnceOnly { .. } => Dto::Storage(value.to_string()),
-        PluginError::HashComputationFailed => Dto::HashComputationFailed,
-        PluginError::Storage(err) => Dto::Storage(err.to_string()),
-        PluginError::Settings(_) | PluginError::Provider(_) => {
-            unreachable!("mapped by `From<&PluginError> for HostError`")
-        }
+        PluginCallError::MissingFunction
+        | PluginCallError::Timeout
+        | PluginCallError::OutOfFuel
+        | PluginCallError::OutOfMemory
+        | PluginCallError::Trap(_)
+        | PluginCallError::NonZeroExit(_)
+        | PluginCallError::Plugin(_)
+        | PluginCallError::Codec(_)
+        | PluginCallError::Reentrant => Kind::PluginCallFailed.of(value),
     }
 }
 
-impl From<&PluginProviderError> for PluginErrorDto {
-    fn from(value: &PluginProviderError) -> Self {
-        match value {
-            PluginProviderError::ManifestNotFound { path } => {
-                Self::ManifestNotFound { path: path.clone() }
-            }
-            PluginProviderError::InvalidManifestFormat { error } => Self::InvalidManifestFormat {
-                error: error.to_string(),
-            },
-            PluginProviderError::ExtractionFailed { from } => {
-                Self::ExtractionFailed { from: from.clone() }
-            }
-            PluginProviderError::InvalidExtractionFormat => Self::InvalidExtractionFormat,
-            PluginProviderError::FileExtractionFailed { from } => {
-                Self::FileExtractionFailed { from: from.clone() }
-            }
-            PluginProviderError::Manifest(err) => Self::Manifest(err.into()),
-            PluginProviderError::Storage(err) => Self::Storage(err.to_string()),
-            PluginProviderError::ProviderFetchError {
-                source_type,
-                reason,
-            } => Self::ProviderFetchError {
-                source_type: source_type.into(),
-                details: reason.to_string(),
-            },
-            PluginProviderError::ProviderNoAssets { source_type } => Self::ProviderNoAssets {
-                source_type: source_type.into(),
-            },
-            // ABI has no matching kind; a new one would not decode in plugins built before it.
-            PluginProviderError::ArchiveChangedSincePreview => Self::InvalidManifestFormat {
-                error: value.to_string(),
-            },
-            PluginProviderError::NoRemoteSource { plugin_id } => Self::NoRemoteSource {
-                plugin_id: plugin_id.to_string(),
-            },
-            PluginProviderError::DownloadFailed { url, reason } => Self::DownloadFailed {
-                url: url.clone(),
-                details: reason.to_string(),
-            },
-            PluginProviderError::ProviderRateLimited {
-                source_type,
-                retry_after,
-            } => Self::ProviderRateLimited {
-                source_type: source_type.into(),
-                retry_after: *retry_after,
-            },
-        }
+/// Only the user installs or updates a plugin; a host function never gets here.
+fn plugin_provider(value: &PluginProviderError) -> Kind {
+    match value {
+        PluginProviderError::ManifestNotFound { .. }
+        | PluginProviderError::InvalidManifestFormat { .. }
+        | PluginProviderError::ExtractionFailed { .. }
+        | PluginProviderError::InvalidExtractionFormat
+        | PluginProviderError::FileExtractionFailed { .. }
+        | PluginProviderError::Manifest(_) => Kind::InvalidArgument,
+        PluginProviderError::ProviderNoAssets { .. }
+        | PluginProviderError::NoRemoteSource { .. } => Kind::NotFound,
+        PluginProviderError::ArchiveChangedSincePreview => Kind::Conflict,
+        PluginProviderError::ProviderFetchError { .. }
+        | PluginProviderError::DownloadFailed { .. }
+        | PluginProviderError::ProviderRateLimited { .. } => Kind::Http,
+        PluginProviderError::Storage(_) => Kind::Internal,
     }
 }
 
-impl From<&PluginSourceType> for PluginSourceTypeDto {
-    fn from(value: &PluginSourceType) -> Self {
-        match value {
-            PluginSourceType::GitHub => Self::GitHub,
-            PluginSourceType::Local => Self::Local,
-        }
-    }
+fn settings(value: &SettingsError) -> HostError {
+    let kind = match value {
+        SettingsError::InvalidPlatformProvider { .. }
+        | SettingsError::InvalidMaxConcurrentDownloads
+        | SettingsError::InvalidMemory => Kind::InvalidArgument,
+        // The launcher's own settings: nothing the plugin named is missing.
+        SettingsError::NotFound | SettingsError::Storage(_) => Kind::Internal,
+    };
+
+    kind.of(value)
+}
+
+fn request(value: &RequestError) -> HostError {
+    let kind = match value {
+        RequestError::RequestSend(_)
+        | RequestError::Middleware(_)
+        | RequestError::Status { .. }
+        | RequestError::Hash { .. }
+        | RequestError::Json(_)
+        | RequestError::Toml(_)
+        | RequestError::Parse(_) => Kind::Http,
+        RequestError::TooLarge { .. } => Kind::TooLarge,
+        RequestError::Acquire(_) | RequestError::Io { .. } => Kind::Internal,
+    };
+
+    kind.of(value)
 }
 
 impl From<CommandApprovalRefusal> for CommandRefusalDto {
@@ -606,157 +393,258 @@ impl TryFrom<CommandRefusalDto> for CommandApprovalRefusal {
     }
 }
 
-impl From<&PluginCallError> for PluginCallErrorDto {
-    fn from(value: &PluginCallError) -> Self {
-        match value {
-            PluginCallError::MissingFunction => Self::MissingFunction,
-            PluginCallError::Timeout => Self::Timeout,
-            PluginCallError::OutOfFuel => Self::OutOfFuel,
-            PluginCallError::OutOfMemory => Self::OutOfMemory,
-            PluginCallError::Trap(message) => Self::Trap(message.clone()),
-            PluginCallError::NonZeroExit(code) => Self::NonZeroExit(*code),
-            PluginCallError::Plugin(message) => Self::Plugin(message.clone()),
-            PluginCallError::CommandNotApproved { reason, details } => Self::CommandNotApproved {
-                reason: (*reason).into(),
-                details: details.clone(),
-            },
-            PluginCallError::Codec(message) => Self::Codec(message.clone()),
-            PluginCallError::Reentrant => Self::Reentrant,
-        }
-    }
-}
-
-impl From<&ManifestError> for ManifestErrorDto {
-    fn from(value: &ManifestError) -> Self {
-        match value {
-            ManifestError::UnsupportedApi => Self::UnsupportedApi,
-            ManifestError::InvalidSemver {
-                field,
-                value,
-                error,
-            } => Self::InvalidSemver {
-                field: field.clone(),
-                value: value.clone(),
-                error: error.clone(),
-            },
-            // The plugin-facing API has no dedicated variant; both are path-shape rejections.
-            ManifestError::InvalidPathMapping | ManifestError::InvalidLoadFile(_) => {
-                Self::InvalidPathMapping
-            }
-            ManifestError::UnknownHostFunctions(names) => Self::UnknownHostFunctions(names.clone()),
-            ManifestError::HostFunctionsNotDeclared => Self::HostFunctionsNotDeclared,
-            ManifestError::InvalidId { field, value } => Self::InvalidId {
-                field: field.clone(),
-                value: value.clone(),
-            },
-            ManifestError::ReservedPluginId => Self::ReservedPluginId,
-            ManifestError::PlatformWithoutResolveFile { capability_id } => {
-                Self::PlatformWithoutResolveFile {
-                    capability_id: capability_id.to_string(),
-                }
-            }
-        }
-    }
-}
-
-// --- game log ---
-
-impl From<&GameLogError> for HostError {
-    fn from(value: &GameLogError) -> Self {
-        Self::GameLogError(match value {
-            GameLogError::InvalidSource { source_id } => GameLogErrorDto::InvalidSource {
-                source_id: source_id.clone(),
-            },
-            GameLogError::SourceNotFound { source_id } => GameLogErrorDto::SourceNotFound {
-                source_id: source_id.clone(),
-            },
-            GameLogError::TooLarge { source_id, limit } => GameLogErrorDto::TooLarge {
-                source_id: source_id.clone(),
-                limit: *limit,
-            },
-            GameLogError::Io(err) => GameLogErrorDto::Io(err.to_string()),
-        })
-    }
-}
-
-// --- process ---
-
-impl From<&ProcessError> for HostError {
-    fn from(value: &ProcessError) -> Self {
-        Self::ProcessError(match value {
-            ProcessError::KillError { id } => ProcessErrorDto::KillError { id: id.clone() },
-            ProcessError::WaitError { id } => ProcessErrorDto::WaitError { id: id.clone() },
-            ProcessError::Io(_) | ProcessError::SpawnFailed { .. } => {
-                ProcessErrorDto::Io(value.to_string())
-            }
-        })
-    }
-}
-
-// --- settings ---
-
-impl From<&SettingsError> for HostError {
-    fn from(value: &SettingsError) -> Self {
-        Self::SettingsError(match value {
-            SettingsError::NotFound => SettingsErrorDto::NotFound,
-            SettingsError::Storage(err) => SettingsErrorDto::Storage(err.clone()),
-            // The plugin API has no variant for it and a plugin cannot edit the provider choice,
-            // so it only ever sees it as a settings failure with the readable message.
-            SettingsError::InvalidPlatformProvider { .. }
-            | SettingsError::InvalidMaxConcurrentDownloads
-            | SettingsError::InvalidMemory => SettingsErrorDto::Storage(value.to_string()),
-        })
-    }
-}
-
-// --- request ---
-
-impl From<&RequestError> for HostError {
-    fn from(value: &RequestError) -> Self {
-        Self::RequestError(match value {
-            RequestError::Acquire(err) => RequestErrorDto::Acquire(err.to_string()),
-            RequestError::RequestSend(err) => RequestErrorDto::RequestSend(err.to_string()),
-            RequestError::Middleware(err) => RequestErrorDto::Middleware(err.to_string()),
-            RequestError::Hash { actual, expected } => RequestErrorDto::Hash {
-                actual: actual.clone(),
-                expected: expected.clone(),
-            },
-            RequestError::Json(err) => RequestErrorDto::Json(err.to_string()),
-            RequestError::Toml(err) => RequestErrorDto::Toml(err.to_string()),
-            RequestError::Parse(err) => RequestErrorDto::Parse(err.to_string()),
-            RequestError::Status { status, url } => RequestErrorDto::Status {
-                status: *status,
-                url: url.clone(),
-            },
-            RequestError::TooLarge { limit } => RequestErrorDto::TooLarge { limit: *limit },
-            RequestError::Io { path, source } => RequestErrorDto::Io {
-                path: path.display().to_string(),
-                details: source.to_string(),
-            },
-        })
-    }
-}
-
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
+
     use super::*;
-    use crate::features::instance::PageSize;
+    use crate::features::{
+        auth::{AuthApplicationError, AuthDomainError},
+        events::EventError,
+        file_watcher::FileWatcherError,
+        game_log::GameLogError,
+        instance::{PageSize, PluginId},
+        process::ProcessError,
+    };
+
+    fn host(error: impl Into<ErrorKind>) -> HostError {
+        HostError::from(&error.into())
+    }
+
+    fn message(error: impl Into<ErrorKind>) -> String {
+        error.into().to_string()
+    }
 
     #[test]
-    fn should_map_the_pagination_fields_when_the_instance_error_is_an_invalid_pagination() {
+    fn should_tell_not_found_when_the_storage_has_no_such_file() {
+        let error = InstanceError::storage(std::io::Error::from(std::io::ErrorKind::NotFound));
+
+        assert_eq!(
+            host(error.clone()),
+            HostError::NotFound {
+                message: message(error)
+            }
+        );
+    }
+
+    #[test]
+    fn should_tell_internal_when_the_storage_failed_for_another_reason() {
+        let error =
+            InstanceError::storage(std::io::Error::from(std::io::ErrorKind::PermissionDenied));
+
+        assert!(matches!(host(error), HostError::Internal { .. }));
+    }
+
+    #[test]
+    fn should_tell_an_invalid_argument_when_a_value_the_plugin_sent_is_refused() {
         let error = InstanceError::from(PageSize::parse(0).unwrap_err());
 
-        let HostError::InstanceError(InstanceErrorDto::InvalidPagination {
-            field,
-            value,
-            reason,
-        }) = HostError::from(&error)
-        else {
-            panic!("expected an invalid pagination error");
+        assert_eq!(
+            host(error.clone()),
+            HostError::InvalidArgument {
+                message: message(error)
+            }
+        );
+    }
+
+    #[test]
+    fn should_tell_not_found_when_the_instance_does_not_exist() {
+        let error = InstanceError::NotFound {
+            instance_id: "abc".to_owned(),
         };
 
-        assert_eq!(field, "page size");
-        assert_eq!(value, "0");
-        assert_eq!(reason, "it must be at least 1");
+        assert_eq!(
+            host(error),
+            HostError::NotFound {
+                message: "Instance with id \"abc\" not found".to_owned()
+            }
+        );
+    }
+
+    #[test]
+    fn should_tell_access_denied_when_a_path_escapes_the_instance() {
+        let error = InstanceError::PathEscapesInstance {
+            path: "../x".to_owned(),
+            instance_id: "inst".to_owned(),
+        };
+
+        assert_eq!(
+            host(error.clone()),
+            HostError::AccessDenied {
+                message: message(error)
+            }
+        );
+    }
+
+    #[rstest]
+    #[case(CommandApprovalRefusal::Denied)]
+    #[case(CommandApprovalRefusal::TimedOut)]
+    #[case(CommandApprovalRefusal::Cancelled)]
+    #[case(CommandApprovalRefusal::JarChanged)]
+    fn should_hand_a_refused_command_over_with_its_reason(#[case] reason: CommandApprovalRefusal) {
+        let error = PluginError::CommandNotApproved {
+            plugin_id: PluginId::from_static("packwiz"),
+            reason,
+        };
+
+        let HostError::CommandNotApproved {
+            reason: dto,
+            message: text,
+        } = host(error.clone())
+        else {
+            panic!("expected CommandNotApproved");
+        };
+        assert_eq!(text, message(error));
+        // The word on the wire is the one `as_wire` names, which the docs list.
+        assert_eq!(
+            serde_json::to_value(dto).unwrap(),
+            serde_json::json!(reason.as_wire())
+        );
+        assert_eq!(CommandApprovalRefusal::try_from(dto), Ok(reason));
+    }
+
+    #[test]
+    fn should_keep_the_words_of_the_other_plugin_when_its_command_was_refused() {
+        let error = PluginError::FunctionCallFailed {
+            function_name: "install".to_owned(),
+            plugin_id: PluginId::from_static("b"),
+            error: PluginCallError::CommandNotApproved {
+                reason: CommandApprovalRefusal::Cancelled,
+                details: "b said so".to_owned(),
+            },
+        };
+
+        assert_eq!(
+            host(error),
+            HostError::CommandNotApproved {
+                reason: CommandRefusalDto::Cancelled,
+                message: "b said so".to_owned(),
+            }
+        );
+    }
+
+    #[test]
+    fn should_tell_too_large_when_a_response_is_over_the_limit() {
+        let error = RequestError::TooLarge { limit: 7 };
+
+        assert_eq!(
+            host(error.clone()),
+            HostError::TooLarge {
+                message: message(error)
+            }
+        );
+    }
+
+    #[test]
+    fn should_tell_a_conflict_when_the_instance_is_still_installing() {
+        let error = InstanceError::InstanceStillInstalling {
+            instance_id: "inst".to_owned(),
+        };
+
+        assert_eq!(
+            host(error.clone()),
+            HostError::Conflict {
+                message: message(error)
+            }
+        );
+    }
+
+    #[test]
+    fn should_tell_cancelled_when_the_work_was_called_off() {
+        assert_eq!(
+            host(InstanceError::Cancelled),
+            HostError::Cancelled {
+                message: message(InstanceError::Cancelled)
+            }
+        );
+    }
+
+    #[test]
+    fn should_tell_timed_out_when_java_did_not_answer_in_time() {
+        let error = JavaApplicationError::Domain(JavaDomainError::PropertiesTimeout {
+            path: "java".into(),
+            seconds: 5,
+        });
+
+        assert_eq!(
+            host(error.clone()),
+            HostError::TimedOut {
+                message: message(error)
+            }
+        );
+    }
+
+    #[test]
+    fn should_tell_a_failed_plugin_call_when_the_other_plugin_hit_a_limit() {
+        let error = PluginError::FunctionCallFailed {
+            function_name: "install".to_owned(),
+            plugin_id: PluginId::from_static("packwiz"),
+            error: PluginCallError::Timeout,
+        };
+
+        assert_eq!(
+            host(error.clone()),
+            HostError::PluginCallFailed {
+                message: message(error)
+            }
+        );
+    }
+
+    #[test]
+    fn should_tell_http_when_a_request_failed_with_a_status() {
+        let error = JavaApplicationError::DownloadFailed(RequestError::Status {
+            status: 404,
+            url: "https://example.com/jre".to_owned(),
+        });
+
+        assert_eq!(
+            host(error),
+            HostError::Http {
+                message: "Unexpected HTTP status 404 from `https://example.com/jre`".to_owned()
+            }
+        );
+    }
+
+    #[test]
+    fn should_tell_internal_without_the_display_prefix_when_the_core_failed() {
+        assert_eq!(
+            host(ErrorKind::CoreError("disk full".to_owned())),
+            HostError::Internal {
+                message: "disk full".to_owned()
+            }
+        );
+    }
+
+    #[test]
+    fn should_classify_a_wrapped_error_by_itself_with_its_own_text() {
+        let wrapped = MinecraftApplicationError::Domain(MinecraftDomainError::VersionNotFound {
+            version: "1.20".to_owned(),
+        });
+
+        assert_eq!(
+            host(InstanceError::MinecraftError(wrapped.clone())),
+            HostError::NotFound {
+                message: message(wrapped)
+            }
+        );
+    }
+
+    /// No host function reaches these features; should one, it still maps without a kind of
+    /// its own.
+    #[rstest]
+    #[case(AuthApplicationError::Domain(AuthDomainError::TokenExpired).into())]
+    #[case(EventError::NotInitialized.into())]
+    #[case(FileWatcherError::WatchNotFound.into())]
+    #[case(GameLogError::SourceNotFound { source_id: "latest".to_owned() }.into())]
+    #[case(ProcessError::KillError { id: "p1".to_owned() }.into())]
+    fn should_tell_internal_when_a_feature_no_host_function_reaches_failed(
+        #[case] error: ErrorKind,
+    ) {
+        assert_eq!(
+            host(error.clone()),
+            HostError::Internal {
+                message: error.to_string()
+            }
+        );
     }
 }
