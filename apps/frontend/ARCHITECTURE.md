@@ -214,6 +214,11 @@ These apply to new and edited code; older code is brought in line when a file is
 - A segment that equals a value of a backend enum keeps that value's case, so the key can be built from the value.
 - Check: `shared/i18n/__tests__/keyFormat.test.ts`. Under `errors.<domain>` any depth may be UPPER_SNAKE; elsewhere the parent of enum-value segments must be listed in `ENUM_VALUE_PARENTS` there.
 
+### Tests
+
+- A test lives in `__tests__/` next to the code it covers, named `<file>.test.ts(x)`.
+- A test is `it(...)`, never `test(...)`; `vitest/consistent-test-it` in `.oxlintrc.json` enforces it. The description says what happens (`it('keeps stored values of the right type')`); the wording is not checked.
+
 ### Form schemas
 
 - A form schema is `export const <Name>Schema` in `model/<name>Schema.ts`.
