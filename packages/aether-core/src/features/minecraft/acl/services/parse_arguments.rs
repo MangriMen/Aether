@@ -56,7 +56,10 @@ mod tests {
     };
     use rstest::rstest;
 
-    #[allow(clippy::unnecessary_wraps)]
+    #[expect(
+        clippy::unnecessary_wraps,
+        reason = "the signature is the one the parser expects"
+    )]
     fn identity(s: &str) -> Result<String, MinecraftDomainError> {
         Ok(s.to_string())
     }

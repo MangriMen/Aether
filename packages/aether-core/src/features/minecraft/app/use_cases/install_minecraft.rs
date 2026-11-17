@@ -64,7 +64,10 @@ pub struct InstallMinecraftUseCase {
 }
 
 impl InstallMinecraftUseCase {
-    #[allow(clippy::too_many_arguments)]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "one collaborator per argument, wired once in the DI container"
+    )]
     pub fn new(
         loader_version_resolver: Arc<dyn LoaderVersionService>,
         get_version_manifest_use_case: Arc<dyn VersionManifestService>,

@@ -1,4 +1,7 @@
-#![allow(clippy::needless_pass_by_value)]
+#![expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri hands command arguments over by value"
+)]
 use std::path::Path;
 
 use tauri::State;

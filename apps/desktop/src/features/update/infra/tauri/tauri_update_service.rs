@@ -74,7 +74,10 @@ impl<R: tauri::Runtime> UpdateService for TauriUpdateService<R> {
                     downloaded += chunk_length;
                     content_length = total_length;
 
-                    #[allow(clippy::cast_precision_loss)]
+                    #[expect(
+                        clippy::cast_precision_loss,
+                        reason = "a progress fraction; the loss is far below what is displayed"
+                    )]
                     let fraction = content_length.map(|total| downloaded as f64 / total as f64);
 
                     let version = update.version.clone();

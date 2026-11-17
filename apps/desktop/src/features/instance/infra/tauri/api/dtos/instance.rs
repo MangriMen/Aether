@@ -19,7 +19,6 @@ use crate::{
 #[serde_as]
 #[derive(Serialize, Deserialize, Clone, Debug, Type)]
 #[serde(rename_all = "camelCase")]
-#[allow(clippy::struct_excessive_bools)]
 pub struct InstanceDto {
     pub id: String,
 

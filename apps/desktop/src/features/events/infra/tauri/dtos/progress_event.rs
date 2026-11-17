@@ -39,7 +39,10 @@ pub struct ProgressEventDto {
 }
 
 /// The bytes as a number the frontend reads: see [`ProgressEventDto::bytes_done`].
-#[allow(clippy::cast_precision_loss)]
+#[expect(
+    clippy::cast_precision_loss,
+    reason = "a byte count shown as a number; the loss is far below what is displayed"
+)]
 pub(super) fn bytes_to_number(bytes: Option<u64>) -> Option<f64> {
     bytes.map(|bytes| bytes as f64)
 }

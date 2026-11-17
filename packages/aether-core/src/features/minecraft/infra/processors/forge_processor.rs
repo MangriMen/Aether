@@ -267,7 +267,10 @@ const PROCESSORS_PROGRESS_SPAN: f64 = 30.0;
 
 /// Progress increment reported after each processor run.
 fn progress_step(total_processors: usize) -> f64 {
-    #[allow(clippy::cast_precision_loss)]
+    #[expect(
+        clippy::cast_precision_loss,
+        reason = "a count of processors, far below the precision of an f64"
+    )]
     let total = total_processors as f64;
     PROCESSORS_PROGRESS_SPAN / total
 }

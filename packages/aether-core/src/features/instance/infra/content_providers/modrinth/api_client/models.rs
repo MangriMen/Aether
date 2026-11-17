@@ -8,7 +8,7 @@ pub(crate) const MODRINTH_API_URL: &str = "https://api.modrinth.com/v2";
 pub(crate) const MODRINTH_API_V3_URL: &str = "https://api.modrinth.com/v3";
 pub(crate) const MODRINTH_WEB_URL: &str = "https://modrinth.com";
 
-#[allow(unused)]
+#[expect(unused, reason = "not used yet")]
 pub(crate) static DEFAULT_HEADERS: LazyLock<HeaderMap> = LazyLock::new(|| {
     let mut headers = HeaderMap::new();
     headers.insert("User-Agent", HeaderValue::from_static("MangriMen/aether"));
@@ -334,7 +334,7 @@ pub struct File {
     pub filename: String,
     pub primary: bool,
     pub size: i64,
-    #[allow(clippy::struct_field_names)]
+    #[expect(clippy::struct_field_names, reason = "the name is the API field")]
     pub file_type: Option<serde_json::Value>,
 }
 

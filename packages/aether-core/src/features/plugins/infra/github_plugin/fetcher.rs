@@ -98,7 +98,10 @@ impl GitHubPluginFetcher {
     }
 
     /// Fetch all releases for a GitHub repo, limited to `max_results`.
-    #[allow(clippy::items_after_statements)]
+    #[expect(
+        clippy::items_after_statements,
+        reason = "the response type sits next to the one place that parses it"
+    )]
     pub async fn fetch_releases(
         &self,
         owner: &str,

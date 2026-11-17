@@ -148,7 +148,7 @@ impl<PS: ProgressService + ?Sized> ReqwestClient<PS> {
                 .add_progress_bytes_safe(progress_bar_id, chunk.len() as u64)
                 .await;
 
-            #[allow(clippy::cast_precision_loss)]
+            #[expect(clippy::cast_precision_loss, reason = "a progress fraction")]
             let progress = (chunk.len() as f64 / total_size as f64) * total;
 
             self.progress_service

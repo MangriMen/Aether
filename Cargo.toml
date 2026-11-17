@@ -24,6 +24,8 @@ unused_async = "allow"
 unused_async_trait_impl = "allow"
 # Its fix, `assert_eq!(x, [] as [T; 0])`, reads worse than `assert!(x.is_empty())`.
 assert_is_empty = "allow"
+allow_attributes = "warn"
+allow_attributes_without_reason = "warn"
 
 [workspace.dependencies]
 # Internal Packages

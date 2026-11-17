@@ -61,7 +61,7 @@ impl AppSettingsStorage for SqliteAppSettingsStorage {
 
 #[derive(sqlx::FromRow)]
 struct SqlAppSettings {
-    #[allow(unused)]
+    #[expect(unused, reason = "the row has the column; the code does not read it")]
     id: i64,
     action_on_instance_launch: String,
     is_actual_transparent: bool,

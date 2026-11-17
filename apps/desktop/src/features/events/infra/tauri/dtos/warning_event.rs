@@ -19,7 +19,10 @@ pub struct WarningEventDto {
 #[derive(Debug, Serialize, Clone, Type)]
 #[serde(tag = "code", content = "payload", rename_all = "SCREAMING_SNAKE_CASE")]
 // The codes are the translation keys; the warnings of other kinds will not share the prefix.
-#[allow(clippy::enum_variant_names)]
+#[expect(
+    clippy::enum_variant_names,
+    reason = "the codes are translation keys; other kinds of warning will not share the prefix"
+)]
 pub enum WarningDto {
     InstanceIconNotImported {
         cause: CauseDto,

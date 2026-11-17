@@ -44,7 +44,6 @@ macro_rules! imports {
 
         $(
             #[cfg(not(target_arch = "wasm32"))]
-            #[allow(clippy::unnecessary_wraps)]
             pub(crate) unsafe fn $name(
                 _params: Wire<$param>,
             ) -> std::result::Result<HostReply<$reply>, extism_pdk::Error> {

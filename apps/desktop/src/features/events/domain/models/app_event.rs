@@ -17,7 +17,7 @@ impl TryFrom<AppEvent> for UpdateProgress {
     fn try_from(value: AppEvent) -> Result<Self, Self::Error> {
         match value {
             AppEvent::Update(progress) => Ok(progress),
-            #[allow(unreachable_patterns)]
+            #[expect(unreachable_patterns, reason = "a fallback for variants added later")]
             _ => Err(()),
         }
     }

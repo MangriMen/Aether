@@ -66,7 +66,7 @@ impl<'a, PS: ProgressService> VersionProgress<'a, PS> {
     /// `bytes` of what the version's bar expects are in place.
     pub(crate) async fn add_done(&self, bytes: u64) {
         if let Some(bar) = self.bar {
-            #[allow(clippy::cast_precision_loss)] // a progress fraction
+            #[expect(clippy::cast_precision_loss, reason = "a progress fraction")]
             self.service
                 .emit_progress_safe(bar, bytes as f64, None)
                 .await;

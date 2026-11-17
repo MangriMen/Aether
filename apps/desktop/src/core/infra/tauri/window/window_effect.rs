@@ -1,4 +1,3 @@
-#![allow(clippy::needless_pass_by_value)]
 use tauri::{
     WebviewWindow,
     utils::config::WindowEffectsConfig,

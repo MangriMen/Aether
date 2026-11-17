@@ -7,7 +7,7 @@ use crate::features::instance::{
     },
 };
 
-#[allow(clippy::struct_field_names)]
+#[expect(clippy::struct_field_names, reason = "the names are the column names")]
 pub struct SqlPackInfo {
     pub provider_id: String,
     pub modpack_id: String,

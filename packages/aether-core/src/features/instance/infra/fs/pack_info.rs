@@ -51,7 +51,7 @@ pub struct ProviderIdV1 {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
-#[allow(clippy::struct_field_names)]
+#[expect(clippy::struct_field_names, reason = "the names are the stored format")]
 pub struct PackInfoV2 {
     pub provider_id: ProviderIdV1,
     pub modpack_id: String,

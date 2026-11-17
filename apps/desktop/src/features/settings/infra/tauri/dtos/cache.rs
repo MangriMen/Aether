@@ -31,7 +31,10 @@ pub struct CacheUsageEntryDto {
 }
 
 /// The bytes as a number the frontend reads: see [`CacheUsageEntryDto::bytes`].
-#[allow(clippy::cast_precision_loss)]
+#[expect(
+    clippy::cast_precision_loss,
+    reason = "a byte count shown as a number; the loss is far below what is displayed"
+)]
 fn bytes_to_number(bytes: u64) -> f64 {
     bytes as f64
 }

@@ -112,7 +112,10 @@ async fn notify_credentials_outcome(outcome: &LegacyCredentialsOutcome) {
 /// infrastructure adapter (`SQLite`, filesystem, `HTTP`, etc.), performs data
 /// migrations, and assembles the full dependency graph before returning an
 /// `Arc<AetherContainer>` ready for use.
-#[allow(clippy::too_many_lines)]
+#[expect(
+    clippy::too_many_lines,
+    reason = "the composition root wires every service in one place"
+)]
 pub async fn build_container(
     location_info: Arc<LocationInfo>,
     event_emitter: SharedEventEmitter,

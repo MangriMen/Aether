@@ -26,7 +26,6 @@ use super::{
 #[schemars(rename = "PluginWire", rename_all = "camelCase")]
 #[schema_category("plugin_api")]
 #[schema_name("PluginWire")]
-#[allow(dead_code)]
 pub struct PluginWireDto {
     /// What every host function returns on failure, inside `{"status": "err", "data": …}`.
     pub host_error: HostError,

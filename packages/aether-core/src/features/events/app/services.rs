@@ -1947,7 +1947,7 @@ mod tests {
     /// `cargo test -p aether-core measure_bar_updates -- --ignored --nocapture`.
     #[tokio::test(flavor = "multi_thread", worker_threads = 8)]
     #[ignore = "a measurement, not a test"]
-    #[allow(clippy::cast_precision_loss)] // timings to print
+    #[expect(clippy::cast_precision_loss, reason = "timings to print")]
     async fn measure_bar_updates() {
         const CHUNKS: usize = 200;
 

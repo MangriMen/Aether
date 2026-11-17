@@ -119,7 +119,6 @@ fn parse_timestamps(
 }
 
 impl SqliteInstanceStorage {
-    #[allow(clippy::too_many_lines)]
     async fn scan(&self) -> Result<Scan, InstanceError> {
         let rows = sqlx::query!(
             r#"
@@ -272,7 +271,6 @@ impl InstanceStorage for SqliteInstanceStorage {
     }
 }
 
-#[allow(clippy::too_many_lines)]
 async fn read_instance(
     conn: &mut SqliteConnection,
     id: &InstanceId,
@@ -370,7 +368,7 @@ async fn read_instance(
     Ok(instance)
 }
 
-#[allow(clippy::too_many_lines)]
+#[expect(clippy::too_many_lines, reason = "one statement per table")]
 async fn write_instance(
     tx: &mut SqliteConnection,
     instance: &Instance,
