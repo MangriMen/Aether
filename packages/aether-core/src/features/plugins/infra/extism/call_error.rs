@@ -1,4 +1,4 @@
-use aether_core_plugin_api::v0::{HostError, PluginFailureDto};
+use aether_core_plugin_api::v0::{HostError, HttpErrorDto, PluginFailureDto};
 
 use crate::features::plugins::{CommandApprovalRefusal, PluginCallError};
 
@@ -35,14 +35,24 @@ pub(super) fn classify_call_error(error: &extism::Error, code: i32) -> PluginCal
     }
 }
 
-/// A failure the plugin reported in its envelope: the refusal of a command, either of its own
-/// call of `run_command` or of a call of another plugin that failed that way, with the plugin's
-/// own message; else only that message. A refusal of a kind this launcher does not know is only
-/// the plugin's message.
+/// A failure the plugin reported in its envelope, with the plugin's own message: the refusal of a
+/// command, either of its own call of `run_command` or of a call of another plugin that failed
+/// that way; or the refusal of a host by one of its own network host functions (a host refused
+/// to another plugin it called reaches it as a failed call, not as this); else only that
+/// message. A refusal of a kind this launcher does not know is only the plugin's message.
 fn reported_failure(failure: PluginFailureDto) -> PluginCallError {
     let reported = match failure.host {
         Some(HostError::CommandNotApproved { reason, .. }) => {
             CommandApprovalRefusal::try_from(reason)
+        }
+        Some(HostError::Http {
+            error: HttpErrorDto::HostNotAllowed { host },
+            ..
+        }) => {
+            return PluginCallError::HostNotAllowed {
+                host,
+                details: failure.message,
+            };
         }
         _ => return PluginCallError::Plugin(failure.message),
     };
@@ -144,6 +154,18 @@ Caused by: x"#,
         (
             "unknown_reason",
             r#"aether-plugin-failure:{"message":"m","host":{"type":"commandNotApproved","data":{"reason":"because","message":"m"}}}"#,
+        ),
+        (
+            "host_refused",
+            r#"aether-plugin-failure:{"message":"cdn refused","host":{"type":"http","data":{"message":"Host `cdn.example` is not allowed","error":{"type":"hostNotAllowed","data":{"host":"cdn.example"}}}}}"#,
+        ),
+        (
+            "http_status",
+            r#"aether-plugin-failure:{"message":"got 404","host":{"type":"http","data":{"message":"404","error":{"type":"status","data":{"status":404}}}}}"#,
+        ),
+        (
+            "unknown_http_error",
+            r#"aether-plugin-failure:{"message":"newer","host":{"type":"http","data":{"message":"m","error":{"type":"quantumTunnel","data":{"host":"cdn.example"}}}}}"#,
         ),
         ("broken_json", "aether-plugin-failure:{not json"),
         (
@@ -312,8 +334,35 @@ Caused by: x"#,
     }
 
     #[test]
+    fn should_report_the_refused_host_when_the_plugin_reports_a_host_not_allowed() {
+        assert_eq!(
+            call_error(&mut unlimited(), "host_refused"),
+            PluginCallError::HostNotAllowed {
+                host: "cdn.example".to_owned(),
+                details: "cdn refused".to_owned(),
+            }
+        );
+    }
+
+    #[test]
+    fn should_keep_the_refused_host_when_a_trap_follows_it() {
+        assert_eq!(
+            call_error(&mut unlimited(), "host_refused_then_panic"),
+            PluginCallError::HostNotAllowed {
+                host: "cdn.example".to_owned(),
+                details: "cdn refused".to_owned(),
+            }
+        );
+    }
+
+    #[test]
     fn should_give_the_message_of_the_envelope_when_it_reports_nothing_else_the_host_knows() {
-        for (name, message) in [("unknown_reason", "m"), ("only_message", "just text")] {
+        for (name, message) in [
+            ("unknown_reason", "m"),
+            ("only_message", "just text"),
+            ("http_status", "got 404"),
+            ("unknown_http_error", "newer"),
+        ] {
             assert_eq!(
                 call_error(&mut unlimited(), name),
                 PluginCallError::Plugin(message.to_owned()),

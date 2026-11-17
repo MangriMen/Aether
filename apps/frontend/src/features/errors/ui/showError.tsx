@@ -4,6 +4,7 @@ import type { ShowToastParams } from '@/shared/ui-kit';
 import { logError } from '@/shared/log';
 import { showToast } from '@/shared/ui-kit';
 
+import { findErrorAction } from '../model/errorActions';
 import {
   getErrorDetails,
   getTranslatedError,
@@ -21,6 +22,7 @@ export const showError = ({
   err,
   t,
   variant = 'destructive',
+  action: callerAction,
   ...params
 }: ShowErrorParams) => {
   const isTranslationError = isLauncherError(err);
@@ -30,18 +32,31 @@ export const showError = ({
     : undefined;
 
   const details = getErrorDetails(err);
+  const renderDetails = details
+    ? () => (
+        <ErrorDetails
+          details={details}
+          defaultOpen={isInternalError(err)}
+          t={t}
+        />
+      )
+    : undefined;
+  // A way to fix the error that a feature registered, shown above the raw text.
+  const fix = isTranslationError ? findErrorAction(err) : undefined;
 
   showToast({
     description,
-    action: details
-      ? () => (
-          <ErrorDetails
-            details={details}
-            defaultOpen={isInternalError(err)}
-            t={t}
-          />
-        )
-      : undefined,
+    // The caller's own action wins; `action: undefined` from a caller must not wipe the others.
+    action:
+      callerAction ??
+      (fix
+        ? () => (
+            <div class='gap-2 flex flex-col'>
+              {fix()}
+              {renderDetails?.()}
+            </div>
+          )
+        : renderDetails),
     variant,
     ...params,
   });

@@ -672,6 +672,33 @@ describe('plugin command refused, reported by the plugin', () => {
   });
 });
 
+describe('plugin host refused, reported by the plugin', () => {
+  const refused = {
+    type: 'plugin',
+    payload: {
+      code: 'HOST_NOT_ALLOWED',
+      payload: {
+        plugin_id: 'packwiz',
+        host: 'cdn.example',
+        cause: { type: 'unknown', details: 'cdn refused' },
+      },
+    },
+  } as LauncherError;
+
+  it('should_name_the_plugin_and_the_host_it_may_not_reach', () => {
+    expect(getTranslatedError(refused, tEn)).toBe(
+      'Plugin packwiz may not connect to cdn.example: the host is not in its network access list',
+    );
+    expect(getTranslatedError(refused, tRu)).toBe(
+      'Плагину packwiz не разрешено подключаться к cdn.example: хоста нет в списке доступа к сети',
+    );
+  });
+
+  it('should_keep_the_text_of_the_plugin_in_the_details', () => {
+    expect(getErrorDetails(refused)).toBe('cdn refused');
+  });
+});
+
 describe('plugin provider failure', () => {
   it('should_translate_the_reason_and_the_category_of_its_cause', () => {
     const error = {

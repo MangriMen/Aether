@@ -10,6 +10,7 @@ use crate::features::{
 use crate::features::plugins::infra::extism::models::PluginInstanceExt;
 use crate::features::plugins::infra::pack_instances::deploying_packs;
 use crate::features::plugins::infra::plugin_utils::to_wasi_path;
+use crate::features::plugins::infra::refused_host::refused_host;
 use crate::shared::web_url::{HttpUrl, InvalidUrl};
 
 /// Whether `input` is written as an address, not a path: it starts with `http://` or `https://`
@@ -96,7 +97,7 @@ impl Importer for PluginImporterProxy {
             }),
             Err(err) => {
                 tracing::error!("Error importing instance by plugin '{plugin_id}': {err:?}");
-                Err(failed(err.to_string()))
+                Err(refused_host(&err).unwrap_or_else(|| failed(err.to_string())))
             }
             Ok(None) => {
                 tracing::error!(
@@ -125,6 +126,7 @@ mod tests {
         plugins::infra::{
             extism::models::ExtismPluginInstance,
             pack_instances::{is_deploying_packs, record_pack_instance},
+            refused_host::failing_plugin::{HOST_REFUSED, NOT_FOUND, failing},
         },
     };
 
@@ -206,11 +208,15 @@ mod tests {
             .build()
             .expect("the test plugin should load");
 
+        importer_of(PluginHandle::new(ExtismPluginInstance::new(
+            plugin,
+            PluginId::from_static("packwiz"),
+        )))
+    }
+
+    fn importer_of(plugin: PluginHandle) -> PluginImporterProxy {
         PluginImporterProxy::new(
-            PluginHandle::new(ExtismPluginInstance::new(
-                plugin,
-                PluginId::from_static("packwiz"),
-            )),
+            plugin,
             PluginImporterCapability {
                 metadata: ImporterCapabilityMetadata {
                     base: CapabilityMetadata {
@@ -261,5 +267,40 @@ mod tests {
             "{err}"
         );
         assert!(err.to_string().contains("missing"), "{err}");
+    }
+
+    fn failing_importer(message: &str) -> PluginImporterProxy {
+        importer_of(failing(
+            &PluginId::from_static("packwiz"),
+            &["import"],
+            message,
+        ))
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn should_name_the_refused_host_when_the_importer_reports_one() {
+        let err = failing_importer(HOST_REFUSED)
+            .import("pack.toml")
+            .await
+            .unwrap_err();
+
+        assert!(
+            matches!(&err, InstanceError::PluginHostNotAllowed { plugin_id, host, details }
+                if plugin_id == "packwiz" && host == "cdn.example" && details == "cdn refused"),
+            "{err:?}"
+        );
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn should_keep_the_text_of_any_other_failure_of_the_importer() {
+        let err = failing_importer(NOT_FOUND)
+            .import("pack.toml")
+            .await
+            .unwrap_err();
+
+        assert!(
+            matches!(&err, InstanceError::ImportFailed { reason, .. } if reason.contains("got 404")),
+            "{err:?}"
+        );
     }
 }

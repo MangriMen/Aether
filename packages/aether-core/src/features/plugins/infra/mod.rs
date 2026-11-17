@@ -13,6 +13,7 @@ mod plugin_infrastructure_listener;
 mod plugin_updater_proxy;
 pub(crate) mod plugin_utils;
 mod provider_failure;
+mod refused_host;
 #[cfg(test)]
 mod reload_plugin_test;
 #[cfg(test)]

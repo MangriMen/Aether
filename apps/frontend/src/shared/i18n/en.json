@@ -322,6 +322,7 @@
       "INVALID_ALLOWED_HOST": "The host of {{url}} cannot be given to the plugin: only http and https addresses of public hosts are allowed, without wildcards",
       "INVALID_ALLOWED_HOST_ENTRY": "Host {{entry}} cannot be saved: write a host name or a pattern such as *.example.com, without a scheme, port or path",
       "COMMAND_NOT_APPROVED": "The command of plugin {{plugin_id}} did not run: {{reason}}",
+      "HOST_NOT_ALLOWED": "Plugin {{plugin_id}} may not connect to {{host}}: the host is not in its network access list",
       "COMMAND_APPROVAL_NOT_FOUND": "This question is already closed",
       "COMMAND_APPROVAL_ONCE_ONLY": "This command can be allowed once only",
       "HASH_COMPUTATION_FAILED": "Failed to compute plugin hash",
@@ -1027,6 +1028,7 @@
     "accessConfirmDeny": "Don't allow",
     "hostAccessGranted": "The plugin can now connect to this host",
     "hostAccessFailed": "Could not give the plugin access to the host",
+    "allowHost": "Allow {{host}}",
     "ignoredPath": {
       "host_not_absolute": "Not used by the plugin: the host path is not absolute",
       "host_not_a_folder": "Not used by the plugin: the host path is not an existing folder",

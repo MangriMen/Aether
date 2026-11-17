@@ -324,6 +324,16 @@ pub enum InstanceError {
     )]
     PluginNotRunning { plugin_id: String },
 
+    /// The plugin behind a capability (an importer, a content provider, an updater) failed
+    /// because one of its network host functions refused `host`: it is not among the plugin's
+    /// allowed hosts, which the user can change. `details` is the plugin's own text.
+    #[error("Plugin \"{plugin_id}\" may not connect to {host}: it is not among its allowed hosts")]
+    PluginHostNotAllowed {
+        plugin_id: String,
+        host: String,
+        details: String,
+    },
+
     #[error("The caches are being cleared; try again in a moment")]
     CachesBeingCleared,
 

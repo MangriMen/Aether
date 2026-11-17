@@ -871,6 +871,17 @@ export type PluginErrorDto = { code: "NOT_FOUND"; payload: {
 	reason: CommandRefusalDto,
 	cause: CauseDto | null,
 } } | 
+/**
+ *  A call of the plugin failed because one of its network host functions refused `host`: it
+ *  is not among the plugin's allowed hosts. `plugin_id` is the plugin that was called,
+ *  `cause` holds that plugin's own words. A failed call of an importer, a content provider
+ *  or an updater (`InstanceError::PluginHostNotAllowed`) is reported as this too.
+ */
+{ code: "HOST_NOT_ALLOWED"; payload: {
+	plugin_id: string,
+	host: string,
+	cause: CauseDto,
+} } | 
 /**  The question was answered or ended before this answer came. */
 { code: "COMMAND_APPROVAL_NOT_FOUND"; payload: {
 	request_id: string,

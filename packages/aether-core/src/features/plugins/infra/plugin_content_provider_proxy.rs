@@ -43,6 +43,7 @@ use crate::features::plugins::infra::plugin_utils::{
     MountSet, host_path_to_plugin, parse_plugin_path, resolve_plugin_path,
     resolve_plugin_path_anchored,
 };
+use crate::features::plugins::infra::refused_host::refused_host;
 use crate::shared::web_url::display_icon_url;
 
 /// A content provider implemented by a plugin, calling the functions its `capabilities.json`
@@ -357,9 +358,11 @@ impl PluginContentProviderProxy {
                     handler_name,
                     err
                 );
-                Err(InstanceError::ContentProviderError {
-                    reason: ContentProviderRejection::Provider(err.to_string()),
-                })
+                Err(
+                    refused_host(&err).unwrap_or_else(|| InstanceError::ContentProviderError {
+                        reason: ContentProviderRejection::Provider(err.to_string()),
+                    }),
+                )
             }
         }
     }
