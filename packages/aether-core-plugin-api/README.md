@@ -130,7 +130,10 @@ the plugin is stopped or reloaded: the same command is refused again without a n
 
 To let the user see why, report the error as a failure envelope (see "Reporting a typed failure"
 below), passing the `HostError` as `host`: the launcher then tells the user that the command was
-not allowed, and why, with the envelope's `message` as the plugin's words. A plugin that turns
+not allowed, and why, with the envelope's `message` as the plugin's words. A call of an importer
+or an updater, or of a content provider while content is installed or an instance is updated, is
+told this way too; where the launcher only logs the failure (`handle_event`) or shows no toast
+(searching and browsing content), it is not shown. A plugin that turns
 the error into plain text still fails, but the user only learns that the plugin reported an
 error. When a plugin calls another through the host and the other one reported a refusal this
 way, the refusal reaches the caller as the same `commandNotApproved`, its `message` being the

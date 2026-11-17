@@ -14,6 +14,7 @@ use crate::features::{
         GameVersionRejection, InvalidGameVersion, InvalidLoaderVersionId, LoaderVersionIdRejection,
         MinecraftApplicationError,
     },
+    plugins::CommandApprovalRefusal,
     process::ProcessError,
     settings::SettingsError,
 };
@@ -331,6 +332,16 @@ pub enum InstanceError {
     PluginHostNotAllowed {
         plugin_id: String,
         host: String,
+        details: String,
+    },
+
+    /// The plugin behind a capability (an importer, a content provider, an updater) failed
+    /// because a command it asked `run_command` for was not run: the user denied it (now or
+    /// earlier), or nobody answered. `details` is the plugin's own text.
+    #[error("The command of plugin \"{plugin_id}\" was not approved: {}", reason.as_wire())]
+    PluginCommandNotApproved {
+        plugin_id: String,
+        reason: CommandApprovalRefusal,
         details: String,
     },
 

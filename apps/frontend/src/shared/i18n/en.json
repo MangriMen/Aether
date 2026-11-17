@@ -351,7 +351,7 @@
           "OTHER": "an unexpected error occurred while loading it"
         },
         "COMMAND_NOT_APPROVED": {
-          "DENIED": "it was not allowed",
+          "DENIED": "it was not allowed; the same command is refused without asking until the plugin is restarted",
           "TIMED_OUT": "nobody answered in time",
           "CANCELLED": "the plugin was stopped",
           "JAR_CHANGED": "the program changed while the question was open"

@@ -8,7 +8,7 @@ use crate::features::{
 };
 
 use crate::features::plugins::infra::extism::models::PluginInstanceExt;
-use crate::features::plugins::infra::refused_host::refused_host;
+use crate::features::plugins::infra::refusal::refusal;
 
 pub struct PluginUpdaterProxy {
     instance: PluginHandle,
@@ -61,7 +61,7 @@ impl Updater for PluginUpdaterProxy {
             }),
             Err(err) => {
                 tracing::error!("Error updating instance by plugin '{plugin_id}': {err:?}");
-                Err(refused_host(&err).unwrap_or_else(failed))
+                Err(refusal(&err).unwrap_or_else(failed))
             }
             Ok(None) => {
                 tracing::error!(
@@ -80,8 +80,9 @@ impl Updater for PluginUpdaterProxy {
 mod tests {
     use super::*;
     use crate::features::instance::{CapabilityId, CapabilityMetadata, PluginId};
-    use crate::features::plugins::infra::refused_host::failing_plugin::{
-        HOST_REFUSED, NOT_FOUND, failing,
+    use crate::features::plugins::CommandApprovalRefusal;
+    use crate::features::plugins::infra::refusal::failing_plugin::{
+        COMMAND_DENIED, HOST_REFUSED, NOT_FOUND, failing,
     };
 
     fn failing_updater(message: &str) -> PluginUpdaterProxy {
@@ -115,6 +116,22 @@ mod tests {
         assert!(
             matches!(&err, InstanceError::PluginHostNotAllowed { plugin_id, host, details }
                 if plugin_id == "packwiz" && host == "cdn.example" && details == "cdn refused"),
+            "{err:?}"
+        );
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn should_tell_why_the_command_did_not_run_when_the_updater_reports_a_refused_one() {
+        let err = failing_updater(COMMAND_DENIED)
+            .update(&instance())
+            .await
+            .unwrap_err();
+
+        assert!(
+            matches!(&err, InstanceError::PluginCommandNotApproved { plugin_id, reason, details }
+                if plugin_id == "packwiz"
+                    && *reason == CommandApprovalRefusal::Denied
+                    && details == "java refused"),
             "{err:?}"
         );
     }

@@ -4,19 +4,32 @@ use crate::features::{
 };
 
 /// The error of a capability's call (an importer, a content provider, an updater) when the plugin
-/// reported that one of its network host functions refused a host: the user can allow that host,
-/// so it is not folded into the text of a generic failure. `None` for any other error.
-pub(super) fn refused_host(err: &PluginError) -> Option<InstanceError> {
-    match err {
-        PluginError::FunctionCallFailed {
-            plugin_id,
-            error: PluginCallError::HostNotAllowed { host, details },
-            ..
-        } => Some(InstanceError::PluginHostNotAllowed {
-            plugin_id: plugin_id.to_string(),
-            host: host.clone(),
-            details: details.clone(),
-        }),
+/// reported that it was refused something the user decides on: a host one of its network host
+/// functions may not reach (the user can allow it), or a command `run_command` did not run (the
+/// user denied it, or did not answer). Either is told as such, not folded into the text of a
+/// generic failure. `None` for any other error.
+pub(super) fn refusal(err: &PluginError) -> Option<InstanceError> {
+    let PluginError::FunctionCallFailed {
+        plugin_id, error, ..
+    } = err
+    else {
+        return None;
+    };
+    match error {
+        PluginCallError::HostNotAllowed { host, details } => {
+            Some(InstanceError::PluginHostNotAllowed {
+                plugin_id: plugin_id.to_string(),
+                host: host.clone(),
+                details: details.clone(),
+            })
+        }
+        PluginCallError::CommandNotApproved { reason, details } => {
+            Some(InstanceError::PluginCommandNotApproved {
+                plugin_id: plugin_id.to_string(),
+                reason: *reason,
+                details: details.clone(),
+            })
+        }
         _ => None,
     }
 }
@@ -37,6 +50,10 @@ pub(crate) mod failing_plugin {
     /// What the plugin reports when `http_get` refused `cdn.example` to it and it passed the
     /// error back in a failure envelope.
     pub(crate) const HOST_REFUSED: &str = r#"aether-plugin-failure:{"message":"cdn refused","host":{"type":"http","data":{"message":"Host `cdn.example` is not listed in the plugin's allowed_hosts","error":{"type":"hostNotAllowed","data":{"host":"cdn.example"}}}}}"#;
+
+    /// What the plugin reports when the user denied the command it asked `run_command` for and
+    /// it passed the error back in a failure envelope.
+    pub(crate) const COMMAND_DENIED: &str = r#"aether-plugin-failure:{"message":"java refused","host":{"type":"commandNotApproved","data":{"reason":"denied","message":"The command of plugin \"packwiz\" was not approved: denied"}}}"#;
 
     /// Any other failure: an `http` error of another kind.
     pub(crate) const NOT_FOUND: &str = r#"aether-plugin-failure:{"message":"got 404","host":{"type":"http","data":{"message":"404","error":{"type":"status","data":{"status":404}}}}}"#;
@@ -86,7 +103,7 @@ pub(crate) mod failing_plugin {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::features::instance::PluginId;
+    use crate::features::{instance::PluginId, plugins::CommandApprovalRefusal};
 
     fn call_failed(error: PluginCallError) -> PluginError {
         PluginError::FunctionCallFailed {
@@ -104,10 +121,34 @@ mod tests {
         });
 
         assert!(matches!(
-            refused_host(&err),
+            refusal(&err),
             Some(InstanceError::PluginHostNotAllowed { plugin_id, host, details })
                 if plugin_id == "packwiz" && host == "cdn.example" && details == "cdn refused"
         ));
+    }
+
+    #[test]
+    fn should_name_the_plugin_and_the_reason_when_its_command_was_not_approved() {
+        for reason in [
+            CommandApprovalRefusal::Denied,
+            CommandApprovalRefusal::TimedOut,
+            CommandApprovalRefusal::Cancelled,
+            CommandApprovalRefusal::JarChanged,
+        ] {
+            let err = call_failed(PluginCallError::CommandNotApproved {
+                reason,
+                details: "java refused".to_owned(),
+            });
+
+            assert!(
+                matches!(
+                    refusal(&err),
+                    Some(InstanceError::PluginCommandNotApproved { plugin_id, reason: got, details })
+                        if plugin_id == "packwiz" && got == reason && details == "java refused"
+                ),
+                "{reason:?}"
+            );
+        }
     }
 
     #[test]
@@ -119,7 +160,7 @@ mod tests {
                 plugin_id: PluginId::from_static("packwiz"),
             },
         ] {
-            assert!(refused_host(&err).is_none(), "{err:?}");
+            assert!(refusal(&err).is_none(), "{err:?}");
         }
     }
 }

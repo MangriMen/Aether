@@ -35,14 +35,14 @@ use crate::{
             InstanceError, InstanceId, PackSource, PageIndex, PageSize, ProviderId, Updater,
         },
         plugins::{
-            ApiConfig, LoadConfig, Plugin, PluginCapabilities, PluginContentProviderCapability,
-            PluginHandle, PluginManifest, PluginMetadata, PluginRegistry, PluginState,
-            RuntimeConfig,
+            ApiConfig, CommandApprovalRefusal, LoadConfig, Plugin, PluginCapabilities,
+            PluginContentProviderCapability, PluginHandle, PluginManifest, PluginMetadata,
+            PluginRegistry, PluginState, RuntimeConfig,
             infra::{
                 PluginCapabilitiesV1, PluginContentProviderProxy, PluginInfrastructureListener,
                 extism::models::ExtismPluginInstance,
                 plugin_utils::{get_default_allowed_paths, to_extism_mount_key},
-                refused_host::failing_plugin::{HOST_REFUSED, NOT_FOUND, failing},
+                refusal::failing_plugin::{COMMAND_DENIED, HOST_REFUSED, NOT_FOUND, failing},
             },
         },
         settings::LocationInfo,
@@ -852,4 +852,30 @@ async fn should_name_the_refused_host_when_a_wasm_plugin_reports_one() {
         "{refused:?}"
     );
     assert!(provider_error(other).contains("got 404"));
+}
+
+// ─── A command refused to the plugin ───────────────────────────
+
+/// The plugin's search fails because the user denied the command it asked `run_command` for: the
+/// user is told that the command did not run, and why.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn should_tell_why_the_command_did_not_run_when_a_wasm_plugin_reports_a_refused_one() {
+    let sandbox = sandbox();
+
+    let refused = proxy(
+        &sandbox,
+        PLUGIN_ID,
+        failing(&plugin_id(), &["cf_search"], COMMAND_DENIED),
+    )
+    .search(search_params(&plugin_id()))
+    .await
+    .unwrap_err();
+
+    assert!(
+        matches!(&refused, InstanceError::PluginCommandNotApproved { plugin_id, reason, details }
+            if plugin_id == PLUGIN_ID
+                && *reason == CommandApprovalRefusal::Denied
+                && details == "java refused"),
+        "{refused:?}"
+    );
 }

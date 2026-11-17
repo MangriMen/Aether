@@ -10,7 +10,7 @@ use crate::features::{
 use crate::features::plugins::infra::extism::models::PluginInstanceExt;
 use crate::features::plugins::infra::pack_instances::deploying_packs;
 use crate::features::plugins::infra::plugin_utils::to_wasi_path;
-use crate::features::plugins::infra::refused_host::refused_host;
+use crate::features::plugins::infra::refusal::refusal;
 use crate::shared::web_url::{HttpUrl, InvalidUrl};
 
 /// Whether `input` is written as an address, not a path: it starts with `http://` or `https://`
@@ -97,7 +97,7 @@ impl Importer for PluginImporterProxy {
             }),
             Err(err) => {
                 tracing::error!("Error importing instance by plugin '{plugin_id}': {err:?}");
-                Err(refused_host(&err).unwrap_or_else(|| failed(err.to_string())))
+                Err(refusal(&err).unwrap_or_else(|| failed(err.to_string())))
             }
             Ok(None) => {
                 tracing::error!(
@@ -123,10 +123,11 @@ mod tests {
     use crate::features::instance::{CapabilityId, PluginId};
     use crate::features::{
         instance::CapabilityMetadata,
+        plugins::CommandApprovalRefusal,
         plugins::infra::{
             extism::models::ExtismPluginInstance,
             pack_instances::{is_deploying_packs, record_pack_instance},
-            refused_host::failing_plugin::{HOST_REFUSED, NOT_FOUND, failing},
+            refusal::failing_plugin::{COMMAND_DENIED, HOST_REFUSED, NOT_FOUND, failing},
         },
     };
 
@@ -287,6 +288,22 @@ mod tests {
         assert!(
             matches!(&err, InstanceError::PluginHostNotAllowed { plugin_id, host, details }
                 if plugin_id == "packwiz" && host == "cdn.example" && details == "cdn refused"),
+            "{err:?}"
+        );
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn should_tell_why_the_command_did_not_run_when_the_importer_reports_a_refused_one() {
+        let err = failing_importer(COMMAND_DENIED)
+            .import("pack.toml")
+            .await
+            .unwrap_err();
+
+        assert!(
+            matches!(&err, InstanceError::PluginCommandNotApproved { plugin_id, reason, details }
+                if plugin_id == "packwiz"
+                    && *reason == CommandApprovalRefusal::Denied
+                    && details == "java refused"),
             "{err:?}"
         );
     }

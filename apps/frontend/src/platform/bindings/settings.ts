@@ -559,7 +559,8 @@ export type PluginErrorDto = { code: "NOT_FOUND"; payload: {
 /**
  *  The user did not allow the plugin's command, or was not there to. When a plugin reported
  *  it as the reason a call failed, `plugin_id` is the plugin that was called and `cause`
- *  holds that plugin's own words.
+ *  holds that plugin's own words. A failed call of an importer, a content provider or an
+ *  updater (`InstanceError::PluginCommandNotApproved`) is reported as this too.
  */
 { code: "COMMAND_NOT_APPROVED"; payload: {
 	plugin_id: string,
