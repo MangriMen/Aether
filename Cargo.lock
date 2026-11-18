@@ -135,6 +135,7 @@ dependencies = [
  "toml 1.2.0+spec-1.1.0",
  "tracing",
  "tracing-error",
+ "tracing-subscriber",
  "url",
  "uuid",
  "windows",
