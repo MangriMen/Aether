@@ -65,6 +65,10 @@ impl From<&ErrorKind> for HostError {
             ErrorKind::SettingsError(err) => settings(err),
             ErrorKind::RequestError(err) => request(err),
             ErrorKind::PluginHttpError(err) => http(err, plugin_http(err)),
+            // The text names a host path, which stays in the log.
+            ErrorKind::PluginDownloadError(PluginDownloadError::UnusableCache { .. }) => {
+                Kind::Internal.of(&"The plugin cache cannot be used")
+            }
             ErrorKind::PluginDownloadError(err) => http_or_internal(err, plugin_download(err)),
             ErrorKind::PluginCommandError(err) => plugin_command(err),
             // No host function reaches these: should one, the plugin can do nothing about it.

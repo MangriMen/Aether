@@ -193,7 +193,7 @@ pub(crate) async fn write_instance_file_with(
     get_instance: &dyn GetInstanceUseCasePort,
     file_service: &dyn InstanceFileService,
 ) -> crate::Result<()> {
-    log::debug!(
+    tracing::debug!(
         target: "plugin",
         "[{plugin_id}]: write_instance_file {}/{} ({} bytes)",
         params.instance_id,
@@ -217,7 +217,7 @@ pub(crate) async fn write_instance_file_with(
         .write_instance_file(&instance_id, &relative_path, &params.bytes)
         .await
         .map_err(|err| {
-            log::warn!(target: "plugin", "[{plugin_id}]: write_instance_file failed: {err}");
+            tracing::warn!(target: "plugin", "[{plugin_id}]: write_instance_file failed: {err}");
             err.into()
         })
 }
@@ -230,7 +230,7 @@ pub(crate) async fn read_instance_file_with(
     get_instance: &dyn GetInstanceUseCasePort,
     file_service: &dyn InstanceFileService,
 ) -> crate::Result<Vec<u8>> {
-    log::debug!(
+    tracing::debug!(
         target: "plugin",
         "[{plugin_id}]: read_instance_file {}/{}",
         params.instance_id,
@@ -246,7 +246,7 @@ pub(crate) async fn read_instance_file_with(
         .read_instance_file(&instance_id, &relative_path)
         .await
         .map_err(|err| {
-            log::warn!(target: "plugin", "[{plugin_id}]: read_instance_file failed: {err}");
+            tracing::warn!(target: "plugin", "[{plugin_id}]: read_instance_file failed: {err}");
             crate::Error::from(err)
         })?;
 

@@ -473,12 +473,12 @@ pub(crate) async fn handle_http_get(
     hosts: &PluginHosts,
     limits: PluginSandboxLimits,
 ) -> crate::Result<HttpResponseDto> {
-    log::debug!(target: "plugin", "[{plugin_id}]: http_get {}", request.url);
+    tracing::debug!(target: "plugin", "[{plugin_id}]: http_get {}", request.url);
 
     perform_get(&request, hosts, is_blocked_ip, &ProxySource::System, limits)
         .await
         .map_err(|err| {
-            log::warn!(target: "plugin", "[{plugin_id}]: http_get failed: {err}");
+            tracing::warn!(target: "plugin", "[{plugin_id}]: http_get failed: {err}");
             crate::ErrorKind::from(err).as_error()
         })
 }
@@ -490,12 +490,12 @@ pub(crate) async fn handle_http_post_json(
     hosts: &PluginHosts,
     limits: PluginSandboxLimits,
 ) -> crate::Result<HttpResponseDto> {
-    log::debug!(target: "plugin", "[{plugin_id}]: http_post_json {}", request.url);
+    tracing::debug!(target: "plugin", "[{plugin_id}]: http_post_json {}", request.url);
 
     perform_post_json(&request, hosts, is_blocked_ip, &ProxySource::System, limits)
         .await
         .map_err(|err| {
-            log::warn!(target: "plugin", "[{plugin_id}]: http_post_json failed: {err}");
+            tracing::warn!(target: "plugin", "[{plugin_id}]: http_post_json failed: {err}");
             crate::ErrorKind::from(err).as_error()
         })
 }

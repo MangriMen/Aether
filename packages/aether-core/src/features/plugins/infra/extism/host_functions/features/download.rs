@@ -312,12 +312,12 @@ pub(crate) async fn handle_download_to_cache(
     params: DownloadToCacheParamsDto,
     context: &DownloadContext<'_>,
 ) -> crate::Result<CachedFileDto> {
-    log::debug!(target: "plugin", "[{plugin_id}]: download_to_cache {}", params.url);
+    tracing::debug!(target: "plugin", "[{plugin_id}]: download_to_cache {}", params.url);
 
     perform_download(params, context, is_blocked_ip)
         .await
         .map_err(|err| {
-            log::warn!(target: "plugin", "[{plugin_id}]: download_to_cache failed: {err}");
+            tracing::warn!(target: "plugin", "[{plugin_id}]: download_to_cache failed: {err}");
             crate::ErrorKind::from(err).as_error()
         })
 }
