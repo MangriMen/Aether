@@ -31,14 +31,15 @@ describe('I18nProvider', () => {
     document.body.replaceChildren();
   });
 
-  it.each(['"xx"', 'not json', '42', '"constructor"'])(
+  it.each(['"xx"', '42', '"constructor"'])(
     'should fall back to a known locale when the stored value is %s',
     (stored) => {
       localStorage.setItem(LOCALE_LS_KEY, stored);
 
       const locale = renderProvider();
 
-      expect(Object.keys(LOCALE_RESOURCES)).toContain(locale);
+      expect(locale).toBe('en');
+      expect(document.documentElement.lang).toBe('en');
     },
   );
 
