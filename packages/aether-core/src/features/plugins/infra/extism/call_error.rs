@@ -2,6 +2,8 @@ use aether_core_plugin_api::v0::{HostError, HttpErrorDto, PluginFailureDto};
 
 use crate::features::plugins::{CommandApprovalRefusal, PluginCallError};
 
+use super::host_functions::sanitize_log_message;
+
 // Extism hands back an untyped `anyhow::Error` and builds these messages itself
 // (`extism-1.41.0/src/plugin.rs`, `raw_call`; `current_plugin.rs`, `memory_growing`). Text is
 // all there is to tell the limits apart, so it is matched here and nowhere else, and the tests
@@ -30,8 +32,8 @@ pub(super) fn classify_call_error(error: &extism::Error, code: i32) -> PluginCal
         // What the plugin reported in a failure envelope. Extism keeps the plugin's message as the
         // cause even when it traps after setting it, so this is not hidden behind the trap code.
         _ if let Some(failure) = PluginFailureDto::parse(&cause) => reported_failure(failure),
-        _ if code == TRAP_CODE => PluginCallError::Trap(cause),
-        _ => PluginCallError::Plugin(cause),
+        _ if code == TRAP_CODE => PluginCallError::Trap(sanitize_log_message(&cause)),
+        _ => PluginCallError::Plugin(sanitize_log_message(&cause)),
     }
 }
 
@@ -65,14 +67,14 @@ fn reported_failure(failure: PluginFailureDto) -> PluginCallError {
                 details: failure.message,
             };
         }
-        _ => return PluginCallError::Plugin(failure.message),
+        _ => return PluginCallError::Plugin(sanitize_log_message(&failure.message)),
     };
     match reported {
         Ok(reason) => PluginCallError::CommandNotApproved {
             reason,
             details: failure.message,
         },
-        Err(_) => PluginCallError::Plugin(failure.message),
+        Err(_) => PluginCallError::Plugin(sanitize_log_message(&failure.message)),
     }
 }
 
@@ -285,6 +287,16 @@ Caused by: x"#,
         assert_eq!(
             call_error(&mut unlimited(), "exit"),
             PluginCallError::NonZeroExit(3)
+        );
+    }
+
+    #[test]
+    fn should_escape_the_message_when_it_has_control_characters() {
+        let error = extism::Error::msg("x\n[2026][ERROR] forged");
+
+        assert_eq!(
+            super::classify_call_error(&error, 1),
+            PluginCallError::Plugin(r"x\n[2026][ERROR] forged".to_owned())
         );
     }
 

@@ -11,6 +11,6 @@ pub(crate) use get_host_functions::*;
 pub(crate) use features::test_server;
 pub(crate) use features::{
     AddressFilter, PluginNetwork, ProxySource, VettedDownloadClient, download_with, is_blocked_ip,
-    vetted_download_client,
+    sanitize_log_message, vetted_download_client,
 };
 pub(crate) use plugin_context::*;

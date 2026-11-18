@@ -3,7 +3,9 @@
 //! This is the one place that decides what kind an error is for a plugin: what it can do about
 //! it, not which feature failed. Each enum is matched variant by variant, so a new variant has
 //! to be placed here before it compiles. An error that wraps another feature's error is
-//! classified by the wrapped one. The message is the core's own text of the error.
+//! classified by the wrapped one. The message is the core's own text of the error, except where
+//! that text names a path on the host's disk: a fixed text goes to the plugin and the detail to
+//! the log.
 
 use std::{error::Error, fmt::Display};
 
@@ -133,15 +135,21 @@ fn instance(value: &InstanceError) -> HostError {
 
         // The text of a storage error names the path on the host's disk, which tells the plugin
         // the layout and the user's name: it goes to the log, the plugin gets the failure only.
-        InstanceError::Storage(err) if storage_is_missing(err) => {
-            return Kind::NotFound.of(&"The file or folder does not exist");
+        InstanceError::Storage(err) => {
+            tracing::warn!("Instance storage failed for a plugin: {value}");
+            return if storage_is_missing(err) {
+                Kind::NotFound.of(&"The file or folder does not exist")
+            } else {
+                Kind::Internal.of(&"The instance storage could not complete the operation")
+            };
         }
-        InstanceError::Storage(_) => {
-            return Kind::Internal.of(&"The instance storage could not complete the operation");
+        // Each failure names the file with its host path.
+        InstanceError::ContentStateChangeFailed { .. } => {
+            tracing::warn!("Content change failed for a plugin: {value}");
+            return Kind::Internal.of(&"Some content files could not be changed");
         }
 
         InstanceError::InvalidRecord { .. }
-        | InstanceError::ContentStateChangeFailed { .. }
         | InstanceError::CapabilityOperationError
         | InstanceError::PrelaunchCommandError { .. }
         | InstanceError::Hook(_)
@@ -616,6 +624,13 @@ mod tests {
         };
 
         assert!(!message.contains("alice"), "{message}");
+    }
+
+    #[test]
+    fn should_tell_not_found_when_the_storage_has_a_bare_io_error_of_that_kind() {
+        let error = InstanceError::storage(std::io::Error::from(std::io::ErrorKind::NotFound));
+
+        assert!(matches!(host(error), HostError::NotFound { .. }));
     }
 
     #[test]

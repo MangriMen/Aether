@@ -1,6 +1,7 @@
 use super::PluginInstanceExt;
 use crate::features::instance::PluginId;
 use crate::features::plugins::infra::extism::Wire;
+use crate::features::plugins::infra::extism::host_functions::sanitize_log_message;
 use crate::features::plugins::{
     PluginCallError, PluginError, PluginInstance, PluginInternalEvent,
     infra::extism::call_error::classify_call_error,
@@ -43,8 +44,9 @@ impl PluginInstance for ExtismPluginInstance {
             .call_get_error_code(name, args)
             .map_err(|(error, code)| {
                 tracing::debug!(
-                    "Call to \"{name}\" in plugin \"{}\" failed with code {code}: {error:?}",
-                    self.id
+                    "Call to \"{name}\" in plugin \"{}\" failed with code {code}: {}",
+                    self.id,
+                    sanitize_log_message(&format!("{error:?}"))
                 );
                 failed(classify_call_error(&error, code))
             })

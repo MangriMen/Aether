@@ -84,7 +84,8 @@ fn resolve_log_levels(rust_log: Option<&str>, is_debug: bool) -> LogLevels {
         ("wasmtime".to_owned(), external_level),
         // Extism writes the text a plugin sets as its error into the log as it is, unescaped and
         // without a limit: a plugin could forge lines of the core. The failure itself reaches the
-        // core as an error, which it logs cleaned. Raise it with an explicit `extism=debug`.
+        // core as an error, whose text is cleaned where it is made (`classify_call_error`).
+        // Raise it with an explicit `extism=debug`.
         ("extism".to_owned(), LevelFilter::Off),
         ("wasmtime_internal_cranelift".to_owned(), LevelFilter::Info),
         ("cranelift_codegen".to_owned(), external_level),
@@ -158,7 +159,7 @@ mod tests {
     }
 
     #[test]
-    fn should_silence_extism_unless_it_is_asked_for_by_name() {
+    fn should_keep_extism_off_when_the_level_is_not_set_for_it_by_name() {
         for value in [None, Some("trace")] {
             assert_eq!(
                 resolve_log_levels(value, true).level_of("extism"),
