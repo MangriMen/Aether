@@ -44,7 +44,6 @@ export const createContentTable = (props: CreateContentTableProps) => {
       ),
       cell: (cellProps) => (
         <div class='flex justify-end'>
-          {/* Используем сокращенный путь props.row.original */}
           <props.contentActions file={cellProps.row.original} />
         </div>
       ),
