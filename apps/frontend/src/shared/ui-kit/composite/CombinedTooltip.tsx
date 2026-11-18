@@ -66,8 +66,6 @@ export const CombinedTooltip = <T extends ValidComponent = 'button'>(
       // A controlled `open` would otherwise keep the content visible while disabled.
       open={local.disableTooltip ? false : tooltipRoot.open}
     >
-      {/* // TODO: find a way to make this work
-      //@ts-expect-error no declaration */}
       <TooltipTrigger
         // Kobalte sets aria-describedby only while the tooltip is open, so an icon-only trigger needs its own name.
         aria-label={
@@ -75,7 +73,7 @@ export const CombinedTooltip = <T extends ValidComponent = 'button'>(
             ? local.label
             : undefined
         }
-        {...(rest as TooltipTriggerProps<T>)}
+        {...(rest as PolymorphicProps<T, TooltipTriggerProps<T>>)}
       >
         {resolved()}
       </TooltipTrigger>

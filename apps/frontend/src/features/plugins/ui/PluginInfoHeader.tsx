@@ -58,13 +58,23 @@ export const PluginInfoHeader: Component<PluginInfoHeaderProps> = (props) => {
         <div class='gap-1 flex items-end'>
           <span class='text-muted-foreground'>{props.version}</span>
           <Show when={props.apiVersion}>
-            <PluginApiCompatibilityBadge
-              class='mb-0.75'
-              apiVersion={props.apiVersion!}
-            />
+            {(apiVersion) => (
+              <PluginApiCompatibilityBadge
+                class='mb-0.75'
+                apiVersion={apiVersion()}
+              />
+            )}
           </Show>
-          <Show when={props.verified !== undefined}>
-            <PluginSourceBadge class='mb-0.75' verified={props.verified!} />
+          <Show
+            when={
+              props.verified === undefined
+                ? undefined
+                : { value: props.verified }
+            }
+          >
+            {(verified) => (
+              <PluginSourceBadge class='mb-0.75' verified={verified().value} />
+            )}
           </Show>
         </div>
       </div>

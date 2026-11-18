@@ -2,6 +2,7 @@ import { openUrl } from '@tauri-apps/plugin-opener';
 
 import type { TFunction } from '@/shared/i18n';
 
+import { logError } from '@/shared/log';
 import { showToast } from '@/shared/ui-kit';
 
 const maxTextLengthForTranslatorUrl = 5000;
@@ -32,8 +33,7 @@ export const openTranslationInBrowser = async (text: string, t: TFunction) => {
       description: t('update.failedToOpenBrowserWithChangelogDescription'),
       variant: 'destructive',
     });
-    // oxlint-disable-next-line no-console
-    console.error('Browser open error:', err);
+    logError('Browser open error:', err);
   }
 };
 

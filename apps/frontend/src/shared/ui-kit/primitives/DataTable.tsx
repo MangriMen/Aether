@@ -9,7 +9,15 @@ import type {
 import type { Accessor, ComponentProps, JSX } from 'solid-js';
 
 import { createTable, FlexRender } from '@tanstack/solid-table';
-import { createMemo, For, Show, Switch, Match, splitProps } from 'solid-js';
+import {
+  createMemo,
+  For,
+  Show,
+  Switch,
+  Match,
+  splitProps,
+  untrack,
+} from 'solid-js';
 
 import { cn } from '@/shared/utils';
 
@@ -119,23 +127,24 @@ export const DataTable = <TData extends RowData>(
 
   const labels = useUiKitLabels();
 
-  const getTable = () => {
+  // One table per provided table or per mount: the getters below keep data and columns live,
+  // so a new data array must not build a new table.
+  const getTable = createMemo(() => {
     if (local.table) {
       return local.table;
     }
 
-    const data = local.data;
-    const columns = local.columns;
-
-    if (!data || !columns) {
+    if (!untrack(() => local.data && local.columns)) {
       throw new Error("If table not provided, 'data' and 'columns' must be");
     }
 
-    return createDefaultTable(
-      () => data,
-      () => columns,
+    return untrack(() =>
+      createDefaultTable(
+        () => local.data,
+        () => local.columns!,
+      ),
     );
-  };
+  });
 
   const columnsData = createMemo(() => {
     const visibleLeafColumns = getTable().getVisibleLeafColumns();

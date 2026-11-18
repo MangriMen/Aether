@@ -8,6 +8,7 @@ import {
   type ContentType,
 } from '@/features/content';
 import { useTranslation } from '@/shared/i18n';
+import { logError } from '@/shared/log';
 import { Skeleton, Tabs, TabsList, TabsTrigger } from '@/shared/ui-kit';
 
 export type ContentTypeTabsProps = Omit<ComponentProps<'div'>, 'onChange'> & {
@@ -34,8 +35,7 @@ export const ContentTypeTabs: Component<ContentTypeTabsProps> = (props) => {
     if (isContentType(value)) {
       local.onChange(value);
     } else {
-      // oxlint-disable-next-line no-console
-      console.error(`Unknown content type received: ${value}`);
+      logError(`Unknown content type received: ${value}`);
     }
   };
 

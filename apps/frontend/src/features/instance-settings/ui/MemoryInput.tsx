@@ -64,12 +64,11 @@ export const MemoryInput: Component<MemoryInputProps> = (props) => {
 
   const textFieldDefaultValue = createMemo(() => String(defaultValue()));
 
-  createEffect(() => {
-    const value = isNil(merged.value)
-      ? textFieldDefaultValue()
-      : String(merged.value);
+  const controlledText = () =>
+    isNil(merged.value) ? textFieldDefaultValue() : String(merged.value);
 
-    setTextFieldValue(value);
+  createEffect(() => {
+    setTextFieldValue(controlledText());
   });
 
   const handleChangeTextField = (e: Event) => {
@@ -89,6 +88,9 @@ export const MemoryInput: Component<MemoryInputProps> = (props) => {
     }
 
     memorySliderProps.onChange?.([value]);
+    // The owner may clamp the value to what it already had, which would not re-run the
+    // effect above and would leave the rejected text in the field.
+    setTextFieldValue(controlledText());
   };
 
   return (
