@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { lazyParseMarkdown } from '../parseMarkdown';
+import { lazyParseMarkdown, lazySanitizeText } from '../parseMarkdown';
 
 const imgSrc = (html: string) => /<img[^>]*\ssrc="([^"]*)"/.exec(html)?.[1];
 
@@ -27,5 +27,14 @@ describe('lazyParseMarkdown image hosts', () => {
     expect(imgSrc(await lazyParseMarkdown(`![a](${src})`))).toBe(
       `https://wsrv.nl/?url=${encodeURIComponent(src)}&n=-1`,
     );
+  });
+});
+
+describe('lazyParseMarkdown embedded frames', () => {
+  it('should_strip_an_iframe_when_the_markdown_embeds_one', async () => {
+    const html = await lazySanitizeText(
+      '<iframe src="https://example.com/embed" allow="autoplay"></iframe>',
+    );
+    expect(html).not.toContain('iframe');
   });
 });

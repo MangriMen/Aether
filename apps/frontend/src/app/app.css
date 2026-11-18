@@ -619,8 +619,8 @@
       color: var(--color-muted-foreground);
     }
 
-    /* 6. Video Embeds & Iframes */
-    :where(iframe, video) {
+    /* 6. Video Embeds */
+    :where(video) {
       aspect-ratio: 16 / 9;
       width: 850px;
       max-width: 100%;
@@ -628,7 +628,7 @@
     }
 
     @media screen and (max-width: 1280px) {
-      :where(iframe, video) {
+      :where(video) {
         width: 100%;
       }
     }

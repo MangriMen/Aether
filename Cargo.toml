@@ -62,10 +62,7 @@ specta = { version = "=2.0.0-rc.25", features = [
     "semver",
 ] }
 specta-typescript = "0.0.12"
-tauri = { version = "2.11.5", features = [
-    "tray-icon",
-    "test",
-] }
+tauri = "2.11.5"
 tauri-specta = { version = "=2.0.0-rc.25", features = ["derive", "typescript"] }
 
 # Utilities

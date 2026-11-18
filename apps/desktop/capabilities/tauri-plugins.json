@@ -2,5 +2,12 @@
   "identifier": "tauri-plugins",
   "local": true,
   "windows": ["main"],
-  "permissions": ["opener:default", "dialog:default", "os:default", "log:default"]
+  "permissions": [
+    {
+      "identifier": "opener:allow-open-url",
+      "allow": [{ "url": "https://*" }, { "url": "http://*" }, { "url": "mailto:*" }]
+    },
+    "dialog:allow-open",
+    "log:default"
+  ]
 }
