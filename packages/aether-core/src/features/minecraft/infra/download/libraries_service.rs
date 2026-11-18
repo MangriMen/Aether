@@ -237,6 +237,7 @@ impl<RC: RequestClient> LibrariesService<RC> {
                             library,
                             version_info,
                             java_arch,
+                            force,
                             file.bar(),
                         )
                         .await?;
@@ -400,23 +401,25 @@ impl<RC: RequestClient> LibrariesService<RC> {
     async fn extract_native_library(
         &self,
         bytes: Bytes,
+        library: &vanilla::Library,
         version_info: &vanilla::VersionInfo,
+        force: bool,
     ) -> Result<(), MinecraftDomainError> {
-        let reader = std::io::Cursor::new(&bytes);
-
-        let mut archive = zip::ZipArchive::new(reader).map_err(|err| {
-            error!("Failed to create zip archive: {:?}", err);
-            IoError::from(std::io::Error::new(std::io::ErrorKind::InvalidData, err))
-        })?;
-
         let extract_path = self.location_info.version_natives_dir(&version_info.id);
+        let exclude = library
+            .extract
+            .as_ref()
+            .and_then(|extract| extract.exclude.clone())
+            .unwrap_or_default();
 
-        archive.extract(&extract_path).map_err(|err| {
-            error!(
-                "Failed to extract zip archive to {:?}: {:?}",
-                extract_path, err
-            );
-            IoError::from(std::io::Error::other(err))
+        tokio::task::spawn_blocking(move || {
+            extract_natives(&bytes, &extract_path, &exclude, force)
+        })
+        .await
+        .map_err(|err| IoError::from(std::io::Error::other(err)))?
+        .map_err(|err| {
+            error!("Failed to extract natives: {err}");
+            IoError::from(err)
         })?;
 
         Ok(())
@@ -429,6 +432,7 @@ impl<RC: RequestClient> LibrariesService<RC> {
         library: &vanilla::Library,
         version_info: &vanilla::VersionInfo,
         java_arch: &str,
+        force: bool,
         bar: Option<&ProgressBarId>,
     ) -> Result<(), MinecraftDomainError> {
         let Some(native) = Self::native_download(library, java_arch) else {
@@ -446,7 +450,7 @@ impl<RC: RequestClient> LibrariesService<RC> {
                 e
             })?;
 
-        self.extract_native_library(bytes, version_info)
+        self.extract_native_library(bytes, library, version_info, force)
             .await
             .map_err(|e| {
                 error!("Failed to extract native library {}: {:?}", library.name, e);
@@ -455,6 +459,56 @@ impl<RC: RequestClient> LibrariesService<RC> {
 
         Ok(())
     }
+}
+
+/// Unpack the natives in `bytes` into `dir`, but not the entries under a prefix of `exclude`
+/// (`META-INF/`), nor, unless `force`, a file that is there already with the size it has in the
+/// archive: a game that is running may hold it open.
+fn extract_natives(
+    bytes: &[u8],
+    dir: &Path,
+    exclude: &[String],
+    force: bool,
+) -> std::io::Result<()> {
+    let mut archive = zip::ZipArchive::new(std::io::Cursor::new(bytes))
+        .map_err(|err| std::io::Error::new(std::io::ErrorKind::InvalidData, err))?;
+
+    for index in 0..archive.len() {
+        let mut entry = archive
+            .by_index(index)
+            .map_err(|err| std::io::Error::new(std::io::ErrorKind::InvalidData, err))?;
+        let Some(relative) = entry.enclosed_name() else {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                "A native has an unsafe path in its archive",
+            ));
+        };
+        let mut name = relative.to_string_lossy().replace('\\', "/");
+        if entry.is_dir() {
+            name.push('/');
+        }
+        if exclude
+            .iter()
+            .any(|prefix| name.starts_with(prefix.as_str()))
+        {
+            continue;
+        }
+
+        let target = dir.join(relative);
+        if entry.is_dir() {
+            std::fs::create_dir_all(&target)?;
+            continue;
+        }
+        if !force && std::fs::metadata(&target).is_ok_and(|meta| meta.len() == entry.size()) {
+            continue;
+        }
+        if let Some(parent) = target.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+        let mut file = std::fs::File::create(&target)?;
+        std::io::copy(&mut entry, &mut file)?;
+    }
+    Ok(())
 }
 
 #[derive(Clone, Debug, thiserror::Error)]
@@ -473,4 +527,70 @@ where
         std::io::ErrorKind::NetworkUnreachable,
         error,
     ))
+}
+
+#[cfg(test)]
+mod extract_tests {
+    use std::io::Write;
+
+    use zip::{ZipWriter, write::SimpleFileOptions};
+
+    use super::extract_natives;
+
+    fn archive(files: &[(&str, &[u8])]) -> Vec<u8> {
+        let mut writer = ZipWriter::new(std::io::Cursor::new(Vec::new()));
+        for (name, content) in files {
+            writer
+                .start_file(*name, SimpleFileOptions::default())
+                .unwrap();
+            writer.write_all(content).unwrap();
+        }
+        writer.finish().unwrap().into_inner()
+    }
+
+    #[test]
+    fn should_skip_excluded_entries_when_extracting() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut writer = ZipWriter::new(std::io::Cursor::new(Vec::new()));
+        writer
+            .add_directory("META-INF/", SimpleFileOptions::default())
+            .unwrap();
+        writer
+            .start_file("lwjgl.dll", SimpleFileOptions::default())
+            .unwrap();
+        writer.write_all(b"dll").unwrap();
+        let bytes = writer.finish().unwrap().into_inner();
+
+        extract_natives(&bytes, dir.path(), &["META-INF/".to_owned()], false).unwrap();
+
+        assert!(dir.path().join("lwjgl.dll").is_file());
+        assert!(!dir.path().join("META-INF").exists());
+    }
+
+    #[test]
+    fn should_leave_a_file_of_the_same_size_alone_when_extracting() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("same.dll"), b"old").unwrap();
+        std::fs::write(dir.path().join("other.dll"), b"x").unwrap();
+        let bytes = archive(&[("same.dll", b"new"), ("other.dll", b"changed")]);
+
+        extract_natives(&bytes, dir.path(), &[], false).unwrap();
+
+        assert_eq!(std::fs::read(dir.path().join("same.dll")).unwrap(), b"old");
+        assert_eq!(
+            std::fs::read(dir.path().join("other.dll")).unwrap(),
+            b"changed"
+        );
+    }
+
+    #[test]
+    fn should_replace_a_file_of_the_same_size_when_forced() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("same.dll"), b"old").unwrap();
+        let bytes = archive(&[("same.dll", b"new")]);
+
+        extract_natives(&bytes, dir.path(), &[], true).unwrap();
+
+        assert_eq!(std::fs::read(dir.path().join("same.dll")).unwrap(), b"new");
+    }
 }

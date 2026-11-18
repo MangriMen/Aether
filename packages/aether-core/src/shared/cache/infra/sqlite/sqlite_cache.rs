@@ -1,8 +1,9 @@
 use async_trait::async_trait;
-use chrono::{DateTime, Duration as ChronoDuration, Utc};
+use chrono::{DateTime, Duration as ChronoDuration, TimeZone, Utc};
 use serde::{Serialize, de::DeserializeOwned};
 use sqlx::{Executor, QueryBuilder, Row, Sqlite, SqlitePool};
 use std::{collections::HashMap, time::Duration};
+use tracing::warn;
 
 use crate::shared::{
     cache::domain::{Cache, CacheKey},
@@ -51,9 +52,21 @@ impl SqliteCache {
     }
 }
 
+/// The last moment a row can expire at: a `ttl` past it, such as `FOREVER`, is cut to it.
+/// Dates are stored as text, which stops ordering right below it.
+fn latest_expiry() -> DateTime<Utc> {
+    Utc.with_ymd_and_hms(9999, 12, 31, 23, 59, 59)
+        .single()
+        .unwrap_or(DateTime::<Utc>::MAX_UTC)
+}
+
 /// When a row put now for `ttl` expires.
 fn expires_at(ttl: Duration) -> DateTime<Utc> {
-    Utc::now() + ChronoDuration::from_std(ttl).unwrap_or_else(|_| ChronoDuration::zero())
+    let now = Utc::now();
+    ChronoDuration::from_std(ttl)
+        .ok()
+        .and_then(|ttl| now.checked_add_signed(ttl))
+        .map_or_else(latest_expiry, |at| at.min(latest_expiry()))
 }
 
 /// Put `value` under `key` until `expires_at`, replacing what was there. A value that does not
@@ -64,8 +77,15 @@ async fn upsert<'e, T: Serialize>(
     value: &T,
     expires_at: DateTime<Utc>,
 ) -> bool {
-    let Ok(value_json) = serde_json::to_string(value) else {
-        return false;
+    let value_json = match serde_json::to_string(value) {
+        Ok(json) => json,
+        Err(err) => {
+            warn!(
+                namespace = key.namespace(),
+                "Could not serialize a cache value: {err}"
+            );
+            return false;
+        }
     };
 
     let namespace = key.namespace();
@@ -84,6 +104,7 @@ async fn upsert<'e, T: Serialize>(
     )
     .execute(executor)
     .await
+    .inspect_err(|err| warn!(namespace, "Could not write a cache value: {err}"))
     .is_ok()
 }
 
@@ -104,9 +125,12 @@ impl Cache for SqliteCache {
         )
         .fetch_optional(&self.pool)
         .await
+        .inspect_err(|err| warn!(namespace, "Could not read a cache value: {err}"))
         .ok()??;
 
-        serde_json::from_str(&value_json).ok()
+        serde_json::from_str(&value_json)
+            .inspect_err(|err| warn!(namespace, "Could not parse a cached value: {err}"))
+            .ok()
     }
 
     async fn set<T: Serialize + Send + Sync>(&self, key: &CacheKey<T>, value: &T, ttl: Duration) {
@@ -147,8 +171,12 @@ impl Cache for SqliteCache {
                 }
                 list.push_unseparated(")");
 
-                let Ok(rows) = query.build().fetch_all(&self.pool).await else {
-                    continue;
+                let rows = match query.build().fetch_all(&self.pool).await {
+                    Ok(rows) => rows,
+                    Err(err) => {
+                        warn!(namespace, "Could not read cache values: {err}");
+                        continue;
+                    }
                 };
                 values.extend(rows.into_iter().map(|row| (row.get(0), row.get(1))));
             }
@@ -157,7 +185,14 @@ impl Cache for SqliteCache {
         keys.iter()
             .map(|key| {
                 let value_json = found.get(key.namespace())?.get(key.id().as_ref())?;
-                serde_json::from_str(value_json).ok()
+                serde_json::from_str(value_json)
+                    .inspect_err(|err| {
+                        warn!(
+                            namespace = key.namespace(),
+                            "Could not parse a cached value: {err}"
+                        );
+                    })
+                    .ok()
             })
             .collect()
     }
@@ -173,14 +208,23 @@ impl Cache for SqliteCache {
         }
         let expires_at = expires_at(ttl);
 
-        let Ok(mut tx) = self.pool.begin().await else {
-            return false;
+        let mut tx = match self.pool.begin().await {
+            Ok(tx) => tx,
+            Err(err) => {
+                warn!("Could not begin a cache write: {err}");
+                return false;
+            }
         };
         let mut written = true;
         for (key, value) in entries {
             written &= upsert(&mut *tx, key, value, expires_at).await;
         }
-        tx.commit().await.is_ok() && written
+        let committed = tx
+            .commit()
+            .await
+            .inspect_err(|err| warn!("Could not commit cache writes: {err}"))
+            .is_ok();
+        committed && written
     }
 
     async fn exists<T: Send + Sync>(&self, key: &CacheKey<T>) -> bool {
@@ -200,6 +244,7 @@ impl Cache for SqliteCache {
         )
         .fetch_one(&self.pool)
         .await
+        .inspect_err(|err| warn!(namespace, "Could not check a cache value: {err}"))
         .unwrap_or(false)
     }
 
@@ -207,13 +252,16 @@ impl Cache for SqliteCache {
         let namespace = key.namespace();
         let id = key.id().as_ref();
 
-        let _ = sqlx::query!(
+        if let Err(err) = sqlx::query!(
             "DELETE FROM universal_cache WHERE namespace = ? AND key = ?",
             namespace,
             id,
         )
         .execute(&self.pool)
-        .await;
+        .await
+        {
+            warn!(namespace, "Could not invalidate a cache value: {err}");
+        }
     }
 
     async fn purge_expired(&self) -> u64 {
@@ -222,6 +270,7 @@ impl Cache for SqliteCache {
         sqlx::query!("DELETE FROM universal_cache WHERE expires_at <= ?", now)
             .execute(&self.pool)
             .await
+            .inspect_err(|err| warn!("Could not purge expired cache rows: {err}"))
             .map_or(0, |result| result.rows_affected())
     }
 }
@@ -257,6 +306,7 @@ impl CacheCleaner for SqliteCache {
         .build_query_scalar::<i64>()
         .fetch_one(&self.pool)
         .await
+        .inspect_err(|err| warn!("Could not measure cache rows: {err}"))
         .map_or(0, |bytes| u64::try_from(bytes).unwrap_or_default())
     }
 
@@ -268,6 +318,7 @@ impl CacheCleaner for SqliteCache {
             .build()
             .execute(&self.pool)
             .await
+            .inspect_err(|err| warn!("Could not clear cache rows: {err}"))
             .map_or(0, |result| result.rows_affected())
     }
 }
@@ -276,7 +327,10 @@ impl CacheCleaner for SqliteCache {
 mod tests {
     use sqlx::{pool::PoolOptions, sqlite::SqliteConnectOptions};
 
-    use crate::{core::migrations::run_migrations, shared::cache::domain::CacheId};
+    use crate::{
+        core::migrations::run_migrations,
+        shared::cache::domain::{CacheId, FOREVER},
+    };
 
     use super::*;
 
@@ -461,6 +515,18 @@ mod tests {
         assert_eq!(CacheCleaner::clear(&cache).await, 0);
 
         assert_eq!(cache.get(&key("a", "1")).await, Some("one".to_owned()));
+    }
+
+    #[tokio::test]
+    async fn should_keep_a_value_when_it_is_set_forever() {
+        let cache = create_cache().await;
+
+        cache.set(&key("a", "1"), &"one".to_owned(), FOREVER).await;
+        cache.set_many(&[entry("a", "2", "two")], FOREVER).await;
+
+        assert_eq!(cache.get(&key("a", "1")).await, Some("one".to_owned()));
+        assert!(cache.exists(&key("a", "2")).await);
+        assert_eq!(cache.purge_expired().await, 0);
     }
 
     #[tokio::test]
