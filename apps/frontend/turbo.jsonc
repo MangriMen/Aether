@@ -2,21 +2,33 @@
   "$schema": "https://turbo.build/schema.json",
   "extends": ["//"],
   "tasks": {
+    // Inputs list everything the task reads, otherwise turbo reports a false cache hit
+    // after a config or dependency change.
     "lint:types": {
-      "inputs": ["src/**/*.ts", "src/**/*.tsx", "tsconfig.json"],
+      "inputs": [
+        "src/**",
+        ".storybook/**",
+        "scripts/**",
+        "*.ts",
+        "tsconfig*.json",
+        "package.json",
+      ],
     },
     "lint:code": {
-      "inputs": ["src/**/*.{ts,tsx,js,jsx}", ".oxlintrc.json"],
+      "inputs": ["src/**", "package.json", ".oxlintrc.json"],
     },
     "lint:eslint": {
-      "inputs": ["src/**/*.{ts,tsx,js,jsx}", "eslint.config*"],
+      "inputs": ["src/**", "scripts/**", "*.ts", "eslint.config.js", "package.json"],
       "outputs": ["node_modules/.cache/eslint/**"],
     },
     "lint:format": {
-      "inputs": ["src/**/*.{ts,tsx,js,jsx,css}", ".oxfmtrc.json"],
+      "inputs": ["src/**", ".storybook/**", "scripts/**", "*.{ts,js,mjs,cjs}", ".oxfmtrc.json", "package.json"],
     },
     "lint:arch": {
-      "inputs": ["src/**/*", ".dependency-cruiser.cjs"],
+      "inputs": ["src/**", "scripts/**", ".dependency-cruiser.cjs", "tsconfig*.json", "package.json"],
+    },
+    "lint:unused": {
+      "inputs": ["src/**", ".storybook/**", "scripts/**", "*.ts", "knip.jsonc", "tsconfig*.json", "package.json"],
     },
     "lint:all": {
       "dependsOn": [
@@ -25,6 +37,7 @@
         "lint:eslint",
         "lint:format",
         "lint:arch",
+        "lint:unused",
       ],
     },
   },
