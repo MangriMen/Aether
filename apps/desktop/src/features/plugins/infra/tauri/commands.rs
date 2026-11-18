@@ -15,10 +15,10 @@ use crate::{
         PluginReleaseListingDto, PluginSettingsDto, PluginSourceDto, PluginSourceTypeDto,
         PluginUpdateInfoDto, PluginUpdatePreviewDto, ProviderPluginPreviewDto, SkippedPluginDirDto,
     },
-    shared::reveal_in_explorer::infra::reveal_in_explorer,
     shared::{
         IdempotencyManager, RequestId, TauriIdempotencyExt,
         commands::{PLUGIN_PLUGIN_NAME, plugin_commands},
+        reveal_in_explorer_async,
     },
 };
 
@@ -366,7 +366,7 @@ async fn open_plugins_folder(container: State<'_, ContainerState>) -> FrontendRe
     let container = container.0.clone();
     let plugins_path = container.location_info().plugins_dir();
 
-    let path_to_open = if plugins_path.exists() {
+    let path_to_open = if tokio::fs::try_exists(&plugins_path).await.unwrap_or(false) {
         // If the folder exists, open it directly
         plugins_path
     } else {
@@ -376,7 +376,7 @@ async fn open_plugins_folder(container: State<'_, ContainerState>) -> FrontendRe
             .map_or_else(|| plugins_path.clone(), Path::to_path_buf)
     };
 
-    Ok(reveal_in_explorer(&path_to_open, true)?)
+    Ok(reveal_in_explorer_async(path_to_open, true, None).await?)
 }
 
 #[tauri::command]

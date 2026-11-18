@@ -1,4 +1,7 @@
-use std::{io, path::Path};
+use std::{
+    io,
+    path::{Path, PathBuf},
+};
 
 /// Refuses anything that is not an existing path inside one of the roots: a URL or a path
 /// to an executable elsewhere would be opened by the shell otherwise.
@@ -50,6 +53,25 @@ pub fn reveal_in_explorer(path: &Path, exact: bool) -> crate::Result<()> {
             Ok(open::that(parent_folder)?)
         }
     }
+}
+
+/// [`reveal_in_explorer`] off the async runtime: on Windows it starts a process and waits for
+/// it. With `within_roots`, the path must also lie inside one of them; `None` is only for a
+/// path the backend built itself, never one that came from the frontend.
+pub async fn reveal_in_explorer_async(
+    path: PathBuf,
+    exact: bool,
+    within_roots: Option<Vec<PathBuf>>,
+) -> crate::Result<()> {
+    tauri::async_runtime::spawn_blocking(move || {
+        if let Some(roots) = &within_roots {
+            let roots: Vec<&Path> = roots.iter().map(PathBuf::as_path).collect();
+            ensure_within_roots(&path, &roots)?;
+        }
+        reveal_in_explorer(&path, exact)
+    })
+    .await
+    .map_err(io::Error::other)?
 }
 
 #[cfg(test)]
