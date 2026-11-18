@@ -51,6 +51,7 @@ fn parse_id(id: String) -> Result<PluginId, aether_core::Error> {
 
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn import(
     paths: Vec<PathBuf>,
     request_id: RequestId,
@@ -69,6 +70,7 @@ async fn import(
 
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn sync(
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
@@ -86,6 +88,7 @@ async fn sync(
 
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn list(container: State<'_, ContainerState>) -> FrontendResult<Vec<PluginDto>> {
     let container = container.0.clone();
     Ok(container
@@ -100,6 +103,7 @@ async fn list(container: State<'_, ContainerState>) -> FrontendResult<Vec<Plugin
 
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn list_skipped_dirs(
     container: State<'_, ContainerState>,
 ) -> FrontendResult<Vec<SkippedPluginDirDto>> {
@@ -116,6 +120,7 @@ async fn list_skipped_dirs(
 
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn get(id: String, container: State<'_, ContainerState>) -> FrontendResult<PluginDto> {
     let id = parse_id(id)?;
     let container = container.0.clone();
@@ -129,6 +134,7 @@ async fn get(id: String, container: State<'_, ContainerState>) -> FrontendResult
 
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn remove(
     id: String,
     request_id: RequestId,
@@ -148,6 +154,7 @@ async fn remove(
 
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn enable(
     id: String,
     request_id: RequestId,
@@ -167,6 +174,7 @@ async fn enable(
 
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn force_enable(
     id: String,
     request_id: RequestId,
@@ -186,6 +194,7 @@ async fn force_enable(
 
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn disable(
     id: String,
     request_id: RequestId,
@@ -207,6 +216,7 @@ async fn disable(
 /// the middle of a call refuses with `Busy` and goes on as it was.
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn reload(
     id: String,
     request_id: RequestId,
@@ -226,6 +236,7 @@ async fn reload(
 
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn get_settings(
     id: String,
     container: State<'_, ContainerState>,
@@ -242,6 +253,7 @@ async fn get_settings(
 
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn get_readme(
     id: String,
     container: State<'_, ContainerState>,
@@ -257,6 +269,7 @@ async fn get_readme(
 
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn edit_settings(
     id: String,
     edit_settings: EditPluginSettingsDto,
@@ -281,6 +294,7 @@ async fn edit_settings(
 /// says whether there is anything to ask (`needed`) or the plugin can already read the file.
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn grant_folder_access(
     id: String,
     file_path: PathBuf,
@@ -306,6 +320,7 @@ async fn grant_folder_access(
 /// tells it whether there is anything to ask.
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn grant_host_access(
     id: String,
     url: String,
@@ -332,6 +347,7 @@ async fn grant_host_access(
 /// restart: the plugin's requests read its hosts on every call.
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn grant_local_host_access(
     id: String,
     url: String,
@@ -356,12 +372,14 @@ async fn grant_local_host_access(
 /// the settings form asks it rather than carrying a copy; a pure check, nothing is stored.
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 fn is_wide_allowed_host(entry: &str) -> bool {
     aether_core::features::plugins::is_wide_allowed_host(entry)
 }
 
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn open_plugins_folder(container: State<'_, ContainerState>) -> FrontendResult<()> {
     let container = container.0.clone();
     let plugins_path = container.location_info().plugins_dir();
@@ -381,6 +399,7 @@ async fn open_plugins_folder(container: State<'_, ContainerState>) -> FrontendRe
 
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn get_api_version(container: State<'_, ContainerState>) -> FrontendResult<semver::Version> {
     let container = container.0.clone();
     Ok(container
@@ -394,6 +413,7 @@ async fn get_api_version(container: State<'_, ContainerState>) -> FrontendResult
 
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn get_available_providers(
     container: State<'_, ContainerState>,
 ) -> FrontendResult<Vec<PluginProviderDto>> {
@@ -410,6 +430,7 @@ async fn get_available_providers(
 
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn get_plugin_source(
     id: String,
     container: State<'_, ContainerState>,
@@ -426,6 +447,7 @@ async fn get_plugin_source(
 
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn check_for_updates(
     id: String,
     container: State<'_, ContainerState>,
@@ -444,6 +466,7 @@ async fn check_for_updates(
 /// installed. The tag is one `check_for_updates` listed.
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn preview_plugin_update(
     id: String,
     tag: String,
@@ -463,6 +486,7 @@ async fn preview_plugin_update(
 /// `preview_plugin_update` read: `archive_sha256` is the hash that preview gave.
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn update_plugin(
     id: String,
     tag: String,
@@ -488,6 +512,7 @@ async fn update_plugin(
 /// read by `preview_plugin_release`.
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn list_plugin_releases(
     source_type: PluginSourceTypeDto,
     identifier: String,
@@ -505,6 +530,7 @@ async fn list_plugin_releases(
 /// What the archive of release `tag` asks for. The tag is one `list_plugin_releases` gave.
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn preview_plugin_release(
     source_type: PluginSourceTypeDto,
     identifier: String,
@@ -522,6 +548,7 @@ async fn preview_plugin_release(
 
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn install_plugin_from_provider(
     source_type: PluginSourceTypeDto,
     identifier: String,
@@ -546,6 +573,7 @@ async fn install_plugin_from_provider(
 /// after an event, since the event carries no arguments.
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn list_pending_command_approvals(
     container: State<'_, ContainerState>,
 ) -> FrontendResult<Vec<PendingCommandApprovalDto>> {
@@ -562,6 +590,7 @@ async fn list_pending_command_approvals(
 /// stopped) is reported as `COMMAND_APPROVAL_NOT_FOUND`, which the caller may ignore.
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn answer_command_approval(
     request_id: String,
     answer: CommandAnswerDto,

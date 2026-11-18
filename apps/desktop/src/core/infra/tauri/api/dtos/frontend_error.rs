@@ -67,7 +67,7 @@ impl From<crate::Error> for FrontendError {
             // Logged by the conversion below.
             crate::Error::Core(core_err) => return Self::from(core_err),
         };
-        dto.log(&cause);
+        dto.log(&cause, None);
         dto
     }
 }
@@ -75,7 +75,11 @@ impl From<crate::Error> for FrontendError {
 impl From<aether_core::Error> for FrontendError {
     fn from(value: aether_core::Error) -> Self {
         let dto = Self::from(value.raw.as_ref());
-        dto.log(&value.raw.display_chain());
+        let spans = value.span_trace.status() == tracing_error::SpanTraceStatus::CAPTURED;
+        dto.log(
+            &value.raw.display_chain(),
+            spans.then(|| value.span_trace.to_string()).as_deref(),
+        );
         dto
     }
 }
@@ -99,11 +103,13 @@ impl FrontendError {
         )
     }
 
-    fn log(&self, cause: &str) {
+    /// `spans` is the trace of the spans open where the error was raised; it is not part of the DTO.
+    fn log(&self, cause: &str, spans: Option<&str>) {
+        let spans = spans.map(tracing::field::display);
         if self.is_expected() {
-            tracing::debug!(error = %cause, dto = ?self, "Command refused");
+            tracing::debug!(error = %cause, dto = ?self, spans, "Command refused");
         } else {
-            tracing::warn!(error = %cause, dto = ?self, "Command failed");
+            tracing::warn!(error = %cause, dto = ?self, spans, "Command failed");
         }
     }
 }

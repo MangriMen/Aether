@@ -18,7 +18,17 @@ use super::{
 pub fn launch_app() -> crate::Result<()> {
     super::fatal::install_panic_hook();
 
-    build_app()?.run(handle_app_events);
+    // Another global subscriber would only cost the span traces of errors.
+    let capture_error =
+        tracing::subscriber::set_global_default(super::span_capture::span_capture());
+
+    let app = build_app()?;
+    // The logger is up only once the app is built; the release build has no console to print to.
+    if let Err(err) = capture_error {
+        tracing::warn!(error = %err, "Span capture is off, error logs carry no span trace");
+    }
+
+    app.run(handle_app_events);
     Ok(())
 }
 

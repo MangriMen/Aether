@@ -1,4 +1,4 @@
-use tracing_error::InstrumentError;
+use tracing_error::SpanTrace;
 
 use crate::{
     features::{
@@ -59,33 +59,34 @@ pub enum ErrorKind {
     CoreError(String),
 }
 
-/// Core error: the [`ErrorKind`] plus a span trace for diagnostics.
+/// Core error: the [`ErrorKind`] plus the spans that were open where it was raised.
+///
+/// The trace is for logs only: it stays out of `Display` and of the cause chain.
 #[derive(Debug)]
 pub struct Error {
     pub raw: std::sync::Arc<ErrorKind>,
-    pub source: tracing_error::TracedError<std::sync::Arc<ErrorKind>>,
+    pub span_trace: SpanTrace,
 }
 
 impl std::error::Error for Error {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        self.source.source()
+        self.raw.source()
     }
 }
 
 impl std::fmt::Display for Error {
     fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(fmt, "{}", self.source)
+        write!(fmt, "{}", self.raw)
     }
 }
 
 impl<E: Into<ErrorKind>> From<E> for Error {
     fn from(source: E) -> Self {
         let error = Into::<ErrorKind>::into(source);
-        let boxed_error = std::sync::Arc::new(error);
 
         Self {
-            raw: boxed_error.clone(),
-            source: boxed_error.in_current_span(),
+            raw: std::sync::Arc::new(error),
+            span_trace: SpanTrace::capture(),
         }
     }
 }
@@ -95,7 +96,7 @@ impl ErrorKind {
         self.into()
     }
 
-    /// Full cause chain for logs; starts at the kind, since `Error` repeats its text via the span trace.
+    /// Full cause chain for logs; starts at the kind, as the trace of `Error` is not part of the chain.
     pub fn display_chain(&self) -> String {
         error_chain(self)
     }
@@ -176,6 +177,14 @@ mod tests {
                 )
             )) if source.kind() == std::io::ErrorKind::StorageFull
         ));
+    }
+
+    #[test]
+    fn should_keep_the_span_trace_out_of_the_cause_chain() {
+        let error = Error::from(ErrorKind::CoreError("boom".into()));
+
+        assert_eq!(error_chain(&error), "Core error: boom");
+        assert_eq!(error.to_string(), "Core error: boom");
     }
 
     #[test]
