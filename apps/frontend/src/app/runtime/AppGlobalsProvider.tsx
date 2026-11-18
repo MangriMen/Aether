@@ -6,12 +6,12 @@ import { useSetupListeners } from './useSetupListeners';
 
 export type AppGlobalsProviderProps = { children?: JSX.Element };
 
-export const AppGlobalsProvider = ({ children }: AppGlobalsProviderProps) => {
+export const AppGlobalsProvider = (props: AppGlobalsProviderProps) => {
   useSetupListeners();
 
   onMount(() => {
     getOrCreateFeatureFlagsStore();
   });
 
-  return children;
+  return <>{props.children}</>;
 };

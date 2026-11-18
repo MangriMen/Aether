@@ -3,7 +3,11 @@ import type { ColorMode } from '@kobalte/core';
 import { useColorMode } from '@kobalte/core';
 import { createEffect, on } from 'solid-js';
 
-import { useAppSettings, useEditAppSettings } from '@/features/settings';
+import {
+  useAppSettings,
+  useEditAppSettings,
+  type WindowEffect,
+} from '@/features/settings';
 import { logError } from '@/shared/log';
 import { debounce } from '@/shared/utils';
 
@@ -22,23 +26,27 @@ export const useMicaUpdateListener = () => {
     (rawTheme: string, colorMode: ColorMode) => {
       const window_effect = appSettings.data?.windowEffect;
 
-      switch (window_effect) {
-        case 'mica':
-        case 'mica_dark':
-        case 'mica_light':
-          updateAppSettings.mutate(
-            {
-              windowEffect: isSystemTheme(rawTheme)
-                ? 'mica'
-                : `mica_${colorMode}`,
-            },
-            { onError: (err) => logError('Failed to update mica', err) },
-          );
-          break;
-
-        default:
-          break;
+      if (
+        window_effect !== 'mica' &&
+        window_effect !== 'mica_dark' &&
+        window_effect !== 'mica_light'
+      ) {
+        return;
       }
+
+      const next: WindowEffect = isSystemTheme(rawTheme)
+        ? 'mica'
+        : `mica_${colorMode}`;
+
+      // Mutating on every start would rewrite the settings file for nothing.
+      if (next === window_effect) {
+        return;
+      }
+
+      updateAppSettings.mutate(
+        { windowEffect: next },
+        { onError: (err) => logError('Failed to update mica', err) },
+      );
     },
     50,
   );

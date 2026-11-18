@@ -1,6 +1,6 @@
 import type { Component, ComponentProps } from 'solid-js';
 
-import { createEffect, createMemo, createSignal, Show } from 'solid-js';
+import { createMemo, Show } from 'solid-js';
 
 import type { ThemeConfig } from '@/features/appearance';
 import type { SelectRootProps, Option } from '@/shared/ui-kit';
@@ -36,15 +36,8 @@ export const SelectTheme: Component<
     { name: t('settings.themes.system') ?? 'system', value: 'system' },
   ]);
 
-  const [currentTheme, setCurrentTheme] = createSignal<ThemeConfig>(
-    themeContext.rawTheme,
-  );
-  createEffect(() => {
-    setCurrentTheme(themeContext.rawTheme);
-  });
-
   const currentOption = createMemo(() =>
-    themeOptions().find((option) => option.value === currentTheme()),
+    themeOptions().find((option) => option.value === themeContext.rawTheme),
   );
 
   const handleChangeTheme = (theme: Option<ThemeConfig> | null) => {

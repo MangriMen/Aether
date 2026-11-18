@@ -5,7 +5,7 @@ import type {
 } from '@kobalte/core';
 import type { Component, ValidComponent } from 'solid-js';
 
-import { createEffect, createMemo, createSignal } from 'solid-js';
+import { createMemo } from 'solid-js';
 
 import type { ThemeConfig } from '@/features/appearance';
 import type { Option } from '@/shared/ui-kit';
@@ -44,10 +44,10 @@ const SelectThemeByColorMode: Component<SelectThemeByColorModeProps> = (
     })),
   );
 
-  const [currentTheme, setCurrentTheme] = createSignal<ThemeConfig>('light');
-
   const currentOption = createMemo(() =>
-    options().find((option) => option.value === currentTheme()),
+    options().find(
+      (option) => option.value === themeContext[`${props.colorMode}Theme`],
+    ),
   );
 
   const handleChangeTheme = (theme: Option<ThemeConfig> | null) => {
@@ -56,12 +56,7 @@ const SelectThemeByColorMode: Component<SelectThemeByColorModeProps> = (
     }
 
     setThemeForColorMode(props.colorMode, theme.value);
-    setCurrentTheme(theme.value);
   };
-
-  createEffect(() => {
-    setCurrentTheme(themeContext[`${props.colorMode}Theme`]);
-  });
 
   return (
     <Select
