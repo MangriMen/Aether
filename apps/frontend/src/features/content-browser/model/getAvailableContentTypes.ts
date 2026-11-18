@@ -1,24 +1,12 @@
 import type { ModLoader } from '@/features/minecraft';
 
 import { ATOMIC_CONTENT_TYPES, ContentType } from '@/features/content';
-import { getOrCreateFeatureFlagsStore } from '@/features/settings';
 
 export const getAvailableContentTypes = (
   instanceLoader: ModLoader | undefined,
   isInstanceContentPage: boolean,
 ): readonly ContentType[] | undefined => {
-  const [ff] = getOrCreateFeatureFlagsStore();
-
   if (!isInstanceContentPage) {
-    if (!ff.isAllowInstallModpacks) {
-      return [
-        ContentType.Mod,
-        ContentType.DataPack,
-        ContentType.ResourcePack,
-        ContentType.ShaderPack,
-      ];
-    }
-
     // Undefined means all content types
     return;
   }

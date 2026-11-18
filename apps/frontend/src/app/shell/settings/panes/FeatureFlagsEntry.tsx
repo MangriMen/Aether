@@ -1,17 +1,22 @@
 import { For, type Component, type ComponentProps, splitProps } from 'solid-js';
 
-import type { FeatureFlagsStore } from '@/features/settings';
 import type { SettingsEntryProps } from '@/shared/settings-layout';
 
 import { featureFlagsActions, useFeatureFlagsStore } from '@/features/settings';
+import { useTranslation } from '@/shared/i18n';
 import { SettingsEntry, useSettingsEntryLabel } from '@/shared/settings-layout';
 import { Switch, SwitchControl, SwitchThumb } from '@/shared/ui-kit';
 
 export type FeatureFlagsEntryProps = ComponentProps<'div'> & SettingsEntryProps;
 
 export const FeatureFlagsEntry: Component<FeatureFlagsEntryProps> = (props) => {
+  const [{ t }] = useTranslation();
+
   return (
-    <For each={featureFlagsActions.getBooleanFeatureFlags()}>
+    <For
+      each={featureFlagsActions.getBooleanFeatureFlags()}
+      fallback={<SettingsEntry title={t('settings.noFlags')} {...props} />}
+    >
       {(name) => (
         <SettingsEntry class='capitalize' title={name} {...props}>
           <BooleanFlagSwitch name={name} />
@@ -22,7 +27,7 @@ export const FeatureFlagsEntry: Component<FeatureFlagsEntryProps> = (props) => {
 };
 
 type BooleanFlagSwitchProps = {
-  name: keyof FeatureFlagsStore;
+  name: string;
 };
 
 const BooleanFlagSwitch: Component<BooleanFlagSwitchProps> = (props) => {

@@ -19,11 +19,7 @@ import {
   showError,
 } from '@/features/errors';
 import { invalidateInstanceContent } from '@/features/instance';
-import {
-  SettingsTab,
-  useFeatureFlagsStore,
-  useSettingsSearchParams,
-} from '@/features/settings';
+import { SettingsTab, useSettingsSearchParams } from '@/features/settings';
 import { instanceCommands } from '@/platform/ipc';
 import { useTranslation } from '@/shared/i18n';
 import { Button, showToast } from '@/shared/ui-kit';
@@ -40,7 +36,6 @@ import {
   contentVersionDtoToContentVersion,
 } from '../model/contentItemMappers';
 import { ContentType } from '../model/contentType';
-import { ModpackInstallDisabledError } from '../model/modpackInstallDisabledError';
 import { CONTENT_QUERY_KEYS } from './contentQueryKeys';
 
 export const useContentProviders = () => {
@@ -148,17 +143,11 @@ const isProviderNotChosen = (err: unknown) =>
 export const useInstallContent = () => {
   const queryClient = useQueryClient();
   const [{ t }] = useTranslation();
-  const [ff] = useFeatureFlagsStore();
   const settingsParams = useSettingsSearchParams();
 
   return useMutation(() => ({
-    mutationFn: (payload: ContentInstallParamsDto) => {
-      if (!ff.isAllowInstallModpacks && payload.type === 'modpack') {
-        throw new ModpackInstallDisabledError();
-      }
-
-      return instanceCommands.installContent(payload);
-    },
+    mutationFn: (payload: ContentInstallParamsDto) =>
+      instanceCommands.installContent(payload),
     onSuccess: (_, payload) => {
       if (payload.type === 'atomic') {
         invalidateInstanceContent(queryClient, payload.data.instanceId);
@@ -177,13 +166,7 @@ export const useInstallContent = () => {
       });
     },
     onError: (err) => {
-      if (err instanceof ModpackInstallDisabledError) {
-        showToast({
-          title: t('content.failedToInstall'),
-          description: t('content.modpackInstallDisabled'),
-          variant: 'destructive',
-        });
-      } else if (!isCancelledError(err)) {
+      if (!isCancelledError(err)) {
         // Not called off by the user: report it.
         showError({
           title: t('content.failedToInstall'),
