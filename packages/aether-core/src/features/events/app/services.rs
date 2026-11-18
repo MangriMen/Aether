@@ -155,6 +155,12 @@ impl<PS: ProgressBarStorage + 'static> ProgressServiceImpl<PS> {
         bar.cancel = cancel.map(BarCancel::new);
         let waiting = shared.then(|| self.waiting_on(&bar.progress_type));
         self.progress_storage.insert(id, bar).await?;
+        // From here a failure drops the handle, which ends the bar: it is not left running.
+        let handle = ProgressBarId {
+            id,
+            progress_storage: Some(self.progress_storage.clone()),
+            sequencer: Some(self.sequencer.clone()),
+        };
         if shared {
             self.shared_bars
                 .lock()
@@ -168,11 +174,7 @@ impl<PS: ProgressBarStorage + 'static> ProgressServiceImpl<PS> {
         }
         self.emit_after(guard, events).await?;
 
-        Ok(ProgressBarId {
-            id,
-            progress_storage: Some(self.progress_storage.clone()),
-            sequencer: Some(self.sequencer.clone()),
-        })
+        Ok(handle)
     }
 
     /// The bars waiting on the shared download `event_type`, each once.
@@ -674,6 +676,16 @@ impl<PS: ProgressBarStorage + 'static> ProgressService for ProgressServiceImpl<P
 
 #[cfg(test)]
 mod tests {
+    /// A second handle of the bar, to have it end while a call is under way. Whoever drops the
+    /// second one ends the bar as well, which is for the test to expect.
+    fn alias(bar: &ProgressBarId) -> ProgressBarId {
+        ProgressBarId {
+            id: bar.id,
+            progress_storage: bar.progress_storage.clone(),
+            sequencer: bar.sequencer.clone(),
+        }
+    }
+
     /// A failure for a test, by its text.
     fn failure(text: &str) -> crate::ErrorKind {
         crate::ErrorKind::CoreError(text.to_owned())
@@ -980,6 +992,42 @@ mod tests {
         for _ in 0..10 {
             tokio::task::yield_now().await;
         }
+    }
+
+    #[tokio::test]
+    async fn should_start_a_bar_when_init_or_edit_is_given_none() {
+        let (service, storage, _rx) = service();
+
+        let bar = service
+            .init_or_edit_progress(None, java(), 4.0, "Starting".to_string())
+            .await
+            .unwrap();
+
+        let stored = storage.get(bar.id).await.unwrap();
+        assert_eq!((stored.total, stored.message.as_str()), (4.0, "Starting"));
+    }
+
+    #[tokio::test]
+    async fn should_put_the_given_bar_to_other_work_when_init_or_edit_is_given_one() {
+        let (service, storage, _rx) = service();
+        let first = service
+            .init_progress(java(), 4.0, "First".to_string())
+            .await
+            .unwrap();
+        let id = first.id;
+
+        let bar = service
+            .init_or_edit_progress(Some(first), java(), 9.0, "Second".to_string())
+            .await
+            .unwrap();
+
+        assert_eq!(bar.id, id);
+        let stored = storage.get(id).await.unwrap();
+        assert_eq!(
+            (stored.total, stored.message.as_str(), stored.current),
+            (9.0, "Second", 0.0)
+        );
+        assert_eq!(storage.list().await.len(), 1);
     }
 
     #[tokio::test]
@@ -1500,7 +1548,7 @@ mod tests {
                 .unwrap(),
         );
         let report = |bytes| {
-            let (service, id) = (service.clone(), id.clone());
+            let (service, id) = (service.clone(), alias(&id));
             tokio::spawn(async move { service.add_progress_bytes(&id, bytes).await.unwrap() })
         };
 
@@ -1713,7 +1761,7 @@ mod tests {
         assert!(!holding.is_finished());
 
         let reporting = {
-            let (service, clone) = (service.clone(), id.clone());
+            let (service, clone) = (service.clone(), alias(&id));
             tokio::spawn(async move {
                 service.emit_progress(&clone, 5.0, None).await.unwrap();
                 // Dropping the clone afterwards finds the bar gone already.
@@ -1818,7 +1866,7 @@ mod tests {
 
         // The shared bar's own event holds the line, which shows it to bars starting to wait.
         let holding = {
-            let (service, clone) = (service.clone(), shared.clone());
+            let (service, clone) = (service.clone(), alias(&shared));
             tokio::spawn(async move {
                 service.emit_progress(&clone, 4.0, None).await.unwrap();
                 clone

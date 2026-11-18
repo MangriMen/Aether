@@ -81,14 +81,17 @@ impl StartProcessUseCase {
         let process_uuid_clone = metadata.uuid();
 
         tokio::spawn(async move {
-            let _ = manage_process_service
+            if let Err(err) = manage_process_service
                 .execute(ManageProcessParams {
                     process_id: process_uuid_clone,
                     instance_id: instance_id_clone,
                     post_exit_command,
                     capture,
                 })
-                .await;
+                .await
+            {
+                tracing::error!(process_id = %process_uuid_clone, "Could not follow the game process: {err}");
+            }
         });
 
         self.event_emitter

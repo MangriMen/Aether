@@ -57,12 +57,10 @@ impl ProcessStorage for InMemoryProcessStorage {
 
     async fn try_wait(&self, id: Uuid) -> Result<Option<Option<ExitStatus>>, ProcessError> {
         if let Some(mut process) = self.processes.get_mut(&id) {
-            return Ok(Some(
-                process
-                    .child
-                    .try_wait()
-                    .map_err(|_| ProcessError::WaitError { id: id.to_string() })?,
-            ));
+            return Ok(Some(process.child.try_wait().map_err(|err| {
+                tracing::warn!(process_id = %id, "Failed to wait for the game process: {err}");
+                ProcessError::WaitError { id: id.to_string() }
+            })?));
         }
         Ok(None)
     }

@@ -15,14 +15,17 @@ use crate::{
         },
         minecraft::{
             GameVersion, JvmArgumentsParams, LaunchSettings, LoaderVersionPreference,
-            LoaderVersionService, MinecraftApplicationError, MinecraftDownloader,
-            MinecraftLaunchCommandService, ModLoader, VersionManifestService, get_class_paths,
-            get_compatible_java_version, get_jvm_arguments, get_logging_argument,
+            LoaderVersionService, MinecraftApplicationError, MinecraftDomainError,
+            MinecraftDownloader, MinecraftLaunchCommandService, ModLoader, VersionManifestService,
+            get_class_paths, get_compatible_java_version, get_jvm_arguments, get_logging_argument,
             resolve_minecraft_version, vanilla, version_jar_name,
         },
         settings::LocationInfo,
     },
-    shared::{io::infra::create_dir_all, serializable_command::Wrapper},
+    shared::{
+        io::{IoError, infra::create_dir_all},
+        serializable_command::Wrapper,
+    },
 };
 
 use super::get_minecraft_arguments::get_minecraft_arguments;
@@ -137,13 +140,25 @@ impl GetMinecraftLaunchCommandUseCase {
         let natives_dir = self.ensure_natives_dir(&version_jar).await?;
 
         let libraries_dir = self.location_info.libraries_dir();
-        let class_paths = get_class_paths(
-            &libraries_dir,
-            version_info.libraries.as_slice(),
-            &client_path,
-            java.architecture(),
-            minecraft_updated,
-        )?;
+        // One canonicalize per library: off the async worker.
+        let class_paths = {
+            let libraries_dir = libraries_dir.clone();
+            let libraries = version_info.libraries.clone();
+            let java_arch = java.architecture().to_owned();
+            tokio::task::spawn_blocking(move || {
+                get_class_paths(
+                    &libraries_dir,
+                    &libraries,
+                    &client_path,
+                    &java_arch,
+                    minecraft_updated,
+                )
+            })
+            .await
+            .map_err(|err| {
+                MinecraftDomainError::from(IoError::from(std::io::Error::other(err)))
+            })??
+        };
         let mut jvm_arguments = get_jvm_arguments(JvmArgumentsParams {
             arguments: args
                 .get(&vanilla::ArgumentType::Jvm)
