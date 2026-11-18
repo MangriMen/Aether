@@ -33,6 +33,7 @@ use crate::features::{
     },
     settings::LocationInfo,
 };
+use crate::shared::limits::{MAX_PLUGIN_AUTHOR_NAME_CHARS, MAX_PLUGIN_AUTHOR_REF_LEN};
 
 use crate::features::plugins::infra::extism::models::PluginInstanceExt;
 use crate::features::plugins::infra::extism::{
@@ -708,20 +709,18 @@ fn content_metadata_from_dto(dto: ContentMetadataDto) -> Option<ContentMetadata>
         name: dto.name,
         author: dto.author,
         author_ref: dto.author_ref.filter(|author_ref| {
-            !author_ref.trim().is_empty() && author_ref.len() <= MAX_AUTHOR_REF_LEN
+            !author_ref.trim().is_empty() && author_ref.len() <= MAX_PLUGIN_AUTHOR_REF_LEN
         }),
         icon_url,
     })
 }
 
-/// The longest ref the host keeps and sends back to a plugin; it is an opaque token (a team or
-/// organization id), so a longer one is a plugin's mistake, not an author.
-const MAX_AUTHOR_REF_LEN: usize = 256;
-const MAX_AUTHOR_NAME_CHARS: usize = 128;
-
 /// An author's name is shown as one line, so it is trimmed and cut to a length that fits.
 fn author_name(name: &str) -> String {
-    name.trim().chars().take(MAX_AUTHOR_NAME_CHARS).collect()
+    name.trim()
+        .chars()
+        .take(MAX_PLUGIN_AUTHOR_NAME_CHARS)
+        .collect()
 }
 
 /// An empty title is no title.

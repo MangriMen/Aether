@@ -2,15 +2,13 @@ use std::path::{Path, PathBuf};
 
 use tokio::fs;
 
+use crate::shared::limits::MAX_GAME_LOG_UNPACKED_BYTES;
 use crate::{
     features::game_log::domain::{GameLogError, LogSourceRef},
     shared::io::domain::IoError,
 };
 
 use super::fs_store::modified_millis;
-
-/// A packed log that unpacks to more than this is refused, so a crafted file cannot fill the disk.
-const MAX_UNPACKED_BYTES: u64 = 256 * 1024 * 1024;
 
 /// The unpacked copy of a `.gz` log in `cache_dir`, unpacking it once per version of the file.
 pub(super) async fn unpacked_path(
@@ -70,7 +68,7 @@ fn unpack(path: &Path, target: &Path, source_id: &str) -> Result<(), GameLogErro
     let part = target.with_extension(format!("{}.part", uuid::Uuid::new_v4()));
     let result = (|| -> std::io::Result<u64> {
         let input = std::fs::File::open(path)?;
-        let mut decoder = flate2::read::GzDecoder::new(input).take(MAX_UNPACKED_BYTES + 1);
+        let mut decoder = flate2::read::GzDecoder::new(input).take(MAX_GAME_LOG_UNPACKED_BYTES + 1);
         let mut output = std::fs::File::create(&part)?;
         std::io::copy(&mut decoder, &mut output)
     })();
@@ -79,11 +77,11 @@ fn unpack(path: &Path, target: &Path, source_id: &str) -> Result<(), GameLogErro
         let _ = std::fs::remove_file(part);
     };
     match result {
-        Ok(written) if written > MAX_UNPACKED_BYTES => {
+        Ok(written) if written > MAX_GAME_LOG_UNPACKED_BYTES => {
             finish(&part);
             Err(GameLogError::TooLarge {
                 source_id: source_id.to_string(),
-                limit: MAX_UNPACKED_BYTES,
+                limit: MAX_GAME_LOG_UNPACKED_BYTES,
             })
         }
         Ok(_) => std::fs::rename(&part, target).map_err(|err| {

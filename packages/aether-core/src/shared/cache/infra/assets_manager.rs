@@ -7,13 +7,10 @@ use crate::shared::{
     cache::domain::{AssetError, AssetsStorage, CacheId, CacheKey, FileStore},
     hash::infra::sha1_async,
     image::{looks_like_svg, sniff_image_extension},
+    limits::MAX_ASSET_BYTES,
 };
 
 pub const ASSETS_CACHE_NAMESPACE: &str = "assets";
-
-/// The largest file `import_file` takes. The source may be a file a plugin wrote anywhere it can
-/// write, so it is not read whole before its size is known.
-pub const MAX_ASSET_BYTES: u64 = 4 * 1024 * 1024;
 
 async fn read_limited(source: &Path, limit: u64) -> Result<Vec<u8>, AssetError> {
     let source = source.to_owned();

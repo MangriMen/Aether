@@ -1,10 +1,9 @@
 use chrono::{DateTime, Local};
 
+use crate::shared::limits::MAX_GAME_LOG_EVENT_BYTES;
+
 const EVENT_OPEN: &str = "<log4j:Event ";
 const EVENT_CLOSE: &str = "</log4j:Event>";
-/// An event larger than this is written out as the raw lines it arrived in.
-const MAX_EVENT_BYTES: usize = 1024 * 1024;
-
 /// Turns the game's log4j XML console output into plain log lines. The vanilla client config
 /// prints every entry as a multi-line `<log4j:Event>`; anything else (JVM messages, output of
 /// versions that predate log4j) passes through unchanged.
@@ -32,7 +31,7 @@ impl Log4jNormalizer {
             self.pending_bytes = 0;
             return render_event(&raw.join("\n")).unwrap_or(raw);
         }
-        if self.pending_bytes > MAX_EVENT_BYTES {
+        if self.pending_bytes > MAX_GAME_LOG_EVENT_BYTES {
             return self.finish();
         }
         Vec::new()
