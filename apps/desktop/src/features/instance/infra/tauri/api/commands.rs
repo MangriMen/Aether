@@ -51,6 +51,7 @@ pub fn get_specta_events() -> tauri_specta::Events {
 
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn create(
     new_instance: NewInstanceDto,
     request_id: RequestId,
@@ -73,6 +74,7 @@ async fn create(
 
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn import(
     import_instance: ImportInstanceDto,
     request_id: RequestId,
@@ -91,6 +93,7 @@ async fn import(
 
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn list_importers(
     container: State<'_, ContainerState>,
 ) -> FrontendResult<Vec<CapabilityEntryDto<ImporterCapabilityMetadataDto>>> {
@@ -107,6 +110,7 @@ async fn list_importers(
 
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn list(container: State<'_, ContainerState>) -> FrontendResult<Vec<InstanceDto>> {
     let container = container.0.clone();
     Ok(container
@@ -122,6 +126,7 @@ async fn list(container: State<'_, ContainerState>) -> FrontendResult<Vec<Instan
 /// The instances that are stored but cannot be read, with why.
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn list_broken(
     container: State<'_, ContainerState>,
 ) -> FrontendResult<Vec<BrokenInstanceDto>> {
@@ -139,6 +144,7 @@ async fn list_broken(
 /// Removes a broken instance by the id `list_broken` gave. Not an instance that is readable.
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn remove_broken(
     id: String,
     request_id: RequestId,
@@ -157,6 +163,7 @@ async fn remove_broken(
 
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn get(id: String, container: State<'_, ContainerState>) -> FrontendResult<InstanceDto> {
     let id = InstanceId::try_from(id).map_err(aether_core::Error::from)?;
     let container = container.0.clone();
@@ -170,6 +177,7 @@ async fn get(id: String, container: State<'_, ContainerState>) -> FrontendResult
 
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn get_dir(id: String, container: State<'_, ContainerState>) -> FrontendResult<PathBuf> {
     let id = InstanceId::try_from(id).map_err(aether_core::Error::from)?;
     let container = container.0.clone();
@@ -178,6 +186,7 @@ async fn get_dir(id: String, container: State<'_, ContainerState>) -> FrontendRe
 
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn install(
     id: String,
     force: bool,
@@ -198,6 +207,7 @@ async fn install(
 
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn update(
     id: String,
     request_id: RequestId,
@@ -217,6 +227,7 @@ async fn update(
 
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn edit(
     id: String,
     edit_instance: EditInstanceDto,
@@ -238,6 +249,7 @@ async fn edit(
 
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn remove(
     id: String,
     request_id: RequestId,
@@ -257,6 +269,7 @@ async fn remove(
 
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn launch(
     id: String,
     request_id: RequestId,
@@ -279,6 +292,7 @@ async fn launch(
 /// launch that began before it was reloaded; `LaunchStarted` and `LaunchEnded` tell the rest.
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn list_launching(container: State<'_, ContainerState>) -> FrontendResult<Vec<String>> {
     Ok(container
         .0
@@ -293,6 +307,7 @@ async fn list_launching(container: State<'_, ContainerState>) -> FrontendResult<
 /// to stop is no error.
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn stop(
     id: String,
     request_id: RequestId,
@@ -312,6 +327,7 @@ async fn stop(
 
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn import_contents(
     instance_id: String,
     content_type: ContentTypeDto,
@@ -337,6 +353,7 @@ async fn import_contents(
 
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn list_content(
     id: String,
     container: State<'_, ContainerState>,
@@ -355,6 +372,7 @@ async fn list_content(
 
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn install_content(
     payload: ContentInstallParamsDto,
     request_id: RequestId,
@@ -373,6 +391,7 @@ async fn install_content(
 
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn enable_contents(
     id: String,
     content_paths: Vec<String>,
@@ -398,6 +417,7 @@ async fn enable_contents(
 
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn disable_contents(
     id: String,
     content_paths: Vec<String>,
@@ -423,6 +443,7 @@ async fn disable_contents(
 
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn remove_contents(
     id: String,
     content_paths: Vec<String>,
@@ -444,6 +465,7 @@ async fn remove_contents(
 
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn list_content_providers(
     container: State<'_, ContainerState>,
 ) -> FrontendResult<Vec<CapabilityEntryDto<ContentProviderCapabilityMetadataDto>>> {
@@ -460,6 +482,7 @@ async fn list_content_providers(
 
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn search_content(
     payload: ContentSearchParamsDto,
     container: State<'_, ContainerState>,
@@ -475,6 +498,7 @@ async fn search_content(
 
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn check_compatibility(
     instance_ids: HashSet<String>,
     check_params: ContentCompatibilityCheckParamsDto,
@@ -502,6 +526,7 @@ async fn check_compatibility(
 
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn get_content(
     params: ContentGetParamsDto,
     container: State<'_, ContainerState>,
@@ -517,6 +542,7 @@ async fn get_content(
 
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn list_content_version(
     params: ContentListVersionParamsDto,
     container: State<'_, ContainerState>,
@@ -534,6 +560,7 @@ async fn list_content_version(
 
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn get_content_version(
     params: ContentGetVersionParamsDto,
     container: State<'_, ContainerState>,
@@ -549,6 +576,7 @@ async fn get_content_version(
 
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
 async fn edit_icon(
     edit_instance_icon: EditInstanceIconDto,
     request_id: RequestId,

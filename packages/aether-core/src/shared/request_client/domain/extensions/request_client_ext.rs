@@ -16,7 +16,11 @@ pub trait RequestClientExt: RequestClient {
         self.fetch_json_with_progress(request, None).await
     }
 
-    #[tracing::instrument(skip(self, loading_bar))]
+    #[tracing::instrument(
+        level = "debug",
+        skip_all,
+        fields(url = %request.url.split('?').next().unwrap_or_default())
+    )]
     async fn fetch_json_with_progress<T>(
         &self,
         request: Request,

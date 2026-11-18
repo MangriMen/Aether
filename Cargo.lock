@@ -77,6 +77,8 @@ dependencies = [
  "tokio",
  "toml 1.2.0+spec-1.1.0",
  "tracing",
+ "tracing-error",
+ "tracing-subscriber",
  "ttf-parser",
  "uuid",
  "windows-sys 0.61.2",
