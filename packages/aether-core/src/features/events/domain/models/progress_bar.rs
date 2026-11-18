@@ -242,7 +242,7 @@ pub(crate) struct Shown {
     last_sent_at: Option<Instant>,
 }
 
-#[derive(Clone)]
+/// The handle of a bar: dropping it ends the bar, so there is one, and it is not `Clone`.
 pub struct ProgressBarId {
     pub id: Uuid,
     pub(crate) progress_storage: Option<Arc<dyn ProgressBarStorage>>,
