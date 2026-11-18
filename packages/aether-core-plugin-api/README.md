@@ -51,7 +51,10 @@ version of this crate.
 
 Names are matched exactly (case included), without the `extism:host/user` namespace. Extism's
 own built-ins (`http_request`, `config_get`, `var_get`, …) live in a different namespace and are
-not covered by the list.
+not covered by the list. The exception is Extism's log functions (`log_info`, `log_error`, …,
+what the `extism_pdk` logging macros call): the launcher takes them over, so they follow the
+`log` declaration. A plugin that does not list `log` has these messages dropped; the text is
+escaped and cut at 4 KiB like that of `log`.
 
 With `aether-core-plugin-pdk`, the list is the set of `pdk::host` functions the plugin actually
 calls (the linker drops the imports of the others); with your own `#[host_fn] extern

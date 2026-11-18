@@ -1,4 +1,5 @@
 mod block_on;
+mod extism_log;
 mod features;
 mod get_host_functions;
 mod plugin_context;

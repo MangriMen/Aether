@@ -150,7 +150,7 @@ pub(crate) fn get_host_functions(
 ) -> Vec<Function> {
     let context = PluginContext::new(plugin_id.clone(), container, wasm_sha256, memory_limit);
 
-    select_host_functions(declared)
+    let functions = select_host_functions(declared)
         .into_iter()
         .map(|spec| {
             Function::new(
@@ -161,7 +161,10 @@ pub(crate) fn get_host_functions(
                 spec.handler,
             )
         })
-        .collect()
+        .collect();
+
+    // Linked whether or not `log` is declared: they stand in for the ones Extism links itself.
+    super::extism_log::with_extism_log_functions(functions, plugin_id, declared)
 }
 
 #[cfg(test)]
