@@ -186,7 +186,7 @@ async fn should_download_verify_and_return_a_cache_path_when_the_hash_matches() 
 
 /// Answer one request with the headers and a first piece of a body, then hold the connection
 /// open without sending the rest: a transfer the client's own timeouts give up on only after
-/// `READ_TIMEOUT`.
+/// `PLUGIN_HTTP_READ_TIMEOUT`.
 async fn serve_a_stalled_body() -> SocketAddr {
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
 

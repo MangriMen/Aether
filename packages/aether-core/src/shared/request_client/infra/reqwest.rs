@@ -13,19 +13,13 @@ use crate::{
             FileHash,
             infra::{FileHasher, hash_hex_async},
         },
+        limits::{HTTP_CLIENT_CONNECT_TIMEOUT, HTTP_CLIENT_READ_TIMEOUT},
         request_client::{
             BytesProgress, FileDownload, Method, Request, RequestClient, RequestError,
             SavedDownload,
         },
     },
 };
-
-/// How long a connection may take to open.
-pub const CONNECT_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(30);
-/// How long a response may stay silent. Per read, not per request: a large download that keeps
-/// flowing is never cut, a stalled one is. Generous, so a poor connection is not mistaken for a
-/// dead one; the retry middleware covers the rest.
-pub const READ_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(90);
 
 /// Give `builder` timeouts, so a stalled server cannot hold a permit forever.
 pub fn with_timeouts(
@@ -36,9 +30,13 @@ pub fn with_timeouts(
     builder.connect_timeout(connect).read_timeout(read)
 }
 
-/// [`with_timeouts`] with [`CONNECT_TIMEOUT`] and [`READ_TIMEOUT`].
+/// [`with_timeouts`] with [`HTTP_CLIENT_CONNECT_TIMEOUT`] and [`HTTP_CLIENT_READ_TIMEOUT`].
 pub fn with_default_timeouts(builder: reqwest::ClientBuilder) -> reqwest::ClientBuilder {
-    with_timeouts(builder, CONNECT_TIMEOUT, READ_TIMEOUT)
+    with_timeouts(
+        builder,
+        HTTP_CLIENT_CONNECT_TIMEOUT,
+        HTTP_CLIENT_READ_TIMEOUT,
+    )
 }
 
 /// The queue a client's requests wait in.

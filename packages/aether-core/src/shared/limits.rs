@@ -129,14 +129,14 @@ const _: () = assert!(
 pub(crate) const DOWNLOAD_MAX_RETRIES: u32 = 3;
 
 /// Total time budget for one `http_get`, including connect and body download.
-pub(crate) const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
+pub(crate) const PLUGIN_HTTP_REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
 
 /// Time budget for establishing the connection alone.
-pub(crate) const CONNECT_TIMEOUT: Duration = Duration::from_secs(10);
+pub(crate) const PLUGIN_HTTP_CONNECT_TIMEOUT: Duration = Duration::from_secs(10);
 
 /// Longest a connection may stay silent mid-response. Only matters for calls whose total
 /// budget is longer than this, i.e. `download_to_cache`.
-pub(crate) const READ_TIMEOUT: Duration = Duration::from_secs(30);
+pub(crate) const PLUGIN_HTTP_READ_TIMEOUT: Duration = Duration::from_secs(30);
 
 impl PluginSandboxLimits {
     /// Refuses limits that contradict each other, rather than letting a plugin find out at run
@@ -184,6 +184,31 @@ impl PluginSandboxLimits {
         })
     }
 }
+
+/// How long the application's HTTP client may take to open a connection.
+pub(crate) const HTTP_CLIENT_CONNECT_TIMEOUT: Duration = Duration::from_secs(30);
+
+/// How long a response to the application's HTTP client may stay silent. Per read, not per
+/// request: a large download that keeps flowing is never cut, a stalled one is. Generous, so a
+/// poor connection is not mistaken for a dead one; the retry middleware covers the rest.
+pub(crate) const HTTP_CLIENT_READ_TIMEOUT: Duration = Duration::from_secs(90);
+
+/// Retries of transient failures (connection errors, 5xx, 429) by the application's HTTP
+/// client. The plugins' downloads retry less: see [`DOWNLOAD_MAX_RETRIES`].
+pub const HTTP_CLIENT_MAX_RETRIES: u32 = 5;
+
+/// Upper bound for a downloaded plugin archive. The body goes to disk as it arrives, so this
+/// stops an endless stream rather than limiting what a plugin may weigh.
+pub(crate) const MAX_PLUGIN_ARCHIVE_BYTES: u64 = 64 * 1024 * 1024;
+
+/// The largest content icon taken from a provider. Modrinth's are a few KiB.
+pub(crate) const MAX_ICON_BYTES: u64 = 1 << 20;
+
+/// How long fetching one content icon may take.
+pub(crate) const ICON_FETCH_TIMEOUT: Duration = Duration::from_secs(20);
+
+/// How many redirects a content icon fetch follows.
+pub(crate) const MAX_ICON_REDIRECTS: usize = 3;
 
 #[cfg(test)]
 mod tests {

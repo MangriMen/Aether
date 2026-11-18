@@ -49,7 +49,10 @@ pub(crate) use crate::features::plugins::is_host_allowed;
 pub(crate) use crate::features::plugins::{PluginHosts, is_blocked_ip};
 // The domain's, so that it reaches the plugin typed through `ErrorKind`.
 use crate::features::plugins::PluginHttpError;
-use crate::shared::limits::{CONNECT_TIMEOUT, PluginSandboxLimits, READ_TIMEOUT, REQUEST_TIMEOUT};
+use crate::shared::limits::{
+    PLUGIN_HTTP_CONNECT_TIMEOUT, PLUGIN_HTTP_READ_TIMEOUT, PLUGIN_HTTP_REQUEST_TIMEOUT,
+    PluginSandboxLimits,
+};
 
 mod policy;
 
@@ -294,8 +297,8 @@ pub(super) fn vetted_client(
         .redirect(redirect::Policy::none())
         .referer(false)
         .dns_resolver(resolver.clone())
-        .connect_timeout(CONNECT_TIMEOUT)
-        .read_timeout(READ_TIMEOUT)
+        .connect_timeout(PLUGIN_HTTP_CONNECT_TIMEOUT)
+        .read_timeout(PLUGIN_HTTP_READ_TIMEOUT)
         .timeout(total_timeout);
     let client = proxy.configure(builder).build().map_err(build_failed)?;
 
@@ -421,7 +424,7 @@ async fn send_checked(
         system_lookup,
         is_blocked,
         proxy,
-        REQUEST_TIMEOUT,
+        PLUGIN_HTTP_REQUEST_TIMEOUT,
         None,
         limits.max_redirects,
     )?;
