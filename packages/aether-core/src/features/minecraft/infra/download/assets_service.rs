@@ -111,7 +111,7 @@ impl<RC: RequestClient, C: Cache> AssetsService<RC, C> {
 
     async fn fetch_bytes(&self, url: &str, sha1: &str) -> Result<Bytes, IoError> {
         self.download_client
-            .fetch_bytes(checked_get(url, sha1))
+            .fetch_bytes(checked_get(url, sha1)?)
             .await
             .map_err(get_network_error)
     }

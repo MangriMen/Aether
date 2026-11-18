@@ -49,7 +49,7 @@ impl<RC: RequestClient, FS: FileStore> ClientService<RC, FS> {
         Ok(self
             .request_client
             .fetch_bytes_with_progress(
-                checked_get(&client_download.url, &client_download.sha1),
+                checked_get(&client_download.url, &client_download.sha1)?,
                 bar.map(|bar| (bar, 1.0)),
             )
             .await

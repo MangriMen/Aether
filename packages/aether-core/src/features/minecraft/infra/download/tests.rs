@@ -259,16 +259,16 @@ fn version_from(
 
     let mut json = serde_json::json!({
         "assetIndex": {
-            "id": id, "sha1": "0", "size": 1, "totalSize": 5, "url": assets_index_url(id)
+            "id": id, "sha1": "", "size": 1, "totalSize": 5, "url": assets_index_url(id)
         },
         "assets": id,
-        "downloads": { "client": { "sha1": "0", "size": 9, "url": client_url(id) } },
+        "downloads": { "client": { "sha1": "", "size": 9, "url": client_url(id) } },
         "id": id,
         "javaVersion": null,
         "libraries": [{
             "name": LIBRARY,
             "downloads": { "artifact": {
-                "path": "com/example/lib/1.0/lib-1.0.jar", "sha1": "0", "size": 7,
+                "path": "com/example/lib/1.0/lib-1.0.jar", "sha1": "", "size": 7,
                 "url": LIBRARY_URL
             } }
         }],
@@ -289,7 +289,7 @@ const NATIVE_JAR_URL: &str = "https://libraries.example/native-1.0.jar";
 /// Adds a library with natives for every OS, served from [`NATIVE_URL`].
 fn with_natives(json: &mut serde_json::Value) {
     let classifier = serde_json::json!({
-        "path": "n.jar", "sha1": "0", "size": 3, "url": NATIVE_URL
+        "path": "n.jar", "sha1": "", "size": 3, "url": NATIVE_URL
     });
     json["libraries"]
         .as_array_mut()
@@ -301,7 +301,7 @@ fn with_natives(json: &mut serde_json::Value) {
             },
             "downloads": {
                 "artifact": {
-                    "path": "com/example/native/1.0/native-1.0.jar", "sha1": "0", "size": 3,
+                    "path": "com/example/native/1.0/native-1.0.jar", "sha1": "", "size": 3,
                     "url": NATIVE_JAR_URL
                 },
                 "classifiers": { "natives-all": classifier }
@@ -312,7 +312,7 @@ fn with_natives(json: &mut serde_json::Value) {
 /// Adds a library like Mojang's 1.7.10-1.12.2 ones: natives and classifiers, no `artifact`.
 fn with_natives_only(json: &mut serde_json::Value) {
     let classifier = serde_json::json!({
-        "path": "n.jar", "sha1": "0", "size": 3, "url": NATIVE_URL
+        "path": "n.jar", "sha1": "", "size": 3, "url": NATIVE_URL
     });
     json["libraries"]
         .as_array_mut()
@@ -588,7 +588,7 @@ fn with_log_config(json: &mut serde_json::Value) {
         "client": {
             "argument": "-Dlog4j.configurationFile=${path}",
             "file": {
-                "id": "client-1.12.xml", "sha1": "0", "size": 5, "url": LOG_CONFIG_URL
+                "id": "client-1.12.xml", "sha1": "", "size": 5, "url": LOG_CONFIG_URL
             },
             "type": "log4j2-xml"
         }

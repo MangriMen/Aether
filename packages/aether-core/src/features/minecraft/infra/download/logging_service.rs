@@ -77,7 +77,7 @@ impl<RC: RequestClient> LoggingService<RC> {
             let bytes = self
                 .request_client
                 .fetch_bytes_with_progress(
-                    checked_get(&file.url, &file.sha1),
+                    checked_get(&file.url, &file.sha1)?,
                     bar.bar().map(|bar| (bar, 1.0)),
                 )
                 .await
