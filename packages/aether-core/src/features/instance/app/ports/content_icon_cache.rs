@@ -37,6 +37,12 @@ pub enum ContentIconError {
 
     #[error("Failed to store the icon: {0}")]
     Storage(String),
+
+    /// The icon is as good as it was or better, but what tells when to ask again could not be
+    /// written: left alone, the icon would be fetched at every look. `arrived`: a new icon was
+    /// put in place all the same.
+    #[error("Failed to keep the validators of the icon: {reason}")]
+    ValidatorsNotKept { arrived: bool, reason: String },
 }
 
 /// Local copies of the icons of content projects (see

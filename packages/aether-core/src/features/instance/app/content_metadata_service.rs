@@ -22,8 +22,9 @@ use crate::{
         instance::{
             CachedContentAuthor, CachedContentIcon, CachedContentMetadata,
             CachedContentVersionMetadata, ContentAuthor, ContentFile, ContentFileView,
-            ContentIconCache, ContentId, ContentMetadata, ContentMetadataCache, ContentProvider,
-            ContentVersionId, ContentVersionMetadata, InstanceError, InstanceId, ProviderId,
+            ContentIconCache, ContentIconError, ContentId, ContentMetadata, ContentMetadataCache,
+            ContentProvider, ContentVersionId, ContentVersionMetadata, InstanceError, InstanceId,
+            ProviderId,
         },
     },
     shared::{capability::domain::CapabilityRegistry, web_url::HttpsUrl},
@@ -898,7 +899,10 @@ impl Inner {
                 Err(err) => {
                     tracing::debug!("Could not fetch the content icon {url}: {err}");
                     inner.remember_icon_failure(&url);
-                    false
+                    matches!(
+                        err,
+                        ContentIconError::ValidatorsNotKept { arrived: true, .. }
+                    )
                 }
             };
             inner

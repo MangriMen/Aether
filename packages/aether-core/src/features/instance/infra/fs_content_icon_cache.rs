@@ -101,19 +101,11 @@ impl FsContentIconCache {
 
     /// Without them the icon is revalidated at every look: a failure is the fetch's, so that
     /// it is remembered and not tried again at once.
-    async fn write_validators(
-        &self,
-        stem: &str,
-        validators: &Validators,
-    ) -> Result<(), ContentIconError> {
-        let bytes = serde_json::to_vec(validators)
-            .map_err(|err| storage_error(std::io::Error::other(err)))?;
+    async fn write_validators(&self, stem: &str, validators: &Validators) -> Result<(), String> {
+        let bytes = serde_json::to_vec(validators).map_err(|err| err.to_string())?;
         write_replacing_async(&self.validators_path(stem), bytes)
             .await
-            .map_err(|err| {
-                tracing::debug!("Failed to keep the validators of a content icon: {err}");
-                storage_error(err)
-            })
+            .map_err(|err| err.to_string())
     }
 }
 
@@ -287,7 +279,11 @@ impl ContentIconCache for FsContentIconCache {
                         ..validators
                     },
                 )
-                .await?;
+                .await
+                .map_err(|reason| ContentIconError::ValidatorsNotKept {
+                    arrived: false,
+                    reason,
+                })?;
                 return Ok(false);
             }
             FileDownload::NotModified => {
@@ -326,7 +322,11 @@ impl ContentIconCache for FsContentIconCache {
                     checked_at: unix_secs(SystemTime::now()),
                 },
             )
-            .await?;
+            .await
+            .map_err(|reason| ContentIconError::ValidatorsNotKept {
+                arrived: true,
+                reason,
+            })?;
         }
 
         Ok(true)
@@ -837,7 +837,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn should_fail_the_fetch_when_the_validators_cannot_be_kept() {
+    async fn should_fail_the_fetch_but_keep_the_new_icon_when_the_validators_cannot_be_kept() {
         let fixture = Fixture::new();
         fixture.http.reply(LEGACY_URL, image(PNG, "image/png"));
         // A directory where the validators file goes: nothing can be written there.
@@ -851,8 +851,18 @@ mod tests {
         let result = fixture.cache.fetch(&https(LEGACY_URL)).await;
 
         assert!(
-            matches!(result, Err(ContentIconError::Storage(_))),
+            matches!(
+                result,
+                Err(ContentIconError::ValidatorsNotKept { arrived: true, .. })
+            ),
             "{result:?}"
+        );
+        assert!(
+            fixture
+                .cache
+                .find(&stem(&https(LEGACY_URL)))
+                .await
+                .is_some()
         );
     }
 
