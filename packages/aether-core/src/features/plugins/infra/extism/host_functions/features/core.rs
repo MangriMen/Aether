@@ -24,7 +24,8 @@ use crate::{
         plugins::{PluginCommandError, PluginsFeature},
     },
     shared::{
-        limits::COMMAND_TIMEOUT, process_tree::wrap_tree,
+        limits::{COMMAND_TIMEOUT, MAX_PLUGIN_LOG_BYTES},
+        process_tree::wrap_tree,
         serializable_command::domain::SerializableCommand,
     },
 };
@@ -39,20 +40,23 @@ use super::super::{
 
 // ── Testable business logic ──
 
-/// Longest plugin message that is logged; the rest is cut off.
-const MAX_LOG_MESSAGE_BYTES: usize = 4096;
+/// Text a plugin wrote, made safe for a log line: control characters (a newline would start a
+/// fake line, ESC an ANSI sequence), line separators and bidi marks are shown escaped, and the
+/// text is cut to [`MAX_PLUGIN_LOG_BYTES`].
+/// Characters that are not control characters but still break a log line or reorder its text.
+fn is_unsafe_format_char(ch: char) -> bool {
+    matches!(ch, '\u{2028}' | '\u{2029}' | '\u{202a}'..='\u{202e}' | '\u{2066}'..='\u{2069}')
+}
 
-/// `msg` made safe to write into a log line: control characters (a newline would start a fake
-/// line, ESC an ANSI sequence) are shown escaped, and the text is cut to [`MAX_LOG_MESSAGE_BYTES`].
-fn sanitize_log_message(msg: &str) -> String {
-    let mut out = String::with_capacity(msg.len().min(MAX_LOG_MESSAGE_BYTES));
+pub(crate) fn sanitize_log_message(msg: &str) -> String {
+    let mut out = String::with_capacity(msg.len().min(MAX_PLUGIN_LOG_BYTES));
     for ch in msg.chars() {
-        let piece = if ch.is_control() {
+        let piece = if ch.is_control() || is_unsafe_format_char(ch) {
             ch.escape_default().to_string()
         } else {
             ch.to_string()
         };
-        if out.len() + piece.len() > MAX_LOG_MESSAGE_BYTES {
+        if out.len() + piece.len() > MAX_PLUGIN_LOG_BYTES {
             out.push_str("...");
             break;
         }
@@ -246,7 +250,7 @@ pub(crate) async fn handle_run_command(
     tracing::debug!(
         target: "plugin",
         "[{plugin_id}]: run_command `{}` with {} argument(s)",
-        command.program,
+        sanitize_log_message(&command.program),
         command.args.len()
     );
 
@@ -348,10 +352,18 @@ mod tests {
     }
 
     #[test]
-    fn should_cut_the_message_when_it_is_longer_than_the_limit() {
-        let out = sanitize_log_message(&"я".repeat(MAX_LOG_MESSAGE_BYTES));
+    fn should_escape_line_separators_and_bidi_marks() {
+        assert_eq!(
+            sanitize_log_message("a\u{2028}b\u{202e}c"),
+            r"a\u{2028}b\u{202e}c"
+        );
+    }
 
-        assert!(out.len() <= MAX_LOG_MESSAGE_BYTES + 3);
+    #[test]
+    fn should_cut_the_message_when_it_is_longer_than_the_limit() {
+        let out = sanitize_log_message(&"я".repeat(MAX_PLUGIN_LOG_BYTES));
+
+        assert!(out.len() <= MAX_PLUGIN_LOG_BYTES + 3);
         assert!(out.ends_with("..."));
     }
 
