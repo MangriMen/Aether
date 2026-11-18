@@ -28,13 +28,14 @@ mod tests {
 
     use super::*;
 
-    fn frames() -> usize {
-        let mut count = 0;
-        SpanTrace::capture().with_spans(|_, _| {
-            count += 1;
+    /// Targets of the recorded frames, innermost first.
+    fn frames() -> Vec<String> {
+        let mut targets = Vec::new();
+        SpanTrace::capture().with_spans(|meta, _| {
+            targets.push(meta.target().to_owned());
             true
         });
-        count
+        targets
     }
 
     #[test]
@@ -48,11 +49,11 @@ mod tests {
     }
 
     #[test]
-    fn should_record_one_frame_when_a_foreign_span_sits_between_app_spans() {
+    fn should_record_only_the_app_frame_when_a_foreign_span_is_innermost() {
         tracing::subscriber::with_default(span_capture(), || {
             let n = span!(target: "aether_core::x", Level::DEBUG, "own")
                 .in_scope(|| span!(target: "hyper", Level::DEBUG, "foreign").in_scope(frames));
-            assert_eq!(n, 1);
+            assert_eq!(n, ["aether_core::x"]);
         });
     }
 }

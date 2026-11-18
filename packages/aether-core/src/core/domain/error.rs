@@ -96,7 +96,7 @@ impl ErrorKind {
         self.into()
     }
 
-    /// Full cause chain for logs; starts at the kind, since `Error` repeats its text via the span trace.
+    /// Full cause chain for logs; starts at the kind, as the trace of `Error` is not part of the chain.
     pub fn display_chain(&self) -> String {
         error_chain(self)
     }
