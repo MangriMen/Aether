@@ -132,7 +132,11 @@ impl Default for WindowSize {
 }
 
 impl WindowSize {
+    /// A side of 0 is no window the game can open: such a size is the default one.
     pub fn new(width: u16, height: u16) -> Self {
+        if width == 0 || height == 0 {
+            return Self::default();
+        }
         Self { width, height }
     }
 
@@ -244,6 +248,21 @@ impl Hooks {
 mod tests {
     use super::*;
     use rstest::rstest;
+
+    #[rstest]
+    #[case(0, 720)]
+    #[case(1280, 0)]
+    #[case(0, 0)]
+    fn should_take_the_default_size_when_a_side_is_zero(#[case] width: u16, #[case] height: u16) {
+        assert_eq!(WindowSize::new(width, height), WindowSize::default());
+    }
+
+    #[test]
+    fn should_keep_the_size_when_both_sides_are_set() {
+        let size = WindowSize::new(1280, 720);
+
+        assert_eq!((size.width(), size.height()), (1280, 720));
+    }
 
     // ── Hooks::update_hooks ──
 

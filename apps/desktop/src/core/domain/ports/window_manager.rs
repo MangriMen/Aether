@@ -7,6 +7,12 @@ use crate::{
 
 #[async_trait]
 pub trait WindowManager: Send + Sync {
+    /// Whether this system can show `effect`. The system drops the error of one it cannot, so
+    /// asking first is the only way to tell the user.
+    fn supports_window_effect(&self, _effect: WindowEffect) -> bool {
+        true
+    }
+
     async fn apply_visual_effect(
         &self,
         label: WindowLabel,

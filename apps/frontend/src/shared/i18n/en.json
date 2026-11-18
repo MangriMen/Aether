@@ -415,8 +415,8 @@
           "INVALID_PART": "\"{{value}}\" is not a valid id: it may contain only lowercase Latin letters, digits, \"_\" and \"-\", and must start with a letter or digit"
         }
       },
-      "INVALID_MAX_CONCURRENT_DOWNLOADS": "The number of concurrent downloads must be at least 1",
-      "INVALID_MEMORY": "The memory amount must be at least 1 MB"
+      "INVALID_MAX_CONCURRENT_DOWNLOADS": "The number of concurrent downloads must be from 1 to 64",
+      "INVALID_MEMORY": "The memory amount must be at least 512 MB"
     },
     "update": {
       "GAME_RUNNING": "A game is running. Close it to install the update",

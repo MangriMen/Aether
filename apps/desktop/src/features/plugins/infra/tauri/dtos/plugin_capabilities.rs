@@ -15,15 +15,12 @@ use crate::features::instance::infra::{
 #[serde(rename_all = "camelCase")]
 pub struct PluginCapabilitiesDto {
     /// List of supported modpack importers provided by the plugin.
-    #[serde(default)]
     pub importers: Vec<PluginImporterCapabilityDto>,
 
     /// List of supported modpack updaters provided by the plugin.
-    #[serde(default)]
     pub updaters: Vec<PluginUpdaterCapabilityDto>,
 
     /// List of content providers provided by the plugin.
-    #[serde(default)]
     pub content_providers: Vec<PluginContentProviderCapabilityDto>,
 }
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
