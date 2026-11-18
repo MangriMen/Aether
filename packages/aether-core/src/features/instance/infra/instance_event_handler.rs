@@ -1,4 +1,7 @@
-use std::{collections::HashSet, path::Path, sync::Arc};
+use std::{
+    collections::HashSet,
+    path::{Path, PathBuf},
+};
 
 use async_trait::async_trait;
 
@@ -13,14 +16,24 @@ use crate::features::{
 /// here: the frontend shows it from the process that ended.
 pub struct InstanceEventHandler {
     event_emitter: SharedEventEmitter,
-    location_info: Arc<LocationInfo>,
+    /// The instances directory as the watched paths spell it, and as the file system resolves
+    /// it: some backends (`FSEvents`) report real paths below a symlinked data directory.
+    instances_dirs: Vec<PathBuf>,
 }
 
 impl InstanceEventHandler {
-    pub fn new(event_emitter: SharedEventEmitter, location_info: Arc<LocationInfo>) -> Self {
+    pub fn new(event_emitter: SharedEventEmitter, location_info: &LocationInfo) -> Self {
+        let instances_dir = location_info.instances_dir();
+        let mut instances_dirs = vec![instances_dir.clone()];
+        if let Ok(real) = dunce::canonicalize(&instances_dir)
+            && real != instances_dir
+        {
+            instances_dirs.push(real);
+        }
+
         Self {
             event_emitter,
-            location_info,
+            instances_dirs,
         }
     }
 
@@ -28,7 +41,10 @@ impl InstanceEventHandler {
     /// directory, so a data directory that itself has an `instances` folder in its path does
     /// not mislead.
     fn extract_instance_path(&self, path: &Path) -> Option<InstanceId> {
-        let relative = path.strip_prefix(self.location_info.instances_dir()).ok()?;
+        let relative = self
+            .instances_dirs
+            .iter()
+            .find_map(|dir| path.strip_prefix(dir).ok())?;
         let first = relative.components().next()?;
         InstanceId::try_from(first.as_os_str().to_string_lossy().to_string()).ok()
     }
@@ -104,11 +120,9 @@ mod tests {
 
     fn handler_in(config_dir: &str) -> (InstanceEventHandler, mpsc::UnboundedReceiver<Event>) {
         let (tx, rx) = mpsc::unbounded_channel();
-        let location_info = Arc::new(LocationInfo::new(
-            PathBuf::from("/settings"),
-            PathBuf::from(config_dir),
-        ));
-        let handler = InstanceEventHandler::new(Arc::new(ChannelEmitter(tx)), location_info);
+        let location_info =
+            LocationInfo::new(PathBuf::from("/settings"), PathBuf::from(config_dir));
+        let handler = InstanceEventHandler::new(Arc::new(ChannelEmitter(tx)), &location_info);
         (handler, rx)
     }
 
@@ -212,6 +226,30 @@ mod tests {
         };
         assert_eq!(event.instance_id, InstanceId::try_from("abc").unwrap());
         assert_silent(&mut rx).await;
+    }
+
+    #[tokio::test]
+    async fn should_name_the_instance_when_the_watcher_reports_the_resolved_path() {
+        let temp = tempfile::tempdir().unwrap();
+        let real = dunce::canonicalize(temp.path()).unwrap();
+        std::fs::create_dir_all(real.join("data/instances")).unwrap();
+        std::fs::create_dir_all(real.join("elsewhere")).unwrap();
+        // The configured spelling differs from the resolved one: a symlink behaves the same.
+        let configured = real.join("elsewhere").join("..").join("data");
+        let (handler, mut rx) = handler_in(configured.to_str().unwrap());
+
+        handler
+            .handle_events(Ok(vec![FileEvent {
+                kind: FileEventKind::Modify,
+                path: real.join("data/instances/abc/mods/a.jar"),
+            }]))
+            .await
+            .unwrap();
+
+        let Event::Instance(event) = next_event(&mut rx).await else {
+            panic!("expected instance event");
+        };
+        assert_eq!(event.instance_id, InstanceId::try_from("abc").unwrap());
     }
 
     #[tokio::test]
