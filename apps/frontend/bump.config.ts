@@ -86,7 +86,7 @@ const validateChangelog = async () => {
   const unreleasedMatch = content.match(
     /## \[Unreleased\]([\s\S]*?)(?=## \[|$)/,
   );
-  const unreleasedContent = unreleasedMatch ? unreleasedMatch[1].trim() : '';
+  const unreleasedContent = unreleasedMatch?.[1]?.trim() ?? '';
 
   const realContent = unreleasedContent.replace(/### .+/g, '').trim();
 
