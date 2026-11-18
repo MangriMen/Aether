@@ -71,6 +71,11 @@ impl<R: tauri::Runtime> TauriWindowManager<R> {
 
 #[async_trait]
 impl<R: tauri::Runtime> WindowManager for TauriWindowManager<R> {
+    /// Mica and Acrylic are Windows only.
+    fn supports_window_effect(&self, effect: WindowEffect) -> bool {
+        effect == WindowEffect::Off || cfg!(windows)
+    }
+
     async fn apply_visual_effect(
         &self,
         label: WindowLabel,

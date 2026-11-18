@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::{
-    core::{WindowLabel, WindowManager},
+    core::{WindowError, WindowLabel, WindowManager},
     features::settings::{
         AppSettings, AppSettingsError, AppSettingsStorage, EditAppSettingsRequest,
     },
@@ -36,6 +36,11 @@ impl<ASS: AppSettingsStorage, WM: WindowManager> EditAppSettingsUseCase<ASS, WM>
         }
 
         if let Some(window_effect) = edit_app_settings.window_effect {
+            if !self.window_manager.supports_window_effect(window_effect) {
+                return Err(AppSettingsError::CanNotSetEffect(
+                    WindowError::PlatformNotSupported,
+                ));
+            }
             new_settings.window_effect = window_effect;
         }
 
@@ -112,11 +117,13 @@ mod tests {
         apply_effect_label: Arc<std::sync::Mutex<Option<WindowLabel>>>,
         apply_effect_effect: Arc<std::sync::Mutex<Option<WindowEffect>>>,
         should_fail: bool,
+        supports_effects: bool,
     }
 
     impl MockWindowManager {
         fn new(should_fail: bool) -> Self {
             Self {
+                supports_effects: true,
                 apply_effect_called: Arc::new(AtomicBool::new(false)),
                 apply_effect_label: Arc::new(std::sync::Mutex::new(None)),
                 apply_effect_effect: Arc::new(std::sync::Mutex::new(None)),
@@ -127,6 +134,10 @@ mod tests {
 
     #[async_trait]
     impl WindowManager for MockWindowManager {
+        fn supports_window_effect(&self, _effect: WindowEffect) -> bool {
+            self.supports_effects
+        }
+
         async fn apply_visual_effect(
             &self,
             label: WindowLabel,
@@ -275,6 +286,32 @@ mod tests {
             expect_applied,
             "unexpected apply_visual_effect call state"
         );
+    }
+
+    #[tokio::test]
+    async fn should_refuse_and_keep_the_settings_when_the_system_has_no_such_effect() {
+        let storage = Arc::new(MockStorage::new(AppSettings::default()));
+        let mut window = MockWindowManager::new(false);
+        window.supports_effects = false;
+        let window = Arc::new(window);
+        let use_case = EditAppSettingsUseCase::new(storage.clone(), window.clone());
+
+        let result = use_case
+            .execute(EditAppSettingsRequest {
+                action_on_instance_launch: None,
+                transparent: None,
+                window_effect: Some(WindowEffect::Mica),
+            })
+            .await;
+
+        assert!(matches!(
+            result,
+            Err(AppSettingsError::CanNotSetEffect(
+                WindowError::PlatformNotSupported
+            ))
+        ));
+        assert_eq!(storage.upsert_call_count.load(Ordering::SeqCst), 0);
+        assert!(!window.apply_effect_called.load(Ordering::SeqCst));
     }
 
     #[tokio::test]

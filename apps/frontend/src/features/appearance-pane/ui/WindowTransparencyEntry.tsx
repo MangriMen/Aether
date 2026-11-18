@@ -1,4 +1,5 @@
-import { type Component } from 'solid-js';
+import { platform as getOsPlatform } from '@tauri-apps/plugin-os';
+import { Show, type Component } from 'solid-js';
 
 import type { CollapsibleSettingsEntryProps } from '@/shared/settings-layout';
 
@@ -9,6 +10,15 @@ import { Separator } from '@/shared/ui-kit';
 import { BackgroundOpacityEntry } from './BackgroundOpacityEntry';
 import { WindowEffectEntry } from './WindowEffectEntry';
 import { WindowTransparencySwitch } from './WindowTransparencySwitch';
+
+// Mica and Acrylic exist on Windows only; the backend refuses them elsewhere.
+const supportsWindowEffects = () => {
+  try {
+    return getOsPlatform() === 'windows';
+  } catch {
+    return true;
+  }
+};
 
 export type WindowTransparencyEntryProps = CollapsibleSettingsEntryProps;
 
@@ -25,8 +35,10 @@ export const WindowTransparencyEntry: Component<
       collapsibleContent={
         <>
           <Separator />
-          <WindowEffectEntry class='px-4' />
-          <Separator />
+          <Show when={supportsWindowEffects()}>
+            <WindowEffectEntry class='px-4' />
+            <Separator />
+          </Show>
           <BackgroundOpacityEntry class='px-4' />
         </>
       }
