@@ -1,9 +1,8 @@
 import { makePersisted } from '@solid-primitives/storage';
 import { createStore, type SetStoreFunction, type Store } from 'solid-js/store';
 
-export interface FeatureFlagsStore {
-  isAllowInstallModpacks: boolean;
-}
+// Narrow to a union of flag names when the first flag is added.
+export type FeatureFlagsStore = Partial<Record<string, boolean>>;
 
 // Simplified type definition
 type FeatureFlagsStoreTuple = [
@@ -17,9 +16,7 @@ export const getOrCreateFeatureFlagsStore = (): FeatureFlagsStoreTuple => {
   if (!featureFlagsStore) {
     // Correct usage of makePersisted with createStore
     const [state, setState] = makePersisted(
-      createStore<FeatureFlagsStore>({
-        isAllowInstallModpacks: false,
-      }),
+      createStore<FeatureFlagsStore>({}),
       { name: 'feature-flags-store' }, // Better to use kebab-case or distinct storage key
     );
 
@@ -34,7 +31,5 @@ export const useFeatureFlagsStore = () => getOrCreateFeatureFlagsStore();
 
 // Meta-information actions
 export const featureFlagsActions = {
-  getBooleanFeatureFlags: (): (keyof FeatureFlagsStore)[] => [
-    'isAllowInstallModpacks',
-  ],
+  getBooleanFeatureFlags: (): readonly string[] => [],
 };

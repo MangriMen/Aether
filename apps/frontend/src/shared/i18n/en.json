@@ -521,7 +521,6 @@
       "versions": "Versions"
     },
     "alreadyInstalled": "This content is already installed",
-    "modpackInstallDisabled": "Installing modpacks is disabled",
     "providersError": "Failed to load content providers",
     "noProviders": "No content providers are installed",
     "openPluginSettings": "Open plugin settings"
@@ -829,6 +828,7 @@
     "dialogTitle": "Progress details"
   },
   "settings": {
+    "noFlags": "There are no experimental flags right now",
     "tab": {
       "appearance": "Appearance",
       "java": "Java",

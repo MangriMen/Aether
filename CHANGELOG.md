@@ -22,6 +22,7 @@ This release adds a permission prompt for plugin commands, cancellable installs,
 - **Content list:** Content loads in stages, with cached metadata and icons, and shows a loading indicator while the author is fetched.
 - **Interface font:** Choose the interface font in the settings: the system font, Inter, an installed font or any font by name.
 - **Storage:** A Storage tab in the settings shows disk usage by kind and the size of the cache, with a button to clear the cache. Only data the launcher can download again is removed.
+- **Modpacks:** Modpacks can be installed from the content search, which now opens on the Modpack type. A modpack update replaces its files and the overrides and paths of the new version without keeping your edits to them, so back up changed configs before updating.
 
 ### Changed
 
