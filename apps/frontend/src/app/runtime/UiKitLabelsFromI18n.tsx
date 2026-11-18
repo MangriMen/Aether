@@ -37,6 +37,9 @@ export const UiKitLabelsFromI18n = (props: UiKitLabelsFromI18nProps) => {
     get browse() {
       return t('common.browse');
     },
+    get notifications() {
+      return t('common.notifications');
+    },
   };
 
   return (

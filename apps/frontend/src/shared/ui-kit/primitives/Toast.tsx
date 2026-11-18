@@ -9,6 +9,8 @@ import { Portal } from 'solid-js/web';
 
 import { cn } from '@/shared/utils';
 
+import { useUiKitLabels } from './UiKitLabels';
+
 const toastVariants = cva(
   `
     group space-x-4 rounded-md p-4 pr-8 shadow-lg
@@ -53,9 +55,14 @@ const Toaster = <T extends ValidComponent = 'ol'>(
   props: PolymorphicProps<T, ToastListProps<T>>,
 ) => {
   const [local, others] = splitProps(props as ToastListProps, ['class']);
+  const labels = useUiKitLabels();
   return (
     <Portal>
-      <ToastPrimitive.Region>
+      <ToastPrimitive.Region
+        translations={{
+          notifications: (hotkey) => `${labels.notifications} (${hotkey})`,
+        }}
+      >
         <ToastPrimitive.List
           class={cn(
             `
@@ -98,8 +105,10 @@ const ToastClose = <T extends ValidComponent = 'button'>(
   props: PolymorphicProps<T, ToastCloseButtonProps<T>>,
 ) => {
   const [local, others] = splitProps(props as ToastCloseButtonProps, ['class']);
+  const labels = useUiKitLabels();
   return (
     <ToastPrimitive.CloseButton
+      aria-label={labels.close}
       class={cn(
         `
           top-2 right-2 rounded-md p-1 text-foreground/50

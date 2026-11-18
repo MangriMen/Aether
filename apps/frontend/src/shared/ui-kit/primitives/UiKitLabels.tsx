@@ -13,6 +13,7 @@ export type UiKitLabels = {
   ok: string;
   cancel: string;
   browse: string;
+  notifications: string;
 };
 
 const DEFAULT_UI_KIT_LABELS: UiKitLabels = {
@@ -24,6 +25,7 @@ const DEFAULT_UI_KIT_LABELS: UiKitLabels = {
   ok: 'Ok',
   cancel: 'Cancel',
   browse: 'Browse',
+  notifications: 'Notifications',
 };
 
 const UiKitLabelsContext = createContext<UiKitLabels>(DEFAULT_UI_KIT_LABELS);
