@@ -613,7 +613,6 @@ impl Fixture {
             storage.clone(),
             updaters,
             providers,
-            pack_storage.clone(),
             executor,
             locks.clone(),
         );
@@ -862,10 +861,10 @@ async fn should_keep_the_recorded_version_when_the_provider_does_not_name_it() {
 
 // ─── A pack installed before owners were recorded ──────────────
 
-/// The files of the installed version become the pack's before the update, so the one it drops
-/// is removed; a mod the user added next to them is not the pack's and stays.
+/// Records without an owner are not the pack's: the file the new plan drops and the user's own
+/// file stay, and the installed version's plan is not asked for.
 #[tokio::test]
-async fn should_adopt_the_files_when_a_pack_was_installed_without_owners() {
+async fn should_leave_ownerless_files_alone_when_updating() {
     let provider = Arc::new(PackProvider::v1_and_v2(None));
     let fixture = Fixture::new(Some(provider.clone())).await;
     fixture.put_v1(None).await;
@@ -873,8 +872,8 @@ async fn should_adopt_the_files_when_a_pack_was_installed_without_owners() {
 
     fixture.update().await.unwrap();
 
-    assert_eq!(fixture.mods(), ["a2.jar", "b.jar", "user.jar"]);
-    assert_eq!(fixture.owner_of("mods/b.jar").await, Some(origin()));
+    assert_eq!(fixture.mods(), ["a.jar", "a2.jar", "b.jar", "user.jar"]);
+    assert_eq!(fixture.owner_of("mods/a.jar").await, None);
     assert_eq!(fixture.owner_of("mods/user.jar").await, None);
     assert_eq!(
         provider
@@ -882,49 +881,8 @@ async fn should_adopt_the_files_when_a_pack_was_installed_without_owners() {
             .iter()
             .map(|params| params.version.clone())
             .collect::<Vec<_>>(),
-        [
-            Some(ContentVersionId::try_from("v2").unwrap()),
-            Some(ContentVersionId::try_from("v1").unwrap())
-        ]
+        [Some(ContentVersionId::try_from("v2").unwrap())]
     );
-}
-
-/// A failed update takes its adoption back with it: the files stay without an owner, as the
-/// user may still have to tell them apart.
-#[tokio::test]
-async fn should_leave_the_files_ownerless_when_the_update_that_adopted_them_fails() {
-    let mut provider = PackProvider::v1_and_v2(None);
-    provider
-        .versions
-        .get_mut("v2")
-        .unwrap()
-        .files
-        .push(pack_file("fail.jar", "mods/fail.jar"));
-    let fixture = Fixture::new(Some(Arc::new(provider))).await;
-    fixture.put_v1(None).await;
-
-    fixture.update().await.unwrap_err();
-
-    assert_eq!(fixture.mods(), ["a.jar", "b.jar"]);
-    assert_eq!(fixture.owner_of("mods/a.jar").await, None);
-    assert_eq!(fixture.owner_of("mods/b.jar").await, None);
-    assert_eq!(fixture.version_id(), "v1");
-}
-
-/// The installed version is gone: nothing tells the pack's files from the user's, so none is
-/// removed, and the update still goes through.
-#[tokio::test]
-async fn should_remove_no_ownerless_file_when_the_installed_version_is_gone() {
-    let mut provider = PackProvider::v1_and_v2(None);
-    provider.versions.remove("v1");
-    let fixture = Fixture::new(Some(Arc::new(provider))).await;
-    fixture.put_v1(None).await;
-
-    fixture.update().await.unwrap();
-
-    assert_eq!(fixture.mods(), ["a.jar", "a2.jar", "b.jar"]);
-    assert_eq!(fixture.owner_of("mods/a.jar").await, None);
-    assert_eq!(fixture.version_id(), "v2");
 }
 
 // ─── A plugin that deploys its packs itself ────────────────────

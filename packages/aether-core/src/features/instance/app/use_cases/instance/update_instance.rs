@@ -1,7 +1,4 @@
-use std::{
-    collections::{HashMap, HashSet},
-    sync::Arc,
-};
+use std::sync::Arc;
 
 use async_trait::async_trait;
 
@@ -10,10 +7,9 @@ use crate::features::instance::app::ports::{InstallPlanExecutorPort, UpdateInsta
 use crate::{
     features::{
         instance::{
-            ContentPath, ContentProvider, ContentProviderRejection, ContentVersionId, InstallPlan,
-            Instance, InstanceError, InstanceId, InstanceInstallStage, InstanceLocks,
-            InstanceStorage, InstanceStorageExt, PackFile, PackInfo, PackSource, PackStorage,
-            PlanOrigin, ResolveInstallPlanParams, ResolveTarget, Updater,
+            ContentProvider, ContentProviderRejection, ContentVersionId, Instance, InstanceError,
+            InstanceId, InstanceInstallStage, InstanceLocks, InstanceStorage, InstanceStorageExt,
+            PackInfo, PackSource, PlanOrigin, ResolveInstallPlanParams, ResolveTarget, Updater,
         },
         minecraft::ModLoader,
     },
@@ -32,7 +28,6 @@ pub struct UpdateInstanceUseCase {
     instance_storage: Arc<dyn InstanceStorage>,
     updaters_registry: Arc<dyn CapabilityRegistry<Arc<dyn Updater>>>,
     provider_registry: Arc<dyn CapabilityRegistry<Arc<dyn ContentProvider>>>,
-    pack_storage: Arc<dyn PackStorage>,
     plan_executor: Arc<dyn InstallPlanExecutorPort>,
     instance_locks: Arc<InstanceLocks>,
 }
@@ -52,7 +47,6 @@ impl UpdateInstanceUseCase {
         instance_storage: Arc<dyn InstanceStorage>,
         updaters_registry: Arc<dyn CapabilityRegistry<Arc<dyn Updater>>>,
         provider_registry: Arc<dyn CapabilityRegistry<Arc<dyn ContentProvider>>>,
-        pack_storage: Arc<dyn PackStorage>,
         plan_executor: Arc<dyn InstallPlanExecutorPort>,
         instance_locks: Arc<InstanceLocks>,
     ) -> Self {
@@ -60,7 +54,6 @@ impl UpdateInstanceUseCase {
             instance_storage,
             updaters_registry,
             provider_registry,
-            pack_storage,
             plan_executor,
             instance_locks,
         }
@@ -179,24 +172,9 @@ impl UpdateInstanceUseCase {
             provider_id: pack_info.provider_id.clone(),
             content_id: pack_info.modpack_id.clone(),
         };
-        let adopted = self
-            .adopt_ownerless_files(
-                provider,
-                instance.id(),
-                &requested,
-                pack_info,
-                &origin,
-                progress,
-            )
+        self.plan_executor
+            .execute_in(plan, origin, progress)
             .await?;
-
-        // The executor rolls a failed plan back to the records it found, the adopted ones; the
-        // adoption is part of the update and goes back with it.
-        if let Err(err) = self.plan_executor.execute_in(plan, origin, progress).await {
-            self.disown(instance.id(), adopted).await;
-            return Err(err);
-        }
-
         Ok(Updated::Plan { version_id })
     }
 
@@ -224,139 +202,6 @@ impl UpdateInstanceUseCase {
             Err(err) => Err(err),
         }
     }
-
-    /// A pack installed before plans recorded owners has its files recorded without one, so an
-    /// update would leave the files the pack dropped next to their replacements. The plan of the
-    /// installed version names the pack's paths: the ownerless records at them become the pack's.
-    ///
-    /// Without that plan (the version is gone, no network) nothing is adopted and the update
-    /// goes on: an ownerless file may be the user's own, and only an owned one is ever removed.
-    ///
-    /// Returns the adopted records as they were, for a failed update to put back ([`disown`]).
-    ///
-    /// [`disown`]: Self::disown
-    async fn adopt_ownerless_files(
-        &self,
-        provider: &dyn ContentProvider,
-        instance_id: &InstanceId,
-        requested: &ResolveTarget,
-        pack_info: &PackInfo,
-        origin: &PlanOrigin,
-        progress: &PlanProgress,
-    ) -> Result<Vec<(ContentPath, PackFile)>, InstanceError> {
-        let records = self.pack_storage.get_pack_files(instance_id).await?;
-        let owned = records
-            .values()
-            .any(|record| record.installed_by.as_ref() == Some(origin));
-        if owned || records.values().all(|record| record.installed_by.is_some()) {
-            return Ok(Vec::new());
-        }
-
-        // A label that is no provider id names no version to look up.
-        let Some(installed_version) = installed_version_of(pack_info) else {
-            return Ok(Vec::new());
-        };
-
-        let installed_plan = progress
-            .resolve_plan(
-                provider,
-                ResolveInstallPlanParams {
-                    content_id: pack_info.modpack_id.clone(),
-                    version: Some(installed_version.clone()),
-                    installed_version: installed_version_of(pack_info),
-                    target: requested.clone(),
-                },
-            )
-            .await;
-        let installed_plan = match installed_plan {
-            Ok(plan) => plan,
-            // The user's word, not the plan's: the update goes no further.
-            Err(InstanceError::Cancelled) => return Err(InstanceError::Cancelled),
-            Err(err) => {
-                tracing::warn!(
-                    "Cannot tell the files of pack \"{}\" version \"{}\" in \"{instance_id}\" \
-                     from the user's: {err}. Updating without removing the files the pack drops",
-                    pack_info.modpack_id,
-                    pack_info.version_id
-                );
-                return Ok(Vec::new());
-            }
-        };
-
-        let ownerless = ownerless_pack_files(records, &installed_plan);
-        if ownerless.is_empty() {
-            return Ok(Vec::new());
-        }
-        let (paths, files): (Vec<ContentPath>, Vec<PackFile>) = ownerless
-            .iter()
-            .map(|(path, record)| {
-                let mut record = record.clone();
-                record.installed_by = Some(origin.clone());
-                (path.clone(), record)
-            })
-            .unzip();
-
-        tracing::info!(
-            "Adopting {} files of \"{instance_id}\" as files of pack \"{}\"",
-            paths.len(),
-            pack_info.modpack_id
-        );
-        self.pack_storage
-            .update_pack_file_many(instance_id, &paths, &files)
-            .await?;
-
-        Ok(ownerless)
-    }
-
-    /// Put the records adopted for an update that failed back as they were, without an owner.
-    /// A failure is only logged: the update has failed already, and an adopted record is still
-    /// the pack's file.
-    async fn disown(&self, instance_id: &InstanceId, adopted: Vec<(ContentPath, PackFile)>) {
-        if adopted.is_empty() {
-            return;
-        }
-
-        let (paths, files): (Vec<ContentPath>, Vec<PackFile>) = adopted.into_iter().unzip();
-        if let Err(err) = self
-            .pack_storage
-            .update_pack_file_many(instance_id, &paths, &files)
-            .await
-        {
-            tracing::error!(
-                "Failed to put back the {} files of \"{instance_id}\" adopted for the failed \
-                 update: {err}",
-                paths.len()
-            );
-        }
-    }
-}
-
-/// The ownerless records at a path of `plan`, compared as the executor compares paths:
-/// either separator, and without case where the file system ignores it.
-fn ownerless_pack_files(
-    records: HashMap<ContentPath, PackFile>,
-    plan: &InstallPlan,
-) -> Vec<(ContentPath, PackFile)> {
-    ownerless_pack_files_by(records, plan, cfg!(any(windows, target_os = "macos")))
-}
-
-fn ownerless_pack_files_by(
-    records: HashMap<ContentPath, PackFile>,
-    plan: &InstallPlan,
-    ignores_case: bool,
-) -> Vec<(ContentPath, PackFile)> {
-    let planned: HashSet<String> = plan
-        .files
-        .iter()
-        .map(|file| file.relative_path.key(ignores_case))
-        .collect();
-
-    records
-        .into_iter()
-        .filter(|(path, record)| {
-            record.installed_by.is_none() && planned.contains(&path.key(ignores_case))
-        })
-        .collect()
 }
 
 #[async_trait]
@@ -421,58 +266,4 @@ impl UpdateInstanceUseCasePort for UpdateInstanceUseCase {
 /// The pack's version label as a provider's version id, when it is one.
 fn installed_version_of(pack_info: &PackInfo) -> Option<ContentVersionId> {
     ContentVersionId::try_from(pack_info.version_id.as_str()).ok()
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::features::instance::{ContentSource, ContentType, InstallFileEntry};
-    use crate::shared::web_url::HttpsUrl;
-
-    fn sha1_hash(c: char) -> crate::shared::hash::FileHash {
-        crate::shared::hash::FileHash::new(
-            crate::shared::hash::HashAlgorithm::Sha1,
-            c.to_string().repeat(40),
-        )
-        .unwrap()
-    }
-
-    fn plan_of(path: &str) -> InstallPlan {
-        InstallPlan {
-            target: crate::features::instance::InstallTarget::existing(
-                InstanceId::try_from("instance").unwrap(),
-            ),
-            files: vec![InstallFileEntry::new(
-                ContentSource::direct(HttpsUrl::parse("https://example.com/a.jar").unwrap(), None),
-                ContentPath::parse(path).unwrap(),
-                ContentType::Mod,
-            )],
-            overrides: Vec::new(),
-        }
-    }
-
-    fn record_at(path: &str) -> HashMap<ContentPath, PackFile> {
-        HashMap::from([(
-            ContentPath::parse(path).unwrap(),
-            PackFile::from_hash("a.jar".into(), sha1_hash('a')),
-        )])
-    }
-
-    #[test]
-    fn should_not_adopt_a_record_when_it_differs_from_the_planned_path_in_case_on_a_case_sensitive_file_system()
-     {
-        let adopted =
-            ownerless_pack_files_by(record_at("mods/A.jar"), &plan_of("mods/a.jar"), false);
-
-        assert!(adopted.is_empty());
-    }
-
-    #[test]
-    fn should_adopt_a_record_when_it_differs_from_the_planned_path_in_case_on_a_case_insensitive_file_system()
-     {
-        let adopted =
-            ownerless_pack_files_by(record_at("mods/A.jar"), &plan_of("mods/a.jar"), true);
-
-        assert_eq!(adopted.len(), 1);
-    }
 }
