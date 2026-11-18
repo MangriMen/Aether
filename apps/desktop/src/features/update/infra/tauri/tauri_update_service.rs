@@ -11,12 +11,14 @@ use tauri::webview::cookie::time::OffsetDateTime;
 use tauri_plugin_updater::Update;
 use tauri_plugin_updater::UpdaterExt;
 use tokio::sync::Mutex;
+use uuid::Uuid;
 
 use aether_core::shared::error::SharedSource;
 
 use crate::features::events::AppEvent;
 use crate::features::update::UpdatePhase;
 use crate::features::update::UpdateProgress;
+use crate::features::update::infra::tauri::download_progress::download_with_progress;
 use crate::features::update::{BeforeInstall, UpdateError, UpdateService, UpdateStatus};
 
 pub struct TauriUpdateService<R: tauri::Runtime> {
@@ -53,8 +55,11 @@ impl<R: tauri::Runtime> UpdateService for TauriUpdateService<R> {
             cache.take().ok_or(UpdateError::NoPendingUpdate)?
         };
 
+        let progress_bar_id = Uuid::new_v4();
+
         self.event_emitter
             .emit_safe(UpdateProgress {
+                progress_bar_id,
                 fraction: Some(0.0),
                 phase: UpdatePhase::Started,
                 version: update.version.clone(),
@@ -62,62 +67,36 @@ impl<R: tauri::Runtime> UpdateService for TauriUpdateService<R> {
             })
             .await;
 
-        let mut downloaded = 0;
-        let mut content_length: Option<u64> = None;
-
-        let version = update.version.clone();
-        let current_version = update.current_version.clone();
-
-        let update_result = update
-            .download(
-                |chunk_length, total_length| {
-                    downloaded += chunk_length;
-                    content_length = total_length;
-
-                    #[expect(
-                        clippy::cast_precision_loss,
-                        reason = "a progress fraction; the loss is far below what is displayed"
-                    )]
-                    let fraction = content_length.map(|total| downloaded as f64 / total as f64);
-
-                    let version = update.version.clone();
-                    let current_version = update.current_version.clone();
-
-                    let emitter = self.event_emitter.clone();
-                    tokio::spawn(async move {
-                        emitter
-                            .emit_safe(UpdateProgress {
-                                fraction,
-                                phase: UpdatePhase::Progress,
-                                version,
-                                current_version,
-                            })
-                            .await;
-                    });
-                },
-                move || {
-                    let version = version.clone();
-                    let current_version = current_version.clone();
-
-                    let emitter = self.event_emitter.clone();
-                    tokio::spawn(async move {
-                        emitter
-                            .emit_safe(UpdateProgress {
-                                fraction: None,
-                                phase: UpdatePhase::Finished,
-                                version,
-                                current_version,
-                            })
-                            .await;
-                    });
-                },
-            )
-            .await;
+        let update_result = download_with_progress(
+            &self.event_emitter,
+            progress_bar_id,
+            &update.version,
+            &update.current_version,
+            |mut sink| {
+                update.download(
+                    move |chunk_length, total_length| sink.chunk(chunk_length, total_length),
+                    || {},
+                )
+            },
+        )
+        .await;
 
         // A game started during the download must not be left without the launcher.
         let installed = match update_result {
             Ok(bytes) => match before_install().await {
-                Ok(()) => update.install(bytes).map_err(install_error),
+                Ok(()) => {
+                    // Only now the update is certain to be installed.
+                    self.event_emitter
+                        .emit_safe(UpdateProgress {
+                            progress_bar_id,
+                            fraction: None,
+                            phase: UpdatePhase::Finished,
+                            version: update.version.clone(),
+                            current_version: update.current_version.clone(),
+                        })
+                        .await;
+                    update.install(bytes).map_err(install_error)
+                }
                 Err(error) => Err(error),
             },
             Err(e) => Err(install_error(e)),
@@ -127,6 +106,7 @@ impl<R: tauri::Runtime> UpdateService for TauriUpdateService<R> {
             // Logged by the command that returns it.
             self.event_emitter
                 .emit_safe(UpdateProgress {
+                    progress_bar_id,
                     fraction: None,
                     phase: UpdatePhase::Error(error.clone()),
                     version: update.version.clone(),
