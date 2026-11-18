@@ -3,9 +3,8 @@
   "identifier": "base-capability",
   "windows": ["main"],
   "permissions": [
-    "core:app:default",
+    "core:app:allow-version",
     "core:event:default",
-    "core:webview:default",
     "core:window:default",
     "core:window:allow-maximize",
     "core:window:allow-unmaximize",

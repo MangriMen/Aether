@@ -76,7 +76,7 @@ const createDefaultRenderer = async (): Promise<Renderer<string, string>> => {
 };
 
 const DEFAULT_SANITIZE_CONFIG: DOMPurifyConfig = {
-  // Allow attributes for images
+  // Allow attributes for images and links
   ADD_ATTR: ['target', 'rel', 'src', 'alt', 'title', 'width', 'height'],
   ADD_TAGS: ['img', 'picture', 'source'],
 };
