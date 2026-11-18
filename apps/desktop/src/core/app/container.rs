@@ -51,7 +51,9 @@ use aether_core::shared::capability::CapabilityRegistry;
 use aether_core::shared::capability::infra::MemoryCapabilityRegistry;
 use aether_core::shared::fetch::{ApiSemaphore, FetchSemaphore};
 use aether_core::shared::housekeeping::{CacheCleaner, Housekeeping, spawn_housekeeping};
-use aether_core::shared::limits::{ContentInstallLimits, PluginSandboxLimits};
+use aether_core::shared::limits::{
+    ContentInstallLimits, HTTP_CLIENT_MAX_RETRIES, PluginSandboxLimits,
+};
 use aether_core::shared::request_client::infra::{ReqwestClient, with_default_timeouts};
 use log::info;
 use reqwest_middleware::ClientWithMiddleware;
@@ -238,7 +240,8 @@ pub async fn build_container(
             with_default_timeouts(builder.tcp_keepalive(Some(std::time::Duration::from_secs(10))))
                 .build()
                 .expect("Failed to build reqwest client");
-        let retry_policy = ExponentialBackoff::builder().build_with_max_retries(5);
+        let retry_policy =
+            ExponentialBackoff::builder().build_with_max_retries(HTTP_CLIENT_MAX_RETRIES);
         let retry_middleware =
             reqwest_retry::RetryTransientMiddleware::new_with_policy(retry_policy);
         Arc::new(

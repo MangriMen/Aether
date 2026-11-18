@@ -21,10 +21,10 @@ use crate::features::{
     instance::InstanceId,
     settings::LocationInfo,
 };
+use crate::shared::limits::MAX_GAME_LOG_FILE_BYTES;
 
 /// Console logs of earlier runs kept next to the one being written.
 const KEPT_RUNS: usize = 5;
-const MAX_FILE_BYTES: u64 = 64 * 1024 * 1024;
 const FILE_SUFFIX: &str = ".log";
 const MAX_BATCH_MESSAGES: usize = 512;
 /// New lines reach the UI in batches this far apart, not one event per line.
@@ -151,7 +151,7 @@ impl LogSink {
             return;
         };
 
-        if self.written + text.len() as u64 > MAX_FILE_BYTES {
+        if self.written + text.len() as u64 > MAX_GAME_LOG_FILE_BYTES {
             let _ = file
                 .write_all(b"[console log size limit reached, the rest is not recorded]\n")
                 .await;

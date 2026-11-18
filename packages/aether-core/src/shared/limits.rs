@@ -1,8 +1,11 @@
-//! Every size and budget limit of content installation and of the plugin sandbox, in one place.
+//! Every limit on size or count, and every timeout, that protects against external input
+//! (network, archives, plugin calls, game output), in one place, each with what it protects
+//! against. Adapters import them; none declares its own.
 //!
-//! Built in the composition root (`build_container`); the plugin archive extractor has its own,
-//! `ZipPluginExtractorConstants`. The timeouts and retries of plugin calls, commands, downloads
-//! and HTTP requests are here too.
+//! The grouped limits are built in the composition root (`build_container`); the plugin archive
+//! extractor has its own, `ZipPluginExtractorConstants`. Not here: a bound that is part of a
+//! value type's invariant, and the settings of a feature that do not guard against outside
+//! input (concurrency, batching, paging, cache lifetimes).
 
 use std::time::Duration;
 
@@ -129,14 +132,14 @@ const _: () = assert!(
 pub(crate) const DOWNLOAD_MAX_RETRIES: u32 = 3;
 
 /// Total time budget for one `http_get`, including connect and body download.
-pub(crate) const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
+pub(crate) const PLUGIN_HTTP_REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
 
 /// Time budget for establishing the connection alone.
-pub(crate) const CONNECT_TIMEOUT: Duration = Duration::from_secs(10);
+pub(crate) const PLUGIN_HTTP_CONNECT_TIMEOUT: Duration = Duration::from_secs(10);
 
 /// Longest a connection may stay silent mid-response. Only matters for calls whose total
 /// budget is longer than this, i.e. `download_to_cache`.
-pub(crate) const READ_TIMEOUT: Duration = Duration::from_secs(30);
+pub(crate) const PLUGIN_HTTP_READ_TIMEOUT: Duration = Duration::from_secs(30);
 
 impl PluginSandboxLimits {
     /// Refuses limits that contradict each other, rather than letting a plugin find out at run
@@ -184,6 +187,72 @@ impl PluginSandboxLimits {
         })
     }
 }
+
+/// How long the application's HTTP client may take to open a connection.
+pub(crate) const HTTP_CLIENT_CONNECT_TIMEOUT: Duration = Duration::from_secs(30);
+
+/// How long a response to the application's HTTP client may stay silent. Per read, not per
+/// request: a large download that keeps flowing is never cut, a stalled one is. Generous, so a
+/// poor connection is not mistaken for a dead one; the retry middleware covers the rest.
+pub(crate) const HTTP_CLIENT_READ_TIMEOUT: Duration = Duration::from_secs(90);
+
+/// Retries of transient failures (connection errors, 5xx, 429) by the application's HTTP
+/// client. The plugins' downloads retry less: see [`DOWNLOAD_MAX_RETRIES`].
+pub const HTTP_CLIENT_MAX_RETRIES: u32 = 5;
+
+/// Upper bound for a downloaded plugin archive. The body goes to disk as it arrives, so this
+/// stops an endless stream rather than limiting what a plugin may weigh.
+pub(crate) const MAX_PLUGIN_ARCHIVE_BYTES: u64 = 64 * 1024 * 1024;
+
+/// The largest content icon taken from a provider. Modrinth's are a few KiB.
+pub(crate) const MAX_ICON_BYTES: u64 = 1 << 20;
+
+/// How long fetching one content icon may take.
+pub(crate) const ICON_FETCH_TIMEOUT: Duration = Duration::from_secs(20);
+
+/// How many redirects a content icon fetch follows.
+pub(crate) const MAX_ICON_REDIRECTS: usize = 3;
+
+/// The largest manifest read from a jar; a real one is a few lines.
+pub(crate) const MAX_JAR_MANIFEST_BYTES: u64 = 1024 * 1024;
+
+/// The largest jar that may be approved for good; hashing a bigger one for every run is not worth
+/// it, and a tool that size is not what a plugin ships.
+pub const MAX_APPROVED_JAR_BYTES: u64 = 256 * 1024 * 1024;
+
+/// A plugin's README past this is not shown: the text goes to the UI whole, and a plugin's
+/// archive is not the launcher's to trust.
+pub(crate) const MAX_PLUGIN_README_BYTES: u64 = 256 * 1024;
+
+/// The longest author ref the host keeps and sends back to a plugin; it is an opaque token (a
+/// team or organization id), so a longer one is a plugin's mistake, not an author.
+pub(crate) const MAX_PLUGIN_AUTHOR_REF_LEN: usize = 256;
+
+/// The most characters of an author name the host keeps from a plugin's content provider.
+pub(crate) const MAX_PLUGIN_AUTHOR_NAME_CHARS: usize = 128;
+
+/// The largest file `import_file` takes. The source may be a file a plugin wrote anywhere it can
+/// write, so it is not read whole before its size is known.
+pub(crate) const MAX_ASSET_BYTES: u64 = 4 * 1024 * 1024;
+
+/// How long a pre-launch hook may run. The instance stays locked meanwhile, and a hook that
+/// never ends would keep the game from starting for good.
+pub(crate) const PRELAUNCH_HOOK_TIMEOUT: Duration = Duration::from_mins(10);
+
+/// Most a game's console log file may grow to, so a game that prints without end cannot fill the
+/// disk; what comes after is dropped with a note in the file.
+pub(crate) const MAX_GAME_LOG_FILE_BYTES: u64 = 64 * 1024 * 1024;
+
+/// A packed game log that unpacks to more than this is refused, so a crafted file cannot fill
+/// the disk.
+pub(crate) const MAX_GAME_LOG_UNPACKED_BYTES: u64 = 256 * 1024 * 1024;
+
+/// The longest line of game output read as one; a longer one is split, so a game that never
+/// prints a newline cannot grow a buffer without bound.
+pub(crate) const MAX_GAME_LOG_LINE_BYTES: usize = 16 * 1024;
+
+/// A game log event larger than this is written out as the raw lines it arrived in.
+pub(crate) const MAX_GAME_LOG_EVENT_BYTES: usize = 1024 * 1024;
 
 #[cfg(test)]
 mod tests {

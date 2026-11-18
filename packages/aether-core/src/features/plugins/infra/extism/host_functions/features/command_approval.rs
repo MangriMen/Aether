@@ -3,20 +3,20 @@
 //!
 //! Runs after the program and the working directory passed their checks, so the question is only
 //! ever about a command that could run.
-
 use std::{fs::File, io::Read, path::Path};
 
 use aether_core_plugin_api::v0::CommandDto;
 use uuid::Uuid;
 
+use crate::shared::limits::{MAX_APPROVED_JAR_BYTES, MAX_JAR_MANIFEST_BYTES};
 use crate::{
     features::{
         instance::PluginId,
         plugins::{
             CommandApproval, CommandApprovalRefusal, CommandApprovalRequest, CommandApprover,
-            CommandGrant, CommandIdentity, CommandJar, MAX_APPROVED_JAR_BYTES, OnceOnlyReason,
-            PluginError, PluginPath, PluginRegistry, PluginSettings, PluginSettingsStorage,
-            manifest_has_class_path, parse_jar_launch,
+            CommandGrant, CommandIdentity, CommandJar, OnceOnlyReason, PluginError, PluginPath,
+            PluginRegistry, PluginSettings, PluginSettingsStorage, manifest_has_class_path,
+            parse_jar_launch,
         },
         settings::LocationInfo,
     },
@@ -27,9 +27,6 @@ use crate::{
 };
 
 use super::super::super::super::plugin_utils::{self, MountSet};
-
-/// The largest manifest read from a jar; a real one is a few lines.
-const MAX_MANIFEST_BYTES: u64 = 1024 * 1024;
 
 /// What `authorize_command` works with, so that it can be driven without the whole container.
 pub(crate) struct CommandAuthority<'a> {
@@ -297,10 +294,10 @@ fn jar_has_class_path(path: &Path) -> Result<bool, ()> {
 
     let mut manifest = String::new();
     entry
-        .take(MAX_MANIFEST_BYTES + 1)
+        .take(MAX_JAR_MANIFEST_BYTES + 1)
         .read_to_string(&mut manifest)
         .map_err(|_| ())?;
-    if manifest.len() as u64 > MAX_MANIFEST_BYTES {
+    if manifest.len() as u64 > MAX_JAR_MANIFEST_BYTES {
         return Err(());
     }
     Ok(manifest_has_class_path(&manifest))

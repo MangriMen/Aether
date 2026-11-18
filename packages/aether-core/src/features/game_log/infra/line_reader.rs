@@ -6,8 +6,7 @@ use tokio::{
 };
 
 use crate::features::game_log::domain::{Log4jNormalizer, Redactor};
-
-const MAX_LINE_BYTES: usize = 16 * 1024;
+use crate::shared::limits::MAX_GAME_LOG_LINE_BYTES;
 
 pub(super) async fn pump<R>(stream: R, redactor: Arc<Redactor>, tx: mpsc::Sender<Vec<String>>)
 where
@@ -67,7 +66,7 @@ where
             None => (chunk.len(), false),
         };
 
-        let room = MAX_LINE_BYTES.saturating_sub(buf.len());
+        let room = MAX_GAME_LOG_LINE_BYTES.saturating_sub(buf.len());
         let keep = take.min(room);
         buf.extend_from_slice(&chunk[..keep]);
         if keep < take {
@@ -123,7 +122,7 @@ mod tests {
 
     #[tokio::test]
     async fn should_truncate_a_line_when_it_exceeds_the_cap() {
-        let mut input = vec![b'a'; MAX_LINE_BYTES * 2];
+        let mut input = vec![b'a'; MAX_GAME_LOG_LINE_BYTES * 2];
         input.extend_from_slice(b"\nnext\n");
 
         let out = lines_of(&input).await;

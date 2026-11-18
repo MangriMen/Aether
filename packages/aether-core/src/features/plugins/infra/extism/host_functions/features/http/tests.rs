@@ -1122,7 +1122,7 @@ async fn get_with_fake_ip_dns(url: &str, proxy: &ProxySource) -> Result<Vec<u8>,
         fake_ip_dns,
         is_blocked_ip,
         proxy,
-        REQUEST_TIMEOUT,
+        PLUGIN_HTTP_REQUEST_TIMEOUT,
         None,
         limits().max_redirects,
     )?;
@@ -1195,7 +1195,7 @@ async fn should_refuse_a_name_when_it_rebinds_to_a_private_address() {
         rebinding_dns,
         production_filter_except_first,
         &ProxySource::Direct,
-        REQUEST_TIMEOUT,
+        PLUGIN_HTTP_REQUEST_TIMEOUT,
         None,
         limits().max_redirects,
     )
@@ -1269,7 +1269,7 @@ async fn get_granted(
         lookup,
         is_blocked_ip,
         &ProxySource::Direct,
-        REQUEST_TIMEOUT,
+        PLUGIN_HTTP_REQUEST_TIMEOUT,
         None,
         limits().max_redirects,
     )?;

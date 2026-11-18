@@ -3,14 +3,10 @@ use std::sync::Arc;
 use reqwest_middleware::ClientWithMiddleware;
 use tokio::io::{AsyncWrite, AsyncWriteExt};
 
-use crate::shared::io::domain::IoError;
+use crate::shared::{io::domain::IoError, limits::MAX_PLUGIN_ARCHIVE_BYTES};
 
 use super::types::{GitHubPluginPreview, GitHubReleaseInfo, PluginUpdateInfo};
 use crate::features::plugins::{PluginProviderError, PluginSourceType, ProviderFailure};
-
-/// Upper bound for a downloaded plugin archive. The body goes to disk as it arrives, so this stops
-/// an endless stream rather than limiting what a plugin may weigh.
-const MAX_ARCHIVE_BYTES: u64 = 64 * 1024 * 1024;
 
 /// Only GitHub itself may serve plugin assets; the URL can come from a user-pasted repo.
 fn is_allowed_asset_url(url: &str) -> bool {
@@ -176,7 +172,7 @@ impl GitHubPluginFetcher {
                         .is_some_and(|ext| ext.eq_ignore_ascii_case("zip"))
                 });
                 let zip_asset = match (zips.next(), zips.next()) {
-                    (Some(only), None) if only.size <= MAX_ARCHIVE_BYTES => Some(only),
+                    (Some(only), None) if only.size <= MAX_PLUGIN_ARCHIVE_BYTES => Some(only),
                     _ => None,
                 };
 
@@ -250,7 +246,7 @@ impl GitHubPluginFetcher {
         dest: &mut W,
     ) -> Result<u64, PluginProviderError> {
         let response = self.asset_response(url).await?;
-        copy_capped(response, url, MAX_ARCHIVE_BYTES, dest).await
+        copy_capped(response, url, MAX_PLUGIN_ARCHIVE_BYTES, dest).await
     }
 
     /// Asks GitHub for an asset and checks the answer; the body is left to the caller.

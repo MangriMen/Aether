@@ -10,10 +10,6 @@ use uuid::Uuid;
 
 use crate::features::instance::PluginId;
 
-/// The largest jar that may be approved for good; hashing a bigger one for every run is not worth
-/// it, and a tool that size is not what a plugin ships.
-pub const MAX_APPROVED_JAR_BYTES: u64 = 256 * 1024 * 1024;
-
 /// What a "always" answer is remembered by.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CommandIdentity {
@@ -61,7 +57,7 @@ pub enum OnceOnlyReason {
     JarHasClassPath,
     /// The jar cannot be read as a jar.
     JarUnreadable,
-    /// The jar is over [`MAX_APPROVED_JAR_BYTES`].
+    /// The jar is over [`crate::shared::limits::MAX_APPROVED_JAR_BYTES`].
     JarTooLarge,
 }
 

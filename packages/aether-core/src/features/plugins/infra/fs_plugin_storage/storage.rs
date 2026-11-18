@@ -9,6 +9,7 @@ use async_trait::async_trait;
 use tokio::io::AsyncReadExt;
 use tracing::{error, warn};
 
+use crate::shared::limits::MAX_PLUGIN_README_BYTES;
 use crate::{
     features::{
         instance::PluginId,
@@ -164,10 +165,6 @@ fn is_side_dir(name: &std::ffi::OsStr) -> bool {
 /// The name a plugin's description goes by, matched case-insensitively.
 const README_FILE_NAME: &str = "README.md";
 
-/// A README past this is not shown: the text goes to the UI whole, and a plugin's archive is not
-/// the launcher's to trust.
-const MAX_README_BYTES: u64 = 256 * 1024;
-
 /// The text of the README in `dir`, or `None` when there is none or it must not be shown.
 ///
 /// Only a plain file counts: a link could lead anywhere on the disk, and a directory of that
@@ -209,13 +206,13 @@ async fn read_readme_in(dir: &Path) -> Result<Option<String>, IoError> {
         .await
         .map_err(|err| IoError::with_path(err, &path))?;
     let mut bytes = Vec::new();
-    file.take(MAX_README_BYTES + 1)
+    file.take(MAX_PLUGIN_README_BYTES + 1)
         .read_to_end(&mut bytes)
         .await
         .map_err(|err| IoError::with_path(err, &path))?;
-    if bytes.len() as u64 > MAX_README_BYTES {
+    if bytes.len() as u64 > MAX_PLUGIN_README_BYTES {
         warn!(
-            "'{}' is larger than {MAX_README_BYTES} bytes, no README shown",
+            "'{}' is larger than {MAX_PLUGIN_README_BYTES} bytes, no README shown",
             path.display()
         );
         return Ok(None);
@@ -1202,7 +1199,7 @@ mod tests {
     #[tokio::test]
     async fn should_read_no_readme_when_it_is_over_the_limit() {
         let fixture = Fixture::installed();
-        let limit = usize::try_from(MAX_README_BYTES).unwrap();
+        let limit = usize::try_from(MAX_PLUGIN_README_BYTES).unwrap();
         let at_limit = vec![b'a'; limit];
         std::fs::write(fixture.plugin_dir().join("README.md"), &at_limit).unwrap();
 

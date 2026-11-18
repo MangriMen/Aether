@@ -31,6 +31,7 @@ use crate::{
         housekeeping::CacheCleaner,
         image::sniff_image_extension,
         io::infra::{REPLACING_TEMP_PREFIX, write_replacing_async},
+        limits::{ICON_FETCH_TIMEOUT, MAX_ICON_BYTES, MAX_ICON_REDIRECTS},
         request_client::{FileDownload, Request, RequestClient},
         web_url::HttpsUrl,
     },
@@ -38,12 +39,6 @@ use crate::{
 
 /// The folder of the asset store the icons are kept in.
 pub const CONTENT_ICONS_FOLDER: &str = "content-icons";
-
-/// The largest icon taken. Modrinth's are a few KiB.
-const MAX_ICON_SIZE: u64 = 1 << 20;
-
-/// How long fetching one icon may take.
-const FETCH_TIMEOUT: Duration = Duration::from_secs(20);
 
 /// How old an icon must be to be dropped for being unwanted: a younger one may belong to
 /// content whose metadata the cleanup did not see yet.
@@ -141,9 +136,6 @@ fn check_public(url: &HttpsUrl) -> Result<(), ContentIconError> {
         Err(ContentIconError::InvalidUrl(url.to_string()))
     }
 }
-
-/// How many redirects an icon fetch follows.
-const MAX_ICON_REDIRECTS: usize = 3;
 
 /// Whether an icon fetch may follow a redirect to `target`, which is the `redirect_number`th.
 /// Each hop is vetted like the first URL: a public host could otherwise send the request to
@@ -243,7 +235,7 @@ impl ContentIconCache for FsContentIconCache {
             return Ok(false);
         }
 
-        let mut request = Request::get(url.as_str()).with_timeout(FETCH_TIMEOUT);
+        let mut request = Request::get(url.as_str()).with_timeout(ICON_FETCH_TIMEOUT);
         if existing.is_some()
             && let Some(validators) = self.read_validators(&stem).await
         {
@@ -274,7 +266,7 @@ impl ContentIconCache for FsContentIconCache {
 
         let saved = match self
             .client
-            .download_to_file_conditional(request, &staging, MAX_ICON_SIZE)
+            .download_to_file_conditional(request, &staging, MAX_ICON_BYTES)
             .await
             .map_err(|err| ContentIconError::Request(err.to_string()))?
         {
@@ -771,7 +763,7 @@ mod tests {
     async fn should_reject_an_icon_when_it_is_too_large() {
         let fixture = Fixture::new();
         let huge: &'static [u8] =
-            Box::leak(vec![0_u8; usize::try_from(MAX_ICON_SIZE).unwrap() + 1].into());
+            Box::leak(vec![0_u8; usize::try_from(MAX_ICON_BYTES).unwrap() + 1].into());
         fixture.http.reply(LEGACY_URL, image(huge, "image/png"));
 
         assert!(matches!(

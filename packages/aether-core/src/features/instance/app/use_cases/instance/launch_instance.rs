@@ -4,6 +4,7 @@ use async_trait::async_trait;
 use process_wrap::tokio::{ChildWrapper, CommandWrap};
 use tokio_util::sync::CancellationToken;
 
+use crate::shared::limits::PRELAUNCH_HOOK_TIMEOUT;
 use crate::{
     features::{
         auth::Credential,
@@ -31,10 +32,6 @@ use crate::{
         },
     },
 };
-
-/// How long a pre-launch hook may run. The instance stays locked meanwhile, and a hook that
-/// never ends would keep the game from starting for good.
-const PRELAUNCH_HOOK_TIMEOUT: Duration = Duration::from_mins(10);
 
 pub struct LaunchInstanceUseCase {
     event_emitter: SharedEventEmitter,
