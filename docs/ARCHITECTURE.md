@@ -175,7 +175,7 @@ A path segment that comes from outside (Mojang or Modrinth metadata, a maven coo
 
 ### 10.3. Files that are read back
 
-A file that the app reads back later (settings, metadata, a cache entry, a manifest, an instance file) is written by replacing it as a whole: through `write_json_async` or `write_toml_async` from `shared::io`, or, inside `aether-core`, `write_replacing_async` for raw bytes. A crash or a full disk then leaves the previous content, not a truncated file that no longer parses. A plain `fs::write` or `File::create` is fine in tests and in a staging directory that is moved into place as a whole. The non-atomic `write_async` is not for such files. Example: `write_replacing_async` in `shared/io/infra/fs.rs`.
+A file that the app reads back later (settings, metadata, a cache entry, a manifest, an instance file) is written by replacing it as a whole: through `write_json_async` or `write_toml_async` from `shared::io`, or, inside `aether-core`, `write_replacing_async` for raw bytes. A crash or a full disk then leaves the previous content, not a truncated file that no longer parses. A plain `fs::write` or `File::create` is fine in tests and in a staging directory that is moved into place as a whole. Example: `write_replacing_async` in `shared/io/infra/fs.rs`.
 
 ---
 

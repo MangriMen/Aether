@@ -13,20 +13,6 @@ pub async fn read_async(path: impl AsRef<Path>) -> Result<Vec<u8>, IoError> {
         .map_err(|err| IoError::with_path(err, path_ref))
 }
 
-pub async fn write_async(path: impl AsRef<Path>, data: impl AsRef<[u8]>) -> Result<(), IoError> {
-    let path_ref = path.as_ref();
-
-    if let Some(parent) = path_ref.parent() {
-        tokio::fs::create_dir_all(parent)
-            .await
-            .map_err(|err| IoError::with_path(err, parent))?;
-    }
-
-    tokio::fs::write(path_ref, data)
-        .await
-        .map_err(|err| IoError::with_path(err, path_ref))
-}
-
 /// How the temporary files of [`write_replacing_async`] start, for a cleanup to recognise the
 /// leftovers of an interrupted write.
 pub(crate) const REPLACING_TEMP_PREFIX: &str = ".write-";
