@@ -26,19 +26,22 @@ export const AppInitializeError: Component<AppInitializeErrorProps> = (
 
   let errorHasBeenCopiedTimer: ReturnType<typeof setTimeout> | undefined;
 
-  const handleCopyError = () => {
+  const handleCopyError = async () => {
     if (!local.error || typeof navigator === 'undefined') {
       return;
     }
 
     try {
-      navigator.clipboard.writeText(local.error);
-    } finally {
-      setErrorHasBeenCopied(true);
-      errorHasBeenCopiedTimer = setTimeout(() => {
-        setErrorHasBeenCopied(false);
-      }, 2500);
+      await navigator.clipboard.writeText(local.error);
+    } catch {
+      return;
     }
+
+    clearTimeout(errorHasBeenCopiedTimer);
+    setErrorHasBeenCopied(true);
+    errorHasBeenCopiedTimer = setTimeout(() => {
+      setErrorHasBeenCopied(false);
+    }, 2500);
   };
 
   onCleanup(() => {

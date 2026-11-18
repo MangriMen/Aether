@@ -29,7 +29,11 @@ export const InstallFromPluginPackageButton: Component<
       return;
     }
 
-    await importPlugin.mutateAsync(path);
+    try {
+      await importPlugin.mutateAsync(path);
+    } catch {
+      // useImportPlugins reports the failure to the user
+    }
   };
 
   return (
