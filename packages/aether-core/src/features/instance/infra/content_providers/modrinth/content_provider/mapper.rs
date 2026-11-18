@@ -296,8 +296,8 @@ impl From<ModrinthVersionStatus> for ContentVersionStatus {
             ModrinthVersionStatus::Listed => Self::Listed,
             ModrinthVersionStatus::Archived => Self::Archived,
             ModrinthVersionStatus::Draft => Self::Draft,
-            // Not offered by default, like a version that is not listed.
-            ModrinthVersionStatus::Unlisted | ModrinthVersionStatus::Unknown => Self::Unlisted,
+            ModrinthVersionStatus::Unlisted => Self::Unlisted,
+            ModrinthVersionStatus::Unknown => Self::Unknown,
             ModrinthVersionStatus::Scheduled => Self::Scheduled,
         }
     }
@@ -446,7 +446,7 @@ mod tests {
         ));
         assert!(matches!(
             ContentVersionStatus::from(version.status),
-            ContentVersionStatus::Unlisted
+            ContentVersionStatus::Unknown
         ));
         assert!(matches!(
             version.requested_status,

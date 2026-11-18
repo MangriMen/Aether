@@ -42,14 +42,14 @@ fn resolve_disabled(
     )
 }
 
-/// Renames every file of `renames` (content path, from, to), the ones before a failure and the
-/// ones after it alike: a file a game holds open fails alone, and the others still change. What
-/// failed is reported together, with how many did change.
 /// Whether `path` is there; a path that cannot be looked at is taken as not.
 async fn exists(path: &std::path::Path) -> bool {
     tokio::fs::try_exists(path).await.unwrap_or(false)
 }
 
+/// Renames every file of `renames` (content path, from, to), the ones before a failure and the
+/// ones after it alike: a file a game holds open fails alone, and the others still change. What
+/// failed is reported together, with how many did change.
 async fn rename_all(
     renames: Vec<(&ContentPath, PathBuf, PathBuf)>,
     mut failures: Vec<ContentFileFailure>,
@@ -170,6 +170,7 @@ impl ContentFileService for FsContentFileService {
 
         let mut renames = Vec::new();
         let mut conflicts = Vec::new();
+        let mut conflicted = std::collections::HashSet::new();
         for content_path in content_paths {
             let disabled_path = resolve_disabled(instance_id, &instance_dir, content_path)?;
             let enabled_path = resolve_content(instance_id, &instance_dir, content_path)?;
@@ -177,7 +178,7 @@ impl ContentFileService for FsContentFileService {
             if exists(&disabled_path).await {
                 // Both copies are there: renaming would replace one with the other, and doing
                 // nothing would say it is disabled when the enabled copy is still loaded.
-                if exists(&enabled_path).await {
+                if exists(&enabled_path).await && conflicted.insert(disabled_path.clone()) {
                     conflicts.push(ContentFileFailure {
                         content_path: content_path.clone(),
                         cause: IoError::with_path(
