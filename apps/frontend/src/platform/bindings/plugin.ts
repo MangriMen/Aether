@@ -20,22 +20,22 @@ export const commands = {
 	 */
 	reload: (id: string, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:plugin|reload", { id, requestId }),
 	getSettings: (id: string) => __TAURI_INVOKE<{
-	allowedHosts?: string[],
+	allowedHosts: string[],
 	/**
 	 *  Local hosts (`host` or `host:port`) the user let the plugin reach at a non-public
 	 *  address, to take back from the settings screen. Granted only by
 	 *  `grant_local_host_access`, never by an edit.
 	 */
-	localHosts?: string[],
-	allowedPaths?: AllowedPathDto[],
+	localHosts: string[],
+	allowedPaths: AllowedPathDto[],
 	/**
 	 *  Saved folders that were left out because they are not valid (for example the plugin side
 	 *  is not a path a plugin may have). Never mounted, but kept in the file until the user
 	 *  removes them: send the ones to keep as `ignoredPaths` of an edit.
 	 */
-	ignoredPaths?: IgnoredAllowedPathDto[],
+	ignoredPaths: IgnoredAllowedPathDto[],
 	/**  Programs the user let the plugin run for good, to take back from the settings screen. */
-	commandApprovals?: CommandApprovalDto[],
+	commandApprovals: CommandApprovalDto[],
 } | null>("plugin:plugin|get_settings", { id }),
 	getReadme: (id: string) => __TAURI_INVOKE<string | null>("plugin:plugin|get_readme", { id }),
 	editSettings: (id: string, editSettings: EditPluginSettingsDto, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<PluginSettingsDto>("plugin:plugin|edit_settings", { id, editSettings, requestId }),
@@ -569,7 +569,7 @@ export type LoadConfigDto =
 /**  Path to the .wasm file relative to the plugin root. */
 file: string; 
 /**  Maximum memory (in bytes) the plugin is allowed to allocate. */
-memoryLimit?: string };
+memoryLimit?: string | null };
 
 export type LoadConfigTypeDto = "extism";
 
@@ -680,11 +680,11 @@ export type PluginCallReasonDto = { code: "MISSING_FUNCTION" } | { code: "TIMEOU
 /**  Describes the declarative capabilities of a plugin, such as supported importers. */
 export type PluginCapabilitiesDto = {
 	/**  List of supported modpack importers provided by the plugin. */
-	importers?: PluginImporterCapabilityDto[],
+	importers: PluginImporterCapabilityDto[],
 	/**  List of supported modpack updaters provided by the plugin. */
-	updaters?: PluginUpdaterCapabilityDto[],
+	updaters: PluginUpdaterCapabilityDto[],
 	/**  List of content providers provided by the plugin. */
-	contentProviders?: PluginContentProviderCapabilityDto[],
+	contentProviders: PluginContentProviderCapabilityDto[],
 };
 
 export type PluginContentProviderCapabilityDto = {
@@ -914,7 +914,7 @@ export type PluginMetadataDto = {
 	/**  Short summary of the plugin's purpose. */
 	description: string | null,
 	/**  List of plugin authors. */
-	authors?: string[],
+	authors: string[],
 	/**  License under which the plugin is distributed. */
 	license: string | null,
 };
@@ -935,22 +935,22 @@ export type PluginReleaseListingDto = {
 };
 
 export type PluginSettingsDto = {
-	allowedHosts?: string[],
+	allowedHosts: string[],
 	/**
 	 *  Local hosts (`host` or `host:port`) the user let the plugin reach at a non-public
 	 *  address, to take back from the settings screen. Granted only by
 	 *  `grant_local_host_access`, never by an edit.
 	 */
-	localHosts?: string[],
-	allowedPaths?: AllowedPathDto[],
+	localHosts: string[],
+	allowedPaths: AllowedPathDto[],
 	/**
 	 *  Saved folders that were left out because they are not valid (for example the plugin side
 	 *  is not a path a plugin may have). Never mounted, but kept in the file until the user
 	 *  removes them: send the ones to keep as `ignoredPaths` of an edit.
 	 */
-	ignoredPaths?: IgnoredAllowedPathDto[],
+	ignoredPaths: IgnoredAllowedPathDto[],
 	/**  Programs the user let the plugin run for good, to take back from the settings screen. */
-	commandApprovals?: CommandApprovalDto[],
+	commandApprovals: CommandApprovalDto[],
 };
 
 export type PluginSourceDto = { source: "remote"; source_type: PluginSourceTypeDto; identifier: string; current_tag: string; current_version: string } | { source: "local" };
@@ -1140,12 +1140,12 @@ export type RequestErrorDto = { code: "ACQUIRE" } | { code: "REQUEST_SEND"; payl
 
 export type RuntimeConfigDto = {
 	/**  List of domains or IP addresses the plugin is allowed to connect to. */
-	allowedHosts?: string[],
+	allowedHosts: string[],
 	/**
 	 *  Ignored by the launcher, which logs a warning: folders are given to a plugin by the
 	 *  user, in its settings. Kept so that manifests declaring it still load.
 	 */
-	allowedPaths?: PathMappingDto[],
+	allowedPaths: PathMappingDto[],
 };
 
 export type SettingsErrorDto = { code: "NOT_FOUND" } | { code: "STORAGE_FAILURE" } | { code: "INVALID_PLATFORM_PROVIDER"; payload: {

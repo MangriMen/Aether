@@ -34,7 +34,6 @@ pub struct PluginMetadataDto {
     pub description: Option<String>,
 
     /// List of plugin authors.
-    #[serde(default)]
     pub authors: Vec<String>,
 
     /// License under which the plugin is distributed.
@@ -45,12 +44,10 @@ pub struct PluginMetadataDto {
 #[serde(rename_all = "camelCase")]
 pub struct RuntimeConfigDto {
     /// List of domains or IP addresses the plugin is allowed to connect to.
-    #[serde(default)]
     pub allowed_hosts: Vec<String>,
 
     /// Ignored by the launcher, which logs a warning: folders are given to a plugin by the
     /// user, in its settings. Kept so that manifests declaring it still load.
-    #[serde(default)]
     pub allowed_paths: Vec<PathMappingDto>,
 }
 
@@ -86,9 +83,8 @@ pub enum LoadConfigDto {
         /// Path to the .wasm file relative to the plugin root.
         file: PathBuf,
         /// Maximum memory (in bytes) the plugin is allowed to allocate.
-        #[specta(type = String)]
+        #[specta(type = Option<String>)]
         #[serde_as(as = "Option<DisplayFromStr>")]
-        #[serde(default)]
         memory_limit: Option<usize>,
     },
 }

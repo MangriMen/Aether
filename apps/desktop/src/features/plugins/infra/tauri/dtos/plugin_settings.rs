@@ -11,26 +11,21 @@ use specta::Type;
 #[derive(Serialize, Deserialize, Debug, Default, Type)]
 #[serde(rename_all = "camelCase")]
 pub struct PluginSettingsDto {
-    #[serde(default)]
     pub allowed_hosts: Vec<String>,
 
     /// Local hosts (`host` or `host:port`) the user let the plugin reach at a non-public
     /// address, to take back from the settings screen. Granted only by
     /// `grant_local_host_access`, never by an edit.
-    #[serde(default)]
     pub local_hosts: Vec<String>,
 
-    #[serde(default)]
     pub allowed_paths: Vec<AllowedPathDto>,
 
     /// Saved folders that were left out because they are not valid (for example the plugin side
     /// is not a path a plugin may have). Never mounted, but kept in the file until the user
     /// removes them: send the ones to keep as `ignoredPaths` of an edit.
-    #[serde(default)]
     pub ignored_paths: Vec<IgnoredAllowedPathDto>,
 
     /// Programs the user let the plugin run for good, to take back from the settings screen.
-    #[serde(default)]
     pub command_approvals: Vec<CommandApprovalDto>,
 }
 

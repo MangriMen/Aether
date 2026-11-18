@@ -14,8 +14,10 @@ describe('pluginSettingsConverter', () => {
   it('should list the ignored folders with the others when the settings are read', () => {
     const values = pluginSettingsToPluginSettingsValues({
       allowedHosts: [],
+      localHosts: [],
       allowedPaths: [{ hostPath: '/b', pluginPath: '/b', readOnly: false }],
       ignoredPaths: [ignored],
+      commandApprovals: [],
     });
 
     expect(values?.allowedPaths).toEqual([
