@@ -55,9 +55,8 @@ fn is_worth_showing(shown: Option<f64>, new: Option<f64>) -> bool {
 /// Runs a download and reports its progress as `UpdateProgress` events of one progress bar.
 ///
 /// The events go one at a time, in order, and all of them are sent before this returns. A fast
-/// download skips the intermediate fractions instead of queuing them. `Finished` is sent only
-/// when the download succeeded, so after everything the download itself checks. The sink must
-/// be dropped by the download when it ends, or this never returns.
+/// download skips the intermediate fractions instead of queuing them. The sink must be dropped
+/// by the download when it ends, or this never returns.
 pub(crate) async fn download_with_progress<T, E, Fut>(
     emitter: &SharedEventEmitter<AppEvent>,
     progress_bar_id: Uuid,
@@ -88,12 +87,6 @@ where
     };
 
     let (result, ()) = tokio::join!(download(ProgressSink::new(sender)), report);
-
-    if result.is_ok() {
-        emitter
-            .emit_safe(progress(None, UpdatePhase::Finished))
-            .await;
-    }
 
     result
 }
@@ -163,7 +156,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn should_send_the_last_progress_before_returning_and_finish_after_it() {
+    async fn should_send_the_last_progress_before_returning_when_the_download_ends() {
         let (result, events) = run(vec![10; 10], Some(100), true).await;
 
         assert!(result.is_ok());
@@ -172,11 +165,7 @@ mod tests {
             .rposition(|e| matches!(e.phase, UpdatePhase::Progress))
             .unwrap();
         assert_eq!(events[last_progress].fraction, Some(1.0));
-        assert_eq!(last_progress, events.len() - 2);
-        assert!(matches!(
-            events.last().unwrap().phase,
-            UpdatePhase::Finished
-        ));
+        assert_eq!(last_progress, events.len() - 1);
     }
 
     #[tokio::test]
@@ -201,18 +190,6 @@ mod tests {
         let (_, events) = run(vec![996, 4], Some(1000), true).await;
 
         assert_eq!(*fractions(&events).last().unwrap(), 1.0);
-    }
-
-    #[tokio::test]
-    async fn should_not_finish_when_the_download_fails() {
-        let (result, events) = run(vec![50], Some(100), false).await;
-
-        assert!(result.is_err());
-        assert!(
-            !events
-                .iter()
-                .any(|e| matches!(e.phase, UpdatePhase::Finished))
-        );
     }
 
     #[tokio::test]

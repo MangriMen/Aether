@@ -84,7 +84,19 @@ impl<R: tauri::Runtime> UpdateService for TauriUpdateService<R> {
         // A game started during the download must not be left without the launcher.
         let installed = match update_result {
             Ok(bytes) => match before_install().await {
-                Ok(()) => update.install(bytes).map_err(install_error),
+                Ok(()) => {
+                    // Only now the update is certain to be installed.
+                    self.event_emitter
+                        .emit_safe(UpdateProgress {
+                            progress_bar_id,
+                            fraction: None,
+                            phase: UpdatePhase::Finished,
+                            version: update.version.clone(),
+                            current_version: update.current_version.clone(),
+                        })
+                        .await;
+                    update.install(bytes).map_err(install_error)
+                }
                 Err(error) => Err(error),
             },
             Err(e) => Err(install_error(e)),
