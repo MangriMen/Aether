@@ -447,7 +447,7 @@ pub async fn build_container(
 
     // ── Instance watcher ────────────────────────────────────────────
     let instance_watcher_service: Arc<dyn aether_core::features::instance::InstanceWatcherService> = {
-        let event_handler = Arc::new(InstanceEventHandler::new(event_emitter.clone()));
+        let event_handler = Arc::new(InstanceEventHandler::new(event_emitter.clone(), location_info.clone()));
         let watcher = NotifyFileWatcher::new(event_handler)
             .map_err(|e| anyhow::anyhow!("File watcher: {e}"))?;
         Arc::new(InstanceWatcherServiceImpl::new(

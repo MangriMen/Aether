@@ -1,4 +1,4 @@
-use std::{collections::HashSet, path::Path};
+use std::{collections::HashSet, path::Path, sync::Arc};
 
 use async_trait::async_trait;
 
@@ -6,32 +6,31 @@ use crate::features::{
     events::{EventEmitterExt, InstanceEvent, InstanceEventType, SharedEventEmitter},
     file_watcher::{FileEvent, FileEventHandler, FileWatcherError},
     instance::InstanceId,
-    settings::INSTANCES_FOLDER_NAME,
+    settings::LocationInfo,
 };
 
 /// Tells the frontend which instances changed on disk. A crash of the game is not looked for
 /// here: the frontend shows it from the process that ended.
 pub struct InstanceEventHandler {
     event_emitter: SharedEventEmitter,
+    location_info: Arc<LocationInfo>,
 }
 
 impl InstanceEventHandler {
-    pub fn new(event_emitter: SharedEventEmitter) -> Self {
-        Self { event_emitter }
+    pub fn new(event_emitter: SharedEventEmitter, location_info: Arc<LocationInfo>) -> Self {
+        Self {
+            event_emitter,
+            location_info,
+        }
     }
 
-    fn extract_instance_path(path: &Path) -> Option<InstanceId> {
-        let mut found = false;
-        for component in path.components() {
-            if found {
-                return InstanceId::try_from(component.as_os_str().to_string_lossy().to_string())
-                    .ok();
-            }
-            if component.as_os_str() == INSTANCES_FOLDER_NAME {
-                found = true;
-            }
-        }
-        None
+    /// The instance whose folder holds `path`: the first component below the instances
+    /// directory, so a data directory that itself has an `instances` folder in its path does
+    /// not mislead.
+    fn extract_instance_path(&self, path: &Path) -> Option<InstanceId> {
+        let relative = path.strip_prefix(self.location_info.instances_dir()).ok()?;
+        let first = relative.components().next()?;
+        InstanceId::try_from(first.as_os_str().to_string_lossy().to_string()).ok()
     }
 }
 
@@ -53,7 +52,7 @@ impl FileEventHandler for InstanceEventHandler {
         let mut synced: HashSet<InstanceId> = HashSet::new();
 
         for event in &events {
-            let Some(instance_id) = Self::extract_instance_path(&event.path) else {
+            let Some(instance_id) = self.extract_instance_path(&event.path) else {
                 continue;
             };
 
@@ -100,8 +99,16 @@ mod tests {
     }
 
     fn handler() -> (InstanceEventHandler, mpsc::UnboundedReceiver<Event>) {
+        handler_in("/data")
+    }
+
+    fn handler_in(config_dir: &str) -> (InstanceEventHandler, mpsc::UnboundedReceiver<Event>) {
         let (tx, rx) = mpsc::unbounded_channel();
-        let handler = InstanceEventHandler::new(Arc::new(ChannelEmitter(tx)));
+        let location_info = Arc::new(LocationInfo::new(
+            PathBuf::from("/settings"),
+            PathBuf::from(config_dir),
+        ));
+        let handler = InstanceEventHandler::new(Arc::new(ChannelEmitter(tx)), location_info);
         (handler, rx)
     }
 
@@ -186,6 +193,39 @@ mod tests {
             panic!("expected instance event");
         };
         assert!(matches!(event.event, InstanceEventType::Synced));
+        assert_silent(&mut rx).await;
+    }
+
+    #[tokio::test]
+    async fn should_name_the_instance_when_the_data_dir_has_an_instances_folder_in_its_path() {
+        let (handler, mut rx) = handler_in("/instances/Aether");
+
+        handler
+            .handle_events(Ok(vec![modified(
+                "/instances/Aether/instances/abc/mods/a.jar",
+            )]))
+            .await
+            .unwrap();
+
+        let Event::Instance(event) = next_event(&mut rx).await else {
+            panic!("expected instance event");
+        };
+        assert_eq!(event.instance_id, InstanceId::try_from("abc").unwrap());
+        assert_silent(&mut rx).await;
+    }
+
+    #[tokio::test]
+    async fn should_ignore_a_path_that_is_not_below_an_instance() {
+        let (handler, mut rx) = handler();
+
+        handler
+            .handle_events(Ok(vec![
+                modified("/data/instances"),
+                modified("/other/instances/abc/mods/a.jar"),
+            ]))
+            .await
+            .unwrap();
+
         assert_silent(&mut rx).await;
     }
 
