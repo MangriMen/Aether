@@ -198,9 +198,9 @@ fn resolve_in_mount(
         .ok_or_else(deny)?;
 
     let base = mount.host_root(location_info, plugin_id);
-    let canonical_base = canonicalize_or_deny(plugin_id, &base)?;
+    let canonical_base = canonicalize_or_deny(plugin_id, &base, plugin_path.as_str())?;
     let host = relative.fold(base, |host, segment| host.join(segment));
-    let canonical_host = canonicalize_or_deny(plugin_id, &host)?;
+    let canonical_host = canonicalize_or_deny(plugin_id, &host, plugin_path.as_str())?;
 
     if !canonical_host.starts_with(&canonical_base) {
         return Err(deny());
@@ -245,17 +245,22 @@ pub(crate) fn isolated_env() -> BTreeMap<String, String> {
         .collect()
 }
 
-fn access_violation(id: &PluginId, path: impl AsRef<Path>) -> PluginError {
+/// `as_sent` is the path as the plugin wrote it: the error reaches the plugin, and a resolved
+/// host path would tell it where its symlinks lead. The host path goes to the log only.
+fn access_violation(id: &PluginId, as_sent: &str) -> PluginError {
     PluginError::AccessViolation {
         plugin_id: id.clone(),
-        path: path.as_ref().to_string_lossy().to_string(),
+        path: as_sent.to_owned(),
     }
 }
 
 /// Canonicalise or refuse. A path that cannot be resolved — it does not exist, or it is not
 /// reachable — is never given the benefit of the doubt.
-fn canonicalize_or_deny(id: &PluginId, path: &Path) -> Result<PathBuf, PluginError> {
-    crate::shared::io::infra::canonicalize(path).map_err(|_| access_violation(id, path))
+fn canonicalize_or_deny(id: &PluginId, path: &Path, as_sent: &str) -> Result<PathBuf, PluginError> {
+    crate::shared::io::infra::canonicalize(path).map_err(|err| {
+        tracing::debug!(plugin = %id, host_path = %path.display(), error = %err, "Path of a plugin cannot be resolved");
+        access_violation(id, as_sent)
+    })
 }
 
 /// The directories a plugin may start a program from: the canonical `bin` directories of the
@@ -330,10 +335,12 @@ fn command_value_to_host(
 fn refuse_untrusted_share(
     id: &PluginId,
     path: &Path,
+    as_sent: &str,
     trusted_roots: &[PathBuf],
 ) -> Result<(), PluginError> {
     if is_share_or_device(path) && !trusted_roots.iter().any(|root| is_share_or_device(root)) {
-        return Err(access_violation(id, path));
+        tracing::debug!(plugin = %id, host_path = %path.display(), "Path of a plugin is a network share or device");
+        return Err(access_violation(id, as_sent));
     }
     Ok(())
 }
@@ -358,11 +365,11 @@ fn resolve_allowed_program(
     allowed_program_dirs: &[PathBuf],
 ) -> Result<String, PluginError> {
     let resolved = PathBuf::from(command_value_to_host(id, program, location_info)?);
-    refuse_untrusted_share(id, &resolved, allowed_program_dirs)?;
+    refuse_untrusted_share(id, &resolved, program, allowed_program_dirs)?;
 
     // No fallback to the raw string: a `program` that does not resolve is refused instead of
     // being launched as written.
-    let canonical_program = canonicalize_or_deny(id, &resolved)?;
+    let canonical_program = canonicalize_or_deny(id, &resolved, program)?;
 
     // Fails closed: with no Java registered there is no allowed program at all.
     let is_allowed = is_java_launcher(&canonical_program)
@@ -371,7 +378,8 @@ fn resolve_allowed_program(
             .is_some_and(|parent| allowed_program_dirs.iter().any(|dir| dir == parent));
 
     if !is_allowed {
-        return Err(access_violation(id, &canonical_program));
+        tracing::debug!(plugin = %id, host_path = %canonical_program.display(), "Program of a plugin is not an allowed Java launcher");
+        return Err(access_violation(id, program));
     }
 
     // The path that was checked, not the one that was asked for.
@@ -393,9 +401,9 @@ fn resolve_required_current_dir(
         .into_iter()
         .map(|mount| mount.host_root(location_info, id))
         .collect();
-    refuse_untrusted_share(id, &resolved, &mount_roots)?;
+    refuse_untrusted_share(id, &resolved, current_dir, &mount_roots)?;
 
-    let canonical = canonicalize_or_deny(id, &resolved)?;
+    let canonical = canonicalize_or_deny(id, &resolved, current_dir)?;
 
     let is_mounted = mount_roots
         .iter()
@@ -403,7 +411,8 @@ fn resolve_required_current_dir(
         .any(|root| canonical.starts_with(&root));
 
     if !is_mounted {
-        return Err(access_violation(id, &canonical));
+        tracing::debug!(plugin = %id, host_path = %canonical.display(), "Working directory of a plugin is outside its mounts");
+        return Err(access_violation(id, current_dir));
     }
 
     Ok(canonical)
@@ -441,6 +450,19 @@ mod tests {
     use super::{from_wasi_path, to_wasi_path};
     use crate::features::instance::InstanceId;
     use rstest::rstest;
+
+    #[test]
+    fn should_name_the_path_as_sent_when_a_path_cannot_be_resolved() {
+        let id = PluginId::from_static("p-plugin");
+        let host_path = std::env::temp_dir().join("aether-no-such-dir-4f2a");
+
+        let err = canonicalize_or_deny(&id, &host_path, "/cache/x").expect_err("must be refused");
+
+        assert!(matches!(
+            err,
+            PluginError::AccessViolation { ref path, .. } if path == "/cache/x"
+        ));
+    }
 
     #[rstest]
     #[case::drive_with_backslash(

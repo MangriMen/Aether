@@ -24,7 +24,8 @@ use crate::{
         plugins::{PluginCommandError, PluginsFeature},
     },
     shared::{
-        limits::COMMAND_TIMEOUT, process_tree::wrap_tree,
+        limits::{COMMAND_TIMEOUT, MAX_PLUGIN_LOG_BYTES},
+        process_tree::wrap_tree,
         serializable_command::domain::SerializableCommand,
     },
 };
@@ -39,23 +40,41 @@ use super::super::{
 
 // ── Testable business logic ──
 
-fn log_level(level: LogLevelDto) -> log::Level {
-    match level {
-        LogLevelDto::Error => log::Level::Error,
-        LogLevelDto::Warn => log::Level::Warn,
-        LogLevelDto::Info => log::Level::Info,
-        LogLevelDto::Debug => log::Level::Debug,
-        LogLevelDto::Trace => log::Level::Trace,
+/// Text a plugin wrote, made safe for a log line: control characters (a newline would start a
+/// fake line, ESC an ANSI sequence), line separators and bidi marks are shown escaped, and the
+/// text is cut to [`MAX_PLUGIN_LOG_BYTES`].
+/// Characters that are not control characters but still break a log line or reorder its text.
+fn is_unsafe_format_char(ch: char) -> bool {
+    matches!(ch, '\u{2028}' | '\u{2029}' | '\u{202a}'..='\u{202e}' | '\u{2066}'..='\u{2069}')
+}
+
+pub(crate) fn sanitize_log_message(msg: &str) -> String {
+    let mut out = String::with_capacity(msg.len().min(MAX_PLUGIN_LOG_BYTES));
+    for ch in msg.chars() {
+        let piece = if ch.is_control() || is_unsafe_format_char(ch) {
+            ch.escape_default().to_string()
+        } else {
+            ch.to_string()
+        };
+        if out.len() + piece.len() > MAX_PLUGIN_LOG_BYTES {
+            out.push_str("...");
+            break;
+        }
+        out.push_str(&piece);
     }
+    out
 }
 
 /// Handle `log` — forward a log message from the plugin.
 pub(crate) fn handle_log(plugin_id: &PluginId, level: LogLevelDto, msg: &str) {
-    log::log!(
-        target: "plugin",
-        log_level(level),
-        "[{plugin_id}]: {msg}"
-    );
+    let msg = sanitize_log_message(msg);
+    match level {
+        LogLevelDto::Error => tracing::error!(target: "plugin", "[{plugin_id}]: {msg}"),
+        LogLevelDto::Warn => tracing::warn!(target: "plugin", "[{plugin_id}]: {msg}"),
+        LogLevelDto::Info => tracing::info!(target: "plugin", "[{plugin_id}]: {msg}"),
+        LogLevelDto::Debug => tracing::debug!(target: "plugin", "[{plugin_id}]: {msg}"),
+        LogLevelDto::Trace => tracing::trace!(target: "plugin", "[{plugin_id}]: {msg}"),
+    }
 }
 
 /// Read a stream to its end, keeping at most `limit` bytes. Reads on past the limit: stopping
@@ -231,7 +250,7 @@ pub(crate) async fn handle_run_command(
     tracing::debug!(
         target: "plugin",
         "[{plugin_id}]: run_command `{}` with {} argument(s)",
-        command.program,
+        sanitize_log_message(&command.program),
         command.args.len()
     );
 
@@ -323,6 +342,38 @@ pub run_command(user_data: PluginContext; command: Wire<CommandDto>) -> HostRepl
 mod tests {
     use super::*;
     use rstest::rstest;
+
+    #[test]
+    fn should_escape_control_characters_when_a_plugin_logs_them() {
+        assert_eq!(
+            sanitize_log_message("a\nb\r[x]\u{1b}[31mred"),
+            r"a\nb\r[x]\u{1b}[31mred"
+        );
+    }
+
+    #[test]
+    fn should_escape_line_separators_and_bidi_marks() {
+        assert_eq!(
+            sanitize_log_message("a\u{2028}b\u{202e}c"),
+            r"a\u{2028}b\u{202e}c"
+        );
+    }
+
+    #[test]
+    fn should_cut_the_message_when_it_is_longer_than_the_limit() {
+        let out = sanitize_log_message(&"я".repeat(MAX_PLUGIN_LOG_BYTES));
+
+        assert!(out.len() <= MAX_PLUGIN_LOG_BYTES + 3);
+        assert!(out.ends_with("..."));
+    }
+
+    #[test]
+    fn should_keep_a_short_message_as_it_is() {
+        assert_eq!(
+            sanitize_log_message("loaded 3 items, ok"),
+            "loaded 3 items, ok"
+        );
+    }
 
     fn max_output_bytes() -> usize {
         crate::shared::limits::PluginSandboxLimits::default().max_output_bytes

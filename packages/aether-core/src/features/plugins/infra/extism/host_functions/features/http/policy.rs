@@ -236,7 +236,7 @@ impl VettedHops {
         let proxy_port = proxy_uri.port_u16().unwrap_or(default_port);
 
         PROXY_NOTICE.call_once(|| {
-            log::info!(
+            tracing::info!(
                 target: "plugin",
                 "Plugin requests go through the configured proxy {proxy_host}:{proxy_port}; \
                  the proxy resolves host names, so it, not the launcher, checks their addresses"

@@ -65,7 +65,12 @@ impl From<&ErrorKind> for HostError {
             ErrorKind::SettingsError(err) => settings(err),
             ErrorKind::RequestError(err) => request(err),
             ErrorKind::PluginHttpError(err) => http(err, plugin_http(err)),
-            ErrorKind::PluginDownloadError(err) => http_or_internal(err, plugin_download(err)),
+            ErrorKind::PluginDownloadError(err) => match plugin_download(err) {
+                Some(kind) => http(err, kind),
+                // Their text names host paths (the cache, the file being written), which stay in
+                // the log.
+                None => Kind::Internal.of(&"The download failed inside the launcher"),
+            },
             ErrorKind::PluginCommandError(err) => plugin_command(err),
             // No host function reaches these: should one, the plugin can do nothing about it.
             ErrorKind::AuthError(err) => Kind::Internal.of(err),

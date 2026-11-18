@@ -253,6 +253,9 @@ pub(crate) const MAX_GAME_LOG_LINE_BYTES: usize = 16 * 1024;
 
 /// A game log event larger than this is written out as the raw lines it arrived in.
 pub(crate) const MAX_GAME_LOG_EVENT_BYTES: usize = 1024 * 1024;
+/// Longest plugin text written to the log in one line; the rest is cut off, so a plugin cannot
+/// flood the log file with a single message.
+pub const MAX_PLUGIN_LOG_BYTES: usize = 4096;
 
 #[cfg(test)]
 mod tests {

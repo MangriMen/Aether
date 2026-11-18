@@ -39,6 +39,7 @@ use reqwest_middleware::{ClientWithMiddleware, Middleware};
 use url::Url;
 
 use super::super::{super::mappers::to_extism_res, PluginContext, block_on};
+use super::core::sanitize_log_message;
 use policy::{PinnedResolver, VettedHops};
 pub(super) use policy::{find_policy_refusal, policy_error};
 // The allowlist match and the address policy are the domain's: giving a host to a plugin
@@ -473,12 +474,12 @@ pub(crate) async fn handle_http_get(
     hosts: &PluginHosts,
     limits: PluginSandboxLimits,
 ) -> crate::Result<HttpResponseDto> {
-    log::debug!(target: "plugin", "[{plugin_id}]: http_get {}", request.url);
+    tracing::debug!(target: "plugin", "[{plugin_id}]: http_get {}", sanitize_log_message(&request.url));
 
     perform_get(&request, hosts, is_blocked_ip, &ProxySource::System, limits)
         .await
         .map_err(|err| {
-            log::warn!(target: "plugin", "[{plugin_id}]: http_get failed: {err}");
+            tracing::warn!(target: "plugin", "[{plugin_id}]: http_get failed: {}", sanitize_log_message(&err.to_string()));
             crate::ErrorKind::from(err).as_error()
         })
 }
@@ -490,12 +491,12 @@ pub(crate) async fn handle_http_post_json(
     hosts: &PluginHosts,
     limits: PluginSandboxLimits,
 ) -> crate::Result<HttpResponseDto> {
-    log::debug!(target: "plugin", "[{plugin_id}]: http_post_json {}", request.url);
+    tracing::debug!(target: "plugin", "[{plugin_id}]: http_post_json {}", sanitize_log_message(&request.url));
 
     perform_post_json(&request, hosts, is_blocked_ip, &ProxySource::System, limits)
         .await
         .map_err(|err| {
-            log::warn!(target: "plugin", "[{plugin_id}]: http_post_json failed: {err}");
+            tracing::warn!(target: "plugin", "[{plugin_id}]: http_post_json failed: {}", sanitize_log_message(&err.to_string()));
             crate::ErrorKind::from(err).as_error()
         })
 }

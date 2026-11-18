@@ -283,7 +283,16 @@ impl PluginLoader for ExtismPluginLoader {
             }
         })
         .await
-        .unwrap_or_else(|err| std::panic::resume_unwind(err.into_panic()))?;
+        .map_err(|err| {
+            // A panic is a bug and goes on; any other end is a runtime that shut down.
+            if err.is_panic() {
+                std::panic::resume_unwind(err.into_panic());
+            }
+            PluginError::LoadFailed {
+                plugin_id: plugin_id.clone(),
+                reason: PluginLoadFailure::Other(format!("the build was cancelled: {err}")),
+            }
+        })??;
 
         let plugin = PluginHandle::new(ExtismPluginInstance::new(extism_plugin, plugin_id.clone()))
             .with_folders(mounted_folders);
