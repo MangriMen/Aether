@@ -8,7 +8,6 @@
       "allow": [{ "url": "https://*" }]
     },
     "dialog:allow-open",
-    "os:default",
     "log:default"
   ]
 }
