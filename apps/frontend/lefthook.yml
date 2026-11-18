@@ -6,7 +6,6 @@ pre-commit:
       root: 'apps/frontend'
       glob: '**/*.{js,ts,jsx,tsx}'
       run: bun run lint:types
-      stage_fixed: true
 
     - name: frontend:oxlint
       root: 'apps/frontend'
@@ -17,7 +16,6 @@ pre-commit:
       root: 'apps/frontend'
       glob: '**/*.{js,ts,jsx,tsx,css}'
       run: bun run lint:eslint
-      stage_fixed: true
 
     - name: frontend:format
       root: 'apps/frontend'
