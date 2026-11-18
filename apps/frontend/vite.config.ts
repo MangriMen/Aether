@@ -1,17 +1,20 @@
 import type { UserConfig } from 'vite';
+import type { InlineConfig } from 'vitest/node';
 
 import path from 'path';
 import tailwindcss from '@tailwindcss/vite';
 import Icons from 'unplugin-icons/vite';
-import { defineConfig } from 'vite';
 import vitePluginChecker from 'vite-plugin-checker';
 import solid from 'vite-plugin-solid';
 import solidSvg from 'vite-plugin-solid-svg';
+import { defineConfig } from 'vitest/config';
 
 const host = process.env.TAURI_DEV_HOST;
 
 const vitePluginCheckerConfig = vitePluginChecker({
   typescript: true,
+  // tsc already runs in lint:types; a second run inside vite build costs most of the build time
+  enableBuild: false,
   overlay: {
     initialIsOpen: false,
   },
@@ -45,10 +48,9 @@ const testConfig = {
   environment: 'jsdom',
   // create jsdom once per worker instead of once per test file; files stay isolated
   pool: 'vmThreads',
-  globals: true,
   setupFiles: ['./src/test/setup.ts'],
   alias: srcAliases,
-};
+} satisfies InlineConfig;
 
 const developmentConfig: UserConfig = {
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
