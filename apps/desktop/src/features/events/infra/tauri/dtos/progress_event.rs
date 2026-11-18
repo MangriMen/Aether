@@ -266,8 +266,6 @@ impl From<ProgressEventType> for ProgressEventTypeDto {
     }
 }
 
-const UPDATE_PROGRESS_BAR_UUID: Uuid = Uuid::from_u128(0x1d1d98b5_eb55_4815_9349_8250b034aba3);
-
 impl From<UpdateProgress> for ProgressEventDto {
     fn from(value: UpdateProgress) -> Self {
         let phase = (&value.phase).into();
@@ -285,7 +283,7 @@ impl From<UpdateProgress> for ProgressEventDto {
                 current_version: value.current_version,
                 phase,
             },
-            progress_bar_id: UPDATE_PROGRESS_BAR_UUID,
+            progress_bar_id: value.progress_bar_id,
             fraction: value.fraction,
             message: "Launcher is updating".to_owned(),
             stage: None,
@@ -337,6 +335,7 @@ mod tests {
     #[test]
     fn should_serialize_a_failed_launcher_update_with_its_update_error() {
         let dto = ProgressEventDto::from(UpdateProgress {
+            progress_bar_id: Uuid::nil(),
             fraction: None,
             phase: UpdatePhase::Error(crate::features::update::UpdateError::NoPendingUpdate),
             version: "2.0.0".to_owned(),

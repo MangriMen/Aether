@@ -30,6 +30,7 @@ mod tests {
 
     fn make_progress() -> UpdateProgress {
         UpdateProgress {
+            progress_bar_id: uuid::Uuid::nil(),
             fraction: Some(0.5),
             phase: UpdatePhase::Progress,
             version: "1.0.0".to_string(),
