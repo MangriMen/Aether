@@ -1,20 +1,28 @@
 use std::num::{NonZeroU32, NonZeroUsize};
 
+/// More downloads at once than this only fight over the connection; a semaphore also panics
+/// when asked for an absurd number of permits.
+pub const MAX_CONCURRENT_DOWNLOADS: usize = 64;
+
+/// The least memory a game can start with; the settings form allows no less either.
+pub const MIN_MEMORY_MB: u32 = 512;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
-#[error("The number of concurrent downloads must be at least 1, got {0}")]
+#[error("The number of concurrent downloads must be from 1 to 64, got {0}")]
 pub struct InvalidMaxConcurrentDownloads(pub i64);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
-#[error("The memory amount must be at least 1 MB, got {0}")]
+#[error("The memory amount must be at least 512 MB, got {0}")]
 pub struct InvalidMemoryMb(pub i64);
 
-/// How many downloads may run at once. Always at least 1.
+/// How many downloads may run at once. Always from 1 to [`MAX_CONCURRENT_DOWNLOADS`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct MaxConcurrentDownloads(NonZeroUsize);
 
 impl MaxConcurrentDownloads {
     pub fn new(value: usize) -> Result<Self, InvalidMaxConcurrentDownloads> {
         NonZeroUsize::new(value)
+            .filter(|value| value.get() <= MAX_CONCURRENT_DOWNLOADS)
             .map(Self)
             .ok_or_else(|| InvalidMaxConcurrentDownloads(i64::try_from(value).unwrap_or(i64::MAX)))
     }
@@ -45,6 +53,7 @@ impl TryFrom<i64> for MaxConcurrentDownloads {
         usize::try_from(value)
             .ok()
             .and_then(NonZeroUsize::new)
+            .filter(|value| value.get() <= MAX_CONCURRENT_DOWNLOADS)
             .map(Self)
             .ok_or(InvalidMaxConcurrentDownloads(value))
     }
@@ -62,13 +71,14 @@ impl From<MaxConcurrentDownloads> for i64 {
     }
 }
 
-/// Memory amount in megabytes. Always at least 1.
+/// Memory amount in megabytes. Always at least [`MIN_MEMORY_MB`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct MemoryMb(NonZeroU32);
 
 impl MemoryMb {
     pub fn new(value: u32) -> Result<Self, InvalidMemoryMb> {
         NonZeroU32::new(value)
+            .filter(|value| value.get() >= MIN_MEMORY_MB)
             .map(Self)
             .ok_or(InvalidMemoryMb(i64::from(value)))
     }
@@ -99,6 +109,7 @@ impl TryFrom<i64> for MemoryMb {
         u32::try_from(value)
             .ok()
             .and_then(NonZeroU32::new)
+            .filter(|value| value.get() >= MIN_MEMORY_MB)
             .map(Self)
             .ok_or(InvalidMemoryMb(value))
     }
@@ -130,6 +141,14 @@ mod tests {
     }
 
     #[test]
+    fn should_reject_more_downloads_than_the_maximum() {
+        assert_eq!(MaxConcurrentDownloads::new(64).unwrap().get(), 64);
+        assert!(MaxConcurrentDownloads::new(65).is_err());
+        assert!(MaxConcurrentDownloads::try_from(65_i64).is_err());
+        assert!(MaxConcurrentDownloads::try_from(i64::MAX).is_err());
+    }
+
+    #[test]
     fn should_default_downloads_to_ten() {
         assert_eq!(MaxConcurrentDownloads::default().get(), 10);
     }
@@ -143,8 +162,10 @@ mod tests {
     }
 
     #[test]
-    fn should_reject_zero_memory() {
+    fn should_reject_memory_below_the_minimum() {
         assert_eq!(MemoryMb::new(0), Err(InvalidMemoryMb(0)));
+        assert_eq!(MemoryMb::new(511), Err(InvalidMemoryMb(511)));
+        assert!(MemoryMb::try_from(511_i64).is_err());
         assert_eq!(MemoryMb::new(512).unwrap().get(), 512);
     }
 
