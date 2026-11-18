@@ -15,20 +15,55 @@
       ],
     },
     "lint:code": {
-      "inputs": ["src/**", "package.json", ".oxlintrc.json"],
+      "inputs": [
+        "src/**",
+        ".storybook/**",
+        "scripts/**",
+        "*.ts",
+        "package.json",
+        ".oxlintrc.json",
+      ],
     },
     "lint:eslint": {
-      "inputs": ["src/**", "scripts/**", "*.ts", "eslint.config.js", "package.json"],
+      "inputs": [
+        "src/**",
+        ".storybook/**",
+        "scripts/**",
+        "*.ts",
+        "eslint.config.js",
+        "package.json",
+      ],
       "outputs": ["node_modules/.cache/eslint/**"],
     },
     "lint:format": {
-      "inputs": ["src/**", ".storybook/**", "scripts/**", "*.{ts,js,mjs,cjs}", ".oxfmtrc.json", "package.json"],
+      "inputs": [
+        "src/**",
+        ".storybook/**",
+        "scripts/**",
+        "*.{ts,js,mjs,cjs}",
+        ".oxfmtrc.json",
+        "package.json",
+      ],
     },
     "lint:arch": {
-      "inputs": ["src/**", "scripts/**", ".dependency-cruiser.cjs", "tsconfig*.json", "package.json"],
+      "inputs": [
+        "src/**",
+        "scripts/**",
+        ".dependency-cruiser.cjs",
+        "tsconfig*.json",
+        "package.json",
+      ],
     },
     "lint:unused": {
-      "inputs": ["src/**", ".storybook/**", "scripts/**", "*.ts", "knip.jsonc", "tsconfig*.json", "package.json"],
+      "inputs": [
+        "src/**",
+        ".storybook/**",
+        "scripts/**",
+        "*.ts",
+        "knip.jsonc",
+        "tsconfig*.json",
+        "package.json",
+      ],
     },
     "lint:all": {
       "dependsOn": [
