@@ -131,10 +131,16 @@ fn instance(value: &InstanceError) -> HostError {
         | InstanceError::PluginHostNotAllowed { .. }
         | InstanceError::PluginAddressBlocked { .. } => Kind::PluginCallFailed,
 
-        InstanceError::Storage(err) if storage_is_missing(err) => Kind::NotFound,
+        // The text of a storage error names the path on the host's disk, which tells the plugin
+        // the layout and the user's name: it goes to the log, the plugin gets the failure only.
+        InstanceError::Storage(err) if storage_is_missing(err) => {
+            return Kind::NotFound.of(&"The file or folder does not exist");
+        }
+        InstanceError::Storage(_) => {
+            return Kind::Internal.of(&"The instance storage could not complete the operation");
+        }
 
-        InstanceError::Storage(_)
-        | InstanceError::InvalidRecord { .. }
+        InstanceError::InvalidRecord { .. }
         | InstanceError::ContentStateChangeFailed { .. }
         | InstanceError::CapabilityOperationError
         | InstanceError::PrelaunchCommandError { .. }
@@ -585,23 +591,31 @@ mod tests {
     }
 
     #[test]
-    fn should_tell_not_found_when_the_storage_has_no_such_file() {
-        let error = InstanceError::storage(std::io::Error::from(std::io::ErrorKind::NotFound));
+    fn should_tell_not_found_without_the_host_path_when_the_storage_has_no_such_file() {
+        let error = InstanceError::storage(IoError::with_path(
+            std::io::Error::from(std::io::ErrorKind::NotFound),
+            "C:/Users/alice/AppData/instances/a/mods/nope.jar",
+        ));
 
-        assert_eq!(
-            host(error.clone()),
-            HostError::NotFound {
-                message: message(error)
-            }
-        );
+        let HostError::NotFound { message } = host(error) else {
+            panic!("not found expected");
+        };
+
+        assert!(!message.contains("alice"), "{message}");
     }
 
     #[test]
-    fn should_tell_internal_when_the_storage_failed_for_another_reason() {
-        let error =
-            InstanceError::storage(std::io::Error::from(std::io::ErrorKind::PermissionDenied));
+    fn should_tell_internal_without_the_host_path_when_the_storage_failed_for_another_reason() {
+        let error = InstanceError::storage(IoError::with_path(
+            std::io::Error::from(std::io::ErrorKind::PermissionDenied),
+            "C:/Users/alice/AppData/instances/a/mods/x.jar",
+        ));
 
-        assert!(matches!(host(error), HostError::Internal { .. }));
+        let HostError::Internal { message } = host(error) else {
+            panic!("internal expected");
+        };
+
+        assert!(!message.contains("alice"), "{message}");
     }
 
     #[test]
