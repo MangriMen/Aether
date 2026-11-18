@@ -24,11 +24,8 @@
     "*.cjs",
     "eslint.config.js",
     "dist",
-    ".husky",
-    "src-tauri",
     "src/platform/bindings/**/*",
-    "storybook-static",
-    "src/platform/bindings/**"
+    "storybook-static"
   ],
   "rules": {
     "vitest/consistent-test-it": ["error", { "fn": "it", "withinDescribe": "it" }],

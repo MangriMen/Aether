@@ -1,16 +1,13 @@
 {
+  "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "composite": true,
     "incremental": true,
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "skipLibCheck": true,
     // TS 6 required
     "types": ["node"],
     // Vite + Tauri
     "allowSyntheticDefaultImports": true,
-    "esModuleInterop": true,
-    "isolatedModules": true
+    "esModuleInterop": true
   },
   "include": ["vite.config.ts", "bump.config.ts", "scripts"]
 }
