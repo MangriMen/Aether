@@ -36,7 +36,10 @@ impl<ASS: AppSettingsStorage, WM: WindowManager> EditAppSettingsUseCase<ASS, WM>
         }
 
         if let Some(window_effect) = edit_app_settings.window_effect {
-            if !self.window_manager.supports_window_effect(window_effect) {
+            // The one already stored passes: a theme change sends it again, and it is no news.
+            if window_effect != old_settings.window_effect
+                && !self.window_manager.supports_window_effect(window_effect)
+            {
                 return Err(AppSettingsError::CanNotSetEffect(
                     WindowError::PlatformNotSupported,
                 ));
@@ -312,6 +315,28 @@ mod tests {
         ));
         assert_eq!(storage.upsert_call_count.load(Ordering::SeqCst), 0);
         assert!(!window.apply_effect_called.load(Ordering::SeqCst));
+    }
+
+    #[tokio::test]
+    async fn should_accept_the_effect_already_stored_when_the_system_has_no_such_effect() {
+        let stored = AppSettings {
+            window_effect: WindowEffect::Mica,
+            ..AppSettings::default()
+        };
+        let storage = Arc::new(MockStorage::new(stored));
+        let mut window = MockWindowManager::new(false);
+        window.supports_effects = false;
+        let use_case = EditAppSettingsUseCase::new(storage.clone(), Arc::new(window));
+
+        let result = use_case
+            .execute(EditAppSettingsRequest {
+                action_on_instance_launch: None,
+                transparent: None,
+                window_effect: Some(WindowEffect::Mica),
+            })
+            .await;
+
+        assert!(result.is_ok());
     }
 
     #[tokio::test]
