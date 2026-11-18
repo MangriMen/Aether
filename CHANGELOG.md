@@ -76,7 +76,7 @@ This release adds a permission prompt for plugin commands, cancellable installs,
 - **Log4Shell:** Minecraft 1.7–1.18.0 starts with Mojang's logging config that switches off the Log4Shell lookups.
 - **Files:** Unsafe paths, reserved Windows device names and links are refused, instance icons are limited in size and format, and "show in explorer" works only inside the launcher folders.
 - **Credentials:** Sign-in tokens in the old `credentials.json` are deleted once moved, instead of kept in a backup folder.
-- **Permissions:** The window may open only `https` links, use only the app, event and window commands it needs, and only pick files in dialogs; embedded frames are removed from Markdown.
+- **Permissions:** The window may open only `http`, `https` and `mailto` links, use only the app, event and window commands it needs, and only pick files in dialogs; embedded frames are removed from Markdown.
 - **Data and dependencies:** The app database and its folder are private on Unix, tokens are hidden from debug output, plain `http` images are blocked, and dependencies with known advisories were updated.
 
 ## [0.10.5] - 2026-07-04
