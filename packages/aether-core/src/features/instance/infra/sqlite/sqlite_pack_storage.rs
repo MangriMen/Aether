@@ -559,8 +559,14 @@ impl PackStorage for SqlitePackStorage {
             else {
                 continue;
             };
-            if let Some(Ok(pack_file)) = self.load_pack_file(instance_id, &content_path).await? {
-                return Ok(Some(pack_file));
+            match self.load_pack_file(instance_id, &content_path).await? {
+                Some(Ok(pack_file)) => return Ok(Some(pack_file)),
+                Some(Err(err)) => {
+                    tracing::debug!(
+                        "Skipping pack file \"{content_path}\" with an unusable hash: {err}"
+                    );
+                }
+                None => {}
             }
         }
 
