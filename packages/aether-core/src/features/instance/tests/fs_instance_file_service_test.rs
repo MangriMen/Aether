@@ -167,6 +167,16 @@ async fn should_replace_existing_content_when_the_file_is_written_again() {
 
     let written = location_info.instance_dir(instance_id).join("pack.toml");
     assert_eq!(tokio::fs::read(&written).await.unwrap(), b"second");
+
+    let leftovers: Vec<_> = std::fs::read_dir(written.parent().unwrap())
+        .unwrap()
+        .filter_map(Result::ok)
+        .filter(|entry| entry.file_name().to_string_lossy().starts_with(".write-"))
+        .collect();
+    assert!(
+        leftovers.is_empty(),
+        "temporary files left behind: {leftovers:?}"
+    );
 }
 
 #[tokio::test]

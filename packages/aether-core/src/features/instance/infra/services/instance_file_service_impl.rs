@@ -14,7 +14,7 @@ use crate::{
     },
     shared::io::{
         domain::IoError,
-        infra::{create_dir_all, remove_dir_all, rename},
+        infra::{create_dir_all, remove_dir_all, rename, write_replacing_async},
     },
 };
 
@@ -193,9 +193,9 @@ impl InstanceFileService for FsInstanceFileService {
         // something replaced a component with a symlink since the first check.
         let target = resolve_instance_file_path(instance_id, &instance_dir, relative_path)?;
 
-        fs::write(&target, bytes)
+        write_replacing_async(&target, bytes.to_vec())
             .await
-            .map_err(|err| InstanceError::storage(IoError::with_path(err, &target)))
+            .map_err(InstanceError::storage)
     }
 
     async fn read_instance_file(
