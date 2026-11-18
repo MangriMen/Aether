@@ -284,7 +284,8 @@ impl From<ModrinthVersionType> for ContentVersionType {
         match value {
             ModrinthVersionType::Release => Self::Release,
             ModrinthVersionType::Beta => Self::Beta,
-            ModrinthVersionType::Alpha => Self::Alpha,
+            // The least trusted: an unknown kind is not offered as a release.
+            ModrinthVersionType::Alpha | ModrinthVersionType::Unknown => Self::Alpha,
         }
     }
 }
@@ -296,6 +297,7 @@ impl From<ModrinthVersionStatus> for ContentVersionStatus {
             ModrinthVersionStatus::Archived => Self::Archived,
             ModrinthVersionStatus::Draft => Self::Draft,
             ModrinthVersionStatus::Unlisted => Self::Unlisted,
+            ModrinthVersionStatus::Unknown => Self::Unknown,
             ModrinthVersionStatus::Scheduled => Self::Scheduled,
         }
     }
@@ -307,7 +309,7 @@ impl From<ModrinthRequestedStatus> for RequestedContentVersionStatus {
             ModrinthRequestedStatus::Listed => Self::Listed,
             ModrinthRequestedStatus::Archived => Self::Archived,
             ModrinthRequestedStatus::Draft => Self::Draft,
-            ModrinthRequestedStatus::Unlisted => Self::Unlisted,
+            ModrinthRequestedStatus::Unlisted | ModrinthRequestedStatus::Unknown => Self::Unlisted,
         }
     }
 }
@@ -325,7 +327,10 @@ impl TryFrom<ModrinthDependencyResponse> for ContentVersionDependency {
             file_name: value.file_name,
             dependency_type: match value.dependency_type {
                 ModrinthDependencyType::Required => ContentVersionDependencyType::Required,
-                ModrinthDependencyType::Optional => ContentVersionDependencyType::Optional,
+                // Not pulled in on its own, nor refused over.
+                ModrinthDependencyType::Optional | ModrinthDependencyType::Unknown => {
+                    ContentVersionDependencyType::Optional
+                }
                 ModrinthDependencyType::Incompatible => ContentVersionDependencyType::Incompatible,
                 ModrinthDependencyType::Embedded => ContentVersionDependencyType::Embedded,
             },
@@ -386,7 +391,9 @@ impl TryFrom<ProjectVersionResponse> for ContentVersion {
             loaders,
             featured,
             status: status.into(),
-            requested_status: requested_status.map(Into::into),
+            requested_status: requested_status
+                .filter(|status| !matches!(status, ModrinthRequestedStatus::Unknown))
+                .map(Into::into),
             date_published,
             downloads: u64::try_from(downloads).unwrap_or_default(),
             files: files
@@ -417,6 +424,38 @@ mod tests {
 
     fn provider() -> ProviderId {
         ProviderId::from_parts("aether", "modrinth").unwrap()
+    }
+
+    #[test]
+    fn should_read_a_version_when_its_enums_hold_values_the_launcher_does_not_know() {
+        let version: ProjectVersionResponse = serde_json::from_value(serde_json::json!({
+            "id": "v1", "project_id": "p1", "author_id": "a1", "name": "n",
+            "version_number": "1", "changelog": null,
+            "dependencies": [{"version_id": null, "project_id": "p2", "file_name": null,
+                "dependency_type": "something-new"}],
+            "game_versions": [], "version_type": "nightly", "loaders": [], "featured": false,
+            "status": "something-new", "requested_status": "something-new",
+            "date_published": "2020-01-01T00:00:00Z", "downloads": 0,
+            "changelog_url": null, "files": []
+        }))
+        .unwrap();
+
+        assert!(matches!(
+            ContentVersionType::from(version.version_type),
+            ContentVersionType::Alpha
+        ));
+        assert!(matches!(
+            ContentVersionStatus::from(version.status),
+            ContentVersionStatus::Unknown
+        ));
+        assert!(matches!(
+            version.requested_status,
+            Some(ModrinthRequestedStatus::Unknown)
+        ));
+        assert!(matches!(
+            version.dependencies[0].dependency_type,
+            ModrinthDependencyType::Unknown
+        ));
     }
 
     #[test]

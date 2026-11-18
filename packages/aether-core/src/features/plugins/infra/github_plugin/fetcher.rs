@@ -104,6 +104,14 @@ impl GitHubPluginFetcher {
         repo: &str,
         max_results: u32,
     ) -> Result<Vec<GitHubReleaseInfo>, PluginProviderError> {
+        if !is_github_name(owner) || !is_github_name(repo) {
+            return Err(PluginProviderError::ProviderFetchError {
+                source_type: PluginSourceType::GitHub,
+                reason: ProviderFailure::InvalidUrl {
+                    url: format!("{owner}/{repo}"),
+                },
+            });
+        }
         let url =
             format!("https://api.github.com/repos/{owner}/{repo}/releases?per_page={max_results}");
 
@@ -304,26 +312,42 @@ impl GitHubPluginFetcher {
 
     /// Parse a GitHub URL to extract owner and repo.
     /// Supports: <https://github.com/owner/repo>, <https://github.com/owner/repo/releases/tag/v1.0.0>
+    ///
+    /// The host is `github.com` itself and both names are plain GitHub names: they go into the
+    /// URL of the API request.
     pub fn parse_github_url(url: &str) -> Option<(String, String)> {
-        let url = url.trim().trim_end_matches('/');
-
-        // Remove .git suffix if present
-        let url = url.strip_suffix(".git").unwrap_or(url);
-
-        // Extract from various URL formats
-        let parts: Vec<&str> = url.split("github.com/").collect();
-        let path = parts.get(1)?;
-
-        let segments: Vec<&str> = path.split('/').collect();
-
-        match segments.len() {
-            // github.com/owner/repo
-            2 => Some((segments[0].to_string(), segments[1].to_string())),
-            // github.com/owner/repo/releases/...  or  github.com/owner/repo/tree/...
-            n if n >= 2 => Some((segments[0].to_string(), segments[1].to_string())),
-            _ => None,
+        let url = url.trim();
+        let url = if url.contains("://") {
+            url::Url::parse(url).ok()?
+        } else {
+            url::Url::parse(&format!("https://{url}")).ok()?
+        };
+        if !matches!(url.scheme(), "http" | "https")
+            || !matches!(url.host_str(), Some("github.com" | "www.github.com"))
+            || url.query().is_some()
+            || url.fragment().is_some()
+        {
+            return None;
         }
+
+        let mut segments = url.path_segments()?;
+        let owner = segments.next()?;
+        let repo = segments.next()?;
+        let repo = repo.strip_suffix(".git").unwrap_or(repo);
+
+        (is_github_name(owner) && is_github_name(repo)).then(|| (owner.to_owned(), repo.to_owned()))
     }
+}
+
+/// A user or repository name as GitHub allows it: nothing that would change the path or the
+/// query of the request it is put in.
+fn is_github_name(name: &str) -> bool {
+    !name.is_empty()
+        && name != "."
+        && name != ".."
+        && name
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '_' | '.' | '-'))
 }
 
 #[cfg(test)]
@@ -411,6 +435,42 @@ mod tests {
             .unwrap_err();
 
         assert!(matches!(err, PluginProviderError::Storage(_)));
+    }
+
+    #[test]
+    fn should_take_owner_and_repo_when_the_url_is_a_github_repository() {
+        for url in [
+            "https://github.com/owner/repo",
+            "https://github.com/owner/repo/",
+            "https://github.com/owner/repo.git",
+            "https://github.com/owner/repo/releases/tag/v1.0.0",
+            "github.com/owner/repo",
+            " https://www.github.com/owner/repo ",
+        ] {
+            assert_eq!(
+                GitHubPluginFetcher::parse_github_url(url),
+                Some(("owner".to_owned(), "repo".to_owned())),
+                "{url}"
+            );
+        }
+    }
+
+    #[test]
+    fn should_refuse_a_url_when_it_is_not_a_plain_github_repository() {
+        for url in [
+            "https://evil.example/?github.com/a/b",
+            "https://evil.example/github.com/a/b",
+            "https://github.com.evil.example/a/b",
+            "https://github.com/a",
+            "https://github.com/../b",
+            "https://github.com/a/..",
+            "https://github.com/a/b?x=1",
+            "https://github.com/a/b#frag",
+            "https://github.com/a%2Fb/c",
+            "ftp://github.com/a/b",
+        ] {
+            assert_eq!(GitHubPluginFetcher::parse_github_url(url), None, "{url}");
+        }
     }
 
     #[test]

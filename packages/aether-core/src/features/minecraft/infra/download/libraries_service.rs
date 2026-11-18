@@ -62,15 +62,16 @@ impl<RC: RequestClient> LibrariesService<RC> {
         url: &str,
         sha1: Option<&str>,
         bar: Option<(&ProgressBarId, f64)>,
-    ) -> Result<Bytes, RequestError> {
+    ) -> Result<Bytes, ArtifactError> {
         let request = match sha1 {
-            Some(sha1) => checked_get(url, sha1),
+            Some(sha1) => checked_get(url, sha1)?,
             // From a repository that names no digest.
             None => Request::get(url),
         };
-        self.request_client
+        Ok(self
+            .request_client
             .fetch_bytes_with_progress(request, bar)
-            .await
+            .await?)
     }
 
     async fn create_libraries_directories(
