@@ -297,6 +297,10 @@ pub enum ModrinthVersionType {
     Release,
     Beta,
     Alpha,
+    /// A value this version of the launcher does not know: one version with it must not fail
+    /// the whole list.
+    #[serde(other)]
+    Unknown,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -307,6 +311,10 @@ pub enum ModrinthVersionStatus {
     Draft,
     Unlisted,
     Scheduled,
+    /// A value this version of the launcher does not know: one version with it must not fail
+    /// the whole list.
+    #[serde(other)]
+    Unknown,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -316,6 +324,10 @@ pub enum ModrinthRequestedStatus {
     Archived,
     Draft,
     Unlisted,
+    /// A value this version of the launcher does not know: one version with it must not fail
+    /// the whole list.
+    #[serde(other)]
+    Unknown,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -325,6 +337,10 @@ pub enum ModrinthDependencyType {
     Optional,
     Incompatible,
     Embedded,
+    /// A value this version of the launcher does not know: one version with it must not fail
+    /// the whole list.
+    #[serde(other)]
+    Unknown,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
