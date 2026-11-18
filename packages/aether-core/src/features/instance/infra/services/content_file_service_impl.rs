@@ -45,9 +45,16 @@ fn resolve_disabled(
 /// Renames every file of `renames` (content path, from, to), the ones before a failure and the
 /// ones after it alike: a file a game holds open fails alone, and the others still change. What
 /// failed is reported together, with how many did change.
-async fn rename_all(renames: Vec<(&ContentPath, PathBuf, PathBuf)>) -> Result<(), InstanceError> {
+/// Whether `path` is there; a path that cannot be looked at is taken as not.
+async fn exists(path: &std::path::Path) -> bool {
+    tokio::fs::try_exists(path).await.unwrap_or(false)
+}
+
+async fn rename_all(
+    renames: Vec<(&ContentPath, PathBuf, PathBuf)>,
+    mut failures: Vec<ContentFileFailure>,
+) -> Result<(), InstanceError> {
     let mut changed = 0;
-    let mut failures = Vec::new();
     // A path given twice is one file: its second rename would find nothing to rename.
     let mut seen = std::collections::HashSet::new();
 
@@ -107,7 +114,7 @@ impl ContentFileService for FsContentFileService {
         for content_path in content_paths {
             let enabled_path = resolve_content(instance_id, &instance_dir, content_path)?;
             // A disabled file is removed the same as an enabled one.
-            let file_path = if enabled_path.exists() {
+            let file_path = if exists(&enabled_path).await {
                 enabled_path
             } else {
                 resolve_disabled(instance_id, &instance_dir, content_path)?
@@ -138,18 +145,18 @@ impl ContentFileService for FsContentFileService {
         for content_path in content_paths {
             let enabled_path = resolve_content(instance_id, &instance_dir, content_path)?;
 
-            if enabled_path.exists() {
+            if exists(&enabled_path).await {
                 continue;
             }
 
             let disabled_path = resolve_disabled(instance_id, &instance_dir, content_path)?;
 
-            if disabled_path.exists() {
+            if exists(&disabled_path).await {
                 renames.push((content_path, disabled_path, enabled_path));
             }
         }
 
-        rename_all(renames).await
+        rename_all(renames, Vec::new()).await
     }
 
     async fn disable_content_files(
@@ -162,21 +169,33 @@ impl ContentFileService for FsContentFileService {
         };
 
         let mut renames = Vec::new();
+        let mut conflicts = Vec::new();
         for content_path in content_paths {
             let disabled_path = resolve_disabled(instance_id, &instance_dir, content_path)?;
+            let enabled_path = resolve_content(instance_id, &instance_dir, content_path)?;
 
-            if disabled_path.exists() {
+            if exists(&disabled_path).await {
+                // Both copies are there: renaming would replace one with the other, and doing
+                // nothing would say it is disabled when the enabled copy is still loaded.
+                if exists(&enabled_path).await {
+                    conflicts.push(ContentFileFailure {
+                        content_path: content_path.clone(),
+                        cause: IoError::with_path(
+                            std::io::Error::from(std::io::ErrorKind::AlreadyExists),
+                            &disabled_path,
+                        )
+                        .into(),
+                    });
+                }
                 continue;
             }
 
-            let enabled_path = resolve_content(instance_id, &instance_dir, content_path)?;
-
-            if enabled_path.exists() {
+            if exists(&enabled_path).await {
                 renames.push((content_path, enabled_path, disabled_path));
             }
         }
 
-        rename_all(renames).await
+        rename_all(renames, conflicts).await
     }
 
     async fn locate_content_file(

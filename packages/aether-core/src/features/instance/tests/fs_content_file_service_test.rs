@@ -393,6 +393,43 @@ async fn should_stay_disabled_when_a_file_is_already_disabled() {
 }
 
 #[tokio::test]
+async fn should_report_the_file_and_change_the_others_when_both_copies_exist_on_disable() {
+    let (_temp_dir, location_info) = setup_temp_location();
+    let service = FsContentFileService::new(location_info.clone());
+    let instance_id = &InstanceId::try_from("test-disable-both-copies").unwrap();
+
+    let dir = location_info.instance_dir(instance_id);
+    tokio::fs::create_dir_all(dir.join("mods")).await.unwrap();
+    tokio::fs::write(dir.join("mods/x.jar"), b"enabled")
+        .await
+        .unwrap();
+    tokio::fs::write(dir.join("mods/x.jar.disabled"), b"disabled")
+        .await
+        .unwrap();
+    tokio::fs::write(dir.join("mods/y.jar"), b"data")
+        .await
+        .unwrap();
+
+    let err = service
+        .disable_content_files(instance_id, &[cp("mods/x.jar"), cp("mods/y.jar")])
+        .await
+        .unwrap_err();
+
+    let InstanceError::ContentStateChangeFailed { changed, failures } = err else {
+        panic!("expected a state change failure, got {err:?}");
+    };
+    assert_eq!(changed, 1);
+    assert_eq!(failures.len(), 1);
+    assert_eq!(failures[0].content_path, cp("mods/x.jar"));
+    assert_eq!(std::fs::read(dir.join("mods/x.jar")).unwrap(), b"enabled");
+    assert_eq!(
+        std::fs::read(dir.join("mods/x.jar.disabled")).unwrap(),
+        b"disabled"
+    );
+    assert!(dir.join("mods/y.jar.disabled").exists());
+}
+
+#[tokio::test]
 async fn should_enable_files_when_several_are_given() {
     let (_temp_dir, location_info) = setup_temp_location();
     let service = FsContentFileService::new(location_info.clone());

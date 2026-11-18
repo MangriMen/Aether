@@ -42,21 +42,26 @@ impl EditInstanceIconUseCase {
         self.instance_storage.get(instance_id).await?;
 
         let mut previous_icon = None;
-        let instance = {
+        let mut imported = None;
+        let stored = {
             // Until the instance stores the icon, a release must not delete a reused file.
             let guard = self.icon_reaper.hold().await;
 
             let new_icon = match &edit_instance_icon.icon_path {
-                Some(Some(icon_path)) => Some(Some(
-                    self.icon_reaper
+                Some(Some(icon_path)) => {
+                    let asset = self
+                        .icon_reaper
                         .import_file(&guard, icon_path.as_ref())
                         .await
-                        .map_err(InstanceError::from)?,
-                )),
+                        .map_err(InstanceError::from)?;
+                    imported = Some(asset.clone());
+                    Some(Some(asset))
+                }
                 Some(None) => Some(None),
                 None => None,
             };
 
+            // A new icon is released below when the instance did not take it.
             self.instance_storage
                 .update(
                     instance_id,
@@ -69,7 +74,17 @@ impl EditInstanceIconUseCase {
                         Ok(true)
                     }),
                 )
-                .await?
+                .await
+        };
+        let instance = match stored {
+            Ok(instance) => instance,
+            Err(err) => {
+                // The imported file is nobody's: left, it would stay for good.
+                if let Some(imported) = imported {
+                    self.icon_reaper.release(&imported).await;
+                }
+                return Err(err);
+            }
         };
 
         if let Some(previous) = previous_icon
