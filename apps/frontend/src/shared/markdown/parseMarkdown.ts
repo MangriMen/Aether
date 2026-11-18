@@ -76,18 +76,7 @@ const createDefaultRenderer = async (): Promise<Renderer<string, string>> => {
 };
 
 const DEFAULT_SANITIZE_CONFIG: DOMPurifyConfig = {
-  // Allow attributes for images and embedded video iframes
-  ADD_ATTR: [
-    'target',
-    'rel',
-    'src',
-    'alt',
-    'title',
-    'width',
-    'height',
-    'frameborder',
-    'allow',
-    'allowfullscreen',
-  ],
-  ADD_TAGS: ['iframe', 'img', 'picture', 'source'],
+  // Allow attributes for images
+  ADD_ATTR: ['target', 'rel', 'src', 'alt', 'title', 'width', 'height'],
+  ADD_TAGS: ['img', 'picture', 'source'],
 };
