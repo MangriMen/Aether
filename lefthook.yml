@@ -20,4 +20,4 @@ pre-push:
     - name: frontend:test
       root: "apps/frontend"
       glob: "apps/frontend/**/*.{js,ts,jsx,tsx}"
-      run: bun x vitest run --changed origin/main
+      run: if git rev-parse --verify -q origin/main >/dev/null; then bun x vitest run --changed origin/main; fi
