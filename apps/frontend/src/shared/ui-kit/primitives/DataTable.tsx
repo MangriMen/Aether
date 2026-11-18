@@ -138,9 +138,11 @@ export const DataTable = <TData extends RowData>(
       throw new Error("If table not provided, 'data' and 'columns' must be");
     }
 
-    return createDefaultTable(
-      () => local.data,
-      () => local.columns!,
+    return untrack(() =>
+      createDefaultTable(
+        () => local.data,
+        () => local.columns!,
+      ),
     );
   });
 

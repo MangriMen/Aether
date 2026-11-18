@@ -52,6 +52,12 @@ export const InstallationTab: Component<InstallationTabProps> = (props) => {
 
   const handleRepair = async () => {
     setShowRepairDialog(false);
+
+    // The dialog stays mounted while it closes: a second click must not start another install.
+    if (isRepairBlocked()) {
+      return;
+    }
+
     await installInstance({ id: local.instance.id, force: true }).catch(
       logError,
     );
