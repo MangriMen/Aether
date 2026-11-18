@@ -56,7 +56,8 @@ pub fn reveal_in_explorer(path: &Path, exact: bool) -> crate::Result<()> {
 }
 
 /// [`reveal_in_explorer`] off the async runtime: on Windows it starts a process and waits for
-/// it. With `within_roots`, the path must also lie inside one of them.
+/// it. With `within_roots`, the path must also lie inside one of them; `None` is only for a
+/// path the backend built itself, never one that came from the frontend.
 pub async fn reveal_in_explorer_async(
     path: PathBuf,
     exact: bool,

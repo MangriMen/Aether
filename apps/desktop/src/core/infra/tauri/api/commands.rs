@@ -25,7 +25,7 @@ pub fn get_specta_commands() -> tauri_specta::Commands<tauri::Wry> {
 
 #[tauri::command]
 #[specta::specta]
-pub async fn reveal_in_explorer(
+async fn reveal_in_explorer(
     location_info: State<'_, LocationInfoState>,
     path: String,
     exact: bool,
@@ -39,7 +39,7 @@ pub async fn reveal_in_explorer(
 
 #[tauri::command]
 #[specta::specta]
-pub async fn recreate_window(
+async fn recreate_window(
     app_settings_storage: State<'_, AppSettingsStorageState>,
     window_manager: State<'_, WindowManagerState<tauri::Wry>>,
 ) -> FrontendResult<()> {
