@@ -776,7 +776,6 @@ impl InstanceCrudPort for AetherContainer {
             self.storage().instance_storage.clone(),
             self.updaters_registry().clone(),
             self.content_provider_registry().clone(),
-            self.storage().pack_storage.clone(),
             self.install_plan_executor(),
             self.instance_locks.clone(),
         ))
