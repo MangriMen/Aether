@@ -2,6 +2,7 @@ import * as i18n from '@solid-primitives/i18n';
 import { makePersisted } from '@solid-primitives/storage';
 import {
   createMemo,
+  createEffect,
   createResource,
   createSignal,
   onMount,
@@ -44,7 +45,26 @@ export const I18nProvider = (
 
   const [locale, setLocale_] = makePersisted(
     createSignal<Locale>(getLocale()),
-    { name: LOCALE_LS_KEY },
+    {
+      name: LOCALE_LS_KEY,
+      // A stored value that is not a locale of ours falls back to the default
+      deserialize: (raw) => {
+        try {
+          const stored: unknown = JSON.parse(raw);
+
+          if (
+            typeof stored === 'string' &&
+            Object.hasOwn(local.resources, stored)
+          ) {
+            return stored as Locale;
+          }
+        } catch {
+          // not JSON
+        }
+
+        return getLocale();
+      },
+    },
   );
 
   const combinedSignal = createMemo(() => [locale(), local.resources] as const);
@@ -74,6 +94,10 @@ export const I18nProvider = (
 
   onMount(() => {
     dayjs.locale(locale());
+  });
+
+  createEffect(() => {
+    document.documentElement.lang = locale();
   });
 
   return (
