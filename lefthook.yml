@@ -8,3 +8,16 @@ pre-commit:
     - name: rust:clippy
       glob: ["**/*.rs", "**/Cargo.toml", "Cargo.toml", "Cargo.lock"]
       run: bun run lint:rust
+
+pre-push:
+  parallel: true
+
+  jobs:
+    - name: rust:fmt
+      glob: ["**/*.rs"]
+      run: cargo fmt --all --check
+
+    - name: frontend:test
+      root: "apps/frontend"
+      glob: "apps/frontend/**/*.{js,ts,jsx,tsx}"
+      run: if git rev-parse --verify -q origin/main >/dev/null; then bun x vitest run --changed origin/main; fi

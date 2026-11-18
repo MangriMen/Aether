@@ -1,4 +1,5 @@
 use register_schema::get_all_schemas;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -20,21 +21,50 @@ fn sync_all_schemas() {
 
     let update_mode = std::env::var("UPDATE_SCHEMAS").is_ok();
 
+    let mut expected: BTreeMap<PathBuf, BTreeSet<String>> = BTreeMap::new();
+
     for entry in schemas {
         let target_dir = get_target_dir(entry.category);
 
-        if !target_dir.exists() {
+        if update_mode && !target_dir.exists() {
             fs::create_dir_all(&target_dir).expect("Failed to create target directory");
         }
 
         let file_name = format!("{}.schema.json", to_kebab_case(entry.name));
-        let file_path = target_dir.join(file_name);
+        let file_path = target_dir.join(&file_name);
+        expected.entry(target_dir).or_default().insert(file_name);
 
         let schema_obj = (entry.schema)();
         let actual_json =
             serde_json::to_string_pretty(&schema_obj).expect("Failed to serialize schema");
 
         process_schema(&file_path, &actual_json, update_mode);
+    }
+
+    if !update_mode {
+        assert_no_stale_schemas(&expected);
+    }
+}
+
+/// A schema file no registered type produces any more would otherwise stay for ever.
+fn assert_no_stale_schemas(expected: &BTreeMap<PathBuf, BTreeSet<String>>) {
+    for (dir, names) in expected {
+        let stale: Vec<String> = fs::read_dir(dir)
+            .expect("Failed to read schema directory")
+            .filter_map(Result::ok)
+            .map(|entry| entry.file_name().to_string_lossy().into_owned())
+            .filter(|name| name.ends_with(".schema.json") && !names.contains(name))
+            .collect();
+
+        assert!(
+            stale.is_empty(),
+            "
+
+[ERROR] Schemas no type produces in {}: {stale:?}
+Delete them.
+",
+            dir.display()
+        );
     }
 }
 

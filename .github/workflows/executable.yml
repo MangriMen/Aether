@@ -36,6 +36,13 @@ jobs:
         shell: bash
         run: |
           JSON_VERSION=$(jq -r .version apps/desktop/tauri.conf.json)
+          CARGO_VERSION=$(grep -m1 '^version = ' apps/desktop/Cargo.toml | cut -d'"' -f2)
+          PACKAGE_VERSION=$(jq -r .version apps/frontend/package.json)
+
+          if [ "$JSON_VERSION" != "$CARGO_VERSION" ] || [ "$JSON_VERSION" != "$PACKAGE_VERSION" ]; then
+            echo "::error::Version mismatch! tauri.conf.json is $JSON_VERSION, Cargo.toml is $CARGO_VERSION, package.json is $PACKAGE_VERSION"
+            exit 1
+          fi
 
           if [ "${{ github.ref_type }}" = "tag" ]; then
             TAG_VERSION=${GITHUB_REF_NAME#v}
