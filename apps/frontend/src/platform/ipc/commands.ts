@@ -155,6 +155,7 @@ export const eventsCommands = {
 
 export const applicationCommands = {
   recreateWindow: applicationRawCommands.recreateWindow,
+  revealInExplorer: applicationRawCommands.revealInExplorer,
 };
 
 // Re-export events from bindings

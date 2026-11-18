@@ -1,8 +1,4 @@
-#![expect(
-    clippy::needless_pass_by_value,
-    reason = "Tauri hands command arguments over by value"
-)]
-use std::path::Path;
+use std::path::PathBuf;
 
 use tauri::State;
 
@@ -28,18 +24,17 @@ pub fn get_specta_commands() -> tauri_specta::Commands<tauri::Wry> {
 }
 
 #[tauri::command]
-pub fn reveal_in_explorer(
+#[specta::specta]
+pub async fn reveal_in_explorer(
     location_info: State<'_, LocationInfoState>,
     path: String,
     exact: bool,
 ) -> FrontendResult<()> {
-    let path = Path::new(&path);
-    shared::ensure_within_roots(
-        path,
-        &[location_info.settings_dir(), location_info.config_dir()],
-    )
-    .map_err(crate::Error::from)?;
-    Ok(shared::reveal_in_explorer(path, exact)?)
+    let roots = vec![
+        location_info.settings_dir().to_path_buf(),
+        location_info.config_dir().to_path_buf(),
+    ];
+    Ok(shared::reveal_in_explorer_async(PathBuf::from(path), exact, Some(roots)).await?)
 }
 
 #[tauri::command]

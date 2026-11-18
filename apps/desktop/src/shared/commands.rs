@@ -14,7 +14,8 @@ pub const UPDATE_PLUGIN_NAME: &str = "update";
 macro_rules! application_commands {
     ($($tokens:tt)*) => {
         $($tokens)* [
-            recreate_window
+            recreate_window,
+            reveal_in_explorer,
         ]
     };
 }

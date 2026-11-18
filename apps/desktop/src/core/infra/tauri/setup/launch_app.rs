@@ -54,7 +54,6 @@ fn create_app() -> Builder<Wry> {
         })
         .pipe(configure_system_plugins)
         .pipe(configure_feature_plugins)
-        .pipe(configure_commands)
 }
 
 /// Must be the first plugin: a second copy has to exit before anything opens the database.
@@ -96,8 +95,4 @@ fn configure_feature_plugins(builder: Builder<Wry>) -> Builder<Wry> {
         .plugin(plugins::init())
         .plugin(settings::init())
         .plugin(update::init())
-}
-
-fn configure_commands(builder: Builder<Wry>) -> Builder<Wry> {
-    builder.invoke_handler(tauri::generate_handler![api::reveal_in_explorer,])
 }

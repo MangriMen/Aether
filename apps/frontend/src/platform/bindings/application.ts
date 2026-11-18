@@ -5,6 +5,7 @@ import { invoke as __TAURI_INVOKE } from "@tauri-apps/api/core";
 /** Commands */
 export const commands = {
 	recreateWindow: () => __TAURI_INVOKE<null>("plugin:application|recreate_window"),
+	revealInExplorer: (path: string, exact: boolean) => __TAURI_INVOKE<null>("plugin:application|reveal_in_explorer", { path, exact }),
 };
 
 /* Types */
