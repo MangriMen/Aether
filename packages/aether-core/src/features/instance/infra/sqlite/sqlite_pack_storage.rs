@@ -1,3 +1,8 @@
+use std::collections::HashMap;
+
+use async_trait::async_trait;
+use sqlx::{Sqlite, SqlitePool, Transaction};
+
 use crate::features::instance::{
     ContentFileUpdateInfo, ContentId, ContentPath, FileSide, InstanceError, InstanceId, Pack,
     PackEntry, PackFile, PackStorage, PlanOrigin, ProviderId, StorageError,
@@ -10,9 +15,6 @@ use crate::features::instance::{
     },
 };
 use crate::shared::hash::{FileHash, InvalidFileHash};
-use async_trait::async_trait;
-use sqlx::{Sqlite, SqlitePool, Transaction};
-use std::collections::HashMap;
 
 pub struct SqlitePackStorage {
     pool: SqlitePool,
@@ -559,14 +561,8 @@ impl PackStorage for SqlitePackStorage {
             else {
                 continue;
             };
-            match self.load_pack_file(instance_id, &content_path).await? {
-                Some(Ok(pack_file)) => return Ok(Some(pack_file)),
-                Some(Err(err)) => {
-                    tracing::debug!(
-                        "Skipping pack file \"{content_path}\" with an unusable hash: {err}"
-                    );
-                }
-                None => {}
+            if let Some(Ok(pack_file)) = self.load_pack_file(instance_id, &content_path).await? {
+                return Ok(Some(pack_file));
             }
         }
 
@@ -1006,6 +1002,7 @@ mod tests {
             .await
             .unwrap();
         for path in ["mods/a-bad.jar", "mods/z-good.jar"] {
+            // Runtime form: a statement the compile-time cache has no entry for.
             sqlx::query("INSERT OR IGNORE INTO pack_files (instance_id, content_path, file_name, hash) VALUES ('inst', ?, 'bad.jar', 'not-a-hash')")
                 .bind(path)
                 .execute(&storage.pool)
