@@ -9,6 +9,9 @@ use crate::shared::cache::domain::models::{AssetError, CacheId, CacheKey};
 
 // --- Cache ---
 
+/// A `ttl` for a value that never expires.
+pub const FOREVER: Duration = Duration::MAX;
+
 #[async_trait]
 pub trait Cache: Send + Sync {
     async fn get<T: DeserializeOwned + Send + Sync>(&self, key: &CacheKey<T>) -> Option<T>;

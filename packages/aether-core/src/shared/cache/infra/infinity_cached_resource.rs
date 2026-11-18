@@ -1,10 +1,10 @@
-use std::{sync::Arc, time::Duration};
+use std::sync::Arc;
 
 use bytes::Bytes;
 use tracing::debug;
 
 use crate::shared::{
-    cache::domain::{Cache, CacheKey, FileStore},
+    cache::domain::{Cache, CacheKey, FOREVER, FileStore},
     io::domain::IoError,
 };
 
@@ -40,7 +40,7 @@ impl<C: Cache> InfinityCachedResource<C> {
         let value = fetch_fn.await?;
         debug!("Fetched {}", context_fn());
 
-        self.cache.set(&key, &value, Duration::ZERO).await;
+        self.cache.set(&key, &value, FOREVER).await;
 
         Ok(value)
     }
