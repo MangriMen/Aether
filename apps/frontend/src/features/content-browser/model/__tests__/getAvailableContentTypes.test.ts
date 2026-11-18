@@ -1,22 +1,28 @@
 import { describe, expect, it } from 'vitest';
 
-import { ContentType } from '@/features/content';
+import { ATOMIC_CONTENT_TYPES, ContentType } from '@/features/content';
 
 import { getAvailableContentTypes } from '../getAvailableContentTypes';
 
 describe('getAvailableContentTypes', () => {
-  it('should_allow_every_type_when_browsing_outside_an_instance', () => {
+  it('allows every type outside an instance', () => {
     expect(getAvailableContentTypes(undefined, false)).toBeUndefined();
   });
 
-  it('should_offer_only_resource_and_data_packs_when_the_instance_is_vanilla', () => {
+  it('offers only resource and data packs for a vanilla instance', () => {
     expect(getAvailableContentTypes('vanilla', true)).toEqual([
       ContentType.ResourcePack,
       ContentType.DataPack,
     ]);
   });
 
-  it('should_offer_nothing_when_the_instance_has_no_loader', () => {
+  it('offers nothing for an instance without a loader', () => {
     expect(getAvailableContentTypes(undefined, true)).toEqual([]);
+  });
+
+  it('offers atomic types without modpacks for a modded instance', () => {
+    expect(getAvailableContentTypes('fabric', true)).toEqual(
+      ATOMIC_CONTENT_TYPES,
+    );
   });
 });

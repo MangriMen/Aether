@@ -57,7 +57,7 @@ afterEach(() => {
 });
 
 describe('useInstallContent', () => {
-  it('should_install_a_modpack_when_asked_to', async () => {
+  it('installs a modpack and reports success', async () => {
     installContent.mockResolvedValue(undefined);
     const payload = {
       type: 'modpack',
