@@ -303,11 +303,7 @@ impl PluginLoader for ExtismPluginLoader {
             .await
             .flatten()
         {
-            tracing::debug!(
-                "Failed to call on_load on plugin {}: {:?}",
-                plugin.id(),
-                err
-            );
+            tracing::warn!("Failed to call on_load on plugin {}: {}", plugin.id(), err);
         }
 
         Ok(plugin)
@@ -319,8 +315,8 @@ impl PluginLoader for ExtismPluginLoader {
             .retire(|plugin| plugin.handle_event(&PluginInternalEvent::Unloaded))
             .await?
         {
-            tracing::debug!(
-                "Failed to call on_unload on plugin {}: {:?}",
+            tracing::warn!(
+                "Failed to call on_unload on plugin {}: {}",
                 instance.id(),
                 err
             );
