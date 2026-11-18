@@ -1,6 +1,7 @@
 import IconMdiHammer from '~icons/mdi/hammer';
 import {
   createMemo,
+  createSignal,
   Show,
   splitProps,
   type Component,
@@ -16,7 +17,13 @@ import { isCancelledError } from '@/features/errors';
 import { useInstallInstance, useUpdateInstance } from '@/features/instance';
 import { useTranslation } from '@/shared/i18n';
 import { logError } from '@/shared/log';
-import { Button, Image, LabeledField, Skeleton } from '@/shared/ui-kit';
+import {
+  Button,
+  CombinedDialog,
+  Image,
+  LabeledField,
+  Skeleton,
+} from '@/shared/ui-kit';
 import { cn } from '@/shared/utils';
 
 import type { InstanceSettingsTabProps } from '../model/instanceSettingsTabs';
@@ -41,7 +48,10 @@ export const InstallationTab: Component<InstallationTabProps> = (props) => {
     });
   };
 
+  const [showRepairDialog, setShowRepairDialog] = createSignal(false);
+
   const handleRepair = async () => {
+    setShowRepairDialog(false);
     await installInstance({ id: local.instance.id, force: true }).catch(
       logError,
     );
@@ -106,7 +116,7 @@ export const InstallationTab: Component<InstallationTabProps> = (props) => {
               size='sm'
               variant='ghostWarning'
               leadingIcon={IconMdiHammer}
-              onClick={handleRepair}
+              onClick={() => setShowRepairDialog(true)}
               disabled={isRepairBlocked()}
             >
               {t('common.repair')}
@@ -114,6 +124,18 @@ export const InstallationTab: Component<InstallationTabProps> = (props) => {
           </div>
         </div>
       </LabeledField>
+
+      <CombinedDialog
+        variant='destructive'
+        open={showRepairDialog()}
+        onOpenChange={setShowRepairDialog}
+        header={t('instance.instanceSettings.repairTitle')}
+        description={t('instance.instanceSettings.repairDescription')}
+        buttonOkVariant='destructive'
+        buttonOkText={t('common.repair')}
+        onOk={handleRepair}
+        onCancel={() => setShowRepairDialog(false)}
+      />
 
       <Show when={local.instance.packInfo}>
         {(packInfo) => (

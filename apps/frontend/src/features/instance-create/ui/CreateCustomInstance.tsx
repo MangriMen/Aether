@@ -195,6 +195,7 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
         input: LOADER_VERSION_TYPES[0].value,
       });
       setInput(form, { path: ['loaderVersion'], input: undefined });
+      setShouldIncludeSnapshots(false);
     }
 
     setIsAdvanced(!isAdvanced());
