@@ -37,6 +37,7 @@ impl SqliteCache {
         self
     }
 
+    // The `IN (...)` list has a length only known at run time, so it is built, not checked.
     /// `query` followed by the clearable namespaces as `(?, ?, ...)`.
     fn in_clearable(&self, query: &str) -> QueryBuilder<Sqlite> {
         let mut builder = QueryBuilder::<Sqlite>::new(query);
@@ -91,18 +92,20 @@ impl Cache for SqliteCache {
     async fn get<T: DeserializeOwned + Send + Sync>(&self, key: &CacheKey<T>) -> Option<T> {
         let now = Utc::now();
 
-        let row = sqlx::query(
-            "SELECT value FROM universal_cache 
+        let namespace = key.namespace();
+        let id = key.id().as_ref();
+
+        let value_json = sqlx::query_scalar!(
+            "SELECT value FROM universal_cache
              WHERE namespace = ? AND key = ? AND expires_at > ?",
+            namespace,
+            id,
+            now,
         )
-        .bind(key.namespace())
-        .bind(key.id().as_ref())
-        .bind(now)
         .fetch_optional(&self.pool)
         .await
         .ok()??;
 
-        let value_json: String = row.get(0);
         serde_json::from_str(&value_json).ok()
     }
 
@@ -129,6 +132,7 @@ impl Cache for SqliteCache {
         for (namespace, ids) in ids_by_namespace {
             let values = found.entry(namespace).or_default();
             for chunk in ids.chunks(BATCH_SIZE) {
+                // The `IN (...)` list has a length only known at run time, so it is built, not checked.
                 let mut query = QueryBuilder::<Sqlite>::new(
                     "SELECT key, value FROM universal_cache WHERE namespace = ",
                 );
@@ -182,16 +186,21 @@ impl Cache for SqliteCache {
     async fn exists<T: Send + Sync>(&self, key: &CacheKey<T>) -> bool {
         let now = Utc::now();
 
-        sqlx::query(
-            "SELECT 1 FROM universal_cache 
-             WHERE namespace = ? AND key = ? AND expires_at > ? LIMIT 1",
+        let namespace = key.namespace();
+        let id = key.id().as_ref();
+
+        sqlx::query_scalar!(
+            r#"SELECT EXISTS(
+                 SELECT 1 FROM universal_cache
+                 WHERE namespace = ? AND key = ? AND expires_at > ?
+               ) AS "found!: bool""#,
+            namespace,
+            id,
+            now,
         )
-        .bind(key.namespace())
-        .bind(key.id().as_ref())
-        .bind(now)
-        .fetch_optional(&self.pool)
+        .fetch_one(&self.pool)
         .await
-        .is_ok_and(|res| res.is_some())
+        .unwrap_or(false)
     }
 
     async fn invalidate<T: Send + Sync>(&self, key: &CacheKey<T>) {
@@ -210,8 +219,7 @@ impl Cache for SqliteCache {
     async fn purge_expired(&self) -> u64 {
         let now = Utc::now();
 
-        sqlx::query("DELETE FROM universal_cache WHERE expires_at <= ?")
-            .bind(now)
+        sqlx::query!("DELETE FROM universal_cache WHERE expires_at <= ?", now)
             .execute(&self.pool)
             .await
             .map_or(0, |result| result.rows_affected())
@@ -338,6 +346,19 @@ mod tests {
         let found = cache.get_many(&[key("a", "old"), key("a", "new")]).await;
 
         assert_eq!(found, [None, Some("new".to_owned())]);
+    }
+
+    #[tokio::test]
+    async fn should_report_only_unexpired_values_as_existing_when_checking_existence() {
+        let cache = create_cache().await;
+        cache
+            .set(&key("a", "old"), &"old".to_owned(), Duration::ZERO)
+            .await;
+        cache.set(&key("a", "new"), &"new".to_owned(), LONG).await;
+
+        assert!(cache.exists(&key("a", "new")).await);
+        assert!(!cache.exists(&key("a", "old")).await);
+        assert!(!cache.exists(&key("a", "missing")).await);
     }
 
     #[tokio::test]

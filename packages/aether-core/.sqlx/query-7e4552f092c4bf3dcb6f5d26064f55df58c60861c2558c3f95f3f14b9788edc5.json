@@ -1,0 +1,21 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT EXISTS(\n                 SELECT 1 FROM universal_cache\n                 WHERE namespace = ? AND key = ? AND expires_at > ?\n               ) AS \"found!: bool\"",
+  "describe": {
+    "columns": [
+      {
+        "name": "found!: bool",
+        "ordinal": 0,
+        "type_info": "Integer",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "7e4552f092c4bf3dcb6f5d26064f55df58c60861c2558c3f95f3f14b9788edc5"
+}

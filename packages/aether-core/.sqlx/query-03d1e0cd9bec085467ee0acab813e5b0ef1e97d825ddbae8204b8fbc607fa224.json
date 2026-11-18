@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT value FROM universal_cache\n             WHERE namespace = ? AND key = ? AND expires_at > ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "value",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "universal_cache",
+            "name": "value"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "03d1e0cd9bec085467ee0acab813e5b0ef1e97d825ddbae8204b8fbc607fa224"
+}
