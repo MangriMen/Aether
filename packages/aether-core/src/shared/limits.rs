@@ -196,6 +196,11 @@ pub(crate) const HTTP_CLIENT_CONNECT_TIMEOUT: Duration = Duration::from_secs(30)
 /// poor connection is not mistaken for a dead one; the retry middleware covers the rest.
 pub(crate) const HTTP_CLIENT_READ_TIMEOUT: Duration = Duration::from_secs(90);
 
+/// Most bytes `fetch_bytes` keeps in memory for one response, so that a wrong or hostile
+/// answer cannot exhaust it. Above the largest legitimate body (a JRE archive); bodies that go
+/// to disk (`download_to_file`) take their own limit.
+pub(crate) const MAX_FETCHED_BODY_BYTES: u64 = 256 * 1024 * 1024;
+
 /// Retries of transient failures (connection errors, 5xx, 429) by the application's HTTP
 /// client. The plugins' downloads retry less: see [`DOWNLOAD_MAX_RETRIES`].
 pub const HTTP_CLIENT_MAX_RETRIES: u32 = 5;
