@@ -41,6 +41,8 @@ bytes = "1.12.1"
 cap-fs-ext = "4.0.3"
 cap-std = "4.0.3"
 dunce = "1.0.5"
+# The home folder, which no folder grant may take in.
+dirs = "7.0.0"
 notify = "8.2.0"
 notify-debouncer-mini = "0.7.0"
 path-slash = "0.2.1"

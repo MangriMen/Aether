@@ -239,6 +239,7 @@ pub(super) fn importer_capability() -> PluginImporterCapability {
             },
             field_label: None,
             supported_extensions: Vec::new(),
+            pick_folder: false,
         },
         handler: "import".into(),
     }

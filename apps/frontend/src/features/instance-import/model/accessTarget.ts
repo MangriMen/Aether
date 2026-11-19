@@ -32,8 +32,8 @@ export const namesLocalhostOrAddress = (url: string): boolean => {
 };
 
 /**
- * An http(s) URL needs its host, an absolute path the folder of the file. Anything else is the
- * importer's own business: nothing is asked for it.
+ * An http(s) URL needs its host, an absolute path its folder (the picked one, or the one of the
+ * picked file). Anything else is the importer's own business: nothing is asked for it.
  */
 export const pluginAccessTargetOf = (
   value: string,

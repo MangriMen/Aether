@@ -96,25 +96,27 @@ export const ImportInstanceForm: Component<ImportInstanceFormProps> = (
   };
 
   const handleBrowse = async () => {
-    let file: string | null;
+    let picked: string | null;
 
     try {
-      file = await open({
+      // An importer that reads a pack as a folder is given the folder itself; any other, the
+      // file, and the folder it lies in.
+      picked = await open({
         multiple: false,
-        directory: false,
+        directory: local.importer.pickFolder,
       });
     } catch (error) {
-      logError('Failed to pick a file to import:', error);
+      logError('Failed to pick what to import:', error);
       return;
     }
 
-    if (file) {
-      setInput(form, { path: ['path'], input: file });
+    if (picked) {
+      setInput(form, { path: ['path'], input: picked });
 
-      // Asked right after the pick, while the user knows which file it was: the plugin is to
-      // read the folder it lies in, which also holds the rest of the pack. A no is asked again
-      // on submit.
-      ensurePluginAccess(local.pluginId, file).catch(logError);
+      // Asked right after the pick, while the user knows what it was: the plugin is to read the
+      // folder (the picked one, or the one holding the picked file), which also holds the rest
+      // of the pack. A no is asked again on submit.
+      ensurePluginAccess(local.pluginId, picked).catch(logError);
     }
   };
 

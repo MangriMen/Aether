@@ -31,6 +31,8 @@ pub struct PluginImporterCapabilityV1 {
     pub field_label: Option<String>,
     #[serde(default)]
     pub supported_extensions: Vec<String>,
+    #[serde(default)]
+    pub pick_folder: bool,
     pub handler: String,
 }
 
@@ -228,6 +230,7 @@ impl TryFrom<PluginCapabilitiesV1> for PluginCapabilities {
                             },
                             field_label: i.field_label,
                             supported_extensions: i.supported_extensions,
+                            pick_folder: i.pick_folder,
                         },
                         handler: i.handler,
                     })
@@ -357,6 +360,7 @@ impl From<PluginCapabilities> for PluginCapabilitiesV1 {
                         icon: i.metadata.base.icon.clone(),
                         field_label: i.metadata.field_label.clone(),
                         supported_extensions: i.metadata.supported_extensions.clone(),
+                        pick_folder: i.metadata.pick_folder,
                         handler: i.handler,
                     })
                     .collect(),

@@ -13,7 +13,7 @@ export type AllowedHostEntryRejectionDto = "empty" | "not_a_host_name" | "invali
 
 export type AllowedHostRejectionDto = "invalid_url" | "unsupported_scheme" | "missing_host" | "not_public" | "not_local" | "unresolved" | "wildcard";
 
-export type AllowedPathRejectionDto = "host_not_absolute" | "host_not_a_folder" | "host_is_root" | "plugin_not_absolute" | "plugin_not_normalized" | "plugin_is_root" | "plugin_reserved" | "host_overlaps_core";
+export type AllowedPathRejectionDto = "host_not_absolute" | "host_not_a_folder" | "host_is_root" | "host_is_home" | "plugin_not_absolute" | "plugin_not_normalized" | "plugin_is_root" | "plugin_reserved" | "host_overlaps_core";
 
 export type AppSettingsErrorDto = 
 /**  `reason` is what the window manager refused with, translated as a reason. */
