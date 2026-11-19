@@ -15,11 +15,11 @@ vi.mock('../../api/cancelProgress', () => ({
 const make = (extra: Partial<ProgressEvent> = {}): ProgressEvent => ({
   event: {
     type: 'pack_download',
-    instance_path: '',
-    pack_name: 'Pack',
+    instancePath: '',
+    packName: 'Pack',
     icon: null,
-    pack_id: null,
-    pack_version: null,
+    packId: null,
+    packVersion: null,
   },
   progressBarId: 'plan',
   fraction: 0.5,

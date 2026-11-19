@@ -26,7 +26,7 @@ const make = (
   parentId: string | null,
   extra: Partial<ProgressEvent> = {},
 ): ProgressEvent => ({
-  event: { type: 'file_download', file_name: id },
+  event: { type: 'file_download', fileName: id },
   progressBarId: id,
   fraction: 0.5,
   message: '',
@@ -64,11 +64,11 @@ export const Tree: Story = {
         make('pack', null, {
           event: {
             type: 'pack_download',
-            instance_path: 'create',
-            pack_name: 'Create: Above and Beyond',
+            instancePath: 'create',
+            packName: 'Create: Above and Beyond',
             icon: null,
-            pack_id: null,
-            pack_version: null,
+            packId: null,
+            packVersion: null,
           },
           fraction: 0.35,
           bytesDone: null,
@@ -85,8 +85,8 @@ export const Tree: Story = {
         make('game', 'pack', {
           event: {
             type: 'minecraft_download',
-            instance_id: 'create',
-            instance_name: 'Create',
+            instanceId: 'create',
+            instanceName: 'Create',
           },
           fraction: 0.6,
           bytesDone: null,
@@ -136,11 +136,11 @@ export const Live: Story = {
       pack: make('pack', null, {
         event: {
           type: 'pack_download',
-          instance_path: 'p',
-          pack_name: 'Live pack',
+          instancePath: 'p',
+          packName: 'Live pack',
           icon: null,
-          pack_id: null,
-          pack_version: null,
+          packId: null,
+          packVersion: null,
         },
         fraction: 0,
         bytesDone: null,

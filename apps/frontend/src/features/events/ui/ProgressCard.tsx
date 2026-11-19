@@ -44,22 +44,22 @@ export const ProgressCard: Component<ProgressCardProps> = (props) => {
         });
       case 'minecraft_assets_download':
         return t('events.minecraftAssets', {
-          count: local.payload.event.file_count,
+          count: local.payload.event.fileCount,
         });
       case 'file_download':
-        return local.payload.event.file_name;
+        return local.payload.event.fileName;
       case 'minecraft_download':
         return t('events.gameInstalling');
       case 'instance_update':
       case 'zip_extract':
-        return local.payload.event.instance_name;
+        return local.payload.event.instanceName;
       case 'pack_download':
-        return t('events.installing', { name: local.payload.event.pack_name });
+        return t('events.installing', { name: local.payload.event.packName });
       case 'pack_file_download':
-        return local.payload.event.pack_name;
+        return local.payload.event.packName;
       case 'plugin_download':
         return t('events.pluginDownload', {
-          name: local.payload.event.plugin_name,
+          name: local.payload.event.pluginName,
         });
       case 'launcher_update':
         return t('events.launcherUpdating', {

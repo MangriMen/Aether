@@ -65,7 +65,7 @@ export const commands = {
 	isWideAllowedHost: (entry: string) => __TAURI_INVOKE<boolean>("plugin:plugin|is_wide_allowed_host", { entry }),
 	openPluginsFolder: () => __TAURI_INVOKE<null>("plugin:plugin|open_plugins_folder"),
 	getApiVersion: () => __TAURI_INVOKE<string>("plugin:plugin|get_api_version"),
-	getPluginSource: (id: string) => __TAURI_INVOKE<{ source: "remote"; source_type: PluginSourceTypeDto; identifier: string; current_tag: string; current_version: string } | { source: "local" } | null>("plugin:plugin|get_plugin_source", { id }),
+	getPluginSource: (id: string) => __TAURI_INVOKE<{ source: "remote"; sourceType: PluginSourceTypeDto; identifier: string; currentTag: string; currentVersion: string } | { source: "local" } | null>("plugin:plugin|get_plugin_source", { id }),
 	checkForUpdates: (id: string) => __TAURI_INVOKE<PluginUpdateInfoDto>("plugin:plugin|check_for_updates", { id }),
 	/**
 	 *  What release `tag` of an installed plugin asks for, and how that differs from the version
@@ -856,12 +856,12 @@ export type PluginEventDto = {
 	seq: number,
 } & PluginEventKindDto;
 
-export type PluginEventKindDto = { type: "edit"; plugin_id: string } | { type: "sync" } | 
+export type PluginEventKindDto = { type: "edit"; pluginId: string } | { type: "sync" } | 
 /**
  *  A command of the plugin waits for the user. The arguments are not here: the frontend asks
  *  for the question.
  */
-{ type: "command_approval_requested"; plugin_id: string; request_id: string } | { type: "command_approval_resolved"; plugin_id: string; request_id: string; outcome: CommandApprovalOutcomeDto };
+{ type: "command_approval_requested"; pluginId: string; requestId: string } | { type: "command_approval_resolved"; pluginId: string; requestId: string; outcome: CommandApprovalOutcomeDto };
 
 export type PluginImporterCapabilityDto = {
 	/**  Plugin function name to handle this capability call. */
@@ -956,7 +956,7 @@ export type PluginSettingsDto = {
 	commandApprovals: CommandApprovalDto[],
 };
 
-export type PluginSourceDto = { source: "remote"; source_type: PluginSourceTypeDto; identifier: string; current_tag: string; current_version: string } | { source: "local" };
+export type PluginSourceDto = { source: "remote"; sourceType: PluginSourceTypeDto; identifier: string; currentTag: string; currentVersion: string } | { source: "local" };
 
 /**  Provider source type for plugin installation. */
 export type PluginSourceTypeDto = 

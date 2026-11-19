@@ -214,6 +214,7 @@ A URL that comes from a plugin, from provider metadata or from Markdown is fetch
 
 - Boundary types are named `<Name>Dto` and live in `infra/tauri/dtos/` (`infra/tauri/api/dtos/` in the instance feature) of the desktop app. A conversion is a `From`/`TryFrom` in the same file; there are no `to_dto` functions.
 - Structs have `#[serde(rename_all = "camelCase")]`, enums `"snake_case"`. Any other case is only for a value that must match an external format, with a comment saying so.
+- The fields of a struct variant are fields, not values: an enum with such variants adds `rename_all_fields = "camelCase"` to its `rename_all`. The `code` of an error or warning is the translation key and stays `SCREAMING_SNAKE_CASE`.
 
 ### 12.4. Errors
 
