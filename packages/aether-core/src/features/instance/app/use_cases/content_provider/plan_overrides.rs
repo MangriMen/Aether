@@ -304,10 +304,7 @@ fn open_archive(archive_path: &AnchoredPath) -> Result<zip::ZipArchive<File>, In
         .map_err(storage_error)?;
 
     // Before the central directory is read whole, which costs per entry.
-    if declared_entries(&mut file)
-        .map_err(storage_error)?
-        .is_some_and(|entries| entries > MAX_ARCHIVE_ENTRIES as u64)
-    {
+    if declared_entries(&mut file).is_some_and(|entries| entries > MAX_ARCHIVE_ENTRIES) {
         return Err(InstanceError::ContentProviderError {
             reason: ContentProviderRejection::TooManyOverrides {
                 max: MAX_ARCHIVE_ENTRIES,

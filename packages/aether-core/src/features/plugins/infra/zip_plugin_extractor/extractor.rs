@@ -164,11 +164,7 @@ impl ZipPluginExtractor {
         max_entries: usize,
     ) -> Result<zip::ZipArchive<std::io::BufReader<fs::File>>, PluginProviderError> {
         // Before the central directory is read whole, which costs per entry.
-        let declared =
-            declared_entries(&mut file).map_err(|_| PluginProviderError::ExtractionFailed {
-                from: source_path.to_string(),
-            })?;
-        if declared.is_some_and(|entries| entries > max_entries as u64) {
+        if declared_entries(&mut file).is_some_and(|entries| entries > max_entries) {
             return Err(PluginProviderError::FileExtractionFailed {
                 from: source_path.to_string(),
             });

@@ -71,11 +71,9 @@ fn read_index_within(
         .map_err(|e| rejected(ContentProviderRejection::PackUnreadable(Arc::new(e))))?;
 
     // Before the central directory is read whole, which costs per entry.
-    let declared = declared_entries(&mut file)
-        .map_err(|e| rejected(ContentProviderRejection::PackUnreadable(Arc::new(e))))?;
-    if let Some(count) = declared.filter(|count| *count > max_entries as u64) {
+    if let Some(count) = declared_entries(&mut file).filter(|count| *count > max_entries) {
         return Err(rejected(ContentProviderRejection::TooManyFiles {
-            count: usize::try_from(count).unwrap_or(usize::MAX),
+            count,
             max: max_entries,
         }));
     }
