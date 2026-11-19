@@ -17,7 +17,6 @@ export type InstanceContextMenuProps = ContextMenuRootProps & {
   onOpenSettings?: () => void;
   onRemove?: () => void;
   isLoading?: boolean;
-  disableOpenFolder?: boolean;
 };
 
 export const InstanceContextMenu: Component<InstanceContextMenuProps> = (
@@ -29,7 +28,6 @@ export const InstanceContextMenu: Component<InstanceContextMenuProps> = (
     'onOpenSettings',
     'onRemove',
     'isLoading',
-    'disableOpenFolder',
     'children',
   ]);
 
@@ -53,7 +51,7 @@ export const InstanceContextMenu: Component<InstanceContextMenuProps> = (
         <ContextMenuItem
           class='w-full'
           onSelect={local.onOpenFolder}
-          disabled={local.isLoading || local.disableOpenFolder}
+          disabled={local.isLoading}
         >
           {t('instance.openFolder')}
         </ContextMenuItem>

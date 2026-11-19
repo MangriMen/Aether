@@ -27,14 +27,29 @@ export const useRevealInstanceDir = () => {
   const queryClient = useQueryClient();
   const reveal = useRevealInExplorer();
 
+  const [{ t }] = useTranslation();
+
   return useMutation(() => ({
     mutationFn: async (id: string) => {
-      const path = await queryClient.fetchQuery({
-        queryKey: [...INSTANCE_QUERY_KEYS.DIR(id)],
-        queryFn: () => instanceCommands.getDir(id),
-        staleTime: Infinity,
-      });
+      let path: string;
 
+      try {
+        path = await queryClient.fetchQuery({
+          queryKey: [...INSTANCE_QUERY_KEYS.DIR(id)],
+          queryFn: () => instanceCommands.getDir(id),
+          staleTime: Infinity,
+        });
+      } catch (err) {
+        showError({
+          title: t('common.revealInExplorerError'),
+          err: err as Error,
+          t,
+        });
+
+        throw err;
+      }
+
+      // Its own error is shown by `useRevealInExplorer`.
       await reveal.mutateAsync({ path });
     },
   }));
