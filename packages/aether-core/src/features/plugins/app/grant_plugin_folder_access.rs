@@ -208,8 +208,12 @@ fn folder_of_with_home(
 
 /// Whether `folder` is the home folder or holds it, by where they really are.
 fn holds_home(folder: &Path, home: Option<&Path>) -> bool {
-    let (Some(home), Ok(folder)) = (home, dunce::canonicalize(folder)) else {
+    let Some(home) = home else {
         return false;
+    };
+    // A folder that cannot be resolved cannot be told from the home folder: refused.
+    let Ok(folder) = dunce::canonicalize(folder) else {
+        return true;
     };
     let home = dunce::canonicalize(home).unwrap_or_else(|_| home.to_path_buf());
 
