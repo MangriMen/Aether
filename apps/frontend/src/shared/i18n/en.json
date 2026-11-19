@@ -71,6 +71,7 @@
       "INVALID_USERNAME_LENGTH": "Username must be between {{min}} and {{max}} characters",
       "INVALID_USERNAME_CHARS": "Use only Latin letters, numbers, and underscores",
       "INVALID_ACCOUNT_TYPE": "Invalid account type",
+      "ACCOUNT_ALREADY_EXISTS": "An offline account with this username already exists",
       "TOKEN_EXPIRED": "Session expired, please log in again",
       "STORAGE_ERROR": "Auth storage failure"
     },

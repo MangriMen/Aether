@@ -107,6 +107,7 @@ dependencies = [
  "http",
  "hyper-util",
  "log",
+ "md-5",
  "notify",
  "notify-debouncer-mini",
  "path-slash",
