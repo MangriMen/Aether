@@ -189,7 +189,7 @@ impl GetMinecraftLaunchCommandUseCase {
             &launch_dir,
             &self.location_info.assets_dir(),
             &version.type_,
-            launch_settings.window.game_resolution(),
+            &launch_settings.window,
             java.architecture(),
         )?
         .into_iter()
