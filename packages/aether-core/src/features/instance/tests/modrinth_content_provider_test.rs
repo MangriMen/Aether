@@ -23,11 +23,12 @@ use crate::{
     features::{
         events::ProgressBarId,
         instance::{
-            ContentAuthor, ContentDownloadFailure, ContentIdentity, ContentMetadata,
-            ContentProvider, ContentProviderRejection, ContentSource, ContentType,
-            ContentVersionFile, ContentVersionMetadata, FileSide, InstallTarget, InstanceError,
-            InstanceGame, InstanceId, OverrideLocation, OverrideSource, PackInfo, PackMetadata,
-            PackSource, ResolveInstallPlanParams, ResolveTarget, infra::ModrinthContentProvider,
+            ContentAuthor, ContentCompatibilityCheckParams, ContentDownloadFailure,
+            ContentIdentity, ContentItem, ContentMetadata, ContentProvider,
+            ContentProviderRejection, ContentSource, ContentType, ContentVersionFile,
+            ContentVersionMetadata, FileSide, InstallTarget, InstanceError, InstanceGame,
+            InstanceId, OverrideLocation, OverrideSource, PackInfo, PackMetadata, PackSource,
+            ProviderId, ResolveInstallPlanParams, ResolveTarget, infra::ModrinthContentProvider,
         },
         minecraft::{LoaderVersionPreference, ModLoader},
         settings::LocationInfo,
@@ -1493,4 +1494,33 @@ async fn should_fail_to_give_a_version_when_modrinth_does_not_know_it() {
         .await;
 
     assert!(result.is_err());
+}
+
+#[tokio::test]
+async fn should_refuse_the_check_without_a_request_when_the_slug_is_not_an_id() {
+    let fixture = Fixture::new();
+    let params = ContentCompatibilityCheckParams {
+        provider_id: ProviderId::from_parts("plugin", "modrinth").unwrap(),
+        content_item: ContentItem {
+            id: "AANobbMI".to_owned(),
+            slug: "../user/someone".to_owned(),
+            name: "Sodium".to_owned(),
+            description: None,
+            long_description: None,
+            author: "jellysquid3".to_owned(),
+            url: None,
+            icon_url: None,
+            versions: vec![],
+            content_type: ContentType::Mod,
+        },
+    };
+
+    let result = fixture.provider.check_compatibility(&[], &params).await;
+
+    assert!(matches!(
+        result,
+        Err(InstanceError::InvalidContentId { .. })
+    ));
+    assert_eq!(fixture.http.requests_to(&format!("{API}/user/someone")), 0);
+    assert!(fixture.http.full_requests.lock().unwrap().is_empty());
 }
