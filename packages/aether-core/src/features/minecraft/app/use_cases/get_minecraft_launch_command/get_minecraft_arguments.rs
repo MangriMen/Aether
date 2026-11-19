@@ -4,9 +4,9 @@ use uuid::Uuid;
 
 use crate::{
     features::{
-        auth::Credential,
+        auth::{AccountType, Credential},
         minecraft::{GamePathKind, MinecraftDomainError, parse_arguments, vanilla},
-        settings::WindowSize,
+        settings::{WindowSettings, WindowSize},
     },
     shared::io::infra::canonicalize,
 };
@@ -24,9 +24,11 @@ pub(super) fn get_minecraft_arguments(
     game_directory: &Path,
     assets_directory: &Path,
     version_type: &vanilla::VersionType,
-    resolution: WindowSize,
+    window: &WindowSettings,
     java_arch: &str,
 ) -> Result<Vec<String>, MinecraftDomainError> {
+    let resolution = window.game_resolution();
+    let user_type = user_type_of(credentials);
     let substitute = |template: &str| {
         replace_placeholders_in_argument_string(
             template,
@@ -39,17 +41,50 @@ pub(super) fn get_minecraft_arguments(
             assets_directory,
             version_type,
             resolution,
+            user_type,
         )
     };
 
     if let Some(arguments) = arguments {
         let mut result = Vec::new();
         parse_arguments(arguments, &mut result, substitute, java_arch)?;
+        add_fullscreen(&mut result, window);
         Ok(result)
     } else if let Some(legacy) = legacy_arguments {
-        legacy.split(' ').map(substitute).collect()
+        let mut result = legacy
+            .split(' ')
+            .map(substitute)
+            .collect::<Result<Vec<_>, _>>()?;
+        // A version this old has no rules: the window size is given only when the template asks
+        // for it, and the old templates never do.
+        if !legacy.contains("${resolution_width}") {
+            result.extend([
+                "--width".to_owned(),
+                resolution.width().to_string(),
+                "--height".to_owned(),
+                resolution.height().to_string(),
+            ]);
+        }
+        add_fullscreen(&mut result, window);
+        Ok(result)
     } else {
         Ok(Vec::new())
+    }
+}
+
+fn add_fullscreen(arguments: &mut Vec<String>, window: &WindowSettings) {
+    if window.force_fullscreen() {
+        arguments.push("--fullscreen".to_owned());
+    }
+}
+
+/// What the game is told about the account. A client from 1.16.4 on takes anything but `legacy`
+/// for a Microsoft account and calls the session services with the token, which an offline
+/// account does not have.
+fn user_type_of(credentials: &Credential) -> &'static str {
+    match credentials.account_type() {
+        AccountType::Offline => "legacy",
+        AccountType::Microsoft => "msa",
     }
 }
 
@@ -77,6 +112,7 @@ fn replace_placeholders_in_argument_string(
     assets_directory: &Path,
     version_type: &vanilla::VersionType,
     resolution: WindowSize,
+    user_type: &str,
 ) -> Result<String, MinecraftDomainError> {
     let game = canonical_dir(game_directory, GamePathKind::Game)?;
     let assets = canonical_dir(assets_directory, GamePathKind::Assets)?;
@@ -94,7 +130,7 @@ fn replace_placeholders_in_argument_string(
         ("${uuid}", uuid.as_str()),
         ("${clientid}", "c4502edb-87c6-40cb-b595-64a280cf8906"),
         ("${user_properties}", "{}"),
-        ("${user_type}", "msa"),
+        ("${user_type}", user_type),
         ("${version_name}", version),
         ("${assets_index_name}", asset_index_name),
         ("${game_directory}", game.as_str()),
@@ -175,7 +211,7 @@ mod tests {
             &e.game,
             &e.assets,
             &VersionType::Release,
-            WindowSize::new(1280, 720),
+            &WindowSettings::new(false, WindowSize::new(1280, 720)),
             "x64",
         )
     }
@@ -354,9 +390,9 @@ mod tests {
     #[case::legacy_consecutive_spaces_give_empty_arguments(
         None,
         Some("a  b"),
-        vec!["a", "", "b"]
+        vec!["a", "", "b", "--width", "1280", "--height", "720"]
     )]
-    #[case::legacy_empty_string_gives_one_empty_argument(None, Some(""), vec![""])]
+    #[case::legacy_empty_string_gives_one_empty_argument(None, Some(""), vec!["", "--width", "1280", "--height", "720"])]
     fn arguments_are_resolved(
         #[case] args: Option<Vec<Argument>>,
         #[case] legacy: Option<&str>,
@@ -405,6 +441,10 @@ mod tests {
                 canon(&e.assets),
                 "--uuid".to_string(),
                 UUID_STR.to_string(),
+                "--width".to_string(),
+                "1280".to_string(),
+                "--height".to_string(),
+                "720".to_string(),
             ]
         );
     }
@@ -451,7 +491,7 @@ mod tests {
                 &e.game,
                 &e.assets,
                 &vt,
-                WindowSize::default(),
+                &WindowSettings::default(),
                 "x64",
             )
             .unwrap();
@@ -471,10 +511,120 @@ mod tests {
             &e.game,
             &e.assets,
             &VersionType::Release,
-            WindowSize::default(),
+            &WindowSettings::default(),
             "x64",
         )
         .unwrap();
         assert_eq!(out, vec!["960x540"]);
+    }
+
+    fn call_with(
+        e: &Env,
+        legacy: Option<&str>,
+        modern: Option<&[Argument]>,
+        credentials: &Credential,
+        window: &WindowSettings,
+    ) -> Vec<String> {
+        get_minecraft_arguments(
+            modern,
+            legacy,
+            credentials,
+            "1.12.2",
+            "12",
+            &e.game,
+            &e.assets,
+            &VersionType::Release,
+            window,
+            "x64",
+        )
+        .unwrap()
+    }
+
+    #[test]
+    fn offline_account_is_told_it_is_legacy() {
+        let e = env();
+        let offline = Credential::new_offline(
+            Uuid::parse_str(UUID_STR).unwrap(),
+            Username::parse("Steve_1").unwrap(),
+        );
+        let args = [normal("${user_type}")];
+
+        let out = call_with(&e, None, Some(&args), &offline, &WindowSettings::default());
+        assert_eq!(out, vec!["legacy"]);
+        let out = call_with(
+            &e,
+            None,
+            Some(&args),
+            &credential(),
+            &WindowSettings::default(),
+        );
+        assert_eq!(out, vec!["msa"]);
+    }
+
+    #[test]
+    fn old_version_gets_the_window_size_and_fullscreen() {
+        let e = env();
+        let window = WindowSettings::new(true, WindowSize::new(1280, 720));
+
+        let out = call_with(
+            &e,
+            Some("--username ${auth_player_name}"),
+            None,
+            &credential(),
+            &window,
+        );
+
+        assert_eq!(
+            out,
+            vec![
+                "--username",
+                "Steve_1",
+                "--width",
+                "1280",
+                "--height",
+                "720",
+                "--fullscreen"
+            ]
+        );
+    }
+
+    #[test]
+    fn old_version_with_a_size_in_its_template_gets_no_second_one() {
+        let e = env();
+        let window = WindowSettings::new(false, WindowSize::new(1280, 720));
+
+        let out = call_with(
+            &e,
+            Some("--width ${resolution_width} --height ${resolution_height}"),
+            None,
+            &credential(),
+            &window,
+        );
+
+        assert_eq!(out, vec!["--width", "1280", "--height", "720"]);
+    }
+
+    #[test]
+    fn modern_version_gets_fullscreen_only_when_asked() {
+        let e = env();
+        let args = [normal("x")];
+
+        let off = call_with(
+            &e,
+            None,
+            Some(&args),
+            &credential(),
+            &WindowSettings::default(),
+        );
+        let on = call_with(
+            &e,
+            None,
+            Some(&args),
+            &credential(),
+            &WindowSettings::new(true, WindowSize::default()),
+        );
+
+        assert_eq!(off, vec!["x"]);
+        assert_eq!(on, vec!["x", "--fullscreen"]);
     }
 }
