@@ -47,7 +47,7 @@ export const StoragePane: Component<StoragePaneProps> = (props) => {
         variant='card'
         usage={usage.data}
         busy={busy.data}
-        isLoading={usage.isLoading || busy.isLoading}
+        isLoading={usage.isPending || busy.isPending}
         isError={usage.isError || busy.isError}
         onRetry={() => {
           void usage.refetch();

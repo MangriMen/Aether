@@ -60,7 +60,7 @@ export const UpdateAppEntry: Component<UpdateAppEntryProps> = (props) => {
         description={
           <UpdateDescription
             isUpdateAvailable={isUpdateAvailable()}
-            isChecking={update.isPending && update.isFetching}
+            isChecking={update.isPending}
             isFailed={update.isError}
             update={update.data}
           />
