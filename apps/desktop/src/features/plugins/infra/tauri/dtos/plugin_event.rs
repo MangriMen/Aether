@@ -13,7 +13,11 @@ pub struct PluginEventDto {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Type)]
-#[serde(rename_all = "snake_case", tag = "type")]
+#[serde(
+    rename_all = "snake_case",
+    rename_all_fields = "camelCase",
+    tag = "type"
+)]
 pub enum PluginEventKindDto {
     Edit {
         plugin_id: String,
@@ -100,7 +104,7 @@ mod tests {
 
         assert_eq!(
             serde_json::to_value(dto).unwrap(),
-            json!({ "seq": 3, "type": "edit", "plugin_id": "a" })
+            json!({ "seq": 3, "type": "edit", "pluginId": "a" })
         );
     }
 
@@ -120,8 +124,8 @@ mod tests {
             json!({
                 "seq": 1,
                 "type": "command_approval_resolved",
-                "plugin_id": "a",
-                "request_id": "00000000-0000-0000-0000-000000000000",
+                "pluginId": "a",
+                "requestId": "00000000-0000-0000-0000-000000000000",
                 "outcome": "timed_out"
             })
         );

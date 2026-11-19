@@ -4,7 +4,11 @@ use specta::Type;
 use super::ProviderReleaseInfoDto;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Type)]
-#[serde(tag = "source", rename_all = "snake_case")]
+#[serde(
+    tag = "source",
+    rename_all = "snake_case",
+    rename_all_fields = "camelCase"
+)]
 pub enum PluginSourceDto {
     Remote {
         source_type: PluginSourceTypeDto,

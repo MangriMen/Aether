@@ -24,7 +24,7 @@ const make = (
   parentId: string | null,
   extra: Partial<ProgressEvent> = {},
 ): ProgressEvent => ({
-  event: { type: 'file_download', file_name: id },
+  event: { type: 'file_download', fileName: id },
   progressBarId: id,
   fraction: 0.5,
   message: '',

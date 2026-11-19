@@ -16,7 +16,7 @@ const failure = (details: string): LauncherError => ({
 });
 
 const base: ProgressEvent = {
-  event: { type: 'file_download', file_name: 'client.jar' },
+  event: { type: 'file_download', fileName: 'client.jar' },
   progressBarId: 'bar',
   fraction: 0.4,
   message: '',
