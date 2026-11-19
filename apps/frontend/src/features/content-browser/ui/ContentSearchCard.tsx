@@ -8,6 +8,7 @@ import {
 } from 'solid-js';
 
 import { type ContentType } from '@/features/content';
+import { useTranslation } from '@/shared/i18n';
 import { CombinedPagination, Skeleton } from '@/shared/ui-kit';
 import { cn } from '@/shared/utils';
 
@@ -29,6 +30,7 @@ export type ContentFiltersProps = ComponentProps<'div'> & {
 const DEFAULT_PAGINATION_COUNT_ARRAY = Array.from({ length: 6 });
 
 export const ContentSearchCard: Component<ContentFiltersProps> = (props) => {
+  const [{ t }] = useTranslation();
   const [local, others] = splitProps(props, [
     'page',
     'pageCount',
@@ -78,6 +80,7 @@ export const ContentSearchCard: Component<ContentFiltersProps> = (props) => {
             page={local.page}
             onPageChange={local.onPageChange}
             disabled={isPaginationDisabled()}
+            aria-label={t('pagination.label')}
           />
         </Show>
       </div>
