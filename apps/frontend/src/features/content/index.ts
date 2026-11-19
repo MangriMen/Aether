@@ -1,4 +1,5 @@
 export * from './api/contentQueries';
+export * from './api/contentQueryKeys';
 export * from './lib/useContentItemActions';
 export * from './model/contentContext';
 export * from './model/contentFile';

@@ -10,12 +10,18 @@ import type { UpdateStatus } from '../model/update';
 
 export interface UpdateDescriptionProps extends ComponentProps<'div'> {
   isUpdateAvailable: boolean;
+  /** The first check is under way: there is nothing to say about updates yet. */
+  isChecking?: boolean;
+  /** The last check failed, so "no updates" would be a guess. */
+  isFailed?: boolean;
   update: UpdateStatus | null | undefined;
 }
 
 export const UpdateDescription: Component<UpdateDescriptionProps> = (props) => {
   const [local, others] = splitProps(props, [
     'isUpdateAvailable',
+    'isChecking',
+    'isFailed',
     'update',
     'class',
   ]);
@@ -30,7 +36,16 @@ export const UpdateDescription: Component<UpdateDescriptionProps> = (props) => {
   return (
     <Show
       when={local.isUpdateAvailable}
-      fallback={t('settings.checkForUpdatesDescriptionNoUpdates')}
+      fallback={
+        <Show
+          when={!local.isChecking}
+          fallback={t('settings.checkForUpdatesDescriptionChecking')}
+        >
+          {local.isFailed
+            ? t('settings.checkForUpdatesDescriptionFailed')
+            : t('settings.checkForUpdatesDescriptionNoUpdates')}
+        </Show>
+      }
     >
       <div class={cn('gap-0.5 flex flex-col', local.class)} {...others}>
         {t('settings.checkForUpdatesDescription')}

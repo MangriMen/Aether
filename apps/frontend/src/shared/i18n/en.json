@@ -712,11 +712,12 @@
     "environmentVariables": "Environment variables",
     "javaArguments": "Java arguments",
     "memoryAllocation": "Memory allocation",
-    "memoryMb": "{{value}} Mb",
+    "memoryMb": "{{value}} MB",
     "resolution": "Resolution",
     "resolutionWidth": "Window width",
     "resolutionHeight": "Window height",
     "chooseResolution": "Choose a resolution",
+    "defaultResolution": "default",
     "windowError": {
       "resolution": {
         "emptyValue": "Resolution part must be non empty value",
@@ -843,6 +844,8 @@
     "checkForUpdates": "Check for updates",
     "checkForUpdatesDescription": "An updated version of the application is now available!\nIt will restart automatically after installation.",
     "checkForUpdatesDescriptionNoUpdates": "No updates available",
+    "checkForUpdatesDescriptionChecking": "Checking for updates…",
+    "checkForUpdatesDescriptionFailed": "Could not check for updates. Press the button to try again.",
     "close": "Close",
     "colorScheme": "Color scheme",
     "colorSchemeDescription": "Select preferred color scheme",

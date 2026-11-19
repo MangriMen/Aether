@@ -9,6 +9,7 @@ import {
 } from '@/features/settings';
 import { useTranslation } from '@/shared/i18n';
 import { SettingsPane } from '@/shared/settings-layout';
+import { LoadError, Skeleton } from '@/shared/ui-kit';
 
 import { DiskUsage } from '../ui/DiskUsage';
 import { ClearCacheEntry } from './ClearCacheEntry';
@@ -24,17 +25,34 @@ export const StoragePane: Component<StoragePaneProps> = (props) => {
 
   return (
     <SettingsPane label={t('settings.tab.storage')} {...props}>
-      <Show when={disk.data}>{(data) => <DiskUsage usage={data()} />}</Show>
-      <Show when={disk.isError}>
-        <span role='alert' class='text-destructive'>
-          {t('settings.storage.diskLoadFailed')}
-        </span>
+      <Show
+        when={disk.data}
+        fallback={
+          <Show
+            when={disk.isError}
+            fallback={<Skeleton class='h-24 w-full rounded-lg' />}
+          >
+            <LoadError
+              variant='inline'
+              message={t('settings.storage.diskLoadFailed')}
+              retryLabel={t('common.retry')}
+              onRetry={() => void disk.refetch()}
+            />
+          </Show>
+        }
+      >
+        {(data) => <DiskUsage usage={data()} />}
       </Show>
       <ClearCacheEntry
         variant='card'
         usage={usage.data}
         busy={busy.data}
+        isLoading={usage.isLoading || busy.isLoading}
         isError={usage.isError || busy.isError}
+        onRetry={() => {
+          void usage.refetch();
+          void busy.refetch();
+        }}
       />
     </SettingsPane>
   );

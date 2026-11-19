@@ -717,6 +717,7 @@
     "resolutionWidth": "Ширина окна",
     "resolutionHeight": "Высота окна",
     "chooseResolution": "Выбрать разрешение",
+    "defaultResolution": "по умолчанию",
     "windowError": {
       "resolution": {
         "emptyValue": "Элемент разрешения должен быть не пустым",
@@ -843,6 +844,8 @@
     "checkForUpdates": "Проверить наличие обновлений",
     "checkForUpdatesDescription": "Доступна новая версия приложения!\nПриложение будет перезапущенно автоматически после установки.",
     "checkForUpdatesDescriptionNoUpdates": "Нет доступных обновлений",
+    "checkForUpdatesDescriptionChecking": "Проверка обновлений…",
+    "checkForUpdatesDescriptionFailed": "Не удалось проверить обновления. Нажмите кнопку, чтобы повторить.",
     "close": "Закрыть",
     "colorScheme": "Цветовая схема",
     "colorSchemeDescription": "Выберите предпочитаемую цветовую схему",
