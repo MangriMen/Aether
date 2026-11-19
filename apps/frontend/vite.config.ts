@@ -73,7 +73,7 @@ const developmentConfig: UserConfig = {
 };
 
 const buildConfig: UserConfig['build'] = {
-  chunkSizeWarningLimit: 1500,
+  chunkSizeWarningLimit: 900,
 };
 
 // https://vitejs.dev/config/

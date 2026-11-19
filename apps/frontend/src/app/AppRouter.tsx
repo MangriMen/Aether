@@ -1,15 +1,37 @@
 import { Route, Router, type RouteSectionProps } from '@solidjs/router';
-import { type Component } from 'solid-js';
+import { type Component, lazy } from 'solid-js';
 
 import { HomePage } from '@/app/pages/home';
-import { ContentBrowserWrapper } from '@/features/content-browser';
-import { ContentItemPage } from '@/features/content-item';
-import { ContentPageLayout } from '@/features/content-page';
-import { InstanceSettingsDialog } from '@/features/instance-edit';
-import { InstancePage } from '@/features/instance-page';
 
 import { AppRoot } from './AppRoot';
 import { ROUTE_PATTERNS } from './routePatterns';
+
+// The pages other than the home page load when they are first opened.
+const ContentBrowserWrapper = lazy(() =>
+  import('@/features/content-browser').then((m) => ({
+    default: m.ContentBrowserWrapper,
+  })),
+);
+const ContentItemPage = lazy(() =>
+  import('@/features/content-item').then((m) => ({
+    default: m.ContentItemPage,
+  })),
+);
+const ContentPageLayout = lazy(() =>
+  import('@/features/content-page').then((m) => ({
+    default: m.ContentPageLayout,
+  })),
+);
+const InstanceSettingsDialog = lazy(() =>
+  import('@/features/instance-edit').then((m) => ({
+    default: m.InstanceSettingsDialog,
+  })),
+);
+const InstancePage = lazy(() =>
+  import('@/features/instance-page').then((m) => ({
+    default: m.InstancePage,
+  })),
+);
 
 const InstanceSettingsRoute: Component<RouteSectionProps> = (props) => (
   <InstanceSettingsDialog instanceId={props.params.id} />
