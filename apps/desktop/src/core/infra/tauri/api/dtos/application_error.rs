@@ -7,7 +7,7 @@ use super::CauseDto;
 use crate::shared::IdempotencyManagerError;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub enum IoErrorKindDto {
     NotFound,
     PermissionDenied,
@@ -66,11 +66,11 @@ mod tests {
     #[case::other(std::io::Error::other("disk full"), json!({"type": "unknown", "details": "disk full"}))]
     #[case::not_found(
         std::io::Error::from(std::io::ErrorKind::NotFound),
-        json!({"type": "io", "kind": "notFound"})
+        json!({"type": "io", "kind": "not_found"})
     )]
     #[case::storage_full(
         std::io::Error::from(std::io::ErrorKind::StorageFull),
-        json!({"type": "io", "kind": "storageFull"})
+        json!({"type": "io", "kind": "storage_full"})
     )]
     fn should_map_io_error_to_structured_application_error(
         #[case] io_error: std::io::Error,

@@ -305,7 +305,7 @@ mod tests {
             out,
             json!({
                 "code": "SPAWN_FAILED",
-                "payload": {"cause": {"type": "io", "kind": "notFound"}}
+                "payload": {"cause": {"type": "io", "kind": "not_found"}}
             })
         );
     }
@@ -364,7 +364,7 @@ mod tests {
             out,
             json!({
                 "code": "STORAGE_FAILURE",
-                "payload": {"cause": {"type": "io", "kind": "permissionDenied"}}
+                "payload": {"cause": {"type": "io", "kind": "permission_denied"}}
             })
         );
     }
@@ -423,7 +423,7 @@ mod tests {
 
         assert_eq!(
             serde_json::to_value(dto).unwrap(),
-            json!({"code": "STORAGE", "payload": {"cause": {"type": "io", "kind": "notFound"}}})
+            json!({"code": "STORAGE", "payload": {"cause": {"type": "io", "kind": "not_found"}}})
         );
     }
 

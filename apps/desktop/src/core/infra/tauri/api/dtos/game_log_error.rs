@@ -45,7 +45,7 @@ mod tests {
 
         assert_eq!(
             serde_json::to_value(GameLogErrorDto::from(&err)).unwrap(),
-            json!({"code": "IO", "payload": {"cause": {"type": "io", "kind": "notFound"}}})
+            json!({"code": "IO", "payload": {"cause": {"type": "io", "kind": "not_found"}}})
         );
     }
 }

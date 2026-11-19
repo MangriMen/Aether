@@ -38,6 +38,8 @@ impl From<aether_core::features::plugins::PluginSource> for PluginSourceDto {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Type)]
 #[serde(rename_all = "snake_case")]
 pub enum PluginSourceTypeDto {
+    /// `github`, not `git_hub`: the name the plugin sources and the error payloads use.
+    #[serde(rename = "github")]
     GitHub,
     Local,
 }

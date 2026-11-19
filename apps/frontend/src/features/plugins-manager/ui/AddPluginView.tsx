@@ -32,7 +32,7 @@ export const AddPluginView: Component<AddPluginViewProps> = (props) => {
           </span>
         }
       >
-        <Match when={local.provider === 'git_hub'}>
+        <Match when={local.provider === 'github'}>
           <InstallFromGithubView onInstalled={local.onInstalled} />
         </Match>
       </Switch>

@@ -117,7 +117,7 @@ mod tests {
 
         assert_eq!(
             serde_json::to_value(HookErrorDto::from(&err)).unwrap(),
-            json!({"code": "SPAWN_FAILED", "payload": {"hook": "PRE_LAUNCH", "program": "x", "cause": {"type": "io", "kind": "permissionDenied"}}})
+            json!({"code": "SPAWN_FAILED", "payload": {"hook": "PRE_LAUNCH", "program": "x", "cause": {"type": "io", "kind": "permission_denied"}}})
         );
     }
 }

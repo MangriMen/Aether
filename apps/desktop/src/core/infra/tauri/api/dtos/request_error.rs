@@ -135,7 +135,7 @@ mod tests {
 
         assert_eq!(
             to_json(&err),
-            json!({"code": "IO", "payload": {"path": "a.jar", "cause": {"type": "io", "kind": "notFound"}}})
+            json!({"code": "IO", "payload": {"path": "a.jar", "cause": {"type": "io", "kind": "not_found"}}})
         );
     }
 
@@ -177,7 +177,7 @@ mod tests {
 
         assert_eq!(
             to_json(&err),
-            json!({"code": "MIDDLEWARE", "payload": {"cause": {"type": "io", "kind": "permissionDenied"}}})
+            json!({"code": "MIDDLEWARE", "payload": {"cause": {"type": "io", "kind": "permission_denied"}}})
         );
     }
 }

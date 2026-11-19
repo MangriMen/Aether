@@ -83,7 +83,7 @@ mod tests {
             to_json(event),
             json!({"seq": 0, "warning": {
                 "code": "INSTANCE_ICON_NOT_IMPORTED",
-                "payload": {"cause": {"type": "io", "kind": "permissionDenied"}},
+                "payload": {"cause": {"type": "io", "kind": "permission_denied"}},
             }})
         );
     }

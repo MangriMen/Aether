@@ -291,7 +291,7 @@ mod tests {
             provider(ContentProviderRejection::InvalidOverridesArchive(
                 err.into()
             ))["payload"]["reason"],
-            json!({"code": "INVALID_OVERRIDES_ARCHIVE", "payload": {"cause": {"type": "io", "kind": "invalidData"}}})
+            json!({"code": "INVALID_OVERRIDES_ARCHIVE", "payload": {"cause": {"type": "io", "kind": "invalid_data"}}})
         );
     }
 
@@ -359,7 +359,7 @@ mod tests {
             provider(ContentProviderRejection::Request(std::sync::Arc::new(
                 source
             )))["payload"]["reason"],
-            json!({"code": "REQUEST", "payload": {"cause": {"type": "httpStatus", "status": 503, "url": "https://api.example.com/v2/project/x"}}})
+            json!({"code": "REQUEST", "payload": {"cause": {"type": "http_status", "status": 503, "url": "https://api.example.com/v2/project/x"}}})
         );
     }
 
@@ -407,7 +407,7 @@ mod tests {
     #[test]
     fn should_serialize_the_io_failures_of_a_pack() {
         let io = || std::io::Error::from(std::io::ErrorKind::NotFound);
-        let cause = json!({"cause": {"type": "io", "kind": "notFound"}});
+        let cause = json!({"cause": {"type": "io", "kind": "not_found"}});
 
         for (reason, code) in [
             (
@@ -522,7 +522,7 @@ mod tests {
 
         assert_eq!(
             value["payload"]["reason"],
-            json!({"code": "DOWNLOAD", "payload": {"url": "https://cdn.example.com/a.jar", "cause": {"type": "httpStatus", "status": 404, "url": "https://cdn.example.com/a.jar"}}})
+            json!({"code": "DOWNLOAD", "payload": {"url": "https://cdn.example.com/a.jar", "cause": {"type": "http_status", "status": 404, "url": "https://cdn.example.com/a.jar"}}})
         );
     }
 

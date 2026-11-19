@@ -13,12 +13,12 @@ import {
 export type PluginState = PluginDtoState;
 
 export const isPluginDisabled = (state: PluginState) =>
-  state === 'NotLoaded' || state === 'Failed' || state === 'Incompatible';
+  state === 'not_loaded' || state === 'failed' || state === 'incompatible';
 
 export const isPluginLoading = (state: PluginState) =>
-  state === 'Loading' || state === 'Unloading';
+  state === 'loading' || state === 'unloading';
 
-export const isPluginEnabled = (state: PluginState) => state === 'Loaded';
+export const isPluginEnabled = (state: PluginState) => state === 'loaded';
 
 /** Why the core refused to run the plugin, in the user's language. */
 export const getTranslatedStateReason = (
@@ -62,9 +62,9 @@ export const getTranslatedStateLabel = (
   t: TFunction,
 ): string | undefined => {
   switch (state) {
-    case 'Incompatible':
+    case 'incompatible':
       return t('plugin.stateIncompatible');
-    case 'Failed':
+    case 'failed':
       return t('plugin.stateFailed');
     default:
       return undefined;

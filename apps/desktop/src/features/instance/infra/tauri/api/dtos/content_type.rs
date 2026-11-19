@@ -2,6 +2,7 @@ use aether_core::features::instance::ContentType;
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
+/// The values are the ones Modrinth uses (`datapack`, `resourcepack`), not `snake_case`.
 #[derive(Serialize, Deserialize, Clone, Debug, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "lowercase")]
 pub enum ContentTypeDto {

@@ -29,6 +29,7 @@ impl From<aether_core::features::plugins::HostFunctionRisk> for HostFunctionRisk
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
+#[serde(rename_all = "snake_case")]
 pub enum PluginDtoState {
     NotLoaded,
     Loading,

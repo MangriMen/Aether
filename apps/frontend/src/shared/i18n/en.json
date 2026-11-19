@@ -14,7 +14,7 @@
     "title": "Account"
   },
   "errors": {
-    "appSettings": {
+    "app_settings": {
       "TRANSPARENT_EFFECT_REQUIRED": "Transparency effect is required for this action",
       "CAN_NOT_SET_EFFECT": "Unable to apply the requested effect: {{reason}}",
       "CAN_NOT_RECREATE_WINDOW": "Unable to recreate window: {{reason}}",
@@ -80,12 +80,12 @@
       "SERIALIZE_ERROR": "Failed to serialize event data",
       "STORAGE_ERROR": "Event storage failure"
     },
-    "fileWatcher": {
+    "file_watcher": {
       "PATH_NOT_FOUND": "Watched path not found",
       "WATCH_NOT_FOUND": "Watch handle not found",
       "NOTIFY_ERROR": "Failed to send file system notification"
     },
-    "gameLog": {
+    "game_log": {
       "INVALID_SOURCE": "Unknown log",
       "SOURCE_NOT_FOUND": "The log no longer exists",
       "TOO_LARGE": "The log is too large to open",

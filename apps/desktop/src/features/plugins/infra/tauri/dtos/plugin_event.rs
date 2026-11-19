@@ -13,7 +13,7 @@ pub struct PluginEventDto {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Type)]
-#[serde(rename_all = "camelCase", tag = "type")]
+#[serde(rename_all = "snake_case", tag = "type")]
 pub enum PluginEventKindDto {
     Edit {
         plugin_id: String,
@@ -35,7 +35,7 @@ pub enum PluginEventKindDto {
 /// How a command question ended. The UI tells the user about a timeout only: an answer is
 /// theirs, and a cancel follows an attempt to stop the plugin, which they started.
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub enum CommandApprovalOutcomeDto {
     Answered,
     TimedOut,
@@ -119,10 +119,10 @@ mod tests {
             serde_json::to_value(dto).unwrap(),
             json!({
                 "seq": 1,
-                "type": "commandApprovalResolved",
+                "type": "command_approval_resolved",
                 "plugin_id": "a",
                 "request_id": "00000000-0000-0000-0000-000000000000",
-                "outcome": "timedOut"
+                "outcome": "timed_out"
             })
         );
     }

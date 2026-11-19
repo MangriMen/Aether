@@ -5,6 +5,7 @@ import { enDictionary, ruDictionary } from '..';
 // Parents whose children are values of a backend enum: the segment keeps the
 // value's case, so the key can be built from the value. A new map goes here.
 const ENUM_VALUE_PARENTS = [
+  'errors',
   'events.stage',
   'instance.broken.reasons',
   'plugin.commandApproval.onceOnly',

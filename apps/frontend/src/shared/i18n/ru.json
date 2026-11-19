@@ -14,7 +14,7 @@
     "title": "Аккаунт"
   },
   "errors": {
-    "appSettings": {
+    "app_settings": {
       "TRANSPARENT_EFFECT_REQUIRED": "Для этого действия необходим эффект прозрачности",
       "CAN_NOT_SET_EFFECT": "Не удалось применить эффект: {{reason}}",
       "CAN_NOT_RECREATE_WINDOW": "Не удалось пересоздать окно: {{reason}}",
@@ -80,12 +80,12 @@
       "SERIALIZE_ERROR": "Ошибка сериализации данных события",
       "STORAGE_ERROR": "Ошибка хранилища событий"
     },
-    "fileWatcher": {
+    "file_watcher": {
       "PATH_NOT_FOUND": "Указанный путь не найден",
       "WATCH_NOT_FOUND": "Дескриптор службы отслеживания не найден",
       "NOTIFY_ERROR": "Ошибка уведомления файловой системы"
     },
-    "gameLog": {
+    "game_log": {
       "INVALID_SOURCE": "Неизвестный лог",
       "SOURCE_NOT_FOUND": "Лога больше нет",
       "TOO_LARGE": "Лог слишком большой, чтобы его открыть",

@@ -16,7 +16,7 @@ export const useCacheEventListener = () => {
         case 'changed':
           await settingsCache.invalidate.cacheUsage(queryClient);
           break;
-        case 'busyChanged':
+        case 'busy_changed':
           await settingsCache.setCacheBusy(queryClient, e.payload.busy);
           break;
       }

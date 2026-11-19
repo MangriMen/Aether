@@ -9,7 +9,7 @@ use specta::Type;
 use super::IoErrorKindDto;
 
 #[derive(Debug, Clone, Serialize, Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub enum NetworkErrorKindDto {
     Timeout,
     Connect,
@@ -19,7 +19,7 @@ pub enum NetworkErrorKindDto {
 
 /// Why a command failed, in a form the frontend can translate without seeing raw error text.
 #[derive(Debug, Clone, Serialize, Type)]
-#[serde(tag = "type", rename_all = "camelCase")]
+#[serde(tag = "type", rename_all = "snake_case")]
 pub enum CauseDto {
     Io {
         kind: IoErrorKindDto,
@@ -235,14 +235,14 @@ mod tests {
     }
 
     #[test]
-    fn should_serialize_io_cause_with_camel_case_tag() {
+    fn should_serialize_io_cause_with_snake_case_kind() {
         let cause = CauseDto::Io {
             kind: IoErrorKindDto::StorageFull,
         };
 
         assert_eq!(
             to_json(&cause),
-            json!({"type": "io", "kind": "storageFull"})
+            json!({"type": "io", "kind": "storage_full"})
         );
     }
 
@@ -255,7 +255,7 @@ mod tests {
 
         assert_eq!(
             to_json(&cause),
-            json!({"type": "httpStatus", "status": 404, "url": "https://example.com/a"})
+            json!({"type": "http_status", "status": 404, "url": "https://example.com/a"})
         );
     }
 
@@ -313,7 +313,7 @@ mod tests {
 
         assert_eq!(
             to_json(&CauseDto::of_source(source.as_ref())),
-            json!({"type": "io", "kind": "timedOut"})
+            json!({"type": "io", "kind": "timed_out"})
         );
     }
 
@@ -326,7 +326,7 @@ mod tests {
 
         assert_eq!(
             to_json(&CauseDto::of_source(source.as_ref())),
-            json!({"type": "io", "kind": "timedOut"})
+            json!({"type": "io", "kind": "timed_out"})
         );
     }
 

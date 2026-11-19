@@ -197,7 +197,7 @@ export type CapabilityMetadataDto = {
 };
 
 /**  Why a command failed, in a form the frontend can translate without seeing raw error text. */
-export type CauseDto = { type: "io"; kind: IoErrorKindDto } | { type: "network"; kind: NetworkErrorKindDto; url: string | null } | { type: "httpStatus"; status: number; url: string } | { type: "parse"; line: number | null; column: number | null } | { type: "database" } | 
+export type CauseDto = { type: "io"; kind: IoErrorKindDto } | { type: "network"; kind: NetworkErrorKindDto; url: string | null } | { type: "http_status"; status: number; url: string } | { type: "parse"; line: number | null; column: number | null } | { type: "database" } | 
 /**  The only place raw error text reaches the frontend. */
 { type: "unknown"; details: string };
 
@@ -221,7 +221,7 @@ export type CommandApprovalKeyDto = {
  *  How a command question ended. The UI tells the user about a timeout only: an answer is
  *  theirs, and a cancel follows an attempt to stop the plugin, which they started.
  */
-export type CommandApprovalOutcomeDto = "answered" | "timedOut" | "cancelled";
+export type CommandApprovalOutcomeDto = "answered" | "timed_out" | "cancelled";
 
 export type CommandJarDto = {
 	plugin_path: string,
@@ -351,13 +351,13 @@ export type FileWatcherErrorDto = { code: "PATH_NOT_FOUND"; payload: {
 
 export type FolderAccessDto = 
 /**  The plugin could already read the file. */
-{ type: "alreadyAllowed"; folder: string } | 
+{ type: "already_allowed"; folder: string } | 
 /**  A dry run: the plugin cannot read the file yet; nothing was changed. */
 { type: "needed"; folder: string } | 
 /**  The folder was added read-only and the plugin restarted with it. */
 { type: "granted"; folder: string };
 
-export type FrontendError = { type: "appSettings"; payload: AppSettingsErrorDto } | { type: "window"; payload: WindowErrorDto } | { type: "application"; payload: ApplicationErrorDto } | { type: "auth"; payload: AuthErrorDto } | { type: "event"; payload: EventErrorDto } | { type: "fileWatcher"; payload: FileWatcherErrorDto } | { type: "gameLog"; payload: GameLogErrorDto } | 
+export type FrontendError = { type: "app_settings"; payload: AppSettingsErrorDto } | { type: "window"; payload: WindowErrorDto } | { type: "application"; payload: ApplicationErrorDto } | { type: "auth"; payload: AuthErrorDto } | { type: "event"; payload: EventErrorDto } | { type: "file_watcher"; payload: FileWatcherErrorDto } | { type: "game_log"; payload: GameLogErrorDto } | 
 /**  A hook command of the user could not be run, whichever feature ran it. */
 { type: "hook"; payload: HookErrorDto } | { type: "instance"; payload: InstanceErrorDto } | { type: "java"; payload: JavaErrorDto } | { type: "minecraft"; payload: MinecraftErrorDto } | { type: "plugin"; payload: PluginErrorDto } | { type: "process"; payload: ProcessErrorDto } | { type: "request"; payload: RequestErrorDto } | { type: "settings"; payload: SettingsErrorDto } | { type: "update"; payload: UpdateErrorDto };
 
@@ -399,7 +399,7 @@ export type HookKindDto = "PRE_LAUNCH" | "WRAPPER" | "POST_EXIT";
 
 export type HostAccessDto = 
 /**  The plugin could already reach the host. */
-{ type: "alreadyAllowed"; host: string } | 
+{ type: "already_allowed"; host: string } | 
 /**  A dry run: the plugin cannot reach the host yet; nothing was changed. */
 { type: "needed"; host: string } | 
 /**  The host was added to the plugin's allowed hosts. */
@@ -529,7 +529,7 @@ export type InstanceFieldDto = "name";
 
 export type InstanceValidationErrorReasonDto = "cannot_be_empty";
 
-export type IoErrorKindDto = "notFound" | "permissionDenied" | "alreadyExists" | "storageFull" | "readOnlyFilesystem" | "resourceBusy" | "timedOut" | "invalidData";
+export type IoErrorKindDto = "not_found" | "permission_denied" | "already_exists" | "storage_full" | "read_only_filesystem" | "resource_busy" | "timed_out" | "invalid_data";
 
 export type JavaErrorDto = { code: "NOT_FOUND"; payload: {
 	version: number,
@@ -709,7 +709,7 @@ export type PluginDto = {
 	host_function_risks: HostFunctionRiskDto[],
 };
 
-export type PluginDtoState = "NotLoaded" | "Loading" | "Loaded" | "Unloading" | "Incompatible" | "Failed";
+export type PluginDtoState = "not_loaded" | "loading" | "loaded" | "unloading" | "incompatible" | "failed";
 
 export type PluginErrorDto = { code: "NOT_FOUND"; payload: {
 	plugin_id: string,
@@ -860,7 +860,7 @@ export type PluginEventKindDto = { type: "edit"; plugin_id: string } | { type: "
  *  A command of the plugin waits for the user. The arguments are not here: the frontend asks
  *  for the question.
  */
-{ type: "commandApprovalRequested"; plugin_id: string; request_id: string } | { type: "commandApprovalResolved"; plugin_id: string; request_id: string; outcome: CommandApprovalOutcomeDto };
+{ type: "command_approval_requested"; plugin_id: string; request_id: string } | { type: "command_approval_resolved"; plugin_id: string; request_id: string; outcome: CommandApprovalOutcomeDto };
 
 export type PluginImporterCapabilityDto = {
 	/**  Plugin function name to handle this capability call. */
@@ -958,7 +958,9 @@ export type PluginSettingsDto = {
 export type PluginSourceDto = { source: "remote"; source_type: PluginSourceTypeDto; identifier: string; current_tag: string; current_version: string } | { source: "local" };
 
 /**  Provider source type for plugin installation. */
-export type PluginSourceTypeDto = "git_hub" | "local";
+export type PluginSourceTypeDto = 
+/**  `github`, not `git_hub`: the name the plugin sources and the error payloads use. */
+"github" | "local";
 
 /**  Translated by its `code`; the payload fills in the message. */
 export type PluginStateReasonDto = { code: "INCOMPATIBLE_API_VERSION"; payload: {

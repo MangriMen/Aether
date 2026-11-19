@@ -744,7 +744,7 @@ mod tests {
 
         assert_eq!(
             to_json(&err),
-            json!({"code": "STORAGE", "payload": {"cause": {"type": "io", "kind": "notFound"}}})
+            json!({"code": "STORAGE", "payload": {"cause": {"type": "io", "kind": "not_found"}}})
         );
     }
 
@@ -766,7 +766,7 @@ mod tests {
 
         assert_eq!(
             to_json(&err),
-            json!({"code": "STORAGE", "payload": {"cause": {"type": "io", "kind": "storageFull"}}})
+            json!({"code": "STORAGE", "payload": {"cause": {"type": "io", "kind": "storage_full"}}})
         );
     }
 
@@ -800,7 +800,7 @@ mod tests {
             to_json(&err),
             json!({"code": "CONTENT_STATE_CHANGE_FAILED", "payload": {
                 "paths": ["mods/a.jar", "mods/b.jar"],
-                "cause": {"type": "io", "kind": "permissionDenied"}
+                "cause": {"type": "io", "kind": "permission_denied"}
             }})
         );
     }
