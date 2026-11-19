@@ -4,6 +4,8 @@ import type { Theme as WindowTheme } from '@tauri-apps/api/window';
 import { useColorMode } from '@kobalte/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 
+import { logError } from '@/shared/log';
+
 const configColorModeToWindowThemeMap: Record<
   ConfigColorMode,
   WindowTheme | null
@@ -19,7 +21,11 @@ export const useGlobalColorMode = () => {
 
   const setColorMode = (value: ConfigColorMode) => {
     setBrowserColorMode(value);
-    void getCurrentWindow().setTheme(configColorModeToWindowThemeMap[value]);
+    getCurrentWindow()
+      .setTheme(configColorModeToWindowThemeMap[value])
+      .catch((err: unknown) => {
+        logError('Failed to set the window theme:', err);
+      });
   };
 
   return { colorMode: browserColorMode, setColorMode };
