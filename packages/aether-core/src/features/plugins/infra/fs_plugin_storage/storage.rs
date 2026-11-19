@@ -91,7 +91,17 @@ fn copy_plugin_files(source: &Path, target: &Path, plugin_id: &PluginId) -> Resu
             continue;
         }
 
-        if entry.file_type()?.is_dir() {
+        let file_type = entry.file_type()?;
+        // A link would be followed, bringing in whatever it points at.
+        if file_type.is_symlink() {
+            warn!(
+                "Plugin '{plugin_id}' brings '{}', which is a symbolic link; left out",
+                name.to_string_lossy()
+            );
+            continue;
+        }
+
+        if file_type.is_dir() {
             copy_dir_all(entry.path(), target_path)?;
         } else {
             std::fs::copy(entry.path(), target_path)?;
@@ -1059,6 +1069,31 @@ mod tests {
             .collect();
         names.sort();
         assert_eq!(names, ["manifest.json", "plugin.wasm"]);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn should_leave_out_links_when_the_plugin_brings_them() {
+        let source = TempDir::new().unwrap();
+        let target = TempDir::new().unwrap();
+        let outside = TempDir::new().unwrap();
+        write_plugin(source.path(), "0.1.0");
+        std::fs::write(outside.path().join("secret.txt"), b"secret").unwrap();
+        std::os::unix::fs::symlink(
+            outside.path().join("secret.txt"),
+            source.path().join("link"),
+        )
+        .unwrap();
+
+        copy_plugin_files(
+            source.path(),
+            target.path(),
+            &PluginId::from_static("test-plugin"),
+        )
+        .unwrap();
+
+        assert!(!target.path().join("link").exists());
+        assert!(target.path().join("plugin.wasm").exists());
     }
 
     /// What a process killed between the two renames of a replacement leaves.
