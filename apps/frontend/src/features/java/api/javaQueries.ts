@@ -62,7 +62,7 @@ export const useEditJava = () => {
   return useMutation(() => ({
     mutationFn: javaCommands.edit,
     onSuccess: () => {
-      javaCache.invalidate.list(queryClient);
+      void javaCache.invalidate.list(queryClient);
     },
     onError: (err) => {
       showError({
@@ -81,7 +81,7 @@ export const useRemoveJava = () => {
   return useMutation(() => ({
     mutationFn: javaCommands.remove,
     onSuccess: () => {
-      javaCache.invalidate.list(queryClient);
+      void javaCache.invalidate.list(queryClient);
     },
     onError: (err) => {
       if (

@@ -17,7 +17,7 @@ export const usePluginEventListener = () => {
   const [{ t }] = useTranslation();
 
   // The backend loads plugins on its own at startup, possibly before this listener exists.
-  pluginsCache.invalidate.all(queryClient);
+  void pluginsCache.invalidate.all(queryClient);
   // A question may already wait: the backend runs plugins before this listener exists.
   void invalidateCommandApprovals(queryClient);
 
@@ -26,10 +26,10 @@ export const usePluginEventListener = () => {
 
     switch (e.payload.type) {
       case 'sync':
-        pluginsCache.invalidate.all(queryClient);
+        void pluginsCache.invalidate.all(queryClient);
         break;
       case 'edit':
-        pluginsCache.invalidate.full(queryClient, e.payload.plugin_id);
+        void pluginsCache.invalidate.full(queryClient, e.payload.plugin_id);
         break;
       case 'commandApprovalRequested':
         // The window may be behind another or minimised, and the plugin waits for the answer.

@@ -44,6 +44,8 @@
     ],
     "no-debugger": "warn",
     "no-console": "warn",
+    "typescript/no-floating-promises": "error",
+    "unicorn/no-new-array": "error",
     "constructor-super": "error",
     "for-direction": "error",
     "getter-return": "error",
@@ -570,6 +572,10 @@
                   "@/platform/bindings/**"
                 ],
                 "message": "Use the alias from the feature model/ instead of a *Dto from platform/bindings."
+              },
+              {
+                "group": ["@tauri-apps/api/core", "@tauri-apps/api/event"],
+                "message": "Go through platform/ipc, not the Tauri core or event API."
               }
             ]
           }
@@ -602,6 +608,10 @@
                   "@/platform/bindings/**"
                 ],
                 "message": "Use the alias from the feature model/ instead of a *Dto from platform/bindings."
+              },
+              {
+                "group": ["@tauri-apps/api/core", "@tauri-apps/api/event"],
+                "message": "Go through platform/ipc, not the Tauri core or event API."
               }
             ]
           }

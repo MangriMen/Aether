@@ -54,12 +54,12 @@ export const InstanceActionButton: Component<InstanceActionButtonProps> = (
 
   const handleLaunch = (e: MouseEvent) => {
     e.stopPropagation();
-    launchInstance(local.instance);
+    void launchInstance(local.instance);
   };
 
   const handleStop = (e: MouseEvent) => {
     e.stopPropagation();
-    stopInstance(local.instance);
+    void stopInstance(local.instance);
   };
 
   return (

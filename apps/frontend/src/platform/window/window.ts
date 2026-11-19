@@ -16,9 +16,9 @@ export const toggleMaximize = async () => {
   const isMaximized = await appWindow.isMaximized();
 
   if (isMaximized) {
-    appWindow.unmaximize();
+    await appWindow.unmaximize();
   } else {
-    appWindow.maximize();
+    await appWindow.maximize();
   }
 };
 

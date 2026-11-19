@@ -63,14 +63,14 @@ export const JavaVersionPath: Component<JavaVersionPathProps> = (props) => {
   const handleBlur: JSX.FocusEventHandler<HTMLInputElement, FocusEvent> = (
     e,
   ) => {
-    applyPathChange(e.currentTarget.value);
+    void applyPathChange(e.currentTarget.value);
   };
 
   const handleKeyDown: JSX.EventHandler<HTMLInputElement, KeyboardEvent> = (
     e,
   ) => {
     if (e.key === 'Enter') {
-      applyPathChange(e.currentTarget.value);
+      void applyPathChange(e.currentTarget.value);
     }
   };
 

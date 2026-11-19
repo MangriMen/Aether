@@ -24,15 +24,15 @@ export const useJavaInstallationListener = () => {
     const isAlreadyTracked = currentActive.includes(version);
 
     if (!isAlreadyTracked) {
-      javaCache.invalidate.getActiveInstallations(queryClient);
+      void javaCache.invalidate.getActiveInstallations(queryClient);
     }
 
     if (e.payload.fraction === null) {
       clearTimeout(removeTimeoutId);
 
       removeTimeoutId = window.setTimeout(() => {
-        javaCache.invalidate.list(queryClient);
-        javaCache.invalidate.getActiveInstallations(queryClient);
+        void javaCache.invalidate.list(queryClient);
+        void javaCache.invalidate.getActiveInstallations(queryClient);
       }, PROGRESS_EVENT_REMOVE_DELAY);
     }
   });

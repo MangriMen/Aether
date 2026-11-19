@@ -9,6 +9,7 @@ import { Show, splitProps } from 'solid-js';
 
 import { isMaximized, toggleMaximize } from '@/platform/window';
 import { useTranslation } from '@/shared/i18n';
+import { logError } from '@/shared/log';
 import { cn } from '@/shared/utils';
 
 import { TitleBarButton } from './TitleBarButton';
@@ -24,11 +25,15 @@ export const WindowControls: Component<WindowControlsProps> = (props) => {
   const appWindow = getCurrentWebviewWindow();
 
   const handleMinimize = () => {
-    appWindow.minimize();
+    appWindow.minimize().catch((err: unknown) => {
+      logError('Failed to minimize the window:', err);
+    });
   };
 
   const handleClose = () => {
-    appWindow.close();
+    appWindow.close().catch((err: unknown) => {
+      logError('Failed to close the window:', err);
+    });
   };
 
   return (

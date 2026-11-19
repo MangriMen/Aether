@@ -29,7 +29,7 @@ export const useContentVersionInstall = (
       return;
     }
 
-    installContent(
+    void installContent(
       { id: current.contentId, contentType: type },
       undefined,
       current.id,
