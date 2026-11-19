@@ -62,6 +62,38 @@ async fn should_give_the_folder_read_only_and_restart_the_plugin_when_a_pack_is_
     assert_eq!(settings.folders().len(), 1);
 }
 
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn should_give_the_picked_folder_itself_when_a_folder_is_picked() {
+    let harness = Harness::enabled().await;
+    let settings = Arc::new(MemoryPluginSettings::default());
+    let (_root, file) = pack_file();
+    let folder = file.parent().unwrap().to_path_buf();
+
+    let access = harness
+        .grant(&settings)
+        .execute(plugin_id(), folder.clone(), false)
+        .await
+        .unwrap();
+
+    assert_eq!(
+        access,
+        FolderAccess::Granted {
+            folder: folder.clone()
+        }
+    );
+    assert_eq!(
+        settings.folders(),
+        [AllowedPath::read_only_folder(&folder).unwrap()]
+    );
+
+    let again = harness
+        .grant(&settings)
+        .execute(plugin_id(), file, false)
+        .await
+        .unwrap();
+    assert_eq!(again, FolderAccess::AlreadyAllowed { folder });
+}
+
 // Only a drive can be mounted under its own WASI name: `/` is no mount point on unix, where
 // a saved root lands in the ignored entries instead.
 #[cfg(windows)]

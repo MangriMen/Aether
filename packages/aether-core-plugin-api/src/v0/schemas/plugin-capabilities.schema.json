@@ -111,6 +111,11 @@
           "description": "Display name of the capability.",
           "type": "string"
         },
+        "pickFolder": {
+          "description": "The importer reads a folder, not a file: a pack with its files beside the manifest. The\nUI asks for a folder then, and `supportedExtensions` does not apply.",
+          "type": "boolean",
+          "default": false
+        },
         "supportedExtensions": {
           "description": "List of supported file extensions, e.g., [`zip`, `mrpack`].",
           "type": "array",

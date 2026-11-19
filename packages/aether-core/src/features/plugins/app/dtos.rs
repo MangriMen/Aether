@@ -75,6 +75,7 @@ pub struct ImporterCapabilityMetadataDto {
     pub base: CapabilityMetadataDto,
     pub field_label: Option<String>,
     pub supported_extensions: Vec<String>,
+    pub pick_folder: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -310,6 +311,7 @@ impl From<ImporterCapabilityMetadata> for ImporterCapabilityMetadataDto {
             base: v.base.into(),
             field_label: v.field_label,
             supported_extensions: v.supported_extensions,
+            pick_folder: v.pick_folder,
         }
     }
 }

@@ -85,6 +85,8 @@ pub enum AllowedPathRejection {
     HostNotAFolder,
     /// A whole drive or the filesystem root.
     HostIsRoot,
+    /// The user's home folder, or a folder holding it: a plugin has no business in all of it.
+    HostIsHome,
     /// The plugin path does not start with `/`.
     PluginNotAbsolute,
     /// The plugin path is not plain `/`-separated names (see [`PluginMountPoint`]): it has an
@@ -104,6 +106,7 @@ impl std::fmt::Display for AllowedPathRejection {
             Self::HostNotAbsolute => "the host path is not absolute",
             Self::HostNotAFolder => "the host path is not an existing folder",
             Self::HostIsRoot => "a whole drive is never given to a plugin",
+            Self::HostIsHome => "the home folder is never given to a plugin",
             Self::PluginNotAbsolute => "the plugin path must start with `/`",
             Self::PluginNotNormalized => {
                 "the plugin path must be plain `/`-separated names, without empty, `.` or `..` \

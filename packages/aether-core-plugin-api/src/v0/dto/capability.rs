@@ -31,6 +31,11 @@ pub struct ImporterCapabilityMetadataDto {
 
     /// List of supported file extensions, e.g., [`zip`, `mrpack`].
     pub supported_extensions: Vec<String>,
+
+    /// The importer reads a folder, not a file: a pack with its files beside the manifest. The
+    /// UI asks for a folder then, and `supportedExtensions` does not apply.
+    #[serde(default)]
+    pub pick_folder: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]

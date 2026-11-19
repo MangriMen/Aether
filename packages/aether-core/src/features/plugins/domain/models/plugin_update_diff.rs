@@ -288,6 +288,7 @@ mod tests {
                 base: base(id, &format!("{id} importer")),
                 field_label: None,
                 supported_extensions: vec![],
+                pick_folder: false,
             },
             handler: "import".to_owned(),
         }

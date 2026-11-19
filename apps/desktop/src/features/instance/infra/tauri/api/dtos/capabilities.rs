@@ -36,6 +36,9 @@ pub struct ImporterCapabilityMetadataDto {
 
     /// List of supported file extensions, e.g., [`zip`, `mrpack`].
     pub supported_extensions: Vec<String>,
+
+    /// The importer reads a folder, not a file: the UI asks for a folder.
+    pub pick_folder: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
@@ -84,6 +87,7 @@ impl From<ImporterCapabilityMetadata> for ImporterCapabilityMetadataDto {
             base: m.base.into(),
             field_label: m.field_label,
             supported_extensions: m.supported_extensions,
+            pick_folder: m.pick_folder,
         }
     }
 }
@@ -96,6 +100,7 @@ impl From<aether_core::features::plugins::ImporterCapabilityMetadataDto>
             base: dto.base.into(),
             field_label: dto.field_label,
             supported_extensions: dto.supported_extensions,
+            pick_folder: dto.pick_folder,
         }
     }
 }

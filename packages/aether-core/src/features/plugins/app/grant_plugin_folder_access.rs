@@ -19,7 +19,7 @@ use super::{
     ports::{GrantPluginFolderAccessUseCasePort, ReloadPluginUseCasePort},
 };
 
-/// What became of the folder of a file the user named for a plugin.
+/// What became of the folder the user picked for a plugin.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FolderAccess {
     /// The plugin could already read the file.
@@ -30,9 +30,11 @@ pub enum FolderAccess {
     Granted { folder: PathBuf },
 }
 
-/// Gives a plugin read-only access to the folder of a file the user named for it (the pack an
-/// importer is to read). The whole folder, because a pack is more than its `pack.toml`; a dry
-/// run tells the UI whether there is anything to ask, and refuses what the grant would refuse.
+/// Gives a plugin read-only access to what the user picked for it (the pack an importer is to
+/// read): the folder itself when a folder was picked, else the folder of the file. The whole
+/// folder, because a pack is more than its `pack.toml`. The home folder and anything holding it
+/// are refused. A dry run tells the UI whether there is anything to ask, and refuses what the
+/// grant would refuse.
 ///
 /// Folders are mounted when an instance is built, so a running plugin is restarted. A busy
 /// plugin gets neither the folder nor the restart: the caller gets [`PluginError::Busy`]. Nor
@@ -161,31 +163,57 @@ impl GrantPluginFolderAccessUseCase {
     }
 }
 
-/// The folder holding `file`, as the user named it: the importer hands the plugin the file under
-/// that same name, so a mount of a resolved (symlink-free) path would not answer for it.
-fn folder_of(plugin_id: &PluginId, file: &Path) -> Result<PathBuf, PluginError> {
+/// The folder to give for what the user picked: the pick itself when it is a folder (a pack whose
+/// files sit around its manifest), else the folder holding the file. Under the name the user gave
+/// it: the importer hands the plugin the path under that same name, so a mount of a resolved
+/// (symlink-free) path would not answer for it.
+fn folder_of(plugin_id: &PluginId, picked: &Path) -> Result<PathBuf, PluginError> {
+    folder_of_with_home(plugin_id, picked, dirs::home_dir().as_deref())
+}
+
+fn folder_of_with_home(
+    plugin_id: &PluginId,
+    picked: &Path,
+    home: Option<&Path>,
+) -> Result<PathBuf, PluginError> {
     let rejected = |reason| PluginError::InvalidAllowedPath {
         plugin_id: plugin_id.to_owned(),
-        path: file.to_string_lossy().into_owned(),
+        path: picked.to_string_lossy().into_owned(),
         reason,
     };
 
-    if !file.is_absolute() {
+    if !picked.is_absolute() {
         return Err(rejected(AllowedPathRejection::HostNotAbsolute));
     }
 
-    let folder = file
-        .parent()
-        .filter(|folder| folder.is_dir())
-        .ok_or_else(|| rejected(AllowedPathRejection::HostNotAFolder))?;
+    let folder = if picked.is_dir() {
+        Some(picked)
+    } else {
+        picked.parent().filter(|folder| folder.is_dir())
+    }
+    .ok_or_else(|| rejected(AllowedPathRejection::HostNotAFolder))?;
 
-    // A file at the top of a drive would take the whole drive with it, however the path leads
+    // A pick at the top of a drive would take the whole drive with it, however the path leads
     // there (`D:\x\..\pack.toml` is at the top of `D:`).
     if is_filesystem_root(folder) {
         return Err(rejected(AllowedPathRejection::HostIsRoot));
     }
 
+    if holds_home(folder, home) {
+        return Err(rejected(AllowedPathRejection::HostIsHome));
+    }
+
     Ok(folder.to_path_buf())
+}
+
+/// Whether `folder` is the home folder or holds it, by where they really are.
+fn holds_home(folder: &Path, home: Option<&Path>) -> bool {
+    let (Some(home), Ok(folder)) = (home, dunce::canonicalize(folder)) else {
+        return false;
+    };
+    let home = dunce::canonicalize(home).unwrap_or_else(|_| home.to_path_buf());
+
+    home.starts_with(folder)
 }
 
 #[async_trait]
@@ -197,5 +225,56 @@ impl GrantPluginFolderAccessUseCasePort for GrantPluginFolderAccessUseCase {
         dry_run: bool,
     ) -> Result<FolderAccess, PluginError> {
         self.execute(plugin_id, file, dry_run).await
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn id() -> PluginId {
+        PluginId::from_static("importer")
+    }
+
+    #[test]
+    fn should_pick_the_folder_itself_when_a_folder_is_picked() {
+        let dir = tempfile::tempdir().unwrap();
+
+        assert_eq!(
+            folder_of_with_home(&id(), dir.path(), None).unwrap(),
+            dir.path()
+        );
+    }
+
+    #[test]
+    fn should_pick_the_folder_of_the_file_when_a_file_is_picked() {
+        let dir = tempfile::tempdir().unwrap();
+        let file = dir.path().join("pack.toml");
+        std::fs::write(&file, b"").unwrap();
+
+        assert_eq!(folder_of_with_home(&id(), &file, None).unwrap(), dir.path());
+    }
+
+    #[test]
+    fn should_refuse_the_home_folder_and_what_holds_it() {
+        let outer = tempfile::tempdir().unwrap();
+        let home = outer.path().join("user");
+        let sibling = outer.path().join("pack");
+        std::fs::create_dir_all(&home).unwrap();
+        std::fs::create_dir_all(&sibling).unwrap();
+
+        for held in [home.clone(), outer.path().to_path_buf()] {
+            let result = folder_of_with_home(&id(), &held, Some(&home));
+            assert!(
+                matches!(&result, Err(PluginError::InvalidAllowedPath { reason, .. })
+                    if *reason == AllowedPathRejection::HostIsHome),
+                "{result:?}"
+            );
+        }
+        // A folder inside the home folder is the ordinary case.
+        let inside = home.join("pack");
+        std::fs::create_dir_all(&inside).unwrap();
+        assert!(folder_of_with_home(&id(), &inside, Some(&home)).is_ok());
+        assert!(folder_of_with_home(&id(), &sibling, Some(&home)).is_ok());
     }
 }

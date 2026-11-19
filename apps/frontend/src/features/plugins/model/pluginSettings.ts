@@ -19,6 +19,7 @@ export const ALLOWED_PATH_REJECTIONS = [
   'host_not_absolute',
   'host_not_a_folder',
   'host_is_root',
+  'host_is_home',
   'plugin_not_absolute',
   'plugin_not_normalized',
   'plugin_is_root',

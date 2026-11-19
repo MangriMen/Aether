@@ -139,6 +139,7 @@ async fn import(fail: bool) -> (Result<(), InstanceError>, Arc<MemStorage>) {
                     },
                     field_label: None,
                     supported_extensions: Vec::new(),
+                    pick_folder: false,
                 },
                 fail,
             }),

@@ -127,7 +127,7 @@ export type AllowedPathDto = {
 	readOnly: boolean,
 };
 
-export type AllowedPathRejectionDto = "host_not_absolute" | "host_not_a_folder" | "host_is_root" | "plugin_not_absolute" | "plugin_not_normalized" | "plugin_is_root" | "plugin_reserved" | "host_overlaps_core";
+export type AllowedPathRejectionDto = "host_not_absolute" | "host_not_a_folder" | "host_is_root" | "host_is_home" | "plugin_not_absolute" | "plugin_not_normalized" | "plugin_is_root" | "plugin_reserved" | "host_overlaps_core";
 
 export type ApiConfigDto = {
 	/**  Required API version range (`SemVer` requirement). */
@@ -424,6 +424,8 @@ export type ImporterCapabilityMetadataDto = {
 	fieldLabel: string | null,
 	/**  List of supported file extensions, e.g., [`zip`, `mrpack`]. */
 	supportedExtensions: string[],
+	/**  The importer reads a folder, not a file: the UI asks for a folder. */
+	pickFolder: boolean,
 } & CapabilityMetadataDto;
 
 export type InstanceErrorDto = { code: "STORAGE"; payload: {
