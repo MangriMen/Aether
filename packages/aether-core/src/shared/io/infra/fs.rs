@@ -173,6 +173,7 @@ pub async fn read_dir(path: impl AsRef<Path>) -> Result<ReadDir, IoError> {
         .map_err(|e| IoError::with_path(e, path_ref))
 }
 
+/// Copy the files and directories under `src` into `dst`; symbolic links are left out.
 pub fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> Result<(), IoError> {
     std::fs::create_dir_all(&dst)?;
 
@@ -180,6 +181,11 @@ pub fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> Result<(), 
         let entry = entry?;
         let file_type = entry.file_type()?;
         let dst_path = dst.as_ref().join(entry.file_name());
+
+        // A link would be followed, copying whatever it points at.
+        if file_type.is_symlink() {
+            continue;
+        }
 
         if file_type.is_dir() {
             copy_dir_all(entry.path(), dst_path)?;
@@ -210,6 +216,29 @@ mod tests {
             .unwrap()
             .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
             .collect()
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn should_leave_out_links_when_copying_a_directory() {
+        let dir = tempfile::tempdir().unwrap();
+        let outside = dir.path().join("outside");
+        std::fs::create_dir_all(&outside).unwrap();
+        std::fs::write(outside.join("secret.txt"), "secret").unwrap();
+        let src = dir.path().join("src");
+        std::fs::create_dir_all(src.join("sub")).unwrap();
+        std::fs::write(src.join("sub").join("kept.txt"), "kept").unwrap();
+        std::os::unix::fs::symlink(outside.join("secret.txt"), src.join("file-link")).unwrap();
+        std::os::unix::fs::symlink(&outside, src.join("dir-link")).unwrap();
+        let dst = dir.path().join("dst");
+
+        copy_dir_all(&src, &dst).unwrap();
+
+        assert_eq!(file_names(&dst), ["sub"]);
+        assert_eq!(
+            std::fs::read_to_string(dst.join("sub/kept.txt")).unwrap(),
+            "kept"
+        );
     }
 
     #[tokio::test]

@@ -13,7 +13,7 @@ use crate::{
             FileHash,
             infra::{FileHasher, hash_hex_async},
         },
-        limits::{HTTP_CLIENT_CONNECT_TIMEOUT, HTTP_CLIENT_READ_TIMEOUT},
+        limits::{HTTP_CLIENT_CONNECT_TIMEOUT, HTTP_CLIENT_READ_TIMEOUT, MAX_FETCHED_BODY_BYTES},
         request_client::{
             BytesProgress, FileDownload, Method, Request, RequestClient, RequestError,
             SavedDownload,
@@ -62,6 +62,7 @@ pub struct ReqwestClient<PS: ProgressService + ?Sized> {
     progress_service: Arc<PS>,
     client: Arc<reqwest_middleware::ClientWithMiddleware>,
     permits: Permits,
+    max_body_bytes: u64,
 }
 
 impl<PS: ProgressService + ?Sized> ReqwestClient<PS> {
@@ -75,6 +76,7 @@ impl<PS: ProgressService + ?Sized> ReqwestClient<PS> {
             progress_service,
             client,
             permits: Permits::Downloads(semaphore),
+            max_body_bytes: MAX_FETCHED_BODY_BYTES,
         }
     }
 
@@ -88,6 +90,7 @@ impl<PS: ProgressService + ?Sized> ReqwestClient<PS> {
             progress_service,
             client,
             permits: Permits::Metadata(semaphore),
+            max_body_bytes: MAX_FETCHED_BODY_BYTES,
         }
     }
 
@@ -119,39 +122,50 @@ impl<PS: ProgressService + ?Sized> ReqwestClient<PS> {
         })
     }
 
-    async fn fetch_chunks(
+    /// Read the whole body of `response` into memory, refusing one over `max_body_bytes`
+    /// before it is buffered when its length is declared, and as it arrives when it is not.
+    async fn read_body(
         &self,
         response: Response,
-        progress_bar: (&ProgressBarId, f64),
+        progress_bar: Option<(&ProgressBarId, f64)>,
     ) -> Result<Bytes, RequestError> {
         use futures::StreamExt;
 
-        let Some(total_size) = response.content_length() else {
-            return Ok(response.bytes().await?);
-        };
+        let limit = self.max_body_bytes;
+        let declared = response.content_length();
+        if declared.is_some_and(|length| length > limit) {
+            return Err(RequestError::TooLarge { limit });
+        }
 
         let mut stream = response.bytes_stream();
         let mut bytes = Vec::new();
+        let tracked = progress_bar.zip(declared);
 
-        let (progress_bar_id, total) = progress_bar;
-        // Added, not set: fetches sharing a bar each bring their own size.
-        self.progress_service
-            .add_progress_bytes_total_safe(progress_bar_id, total_size)
-            .await;
+        if let Some(((progress_bar_id, _), total_size)) = tracked {
+            // Added, not set: fetches sharing a bar each bring their own size.
+            self.progress_service
+                .add_progress_bytes_total_safe(progress_bar_id, total_size)
+                .await;
+        }
         while let Some(chunk) = stream.next().await {
             let chunk = chunk.map_err(RequestError::from)?;
+            if bytes.len() as u64 + chunk.len() as u64 > limit {
+                return Err(RequestError::TooLarge { limit });
+            }
             bytes.extend_from_slice(&chunk);
 
-            self.progress_service
-                .add_progress_bytes_safe(progress_bar_id, chunk.len() as u64)
-                .await;
+            if let Some(((progress_bar_id, total), total_size)) = tracked {
+                self.progress_service
+                    .add_progress_bytes_safe(progress_bar_id, chunk.len() as u64)
+                    .await;
 
-            #[expect(clippy::cast_precision_loss, reason = "a progress fraction")]
-            let progress = (chunk.len() as f64 / total_size as f64) * total;
+                #[expect(clippy::cast_precision_loss, reason = "a progress fraction")]
+                let progress = (chunk.len() as f64 / total_size as f64) * total;
 
-            self.progress_service
-                .emit_progress_safe(progress_bar_id, progress, None)
-                .await;
+                self.progress_service
+                    .emit_progress_safe(progress_bar_id, progress, None)
+                    .await;
+            }
         }
 
         Ok(bytes.into())
@@ -221,10 +235,7 @@ impl<PS: ProgressService + ?Sized> RequestClient for ReqwestClient<PS> {
         let response = self.send(method, &url, headers, body, timeout).await?;
         ensure_success(&response, &url)?;
 
-        let bytes = match progress_bar {
-            Some(progress_bar) => self.fetch_chunks(response, progress_bar).await,
-            None => response.bytes().await.map_err(Into::into),
-        }?;
+        let bytes = self.read_body(response, progress_bar).await?;
 
         if let Some(expected) = hash {
             self.verify_hash(bytes.clone(), &expected).await?;
@@ -758,6 +769,55 @@ mod tests {
         let bytes = client().fetch_bytes(Request::get(url(addr))).await.unwrap();
 
         assert_eq!(&bytes[..], b"payload");
+    }
+
+    fn capped(max_body_bytes: u64) -> ReqwestClient<NoopProgress> {
+        ReqwestClient {
+            max_body_bytes,
+            ..client()
+        }
+    }
+
+    #[tokio::test]
+    async fn should_reject_the_fetch_when_the_declared_length_is_over_the_limit() {
+        let addr = serve("200 OK", b"0123456789").await;
+
+        let result = capped(5).fetch_bytes(Request::get(url(addr))).await;
+
+        assert!(matches!(result, Err(RequestError::TooLarge { limit: 5 })));
+    }
+
+    #[tokio::test]
+    async fn should_reject_the_fetch_when_a_chunked_body_grows_over_the_limit() {
+        let addr = serve_chunked(&[b"01234", b"56789"]).await;
+
+        let result = capped(8).fetch_bytes(Request::get(url(addr))).await;
+
+        assert!(matches!(result, Err(RequestError::TooLarge { limit: 8 })));
+    }
+
+    #[tokio::test]
+    async fn should_reject_the_fetch_when_a_tracked_body_is_over_the_limit() {
+        let addr = serve("200 OK", b"0123456789").await;
+        let progress_bar = bar();
+
+        let result = capped(5)
+            .fetch_bytes_with_progress(Request::get(url(addr)), Some((&progress_bar, 100.0)))
+            .await;
+
+        assert!(matches!(result, Err(RequestError::TooLarge { limit: 5 })));
+    }
+
+    #[tokio::test]
+    async fn should_return_the_body_when_it_is_exactly_the_limit() {
+        let addr = serve("200 OK", b"01234").await;
+
+        let bytes = capped(5)
+            .fetch_bytes(Request::get(url(addr)))
+            .await
+            .unwrap();
+
+        assert_eq!(&bytes[..], b"01234");
     }
 
     #[rstest]

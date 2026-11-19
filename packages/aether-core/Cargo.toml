@@ -57,7 +57,8 @@ sys-info = "0.9.1"
 sysinfo = "0.40.1"
 tempfile = "3.27.0"
 flate2 = "1.1.10"
-zip = "9.0.2"
+# Exact: `shared::archive::infra::zip_entries` uses the unstable `ZipIterable`.
+zip = "=9.6.0"
 
 # Plugins & Extism
 aether-core-plugin-api = { path = "../aether-core-plugin-api" }

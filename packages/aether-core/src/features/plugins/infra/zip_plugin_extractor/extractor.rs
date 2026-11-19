@@ -13,7 +13,7 @@ use crate::{
         ArchiveMetadata, ExtractedPlugin, ManifestFormatError, PluginCapabilities, PluginContent,
         PluginExtractor, PluginManifest, PluginProviderError, infra::PluginCapabilitiesV1,
     },
-    shared::io::domain::IoError,
+    shared::{archive::infra::zip_entries::declared_entries, io::domain::IoError},
 };
 
 use super::ZipPluginExtractorConstants;
@@ -159,9 +159,17 @@ impl ZipPluginExtractor {
     }
 
     fn open_archive(
-        file: fs::File,
+        mut file: fs::File,
         source_path: &str,
+        max_entries: usize,
     ) -> Result<zip::ZipArchive<std::io::BufReader<fs::File>>, PluginProviderError> {
+        // Before the central directory is read whole, which costs per entry.
+        if declared_entries(&mut file).is_some_and(|entries| entries > max_entries) {
+            return Err(PluginProviderError::FileExtractionFailed {
+                from: source_path.to_string(),
+            });
+        }
+
         zip::ZipArchive::new(std::io::BufReader::new(file)).map_err(|err| match err {
             // A file that could not be read is not a file in the wrong format.
             zip::result::ZipError::Io(_) => PluginProviderError::ExtractionFailed {
@@ -243,7 +251,8 @@ impl PluginExtractor for ZipPluginExtractor {
         file_path: &Path,
     ) -> Result<ArchiveMetadata, PluginProviderError> {
         self.run_blocking(file_path, |extractor, file, source_path| {
-            let mut archive = Self::open_archive(file, source_path)?;
+            let mut archive =
+                Self::open_archive(file, source_path, extractor.constants.max_entries)?;
             extractor.read_metadata_from(&mut archive)
         })
         .await
@@ -280,7 +289,7 @@ impl ZipPluginExtractor {
         file: fs::File,
         source_path: &str,
     ) -> Result<ExtractedPlugin, PluginProviderError> {
-        let mut archive = Self::open_archive(file, source_path)?;
+        let mut archive = Self::open_archive(file, source_path, self.constants.max_entries)?;
 
         let ArchiveMetadata { manifest, .. } = self.read_metadata_from(&mut archive)?;
         let plugin_id = manifest.metadata.id.clone();

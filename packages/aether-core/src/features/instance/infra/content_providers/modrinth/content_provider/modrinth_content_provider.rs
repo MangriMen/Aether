@@ -732,11 +732,9 @@ impl<RC: RequestClient> ContentProvider for ModrinthContentProvider<RC> {
         instances: &[Instance],
         check_params: &ContentCompatibilityCheckParams,
     ) -> Result<HashMap<InstanceId, ContentCompatibilityResult>, InstanceError> {
-        let project = self
-            .api
-            .get_project(&check_params.content_item.slug)
-            .await
-            .map_err(api_failure)?;
+        // The slug comes from the caller and goes into the request path.
+        let slug = ContentId::try_from(check_params.content_item.slug.as_str())?;
+        let project = self.api.get_project(&slug).await.map_err(api_failure)?;
 
         let project_versions = self
             .api
