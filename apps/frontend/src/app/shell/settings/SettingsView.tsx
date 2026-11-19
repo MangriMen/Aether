@@ -67,30 +67,32 @@ export const SettingsView = <T extends ValidComponent = 'div'>(
         orientation='vertical'
         {...(others as TabsProps<T>)}
       >
-        <SettingsTabsList class='w-56 pb-6'>
-          <For each={tabs()}>
-            {(tab) => (
-              <SettingsTabsTrigger
-                value={tab.value}
-                as={Button}
-                class='h-auto'
-                variant={null}
-                leadingIcon={tab.icon}
-                children={
-                  <span class='overflow-hidden text-ellipsis'>
-                    <UpdateBadge
-                      class='inset-y-0 right-2 absolute my-auto'
-                      isAbleToShow={tab.value === SettingsTab.Update}
-                    />
-                    {t(`settings.tab.${tab.label}`)}
-                  </span>
-                }
-              />
-            )}
-          </For>
+        <div class='w-56 pb-6 flex flex-col'>
+          <SettingsTabsList class='w-full'>
+            <For each={tabs()}>
+              {(tab) => (
+                <SettingsTabsTrigger
+                  value={tab.value}
+                  as={Button}
+                  class='h-auto'
+                  variant={null}
+                  leadingIcon={tab.icon}
+                  children={
+                    <span class='overflow-hidden text-ellipsis'>
+                      <UpdateBadge
+                        class='inset-y-0 right-2 absolute my-auto'
+                        isAbleToShow={tab.value === SettingsTab.Update}
+                      />
+                      {t(`settings.tab.${tab.label}`)}
+                    </span>
+                  }
+                />
+              )}
+            </For>
+          </SettingsTabsList>
 
           <VersionInfo class='pl-6 text-sm mt-auto self-start' />
-        </SettingsTabsList>
+        </div>
 
         <For each={tabs()}>
           {(tabContent) => (

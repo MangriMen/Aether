@@ -72,6 +72,7 @@ export const BrokenInstanceCard: Component<BrokenInstanceCardProps> = (
           <ContextMenuTrigger
             as={BrokenInstanceTile}
             data-context-menu-safe='true'
+            data-arrow-nav-item=''
             aria-haspopup='dialog'
             onClick={() => setShowDetails(true)}
             instance={props.instance}

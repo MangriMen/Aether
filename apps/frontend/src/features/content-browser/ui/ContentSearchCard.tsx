@@ -15,7 +15,7 @@ import { cn } from '@/shared/utils';
 import { ContentSearch } from './ContentSearch';
 import { ItemsPerPageSelect } from './ItemsPerPageSelect';
 
-export type ContentFiltersProps = ComponentProps<'nav'> & {
+export type ContentFiltersProps = ComponentProps<'div'> & {
   page: number;
   pageSize: number;
   pageCount: number | undefined;
@@ -52,11 +52,7 @@ export const ContentSearchCard: Component<ContentFiltersProps> = (props) => {
   );
 
   return (
-    <nav
-      class={cn('gap-2 flex justify-between', local.class)}
-      aria-label={t('pagination.label')}
-      {...others}
-    >
+    <div class={cn('gap-2 flex justify-between', local.class)} {...others}>
       <ContentSearch
         value={local.searchQuery ?? ''}
         contentType={local.contentType}
@@ -84,9 +80,10 @@ export const ContentSearchCard: Component<ContentFiltersProps> = (props) => {
             page={local.page}
             onPageChange={local.onPageChange}
             disabled={isPaginationDisabled()}
+            aria-label={t('pagination.label')}
           />
         </Show>
       </div>
-    </nav>
+    </div>
   );
 };
