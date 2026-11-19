@@ -164,7 +164,7 @@ const withTranslatedReason = (
 /** Arguments that hold a raw name, and the group of `errors.<type>` that translates it. */
 const TRANSLATED_NAMES = {
   field: 'field',
-  entity_type: 'entityType',
+  entityType: 'entityType',
   hook: 'kind',
 } as const;
 

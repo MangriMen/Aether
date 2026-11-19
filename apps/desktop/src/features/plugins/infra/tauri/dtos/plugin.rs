@@ -41,7 +41,12 @@ pub enum PluginDtoState {
 
 /// Translated by its `code`; the payload fills in the message.
 #[derive(Debug, Clone, Serialize, Type)]
-#[serde(tag = "code", content = "payload", rename_all = "SCREAMING_SNAKE_CASE")]
+#[serde(
+    tag = "code",
+    content = "payload",
+    rename_all = "SCREAMING_SNAKE_CASE",
+    rename_all_fields = "camelCase"
+)]
 pub enum PluginStateReasonDto {
     IncompatibleApiVersion {
         required: semver::VersionReq,

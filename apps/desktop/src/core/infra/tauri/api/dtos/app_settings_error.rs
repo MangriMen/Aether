@@ -5,7 +5,12 @@ use super::{CauseDto, WindowErrorDto};
 use crate::features::settings::{AppSettingsError, AppSettingsStorageError};
 
 #[derive(Clone, Debug, Serialize, Type)]
-#[serde(tag = "code", content = "payload", rename_all = "SCREAMING_SNAKE_CASE")]
+#[serde(
+    tag = "code",
+    content = "payload",
+    rename_all = "SCREAMING_SNAKE_CASE",
+    rename_all_fields = "camelCase"
+)]
 pub enum AppSettingsErrorDto {
     /// `reason` is what the window manager refused with, translated as a reason.
     CanNotSetEffect {

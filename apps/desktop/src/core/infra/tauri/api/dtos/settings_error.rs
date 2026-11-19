@@ -4,7 +4,12 @@ use serde::Serialize;
 use specta::Type;
 
 #[derive(Clone, Debug, Serialize, Type)]
-#[serde(tag = "code", content = "payload", rename_all = "SCREAMING_SNAKE_CASE")]
+#[serde(
+    tag = "code",
+    content = "payload",
+    rename_all = "SCREAMING_SNAKE_CASE",
+    rename_all_fields = "camelCase"
+)]
 pub enum SettingsErrorDto {
     NotFound,
 
@@ -22,7 +27,12 @@ pub enum SettingsErrorDto {
 
 /// Why a text is not a `plugin#capability` provider id.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Type)]
-#[serde(tag = "code", content = "payload", rename_all = "SCREAMING_SNAKE_CASE")]
+#[serde(
+    tag = "code",
+    content = "payload",
+    rename_all = "SCREAMING_SNAKE_CASE",
+    rename_all_fields = "camelCase"
+)]
 pub enum ProviderIdReasonDto {
     /// The text is not two parts around the separator.
     Format { value: String },

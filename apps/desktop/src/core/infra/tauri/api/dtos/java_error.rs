@@ -5,7 +5,12 @@ use specta::Type;
 use super::{CauseDto, FrontendError};
 
 #[derive(Clone, Debug, Serialize, Type)]
-#[serde(tag = "code", content = "payload", rename_all = "SCREAMING_SNAKE_CASE")]
+#[serde(
+    tag = "code",
+    content = "payload",
+    rename_all = "SCREAMING_SNAKE_CASE",
+    rename_all_fields = "camelCase"
+)]
 pub enum JavaErrorDto {
     NotFound {
         version: u32,

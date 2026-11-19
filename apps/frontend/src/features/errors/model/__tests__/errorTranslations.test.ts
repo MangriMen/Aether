@@ -286,7 +286,7 @@ describe('field names', () => {
       type: 'minecraft',
       payload: {
         code: 'PATH_NOT_FOUND',
-        payload: { path: '/game/natives', entity_type: 'NATIVE_LIBRARY' },
+        payload: { path: '/game/natives', entityType: 'NATIVE_LIBRARY' },
       },
     } as unknown as LauncherError;
 
@@ -547,7 +547,7 @@ describe('plugin load failure', () => {
       type: 'plugin',
       payload: {
         code: 'LOAD_FAILED',
-        payload: { plugin_id: 'my-plugin', reason },
+        payload: { pluginId: 'my-plugin', reason },
       },
     }) as unknown as LauncherError;
 
@@ -602,7 +602,7 @@ describe('plugin call failure', () => {
       type: 'plugin',
       payload: {
         code: 'FUNCTION_CALL_FAILED',
-        payload: { function_name: 'search', plugin_id: 'my-plugin', reason },
+        payload: { functionName: 'search', pluginId: 'my-plugin', reason },
       },
     }) as unknown as LauncherError;
 
@@ -631,7 +631,7 @@ describe('plugin command not approved', () => {
       type: 'plugin',
       payload: {
         code: 'COMMAND_NOT_APPROVED',
-        payload: { plugin_id: 'packwiz', reason: { code: 'DENIED' } },
+        payload: { pluginId: 'packwiz', reason: { code: 'DENIED' } },
       },
     } as unknown as LauncherError;
 
@@ -649,7 +649,7 @@ describe('plugin command refused to an importer, a content provider or an update
     payload: {
       code: 'COMMAND_NOT_APPROVED',
       payload: {
-        plugin_id: 'packwiz',
+        pluginId: 'packwiz',
         reason: { code: 'DENIED' },
         cause: { type: 'unknown', details: 'java refused' },
       },
@@ -676,7 +676,7 @@ describe('plugin command refused, reported by the plugin', () => {
       type: 'plugin',
       payload: {
         code: 'COMMAND_NOT_APPROVED',
-        payload: { plugin_id: 'packwiz', reason: { code: reason }, cause },
+        payload: { pluginId: 'packwiz', reason: { code: reason }, cause },
       },
     }) as unknown as LauncherError;
 
@@ -707,7 +707,7 @@ describe('plugin host refused, reported by the plugin', () => {
     payload: {
       code: 'HOST_NOT_ALLOWED',
       payload: {
-        plugin_id: 'packwiz',
+        pluginId: 'packwiz',
         host: 'cdn.example',
         cause: { type: 'unknown', details: 'cdn refused' },
       },
@@ -734,7 +734,7 @@ describe('plugin local address refused, reported by the plugin', () => {
     payload: {
       code: 'ADDRESS_BLOCKED',
       payload: {
-        plugin_id: 'packwiz',
+        pluginId: 'packwiz',
         host: 'nas.lan',
         port: 8080,
         cause: { type: 'unknown', details: 'nas refused' },
@@ -761,7 +761,7 @@ describe('plugin local address refused, reported by the plugin', () => {
       payload: {
         code: 'INVALID_LOCAL_HOST',
         payload: {
-          plugin_id: 'packwiz',
+          pluginId: 'packwiz',
           url: 'https://cdn.example/',
           reason: 'not_local',
         },
@@ -784,7 +784,7 @@ describe('plugin provider failure', () => {
       payload: {
         code: 'PROVIDER_FETCH_ERROR',
         payload: {
-          source_type: 'github',
+          sourceType: 'github',
           reason: {
             code: 'REQUEST',
             payload: {
@@ -877,4 +877,201 @@ describe('settings errors', () => {
       'Invalid content provider choice for platform "modrinth": "nope" is not a provider id: write it as plugin#capability',
     );
   });
+});
+
+/** The fields of each `{ code: "X"; payload: { ... } }` of a DTO, by code. */
+const getPayloadFields = (
+  dtoName: string,
+  source = bindings,
+): Record<string, string[]> => {
+  const start = source.indexOf(`export type ${dtoName} =`);
+  const rest = source.slice(start + 1);
+  const end = rest.search(/\nexport type /);
+  const body = rest.slice(0, end === -1 ? undefined : end);
+  const result: Record<string, string[]> = {};
+
+  for (const variant of body.split(/(?=\{ code: ")/).slice(1)) {
+    const code = /^\{ code: "(\w+)"/.exec(variant)?.[1];
+
+    if (code) {
+      result[code] = [...variant.matchAll(/^\t(\w+)\??:/gm)].map((m) => m[1]!);
+    }
+  }
+
+  return result;
+};
+
+const placeholdersOf = (text: string): string[] => [
+  ...new Set([...text.matchAll(/\{\{\s*(\w+)\s*\}\}/g)].map((m) => m[1]!)),
+];
+
+/**
+ * Arguments the frontend adds to the payload before the text is filled in
+ * (`withFormattedArgs`, `withTranslatedReason`, `withTranslatedNames`).
+ */
+const DERIVED_ARGS: Record<string, string[]> = {
+  'errors.instance.PRELAUNCH_COMMAND_TIMEOUT': ['duration'],
+  'errors.java.PROPERTIES_TIMEOUT': ['duration'],
+};
+
+describe('error placeholders', () => {
+  const groups = getErrorGroups();
+
+  it.each(dictionaries)(
+    'every {{placeholder}} of an error text is a field of its payload in %s',
+    (_lang, dictionary) => {
+      const wrong: string[] = [];
+
+      for (const [group, dtoName] of Object.entries(groups)) {
+        const fields = getPayloadFields(dtoName);
+
+        for (const [code, text] of Object.entries(
+          dictionary.errors[group] ?? {},
+        )) {
+          if (typeof text !== 'string' || !(code in fields)) {
+            continue;
+          }
+
+          for (const name of placeholdersOf(text)) {
+            if (
+              !fields[code]!.includes(name) &&
+              !DERIVED_ARGS[`errors.${group}.${code}`]?.includes(name)
+            ) {
+              wrong.push(
+                `errors.${group}.${code}: {{${name}}} not in ${fields[code]!.join(', ') || 'nothing'}`,
+              );
+            }
+          }
+        }
+      }
+
+      expect(wrong).toEqual([]);
+    },
+  );
+
+  it.each(dictionaries)(
+    'every {{placeholder}} of a reason and of a warning is a field of its payload in %s',
+    (_lang, dictionary) => {
+      const wrong: string[] = [];
+
+      const check = (path: string, text: unknown, fields: string[]) => {
+        if (typeof text !== 'string') {
+          return;
+        }
+
+        for (const name of placeholdersOf(text)) {
+          if (!fields.includes(name) && !DERIVED_ARGS[path]?.includes(name)) {
+            wrong.push(
+              `${path}: {{${name}}} not in ${fields.join(', ') || 'nothing'}`,
+            );
+          }
+        }
+      };
+
+      for (const [group, dtoName] of Object.entries(groups)) {
+        const start = bindings.indexOf(`export type ${dtoName} =`);
+        const rest = bindings.slice(start + 1);
+        const body = rest.slice(0, rest.search(/\nexport type /));
+        const reasons = dictionary.errors[group]?.reason as unknown as
+          | Record<string, Record<string, string>>
+          | undefined;
+
+        for (const m of body.matchAll(
+          /\{ code: "(\w+)"; payload: \{[^}]*?reason: (\w+Dto)\b/gs,
+        )) {
+          const fields = getPayloadFields(m[2]!);
+
+          for (const [reasonCode, text] of Object.entries(
+            reasons?.[m[1]!] ?? {},
+          )) {
+            check(
+              `errors.${group}.reason.${m[1]}.${reasonCode}`,
+              text,
+              fields[reasonCode] ?? [],
+            );
+          }
+        }
+      }
+
+      const warnings = getPayloadFields('WarningDto', eventBindings);
+
+      for (const [code, text] of Object.entries(
+        (dictionary as unknown as { warnings: Record<string, string> })
+          .warnings,
+      )) {
+        if (code in warnings) {
+          check(`warnings.${code}`, text, warnings[code]!);
+        }
+      }
+
+      expect(wrong).toEqual([]);
+    },
+  );
+
+  it.each(dictionaries)(
+    'every {{placeholder}} of a manifest error, a broken instance reason and a plugin state reason is a field of its payload in %s',
+    (_lang, dictionary) => {
+      const wrong: string[] = [];
+
+      const lookup = (path: string): Record<string, unknown> => {
+        let node: unknown = dictionary;
+
+        for (const part of path.split('.')) {
+          node = (node as Record<string, unknown> | undefined)?.[part];
+        }
+
+        return (node ?? {}) as Record<string, unknown>;
+      };
+
+      for (const [path, dtoName, source] of [
+        ['errors.plugin.manifest', 'ManifestErrorDto', bindings],
+        ['instance.broken.reasons', 'BrokenInstanceReasonDto', bindings],
+        ['plugin.stateReason', 'PluginStateReasonDto', pluginBindings],
+      ] as const) {
+        const fields = getPayloadFields(dtoName, source);
+
+        expect(Object.keys(fields).length).toBeGreaterThan(0);
+
+        for (const [code, text] of Object.entries(lookup(path))) {
+          if (typeof text !== 'string') {
+            continue;
+          }
+
+          for (const name of placeholdersOf(text)) {
+            if (!(fields[code] ?? []).includes(name)) {
+              wrong.push(
+                `${path}.${code}: {{${name}}} not in ${(fields[code] ?? []).join(', ') || 'nothing'}`,
+              );
+            }
+          }
+        }
+      }
+
+      expect(wrong).toEqual([]);
+    },
+  );
+
+  it.each(dictionaries)(
+    'has no ICU syntax in a text, which the template does not understand, in %s',
+    (_lang, dictionary) => {
+      const texts: string[] = [];
+
+      const walk = (path: string, node: unknown) => {
+        if (typeof node === 'string') {
+          // `{x}` and `{x, plural, ...}` instead of `{{x}}`.
+          if (/(^|[^{])\{\s*\w+\s*[,}]/.test(node)) {
+            texts.push(path);
+          }
+        } else if (node !== null && typeof node === 'object') {
+          for (const [k, v] of Object.entries(node)) {
+            walk(`${path}.${k}`, v);
+          }
+        }
+      };
+
+      walk('errors', dictionary.errors);
+
+      expect(texts).toEqual([]);
+    },
+  );
 });

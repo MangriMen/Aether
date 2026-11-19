@@ -69,7 +69,7 @@ export const useAllowBlockedAddress = () => {
         return undefined;
       }
 
-      const { plugin_id: id, host, port } = payload.payload;
+      const { pluginId: id, host, port } = payload.payload;
       const url = localGrantUrlOf(host, port);
 
       if (!url) {

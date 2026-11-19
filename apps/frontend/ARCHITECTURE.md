@@ -62,7 +62,7 @@ src/
    collapsed when a category exists, open (3 lines) when there is none
    (`application.INTERNAL`). Raw text is never substituted into `errors.*` templates
    (`{{details}}`, `{{message}}`, `{{error}}` are banned by a test). An argument naming a
-   kind of thing (`field`, `entity_type`) is a code, translated by `errors.<type>.field.*` or
+   kind of thing (`field`, `entityType`) is a code, translated by `errors.<type>.field.*` or
    `errors.<type>.entityType.*`, in the error and in its reason alike.
 
 ## Inside a feature

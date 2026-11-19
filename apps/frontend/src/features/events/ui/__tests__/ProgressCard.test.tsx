@@ -115,7 +115,7 @@ describe('ProgressCard', () => {
           type: 'failed',
           error: {
             type: 'instance',
-            payload: { code: 'NOT_FOUND', payload: { instance_id: 'abc' } },
+            payload: { code: 'NOT_FOUND', payload: { instanceId: 'abc' } },
           },
         },
       }),

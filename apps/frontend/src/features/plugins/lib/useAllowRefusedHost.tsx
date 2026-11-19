@@ -44,7 +44,7 @@ export const useAllowRefusedHost = () => {
         return undefined;
       }
 
-      const { plugin_id: id, host } = payload.payload;
+      const { pluginId: id, host } = payload.payload;
       const url = grantUrlOf(host);
 
       if (!url) {

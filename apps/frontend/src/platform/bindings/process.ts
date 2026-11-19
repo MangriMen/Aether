@@ -55,7 +55,7 @@ export type BrokenInstanceReasonDto = { code: "INVALID_ID" } | { code: "INVALID_
 } } | { code: "UNREADABLE_FILE"; payload: {
 	cause: CauseDto,
 } } | { code: "LEGACY_ID_MISMATCH"; payload: {
-	file_id: string,
+	fileId: string,
 } } | { code: "NOT_MIGRATED" };
 
 /**  Why a command failed, in a form the frontend can translate without seeing raw error text. */
@@ -71,16 +71,16 @@ export type CommandRefusalDto = { code: "DENIED" } | { code: "TIMED_OUT" } | { c
 
 /**  Why content could not be downloaded. */
 export type ContentDownloadReasonDto = { code: "NO_FILES"; payload: {
-	version_id: string,
+	versionId: string,
 } } | { code: "NO_VERSIONS"; payload: {
-	content_id: string,
+	contentId: string,
 } } | { code: "NOT_A_MODPACK_FILE"; payload: {
-	file_name: string,
+	fileName: string,
 } } | { code: "DOWNLOAD"; payload: {
 	url: string,
 	cause: CauseDto,
 } } | { code: "NO_NETWORK_POLICY"; payload: {
-	plugin_id: string,
+	pluginId: string,
 } };
 
 /**
@@ -88,10 +88,10 @@ export type ContentDownloadReasonDto = { code: "NO_FILES"; payload: {
  *  same for every provider.
  */
 export type ContentProviderReasonDto = { code: "WRONG_TARGET"; payload: {
-	provider_id: string,
+	providerId: string,
 } } | { code: "FOREIGN_PACK"; payload: {
-	provider_id: string,
-	pack_provider_id: string,
+	providerId: string,
+	packProviderId: string,
 } } | { code: "TOO_MANY_FILES"; payload: {
 	count: string,
 	max: string,
@@ -100,16 +100,16 @@ export type ContentProviderReasonDto = { code: "WRONG_TARGET"; payload: {
 } } | { code: "INVALID_OVERRIDES_ARCHIVE"; payload: {
 	cause: CauseDto,
 } } | { code: "VERSION_OF_ANOTHER_CONTENT"; payload: {
-	version_id: string,
-	owner_id: string,
-	content_id: string,
+	versionId: string,
+	ownerId: string,
+	contentId: string,
 } } | { code: "NOT_A_MODPACK"; payload: {
 	title: string,
-	content_type: ContentTypeDto,
+	contentType: ContentTypeDto,
 } } | { code: "NO_GAME_VERSION"; payload: {
-	version_id: string,
+	versionId: string,
 } } | { code: "UNKNOWN_CONTENT_TYPE"; payload: {
-	content_type: string,
+	contentType: string,
 } } | { code: "INVALID_REQUEST"; payload: {
 	cause: CauseDto,
 } } | { code: "REQUEST"; payload: {
@@ -128,7 +128,7 @@ export type ContentProviderReasonDto = { code: "WRONG_TARGET"; payload: {
 } } | { code: "PACK_NO_INDEX"; payload: {
 	index: string,
 } } | { code: "PACK_INDEX_TOO_LARGE"; payload: {
-	max_bytes: string,
+	maxBytes: string,
 } } | { code: "PACK_INDEX_MALFORMED"; payload: {
 	cause: CauseDto,
 } } | { code: "PACK_WRONG_GAME"; payload: {
@@ -166,11 +166,11 @@ export type FrontendError = { type: "app_settings"; payload: AppSettingsErrorDto
 { type: "hook"; payload: HookErrorDto } | { type: "instance"; payload: InstanceErrorDto } | { type: "java"; payload: JavaErrorDto } | { type: "minecraft"; payload: MinecraftErrorDto } | { type: "plugin"; payload: PluginErrorDto } | { type: "process"; payload: ProcessErrorDto } | { type: "request"; payload: RequestErrorDto } | { type: "settings"; payload: SettingsErrorDto } | { type: "update"; payload: UpdateErrorDto };
 
 export type GameLogErrorDto = { code: "INVALID_SOURCE"; payload: {
-	source_id: string,
+	sourceId: string,
 } } | { code: "SOURCE_NOT_FOUND"; payload: {
-	source_id: string,
+	sourceId: string,
 } } | { code: "TOO_LARGE"; payload: {
-	source_id: string,
+	sourceId: string,
 	limit: number,
 } } | { code: "IO"; payload: {
 	cause: CauseDto,
@@ -204,18 +204,18 @@ export type HookKindDto = "PRE_LAUNCH" | "WRAPPER" | "POST_EXIT";
 export type InstanceErrorDto = { code: "STORAGE"; payload: {
 	cause: CauseDto,
 } } | { code: "NOT_FOUND"; payload: {
-	instance_id: string,
+	instanceId: string,
 } } | { code: "INVALID_RECORD"; payload: {
-	instance_id: string,
+	instanceId: string,
 	reason: BrokenInstanceReasonDto,
 } } | { code: "CONTENT_PROVIDER_NOT_FOUND"; payload: {
-	plugin_id: string,
-	capability_id: string,
+	pluginId: string,
+	capabilityId: string,
 } } | { code: "CAPABILITY_OPERATION_ERROR" } | { code: "INSTANCE_STILL_INSTALLING"; payload: {
-	instance_id: string,
+	instanceId: string,
 } } | { code: "INSTANCE_ALREADY_RUNNING"; payload: {
-	instance_id: string,
-	process_id: string,
+	instanceId: string,
+	processId: string,
 } } | { code: "PRELAUNCH_COMMAND_ERROR"; payload: {
 	code: number,
 } } | { code: "PRELAUNCH_COMMAND_TIMEOUT"; payload: {
@@ -224,33 +224,33 @@ export type InstanceErrorDto = { code: "STORAGE"; payload: {
 	field: InstanceFieldDto,
 	reason: InstanceValidationErrorReasonDto,
 } } | { code: "IMPORTER_NOT_FOUND"; payload: {
-	importer_id: string,
+	importerId: string,
 } } | { code: "IMPORT_FAILED"; payload: {
-	plugin_id: string,
-	capability_id: string,
+	pluginId: string,
+	capabilityId: string,
 	cause: CauseDto,
 } } | { code: "PLUGIN_NOT_RUNNING"; payload: {
-	plugin_id: string,
+	pluginId: string,
 } } | { code: "CACHES_BEING_CLEARED" } | { code: "ICON_TOO_LARGE"; payload: {
 	limit: string,
 } } | { code: "ICON_NOT_SUPPORTED" } | { code: "CANCELLED" } | { code: "PACK_INFO_NOT_FOUND" } | { code: "UPDATER_NOT_FOUND"; payload: {
-	modpack_id: string,
+	modpackId: string,
 } } | { code: "UPDATE_FAILED"; payload: {
-	modpack_id: string,
+	modpackId: string,
 } } | { code: "NOT_BROKEN"; payload: {
-	instance_id: string,
+	instanceId: string,
 } } | { code: "UNMANAGED_INSTANCE"; payload: {
-	instance_id: string,
+	instanceId: string,
 } } | { code: "CONTENT_DUPLICATION"; payload: {
-	content_path: string,
+	contentPath: string,
 } } | { code: "CONTENT_FILENAME"; payload: {
 	path: string,
 } } | { code: "PACK_FILE_NOT_FOUND"; payload: {
-	instance_id: string,
-	content_path: string,
+	instanceId: string,
+	contentPath: string,
 } } | { code: "NOT_A_CONTENT_FILE"; payload: {
-	instance_id: string,
-	content_path: string,
+	instanceId: string,
+	contentPath: string,
 } } | { code: "CONTENT_STATE_CHANGE_FAILED"; payload: {
 	paths: string[],
 	cause: CauseDto,
@@ -272,7 +272,7 @@ export type InstanceErrorDto = { code: "STORAGE"; payload: {
 	reason: LoaderVersionReasonDto,
 } } | { code: "PATH_ESCAPES_INSTANCE"; payload: {
 	path: string,
-	instance_id: string,
+	instanceId: string,
 } } | { code: "FILE_TOO_LARGE"; payload: {
 	path: string,
 	size: string,
@@ -282,20 +282,20 @@ export type InstanceErrorDto = { code: "STORAGE"; payload: {
 } } | { code: "CONTENT_PROVIDER_ERROR"; payload: {
 	reason: ContentProviderReasonDto,
 } } | { code: "CONTENT_FOR_GAME_VERSION_NOT_FOUND"; payload: {
-	game_version: string,
+	gameVersion: string,
 } } | { code: "UNSUPPORTED_CONTENT_TYPE"; payload: {
-	content_type: ContentTypeDto,
+	contentType: ContentTypeDto,
 } } | { code: "UNSUPPORTED_OPERATION"; payload: {
-	provider_id: string,
+	providerId: string,
 	operation: string,
 } } | { code: "PLATFORM_PROVIDER_NOT_FOUND"; payload: {
 	platform: string,
 } } | { code: "PLATFORM_PROVIDER_NOT_CHOSEN"; payload: {
 	platform: string,
 } } | { code: "GAME_CHANGE_NOT_ALLOWED"; payload: {
-	instance_id: string,
-	provider_id: string,
-	content_id: string,
+	instanceId: string,
+	providerId: string,
+	contentId: string,
 } };
 
 export type InstanceFieldDto = "name";
@@ -358,15 +358,15 @@ export type ManifestErrorDto = { code: "UNSUPPORTED_API" } | { code: "INVALID_SE
 	field: string,
 	value: string,
 } } | { code: "RESERVED_PLUGIN_ID" } | { code: "PLATFORM_WITHOUT_RESOLVE_FILE"; payload: {
-	capability_id: string,
+	capabilityId: string,
 } };
 
 export type MinecraftErrorDto = { code: "VERSION_NOT_FOUND"; payload: {
 	version: string,
 } } | { code: "VERSION_FOR_LOADER_NOT_FOUND"; payload: {
-	loader_version_preference: LoaderVersionPreferenceDto,
+	loaderVersionPreference: LoaderVersionPreferenceDto,
 } } | { code: "LOADER_NOT_FOUND"; payload: {
-	loader_version_preference: LoaderVersionPreferenceDto,
+	loaderVersionPreference: LoaderVersionPreferenceDto,
 } } | { code: "LOADER_VERSION_REQUIRED" } | { code: "DEFAULT_LOADER_NOT_FOUND" } | { code: "PROCESSOR_FAILED"; payload: {
 	reason: ProcessorFailureDto,
 } } | { code: "PRE_LAUNCH_FAILED"; payload: {
@@ -375,7 +375,7 @@ export type MinecraftErrorDto = { code: "VERSION_NOT_FOUND"; payload: {
 	code: number,
 } } | { code: "PATH_NOT_FOUND"; payload: {
 	path: string,
-	entity_type: GamePathKindDto,
+	entityType: GamePathKindDto,
 } } | { code: "PARSE_FAILED"; payload: {
 	cause: CauseDto,
 } } | { code: "STORAGE_FAILURE"; payload: {
@@ -383,7 +383,7 @@ export type MinecraftErrorDto = { code: "VERSION_NOT_FOUND"; payload: {
 } } | { code: "INVALID_LOG_CONFIG_NAME"; payload: {
 	name: string,
 } } | { code: "UNSAFE_METADATA_PATH"; payload: {
-	entity_type: GamePathKindDto,
+	entityType: GamePathKindDto,
 	value: string,
 } } | { code: "STORAGE"; payload: {
 	cause: CauseDto,
@@ -420,32 +420,32 @@ export type PluginCallReasonDto = { code: "MISSING_FUNCTION" } | { code: "TIMEOU
 } } | { code: "REENTRANT" };
 
 export type PluginErrorDto = { code: "NOT_FOUND"; payload: {
-	plugin_id: string,
+	pluginId: string,
 } } | { code: "ALREADY_LOADED"; payload: {
-	plugin_id: string,
+	pluginId: string,
 } } | { code: "LOADING_IN_PROGRESS"; payload: {
-	plugin_id: string,
+	pluginId: string,
 } } | { code: "UNLOADING_IN_PROGRESS"; payload: {
-	plugin_id: string,
+	pluginId: string,
 } } | { code: "ALREADY_UNLOADED"; payload: {
-	plugin_id: string,
+	pluginId: string,
 } } | { code: "BUSY"; payload: {
-	plugin_id: string,
+	pluginId: string,
 } } | { code: "STOPPED"; payload: {
-	plugin_id: string,
+	pluginId: string,
 } } | { code: "ID_MISMATCH"; payload: {
-	plugin_id: string,
-	archive_id: string,
+	pluginId: string,
+	archiveId: string,
 } } | { code: "LOAD_FAILED"; payload: {
-	plugin_id: string,
+	pluginId: string,
 	reason: PluginLoadFailureDto,
 } } | { code: "INCOMPATIBLE_API_VERSION"; payload: {
-	plugin_id: string,
+	pluginId: string,
 	required: string,
 	host: string,
 } } | { code: "FUNCTION_CALL_FAILED"; payload: {
-	function_name: string,
-	plugin_id: string,
+	functionName: string,
+	pluginId: string,
 	reason: PluginCallReasonDto,
 } } | { code: "MANIFEST_NOT_FOUND"; payload: {
 	path: string,
@@ -457,29 +457,29 @@ export type PluginErrorDto = { code: "NOT_FOUND"; payload: {
 } } | { code: "MANIFEST"; payload: {
 	error: ManifestErrorDto,
 } } | { code: "LOADER_NOT_FOUND"; payload: {
-	config_type: LoadConfigTypeDto,
+	configType: LoadConfigTypeDto,
 } } | { code: "EXTRACTION_FAILED"; payload: {
 	from: string,
 } } | { code: "INVALID_EXTRACTION_FORMAT" } | { code: "FILE_EXTRACTION_FAILED"; payload: {
 	from: string,
 } } | { code: "CAPABILITY_REGISTRATION_FAILED"; payload: {
-	capability_type: string,
-	capability_id: string,
+	capabilityType: string,
+	capabilityId: string,
 } } | { code: "CAPABILITY_CANCEL_REGISTRATION_FAILED"; payload: {
-	capability_type: string,
-	capability_id: string,
+	capabilityType: string,
+	capabilityId: string,
 } } | { code: "ACCESS_VIOLATION"; payload: {
-	plugin_id: string,
+	pluginId: string,
 	path: string,
 } } | { code: "FOREIGN_PROVIDER"; payload: {
-	plugin_id: string,
-	provider_id: string,
+	pluginId: string,
+	providerId: string,
 } } | { code: "INVALID_ALLOWED_PATH"; payload: {
-	plugin_id: string,
+	pluginId: string,
 	path: string,
 	reason: AllowedPathRejectionDto,
 } } | { code: "INVALID_ALLOWED_HOST"; payload: {
-	plugin_id: string,
+	pluginId: string,
 	url: string,
 	reason: AllowedHostRejectionDto,
 } } | 
@@ -488,11 +488,11 @@ export type PluginErrorDto = { code: "NOT_FOUND"; payload: {
  *  public address literal, or a name that does not resolve only to local addresses.
  */
 { code: "INVALID_LOCAL_HOST"; payload: {
-	plugin_id: string,
+	pluginId: string,
 	url: string,
 	reason: AllowedHostRejectionDto,
 } } | { code: "INVALID_ALLOWED_HOST_ENTRY"; payload: {
-	plugin_id: string,
+	pluginId: string,
 	entry: string,
 	reason: AllowedHostEntryRejectionDto,
 } } | 
@@ -503,7 +503,7 @@ export type PluginErrorDto = { code: "NOT_FOUND"; payload: {
  *  updater (`InstanceError::PluginCommandNotApproved`) is reported as this too.
  */
 { code: "COMMAND_NOT_APPROVED"; payload: {
-	plugin_id: string,
+	pluginId: string,
 	reason: CommandRefusalDto,
 	cause: CauseDto | null,
 } } | 
@@ -514,7 +514,7 @@ export type PluginErrorDto = { code: "NOT_FOUND"; payload: {
  *  or an updater (`InstanceError::PluginHostNotAllowed`) is reported as this too.
  */
 { code: "HOST_NOT_ALLOWED"; payload: {
-	plugin_id: string,
+	pluginId: string,
 	host: string,
 	cause: CauseDto,
 } } | 
@@ -526,41 +526,41 @@ export type PluginErrorDto = { code: "NOT_FOUND"; payload: {
  *  reported as this too.
  */
 { code: "ADDRESS_BLOCKED"; payload: {
-	plugin_id: string,
+	pluginId: string,
 	host: string,
 	port: number,
 	cause: CauseDto,
 } } | 
 /**  The question was answered or ended before this answer came. */
 { code: "COMMAND_APPROVAL_NOT_FOUND"; payload: {
-	request_id: string,
+	requestId: string,
 } } | 
 /**  "Always" was answered for a command that can be allowed once only. */
 { code: "COMMAND_APPROVAL_ONCE_ONLY"; payload: {
-	request_id: string,
+	requestId: string,
 } } | { code: "HASH_COMPUTATION_FAILED" } | { code: "STORAGE"; payload: {
 	cause: CauseDto,
 } } | { code: "PROVIDER_FETCH_ERROR"; payload: {
-	source_type: string,
+	sourceType: string,
 	reason: ProviderFailureDto,
 } } | { code: "PROVIDER_NO_ASSETS"; payload: {
-	source_type: string,
+	sourceType: string,
 } } | { code: "ARCHIVE_CHANGED_SINCE_PREVIEW" } | { code: "NO_REMOTE_SOURCE"; payload: {
-	plugin_id: string,
+	pluginId: string,
 } } | { code: "DOWNLOAD_FAILED"; payload: {
 	url: string,
 	reason: ProviderFailureDto,
 } } | { code: "PROVIDER_RATE_LIMITED"; payload: {
-	source_type: string,
-	retry_after: number | null,
+	sourceType: string,
+	retryAfter: number | null,
 } };
 
 /**  Why the loader could not bring a plugin up. */
 export type PluginLoadFailureDto = { code: "HASH_MISMATCH"; payload: {
 	path: string,
-	actual_sha256: string,
-	recorded_sha256: string,
-	source_type: string,
+	actualSha256: string,
+	recordedSha256: string,
+	sourceType: string,
 } } | { code: "BUILD"; payload: {
 	cause: CauseDto,
 } } | { code: "CONTAINER_UNAVAILABLE" } | { code: "OTHER"; payload: {

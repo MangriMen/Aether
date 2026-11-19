@@ -331,7 +331,7 @@ mod tests {
             serde_json::to_value(ProgressStatusDto::from(status)).unwrap(),
             json!({"type": "failed", "error": {
                 "type": "instance",
-                "payload": {"code": "NOT_FOUND", "payload": {"instance_id": "abc"}},
+                "payload": {"code": "NOT_FOUND", "payload": {"instanceId": "abc"}},
             }})
         );
     }

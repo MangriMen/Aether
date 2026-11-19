@@ -16,7 +16,12 @@ use super::{
 use crate::features::instance::infra::{BrokenInstanceReasonDto, ContentTypeDto};
 
 #[derive(Clone, Debug, Serialize, Type)]
-#[serde(tag = "code", content = "payload", rename_all = "SCREAMING_SNAKE_CASE")]
+#[serde(
+    tag = "code",
+    content = "payload",
+    rename_all = "SCREAMING_SNAKE_CASE",
+    rename_all_fields = "camelCase"
+)]
 pub enum InstanceErrorDto {
     Storage {
         cause: CauseDto,
@@ -444,7 +449,12 @@ impl InstanceErrorDto {
 
 /// Why a path is not a path inside an instance.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Type)]
-#[serde(tag = "code", content = "payload", rename_all = "SCREAMING_SNAKE_CASE")]
+#[serde(
+    tag = "code",
+    content = "payload",
+    rename_all = "SCREAMING_SNAKE_CASE",
+    rename_all_fields = "camelCase"
+)]
 pub enum PathRejectionDto {
     Empty,
     NulByte,
@@ -491,7 +501,12 @@ impl From<PathRejection> for PathRejectionDto {
 
 /// Why a text is not a Minecraft version.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Type)]
-#[serde(tag = "code", content = "payload", rename_all = "SCREAMING_SNAKE_CASE")]
+#[serde(
+    tag = "code",
+    content = "payload",
+    rename_all = "SCREAMING_SNAKE_CASE",
+    rename_all_fields = "camelCase"
+)]
 pub enum GameVersionReasonDto {
     Empty,
     TooLong,
@@ -520,7 +535,12 @@ impl From<GameVersionRejection> for GameVersionReasonDto {
 
 /// Why a text is not a loader version id.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Type)]
-#[serde(tag = "code", content = "payload", rename_all = "SCREAMING_SNAKE_CASE")]
+#[serde(
+    tag = "code",
+    content = "payload",
+    rename_all = "SCREAMING_SNAKE_CASE",
+    rename_all_fields = "camelCase"
+)]
 pub enum LoaderVersionReasonDto {
     Empty,
     TooLong,
@@ -558,7 +578,12 @@ impl From<PaginationField> for PaginationFieldDto {
 
 /// Why a number is not a page index or a page size.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Type)]
-#[serde(tag = "code", content = "payload", rename_all = "SCREAMING_SNAKE_CASE")]
+#[serde(
+    tag = "code",
+    content = "payload",
+    rename_all = "SCREAMING_SNAKE_CASE",
+    rename_all_fields = "camelCase"
+)]
 pub enum PaginationReasonDto {
     TooSmall,
     TooLarge { max: u32 },
@@ -633,7 +658,7 @@ mod tests {
         assert_eq!(
             serde_json::to_value(FrontendError::from(&err)).unwrap(),
             json!({"type": "plugin", "payload": {"code": "HOST_NOT_ALLOWED", "payload": {
-                "plugin_id": "packwiz",
+                "pluginId": "packwiz",
                 "host": "cdn.example",
                 "cause": {"type": "unknown", "details": "cdn refused"},
             }}})
@@ -652,7 +677,7 @@ mod tests {
         assert_eq!(
             serde_json::to_value(FrontendError::from(&err)).unwrap(),
             json!({"type": "plugin", "payload": {"code": "ADDRESS_BLOCKED", "payload": {
-                "plugin_id": "packwiz",
+                "pluginId": "packwiz",
                 "host": "192.168.1.10",
                 "port": 8080,
                 "cause": {"type": "unknown", "details": "nas refused"},
@@ -677,7 +702,7 @@ mod tests {
             assert_eq!(
                 serde_json::to_value(FrontendError::from(&err)).unwrap(),
                 json!({"type": "plugin", "payload": {"code": "COMMAND_NOT_APPROVED", "payload": {
-                    "plugin_id": "packwiz",
+                    "pluginId": "packwiz",
                     "reason": {"code": code},
                     "cause": {"type": "unknown", "details": "java refused"},
                 }}})
@@ -734,7 +759,7 @@ mod tests {
 
         assert_eq!(
             to_json(&err),
-            json!({"code": "NOT_FOUND", "payload": {"instance_id": "i"}})
+            json!({"code": "NOT_FOUND", "payload": {"instanceId": "i"}})
         );
     }
 
@@ -781,7 +806,7 @@ mod tests {
 
         assert_eq!(
             to_json(&err),
-            json!({"code": "INVALID_RECORD", "payload": {"instance_id": "i", "reason": {"code": "INVALID_COLUMN", "payload": {"column": "launch_args_json"}}}})
+            json!({"code": "INVALID_RECORD", "payload": {"instanceId": "i", "reason": {"code": "INVALID_COLUMN", "payload": {"column": "launch_args_json"}}}})
         );
     }
 
@@ -812,7 +837,7 @@ mod tests {
                 instance_id: "i".into(),
                 content_path: "mods/a.jar".into(),
             }),
-            json!({"code": "PACK_FILE_NOT_FOUND", "payload": {"instance_id": "i", "content_path": "mods/a.jar"}})
+            json!({"code": "PACK_FILE_NOT_FOUND", "payload": {"instanceId": "i", "contentPath": "mods/a.jar"}})
         );
         assert_eq!(
             to_json(&InstanceError::NotAContentFile {
@@ -915,7 +940,7 @@ mod tests {
 
         assert_eq!(
             to_json(&err),
-            json!({"code": "IMPORT_FAILED", "payload": {"plugin_id": "p", "capability_id": "c", "cause": {"type": "unknown", "details": "boom"}}})
+            json!({"code": "IMPORT_FAILED", "payload": {"pluginId": "p", "capabilityId": "c", "cause": {"type": "unknown", "details": "boom"}}})
         );
     }
 }

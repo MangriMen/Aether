@@ -6,7 +6,12 @@ use crate::features::update::UpdateError;
 
 /// Why the launcher could not be updated.
 #[derive(Debug, Clone, Serialize, Type)]
-#[serde(tag = "code", content = "payload", rename_all = "SCREAMING_SNAKE_CASE")]
+#[serde(
+    tag = "code",
+    content = "payload",
+    rename_all = "SCREAMING_SNAKE_CASE",
+    rename_all_fields = "camelCase"
+)]
 pub enum UpdateErrorDto {
     NoPendingUpdate,
     GameRunning,

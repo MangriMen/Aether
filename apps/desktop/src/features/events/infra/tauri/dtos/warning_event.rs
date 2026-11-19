@@ -17,7 +17,12 @@ pub struct WarningEventDto {
 
 /// What the user is warned of: a code the frontend translates, with its arguments.
 #[derive(Debug, Serialize, Clone, Type)]
-#[serde(tag = "code", content = "payload", rename_all = "SCREAMING_SNAKE_CASE")]
+#[serde(
+    tag = "code",
+    content = "payload",
+    rename_all = "SCREAMING_SNAKE_CASE",
+    rename_all_fields = "camelCase"
+)]
 // The codes are the translation keys; the warnings of other kinds will not share the prefix.
 #[expect(
     clippy::enum_variant_names,
