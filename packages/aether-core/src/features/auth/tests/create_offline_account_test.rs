@@ -146,9 +146,10 @@ async fn should_not_treat_a_microsoft_account_of_the_same_name_as_a_duplicate() 
         .await
         .unwrap();
 
-    let result = CreateOfflineAccountUseCase::new(storage)
+    let result = CreateOfflineAccountUseCase::new(storage.clone())
         .execute("Steve".to_string())
         .await;
 
     assert!(result.is_ok());
+    assert_eq!(storage.list().await.unwrap().len(), 2);
 }

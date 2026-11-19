@@ -39,7 +39,8 @@ impl CreateOfflineAccountUseCasePort for CreateOfflineAccountUseCase {
         let username = Username::parse(&username)?;
 
         // Minecraft names are case-insensitive, and the id is the key of the account, so a
-        // second account of the same name would overwrite the first one.
+        // second account of the same name would overwrite the first one. Names that differ
+        // only in case get different ids; they are refused too, as the same player.
         let taken = self.credentials_storage.list().await?.iter().any(|c| {
             c.account_type() == AccountType::Offline
                 && c.username()
