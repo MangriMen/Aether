@@ -561,7 +561,7 @@ impl From<LoaderVersionIdRejection> for LoaderVersionReasonDto {
 
 /// Which pagination value was refused.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Type)]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE", rename_all_fields = "camelCase")]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum PaginationFieldDto {
     Page,
     PageSize,

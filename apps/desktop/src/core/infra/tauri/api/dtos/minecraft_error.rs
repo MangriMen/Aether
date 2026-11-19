@@ -59,7 +59,7 @@ pub enum MinecraftErrorDto {
 
 /// What a path the launch needs is the path of.
 #[derive(Debug, Clone, Copy, Serialize, Type)]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE", rename_all_fields = "camelCase")]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum GamePathKindDto {
     Game,
     Assets,

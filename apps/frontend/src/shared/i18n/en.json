@@ -333,7 +333,7 @@
       "PROVIDER_FETCH_ERROR": "Failed to fetch plugin info from provider {{sourceType}}: {{reason}}",
       "PROVIDER_NO_ASSETS": "No suitable release assets found",
       "NO_REMOTE_SOURCE": "Plugin has no remote source configured",
-      "PROVIDER_RATE_LIMITED": "Provider rate limit exceeded. Please wait {retry_after, plural, one {1 second} other {{retry_after} seconds}} before trying again.",
+      "PROVIDER_RATE_LIMITED": "Provider rate limit exceeded. Please try again later.",
       "DOWNLOAD_FAILED": "Failed to download plugin from {{url}}: {{reason}}",
       "manifest": {
         "UNSUPPORTED_API": "The plugin manifest asks for an unsupported API version",

@@ -909,7 +909,10 @@ const placeholdersOf = (text: string): string[] => [
  * Arguments the frontend adds to the payload before the text is filled in
  * (`withFormattedArgs`, `withTranslatedReason`, `withTranslatedNames`).
  */
-const DERIVED_ARGS = new Set(['duration', 'reason']);
+const DERIVED_ARGS: Record<string, string[]> = {
+  'errors.instance.PRELAUNCH_COMMAND_TIMEOUT': ['duration'],
+  'errors.java.PROPERTIES_TIMEOUT': ['duration'],
+};
 
 describe('error placeholders', () => {
   const groups = getErrorGroups();
@@ -930,7 +933,10 @@ describe('error placeholders', () => {
           }
 
           for (const name of placeholdersOf(text)) {
-            if (!fields[code]!.includes(name) && !DERIVED_ARGS.has(name)) {
+            if (
+              !fields[code]!.includes(name) &&
+              !DERIVED_ARGS[`errors.${group}.${code}`]?.includes(name)
+            ) {
               wrong.push(
                 `errors.${group}.${code}: {{${name}}} not in ${fields[code]!.join(', ') || 'nothing'}`,
               );
@@ -954,7 +960,7 @@ describe('error placeholders', () => {
         }
 
         for (const name of placeholdersOf(text)) {
-          if (!fields.includes(name) && !DERIVED_ARGS.has(name)) {
+          if (!fields.includes(name) && !DERIVED_ARGS[path]?.includes(name)) {
             wrong.push(
               `${path}: {{${name}}} not in ${fields.join(', ') || 'nothing'}`,
             );
@@ -999,6 +1005,73 @@ describe('error placeholders', () => {
       }
 
       expect(wrong).toEqual([]);
+    },
+  );
+
+  it.each(dictionaries)(
+    'every {{placeholder}} of a manifest error, a broken instance reason and a plugin state reason is a field of its payload in %s',
+    (_lang, dictionary) => {
+      const wrong: string[] = [];
+
+      const lookup = (path: string): Record<string, unknown> => {
+        let node: unknown = dictionary;
+
+        for (const part of path.split('.')) {
+          node = (node as Record<string, unknown> | undefined)?.[part];
+        }
+
+        return (node ?? {}) as Record<string, unknown>;
+      };
+
+      for (const [path, dtoName, source] of [
+        ['errors.plugin.manifest', 'ManifestErrorDto', bindings],
+        ['instance.broken.reasons', 'BrokenInstanceReasonDto', bindings],
+        ['plugin.stateReason', 'PluginStateReasonDto', pluginBindings],
+      ] as const) {
+        const fields = getPayloadFields(dtoName, source);
+
+        expect(Object.keys(fields).length).toBeGreaterThan(0);
+
+        for (const [code, text] of Object.entries(lookup(path))) {
+          if (typeof text !== 'string') {
+            continue;
+          }
+
+          for (const name of placeholdersOf(text)) {
+            if (!(fields[code] ?? []).includes(name)) {
+              wrong.push(
+                `${path}.${code}: {{${name}}} not in ${(fields[code] ?? []).join(', ') || 'nothing'}`,
+              );
+            }
+          }
+        }
+      }
+
+      expect(wrong).toEqual([]);
+    },
+  );
+
+  it.each(dictionaries)(
+    'has no ICU syntax in a text, which the template does not understand, in %s',
+    (_lang, dictionary) => {
+      const texts: string[] = [];
+
+      const walk = (path: string, node: unknown) => {
+        if (typeof node === 'string') {
+          // `{x}` and `{x, plural, ...}` instead of `{{x}}`.
+          if (/(^|[^{])\{\s*\w+\s*[,}]/.test(node)) {
+            texts.push(path);
+          }
+        } else if (node !== null && typeof node === 'object') {
+          for (const [k, v] of Object.entries(node)) {
+            walk(`${path}.${k}`, v);
+          }
+        }
+      };
+
+      walk('errors', dictionary.errors);
+
+      expect(texts).toEqual([]);
     },
   );
 });

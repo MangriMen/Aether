@@ -31,7 +31,7 @@ pub enum HookErrorDto {
 
 /// Which of the user's launch hooks failed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Type)]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE", rename_all_fields = "camelCase")]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum HookKindDto {
     PreLaunch,
     Wrapper,
