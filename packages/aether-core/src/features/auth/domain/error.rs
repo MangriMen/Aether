@@ -14,6 +14,9 @@ pub enum AuthDomainError {
     #[error("Invalid username chars")]
     InvalidUsernameChars,
 
+    #[error("An offline account with this username already exists")]
+    AccountAlreadyExists,
+
     #[error("Invalid account type")]
     InvalidAccountType,
 

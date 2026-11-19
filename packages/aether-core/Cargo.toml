@@ -104,6 +104,7 @@ sqlx = { workspace = true, features = [
 thiserror.workspace = true
 tokio.workspace = true
 uuid.workspace = true
+md-5 = "0.11"
 svg-hush = "0.9.7"
 
 [target.'cfg(windows)'.dependencies]

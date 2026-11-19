@@ -19,6 +19,8 @@ pub enum AuthErrorDto {
 
     InvalidUsernameChars,
 
+    AccountAlreadyExists,
+
     InvalidAccountType,
 
     TokenExpired,
@@ -47,6 +49,7 @@ impl From<&AuthDomainError> for AuthErrorDto {
             AuthDomainError::InvalidUsernameChars => Self::InvalidUsernameChars,
             AuthDomainError::TokenExpired => Self::TokenExpired,
             AuthDomainError::InvalidAccountType => Self::InvalidAccountType,
+            AuthDomainError::AccountAlreadyExists => Self::AccountAlreadyExists,
         }
     }
 }

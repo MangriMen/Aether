@@ -42,7 +42,7 @@ export type AuthErrorDto = { code: "CREDENTIALS_NOT_FOUND"; payload: {
 } } | { code: "NO_ACTIVE_CREDENTIALS" } | { code: "INVALID_USERNAME_LENGTH"; payload: {
 	min: number,
 	max: number,
-} } | { code: "INVALID_USERNAME_CHARS" } | { code: "INVALID_ACCOUNT_TYPE" } | { code: "TOKEN_EXPIRED" } | { code: "STORAGE_ERROR" };
+} } | { code: "INVALID_USERNAME_CHARS" } | { code: "ACCOUNT_ALREADY_EXISTS" } | { code: "INVALID_ACCOUNT_TYPE" } | { code: "TOKEN_EXPIRED" } | { code: "STORAGE_ERROR" };
 
 /**  Why an instance cannot be read; the code picks the translation. */
 export type BrokenInstanceReasonDto = { code: "INVALID_ID" } | { code: "INVALID_GAME_VERSION"; payload: {
