@@ -26,7 +26,7 @@ export type PluginRestartNoticeProps = {
 export const PluginRestartNotice: Component<PluginRestartNoticeProps> = (
   props,
 ) => (
-  <Show when={props.plugin.restart_needed}>
+  <Show when={props.plugin.restartNeeded}>
     <RestartNotice plugin={props.plugin} class={props.class} />
   </Show>
 );

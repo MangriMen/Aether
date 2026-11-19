@@ -26,7 +26,7 @@ export const PluginUpdateBadge: Component<PluginUpdateBadgeProps> = (props) => {
   const pluginId = () => props.plugin.manifest.metadata.id;
   const updates = useUpdatesData(pluginId);
 
-  const hasUpdate = createMemo(() => updates.data?.has_update ?? false);
+  const hasUpdate = createMemo(() => updates.data?.hasUpdate ?? false);
 
   return (
     <Show when={hasUpdate()}>

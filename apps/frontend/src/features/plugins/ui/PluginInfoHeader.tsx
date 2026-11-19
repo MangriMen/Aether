@@ -23,7 +23,7 @@ export type PluginInfoHeaderProps = {
   authors?: string | null;
   description?: string | null;
   /** Installed plugin whose refusal reason (`Incompatible`/`Failed`) is shown. */
-  plugin?: Pick<Plugin, 'state' | 'state_reason'>;
+  plugin?: Pick<Plugin, 'state' | 'stateReason'>;
   class?: string;
 };
 
@@ -45,8 +45,8 @@ export const PluginInfoHeader: Component<PluginInfoHeaderProps> = (props) => {
 
     return {
       title,
-      reason: getTranslatedStateReason(props.plugin.state_reason, t),
-      details: getStateReasonDetails(props.plugin.state_reason),
+      reason: getTranslatedStateReason(props.plugin.stateReason, t),
+      details: getStateReasonDetails(props.plugin.stateReason),
     };
   };
 

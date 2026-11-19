@@ -15,8 +15,8 @@ describe('secondsLeft', () => {
 describe('byExpiry', () => {
   it('should_put_the_oldest_question_first', () => {
     const sorted = byExpiry([
-      { id: 'b', expires_at: '2026-11-16T10:00:20Z' },
-      { id: 'a', expires_at: '2026-11-16T10:00:10Z' },
+      { id: 'b', expiresAt: '2026-11-16T10:00:20Z' },
+      { id: 'a', expiresAt: '2026-11-16T10:00:10Z' },
     ]);
 
     expect(sorted.map((x) => x.id)).toEqual(['a', 'b']);

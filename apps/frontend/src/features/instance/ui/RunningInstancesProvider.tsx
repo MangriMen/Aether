@@ -31,7 +31,7 @@ export const RunningInstancesProvider: Component<
 
           store.applyProcessSnapshot(
             processes.map((p) => ({
-              instanceId: p.instance_id,
+              instanceId: p.instanceId,
               processId: p.uuid,
             })),
           );

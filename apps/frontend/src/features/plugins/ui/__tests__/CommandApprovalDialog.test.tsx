@@ -28,16 +28,16 @@ const { CommandApprovalDialog } = await import('../CommandApprovalDialog');
 const approval = (
   overrides: Partial<PendingCommandApproval> = {},
 ): PendingCommandApproval => ({
-  request_id: 'r1',
-  plugin_id: 'packwiz',
+  requestId: 'r1',
+  pluginId: 'packwiz',
   java: 'C:/java/bin/java.exe',
-  current_dir: 'C:/cache',
+  currentDir: 'C:/cache',
   options: [],
   target: '#/cache/a.jar',
   rest: ['--token', 'secret-token'],
-  jar: { plugin_path: '/cache/a.jar', sha256: 'abc', size: 100 },
-  once_only: null,
-  expires_at: new Date(Date.now() + 300_000).toISOString(),
+  jar: { pluginPath: '/cache/a.jar', sha256: 'abc', size: 100 },
+  onceOnly: null,
+  expiresAt: new Date(Date.now() + 300_000).toISOString(),
   ...overrides,
 });
 
@@ -111,7 +111,7 @@ describe('CommandApprovalDialog', () => {
   });
 
   it('should_not_offer_always_when_only_once_is_allowed', () => {
-    state.approvals = [approval({ once_only: { code: 'JAR_HAS_CLASS_PATH' } })];
+    state.approvals = [approval({ onceOnly: { code: 'JAR_HAS_CLASS_PATH' } })];
     mount(() => <CommandApprovalDialog />);
     vi.advanceTimersByTime(800);
 
@@ -125,7 +125,7 @@ describe('CommandApprovalDialog', () => {
         options: [],
         target: null,
         rest: ['-Dapi.token=abc123', '-jar', '#/cache/a.jar'],
-        once_only: { code: 'UNLISTED_OPTION', option: '-Dapi.token=abc123' },
+        onceOnly: { code: 'UNLISTED_OPTION', option: '-Dapi.token=abc123' },
       }),
     ];
     mount(() => <CommandApprovalDialog />);

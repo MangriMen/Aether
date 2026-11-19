@@ -16,9 +16,9 @@ export const secondsLeft = (expiresAt: string, now: number): number => {
 };
 
 /** The questions oldest first, which is the order they are answered in. */
-export const byExpiry = <T extends { expires_at: string }>(
+export const byExpiry = <T extends { expiresAt: string }>(
   approvals: readonly T[],
 ): T[] =>
   [...approvals].sort(
-    (a, b) => Date.parse(a.expires_at) - Date.parse(b.expires_at),
+    (a, b) => Date.parse(a.expiresAt) - Date.parse(b.expiresAt),
   );

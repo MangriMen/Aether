@@ -22,7 +22,7 @@ const plugin = (id: string, restartNeeded = false): Plugin =>
   ({
     manifest: { metadata: { id, name: id } },
     state: { type: 'loaded' },
-    restart_needed: restartNeeded,
+    restartNeeded,
   }) as unknown as Plugin;
 
 const deferred = <T>() => {
@@ -192,7 +192,7 @@ describe('plugin release queries', () => {
   });
 
   it('should_list_the_releases_of_the_given_provider_without_asking_for_an_archive', async () => {
-    commands.listPluginReleases.mockResolvedValue({ default_tag: 'v1' });
+    commands.listPluginReleases.mockResolvedValue({ defaultTag: 'v1' });
 
     await queryClient.fetchQuery(pluginsQueries.releases('github', 'o/r'));
 

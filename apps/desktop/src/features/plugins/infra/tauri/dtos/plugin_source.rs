@@ -69,6 +69,7 @@ impl From<PluginSourceTypeDto> for aether_core::features::plugins::PluginSourceT
 /// Provider-agnostic plugin update info.
 /// Uses `ProviderReleaseInfoDto` for releases so it works with any source type.
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
 pub struct PluginUpdateInfoDto {
     pub current_version: String,
     pub current_tag: String,
@@ -104,6 +105,7 @@ impl From<aether_core::features::plugins::ProviderUpdateInfo> for PluginUpdateIn
 
 /// A provider plugins can be installed from, with the name it gives itself.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Type)]
+#[serde(rename_all = "camelCase")]
 pub struct PluginProviderDto {
     pub source_type: PluginSourceTypeDto,
     /// A proper name, shown as it is.

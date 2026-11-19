@@ -4,6 +4,7 @@ use specta::Type;
 use super::HostFunctionRiskDto;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
 pub struct PluginManifestPreviewDto {
     pub id: String,
     pub name: String,

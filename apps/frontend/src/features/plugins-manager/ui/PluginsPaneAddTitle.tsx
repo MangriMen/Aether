@@ -41,7 +41,7 @@ export const PluginsPaneAddTitle: Component<PluginsPaneAddTitleProps> = (
 
   const options = createMemo<ProviderOption[]>(() =>
     local.providers.map((provider) => ({
-      value: provider.source_type,
+      value: provider.sourceType,
       // The provider's own name: a proper name, not translated.
       label: provider.name,
     })),

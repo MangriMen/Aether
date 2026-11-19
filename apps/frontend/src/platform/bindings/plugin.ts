@@ -224,7 +224,7 @@ export type CommandApprovalKeyDto = {
 export type CommandApprovalOutcomeDto = "answered" | "timed_out" | "cancelled";
 
 export type CommandJarDto = {
-	plugin_path: string,
+	pluginPath: string,
 	sha256: string,
 	/**
 	 *  A number, not `u64`: specta refuses to export `u64`, and a jar over 2^53 bytes is refused
@@ -652,11 +652,11 @@ export type PathRejectionDto = { code: "EMPTY" } | { code: "NUL_BYTE" } | { code
 
 /**  A command a plugin wants to run, waiting for the user. */
 export type PendingCommandApprovalDto = {
-	request_id: string,
-	plugin_id: string,
+	requestId: string,
+	pluginId: string,
 	/**  The Java launcher the command starts. */
 	java: string,
-	current_dir: string,
+	currentDir: string,
 	/**  The JVM options before the jar, as the core builds the approval key from them. */
 	options: string[],
 	/**  The jar as the plugin wrote it; `None` when the command is not a plain `-jar` launch. */
@@ -665,8 +665,8 @@ export type PendingCommandApprovalDto = {
 	rest: string[],
 	jar: CommandJarDto | null,
 	/**  Why "always" is not offered; `None` when it is. */
-	once_only: OnceOnlyReasonDto | null,
-	expires_at: string,
+	onceOnly: OnceOnlyReasonDto | null,
+	expiresAt: string,
 };
 
 /**  Why a call into a plugin failed. */
@@ -699,15 +699,15 @@ export type PluginDto = {
 	manifest: PluginManifestDto,
 	capabilities: PluginCapabilitiesDto | null,
 	state: PluginDtoState,
-	state_reason: PluginStateReasonDto | null,
+	stateReason: PluginStateReasonDto | null,
 	/**
 	 *  The plugin runs with other folders than its settings give it now: they take effect once
 	 *  it restarts.
 	 */
-	restart_needed: boolean,
+	restartNeeded: boolean,
 	verified: boolean,
 	/**  What the declared host functions let the plugin do that the user should be warned about. */
-	host_function_risks: HostFunctionRiskDto[],
+	hostFunctionRisks: HostFunctionRiskDto[],
 };
 
 export type PluginDtoState = "not_loaded" | "loading" | "loaded" | "unloading" | "incompatible" | "failed";
@@ -899,12 +899,12 @@ export type PluginManifestPreviewDto = {
 	description: string | null,
 	authors: string[],
 	license: string | null,
-	api_version: string | null,
-	allowed_hosts: string[],
+	apiVersion: string | null,
+	allowedHosts: string[],
 	/**  The entries of `allowed_hosts` that admit far more than one site. */
-	wide_allowed_hosts: string[],
-	host_functions: string[] | null,
-	host_function_risks: HostFunctionRiskDto[],
+	wideAllowedHosts: string[],
+	hostFunctions: string[] | null,
+	hostFunctionRisks: HostFunctionRiskDto[],
 };
 
 export type PluginMetadataDto = {
@@ -924,7 +924,7 @@ export type PluginMetadataDto = {
 
 /**  A provider plugins can be installed from, with the name it gives itself. */
 export type PluginProviderDto = {
-	source_type: PluginSourceTypeDto,
+	sourceType: PluginSourceTypeDto,
 	/**  A proper name, shown as it is. */
 	name: string,
 };
@@ -934,7 +934,7 @@ export type PluginReleaseListingDto = {
 	owner: string,
 	repo: string,
 	releases: ProviderReleaseInfoDto[],
-	default_tag: string,
+	defaultTag: string,
 };
 
 export type PluginSettingsDto = {
@@ -978,23 +978,23 @@ export type PluginStateReasonDto = { code: "INCOMPATIBLE_API_VERSION"; payload: 
  *  ("removed"). Computed and classified by the core: the frontend only shows it.
  */
 export type PluginUpdateDiffDto = {
-	added_host_functions: HostFunctionChangeDto[],
-	removed_host_functions: HostFunctionChangeDto[],
+	addedHostFunctions: HostFunctionChangeDto[],
+	removedHostFunctions: HostFunctionChangeDto[],
 	/**  Risks the release carries that the installed version does not. */
-	added_risks: HostFunctionRiskDto[],
-	added_allowed_hosts: AllowedHostChangeDto[],
-	removed_allowed_hosts: string[],
-	added_capabilities: CapabilityChangeDto[],
-	removed_capabilities: CapabilityChangeDto[],
+	addedRisks: HostFunctionRiskDto[],
+	addedAllowedHosts: AllowedHostChangeDto[],
+	removedAllowedHosts: string[],
+	addedCapabilities: CapabilityChangeDto[],
+	removedCapabilities: CapabilityChangeDto[],
 	/**
 	 *  Capabilities both have under the same kind and id but declare differently, such as a
 	 *  content provider that now serves another platform.
 	 */
-	changed_capabilities: CapabilityChangeDto[],
+	changedCapabilities: CapabilityChangeDto[],
 	/**  The release may do something the user is warned about that the installed version may not. */
-	adds_risk: boolean,
+	addsRisk: boolean,
 	/**  Both versions ask for the same. */
-	is_empty: boolean,
+	isEmpty: boolean,
 };
 
 /**
@@ -1002,12 +1002,12 @@ export type PluginUpdateDiffDto = {
  *  Uses `ProviderReleaseInfoDto` for releases so it works with any source type.
  */
 export type PluginUpdateInfoDto = {
-	current_version: string,
-	current_tag: string,
-	latest_version: string | null,
-	latest_tag: string | null,
-	has_update: boolean,
-	all_releases: ProviderReleaseInfoDto[],
+	currentVersion: string,
+	currentTag: string,
+	latestVersion: string | null,
+	latestTag: string | null,
+	hasUpdate: boolean,
+	allReleases: ProviderReleaseInfoDto[],
 };
 
 /**
@@ -1017,7 +1017,7 @@ export type PluginUpdateInfoDto = {
 export type PluginUpdatePreviewDto = {
 	release: ProviderPluginPreviewDto,
 	/**  The version installed now, which `diff` is taken against. */
-	installed_version: string,
+	installedVersion: string,
 	diff: PluginUpdateDiffDto,
 };
 
@@ -1110,16 +1110,16 @@ export type ProviderPluginPreviewDto = {
 	manifest: PluginManifestPreviewDto,
 	/**  As the launcher would register them (handlers, flags derived from them, platform). */
 	capabilities: PluginCapabilitiesDto | null,
-	archive_sha256: string,
+	archiveSha256: string,
 };
 
 export type ProviderReleaseInfoDto = {
-	tag_name: string,
+	tagName: string,
 	version: string,
-	is_prerelease: boolean,
-	published_at: string,
-	html_url: string,
-	download_url: string,
+	isPrerelease: boolean,
+	publishedAt: string,
+	htmlUrl: string,
+	downloadUrl: string,
 };
 
 export type RequestErrorDto = { code: "ACQUIRE" } | { code: "REQUEST_SEND"; payload: {
@@ -1159,7 +1159,7 @@ export type SettingsErrorDto = { code: "NOT_FOUND" } | { code: "STORAGE_FAILURE"
 } } | { code: "INVALID_MAX_CONCURRENT_DOWNLOADS" } | { code: "INVALID_MEMORY" };
 
 export type SkippedPluginDirDto = {
-	dir_name: string,
+	dirName: string,
 	reason: SkippedPluginDirReasonDto,
 };
 

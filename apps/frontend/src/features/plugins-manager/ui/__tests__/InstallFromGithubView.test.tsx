@@ -18,17 +18,17 @@ vi.mock('@/platform/ipc', async (importOriginal) => ({
 import { InstallFromGithubView } from '../InstallFromGithubView';
 
 const release = (tag: string) => ({
-  tag_name: tag,
+  tagName: tag,
   version: tag,
-  is_prerelease: false,
-  published_at: '',
-  html_url: '',
-  download_url: '',
+  isPrerelease: false,
+  publishedAt: '',
+  htmlUrl: '',
+  downloadUrl: '',
 });
 
 const releases = [release('v2'), release('v1')];
 
-const listing = { owner: 'o', repo: 'r', releases, default_tag: 'v2' };
+const listing = { owner: 'o', repo: 'r', releases, defaultTag: 'v2' };
 
 const previewOf = (tag: string) => ({
   tag,
@@ -39,14 +39,14 @@ const previewOf = (tag: string) => ({
     description: null,
     authors: [],
     license: null,
-    api_version: null,
-    allowed_hosts: [],
-    wide_allowed_hosts: [],
-    host_functions: null,
-    host_function_risks: [],
+    apiVersion: null,
+    allowedHosts: [],
+    wideAllowedHosts: [],
+    hostFunctions: null,
+    hostFunctionRisks: [],
   },
   capabilities: null,
-  archive_sha256: `sha-of-${tag}`,
+  archiveSha256: `sha-of-${tag}`,
   size: 1,
 });
 
@@ -145,7 +145,7 @@ describe('InstallFromGithubView', () => {
             : {
                 ...listing,
                 releases: [release('b2'), release('b1')],
-                default_tag: 'b2',
+                defaultTag: 'b2',
               },
         ),
     );

@@ -26,7 +26,7 @@ export const PluginCapabilitiesTab: Component<PluginCapabilitiesTabProps> = (
       />
       <PluginHostFunctionsSection
         hostFunctions={local.plugin.manifest.api.hostFunctions}
-        risks={local.plugin.host_function_risks}
+        risks={local.plugin.hostFunctionRisks}
       />
     </div>
   );

@@ -5,7 +5,7 @@ import { pluginsCommands } from '@/platform/ipc';
 import { pluginKeys } from './pluginKeys';
 
 /**
- * Whether the core finds an `allowed_hosts` entry wide. The rule lives in the core; until it
+ * Whether the core finds an `allowedHosts` entry wide. The rule lives in the core; until it
  * answers, nothing is warned about.
  */
 export const useIsWideAllowedHost = (entry: () => string) =>

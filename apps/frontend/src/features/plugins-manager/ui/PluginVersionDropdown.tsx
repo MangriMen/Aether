@@ -59,14 +59,14 @@ export const PluginVersionDropdown: Component<PluginVersionDropdownProps> = (
   );
 
   const filteredVersions = createMemo(() => {
-    const all = updates.data?.all_releases ?? [];
+    const all = updates.data?.allReleases ?? [];
     const query = searchQuery().toLowerCase();
 
     if (!query) {
       return all;
     }
 
-    return all.filter((r) => r.tag_name.toLowerCase().includes(query));
+    return all.filter((r) => r.tagName.toLowerCase().includes(query));
   });
 
   const handleCheckUpdates = () => {
@@ -116,7 +116,7 @@ export const PluginVersionDropdown: Component<PluginVersionDropdownProps> = (
               </div>
             }
           >
-            <Show when={updates.data && updates.data.all_releases.length > 0}>
+            <Show when={updates.data && updates.data.allReleases.length > 0}>
               <CombinedTextField
                 class='p-1'
                 value={searchQuery()}
@@ -133,16 +133,14 @@ export const PluginVersionDropdown: Component<PluginVersionDropdownProps> = (
                       as={Button}
                       variant='ghost'
                       class='w-full justify-start'
-                      onSelect={() => handleSwitchVersion(release.tag_name)}
+                      onSelect={() => handleSwitchVersion(release.tagName)}
                       disabled={
                         isDisabled() ||
-                        release.tag_name === updates.data?.current_tag
+                        release.tagName === updates.data?.currentTag
                       }
                     >
-                      <span>{release.tag_name}</span>
-                      <Show
-                        when={release.tag_name === updates.data?.current_tag}
-                      >
+                      <span>{release.tagName}</span>
+                      <Show when={release.tagName === updates.data?.currentTag}>
                         <span class='text-xs text-muted-foreground ml-auto'>
                           {t('common.current')}
                         </span>

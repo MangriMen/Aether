@@ -5,6 +5,7 @@ use super::{PluginCapabilitiesDto, PluginManifestPreviewDto};
 
 /// Generic provider-agnostic plugin preview for the frontend.
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
 pub struct ProviderPluginPreviewDto {
     pub tag: String,
     pub manifest: PluginManifestPreviewDto,
@@ -26,6 +27,7 @@ impl From<aether_core::features::plugins::PluginReleasePreview> for ProviderPlug
 
 /// The releases of a plugin that can be installed, and the one to start from.
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
 pub struct PluginReleaseListingDto {
     pub owner: String,
     pub repo: String,
@@ -56,6 +58,7 @@ impl From<aether_core::features::plugins::PluginReleaseListing> for PluginReleas
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
 pub struct ProviderReleaseInfoDto {
     pub tag_name: String,
     pub version: String,

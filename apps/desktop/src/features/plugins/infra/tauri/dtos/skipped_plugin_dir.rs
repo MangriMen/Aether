@@ -18,6 +18,7 @@ pub enum SkippedPluginDirReasonDto {
 }
 
 #[derive(Debug, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
 pub struct SkippedPluginDirDto {
     pub dir_name: String,
     pub reason: SkippedPluginDirReasonDto,
@@ -60,7 +61,7 @@ mod tests {
     fn should_serialize_an_invalid_name_as_a_bare_code() {
         assert_eq!(
             skipped(SkippedPluginDirReason::InvalidName),
-            json!({"dir_name": "broken", "reason": {"code": "INVALID_NAME"}})
+            json!({"dirName": "broken", "reason": {"code": "INVALID_NAME"}})
         );
     }
 
@@ -73,7 +74,7 @@ mod tests {
                 error: Arc::new(error)
             }),
             json!({
-                "dir_name": "broken",
+                "dirName": "broken",
                 "reason": {
                     "code": "LOAD_FAILED",
                     "payload": {

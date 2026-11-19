@@ -23,9 +23,9 @@ export const ContentVersionDependencyItem: Component<
   const [context] = useContentContext();
 
   const project = useContent(() =>
-    props.dependency.content_id && context.providerId
+    props.dependency.contentId && context.providerId
       ? {
-          contentId: props.dependency.content_id,
+          contentId: props.dependency.contentId,
           providerId: context.providerId,
         }
       : undefined,
@@ -33,14 +33,14 @@ export const ContentVersionDependencyItem: Component<
 
   const label = () =>
     project.data?.name ??
-    props.dependency.file_name ??
-    props.dependency.content_id ??
-    props.dependency.version_id ??
+    props.dependency.fileName ??
+    props.dependency.contentId ??
+    props.dependency.versionId ??
     t('common.unknown');
 
   const href = () =>
-    props.dependency.content_id
-      ? createContentPageHref(props.dependency.content_id, {
+    props.dependency.contentId
+      ? createContentPageHref(props.dependency.contentId, {
           instanceId: context.instanceId,
           providerId: context.providerId,
         })
@@ -59,9 +59,7 @@ export const ContentVersionDependencyItem: Component<
         )}
       </Show>
       <Badge variant='secondary'>
-        {t(
-          `contentVersion.dependencyTypes.${props.dependency.dependency_type}`,
-        )}
+        {t(`contentVersion.dependencyTypes.${props.dependency.dependencyType}`)}
       </Badge>
     </li>
   );
