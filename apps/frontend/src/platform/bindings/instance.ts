@@ -351,6 +351,7 @@ export type ContentSearchResultDto = {
 	items: ContentItemDto[],
 };
 
+/**  The values are the ones Modrinth uses (`datapack`, `resourcepack`), not `snake_case`. */
 export type ContentTypeDto = "modpack" | "mod" | "datapack" | "resourcepack" | "shaderpack";
 
 export type ContentVersionDependencyDto = {
@@ -749,6 +750,7 @@ export type MinecraftProcessMetadataDto = {
 	start_time: string,
 };
 
+/**  The values are the loader names as Modrinth writes them (`neoforge`), not `snake_case`. */
 export type ModLoaderDto = "vanilla" | "forge" | "fabric" | "quilt" | "neoforge";
 
 export type ModpackInstallParamsDto = BaseContentParamsDto;

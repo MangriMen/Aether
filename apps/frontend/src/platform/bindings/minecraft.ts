@@ -139,6 +139,7 @@ export type ContentProviderReasonDto = { code: "WRONG_TARGET"; payload: {
 	cause: CauseDto,
 } };
 
+/**  The values are the ones Modrinth uses (`datapack`, `resourcepack`), not `snake_case`. */
 export type ContentTypeDto = "modpack" | "mod" | "datapack" | "resourcepack" | "shaderpack";
 
 export type EventErrorDto = { code: "NOT_INITIALIZED" } | { code: "NO_LOADING_BAR"; payload: {
@@ -391,6 +392,7 @@ export type MinecraftErrorDto = { code: "VERSION_NOT_FOUND"; payload: {
 	cause: CauseDto,
 } };
 
+/**  The values are the loader names as Modrinth writes them (`neoforge`), not `snake_case`. */
 export type ModLoaderDto = "vanilla" | "forge" | "fabric" | "quilt" | "neoforge";
 
 /**  A version of a Minecraft mod loader */
