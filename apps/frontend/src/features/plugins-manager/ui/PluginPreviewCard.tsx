@@ -60,7 +60,7 @@ export const PluginPreviewCard: Component<PluginPreviewCardProps> = (props) => {
                 class='flex-1'
                 name={preview().manifest.name || props.repo}
                 version={preview().manifest.version}
-                apiVersion={preview().manifest.api_version ?? null}
+                apiVersion={preview().manifest.apiVersion ?? null}
                 authors={props.authors}
                 description={preview().manifest.description ?? null}
               />
@@ -73,12 +73,12 @@ export const PluginPreviewCard: Component<PluginPreviewCardProps> = (props) => {
             </Show>
 
             <PluginAllowedHostsSection
-              allowedHosts={preview().manifest.allowed_hosts}
-              wideHosts={preview().manifest.wide_allowed_hosts}
+              allowedHosts={preview().manifest.allowedHosts}
+              wideHosts={preview().manifest.wideAllowedHosts}
             />
             <PluginHostFunctionsSection
-              hostFunctions={preview().manifest.host_functions}
-              risks={preview().manifest.host_function_risks}
+              hostFunctions={preview().manifest.hostFunctions}
+              risks={preview().manifest.hostFunctionRisks}
             />
 
             <Show when={preview().manifest.license}>

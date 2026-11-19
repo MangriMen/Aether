@@ -43,7 +43,7 @@ export const PluginUpdateButton: Component<PluginUpdateButtonProps> = (
 
   const hasChecked = createMemo(() => updates.data != null);
   const latestTag = createMemo(() =>
-    updates.data?.has_update ? (updates.data.latest_tag ?? null) : null,
+    updates.data?.hasUpdate ? (updates.data.latestTag ?? null) : null,
   );
 
   const handleCheckUpdates = () => {

@@ -59,26 +59,26 @@ const ChangeList: Component<{
 const PluginUpdateDiffView: Component<{ diff: PluginUpdateDiff }> = (props) => {
   const [{ t }] = useTranslation();
 
-  const capability = (c: PluginUpdateDiff['added_capabilities'][number]) => {
+  const capability = (c: PluginUpdateDiff['addedCapabilities'][number]) => {
     const kind = t(`plugins.updateDialog.capabilityKind.${c.kind}`);
 
     return { text: `${c.name} (${kind})` };
   };
 
   const warnings = (): (string | undefined)[] => [
-    ...props.diff.added_risks.map((risk) => t(`plugin.hostRisk.${risk}`)),
-    ...(props.diff.added_allowed_hosts.some((host) => host.wide)
+    ...props.diff.addedRisks.map((risk) => t(`plugin.hostRisk.${risk}`)),
+    ...(props.diff.addedAllowedHosts.some((host) => host.wide)
       ? [t('plugin.allowedHostsWide')]
       : []),
   ];
 
   return (
     <Show
-      when={!props.diff.is_empty}
+      when={!props.diff.isEmpty}
       fallback={<p class='text-sm'>{t('plugins.updateDialog.noChanges')}</p>}
     >
       <div class='gap-3 flex flex-col' data-testid='plugin-update-diff'>
-        <Show when={props.diff.adds_risk}>
+        <Show when={props.diff.addsRisk}>
           <div
             role='alert'
             class='gap-1 rounded-md p-3 flex flex-col border border-warning'
@@ -93,7 +93,7 @@ const PluginUpdateDiffView: Component<{ diff: PluginUpdateDiff }> = (props) => {
         </Show>
         <ChangeList
           label={t('plugins.updateDialog.addedHostFunctions')}
-          items={props.diff.added_host_functions.map((f) => ({
+          items={props.diff.addedHostFunctions.map((f) => ({
             text: f.name,
             warn: f.risk !== null,
             mono: true,
@@ -101,7 +101,7 @@ const PluginUpdateDiffView: Component<{ diff: PluginUpdateDiff }> = (props) => {
         />
         <ChangeList
           label={t('plugins.updateDialog.addedHosts')}
-          items={props.diff.added_allowed_hosts.map((host) => ({
+          items={props.diff.addedAllowedHosts.map((host) => ({
             text: host.entry,
             warn: host.wide,
             mono: true,
@@ -109,29 +109,29 @@ const PluginUpdateDiffView: Component<{ diff: PluginUpdateDiff }> = (props) => {
         />
         <ChangeList
           label={t('plugins.updateDialog.addedCapabilities')}
-          items={props.diff.added_capabilities.map(capability)}
+          items={props.diff.addedCapabilities.map(capability)}
         />
         <ChangeList
           label={t('plugins.updateDialog.changedCapabilities')}
-          items={props.diff.changed_capabilities.map(capability)}
+          items={props.diff.changedCapabilities.map(capability)}
         />
         <ChangeList
           label={t('plugins.updateDialog.removedHostFunctions')}
-          items={props.diff.removed_host_functions.map((f) => ({
+          items={props.diff.removedHostFunctions.map((f) => ({
             text: f.name,
             mono: true,
           }))}
         />
         <ChangeList
           label={t('plugins.updateDialog.removedHosts')}
-          items={props.diff.removed_allowed_hosts.map((entry) => ({
+          items={props.diff.removedAllowedHosts.map((entry) => ({
             text: entry,
             mono: true,
           }))}
         />
         <ChangeList
           label={t('plugins.updateDialog.removedCapabilities')}
-          items={props.diff.removed_capabilities.map(capability)}
+          items={props.diff.removedCapabilities.map(capability)}
         />
       </div>
     </Show>
@@ -174,7 +174,7 @@ const PluginUpdateBody: Component<{
       await updatePlugin.mutateAsync({
         id: pluginId(),
         tag: data.release.tag,
-        archiveSha256: data.release.archive_sha256,
+        archiveSha256: data.release.archiveSha256,
       });
       props.onClose();
     } catch {
@@ -201,7 +201,7 @@ const PluginUpdateBody: Component<{
           {(data) => (
             <DialogDescription>
               {t('plugins.updateDialog.description', {
-                from: data().installed_version,
+                from: data().installedVersion,
                 to: data().release.manifest.version,
               })}
             </DialogDescription>
@@ -248,12 +248,12 @@ const PluginUpdateBody: Component<{
                   )}
                 </Show>
                 <PluginAllowedHostsSection
-                  allowedHosts={data().release.manifest.allowed_hosts}
-                  wideHosts={data().release.manifest.wide_allowed_hosts}
+                  allowedHosts={data().release.manifest.allowedHosts}
+                  wideHosts={data().release.manifest.wideAllowedHosts}
                 />
                 <PluginHostFunctionsSection
-                  hostFunctions={data().release.manifest.host_functions}
-                  risks={data().release.manifest.host_function_risks}
+                  hostFunctions={data().release.manifest.hostFunctions}
+                  risks={data().release.manifest.hostFunctionRisks}
                 />
               </div>
             </details>
@@ -270,7 +270,7 @@ const PluginUpdateBody: Component<{
           {t('common.cancel')}
         </Button>
         <Button
-          variant={ready()?.diff.adds_risk ? 'warning' : 'default'}
+          variant={ready()?.diff.addsRisk ? 'warning' : 'default'}
           disabled={!ready() || updatePlugin.isPending}
           loading={updatePlugin.isPending}
           onClick={() => void handleUpdate()}

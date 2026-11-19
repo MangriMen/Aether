@@ -61,6 +61,7 @@ pub enum PluginStateReasonDto {
 }
 
 #[derive(Debug, Clone, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
 pub struct PluginDto {
     pub manifest: PluginManifestDto,
     pub capabilities: Option<PluginCapabilitiesDto>,

@@ -26,6 +26,7 @@ pub enum ContentVersionDependencyTypeDto {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
 pub struct ContentVersionDependencyDto {
     pub version_id: Option<String>,
     pub content_id: Option<String>,

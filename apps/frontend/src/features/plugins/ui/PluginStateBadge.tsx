@@ -17,7 +17,7 @@ import {
 } from '../model/pluginState';
 
 export type PluginStateBadgeProps = ComponentProps<'span'> & {
-  plugin: Pick<Plugin, 'state' | 'state_reason'>;
+  plugin: Pick<Plugin, 'state' | 'stateReason'>;
 };
 
 /**
@@ -34,7 +34,7 @@ export const PluginStateBadge: Component<PluginStateBadgeProps> = (props) => {
   return (
     <Show when={label()}>
       <CombinedTooltip
-        label={getTranslatedStateReason(local.plugin.state_reason, t)}
+        label={getTranslatedStateReason(local.plugin.stateReason, t)}
         as='span'
         tabIndex={0}
         class={cn('text-xs font-medium text-destructive', local.class)}

@@ -5,6 +5,7 @@ use specta::Type;
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
 pub struct MinecraftProcessMetadataDto {
     uuid: Uuid,
     instance_id: String,

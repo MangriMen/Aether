@@ -391,8 +391,8 @@ export type MinecraftErrorDto = { code: "VERSION_NOT_FOUND"; payload: {
 
 export type MinecraftProcessMetadataDto = {
 	uuid: string,
-	instance_id: string,
-	start_time: string,
+	instanceId: string,
+	startTime: string,
 };
 
 export type NetworkErrorKindDto = "timeout" | "connect" | "redirect" | "body";

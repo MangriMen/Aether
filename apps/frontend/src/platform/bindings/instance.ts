@@ -355,10 +355,10 @@ export type ContentSearchResultDto = {
 export type ContentTypeDto = "modpack" | "mod" | "datapack" | "resourcepack" | "shaderpack";
 
 export type ContentVersionDependencyDto = {
-	version_id: string | null,
-	content_id: string | null,
-	file_name: string | null,
-	dependency_type: ContentVersionDependencyTypeDto,
+	versionId: string | null,
+	contentId: string | null,
+	fileName: string | null,
+	dependencyType: ContentVersionDependencyTypeDto,
 };
 
 export type ContentVersionDependencyTypeDto = "required" | "optional" | "incompatible" | "embedded";
@@ -746,8 +746,8 @@ export type MinecraftErrorDto = { code: "VERSION_NOT_FOUND"; payload: {
 
 export type MinecraftProcessMetadataDto = {
 	uuid: string,
-	instance_id: string,
-	start_time: string,
+	instanceId: string,
+	startTime: string,
 };
 
 /**  The values are the loader names as Modrinth writes them (`neoforge`), not `snake_case`. */

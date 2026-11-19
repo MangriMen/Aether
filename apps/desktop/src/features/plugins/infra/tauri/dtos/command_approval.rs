@@ -7,6 +7,7 @@ use specta::Type;
 
 /// A command a plugin wants to run, waiting for the user.
 #[derive(Debug, Clone, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
 pub struct PendingCommandApprovalDto {
     pub request_id: String,
     pub plugin_id: String,
@@ -26,6 +27,7 @@ pub struct PendingCommandApprovalDto {
 }
 
 #[derive(Debug, Clone, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
 pub struct CommandJarDto {
     pub plugin_path: String,
     pub sha256: String,

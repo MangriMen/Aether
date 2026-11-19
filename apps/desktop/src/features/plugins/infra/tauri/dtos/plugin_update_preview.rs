@@ -10,6 +10,7 @@ use super::{HostFunctionRiskDto, ProviderPluginPreviewDto};
 /// A release of an installed plugin as shown before the update to it. The update is given
 /// `release.archive_sha256` back, so it installs the archive shown here or nothing.
 #[derive(Debug, Clone, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
 pub struct PluginUpdatePreviewDto {
     pub release: ProviderPluginPreviewDto,
     /// The version installed now, which `diff` is taken against.
@@ -30,6 +31,7 @@ impl From<PluginUpdatePreview> for PluginUpdatePreviewDto {
 /// What the release asks for that the installed version does not ("added"), and what it gives up
 /// ("removed"). Computed and classified by the core: the frontend only shows it.
 #[derive(Debug, Clone, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
 pub struct PluginUpdateDiffDto {
     pub added_host_functions: Vec<HostFunctionChangeDto>,
     pub removed_host_functions: Vec<HostFunctionChangeDto>,

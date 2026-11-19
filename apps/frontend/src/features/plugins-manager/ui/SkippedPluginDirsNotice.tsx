@@ -45,7 +45,7 @@ export const SkippedPluginDirsNotice: Component = () => {
               <For each={skipped()}>
                 {(dir) => (
                   <li>
-                    <b>{dir.dir_name}</b>: {reason(dir)}
+                    <b>{dir.dirName}</b>: {reason(dir)}
                     <Show when={details(dir)}>
                       {(text) => <ErrorDetails details={text()} />}
                     </Show>

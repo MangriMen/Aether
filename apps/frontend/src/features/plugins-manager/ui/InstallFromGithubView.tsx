@@ -84,7 +84,7 @@ export const InstallFromGithubView: Component<InstallFromGithubViewProps> = (
     const data = listing();
 
     if (data && pickedTag() === null) {
-      setPickedTag(data.default_tag);
+      setPickedTag(data.defaultTag);
     }
   });
 
@@ -97,9 +97,9 @@ export const InstallFromGithubView: Component<InstallFromGithubViewProps> = (
       return '';
     }
 
-    return picked && data.releases.some((r) => r.tag_name === picked)
+    return picked && data.releases.some((r) => r.tagName === picked)
       ? picked
-      : data.default_tag;
+      : data.defaultTag;
   });
 
   const previewQuery = usePluginPreview(PROVIDER, debouncedUrl, selectedTag);
@@ -128,10 +128,10 @@ export const InstallFromGithubView: Component<InstallFromGithubViewProps> = (
 
   const releaseOptions = createMemo<ReleaseOption[]>(() =>
     (listing()?.releases ?? []).map((r) => ({
-      value: r.tag_name,
-      label: r.is_prerelease
-        ? `${r.tag_name} (${t('plugins.prerelease')})`
-        : r.tag_name,
+      value: r.tagName,
+      label: r.isPrerelease
+        ? `${r.tagName} (${t('plugins.prerelease')})`
+        : r.tagName,
     })),
   );
 
@@ -153,7 +153,7 @@ export const InstallFromGithubView: Component<InstallFromGithubViewProps> = (
         sourceType: PROVIDER,
         identifier: debouncedUrl(),
         tagName: p.tag,
-        archiveSha256: p.archive_sha256,
+        archiveSha256: p.archiveSha256,
       });
       props.onInstalled?.();
     } catch {

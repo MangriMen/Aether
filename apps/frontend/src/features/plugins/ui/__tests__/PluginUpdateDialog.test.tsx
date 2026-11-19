@@ -56,16 +56,16 @@ const plugin = {
 } as unknown as Plugin;
 
 const noChanges = (): PluginUpdateDiff => ({
-  added_host_functions: [],
-  removed_host_functions: [],
-  added_risks: [],
-  added_allowed_hosts: [],
-  removed_allowed_hosts: [],
-  added_capabilities: [],
-  removed_capabilities: [],
-  changed_capabilities: [],
-  adds_risk: false,
-  is_empty: true,
+  addedHostFunctions: [],
+  removedHostFunctions: [],
+  addedRisks: [],
+  addedAllowedHosts: [],
+  removedAllowedHosts: [],
+  addedCapabilities: [],
+  removedCapabilities: [],
+  changedCapabilities: [],
+  addsRisk: false,
+  isEmpty: true,
 });
 
 const preview = (
@@ -81,16 +81,16 @@ const preview = (
       description: null,
       authors: [],
       license: null,
-      api_version: '^0.5.0',
-      allowed_hosts: ['*'],
-      wide_allowed_hosts: ['*'],
-      host_functions: ['run_command'],
-      host_function_risks: ['runs_programs'],
+      apiVersion: '^0.5.0',
+      allowedHosts: ['*'],
+      wideAllowedHosts: ['*'],
+      hostFunctions: ['run_command'],
+      hostFunctionRisks: ['runs_programs'],
     },
     capabilities: null,
-    archive_sha256: 'abc123',
+    archiveSha256: 'abc123',
   },
-  installed_version: '1.0.0',
+  installedVersion: '1.0.0',
   diff,
 });
 
@@ -185,13 +185,13 @@ describe('PluginUpdateDialog', () => {
   it('should warn and list what the new version adds when it adds a risk', () => {
     state.preview.data = preview({
       ...noChanges(),
-      added_host_functions: [{ name: 'run_command', risk: 'runs_programs' }],
-      added_risks: ['runs_programs'],
-      added_allowed_hosts: [{ entry: '*', wide: true }],
-      removed_allowed_hosts: ['api.example.com'],
-      added_capabilities: [{ kind: 'importer', id: 'mrpack', name: 'Mrpack' }],
-      adds_risk: true,
-      is_empty: false,
+      addedHostFunctions: [{ name: 'run_command', risk: 'runs_programs' }],
+      addedRisks: ['runs_programs'],
+      addedAllowedHosts: [{ entry: '*', wide: true }],
+      removedAllowedHosts: ['api.example.com'],
+      addedCapabilities: [{ kind: 'importer', id: 'mrpack', name: 'Mrpack' }],
+      addsRisk: true,
+      isEmpty: false,
     });
     mount(() => (
       <PluginUpdateDialog plugin={plugin} tag='v2' onClose={() => {}} />
@@ -309,10 +309,10 @@ describe('PluginUpdateDialog', () => {
     state.preview.data = {
       ...preview({
         ...noChanges(),
-        changed_capabilities: [
+        changedCapabilities: [
           { kind: 'content_provider', id: 'mods', name: 'Mods' },
         ],
-        is_empty: false,
+        isEmpty: false,
       }),
     };
     (state.preview.data as PluginUpdatePreview).release.capabilities = {

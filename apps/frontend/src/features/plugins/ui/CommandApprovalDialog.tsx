@@ -62,7 +62,7 @@ const CommandApprovalBody: Component<{
   onMount(() => setTimeout(() => denyButton()?.focus(), 0));
 
   const onceOnlyText = () => {
-    const reason = props.approval.once_only;
+    const reason = props.approval.onceOnly;
 
     if (!reason) {
       return undefined;
@@ -74,7 +74,7 @@ const CommandApprovalBody: Component<{
   };
 
   const timeLeft = () => {
-    const total = secondsLeft(props.approval.expires_at, now());
+    const total = secondsLeft(props.approval.expiresAt, now());
 
     return t('plugin.commandApproval.expires', {
       time: `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`,
@@ -86,12 +86,12 @@ const CommandApprovalBody: Component<{
       <DialogHeader>
         <DialogTitle>
           {t('plugin.commandApproval.title', {
-            plugin: props.approval.plugin_id,
+            plugin: props.approval.pluginId,
           })}
         </DialogTitle>
         <DialogDescription>
           {t('plugin.commandApproval.description', {
-            plugin: props.approval.plugin_id,
+            plugin: props.approval.pluginId,
           })}
         </DialogDescription>
       </DialogHeader>
@@ -119,8 +119,8 @@ const CommandApprovalBody: Component<{
                   label={t('plugin.commandApproval.program')}
                   value={
                     jar().size
-                      ? `${jar().plugin_path} (${formatBytes(jar().size!, locale())})`
-                      : jar().plugin_path
+                      ? `${jar().pluginPath} (${formatBytes(jar().size!, locale())})`
+                      : jar().pluginPath
                   }
                 />
                 <Detail
@@ -136,7 +136,7 @@ const CommandApprovalBody: Component<{
           />
           <Detail
             label={t('plugin.commandApproval.folder')}
-            value={props.approval.current_dir}
+            value={props.approval.currentDir}
           />
           <Show when={props.approval.options.length > 0}>
             <Detail
@@ -189,7 +189,7 @@ const CommandApprovalBody: Component<{
         </Button>
         <Button
           variant='secondary'
-          disabled={props.busy || !armed() || props.approval.once_only !== null}
+          disabled={props.busy || !armed() || props.approval.onceOnly !== null}
           onClick={() => props.onAnswer('always')}
         >
           {t('plugin.commandApproval.always')}
@@ -223,7 +223,7 @@ export const CommandApprovalDialog: Component = () => {
           // Closing the dialog any way but a button (Esc, the backdrop) is a denial.
           onOpenChange={(open) => {
             if (!open) {
-              send(approval.request_id, 'deny');
+              send(approval.requestId, 'deny');
             }
           }}
         >
@@ -232,7 +232,7 @@ export const CommandApprovalDialog: Component = () => {
               approval={approval}
               queued={(approvals.data?.length ?? 1) - 1}
               busy={answer.isPending}
-              onAnswer={(value) => send(approval.request_id, value)}
+              onAnswer={(value) => send(approval.requestId, value)}
             />
           </DialogContent>
         </Dialog>

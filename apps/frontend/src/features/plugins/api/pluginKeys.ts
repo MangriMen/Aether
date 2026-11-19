@@ -4,7 +4,7 @@ export const pluginKeys = {
   detail: (id: string) => [...pluginKeys.all, 'detail', id] as const,
   skippedDirs: () => [...pluginKeys.all, 'skipped-dirs'] as const,
   settings: (id: string) => [...pluginKeys.all, 'settings', id] as const,
-  apiVersion: () => [...pluginKeys.list(), 'api_version'] as const,
+  apiVersion: () => [...pluginKeys.list(), 'apiVersion'] as const,
   readme: (id: string, version: string) =>
     [...pluginKeys.all, 'readme', id, version] as const,
   source: (id: string) => [...pluginKeys.all, 'source', id] as const,
@@ -18,7 +18,7 @@ export const pluginKeys = {
     [...pluginKeys.all, 'releases', provider, identifier] as const,
   preview: (provider: string, identifier: string, tag: string) =>
     [...pluginKeys.all, 'preview', provider, identifier, tag] as const,
-  /** Whether the core finds an `allowed_hosts` entry wide; a pure function of the text. */
+  /** Whether the core finds an `allowedHosts` entry wide; a pure function of the text. */
   wideHost: (entry: string) => [...pluginKeys.all, 'wide-host', entry] as const,
   providers: () => [...pluginKeys.all, 'providers'] as const,
   commandApprovals: () => [...pluginKeys.all, 'command-approvals'] as const,

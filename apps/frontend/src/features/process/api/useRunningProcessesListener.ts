@@ -43,12 +43,12 @@ export const useRunningProcessesListener = (
       const processes = await processCommands.list();
 
       for (const process of processes) {
-        if (liveInstanceIds?.has(process.instance_id)) {
+        if (liveInstanceIds?.has(process.instanceId)) {
           continue;
         }
 
         callback({
-          instanceId: process.instance_id,
+          instanceId: process.instanceId,
           processId: process.uuid,
           isRunning: true,
         });
