@@ -117,7 +117,7 @@ describe('useEnsurePluginAccess', () => {
   it('should_ask_for_an_ordinary_host_when_the_literal_is_no_local_address', async () => {
     commands.grantLocalHostAccess.mockRejectedValue(new Error('not local'));
     commands.grantHostAccess.mockResolvedValue({
-      type: 'alreadyAllowed',
+      type: 'already_allowed',
       host: '8.8.8.8',
     });
     const ensure = mountEnsure();
@@ -138,7 +138,7 @@ describe('useEnsurePluginAccess', () => {
     'should_not_ask_about_a_local_address_when_the_host_is_the_name_%s',
     async (host) => {
       commands.grantHostAccess.mockResolvedValue({
-        type: 'alreadyAllowed',
+        type: 'already_allowed',
         host,
       });
       const ensure = mountEnsure();

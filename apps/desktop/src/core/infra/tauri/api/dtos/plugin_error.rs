@@ -928,7 +928,7 @@ mod tests {
 
         assert_eq!(
             plugin(&err),
-            json!({"code": "STORAGE", "payload": {"cause": {"type": "io", "kind": "notFound"}}})
+            json!({"code": "STORAGE", "payload": {"cause": {"type": "io", "kind": "not_found"}}})
         );
     }
 
@@ -949,7 +949,7 @@ mod tests {
             json!({"code": "PROVIDER_FETCH_ERROR", "payload": {
                 "source_type": "github",
                 "reason": {"code": "REQUEST", "payload": {"cause": {
-                    "type": "httpStatus",
+                    "type": "http_status",
                     "status": 403,
                     "url": "https://api.github.com/repos/o/r/releases",
                 }}},
@@ -959,7 +959,7 @@ mod tests {
             plugin(&fetch(ProviderFailure::Request(std::sync::Arc::new(
                 std::io::Error::from(std::io::ErrorKind::TimedOut)
             ))))["payload"]["reason"],
-            json!({"code": "REQUEST", "payload": {"cause": {"type": "io", "kind": "timedOut"}}})
+            json!({"code": "REQUEST", "payload": {"cause": {"type": "io", "kind": "timed_out"}}})
         );
     }
 
@@ -1045,7 +1045,7 @@ mod tests {
 
         assert_eq!(
             plugin(&err),
-            json!({"code": "STORAGE", "payload": {"cause": {"type": "io", "kind": "permissionDenied"}}})
+            json!({"code": "STORAGE", "payload": {"cause": {"type": "io", "kind": "permission_denied"}}})
         );
     }
 }

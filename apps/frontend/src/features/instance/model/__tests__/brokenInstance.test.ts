@@ -31,7 +31,7 @@ describe('getBrokenReasonText with a cause', () => {
       getBrokenReasonText(
         {
           code: 'UNREADABLE_FILE',
-          payload: { cause: { type: 'io', kind: 'notFound' } },
+          payload: { cause: { type: 'io', kind: 'not_found' } },
         },
         t,
       ),

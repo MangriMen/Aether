@@ -149,7 +149,7 @@ mod tests {
                 "code": "FAILED_TO_GET_PROPERTIES",
                 "payload": {
                     "path": path.to_string_lossy(),
-                    "cause": {"type": "io", "kind": "permissionDenied"}
+                    "cause": {"type": "io", "kind": "permission_denied"}
                 }
             })
         );
@@ -189,7 +189,7 @@ mod tests {
                     "version": 21,
                     "os": "linux",
                     "arch": "x86_64",
-                    "cause": {"type": "io", "kind": "storageFull"}
+                    "cause": {"type": "io", "kind": "storage_full"}
                 }
             })
         );

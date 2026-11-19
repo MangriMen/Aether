@@ -67,21 +67,21 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 
 const getIoCauseText = (kind: unknown, t: TFunction): string | undefined => {
   switch (kind) {
-    case 'notFound':
+    case 'not_found':
       return t('errors.cause.io.notFound');
-    case 'permissionDenied':
+    case 'permission_denied':
       return t('errors.cause.io.permissionDenied');
-    case 'alreadyExists':
+    case 'already_exists':
       return t('errors.cause.io.alreadyExists');
-    case 'storageFull':
+    case 'storage_full':
       return t('errors.cause.io.storageFull');
-    case 'readOnlyFilesystem':
+    case 'read_only_filesystem':
       return t('errors.cause.io.readOnly');
-    case 'resourceBusy':
+    case 'resource_busy':
       return t('errors.cause.io.busy');
-    case 'timedOut':
+    case 'timed_out':
       return t('errors.cause.io.timedOut');
-    case 'invalidData':
+    case 'invalid_data':
       return t('errors.cause.io.invalidData');
     default:
       return undefined;
@@ -120,7 +120,7 @@ export const getCauseText = (
       return getIoCauseText(cause.kind, t);
     case 'network':
       return getNetworkCauseText(cause.kind, t);
-    case 'httpStatus':
+    case 'http_status':
       return t('errors.cause.httpStatus', { status: Number(cause.status) });
     case 'parse':
       return typeof cause.line === 'number' && typeof cause.column === 'number'

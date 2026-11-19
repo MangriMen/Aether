@@ -4,23 +4,23 @@ import { resolvePluginProvider } from '../resolvePluginProvider';
 
 describe('resolvePluginProvider', () => {
   it('keeps the picked provider when the backend offers it', () => {
-    expect(resolvePluginProvider(['git_hub', 'local'], 'local')).toBe('local');
+    expect(resolvePluginProvider(['github', 'local'], 'local')).toBe('local');
   });
 
   it('falls back to the first provider when nothing is picked', () => {
-    expect(resolvePluginProvider(['git_hub', 'local'], null)).toBe('git_hub');
+    expect(resolvePluginProvider(['github', 'local'], null)).toBe('github');
   });
 
   it('drops a pick that the backend no longer offers', () => {
-    expect(resolvePluginProvider(['git_hub'], 'local')).toBe('git_hub');
+    expect(resolvePluginProvider(['github'], 'local')).toBe('github');
   });
 
   it('shows none when there are no providers', () => {
-    expect(resolvePluginProvider([], 'git_hub')).toBeNull();
+    expect(resolvePluginProvider([], 'github')).toBeNull();
   });
 
   it('gives the pick back when its provider returns to the list', () => {
-    expect(resolvePluginProvider(['git_hub'], 'local')).toBe('git_hub');
-    expect(resolvePluginProvider(['git_hub', 'local'], 'local')).toBe('local');
+    expect(resolvePluginProvider(['github'], 'local')).toBe('github');
+    expect(resolvePluginProvider(['github', 'local'], 'local')).toBe('local');
   });
 });

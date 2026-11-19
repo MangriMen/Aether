@@ -13,7 +13,7 @@ pub struct CacheEventDto {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Type)]
-#[serde(rename_all = "camelCase", tag = "type")]
+#[serde(rename_all = "snake_case", tag = "type")]
 pub enum CacheEventKindDto {
     Changed,
     BusyChanged { busy: bool },
@@ -47,7 +47,7 @@ mod tests {
 
         assert_eq!(
             serde_json::to_value(dto).unwrap(),
-            json!({ "seq": 7, "type": "busyChanged", "busy": true })
+            json!({ "seq": 7, "type": "busy_changed", "busy": true })
         );
     }
 }

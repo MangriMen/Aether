@@ -89,7 +89,7 @@ pub struct IgnoredAllowedPathDto {
 }
 
 #[derive(Serialize, Debug, Type)]
-#[serde(rename_all = "camelCase", tag = "type")]
+#[serde(rename_all = "snake_case", tag = "type")]
 pub enum FolderAccessDto {
     /// The plugin could already read the file.
     AlreadyAllowed { folder: PathBuf },
@@ -100,7 +100,7 @@ pub enum FolderAccessDto {
 }
 
 #[derive(Serialize, Debug, Type)]
-#[serde(rename_all = "camelCase", tag = "type")]
+#[serde(rename_all = "snake_case", tag = "type")]
 pub enum HostAccessDto {
     /// The plugin could already reach the host.
     AlreadyAllowed { host: String },

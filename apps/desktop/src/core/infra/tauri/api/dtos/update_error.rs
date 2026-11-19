@@ -58,7 +58,7 @@ mod tests {
 
         assert_eq!(
             serde_json::to_value(FrontendError::from(err)).unwrap(),
-            json!({"type": "update", "payload": {"code": "NETWORK", "payload": {"cause": {"type": "io", "kind": "timedOut"}}}})
+            json!({"type": "update", "payload": {"code": "NETWORK", "payload": {"cause": {"type": "io", "kind": "timed_out"}}}})
         );
     }
 

@@ -58,7 +58,7 @@ export type BrokenInstanceReasonDto = { code: "INVALID_ID" } | { code: "INVALID_
 } } | { code: "NOT_MIGRATED" };
 
 /**  Why a command failed, in a form the frontend can translate without seeing raw error text. */
-export type CauseDto = { type: "io"; kind: IoErrorKindDto } | { type: "network"; kind: NetworkErrorKindDto; url: string | null } | { type: "httpStatus"; status: number; url: string } | { type: "parse"; line: number | null; column: number | null } | { type: "database" } | 
+export type CauseDto = { type: "io"; kind: IoErrorKindDto } | { type: "network"; kind: NetworkErrorKindDto; url: string | null } | { type: "http_status"; status: number; url: string } | { type: "parse"; line: number | null; column: number | null } | { type: "database" } | 
 /**  The only place raw error text reaches the frontend. */
 { type: "unknown"; details: string };
 
@@ -143,6 +143,7 @@ export type ContentProviderReasonDto = { code: "WRONG_TARGET"; payload: {
 	cause: CauseDto,
 } };
 
+/**  The values are the ones Modrinth uses (`datapack`, `resourcepack`), not `snake_case`. */
 export type ContentTypeDto = "modpack" | "mod" | "datapack" | "resourcepack" | "shaderpack";
 
 export type EventErrorDto = { code: "NOT_INITIALIZED" } | { code: "NO_LOADING_BAR"; payload: {
@@ -159,7 +160,7 @@ export type FileWatcherErrorDto = { code: "PATH_NOT_FOUND"; payload: {
 	cause: CauseDto,
 } };
 
-export type FrontendError = { type: "appSettings"; payload: AppSettingsErrorDto } | { type: "window"; payload: WindowErrorDto } | { type: "application"; payload: ApplicationErrorDto } | { type: "auth"; payload: AuthErrorDto } | { type: "event"; payload: EventErrorDto } | { type: "fileWatcher"; payload: FileWatcherErrorDto } | { type: "gameLog"; payload: GameLogErrorDto } | 
+export type FrontendError = { type: "app_settings"; payload: AppSettingsErrorDto } | { type: "window"; payload: WindowErrorDto } | { type: "application"; payload: ApplicationErrorDto } | { type: "auth"; payload: AuthErrorDto } | { type: "event"; payload: EventErrorDto } | { type: "file_watcher"; payload: FileWatcherErrorDto } | { type: "game_log"; payload: GameLogErrorDto } | 
 /**  A hook command of the user could not be run, whichever feature ran it. */
 { type: "hook"; payload: HookErrorDto } | { type: "instance"; payload: InstanceErrorDto } | { type: "java"; payload: JavaErrorDto } | { type: "minecraft"; payload: MinecraftErrorDto } | { type: "plugin"; payload: PluginErrorDto } | { type: "process"; payload: ProcessErrorDto } | { type: "request"; payload: RequestErrorDto } | { type: "settings"; payload: SettingsErrorDto } | { type: "update"; payload: UpdateErrorDto };
 
@@ -300,7 +301,7 @@ export type InstanceFieldDto = "name";
 
 export type InstanceValidationErrorReasonDto = "cannot_be_empty";
 
-export type IoErrorKindDto = "notFound" | "permissionDenied" | "alreadyExists" | "storageFull" | "readOnlyFilesystem" | "resourceBusy" | "timedOut" | "invalidData";
+export type IoErrorKindDto = "not_found" | "permission_denied" | "already_exists" | "storage_full" | "read_only_filesystem" | "resource_busy" | "timed_out" | "invalid_data";
 
 export type JavaErrorDto = { code: "NOT_FOUND"; payload: {
 	version: number,

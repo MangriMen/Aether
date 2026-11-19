@@ -132,7 +132,7 @@ pub struct ModpackInstallParamsDto {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Type)]
-#[serde(tag = "type", content = "data", rename_all = "camelCase")]
+#[serde(tag = "type", content = "data", rename_all = "snake_case")]
 pub enum ContentInstallParamsDto {
     Atomic(AtomicInstallParamsDto),
     Modpack(ModpackInstallParamsDto),

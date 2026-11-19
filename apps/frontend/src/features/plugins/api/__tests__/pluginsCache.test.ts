@@ -194,9 +194,9 @@ describe('plugin release queries', () => {
   it('should_list_the_releases_of_the_given_provider_without_asking_for_an_archive', async () => {
     commands.listPluginReleases.mockResolvedValue({ default_tag: 'v1' });
 
-    await queryClient.fetchQuery(pluginsQueries.releases('git_hub', 'o/r'));
+    await queryClient.fetchQuery(pluginsQueries.releases('github', 'o/r'));
 
-    expect(commands.listPluginReleases).toHaveBeenCalledWith('git_hub', 'o/r');
+    expect(commands.listPluginReleases).toHaveBeenCalledWith('github', 'o/r');
     expect(commands.previewPluginRelease).not.toHaveBeenCalled();
   });
 
@@ -205,24 +205,24 @@ describe('plugin release queries', () => {
       .mockResolvedValueOnce({ tag: 'v1' })
       .mockResolvedValueOnce({ tag: 'v2' });
 
-    await queryClient.fetchQuery(pluginsQueries.preview('git_hub', 'x', 'v1'));
-    await queryClient.fetchQuery(pluginsQueries.preview('git_hub', 'x', 'v2'));
+    await queryClient.fetchQuery(pluginsQueries.preview('github', 'x', 'v1'));
+    await queryClient.fetchQuery(pluginsQueries.preview('github', 'x', 'v2'));
 
     expect(commands.previewPluginRelease).toHaveBeenLastCalledWith(
-      'git_hub',
+      'github',
       'x',
       'v2',
     );
     expect(
       queryClient.getQueryData(
-        pluginsQueries.preview('git_hub', 'x', 'v1').queryKey,
+        pluginsQueries.preview('github', 'x', 'v1').queryKey,
       ),
     ).toEqual({ tag: 'v1' });
   });
 
   it('should_not_preview_until_there_is_a_tag', () => {
-    expect(pluginsQueries.preview('git_hub', 'x', '').enabled).toBe(false);
-    expect(pluginsQueries.preview('git_hub', 'x', 'v1').enabled).toBe(true);
+    expect(pluginsQueries.preview('github', 'x', '').enabled).toBe(false);
+    expect(pluginsQueries.preview('github', 'x', 'v1').enabled).toBe(true);
   });
 
   it('should_keep_the_preview_of_each_provider_apart_when_the_url_is_the_same', async () => {
@@ -230,12 +230,12 @@ describe('plugin release queries', () => {
       .mockResolvedValueOnce({ id: 'from-github' })
       .mockResolvedValueOnce({ id: 'from-local' });
 
-    await queryClient.fetchQuery(pluginsQueries.preview('git_hub', 'x', 'v1'));
+    await queryClient.fetchQuery(pluginsQueries.preview('github', 'x', 'v1'));
     await queryClient.fetchQuery(pluginsQueries.preview('local', 'x', 'v1'));
 
     expect(
       queryClient.getQueryData(
-        pluginsQueries.preview('git_hub', 'x', 'v1').queryKey,
+        pluginsQueries.preview('github', 'x', 'v1').queryKey,
       ),
     ).toEqual({ id: 'from-github' });
     expect(

@@ -158,7 +158,7 @@ describe('InstallFromGithubView', () => {
     await pickTag('v1');
     await vi.waitFor(() => {
       expect(commands.previewPluginRelease).toHaveBeenLastCalledWith(
-        'git_hub',
+        'github',
         'https://github.com/o/r',
         'v1',
       );
@@ -167,7 +167,7 @@ describe('InstallFromGithubView', () => {
     typeUrl(container, 'https://github.com/o/b');
     await vi.waitFor(() => {
       expect(commands.previewPluginRelease).toHaveBeenLastCalledWith(
-        'git_hub',
+        'github',
         'https://github.com/o/b',
         'b2',
       );
@@ -186,11 +186,11 @@ describe('InstallFromGithubView', () => {
 
     await vi.waitFor(() => {
       expect(commands.listPluginReleases).toHaveBeenCalledWith(
-        'git_hub',
+        'github',
         'https://github.com/o/r',
       );
       expect(commands.previewPluginRelease).toHaveBeenCalledWith(
-        'git_hub',
+        'github',
         'https://github.com/o/r',
         'v2',
       );
@@ -201,7 +201,7 @@ describe('InstallFromGithubView', () => {
 
     await vi.waitFor(() => {
       expect(commands.previewPluginRelease).toHaveBeenLastCalledWith(
-        'git_hub',
+        'github',
         'https://github.com/o/r',
         'v1',
       );
@@ -214,7 +214,7 @@ describe('InstallFromGithubView', () => {
 
     await vi.waitFor(() => {
       expect(commands.installPluginFromProvider).toHaveBeenCalledWith(
-        'git_hub',
+        'github',
         'https://github.com/o/r',
         'v1',
         'sha-of-v1',

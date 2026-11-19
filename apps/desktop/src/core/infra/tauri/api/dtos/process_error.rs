@@ -39,7 +39,7 @@ mod tests {
 
         assert_eq!(
             serde_json::to_value(ProcessErrorDto::from(&err)).unwrap(),
-            json!({"code": "IO", "payload": {"cause": {"type": "io", "kind": "permissionDenied"}}})
+            json!({"code": "IO", "payload": {"cause": {"type": "io", "kind": "permission_denied"}}})
         );
     }
 }

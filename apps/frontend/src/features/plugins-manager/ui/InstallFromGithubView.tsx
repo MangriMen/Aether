@@ -34,7 +34,7 @@ export type InstallFromGithubViewProps = {
 const DEBOUNCE_MS = 500;
 
 /** This view is the one for GitHub, so it names its provider itself. */
-const PROVIDER = 'git_hub' as const;
+const PROVIDER = 'github' as const;
 
 export const InstallFromGithubView: Component<InstallFromGithubViewProps> = (
   props,

@@ -2,6 +2,7 @@ use aether_core::features::minecraft::ModLoader;
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
+/// The values are the loader names as Modrinth writes them (`neoforge`), not `snake_case`.
 #[derive(Debug, Eq, PartialEq, Clone, Copy, Deserialize, Serialize, Type)]
 #[serde(rename_all = "lowercase")]
 pub enum ModLoaderDto {

@@ -59,7 +59,7 @@ pub struct ContentMetadataDto {
 
 /// The digest of a file, hex-encoded, tagged with its algorithm.
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub enum FileHashDto {
     Sha1(String),
     Sha256(String),

@@ -31,7 +31,7 @@ export const usePluginEventListener = () => {
       case 'edit':
         void pluginsCache.invalidate.full(queryClient, e.payload.plugin_id);
         break;
-      case 'commandApprovalRequested':
+      case 'command_approval_requested':
         // The window may be behind another or minimised, and the plugin waits for the answer.
         getCurrentWindow()
           .requestUserAttention(UserAttentionType.Informational)
@@ -39,9 +39,9 @@ export const usePluginEventListener = () => {
         closeCommandNotAnswered(e.payload.plugin_id);
         void invalidateCommandApprovals(queryClient);
         break;
-      case 'commandApprovalResolved':
+      case 'command_approval_resolved':
         // Only a question nobody answered is news: the user caused the other endings.
-        if (e.payload.outcome === 'timedOut') {
+        if (e.payload.outcome === 'timed_out') {
           showCommandNotAnswered(e.payload.plugin_id, {
             title: t('plugin.commandApproval.notAnsweredTitle', {
               plugin: e.payload.plugin_id,

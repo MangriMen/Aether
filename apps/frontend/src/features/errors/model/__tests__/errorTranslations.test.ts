@@ -97,11 +97,11 @@ describe('error translations', () => {
   it('should_append_the_translated_cause_when_the_error_has_one', () => {
     const cases = [
       [
-        { type: 'io', kind: 'notFound' },
+        { type: 'io', kind: 'not_found' },
         'File system error: file or folder not found',
       ],
       [
-        { type: 'io', kind: 'readOnlyFilesystem' },
+        { type: 'io', kind: 'read_only_filesystem' },
         'File system error: the disk is read-only',
       ],
       [
@@ -109,7 +109,7 @@ describe('error translations', () => {
         'File system error: the server did not respond in time',
       ],
       [
-        { type: 'httpStatus', status: 503, url: 'https://x' },
+        { type: 'http_status', status: 503, url: 'https://x' },
         'File system error: the server answered 503',
       ],
       [
@@ -135,7 +135,7 @@ describe('error translations', () => {
         code: 'CONTENT_STATE_CHANGE_FAILED',
         payload: {
           paths: ['mods/a.jar', 'mods/b.jar'],
-          cause: { type: 'io', kind: 'resourceBusy' },
+          cause: { type: 'io', kind: 'resource_busy' },
         },
       },
     } as LauncherError;
@@ -151,7 +151,7 @@ describe('error translations', () => {
       type: 'instance',
       payload: {
         code: 'CONTENT_STATE_CHANGE_FAILED',
-        payload: { paths, cause: { type: 'io', kind: 'resourceBusy' } },
+        payload: { paths, cause: { type: 'io', kind: 'resource_busy' } },
       },
     } as LauncherError;
 
@@ -164,7 +164,7 @@ describe('error translations', () => {
   });
 
   it('should_translate_the_cause_into_russian', () => {
-    const text = getTranslatedError(io({ type: 'io', kind: 'notFound' }), tRu);
+    const text = getTranslatedError(io({ type: 'io', kind: 'not_found' }), tRu);
 
     expect(text).toBe('Ошибка файловой системы: файл или папка не найдены');
   });
@@ -317,7 +317,7 @@ describe('the cause of a reason', () => {
   it('should_append_the_category_of_the_cause_of_the_reason', () => {
     expect(
       getTranslatedError(
-        download({ type: 'httpStatus', status: 404, url: 'https://x.test' }),
+        download({ type: 'http_status', status: 404, url: 'https://x.test' }),
         tEn,
       ),
     ).toBe(
@@ -353,7 +353,7 @@ describe('getErrorDetails', () => {
 
   it('should_return_nothing_for_a_categorized_cause_or_a_foreign_value', () => {
     expect(
-      getErrorDetails(io({ type: 'io', kind: 'notFound' })),
+      getErrorDetails(io({ type: 'io', kind: 'not_found' })),
     ).toBeUndefined();
     expect(getErrorDetails(new Error('x'))).toBeUndefined();
   });
@@ -405,7 +405,7 @@ describe('plugin state reason translations', () => {
 });
 
 describe.each([
-  ['appSettings', 'AppSettingsErrorDto', 'CAN_NOT_SET_EFFECT'],
+  ['app_settings', 'AppSettingsErrorDto', 'CAN_NOT_SET_EFFECT'],
   ['instance', 'InstanceErrorDto', 'CONTENT_PROVIDER_ERROR'],
   ['minecraft', 'MinecraftErrorDto', 'PROCESSOR_FAILED'],
   ['plugin', 'PluginErrorDto', 'LOAD_FAILED'],
@@ -465,7 +465,7 @@ describe('minecraft processor failure', () => {
   it('should_translate_the_reason_and_the_category_of_its_cause', () => {
     const error = failed({
       code: 'SPAWN_FAILED',
-      payload: { cause: { type: 'io', kind: 'notFound' } },
+      payload: { cause: { type: 'io', kind: 'not_found' } },
     });
 
     expect(getTranslatedError(error, tEn)).toBe(
@@ -788,7 +788,7 @@ describe('plugin provider failure', () => {
           reason: {
             code: 'REQUEST',
             payload: {
-              cause: { type: 'httpStatus', status: 403, url: 'https://x' },
+              cause: { type: 'http_status', status: 403, url: 'https://x' },
             },
           },
         },
@@ -804,7 +804,7 @@ describe('plugin provider failure', () => {
 describe('app settings errors', () => {
   it('should_translate_the_window_error_behind_a_failed_effect', () => {
     const error = {
-      type: 'appSettings',
+      type: 'app_settings',
       payload: {
         code: 'CAN_NOT_SET_EFFECT',
         payload: { reason: { code: 'PLATFORM_NOT_SUPPORTED' } },
@@ -838,7 +838,7 @@ describe('warnings', () => {
   it('should_translate_a_warning_with_the_category_of_its_cause', () => {
     const warning = {
       code: 'INSTANCE_ICON_NOT_IMPORTED',
-      payload: { cause: { type: 'io', kind: 'permissionDenied' } },
+      payload: { cause: { type: 'io', kind: 'permission_denied' } },
     } as const;
 
     expect(getTranslatedWarning(warning, tEn)).toBe(
