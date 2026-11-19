@@ -346,7 +346,11 @@
                 "message": "Import a feature through its index: @/features/<name>."
               },
               {
-                "regex": "^@/(app/(shell|runtime|pages/[^/]+)|platform/(?!bindings/)[^/]+|shared/[^/]+)/.+",
+                "regex": "^@/(app/(shell|runtime|pages/[^/]+)|shared/[^/]+)/.+",
+                "message": "Import a module through its index; inside a module, use relative imports."
+              },
+              {
+                "group": ["@/platform/*/**", "!@/platform/bindings/**"],
                 "message": "Import a module through its index; inside a module, use relative imports."
               }
             ]
@@ -368,7 +372,11 @@
                 "message": "Import a feature through its index: @/features/<name>."
               },
               {
-                "regex": "^@/(app/(shell|runtime|pages/[^/]+)|platform/(?!bindings/)[^/]+|shared/[^/]+)/.+",
+                "regex": "^@/(app/(shell|runtime|pages/[^/]+)|shared/[^/]+)/.+",
+                "message": "Import a module through its index; inside a module, use relative imports."
+              },
+              {
+                "group": ["@/platform/*/**", "!@/platform/bindings/**"],
                 "message": "Import a module through its index; inside a module, use relative imports."
               },
               {
@@ -394,7 +402,11 @@
                 "message": "Import a feature through its index: @/features/<name>."
               },
               {
-                "regex": "^@/(app/(shell|runtime|pages/[^/]+)|platform/(?!bindings/)[^/]+|shared/[^/]+)/.+",
+                "regex": "^@/(app/(shell|runtime|pages/[^/]+)|shared/[^/]+)/.+",
+                "message": "Import a module through its index; inside a module, use relative imports."
+              },
+              {
+                "group": ["@/platform/*/**", "!@/platform/bindings/**"],
                 "message": "Import a module through its index; inside a module, use relative imports."
               },
               {
@@ -424,7 +436,11 @@
                 "message": "Import a feature through its index: @/features/<name>."
               },
               {
-                "regex": "^@/(app/(shell|runtime|pages/[^/]+)|platform/(?!bindings/)[^/]+|shared/[^/]+)/.+",
+                "regex": "^@/(app/(shell|runtime|pages/[^/]+)|shared/[^/]+)/.+",
+                "message": "Import a module through its index; inside a module, use relative imports."
+              },
+              {
+                "group": ["@/platform/*/**", "!@/platform/bindings/**"],
                 "message": "Import a module through its index; inside a module, use relative imports."
               },
               {
@@ -458,7 +474,11 @@
                 "message": "Import a feature through its index: @/features/<name>."
               },
               {
-                "regex": "^@/(app/(shell|runtime|pages/[^/]+)|platform/(?!bindings/)[^/]+|shared/[^/]+)/.+",
+                "regex": "^@/(app/(shell|runtime|pages/[^/]+)|shared/[^/]+)/.+",
+                "message": "Import a module through its index; inside a module, use relative imports."
+              },
+              {
+                "group": ["@/platform/*/**", "!@/platform/bindings/**"],
                 "message": "Import a module through its index; inside a module, use relative imports."
               },
               {
@@ -474,7 +494,7 @@
                 "message": "shared/ is not tied to Aether, so it does not import platform/."
               },
               {
-                "regex": "^@/shared/(?!utils$)",
+                "group": ["@/shared/**", "!@/shared/utils"],
                 "message": "shared/ui-kit imports only shared/utils; texts come through UiKitLabelsProvider."
               }
             ]
@@ -496,7 +516,11 @@
                 "message": "Import a feature through its index: @/features/<name>."
               },
               {
-                "regex": "^@/(app/(shell|runtime|pages/[^/]+)|platform/(?!bindings/)[^/]+|shared/[^/]+)/.+",
+                "regex": "^@/(app/(shell|runtime|pages/[^/]+)|shared/[^/]+)/.+",
+                "message": "Import a module through its index; inside a module, use relative imports."
+              },
+              {
+                "group": ["@/platform/*/**", "!@/platform/bindings/**"],
                 "message": "Import a module through its index; inside a module, use relative imports."
               },
               {
@@ -530,7 +554,11 @@
                 "message": "Import a feature through its index: @/features/<name>."
               },
               {
-                "regex": "^@/(app/(shell|runtime|pages/[^/]+)|platform/(?!bindings/)[^/]+|shared/[^/]+)/.+",
+                "regex": "^@/(app/(shell|runtime|pages/[^/]+)|shared/[^/]+)/.+",
+                "message": "Import a module through its index; inside a module, use relative imports."
+              },
+              {
+                "group": ["@/platform/*/**", "!@/platform/bindings/**"],
                 "message": "Import a module through its index; inside a module, use relative imports."
               },
               {
@@ -562,7 +590,11 @@
                 "message": "Import a feature through its index: @/features/<name>."
               },
               {
-                "regex": "^@/(app/(shell|runtime|pages/[^/]+)|platform/(?!bindings/)[^/]+|shared/[^/]+)/.+",
+                "regex": "^@/(app/(shell|runtime|pages/[^/]+)|shared/[^/]+)/.+",
+                "message": "Import a module through its index; inside a module, use relative imports."
+              },
+              {
+                "group": ["@/platform/*/**", "!@/platform/bindings/**"],
                 "message": "Import a module through its index; inside a module, use relative imports."
               },
               {
@@ -592,7 +624,11 @@
                 "message": "Import a feature through its index: @/features/<name>."
               },
               {
-                "regex": "^@/(app/(shell|runtime|pages/[^/]+)|platform/(?!bindings/)[^/]+|shared/[^/]+)/.+",
+                "regex": "^@/(app/(shell|runtime|pages/[^/]+)|shared/[^/]+)/.+",
+                "message": "Import a module through its index; inside a module, use relative imports."
+              },
+              {
+                "group": ["@/platform/*/**", "!@/platform/bindings/**"],
                 "message": "Import a module through its index; inside a module, use relative imports."
               },
               {
@@ -618,7 +654,11 @@
                 "message": "Import a feature through its index: @/features/<name>."
               },
               {
-                "regex": "^@/(app/(shell|runtime|pages/[^/]+)|platform/(?!bindings/)[^/]+|shared/[^/]+)/.+",
+                "regex": "^@/(app/(shell|runtime|pages/[^/]+)|shared/[^/]+)/.+",
+                "message": "Import a module through its index; inside a module, use relative imports."
+              },
+              {
+                "group": ["@/platform/*/**", "!@/platform/bindings/**"],
                 "message": "Import a module through its index; inside a module, use relative imports."
               }
             ]
