@@ -40,7 +40,7 @@ const blocked = (host: string, port: number) =>
     payload: {
       code: 'ADDRESS_BLOCKED',
       payload: {
-        plugin_id: 'packwiz',
+        pluginId: 'packwiz',
         host,
         port,
         cause: { type: 'unknown', details: 'nas refused' },
@@ -213,7 +213,7 @@ describe('useAllowBlockedAddress', () => {
         payload: {
           code: 'HOST_NOT_ALLOWED',
           payload: {
-            plugin_id: 'packwiz',
+            pluginId: 'packwiz',
             host: 'cdn.example',
             cause: { type: 'unknown', details: 'x' },
           },

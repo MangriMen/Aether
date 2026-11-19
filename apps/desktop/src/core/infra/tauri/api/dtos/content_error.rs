@@ -8,7 +8,12 @@ use crate::features::instance::infra::ContentTypeDto;
 /// Why a content provider's answer, or the request made to it, was refused. The codes are the
 /// same for every provider.
 #[derive(Debug, Clone, Serialize, Type)]
-#[serde(tag = "code", content = "payload", rename_all = "SCREAMING_SNAKE_CASE")]
+#[serde(
+    tag = "code",
+    content = "payload",
+    rename_all = "SCREAMING_SNAKE_CASE",
+    rename_all_fields = "camelCase"
+)]
 pub enum ContentProviderReasonDto {
     WrongTarget {
         provider_id: String,
@@ -184,7 +189,12 @@ impl From<&ContentProviderRejection> for ContentProviderReasonDto {
 
 /// Why content could not be downloaded.
 #[derive(Debug, Clone, Serialize, Type)]
-#[serde(tag = "code", content = "payload", rename_all = "SCREAMING_SNAKE_CASE")]
+#[serde(
+    tag = "code",
+    content = "payload",
+    rename_all = "SCREAMING_SNAKE_CASE",
+    rename_all_fields = "camelCase"
+)]
 pub enum ContentDownloadReasonDto {
     NoFiles { version_id: String },
     NoVersions { content_id: String },
@@ -254,7 +264,7 @@ mod tests {
 
         assert_eq!(
             value,
-            json!({"code": "CONTENT_PROVIDER_ERROR", "payload": {"reason": {"code": "WRONG_TARGET", "payload": {"provider_id": "aether#modrinth"}}}})
+            json!({"code": "CONTENT_PROVIDER_ERROR", "payload": {"reason": {"code": "WRONG_TARGET", "payload": {"providerId": "aether#modrinth"}}}})
         );
     }
 
@@ -267,7 +277,7 @@ mod tests {
 
         assert_eq!(
             value["payload"]["reason"],
-            json!({"code": "FOREIGN_PACK", "payload": {"provider_id": "aether#modrinth", "pack_provider_id": "aether#other"}})
+            json!({"code": "FOREIGN_PACK", "payload": {"providerId": "aether#modrinth", "packProviderId": "aether#other"}})
         );
     }
 
@@ -303,7 +313,7 @@ mod tests {
                 owner_id: "p".into(),
                 content_id: "c".into(),
             })["payload"]["reason"],
-            json!({"code": "VERSION_OF_ANOTHER_CONTENT", "payload": {"version_id": "v", "owner_id": "p", "content_id": "c"}})
+            json!({"code": "VERSION_OF_ANOTHER_CONTENT", "payload": {"versionId": "v", "ownerId": "p", "contentId": "c"}})
         );
     }
 
@@ -314,7 +324,7 @@ mod tests {
                 title: "Sodium".into(),
                 content_type: aether_core::features::instance::ContentType::Mod,
             })["payload"]["reason"],
-            json!({"code": "NOT_A_MODPACK", "payload": {"title": "Sodium", "content_type": "mod"}})
+            json!({"code": "NOT_A_MODPACK", "payload": {"title": "Sodium", "contentType": "mod"}})
         );
     }
 
@@ -324,7 +334,7 @@ mod tests {
             provider(ContentProviderRejection::NoGameVersion {
                 version_id: "v".into()
             })["payload"]["reason"],
-            json!({"code": "NO_GAME_VERSION", "payload": {"version_id": "v"}})
+            json!({"code": "NO_GAME_VERSION", "payload": {"versionId": "v"}})
         );
     }
 
@@ -334,7 +344,7 @@ mod tests {
             provider(ContentProviderRejection::UnknownContentType {
                 content_type: "x".into()
             })["payload"]["reason"],
-            json!({"code": "UNKNOWN_CONTENT_TYPE", "payload": {"content_type": "x"}})
+            json!({"code": "UNKNOWN_CONTENT_TYPE", "payload": {"contentType": "x"}})
         );
     }
 
@@ -436,7 +446,7 @@ mod tests {
         );
         assert_eq!(
             provider(ContentProviderRejection::PackIndexTooLarge { max_bytes: 10 })["payload"]["reason"],
-            json!({"code": "PACK_INDEX_TOO_LARGE", "payload": {"max_bytes": "10"}})
+            json!({"code": "PACK_INDEX_TOO_LARGE", "payload": {"maxBytes": "10"}})
         );
         assert_eq!(
             provider(ContentProviderRejection::PackWrongGame { game: "x".into() })["payload"]["reason"],
@@ -488,13 +498,13 @@ mod tests {
             download(ContentDownloadFailure::NoFiles {
                 version_id: "v".into()
             }),
-            json!({"code": "CONTENT_DOWNLOAD_ERROR", "payload": {"reason": {"code": "NO_FILES", "payload": {"version_id": "v"}}}})
+            json!({"code": "CONTENT_DOWNLOAD_ERROR", "payload": {"reason": {"code": "NO_FILES", "payload": {"versionId": "v"}}}})
         );
         assert_eq!(
             download(ContentDownloadFailure::NoVersions {
                 content_id: "p".into()
             })["payload"]["reason"],
-            json!({"code": "NO_VERSIONS", "payload": {"content_id": "p"}})
+            json!({"code": "NO_VERSIONS", "payload": {"contentId": "p"}})
         );
     }
 
@@ -504,7 +514,7 @@ mod tests {
             download(ContentDownloadFailure::NotAModpackFile {
                 file_name: "a.jar".into()
             })["payload"]["reason"],
-            json!({"code": "NOT_A_MODPACK_FILE", "payload": {"file_name": "a.jar"}})
+            json!({"code": "NOT_A_MODPACK_FILE", "payload": {"fileName": "a.jar"}})
         );
     }
 
@@ -545,7 +555,7 @@ mod tests {
             download(ContentDownloadFailure::NoNetworkPolicy {
                 plugin_id: "p".into()
             })["payload"]["reason"],
-            json!({"code": "NO_NETWORK_POLICY", "payload": {"plugin_id": "p"}})
+            json!({"code": "NO_NETWORK_POLICY", "payload": {"pluginId": "p"}})
         );
     }
 }

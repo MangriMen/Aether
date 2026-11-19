@@ -6,7 +6,12 @@ use super::CauseDto;
 
 /// Why a hook command of the user (pre-launch, wrapper, post-exit) could not be run.
 #[derive(Clone, Debug, Serialize, Type)]
-#[serde(tag = "code", content = "payload", rename_all = "SCREAMING_SNAKE_CASE")]
+#[serde(
+    tag = "code",
+    content = "payload",
+    rename_all = "SCREAMING_SNAKE_CASE",
+    rename_all_fields = "camelCase"
+)]
 pub enum HookErrorDto {
     Invalid {
         hook: HookKindDto,
@@ -26,7 +31,7 @@ pub enum HookErrorDto {
 
 /// Which of the user's launch hooks failed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Type)]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE", rename_all_fields = "camelCase")]
 pub enum HookKindDto {
     PreLaunch,
     Wrapper,
@@ -35,7 +40,12 @@ pub enum HookKindDto {
 
 /// Why a text is not a command.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Type)]
-#[serde(tag = "code", content = "payload", rename_all = "SCREAMING_SNAKE_CASE")]
+#[serde(
+    tag = "code",
+    content = "payload",
+    rename_all = "SCREAMING_SNAKE_CASE",
+    rename_all_fields = "camelCase"
+)]
 pub enum CommandParseReasonDto {
     Empty,
     UnclosedQuote,

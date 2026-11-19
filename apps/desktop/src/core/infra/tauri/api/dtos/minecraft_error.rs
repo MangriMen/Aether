@@ -8,7 +8,12 @@ use super::{CauseDto, FrontendError};
 use crate::features::minecraft::LoaderVersionPreferenceDto;
 
 #[derive(Clone, Debug, Serialize, Type)]
-#[serde(tag = "code", content = "payload", rename_all = "SCREAMING_SNAKE_CASE")]
+#[serde(
+    tag = "code",
+    content = "payload",
+    rename_all = "SCREAMING_SNAKE_CASE",
+    rename_all_fields = "camelCase"
+)]
 pub enum MinecraftErrorDto {
     VersionNotFound {
         version: String,
@@ -54,7 +59,7 @@ pub enum MinecraftErrorDto {
 
 /// What a path the launch needs is the path of.
 #[derive(Debug, Clone, Copy, Serialize, Type)]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE", rename_all_fields = "camelCase")]
 pub enum GamePathKindDto {
     Game,
     Assets,
@@ -87,7 +92,12 @@ impl From<GamePathKind> for GamePathKindDto {
 
 /// Why a modloader processor did not finish.
 #[derive(Debug, Clone, Serialize, Type)]
-#[serde(tag = "code", content = "payload", rename_all = "SCREAMING_SNAKE_CASE")]
+#[serde(
+    tag = "code",
+    content = "payload",
+    rename_all = "SCREAMING_SNAKE_CASE",
+    rename_all_fields = "camelCase"
+)]
 pub enum ProcessorFailureDto {
     MainClassNotFound {
         jar: String,
@@ -242,7 +252,7 @@ mod tests {
 
         assert_eq!(
             out,
-            json!({"code": "PATH_NOT_FOUND", "payload": {"path": "libraries", "entity_type": "NATIVE_LIBRARY"}})
+            json!({"code": "PATH_NOT_FOUND", "payload": {"path": "libraries", "entityType": "NATIVE_LIBRARY"}})
         );
     }
 
@@ -407,7 +417,7 @@ mod tests {
             out,
             json!({
                 "code": "UNSAFE_METADATA_PATH",
-                "payload": {"entity_type": "LIBRARY", "value": "g:../x:1"}
+                "payload": {"entityType": "LIBRARY", "value": "g:../x:1"}
             })
         );
     }

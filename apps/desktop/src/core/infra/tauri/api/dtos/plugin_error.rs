@@ -15,7 +15,11 @@ use crate::features::plugins::{
 
 /// Why a plugin's command was not run.
 #[derive(Debug, Clone, Copy, Serialize, Type)]
-#[serde(tag = "code", rename_all = "SCREAMING_SNAKE_CASE")]
+#[serde(
+    tag = "code",
+    rename_all = "SCREAMING_SNAKE_CASE",
+    rename_all_fields = "camelCase"
+)]
 pub enum CommandRefusalDto {
     Denied,
     TimedOut,
@@ -36,7 +40,12 @@ impl From<CommandApprovalRefusal> for CommandRefusalDto {
 
 /// Why a plugin manifest is refused.
 #[derive(Debug, Clone, Serialize, Type)]
-#[serde(tag = "code", content = "payload", rename_all = "SCREAMING_SNAKE_CASE")]
+#[serde(
+    tag = "code",
+    content = "payload",
+    rename_all = "SCREAMING_SNAKE_CASE",
+    rename_all_fields = "camelCase"
+)]
 pub enum ManifestErrorDto {
     UnsupportedApi,
     InvalidSemver {
@@ -98,7 +107,12 @@ impl From<&ManifestError> for ManifestErrorDto {
 
 /// Why the loader could not bring a plugin up.
 #[derive(Debug, Clone, Serialize, Type)]
-#[serde(tag = "code", content = "payload", rename_all = "SCREAMING_SNAKE_CASE")]
+#[serde(
+    tag = "code",
+    content = "payload",
+    rename_all = "SCREAMING_SNAKE_CASE",
+    rename_all_fields = "camelCase"
+)]
 pub enum PluginLoadFailureDto {
     HashMismatch {
         path: String,
@@ -143,7 +157,12 @@ impl From<&PluginLoadFailure> for PluginLoadFailureDto {
 
 /// Why a call into a plugin failed.
 #[derive(Debug, Clone, Serialize, Type)]
-#[serde(tag = "code", content = "payload", rename_all = "SCREAMING_SNAKE_CASE")]
+#[serde(
+    tag = "code",
+    content = "payload",
+    rename_all = "SCREAMING_SNAKE_CASE",
+    rename_all_fields = "camelCase"
+)]
 pub enum PluginCallReasonDto {
     MissingFunction,
     Timeout,
@@ -186,7 +205,12 @@ impl From<&PluginCallError> for PluginCallReasonDto {
 
 /// What went wrong talking to a plugin source.
 #[derive(Debug, Clone, Serialize, Type)]
-#[serde(tag = "code", content = "payload", rename_all = "SCREAMING_SNAKE_CASE")]
+#[serde(
+    tag = "code",
+    content = "payload",
+    rename_all = "SCREAMING_SNAKE_CASE",
+    rename_all_fields = "camelCase"
+)]
 pub enum ProviderFailureDto {
     Request {
         cause: CauseDto,
@@ -229,7 +253,12 @@ impl From<&ProviderFailure> for ProviderFailureDto {
 }
 
 #[derive(Clone, Debug, Serialize, Type)]
-#[serde(tag = "code", content = "payload", rename_all = "SCREAMING_SNAKE_CASE")]
+#[serde(
+    tag = "code",
+    content = "payload",
+    rename_all = "SCREAMING_SNAKE_CASE",
+    rename_all_fields = "camelCase"
+)]
 pub enum PluginErrorDto {
     NotFound {
         plugin_id: String,
@@ -721,7 +750,7 @@ mod tests {
             manifest(&ManifestError::PlatformWithoutResolveFile {
                 capability_id: CapabilityId::from_static("modrinth"),
             }),
-            json!({"code": "PLATFORM_WITHOUT_RESOLVE_FILE", "payload": {"capability_id": "modrinth"}})
+            json!({"code": "PLATFORM_WITHOUT_RESOLVE_FILE", "payload": {"capabilityId": "modrinth"}})
         );
     }
 
@@ -749,32 +778,32 @@ mod tests {
                 recorded_sha256: "bb".to_owned(),
                 source_type: PluginSourceType::GitHub,
             })),
-            json!({"code": "LOAD_FAILED", "payload": {"plugin_id": "p", "reason": {
+            json!({"code": "LOAD_FAILED", "payload": {"pluginId": "p", "reason": {
                 "code": "HASH_MISMATCH",
                 "payload": {
                     "path": "p/a.wasm",
-                    "actual_sha256": "aa",
-                    "recorded_sha256": "bb",
-                    "source_type": "github",
+                    "actualSha256": "aa",
+                    "recordedSha256": "bb",
+                    "sourceType": "github",
                 },
             }}})
         );
         assert_eq!(
             plugin(&failed(PluginLoadFailure::Build("bad import".to_owned()))),
-            json!({"code": "LOAD_FAILED", "payload": {"plugin_id": "p", "reason": {
+            json!({"code": "LOAD_FAILED", "payload": {"pluginId": "p", "reason": {
                 "code": "BUILD",
                 "payload": {"cause": {"type": "unknown", "details": "bad import"}},
             }}})
         );
         assert_eq!(
             plugin(&failed(PluginLoadFailure::ContainerUnavailable)),
-            json!({"code": "LOAD_FAILED", "payload": {"plugin_id": "p", "reason": {
+            json!({"code": "LOAD_FAILED", "payload": {"pluginId": "p", "reason": {
                 "code": "CONTAINER_UNAVAILABLE",
             }}})
         );
         assert_eq!(
             plugin(&failed(PluginLoadFailure::Other("storage down".to_owned()))),
-            json!({"code": "LOAD_FAILED", "payload": {"plugin_id": "p", "reason": {
+            json!({"code": "LOAD_FAILED", "payload": {"pluginId": "p", "reason": {
                 "code": "OTHER",
                 "payload": {"cause": {"type": "unknown", "details": "storage down"}},
             }}})
@@ -792,7 +821,7 @@ mod tests {
         assert_eq!(
             plugin(&err),
             json!({"code": "INCOMPATIBLE_API_VERSION", "payload": {
-                "plugin_id": "p", "required": "^2.0.0", "host": "1.4.0",
+                "pluginId": "p", "required": "^2.0.0", "host": "1.4.0",
             }})
         );
     }
@@ -810,8 +839,8 @@ mod tests {
         assert_eq!(
             call_failed(PluginCallError::Plugin("denied".to_owned())),
             json!({"code": "FUNCTION_CALL_FAILED", "payload": {
-                "function_name": "list",
-                "plugin_id": "p",
+                "functionName": "list",
+                "pluginId": "p",
                 "reason": {"code": "PLUGIN", "payload": {"cause": {"type": "unknown", "details": "denied"}}},
             }})
         );
@@ -831,7 +860,7 @@ mod tests {
                     details: "AccessViolation".to_owned(),
                 }),
                 json!({"code": "COMMAND_NOT_APPROVED", "payload": {
-                    "plugin_id": "p",
+                    "pluginId": "p",
                     "reason": {"code": code},
                     "cause": {"type": "unknown", "details": "AccessViolation"},
                 }})
@@ -847,7 +876,7 @@ mod tests {
                 details: "cdn refused".to_owned(),
             }),
             json!({"code": "HOST_NOT_ALLOWED", "payload": {
-                "plugin_id": "p",
+                "pluginId": "p",
                 "host": "cdn.example",
                 "cause": {"type": "unknown", "details": "cdn refused"},
             }})
@@ -863,7 +892,7 @@ mod tests {
                 details: "nas refused".to_owned(),
             }),
             json!({"code": "ADDRESS_BLOCKED", "payload": {
-                "plugin_id": "p",
+                "pluginId": "p",
                 "host": "nas.lan",
                 "port": 8080,
                 "cause": {"type": "unknown", "details": "nas refused"},
@@ -879,7 +908,7 @@ mod tests {
                 reason: CommandApprovalRefusal::Denied,
             }),
             json!({"code": "COMMAND_NOT_APPROVED", "payload": {
-                "plugin_id": "p",
+                "pluginId": "p",
                 "reason": {"code": "DENIED"},
                 "cause": null,
             }})
@@ -947,7 +976,7 @@ mod tests {
                 url: "https://api.github.com/repos/o/r/releases?per_page=20".to_owned(),
             })),
             json!({"code": "PROVIDER_FETCH_ERROR", "payload": {
-                "source_type": "github",
+                "sourceType": "github",
                 "reason": {"code": "REQUEST", "payload": {"cause": {
                     "type": "http_status",
                     "status": 403,

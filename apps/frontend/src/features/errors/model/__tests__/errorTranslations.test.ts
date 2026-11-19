@@ -286,7 +286,7 @@ describe('field names', () => {
       type: 'minecraft',
       payload: {
         code: 'PATH_NOT_FOUND',
-        payload: { path: '/game/natives', entity_type: 'NATIVE_LIBRARY' },
+        payload: { path: '/game/natives', entityType: 'NATIVE_LIBRARY' },
       },
     } as unknown as LauncherError;
 
@@ -547,7 +547,7 @@ describe('plugin load failure', () => {
       type: 'plugin',
       payload: {
         code: 'LOAD_FAILED',
-        payload: { plugin_id: 'my-plugin', reason },
+        payload: { pluginId: 'my-plugin', reason },
       },
     }) as unknown as LauncherError;
 
@@ -602,7 +602,7 @@ describe('plugin call failure', () => {
       type: 'plugin',
       payload: {
         code: 'FUNCTION_CALL_FAILED',
-        payload: { function_name: 'search', plugin_id: 'my-plugin', reason },
+        payload: { functionName: 'search', pluginId: 'my-plugin', reason },
       },
     }) as unknown as LauncherError;
 
@@ -631,7 +631,7 @@ describe('plugin command not approved', () => {
       type: 'plugin',
       payload: {
         code: 'COMMAND_NOT_APPROVED',
-        payload: { plugin_id: 'packwiz', reason: { code: 'DENIED' } },
+        payload: { pluginId: 'packwiz', reason: { code: 'DENIED' } },
       },
     } as unknown as LauncherError;
 
@@ -649,7 +649,7 @@ describe('plugin command refused to an importer, a content provider or an update
     payload: {
       code: 'COMMAND_NOT_APPROVED',
       payload: {
-        plugin_id: 'packwiz',
+        pluginId: 'packwiz',
         reason: { code: 'DENIED' },
         cause: { type: 'unknown', details: 'java refused' },
       },
@@ -676,7 +676,7 @@ describe('plugin command refused, reported by the plugin', () => {
       type: 'plugin',
       payload: {
         code: 'COMMAND_NOT_APPROVED',
-        payload: { plugin_id: 'packwiz', reason: { code: reason }, cause },
+        payload: { pluginId: 'packwiz', reason: { code: reason }, cause },
       },
     }) as unknown as LauncherError;
 
@@ -707,7 +707,7 @@ describe('plugin host refused, reported by the plugin', () => {
     payload: {
       code: 'HOST_NOT_ALLOWED',
       payload: {
-        plugin_id: 'packwiz',
+        pluginId: 'packwiz',
         host: 'cdn.example',
         cause: { type: 'unknown', details: 'cdn refused' },
       },
@@ -734,7 +734,7 @@ describe('plugin local address refused, reported by the plugin', () => {
     payload: {
       code: 'ADDRESS_BLOCKED',
       payload: {
-        plugin_id: 'packwiz',
+        pluginId: 'packwiz',
         host: 'nas.lan',
         port: 8080,
         cause: { type: 'unknown', details: 'nas refused' },
@@ -761,7 +761,7 @@ describe('plugin local address refused, reported by the plugin', () => {
       payload: {
         code: 'INVALID_LOCAL_HOST',
         payload: {
-          plugin_id: 'packwiz',
+          pluginId: 'packwiz',
           url: 'https://cdn.example/',
           reason: 'not_local',
         },
@@ -784,7 +784,7 @@ describe('plugin provider failure', () => {
       payload: {
         code: 'PROVIDER_FETCH_ERROR',
         payload: {
-          source_type: 'github',
+          sourceType: 'github',
           reason: {
             code: 'REQUEST',
             payload: {

@@ -84,9 +84,9 @@ describe('getTranslatedStateReason', () => {
         code: 'HASH_MISMATCH',
         payload: {
           path: 'p/a.wasm',
-          actual_sha256: 'aa',
-          recorded_sha256: 'bb',
-          source_type: 'github',
+          actualSha256: 'aa',
+          recordedSha256: 'bb',
+          sourceType: 'github',
         },
       },
     });

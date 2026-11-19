@@ -30,7 +30,7 @@ const refused = (host: string) =>
     payload: {
       code: 'HOST_NOT_ALLOWED',
       payload: {
-        plugin_id: 'packwiz',
+        pluginId: 'packwiz',
         host,
         cause: { type: 'unknown', details: 'cdn refused' },
       },
@@ -159,7 +159,7 @@ describe('useAllowRefusedHost', () => {
     expect(
       findErrorAction({
         type: 'plugin',
-        payload: { code: 'NOT_FOUND', payload: { plugin_id: 'packwiz' } },
+        payload: { code: 'NOT_FOUND', payload: { pluginId: 'packwiz' } },
       }),
     ).toBeUndefined();
 

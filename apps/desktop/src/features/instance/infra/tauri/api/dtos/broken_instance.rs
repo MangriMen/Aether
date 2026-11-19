@@ -17,7 +17,12 @@ pub enum BrokenInstanceOriginDto {
 
 /// Why an instance cannot be read; the code picks the translation.
 #[derive(Serialize, Clone, Debug, Type)]
-#[serde(tag = "code", content = "payload", rename_all = "SCREAMING_SNAKE_CASE")]
+#[serde(
+    tag = "code",
+    content = "payload",
+    rename_all = "SCREAMING_SNAKE_CASE",
+    rename_all_fields = "camelCase"
+)]
 pub enum BrokenInstanceReasonDto {
     InvalidId,
     InvalidGameVersion { value: String },

@@ -4,7 +4,12 @@ use specta::Type;
 use uuid::Uuid;
 
 #[derive(Clone, Debug, Serialize, Type)]
-#[serde(tag = "code", content = "payload", rename_all = "SCREAMING_SNAKE_CASE")]
+#[serde(
+    tag = "code",
+    content = "payload",
+    rename_all = "SCREAMING_SNAKE_CASE",
+    rename_all_fields = "camelCase"
+)]
 pub enum AuthErrorDto {
     CredentialsNotFound { id: Uuid },
 
