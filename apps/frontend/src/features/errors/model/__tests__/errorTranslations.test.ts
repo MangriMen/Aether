@@ -878,3 +878,127 @@ describe('settings errors', () => {
     );
   });
 });
+
+/** The fields of each `{ code: "X"; payload: { ... } }` of a DTO, by code. */
+const getPayloadFields = (
+  dtoName: string,
+  source = bindings,
+): Record<string, string[]> => {
+  const start = source.indexOf(`export type ${dtoName} =`);
+  const rest = source.slice(start + 1);
+  const end = rest.search(/\nexport type /);
+  const body = rest.slice(0, end === -1 ? undefined : end);
+  const result: Record<string, string[]> = {};
+
+  for (const variant of body.split(/(?=\{ code: ")/).slice(1)) {
+    const code = /^\{ code: "(\w+)"/.exec(variant)?.[1];
+
+    if (code) {
+      result[code] = [...variant.matchAll(/^\t(\w+)\??:/gm)].map((m) => m[1]!);
+    }
+  }
+
+  return result;
+};
+
+const placeholdersOf = (text: string): string[] => [
+  ...new Set([...text.matchAll(/\{\{\s*(\w+)\s*\}\}/g)].map((m) => m[1]!)),
+];
+
+/**
+ * Arguments the frontend adds to the payload before the text is filled in
+ * (`withFormattedArgs`, `withTranslatedReason`, `withTranslatedNames`).
+ */
+const DERIVED_ARGS = new Set(['duration', 'reason']);
+
+describe('error placeholders', () => {
+  const groups = getErrorGroups();
+
+  it.each(dictionaries)(
+    'every {{placeholder}} of an error text is a field of its payload in %s',
+    (_lang, dictionary) => {
+      const wrong: string[] = [];
+
+      for (const [group, dtoName] of Object.entries(groups)) {
+        const fields = getPayloadFields(dtoName);
+
+        for (const [code, text] of Object.entries(
+          dictionary.errors[group] ?? {},
+        )) {
+          if (typeof text !== 'string' || !(code in fields)) {
+            continue;
+          }
+
+          for (const name of placeholdersOf(text)) {
+            if (!fields[code]!.includes(name) && !DERIVED_ARGS.has(name)) {
+              wrong.push(
+                `errors.${group}.${code}: {{${name}}} not in ${fields[code]!.join(', ') || 'nothing'}`,
+              );
+            }
+          }
+        }
+      }
+
+      expect(wrong).toEqual([]);
+    },
+  );
+
+  it.each(dictionaries)(
+    'every {{placeholder}} of a reason and of a warning is a field of its payload in %s',
+    (_lang, dictionary) => {
+      const wrong: string[] = [];
+
+      const check = (path: string, text: unknown, fields: string[]) => {
+        if (typeof text !== 'string') {
+          return;
+        }
+
+        for (const name of placeholdersOf(text)) {
+          if (!fields.includes(name) && !DERIVED_ARGS.has(name)) {
+            wrong.push(
+              `${path}: {{${name}}} not in ${fields.join(', ') || 'nothing'}`,
+            );
+          }
+        }
+      };
+
+      for (const [group, dtoName] of Object.entries(groups)) {
+        const start = bindings.indexOf(`export type ${dtoName} =`);
+        const rest = bindings.slice(start + 1);
+        const body = rest.slice(0, rest.search(/\nexport type /));
+        const reasons = dictionary.errors[group]?.reason as unknown as
+          | Record<string, Record<string, string>>
+          | undefined;
+
+        for (const m of body.matchAll(
+          /\{ code: "(\w+)"; payload: \{[^}]*?reason: (\w+Dto)\b/gs,
+        )) {
+          const fields = getPayloadFields(m[2]!);
+
+          for (const [reasonCode, text] of Object.entries(
+            reasons?.[m[1]!] ?? {},
+          )) {
+            check(
+              `errors.${group}.reason.${m[1]}.${reasonCode}`,
+              text,
+              fields[reasonCode] ?? [],
+            );
+          }
+        }
+      }
+
+      const warnings = getPayloadFields('WarningDto', eventBindings);
+
+      for (const [code, text] of Object.entries(
+        (dictionary as unknown as { warnings: Record<string, string> })
+          .warnings,
+      )) {
+        if (code in warnings) {
+          check(`warnings.${code}`, text, warnings[code]!);
+        }
+      }
+
+      expect(wrong).toEqual([]);
+    },
+  );
+});
