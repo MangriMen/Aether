@@ -65,7 +65,11 @@ pub(super) fn get_minecraft_arguments(
                 resolution.height().to_string(),
             ]);
         }
-        add_fullscreen(&mut result, window);
+        if window.force_fullscreen() {
+            // With a value: Forge's tweaker drops a trailing flag that has none. The vanilla
+            // parser takes the flag and leaves the extra word alone.
+            result.extend(["--fullscreen".to_owned(), "true".to_owned()]);
+        }
         Ok(result)
     } else {
         Ok(Vec::new())
@@ -583,7 +587,8 @@ mod tests {
                 "1280",
                 "--height",
                 "720",
-                "--fullscreen"
+                "--fullscreen",
+                "true"
             ]
         );
     }
