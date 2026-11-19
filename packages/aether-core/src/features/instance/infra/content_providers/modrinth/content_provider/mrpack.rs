@@ -15,8 +15,9 @@ use crate::{
     },
     features::minecraft::{GameVersion, LoaderVersionId, ModLoader},
     shared::{
+        archive::infra::zip_entries::declared_entries,
         hash::{FileHash, HashAlgorithm},
-        limits::{MAX_MRPACK_FILES, MAX_MRPACK_INDEX_BYTES},
+        limits::{MAX_ARCHIVE_ENTRIES, MAX_MRPACK_FILES, MAX_MRPACK_INDEX_BYTES},
         web_url::HttpsUrl,
     },
 };
@@ -52,16 +53,32 @@ fn rejected(reason: ContentProviderRejection) -> InstanceError {
 /// The index is refused past [`MAX_MRPACK_INDEX_BYTES`] decompressed or [`MAX_MRPACK_FILES`]
 /// files, so a crafted pack cannot exhaust memory or plan an unbounded number of downloads.
 pub(super) fn read_index(mrpack_path: &Path) -> Result<ModrinthIndex, InstanceError> {
-    read_index_within(mrpack_path, MAX_MRPACK_INDEX_BYTES, MAX_MRPACK_FILES)
+    read_index_within(
+        mrpack_path,
+        MAX_MRPACK_INDEX_BYTES,
+        MAX_MRPACK_FILES,
+        MAX_ARCHIVE_ENTRIES,
+    )
 }
 
 fn read_index_within(
     mrpack_path: &Path,
     max_bytes: u64,
     max_files: usize,
+    max_entries: usize,
 ) -> Result<ModrinthIndex, InstanceError> {
-    let file = std::fs::File::open(mrpack_path)
+    let mut file = std::fs::File::open(mrpack_path)
         .map_err(|e| rejected(ContentProviderRejection::PackUnreadable(Arc::new(e))))?;
+
+    // Before the central directory is read whole, which costs per entry.
+    let declared = declared_entries(&mut file)
+        .map_err(|e| rejected(ContentProviderRejection::PackUnreadable(Arc::new(e))))?;
+    if let Some(count) = declared.filter(|count| *count > max_entries as u64) {
+        return Err(rejected(ContentProviderRejection::TooManyFiles {
+            count: usize::try_from(count).unwrap_or(usize::MAX),
+            max: max_entries,
+        }));
+    }
 
     let mut archive = zip::ZipArchive::new(file).map_err(|e| {
         rejected(ContentProviderRejection::PackInvalidArchive(Arc::new(
@@ -358,7 +375,7 @@ mod tests {
         let body = serde_json::to_vec(&index(vec![index_file("mods/a.jar", &[], None)])).unwrap();
         let path = mrpack_with_index(&dir, &body);
 
-        let read = read_index_within(&path, body.len() as u64, 1).unwrap();
+        let read = read_index_within(&path, body.len() as u64, 1, MAX_ARCHIVE_ENTRIES).unwrap();
 
         assert_eq!(read.files.len(), 1);
     }
@@ -388,6 +405,25 @@ mod tests {
     }
 
     #[test]
+    fn should_refuse_the_archive_before_reading_it_when_it_declares_too_many_entries() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let path = mrpack_with_index(&dir, &serde_json::to_vec(&index(vec![])).unwrap());
+
+        // The archive holds the index alone, so one entry is the most it may declare here.
+        let err = read_index_within(&path, MAX_MRPACK_INDEX_BYTES, 2, 0).unwrap_err();
+
+        assert!(
+            matches!(
+                err,
+                InstanceError::ContentProviderError {
+                    reason: ContentProviderRejection::TooManyFiles { count: 1, max: 0 }
+                }
+            ),
+            "{err}"
+        );
+    }
+
+    #[test]
     fn should_refuse_an_index_when_it_lists_too_many_files() {
         let dir = tempfile::TempDir::new().unwrap();
         let files = (0..3)
@@ -395,7 +431,8 @@ mod tests {
             .collect();
         let path = mrpack_with_index(&dir, &serde_json::to_vec(&index(files)).unwrap());
 
-        let err = read_index_within(&path, MAX_MRPACK_INDEX_BYTES, 2).unwrap_err();
+        let err =
+            read_index_within(&path, MAX_MRPACK_INDEX_BYTES, 2, MAX_ARCHIVE_ENTRIES).unwrap_err();
 
         assert!(
             matches!(

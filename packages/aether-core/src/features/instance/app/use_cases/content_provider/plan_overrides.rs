@@ -30,7 +30,9 @@ use cap_std::{ambient_authority, fs::Dir};
 use crate::features::instance::{
     AnchoredPath, ContentProviderRejection, FileSide, InstanceError, OverrideLocation, StorageError,
 };
-use crate::shared::io::IoError;
+use crate::shared::{
+    archive::infra::zip_entries::declared_entries, io::IoError, limits::MAX_ARCHIVE_ENTRIES,
+};
 
 /// One file of the overrides, by the path it gets in the instance.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -291,14 +293,27 @@ fn open_source_dir(path: &AnchoredPath) -> Result<Dir, InstanceError> {
 
 /// Open an archive source, reached from its root without following a symlink.
 fn open_archive(archive_path: &AnchoredPath) -> Result<zip::ZipArchive<File>, InstanceError> {
-    let file = open_root(archive_path.root())
+    let storage_error = |err| {
+        InstanceError::storage(IoError::with_path(
+            err,
+            archive_path.root().join(archive_path.relative()),
+        ))
+    };
+    let mut file = open_root(archive_path.root())
         .and_then(|root| open_file_nofollow_in(&root, archive_path.relative()))
-        .map_err(|err| {
-            InstanceError::storage(IoError::with_path(
-                err,
-                archive_path.root().join(archive_path.relative()),
-            ))
-        })?;
+        .map_err(storage_error)?;
+
+    // Before the central directory is read whole, which costs per entry.
+    if declared_entries(&mut file)
+        .map_err(storage_error)?
+        .is_some_and(|entries| entries > MAX_ARCHIVE_ENTRIES as u64)
+    {
+        return Err(InstanceError::ContentProviderError {
+            reason: ContentProviderRejection::TooManyOverrides {
+                max: MAX_ARCHIVE_ENTRIES,
+            },
+        });
+    }
 
     zip::ZipArchive::new(file).map_err(invalid_archive)
 }

@@ -1,3 +1,5 @@
+pub mod zip_entries;
+
 use std::path::Path;
 
 use tracing::{info, warn};

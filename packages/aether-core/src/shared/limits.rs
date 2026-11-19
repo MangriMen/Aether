@@ -196,6 +196,12 @@ pub(crate) const HTTP_CLIENT_CONNECT_TIMEOUT: Duration = Duration::from_secs(30)
 /// poor connection is not mistaken for a dead one; the retry middleware covers the rest.
 pub(crate) const HTTP_CLIENT_READ_TIMEOUT: Duration = Duration::from_secs(90);
 
+/// Most entries an archive may declare in its end record before its directory is read: the
+/// reader keeps a record per entry, so millions of tiny ones cost gigabytes of memory. Far
+/// above any pack or plugin, and above `ContentInstallLimits::max_override_files`, which bounds
+/// the files that are kept.
+pub(crate) const MAX_ARCHIVE_ENTRIES: usize = 200_000;
+
 /// Most bytes `fetch_bytes` keeps in memory for one response, so that a wrong or hostile
 /// answer cannot exhaust it. Above the largest legitimate body (a JRE archive); bodies that go
 /// to disk (`download_to_file`) take their own limit.
