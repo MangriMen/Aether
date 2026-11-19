@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/solid-query';
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type QueryClient,
+} from '@tanstack/solid-query';
 
 import { showError } from '@/features/errors';
 import { settingsCommands } from '@/platform/ipc';
@@ -46,8 +51,13 @@ export const useSetPlatformProvider = () => {
   }));
 };
 
-/** Empty the caches the app can fetch again (content metadata, icons, modpack archives). */
-export const useClearCache = () => {
+/**
+ * Empty the caches the app can fetch again (content metadata, icons, modpack archives).
+ * `onCleared` is for what the caller shows from them: this feature does not know those queries.
+ */
+export const useClearCache = (
+  onCleared?: (queryClient: QueryClient) => void,
+) => {
   const queryClient = useQueryClient();
   const [{ t }] = useTranslation();
 
@@ -58,8 +68,9 @@ export const useClearCache = () => {
         showToast({ title: t('settings.storage.busyToast') });
       }
 
-      // What the lists showed from the cache is fetched again.
-      void queryClient.invalidateQueries();
+      void settingsCache.invalidate.cacheUsage(queryClient);
+      void settingsCache.invalidate.storageUsage(queryClient);
+      onCleared?.(queryClient);
     },
     onError: (err) => {
       showError({ title: t('settings.storage.clearError'), err, t });

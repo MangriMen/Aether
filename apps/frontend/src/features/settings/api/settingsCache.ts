@@ -53,6 +53,10 @@ export const settingsCache = {
       queryClient.invalidateQueries({
         queryKey: settingsKeys.get(),
       }),
+    storageUsage: (queryClient: QueryClient) =>
+      queryClient.invalidateQueries({
+        queryKey: settingsKeys.storageUsage(),
+      }),
     cacheUsage: (queryClient: QueryClient) =>
       queryClient.invalidateQueries({
         queryKey: settingsKeys.cacheUsage(),

@@ -90,7 +90,9 @@ export const ResolutionSelectButton: Component<ResolutionSelectButtonProps> = (
             >
               {option.name}
               <Show when={isDefaultResolution(option.value)}>
-                <Badge variant='secondary'>default</Badge>
+                <Badge variant='secondary'>
+                  {t('instanceSettings.defaultResolution')}
+                </Badge>
               </Show>
             </DropdownMenuItem>
           )}
