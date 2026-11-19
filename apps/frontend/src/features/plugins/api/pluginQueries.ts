@@ -235,7 +235,7 @@ export const useGrantPluginFolderAccess = () => {
       dryRun: boolean;
     }) => pluginsCommands.grantFolderAccess(id, filePath, dryRun),
     onGranted: (access, id, queryClient) => {
-      pluginsCache.invalidate.state(queryClient, id);
+      void pluginsCache.invalidate.state(queryClient, id);
 
       return {
         title: t('pluginSettings.folderAccessGranted'),
@@ -265,7 +265,7 @@ export const useGrantPluginHostAccess = () => {
       dryRun: boolean;
     }) => pluginsCommands.grantHostAccess(id, url, dryRun),
     onGranted: (access, id, queryClient) => {
-      queryClient.invalidateQueries({ queryKey: pluginKeys.settings(id) });
+      void queryClient.invalidateQueries({ queryKey: pluginKeys.settings(id) });
 
       return {
         title: t('pluginSettings.hostAccessGranted'),
@@ -295,7 +295,7 @@ export const useGrantPluginLocalHostAccess = () => {
       dryRun: boolean;
     }) => pluginsCommands.grantLocalHostAccess(id, url, dryRun),
     onGranted: (access, id, queryClient) => {
-      queryClient.invalidateQueries({ queryKey: pluginKeys.settings(id) });
+      void queryClient.invalidateQueries({ queryKey: pluginKeys.settings(id) });
 
       return {
         title: t('pluginSettings.localHostAccessGranted'),

@@ -8,13 +8,13 @@ export const invalidateInstanceData = (
   queryClient: QueryClient,
   id: Instance['id'],
 ) => {
-  queryClient.invalidateQueries({
+  void queryClient.invalidateQueries({
     queryKey: INSTANCE_QUERY_KEYS.LIST(),
   });
-  queryClient.invalidateQueries({
+  void queryClient.invalidateQueries({
     queryKey: INSTANCE_QUERY_KEYS.GET(id),
   });
-  queryClient.invalidateQueries({
+  void queryClient.invalidateQueries({
     queryKey: INSTANCE_QUERY_KEYS.DIR(id),
   });
   invalidateInstanceContent(queryClient, id);
@@ -24,7 +24,7 @@ export const invalidateInstanceContent = (
   queryClient: QueryClient,
   id: Instance['id'],
 ) => {
-  queryClient.invalidateQueries({
+  void queryClient.invalidateQueries({
     queryKey: INSTANCE_QUERY_KEYS.CONTENT(id),
   });
 };

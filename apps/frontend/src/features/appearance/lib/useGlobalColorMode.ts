@@ -19,7 +19,7 @@ export const useGlobalColorMode = () => {
 
   const setColorMode = (value: ConfigColorMode) => {
     setBrowserColorMode(value);
-    getCurrentWindow().setTheme(configColorModeToWindowThemeMap[value]);
+    void getCurrentWindow().setTheme(configColorModeToWindowThemeMap[value]);
   };
 
   return { colorMode: browserColorMode, setColorMode };

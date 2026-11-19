@@ -237,9 +237,9 @@ export const ContentContextProvider: Component<ContentContextProviderProps> = (
     }
 
     if (item.contentType === 'modpack') {
-      handleInstallModpack(item, contentVersion);
+      void handleInstallModpack(item, contentVersion);
     } else {
-      handleInstallAtomicContent(item, instanceId, contentVersion);
+      void handleInstallAtomicContent(item, instanceId, contentVersion);
     }
   };
 

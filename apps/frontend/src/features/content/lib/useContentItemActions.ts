@@ -88,7 +88,7 @@ export const useContentItemActions = (
     const isModpack = currentItem.contentType === ContentType.Modpack;
 
     if (isSpecificInstancePage || isModpack) {
-      installContent(currentItem);
+      void installContent(currentItem);
     } else {
       await prefetchCompatibility();
       showInstallContentDialog();

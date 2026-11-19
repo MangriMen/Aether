@@ -24,11 +24,11 @@ export const WindowControls: Component<WindowControlsProps> = (props) => {
   const appWindow = getCurrentWebviewWindow();
 
   const handleMinimize = () => {
-    appWindow.minimize();
+    void appWindow.minimize();
   };
 
   const handleClose = () => {
-    appWindow.close();
+    void appWindow.close();
   };
 
   return (

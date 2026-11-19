@@ -7,6 +7,6 @@ export const useOnMountSettingsPage = () => {
   const queryClient = useQueryClient();
 
   onMount(() => {
-    settingsCache.prefetch.maxRam(queryClient);
+    void settingsCache.prefetch.maxRam(queryClient);
   });
 };

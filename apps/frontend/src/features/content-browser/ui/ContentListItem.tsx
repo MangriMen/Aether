@@ -38,7 +38,7 @@ export const ContentListItem: Component<ContentListItemProps> = (props) => {
 
   const handleInstall = (e: MouseEvent) => {
     e.stopPropagation();
-    requestInstall();
+    void requestInstall();
   };
 
   return (

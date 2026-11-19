@@ -34,7 +34,7 @@ export const WhatsNew: Component<WhatsNewProps> = (props) => {
   };
 
   const handleTranslateInBrowser = () => {
-    openTranslationInBrowser(local.changelogBody, t);
+    void openTranslationInBrowser(local.changelogBody, t);
   };
 
   return (

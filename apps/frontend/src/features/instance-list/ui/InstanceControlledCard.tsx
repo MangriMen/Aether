@@ -55,7 +55,7 @@ export const InstanceControlledCard: Component<InstanceControlledCardProps> = (
   };
 
   const handleLaunch = () => {
-    launchInstance(props.instance);
+    void launchInstance(props.instance);
   };
 
   const handleRemove = () =>

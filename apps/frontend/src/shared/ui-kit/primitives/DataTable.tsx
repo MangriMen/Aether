@@ -321,7 +321,9 @@ interface TableSkeletonProps<TData extends RowData> {
 const TableSkeleton = <TData extends RowData>(
   props: TableSkeletonProps<TData>,
 ) => {
-  const rowIndices = createMemo(() => new Array(props.rowsCount).fill(0));
+  const rowIndices = createMemo(() =>
+    Array.from({ length: props.rowsCount }, () => 0),
+  );
 
   return (
     <For each={rowIndices()}>

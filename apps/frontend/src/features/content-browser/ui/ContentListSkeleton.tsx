@@ -13,7 +13,7 @@ export const ContentListSkeleton: Component<ContentListSkeletonProps> = (
   const [local, others] = splitProps(props, ['class']);
 
   const items = createMemo(() => {
-    return new Array(3).fill(0);
+    return Array.from({ length: 3 }, () => 0);
   });
 
   return (

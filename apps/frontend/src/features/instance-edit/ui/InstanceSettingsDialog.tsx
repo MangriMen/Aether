@@ -66,7 +66,7 @@ export const InstanceSettingsDialog: Component<InstanceSettingsDialogProps> = (
   };
 
   onMount(() => {
-    settingsCache.prefetch.maxRam(queryClient);
+    void settingsCache.prefetch.maxRam(queryClient);
   });
 
   return (
