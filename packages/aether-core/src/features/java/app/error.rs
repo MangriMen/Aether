@@ -1,6 +1,4 @@
-use crate::{
-    features::java::JavaDomainError, shared::request_client::domain::models::RequestError,
-};
+use crate::{features::java::JavaDomainError, shared::request_client::RequestError};
 
 #[derive(Clone, Debug, thiserror::Error)]
 pub enum JavaApplicationError {

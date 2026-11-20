@@ -100,7 +100,7 @@ use crate::{
     },
     shared::{
         cache::domain::AssetsStorage,
-        capability::domain::CapabilityRegistry,
+        capability::CapabilityRegistry,
         fetch::FetchSemaphore,
         housekeeping::ActivityGate,
         limits::{ContentInstallLimits, PluginSandboxLimits},

@@ -12,7 +12,7 @@ use crate::{
         InstanceStorage, ModpackInstallParams, PackStorage, PlanOrigin, ProviderId,
         ResolveInstallPlanParams, ResolveTarget, app::extensions::InstanceStorageExt,
     },
-    shared::capability::domain::CapabilityRegistry,
+    shared::capability::CapabilityRegistry,
 };
 
 pub struct InstallContentUseCase {

@@ -11,7 +11,7 @@ use crate::{
         ContentProvider, Instance, InstanceError, InstanceId, InstanceStorage,
         app::{ContentCompatibilityCheckParams, ContentCompatibilityResult},
     },
-    shared::capability::domain::CapabilityRegistry,
+    shared::capability::CapabilityRegistry,
 };
 
 pub struct CheckContentCompatibilityUseCase {

@@ -7,7 +7,7 @@ use crate::{
     features::instance::{
         ContentProvider, ContentVersion, InstanceError, app::ContentGetVersionParams,
     },
-    shared::capability::domain::CapabilityRegistry,
+    shared::capability::CapabilityRegistry,
 };
 
 pub struct GetContentVersionUseCase {

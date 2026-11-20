@@ -9,7 +9,7 @@ use crate::{
         CapabilityId, Importer, InstanceError, InstanceInstallStage, InstanceStorage, PluginId,
         app::extensions::InstanceStorageExt,
     },
-    shared::capability::domain::CapabilityRegistry,
+    shared::capability::CapabilityRegistry,
 };
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

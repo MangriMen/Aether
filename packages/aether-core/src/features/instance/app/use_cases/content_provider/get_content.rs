@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use crate::features::instance::app::ports::GetContentUseCasePort;
 use crate::{
     features::instance::{ContentItem, ContentProvider, InstanceError, app::ContentGetParams},
-    shared::capability::domain::CapabilityRegistry,
+    shared::capability::CapabilityRegistry,
 };
 
 pub struct GetContentUseCase {

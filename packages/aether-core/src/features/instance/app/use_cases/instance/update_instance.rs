@@ -13,7 +13,7 @@ use crate::{
         },
         minecraft::ModLoader,
     },
-    shared::capability::domain::CapabilityRegistry,
+    shared::capability::CapabilityRegistry,
 };
 
 /// Updates the pack an instance was installed from.
