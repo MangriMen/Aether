@@ -1,14 +1,20 @@
-import { processEvents, useEventListener } from '@/platform/ipc';
+import { processEvents, useReadyEventListener } from '@/platform/ipc';
 import { logDebug } from '@/shared/log';
 
 import type { ProcessEvent } from '../model/processEvent';
 
-export const useProcessEventListener = (
+/** Settles once the listener is registered, see `useReadyEventListener`. */
+export const useReadyProcessEventListener = (
   callback: (event: ProcessEvent) => void,
-) => {
-  useEventListener(processEvents.processEventDto, (e) => {
+) =>
+  useReadyEventListener(processEvents.processEventDto, (e) => {
     logDebug('[EVENT][DEBUG]', e);
 
     callback(e.payload);
   });
+
+export const useProcessEventListener = (
+  callback: (event: ProcessEvent) => void,
+): void => {
+  void useReadyProcessEventListener(callback);
 };

@@ -6,6 +6,8 @@ type RunningInstancesInstanceData = {
   processId?: string;
   isLoading: boolean;
   isRunning: boolean;
+  /** Started by an earlier launcher: the launcher follows the game but has no console output of it. */
+  adopted?: boolean;
   /** A launch has the instance, and may be called off until the game starts. */
   isLaunching?: boolean;
 };

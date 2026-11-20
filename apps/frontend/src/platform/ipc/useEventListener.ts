@@ -14,10 +14,17 @@ type ListenableEvent<T> = {
 // The backend numbers its events in the order it sends them. The webview can hand over an
 // event it has delivered already, long after, so one that does not follow the last this
 // listener saw is dropped.
-export const useEventListener = <T extends { seq: number }>(
+//
+// Returns a promise that settles once the listener is registered (or failed to be), so that a
+// caller that reads state a missed event would change can read it after, not before.
+export const useReadyEventListener = <T extends { seq: number }>(
   event: ListenableEvent<T>,
   callback: EventCallback<T>,
-) => {
+): Promise<void> => {
+  let markReady: () => void = () => {};
+  const ready = new Promise<void>((resolve) => {
+    markReady = resolve;
+  });
   let unlisten: UnlistenFn | undefined;
   let disposed = false;
   let lastSeq = 0;
@@ -44,11 +51,22 @@ export const useEventListener = <T extends { seq: number }>(
       })
       .catch((error: unknown) => {
         logError('[EVENT] failed to start listening', error);
-      });
+      })
+      .finally(markReady);
   });
 
   onCleanup(() => {
     disposed = true;
     unlisten?.();
+    markReady();
   });
+
+  return ready;
+};
+
+export const useEventListener = <T extends { seq: number }>(
+  event: ListenableEvent<T>,
+  callback: EventCallback<T>,
+): void => {
+  void useReadyEventListener(event, callback);
 };
