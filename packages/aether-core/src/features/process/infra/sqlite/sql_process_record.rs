@@ -95,15 +95,17 @@ fn parse_stored_instance_id(record: &str, stored: String) -> Option<InstanceId> 
         .ok()
 }
 
+/// No process has pid 0 to follow: on Unix a signal to it would reach the whole group of the
+/// launcher.
 fn parse_stored_pid(record: &str, column: &str, stored: i64) -> Option<u32> {
-    u32::try_from(stored)
-        .inspect_err(|_| {
-            warn!(
-                record,
-                column, stored, "Skipping a game record with an invalid pid"
-            );
-        })
-        .ok()
+    let pid = u32::try_from(stored).ok().filter(|&pid| pid != 0);
+    if pid.is_none() {
+        warn!(
+            record,
+            column, stored, "Skipping a game record with an invalid pid"
+        );
+    }
+    pid
 }
 
 fn parse_stored_timestamp(record: &str, column: &str, stored: &str) -> Option<DateTime<Utc>> {
@@ -164,10 +166,20 @@ mod tests {
         assert!(row.into_record().is_none());
     }
 
-    #[test]
-    fn should_skip_the_record_when_its_pid_is_negative() {
+    #[rstest::rstest]
+    #[case::negative(-1)]
+    #[case::zero(0)]
+    fn should_skip_the_record_when_its_pid_is_not_one_of_a_process(#[case] pid: i64) {
         let mut row = SqlProcessRecord::from(&record());
-        row.pid = -1;
+        row.pid = pid;
+
+        assert!(row.into_record().is_none());
+    }
+
+    #[test]
+    fn should_skip_the_record_when_its_owner_pid_is_zero() {
+        let mut row = SqlProcessRecord::from(&record());
+        row.owner_pid = 0;
 
         assert!(row.into_record().is_none());
     }

@@ -540,11 +540,14 @@ mod start_tests {
             self.own.as_ref()
         }
 
-        async fn adopt(&self, _record: &ProcessRecord) -> Option<Box<dyn AdoptedProcess>> {
+        async fn adopt(
+            &self,
+            _record: &ProcessRecord,
+        ) -> std::io::Result<Option<Box<dyn AdoptedProcess>>> {
             unimplemented!()
         }
 
-        async fn is_alive(&self, _record: &ProcessRecord) -> bool {
+        async fn is_alive(&self, _record: &ProcessRecord) -> std::io::Result<bool> {
             unimplemented!()
         }
     }

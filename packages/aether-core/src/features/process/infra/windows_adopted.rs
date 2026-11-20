@@ -2,7 +2,7 @@
 //! handle is open the process object stays, so the pid cannot pass to another process and the
 //! exit code can be read even though the game is not a child of this launcher.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::io;
 use std::os::windows::io::{AsRawHandle, FromRawHandle, OwnedHandle};
 use std::os::windows::process::ExitStatusExt;
@@ -10,7 +10,8 @@ use std::process::ExitStatus;
 
 use tracing::{debug, warn};
 use windows::Win32::Foundation::{
-    ERROR_ACCESS_DENIED, ERROR_INVALID_PARAMETER, FILETIME, HANDLE, WAIT_OBJECT_0, WAIT_TIMEOUT,
+    ERROR_ACCESS_DENIED, ERROR_INVALID_PARAMETER, ERROR_NO_MORE_FILES, FILETIME, HANDLE,
+    WAIT_OBJECT_0, WAIT_TIMEOUT,
 };
 use windows::Win32::System::Diagnostics::ToolHelp::{
     CreateToolhelp32Snapshot, PROCESSENTRY32W, Process32FirstW, Process32NextW, TH32CS_SNAPPROCESS,
@@ -42,54 +43,43 @@ pub(super) struct WindowsAdoptedProcess {
 }
 
 impl WindowsAdoptedProcess {
-    /// Opens the process of `identity`; `None` when it has ended or the pid is not in use or
-    /// belongs to a process of another start.
-    pub(super) fn open(identity: &OsProcessIdentity, kill_scope: KillScope) -> Option<Self> {
+    /// Opens the process of `identity`. `Ok(None)` only when it is known to be gone: it has
+    /// ended, its pid is not in use, or the pid belongs to a process of another start. Any other
+    /// failure is an error: the game may still run.
+    pub(super) fn open(
+        identity: &OsProcessIdentity,
+        kill_scope: KillScope,
+    ) -> io::Result<Option<Self>> {
         let pid = identity.pid();
-        let (handle, can_terminate) = match open_process(pid, WATCH | PROCESS_TERMINATE) {
-            Ok(handle) => (handle, true),
+        let opened = match open_process(pid, WATCH | PROCESS_TERMINATE) {
+            Ok(handle) => Ok((handle, true)),
             // A process holds the pid, it is not gone: an elevated game refuses to be stopped by
             // a launcher that is not, yet lets it watch.
             Err(err) if err.code() == ERROR_ACCESS_DENIED.to_hresult() => {
-                match open_process(pid, WATCH) {
-                    Ok(handle) => (handle, false),
-                    Err(err) => {
-                        warn!(pid, error = %err, "Could not open the game process to follow it");
-                        return None;
-                    }
-                }
+                open_process(pid, WATCH).map(|handle| (handle, false))
             }
-            Err(err) => {
-                // The pid is not in use: the game is gone.
-                if err.code() != ERROR_INVALID_PARAMETER.to_hresult() {
-                    warn!(pid, error = %err, "Could not open the game process to follow it");
-                }
-                return None;
-            }
+            Err(err) => Err(err),
         };
-        let created = creation_time(&handle)
-            .inspect_err(|err| {
-                warn!(pid, error = %err, "Could not read when the game process started");
-            })
-            .ok()?;
+        let (handle, can_terminate) = match opened {
+            Ok(opened) => opened,
+            // The pid is not in use.
+            Err(err) if err.code() == ERROR_INVALID_PARAMETER.to_hresult() => return Ok(None),
+            Err(err) => return Err(err.into()),
+        };
+        let created = creation_time(&handle)?;
         // Compared on the handle that is kept, so the pid cannot change hands in between.
         let current = OsProcessIdentity::new(pid, start_stamp(created), String::new());
-        if !identity.matches(&current) {
-            return None;
-        }
         // An ended process is kept as long as anyone holds a handle to it, yet it is gone.
-        let exited = has_exited(&handle)
-            .inspect_err(|err| {
-                warn!(pid, error = %err, "Could not tell whether the game process still runs");
-            })
-            .ok()?;
-        (!exited).then_some(Self {
+        if !identity.matches(&current) || has_exited(&handle)? {
+            return Ok(None);
+        }
+        Ok(Some(Self {
             handle,
             pid,
             created,
             kill_scope,
             can_terminate,
-        })
+        }))
     }
 }
 
@@ -117,12 +107,19 @@ impl AdoptedProcess for WindowsAdoptedProcess {
         // Found before the root goes: the tree is followed by parent pids.
         let descendants = match self.kill_scope {
             KillScope::Process => Vec::new(),
-            KillScope::Tree => descendants(self.pid, self.created),
+            KillScope::Tree => descendants(self.pid, self.created).unwrap_or_else(|err| {
+                warn!(
+                    pid = self.pid,
+                    error = %err,
+                    "Could not list the processes of the game tree: only the game is stopped"
+                );
+                Vec::new()
+            }),
         };
         terminate(&self.handle)?;
-        for descendant in &descendants {
-            if let Err(err) = terminate(descendant) {
-                debug!(pid = self.pid, error = %err, "Could not stop a process of the game tree");
+        for (pid, handle) in &descendants {
+            if let Err(err) = terminate(handle) {
+                debug!(pid, error = %err, "Could not stop a process of the game tree");
             }
         }
         Ok(())
@@ -187,21 +184,18 @@ fn terminate(handle: &OwnedHandle) -> io::Result<()> {
     }
 }
 
-/// The processes below `root`, opened to be stopped. Best effort: the job object that held the
-/// tree went with the launcher that made it, so the tree is found by parent pids. A process
-/// whose parent has already ended is not found, and one created before its supposed parent is a
-/// stranger that holds a reused pid.
-fn descendants(root: u32, root_created: u64) -> Vec<OwnedHandle> {
-    let parents = match parent_pids() {
-        Ok(parents) => parents,
-        Err(err) => {
-            warn!(pid = root, error = %err, "Could not list the processes of the game tree");
-            return Vec::new();
-        }
-    };
+/// A process found below the root: its pid, the pid of its parent and a handle to it.
+type Candidate = (u32, u32, OwnedHandle);
+
+/// The processes below `root`, opened to be stopped, by pid. Best effort: the job object that
+/// held the tree went with the launcher that made it, so the tree is found by parent pids. A
+/// process whose parent has already ended is not found, and one created before its supposed
+/// parent is a stranger that holds a reused pid.
+fn descendants(root: u32, root_created: u64) -> io::Result<Vec<(u32, OwnedHandle)>> {
+    let parents = parent_pids()?;
     let mut seen = HashSet::from([root]);
     let mut to_visit = vec![(root, root_created)];
-    let mut found = Vec::new();
+    let mut candidates: Vec<Candidate> = Vec::new();
     while let Some((parent, parent_created)) = to_visit.pop() {
         for &(pid, _) in parents.iter().filter(|(_, ppid)| *ppid == parent) {
             if !seen.insert(pid) {
@@ -213,13 +207,45 @@ fn descendants(root: u32, root_created: u64) -> Vec<OwnedHandle> {
             match creation_time(&handle) {
                 Ok(created) if created >= parent_created => {
                     to_visit.push((pid, created));
-                    found.push(handle);
+                    candidates.push((pid, parent, handle));
                 }
                 _ => {}
             }
         }
     }
-    found
+    if candidates.is_empty() {
+        return Ok(Vec::new());
+    }
+    // A pid may have passed to another process between the snapshot and its opening. Now the
+    // handles hold every pid, so a second snapshot tells the truth about them.
+    let parents_now: HashMap<u32, u32> = parent_pids()?.into_iter().collect();
+    let links: Vec<(u32, u32)> = candidates
+        .iter()
+        .map(|(pid, parent, _)| (*pid, *parent))
+        .collect();
+    let kept = still_in_tree(root, &links, &parents_now);
+    Ok(candidates
+        .into_iter()
+        .zip(kept)
+        .filter_map(|((pid, _, handle), kept)| kept.then_some((pid, handle)))
+        .collect())
+}
+
+/// Which of the `(pid, parent)` links, listed parents first, still hang from `root` by the
+/// parent pids of now. A link whose parent fell out falls out too: that parent was a stranger,
+/// and so are its children.
+fn still_in_tree(root: u32, links: &[(u32, u32)], parents_now: &HashMap<u32, u32>) -> Vec<bool> {
+    let mut in_tree = HashSet::from([root]);
+    links
+        .iter()
+        .map(|&(pid, parent)| {
+            let kept = in_tree.contains(&parent) && parents_now.get(&pid) == Some(&parent);
+            if kept {
+                in_tree.insert(pid);
+            }
+            kept
+        })
+        .collect()
 }
 
 /// Every running process as `(pid, parent pid)`.
@@ -238,12 +264,16 @@ fn parent_pids() -> io::Result<Vec<(u32, u32)>> {
     // SAFETY: the snapshot is open, and `entry` lives through the call with its size set, as
     // the walk requires.
     let mut next = unsafe { Process32FirstW(raw(&snapshot), &raw mut entry) };
-    while next.is_ok() {
-        parents.push((entry.th32ProcessID, entry.th32ParentProcessID));
+    loop {
+        match next {
+            Ok(()) => parents.push((entry.th32ProcessID, entry.th32ParentProcessID)),
+            Err(err) if err.code() == ERROR_NO_MORE_FILES.to_hresult() => return Ok(parents),
+            // A walk cut short would leave out part of the tree without saying so.
+            Err(err) => return Err(err.into()),
+        }
         // SAFETY: as above.
         next = unsafe { Process32NextW(raw(&snapshot), &raw mut entry) };
     }
-    Ok(parents)
 }
 
 #[cfg(test)]
@@ -256,5 +286,37 @@ mod tests {
         let created = (11_644_473_600 + 1) * 10_000_000 + 9_000_000;
 
         assert_eq!(start_stamp(created), 1);
+    }
+
+    #[test]
+    fn should_keep_the_descendants_when_their_parents_are_the_same_in_the_second_snapshot() {
+        let links = [(20, 10), (30, 20), (31, 20)];
+        let now = HashMap::from([(20, 10), (30, 20), (31, 20), (99, 1)]);
+
+        assert_eq!(still_in_tree(10, &links, &now), [true, true, true]);
+    }
+
+    #[test]
+    fn should_drop_a_reused_pid_and_what_hangs_below_it_when_its_parent_changed() {
+        // Pid 20 passed to a stranger started by 5 before it was opened; 30 is its child.
+        let links = [(20, 10), (30, 20), (40, 10)];
+        let now = HashMap::from([(20, 5), (30, 20), (40, 10)]);
+
+        assert_eq!(still_in_tree(10, &links, &now), [false, false, true]);
+    }
+
+    #[test]
+    fn should_drop_a_descendant_when_it_is_gone_from_the_second_snapshot() {
+        let links = [(20, 10)];
+
+        assert_eq!(still_in_tree(10, &links, &HashMap::new()), [false]);
+    }
+
+    #[test]
+    fn should_list_this_process_with_its_parent_when_the_processes_are_walked() {
+        let parents = parent_pids().unwrap();
+
+        assert!(parents.iter().any(|(pid, _)| *pid == std::process::id()));
+        assert!(parents.len() > 1);
     }
 }

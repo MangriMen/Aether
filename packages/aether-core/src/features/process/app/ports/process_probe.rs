@@ -15,15 +15,21 @@ pub trait ProcessProbe: Send + Sync {
     fn own_identity(&self) -> Option<&OsProcessIdentity>;
 
     /// Takes over the process of `record` so that it can be followed and stopped like a started
-    /// one. `None` when the process is gone or its pid now belongs to another process.
-    async fn adopt(&self, record: &ProcessRecord) -> Option<Box<dyn AdoptedProcess>>;
+    /// one. `Ok(None)` only when the process is known to be gone: it has ended, or its pid is
+    /// free or belongs to another process. An error when the OS could not tell: the game may
+    /// still run, and its record must stay.
+    async fn adopt(
+        &self,
+        record: &ProcessRecord,
+    ) -> std::io::Result<Option<Box<dyn AdoptedProcess>>>;
 
-    /// Whether the process of `record` still runs.
-    async fn is_alive(&self, record: &ProcessRecord) -> bool;
+    /// Whether the process of `record` still runs; an error when the OS could not tell, as
+    /// with [`adopt`](Self::adopt).
+    async fn is_alive(&self, record: &ProcessRecord) -> std::io::Result<bool>;
 }
 
-/// A running process that the launcher did not start. Neither call blocks for long: both are
-/// made while the process list is held.
+/// A running process that the launcher did not start. Both calls may block on the OS, so they
+/// are made off the async runtime.
 pub trait AdoptedProcess: Debug + Send + Sync {
     fn try_wait(&mut self) -> std::io::Result<ProcessState>;
 

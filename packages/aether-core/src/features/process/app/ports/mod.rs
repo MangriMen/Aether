@@ -25,24 +25,6 @@ pub enum ProcessHandle {
     Adopted(Box<dyn AdoptedProcess>),
 }
 
-impl ProcessHandle {
-    pub fn try_wait(&mut self) -> std::io::Result<ProcessState> {
-        match self {
-            Self::Owned(child) => Ok(child.try_wait()?.map_or(ProcessState::Running, |status| {
-                ProcessState::Exited(Some(status))
-            })),
-            Self::Adopted(process) => process.try_wait(),
-        }
-    }
-
-    pub fn start_kill(&mut self) -> std::io::Result<()> {
-        match self {
-            Self::Owned(child) => child.start_kill(),
-            Self::Adopted(process) => process.start_kill(),
-        }
-    }
-}
-
 #[async_trait]
 pub trait ProcessStorage: Send + Sync {
     async fn insert(

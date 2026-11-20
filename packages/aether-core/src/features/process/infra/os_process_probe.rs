@@ -1,4 +1,6 @@
 use std::io;
+#[cfg(any(unix, test))]
+use std::time::{Duration, Instant};
 
 use async_trait::async_trait;
 use tracing::warn;
@@ -46,59 +48,63 @@ impl ProcessProbe for OsProcessProbe {
         self.own.as_ref()
     }
 
-    async fn adopt(&self, record: &ProcessRecord) -> Option<Box<dyn AdoptedProcess>> {
+    async fn adopt(&self, record: &ProcessRecord) -> io::Result<Option<Box<dyn AdoptedProcess>>> {
         let identity = record.process.clone();
         let kill_scope = record.kill_scope;
         tokio::task::spawn_blocking(move || adopt(&identity, kill_scope))
             .await
-            .inspect_err(|err| {
-                warn!(process_id = %record.id, error = %err, "Could not look for the game process");
-            })
-            .ok()
-            .flatten()
+            .map_err(io::Error::other)?
     }
 
-    async fn is_alive(&self, record: &ProcessRecord) -> bool {
-        let Some(mut process) = self.adopt(record).await else {
-            return false;
+    async fn is_alive(&self, record: &ProcessRecord) -> io::Result<bool> {
+        let Some(mut process) = self.adopt(record).await? else {
+            return Ok(false);
         };
-        matches!(process.try_wait(), Ok(ProcessState::Running))
+        let state = tokio::task::spawn_blocking(move || process.try_wait())
+            .await
+            .map_err(io::Error::other)??;
+        Ok(state == ProcessState::Running)
     }
 }
 
 #[cfg(windows)]
-fn adopt(identity: &OsProcessIdentity, kill_scope: KillScope) -> Option<Box<dyn AdoptedProcess>> {
-    super::windows_adopted::WindowsAdoptedProcess::open(identity, kill_scope)
-        .map(|process| Box::new(process) as Box<dyn AdoptedProcess>)
+fn adopt(
+    identity: &OsProcessIdentity,
+    kill_scope: KillScope,
+) -> io::Result<Option<Box<dyn AdoptedProcess>>> {
+    Ok(
+        super::windows_adopted::WindowsAdoptedProcess::open(identity, kill_scope)?
+            .map(|process| Box::new(process) as Box<dyn AdoptedProcess>),
+    )
 }
 
 #[cfg(unix)]
-fn adopt(identity: &OsProcessIdentity, kill_scope: KillScope) -> Option<Box<dyn AdoptedProcess>> {
-    match liveness(identity) {
-        Ok(Liveness::Running) => Some(Box::new(UnixAdoptedProcess {
-            identity: identity.clone(),
-            kill_scope,
-            checked_at: std::time::Instant::now(),
-            exited: false,
-        })),
-        Ok(Liveness::Zombie | Liveness::Gone) => None,
-        Err(err) => {
-            warn!(
-                pid = identity.pid(),
-                error = %err,
-                "Could not tell whether the game process still runs"
-            );
-            None
-        }
+fn adopt(
+    identity: &OsProcessIdentity,
+    kill_scope: KillScope,
+) -> io::Result<Option<Box<dyn AdoptedProcess>>> {
+    if liveness(identity)? != Liveness::Running {
+        return Ok(None);
     }
+    let process: Box<dyn AdoptedProcess> = Box::new(UnixAdoptedProcess {
+        identity: identity.clone(),
+        kill_scope,
+        looks: Looks::new(),
+    });
+    Ok(Some(process))
 }
 
 /// How long a look at an adopted process holds: the game is polled every 50 ms, and each look
 /// reads the process table.
-#[cfg(unix)]
-const LIVENESS_TTL: std::time::Duration = std::time::Duration::from_secs(1);
+#[cfg(any(unix, test))]
+const LIVENESS_TTL: Duration = Duration::from_secs(1);
 
-#[cfg(unix)]
+/// How many looks in a row may fail before the failure is passed on. One failed look, such as
+/// a moment out of file descriptors, must not end the following of a game that still runs.
+#[cfg(any(unix, test))]
+const MAX_FAILED_LOOKS: u32 = 3;
+
+#[cfg(any(unix, test))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Liveness {
     Running,
@@ -108,6 +114,84 @@ enum Liveness {
     Gone,
 }
 
+/// What was last seen of an adopted process.
+#[cfg(any(unix, test))]
+#[derive(Debug)]
+struct Looks {
+    checked_at: Instant,
+    exited: bool,
+    failures: u32,
+}
+
+#[cfg(any(unix, test))]
+impl Looks {
+    /// Starts from a look that saw the process running.
+    fn new() -> Self {
+        Self {
+            checked_at: Instant::now(),
+            exited: false,
+            failures: 0,
+        }
+    }
+
+    fn is_due(&self) -> bool {
+        !self.exited && self.checked_at.elapsed() >= LIVENESS_TTL
+    }
+
+    /// Takes in a look. A failed one keeps what was seen before and is tried again after the
+    /// TTL; only [`MAX_FAILED_LOOKS`] failures in a row are passed on.
+    fn record(&mut self, look: io::Result<Liveness>) -> io::Result<()> {
+        self.checked_at = Instant::now();
+        match look {
+            Ok(liveness) => {
+                self.failures = 0;
+                self.exited = liveness != Liveness::Running;
+                Ok(())
+            }
+            Err(err) => {
+                self.failures += 1;
+                if self.failures >= MAX_FAILED_LOOKS {
+                    Err(err)
+                } else {
+                    Ok(())
+                }
+            }
+        }
+    }
+
+    fn state(&self) -> ProcessState {
+        if self.exited {
+            ProcessState::Exited(None)
+        } else {
+            ProcessState::Running
+        }
+    }
+}
+
+/// The pid to signal to stop `pid`, refused when the signal would reach the launcher: pid 0
+/// and pids that do not fit `pid_t` name process groups or nothing, and the launcher must not
+/// stop itself or, for a tree, its own group.
+#[cfg(any(unix, test))]
+fn kill_target(pid: u32, kill_scope: KillScope, own_pid: u32, own_group: u32) -> io::Result<i32> {
+    let refuse = |why: &str| -> io::Result<i32> {
+        Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            format!("refusing to stop process {pid}: {why}"),
+        ))
+    };
+    let target = match i32::try_from(pid) {
+        Ok(target) if target > 0 => target,
+        _ => return refuse("not a process id"),
+    };
+    if pid == own_pid {
+        return refuse("it is the launcher");
+    }
+    if kill_scope == KillScope::Tree && pid == own_group {
+        return refuse("its group holds the launcher");
+    }
+    Ok(target)
+}
+
 /// A game an earlier launcher started. Only its parent may wait for it, so its exit is seen as
 /// the process going away, and how it ended stays unknown.
 #[cfg(unix)]
@@ -115,30 +199,38 @@ enum Liveness {
 struct UnixAdoptedProcess {
     identity: OsProcessIdentity,
     kill_scope: KillScope,
-    checked_at: std::time::Instant,
-    exited: bool,
+    looks: Looks,
 }
 
 #[cfg(unix)]
 impl AdoptedProcess for UnixAdoptedProcess {
     fn try_wait(&mut self) -> io::Result<ProcessState> {
-        if !self.exited && self.checked_at.elapsed() >= LIVENESS_TTL {
-            self.exited = liveness(&self.identity)? != Liveness::Running;
-            self.checked_at = std::time::Instant::now();
+        if self.looks.is_due() {
+            let look = liveness(&self.identity);
+            if let Err(err) = &look {
+                warn!(
+                    pid = self.identity.pid(),
+                    error = %err,
+                    "Could not look at the adopted game process"
+                );
+            }
+            self.looks.record(look)?;
         }
-        Ok(if self.exited {
-            ProcessState::Exited(None)
-        } else {
-            ProcessState::Running
-        })
+        Ok(self.looks.state())
     }
 
     fn start_kill(&mut self) -> io::Result<()> {
         use nix::errno::Errno;
         use nix::sys::signal::{Signal, kill, killpg};
-        use nix::unistd::Pid;
+        use nix::unistd::{Pid, getpgrp};
 
-        let pid = Pid::from_raw(self.identity.pid().cast_signed());
+        let target = kill_target(
+            self.identity.pid(),
+            self.kill_scope,
+            std::process::id(),
+            getpgrp().as_raw().cast_unsigned(),
+        )?;
+        let pid = Pid::from_raw(target);
         // Looked at right before the signal: the pid of a game that has ended may belong to
         // another process by now. A zombie leader still holds its group, whose members may run.
         let sent = match (liveness(&self.identity)?, self.kill_scope) {
@@ -156,35 +248,40 @@ impl AdoptedProcess for UnixAdoptedProcess {
 
 #[cfg(target_os = "linux")]
 fn read_identity(pid: u32) -> io::Result<OsProcessIdentity> {
-    read_proc_stat(pid).map(|(identity, _)| identity)
+    read_proc_stat(pid)?
+        .map(|(identity, _)| identity)
+        .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, format!("no process {pid}")))
 }
 
-/// The identity of `pid` and its state letter, from `/proc/<pid>/stat`.
+/// The identity of `pid` and its state letter, from `/proc/<pid>/stat`; `None` when there is
+/// no such process.
 #[cfg(target_os = "linux")]
-fn read_proc_stat(pid: u32) -> io::Result<(OsProcessIdentity, char)> {
+fn read_proc_stat(pid: u32) -> io::Result<Option<(OsProcessIdentity, char)>> {
     let path = format!("/proc/{pid}/stat");
-    let stat = std::fs::read_to_string(&path)?;
+    let stat = match std::fs::read_to_string(&path) {
+        Ok(stat) => stat,
+        // ESRCH: the process went away while its file was read.
+        Err(err)
+            if err.kind() == io::ErrorKind::NotFound
+                || err.raw_os_error() == Some(nix::errno::Errno::ESRCH as i32) =>
+        {
+            return Ok(None);
+        }
+        Err(err) => return Err(err),
+    };
     let invalid =
         |what: &str| io::Error::new(io::ErrorKind::InvalidData, format!("no {what} in {path}"));
     let start_ticks = parse_start_ticks(&stat).ok_or_else(|| invalid("start time"))?;
     let state = parse_state(&stat).ok_or_else(|| invalid("state"))?;
     let boot_id = std::fs::read_to_string("/proc/sys/kernel/random/boot_id")?;
     let identity = OsProcessIdentity::new(pid, start_ticks, boot_id.trim().to_owned());
-    Ok((identity, state))
+    Ok(Some((identity, state)))
 }
 
 #[cfg(target_os = "linux")]
 fn liveness(identity: &OsProcessIdentity) -> io::Result<Liveness> {
-    let (current, state) = match read_proc_stat(identity.pid()) {
-        Ok(read) => read,
-        // ESRCH: the process went away while its file was read.
-        Err(err)
-            if err.kind() == io::ErrorKind::NotFound
-                || err.raw_os_error() == Some(nix::errno::Errno::ESRCH as i32) =>
-        {
-            return Ok(Liveness::Gone);
-        }
-        Err(err) => return Err(err),
+    let Some((current, state)) = read_proc_stat(identity.pid())? else {
+        return Ok(Liveness::Gone);
     };
     Ok(if !identity.matches(&current) {
         Liveness::Gone
@@ -219,12 +316,14 @@ fn parse_state(stat: &str) -> Option<char> {
 
 #[cfg(not(target_os = "linux"))]
 fn read_identity(pid: u32) -> io::Result<OsProcessIdentity> {
-    read_process(pid).map(|(identity, _)| identity)
+    read_process(pid)?
+        .map(|(identity, _)| identity)
+        .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, format!("no process {pid}")))
 }
 
-/// The identity of `pid` and whether it is a zombie.
+/// The identity of `pid` and whether it is a zombie; `None` when there is no such process.
 #[cfg(not(target_os = "linux"))]
-fn read_process(pid: u32) -> io::Result<(OsProcessIdentity, bool)> {
+fn read_process(pid: u32) -> io::Result<Option<(OsProcessIdentity, bool)>> {
     use sysinfo::{Pid, ProcessRefreshKind, ProcessStatus, ProcessesToUpdate, System};
 
     let mut system = System::new().map_err(io::Error::other)?;
@@ -234,26 +333,23 @@ fn read_process(pid: u32) -> io::Result<(OsProcessIdentity, bool)> {
         false,
         ProcessRefreshKind::nothing(),
     );
-    // `sysinfo` reports 0 for a process it could not open.
-    let process = system
-        .process(target)
-        .filter(|process| process.start_time() != 0)
-        .ok_or_else(|| {
-            io::Error::new(
-                io::ErrorKind::NotFound,
-                format!("no start time for process {pid}"),
-            )
-        })?;
+    let Some(process) = system.process(target) else {
+        return Ok(None);
+    };
+    // `sysinfo` reports 0 for a process it could not open: one is there, its start unknown.
+    if process.start_time() == 0 {
+        return Err(io::Error::other(format!(
+            "the start time of process {pid} could not be read"
+        )));
+    }
     let identity = OsProcessIdentity::new(pid, process.start_time(), String::new());
-    Ok((identity, process.status() == ProcessStatus::Zombie))
+    Ok(Some((identity, process.status() == ProcessStatus::Zombie)))
 }
 
 #[cfg(all(unix, not(target_os = "linux")))]
 fn liveness(identity: &OsProcessIdentity) -> io::Result<Liveness> {
-    let (current, zombie) = match read_process(identity.pid()) {
-        Ok(read) => read,
-        Err(err) if err.kind() == io::ErrorKind::NotFound => return Ok(Liveness::Gone),
-        Err(err) => return Err(err),
+    let Some((current, zombie)) = read_process(identity.pid())? else {
+        return Ok(Liveness::Gone);
     };
     Ok(if !identity.matches(&current) {
         Liveness::Gone
@@ -292,6 +388,100 @@ mod tests {
     #[test]
     fn should_read_the_zombie_state_when_the_process_has_ended() {
         assert_eq!(parse_state("4242 (java) Z 1 4242"), Some('Z'));
+    }
+
+    fn failed_look() -> io::Result<Liveness> {
+        Err(io::Error::other("too many open files"))
+    }
+
+    #[test]
+    fn should_wait_a_while_before_the_next_look_when_the_process_was_just_seen() {
+        assert!(!Looks::new().is_due());
+    }
+
+    #[test]
+    fn should_keep_the_game_running_when_fewer_looks_than_the_limit_fail_in_a_row() {
+        let mut looks = Looks::new();
+
+        for _ in 1..MAX_FAILED_LOOKS {
+            looks.record(failed_look()).unwrap();
+        }
+
+        assert_eq!(looks.state(), ProcessState::Running);
+    }
+
+    #[test]
+    fn should_pass_the_failure_on_when_the_limit_of_looks_fail_in_a_row() {
+        let mut looks = Looks::new();
+        for _ in 1..MAX_FAILED_LOOKS {
+            looks.record(failed_look()).unwrap();
+        }
+
+        let last = looks.record(failed_look());
+
+        assert!(last.is_err());
+        assert_eq!(looks.state(), ProcessState::Running);
+    }
+
+    #[test]
+    fn should_count_the_failed_looks_anew_when_a_look_succeeds_in_between() {
+        let mut looks = Looks::new();
+        for _ in 1..MAX_FAILED_LOOKS {
+            looks.record(failed_look()).unwrap();
+        }
+        looks.record(Ok(Liveness::Running)).unwrap();
+
+        for _ in 1..MAX_FAILED_LOOKS {
+            looks.record(failed_look()).unwrap();
+        }
+
+        assert_eq!(looks.state(), ProcessState::Running);
+    }
+
+    #[rstest::rstest]
+    #[case::zombie(Liveness::Zombie)]
+    #[case::gone(Liveness::Gone)]
+    fn should_see_the_exit_and_look_no_more_when_the_process_is_not_running(
+        #[case] seen: Liveness,
+    ) {
+        let mut looks = Looks::new();
+
+        looks.record(Ok(seen)).unwrap();
+
+        assert_eq!(looks.state(), ProcessState::Exited(None));
+        assert!(!looks.is_due());
+    }
+
+    const OWN_PID: u32 = 100;
+    const OWN_GROUP: u32 = 90;
+
+    #[rstest::rstest]
+    #[case::pid_zero(0, KillScope::Process)]
+    #[case::group_zero(0, KillScope::Tree)]
+    #[case::beyond_pid_t(u32::MAX, KillScope::Process)]
+    #[case::first_beyond_pid_t(1 << 31, KillScope::Tree)]
+    #[case::the_launcher(OWN_PID, KillScope::Process)]
+    #[case::the_launcher_tree(OWN_PID, KillScope::Tree)]
+    #[case::the_launcher_group(OWN_GROUP, KillScope::Tree)]
+    fn should_refuse_to_signal_when_the_signal_would_reach_the_launcher(
+        #[case] pid: u32,
+        #[case] kill_scope: KillScope,
+    ) {
+        let target = kill_target(pid, kill_scope, OWN_PID, OWN_GROUP);
+
+        assert_eq!(target.unwrap_err().kind(), io::ErrorKind::InvalidInput);
+    }
+
+    #[rstest::rstest]
+    #[case::a_process(4242, KillScope::Process)]
+    #[case::a_group(4242, KillScope::Tree)]
+    fn should_signal_the_pid_when_it_is_a_game_apart_from_the_launcher(
+        #[case] pid: u32,
+        #[case] kill_scope: KillScope,
+    ) {
+        let target = kill_target(pid, kill_scope, OWN_PID, OWN_GROUP);
+
+        assert_eq!(target.unwrap(), pid.cast_signed());
     }
 
     #[tokio::test]
@@ -368,6 +558,7 @@ mod tests {
         probe
             .adopt(&record_of(identity, kill_scope))
             .await
+            .expect("the OS tells about the child")
             .expect("the running child is adopted")
     }
 
@@ -407,7 +598,7 @@ mod tests {
         let _ = child.wait();
 
         assert_eq!(state.unwrap(), ProcessState::Running);
-        assert!(alive);
+        assert!(alive.unwrap());
     }
 
     #[tokio::test]
@@ -427,8 +618,8 @@ mod tests {
         let _ = child.kill();
         let _ = child.wait();
 
-        assert!(adopted.is_none());
-        assert!(!alive);
+        assert!(adopted.unwrap().is_none());
+        assert!(!alive.unwrap());
     }
 
     #[tokio::test]
@@ -441,8 +632,8 @@ mod tests {
         // On Windows `child` still holds a handle, which keeps the ended process around.
         let record = record_of(identity, KillScope::Process);
 
-        assert!(probe.adopt(&record).await.is_none());
-        assert!(!probe.is_alive(&record).await);
+        assert!(probe.adopt(&record).await.unwrap().is_none());
+        assert!(!probe.is_alive(&record).await.unwrap());
     }
 
     #[tokio::test]
@@ -513,7 +704,7 @@ mod tests {
 
         let _ = child.kill();
         eventually("the child is a zombie", || {
-            read_proc_stat(pid).is_ok_and(|(_, state)| state == 'Z')
+            matches!(read_proc_stat(pid), Ok(Some((_, 'Z'))))
         })
         .await;
         let state = wait_for_exit(adopted.as_mut()).await;
