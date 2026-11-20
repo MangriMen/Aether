@@ -146,11 +146,7 @@ async fn execute_processor(
         .chain(std::iter::once(&processor.jar))
         .cloned()
         .collect();
-    let class_path = get_class_paths_jar(
-        libraries_dir,
-        &class_path_entries,
-        java_version.architecture(),
-    )?;
+    let class_path = get_class_paths_jar(libraries_dir, &class_path_entries)?;
 
     let jar_path = get_lib_path(libraries_dir, &processor.jar, false)?;
     let Some(main_class) = get_processor_main_class(jar_path).await? else {

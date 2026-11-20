@@ -65,7 +65,6 @@ pub fn get_jvm_arguments(
                     libraries_path,
                     class_paths,
                     version_name,
-                    java_arch,
                 )
             },
             java_arch,
@@ -116,7 +115,6 @@ fn parse_jvm_argument(
     libraries_path: &Path,
     class_paths: &str,
     version_name: &str,
-    java_arch: &str,
 ) -> Result<String, MinecraftDomainError> {
     let natives = canonical_string(natives_path, GamePathKind::NativeLibrary)?;
     let libraries = canonical_string(libraries_path, GamePathKind::LibrariesDir)?;
@@ -124,7 +122,7 @@ fn parse_jvm_argument(
     let placeholders = [
         ("${natives_directory}", natives.as_str()),
         ("${library_directory}", libraries.as_str()),
-        ("${classpath_separator}", get_classpath_separator(java_arch)),
+        ("${classpath_separator}", get_classpath_separator()),
         ("${launcher_name}", "aether"),
         ("${launcher_version}", env!("CARGO_PKG_VERSION")),
         ("${version_name}", version_name),
@@ -169,20 +167,19 @@ pub fn get_class_paths(
         entries.push(client);
     }
 
-    Ok(entries.join(get_classpath_separator(java_arch)))
+    Ok(entries.join(get_classpath_separator()))
 }
 
 pub fn get_class_paths_jar<T: AsRef<str>>(
     libraries_path: &Path,
     libraries: &[T],
-    java_arch: &str,
 ) -> Result<String, MinecraftDomainError> {
     let paths = libraries
         .iter()
         .map(|lib| get_lib_path(libraries_path, lib.as_ref(), false))
         .collect::<Result<Vec<_>, _>>()?;
 
-    Ok(paths.join(get_classpath_separator(java_arch)))
+    Ok(paths.join(get_classpath_separator()))
 }
 
 /// Where the library `coordinate` lies under the libraries directory, `/`-separated. Refused
@@ -438,7 +435,7 @@ mod tests {
         let e = env();
         let b = make_lib(&e, "g/b/2/b-2.jar");
         let a = make_lib(&e, "g/a/1/a-1.jar");
-        let cp = get_class_paths_jar(&e.libs, &["g:b:2", "g:a:1"], "x64").unwrap();
+        let cp = get_class_paths_jar(&e.libs, &["g:b:2", "g:a:1"]).unwrap();
         assert_eq!(cp, format!("{b}{SEP}{a}"));
     }
 
@@ -446,7 +443,7 @@ mod tests {
     fn class_paths_jar_does_not_deduplicate() {
         let e = env();
         let a = make_lib(&e, "g/a/1/a-1.jar");
-        let cp = get_class_paths_jar(&e.libs, &["g:a:1", "g:a:1"], "x64").unwrap();
+        let cp = get_class_paths_jar(&e.libs, &["g:a:1", "g:a:1"]).unwrap();
         assert_eq!(cp, format!("{a}{SEP}{a}"));
     }
 
@@ -454,14 +451,14 @@ mod tests {
     fn class_paths_jar_empty_is_empty_string() {
         let e = env();
         let none: [&str; 0] = [];
-        assert_eq!(get_class_paths_jar(&e.libs, &none, "x64").unwrap(), "");
+        assert_eq!(get_class_paths_jar(&e.libs, &none).unwrap(), "");
     }
 
     #[test]
     fn class_paths_jar_missing_library_fails() {
         let e = env();
         make_lib(&e, "g/a/1/a-1.jar");
-        let err = get_class_paths_jar(&e.libs, &["g:a:1", "g:missing:1"], "x64").unwrap_err();
+        let err = get_class_paths_jar(&e.libs, &["g:a:1", "g:missing:1"]).unwrap_err();
         assert!(matches!(err, MinecraftDomainError::PathNotFound { .. }));
     }
 
