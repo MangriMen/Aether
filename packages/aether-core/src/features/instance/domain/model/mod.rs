@@ -11,6 +11,7 @@ mod install_plan;
 mod install_stage;
 mod instance;
 mod instance_id;
+mod instance_location;
 mod instance_name;
 mod instance_relative_path;
 mod instance_snapshot;
