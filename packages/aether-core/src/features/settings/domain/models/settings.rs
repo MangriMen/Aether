@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use super::MaxConcurrentDownloads;
-use crate::features::instance::PlatformId;
+use crate::shared::capability::PlatformId;
 
 #[derive(Debug, Clone, Default)]
 pub struct Settings {

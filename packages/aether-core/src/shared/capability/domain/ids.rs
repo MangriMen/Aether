@@ -16,8 +16,8 @@ pub struct InvalidId {
 /// The scheme leaves no room for [`ProviderId::SEPARATOR`] or `:`, so the string form of a
 /// [`ProviderId`] always parses back into the same pair.
 ///
-/// [`ProviderId`]: crate::features::instance::ProviderId
-/// [`ProviderId::SEPARATOR`]: crate::features::instance::ProviderId::SEPARATOR
+/// [`ProviderId`]: super::ProviderId
+/// [`ProviderId::SEPARATOR`]: super::ProviderId::SEPARATOR
 pub fn is_valid_id(value: &str) -> bool {
     let mut chars = value.chars();
 

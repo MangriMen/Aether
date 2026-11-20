@@ -1,4 +1,4 @@
-use crate::features::instance::ProviderIdError;
+use crate::shared::capability::ProviderIdError;
 
 #[derive(Clone, Debug, thiserror::Error)]
 pub enum SettingsError {

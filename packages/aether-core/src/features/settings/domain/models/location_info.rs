@@ -1,8 +1,8 @@
 use std::path::{Path, PathBuf};
 
 use crate::{
-    features::instance::{INSTANCE_METADATA_FOLDER_NAME, InstanceId, PluginId},
-    shared::hash::FileHash,
+    features::instance::{INSTANCE_METADATA_FOLDER_NAME, InstanceId},
+    shared::{capability::PluginId, hash::FileHash},
 };
 
 pub const METADATA_FOLDER_NAME: &str = ".minecraft";
@@ -279,8 +279,11 @@ mod tests {
 
     use super::LocationInfo;
     use crate::{
-        features::instance::{InstanceId, PluginId},
-        shared::hash::{FileHash, HashAlgorithm},
+        features::instance::InstanceId,
+        shared::{
+            capability::PluginId,
+            hash::{FileHash, HashAlgorithm},
+        },
     };
 
     #[test]
