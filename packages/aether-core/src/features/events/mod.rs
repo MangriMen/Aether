@@ -10,15 +10,14 @@ pub use app::ports::{
     ProgressBarStorage, ProgressService, SharedEventEmitter,
 };
 pub use app::services::ProgressServiceImpl;
-pub use app::{EventEmitterExt, EventsFeature, ProgressServiceExt};
+pub use app::{CancellableBar, EventEmitterExt, EventsFeature, ProgressBarId, ProgressServiceExt};
 
 // Domain models — explicitly re-exported for cross-feature use
 pub use domain::{
-    CacheEvent, CancelState, CancellableBar, CommandApprovalOutcome, Event, EventError,
-    GameLogEvent, InstanceEvent, InstanceEventType, PluginEvent, ProcessEvent, ProcessEventType,
-    ProgressBar, ProgressBarId, ProgressBarStorageError, ProgressEvent, ProgressEventType,
-    ProgressFailure, ProgressStage, ProgressStatus, SharedDownload, SharedProgressWait,
-    WarningEvent,
+    CacheEvent, CancelState, CommandApprovalOutcome, Event, EventError, GameLogEvent,
+    InstanceEvent, InstanceEventType, PluginEvent, ProcessEvent, ProcessEventType, ProgressBar,
+    ProgressBarStorageError, ProgressEvent, ProgressEventType, ProgressFailure, ProgressStage,
+    ProgressStatus, SharedDownload, SharedProgressWait, WarningEvent,
 };
 
 #[cfg(test)]

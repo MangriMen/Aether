@@ -10,8 +10,8 @@ use crate::features::events::{
     EventError, ProgressBar, ProgressBarId, ProgressBarStorage, ProgressBarStorageError,
     ProgressEvent, ProgressEventType, ProgressStage, ProgressStatus, SharedDownload,
     SharedEventEmitter, SharedProgressWait,
-    app::ports::ProgressService,
-    domain::{BarCancel, EventSequencer, Shown, TransferWindow},
+    app::{EventSequencer, ports::ProgressService},
+    domain::{BarCancel, Shown, TransferWindow},
 };
 
 /// The least time between an event of a bar and one sent for its bytes alone: four a second
