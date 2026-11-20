@@ -257,6 +257,57 @@ mod tests {
 
         wait_until_gone(grandchild).await;
     }
+
+    /// A long-running program that has nothing to do with the test binary.
+    fn long_running() -> Command {
+        #[cfg(windows)]
+        let mut command = Command::new("ping");
+        #[cfg(windows)]
+        command.args(["-n", "120", "127.0.0.1"]);
+        #[cfg(not(windows))]
+        let mut command = Command::new("sleep");
+        #[cfg(not(windows))]
+        command.arg("120");
+        command
+    }
+
+    async fn force_kill(pid: u32) {
+        #[cfg(windows)]
+        let mut kill = Command::new("taskkill");
+        #[cfg(windows)]
+        kill.args(["/F", "/PID", &pid.to_string()]);
+        #[cfg(not(windows))]
+        let mut kill = Command::new("kill");
+        #[cfg(not(windows))]
+        kill.args(["-9", &pid.to_string()]);
+        let _ = kill.output().await;
+    }
+
+    /// Dropping the handle is what the end of the launcher does to it: the job object or the
+    /// process handle is closed. The game must stay running, a later launcher adopts it.
+    async fn assert_outlives_dropped_handle(kill_scope: KillScope) {
+        let mut command = long_running();
+        command.stdin(Stdio::null()).stdout(Stdio::null());
+        let child = spawn(command, kill_scope).unwrap();
+        let pid = child.id().unwrap();
+
+        drop(child);
+        tokio::time::sleep(Duration::from_millis(500)).await;
+        let survived = is_running(pid).await;
+        force_kill(pid).await;
+
+        assert!(survived, "the game ended with its handle ({kill_scope:?})");
+    }
+
+    #[tokio::test]
+    async fn should_keep_the_game_running_when_its_handle_is_dropped() {
+        assert_outlives_dropped_handle(KillScope::Process).await;
+    }
+
+    #[tokio::test]
+    async fn should_keep_the_game_tree_running_when_its_handle_is_dropped() {
+        assert_outlives_dropped_handle(KillScope::Tree).await;
+    }
 }
 
 #[cfg(test)]
