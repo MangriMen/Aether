@@ -1,4 +1,4 @@
-use aether_core::features::process::MinecraftProcessMetadata;
+use aether_core::features::process::{MinecraftProcessMetadata, ProcessOrigin};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use specta::Type;
@@ -10,6 +10,8 @@ pub struct MinecraftProcessMetadataDto {
     uuid: Uuid,
     instance_id: String,
     start_time: DateTime<Utc>,
+    /// Started by an earlier launcher: its console output went with that one.
+    adopted: bool,
 }
 
 impl From<MinecraftProcessMetadata> for MinecraftProcessMetadataDto {
@@ -18,6 +20,7 @@ impl From<MinecraftProcessMetadata> for MinecraftProcessMetadataDto {
             uuid: value.uuid(),
             instance_id: value.instance_id().to_string(),
             start_time: *value.start_time(),
+            adopted: value.origin() == ProcessOrigin::Adopted,
         }
     }
 }

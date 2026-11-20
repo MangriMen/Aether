@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE game_processes\n            SET owner_pid = ?, owner_start_stamp = ?, owner_boot_id = ?\n            WHERE id = ? AND owner_pid = ? AND owner_start_stamp = ? AND owner_boot_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 7
+    },
+    "nullable": []
+  },
+  "hash": "aa4f00d576c9e96ea2e2741850d6454cbade77ca8a22a13de19820766dabdc74"
+}

@@ -3,10 +3,12 @@ mod domain;
 pub mod infra;
 
 pub use app::{
-    AdoptedProcess, KillProcessUseCase, KillProcessUseCasePort, ListProcessMetadataUseCase,
-    ListProcessMetadataUseCasePort, ManageProcessService, ManageProcessUseCase, ProcessFeature,
-    ProcessHandle, ProcessProbe, ProcessRecordStorage, ProcessStartService, ProcessStorage,
-    StartProcessUseCase, TrackProcessService, TrackProcessUseCase,
+    AdoptGameProcessesUseCase, AdoptGameProcessesUseCasePort, AdoptedProcess,
+    FindRunningGameUseCase, KillProcessUseCase, KillProcessUseCasePort, ListProcessMetadataUseCase,
+    ListProcessMetadataUseCasePort, ManageProcessService, ManageProcessUseCase, PendingAdoptions,
+    ProcessFeature, ProcessHandle, ProcessProbe, ProcessRecordStorage, ProcessStartService,
+    ProcessStorage, RunningGameService, SkippedHookNotices, StartProcessUseCase,
+    TakeSkippedHookNoticesUseCasePort, TrackProcessService, TrackProcessUseCase,
 };
 pub use domain::{
     KillScope, MinecraftProcessMetadata, OsProcessIdentity, ProcessError, ProcessOrigin,

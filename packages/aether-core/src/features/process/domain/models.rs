@@ -16,6 +16,11 @@ pub enum ProcessError {
     #[error("Failed to wait process {id}")]
     WaitError { id: String },
 
+    /// The game was started by an earlier launcher, and this one has not taken it over yet:
+    /// it cannot be stopped until then.
+    #[error("The game process {id} has not been taken over yet")]
+    NotTakenOverYet { id: String },
+
     /// The program of the command could not be started. Names the program only: the arguments
     /// of a launch hold the access token.
     #[error("Failed to start \"{program}\": {source}")]

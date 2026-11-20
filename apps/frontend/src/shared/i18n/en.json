@@ -392,6 +392,7 @@
     "process": {
       "KILL_ERROR": "Failed to terminate process",
       "WAIT_ERROR": "Error waiting for process completion",
+      "NOT_TAKEN_OVER_YET": "The game was started before the launcher restarted and cannot be stopped yet; try again in a moment",
       "IO": "Process I/O error"
     },
     "request": {
@@ -1150,7 +1151,8 @@
     "title": "Warning",
     "INSTANCE_ICON_NOT_IMPORTED": "The icon could not be imported; the instance was created without it",
     "INSTANCE_ICON_TOO_LARGE": "The icon is too large (limit {{limit}} bytes); the instance was created without it",
-    "INSTANCE_ICON_NOT_SUPPORTED": "The icon is not a PNG, JPEG, GIF, WebP or SVG image; the instance was created without it"
+    "INSTANCE_ICON_NOT_SUPPORTED": "The icon is not a PNG, JPEG, GIF, WebP or SVG image; the instance was created without it",
+    "POST_EXIT_HOOK_SKIPPED": "The post-exit command of {{instanceName}} did not run: the game was started before the launcher restarted, and how it ended is unknown"
   },
   "appInit": {
     "title": "Initialization Error",

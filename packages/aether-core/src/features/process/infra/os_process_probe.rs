@@ -56,14 +56,17 @@ impl ProcessProbe for OsProcessProbe {
             .map_err(io::Error::other)?
     }
 
-    async fn is_alive(&self, record: &ProcessRecord) -> io::Result<bool> {
-        let Some(mut process) = self.adopt(record).await? else {
-            return Ok(false);
-        };
-        let state = tokio::task::spawn_blocking(move || process.try_wait())
-            .await
-            .map_err(io::Error::other)??;
-        Ok(state == ProcessState::Running)
+    async fn is_alive(&self, process: &OsProcessIdentity) -> io::Result<bool> {
+        let identity = process.clone();
+        tokio::task::spawn_blocking(move || {
+            // The scope only matters to a stop, which is not asked for here.
+            let Some(mut process) = adopt(&identity, KillScope::Process)? else {
+                return Ok(false);
+            };
+            Ok(process.try_wait()? == ProcessState::Running)
+        })
+        .await
+        .map_err(io::Error::other)?
     }
 }
 
@@ -593,7 +596,7 @@ mod tests {
             probe.identity_of(child.id()).await.unwrap(),
             KillScope::Process,
         );
-        let alive = probe.is_alive(&record).await;
+        let alive = probe.is_alive(&record.process).await;
         let _ = child.kill();
         let _ = child.wait();
 
@@ -614,7 +617,7 @@ mod tests {
         let record = record_of(other, KillScope::Process);
 
         let adopted = probe.adopt(&record).await;
-        let alive = probe.is_alive(&record).await;
+        let alive = probe.is_alive(&record.process).await;
         let _ = child.kill();
         let _ = child.wait();
 
@@ -633,7 +636,7 @@ mod tests {
         let record = record_of(identity, KillScope::Process);
 
         assert!(probe.adopt(&record).await.unwrap().is_none());
-        assert!(!probe.is_alive(&record).await.unwrap());
+        assert!(!probe.is_alive(&record.process).await.unwrap());
     }
 
     #[tokio::test]

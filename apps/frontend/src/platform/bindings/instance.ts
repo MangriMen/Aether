@@ -748,6 +748,8 @@ export type MinecraftProcessMetadataDto = {
 	uuid: string,
 	instanceId: string,
 	startTime: string,
+	/**  Started by an earlier launcher: its console output went with that one. */
+	adopted: boolean,
 };
 
 /**  The values are the loader names as Modrinth writes them (`neoforge`), not `snake_case`. */
@@ -951,6 +953,8 @@ export type PluginLoadFailureDto = { code: "HASH_MISMATCH"; payload: {
 export type ProcessErrorDto = { code: "KILL_ERROR"; payload: {
 	id: string,
 } } | { code: "WAIT_ERROR"; payload: {
+	id: string,
+} } | { code: "NOT_TAKEN_OVER_YET"; payload: {
 	id: string,
 } } | { code: "IO"; payload: {
 	cause: CauseDto,

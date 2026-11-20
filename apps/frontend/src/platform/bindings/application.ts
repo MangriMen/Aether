@@ -560,6 +560,8 @@ export type ProcessErrorDto = { code: "KILL_ERROR"; payload: {
 	id: string,
 } } | { code: "WAIT_ERROR"; payload: {
 	id: string,
+} } | { code: "NOT_TAKEN_OVER_YET"; payload: {
+	id: string,
 } } | { code: "IO"; payload: {
 	cause: CauseDto,
 } };

@@ -157,7 +157,9 @@ mod tests {
     use crate::features::{
         instance::{Instance, InstanceBuilder, InstanceChange, InstanceError, InstanceName},
         minecraft::{GameVersion, ModLoader},
-        process::{MinecraftProcessMetadata, ProcessError, ProcessHandle, ProcessRecord},
+        process::{
+            MinecraftProcessMetadata, OsProcessIdentity, ProcessError, ProcessHandle, ProcessRecord,
+        },
     };
     use crate::shared::error::DatabaseError;
 
@@ -198,6 +200,14 @@ mod tests {
         }
 
         async fn remove(&self, _id: Uuid) -> Result<(), ProcessError> {
+            unimplemented!()
+        }
+
+        async fn replace_pending(
+            &self,
+            _id: Uuid,
+            _handle: ProcessHandle,
+        ) -> Result<bool, ProcessError> {
             unimplemented!()
         }
 
@@ -316,6 +326,15 @@ mod tests {
                 return Err(DatabaseError::new("database is locked"));
             }
             Ok(())
+        }
+
+        async fn take_over(
+            &self,
+            _id: Uuid,
+            _from: &OsProcessIdentity,
+            _to: &OsProcessIdentity,
+        ) -> Result<bool, DatabaseError> {
+            unimplemented!()
         }
     }
 

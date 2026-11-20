@@ -4,8 +4,14 @@ use tauri::State;
 use crate::{
     FrontendResult,
     core::ContainerState,
-    features::process::{MinecraftProcessMetadataDto, ProcessEventDto},
-    shared::commands::{PROCESS_PLUGIN_NAME, process_commands},
+    features::{
+        events::infra::WarningDto,
+        process::{MinecraftProcessMetadataDto, ProcessEventDto},
+    },
+    shared::{
+        IdempotencyManager, RequestId, TauriIdempotencyExt,
+        commands::{PROCESS_PLUGIN_NAME, process_commands},
+    },
 };
 
 #[must_use]
@@ -36,6 +42,27 @@ async fn list(
         .execute()
         .await
         .map_err(aether_core::Error::from)?
+        .into_iter()
+        .map(Into::into)
+        .collect())
+}
+
+/// The notices of skipped post-exit hooks that came before the window listened to events, to
+/// be shown as warnings. Taken once: every later notice comes as a warning event.
+#[tauri::command]
+#[specta::specta]
+async fn take_skipped_hook_notices(
+    request_id: RequestId,
+    idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
+) -> FrontendResult<Vec<WarningDto>> {
+    let _guard = idempotency.lock_cmd(request_id)?;
+
+    let container = container.0.clone();
+    Ok(container
+        .take_skipped_hook_notices_use_case()
+        .execute()
+        .await
         .into_iter()
         .map(Into::into)
         .collect())

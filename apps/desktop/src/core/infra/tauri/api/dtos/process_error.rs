@@ -14,6 +14,7 @@ use super::CauseDto;
 pub enum ProcessErrorDto {
     KillError { id: String },
     WaitError { id: String },
+    NotTakenOverYet { id: String },
     Io { cause: CauseDto },
 }
 
@@ -22,6 +23,7 @@ impl From<&ProcessError> for ProcessErrorDto {
         match value {
             ProcessError::KillError { id } => Self::KillError { id: id.clone() },
             ProcessError::WaitError { id } => Self::WaitError { id: id.clone() },
+            ProcessError::NotTakenOverYet { id } => Self::NotTakenOverYet { id: id.clone() },
             ProcessError::Io(err) => Self::Io { cause: err.into() },
             ProcessError::SpawnFailed { source, .. } => Self::Io {
                 cause: source.into(),

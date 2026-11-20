@@ -6,6 +6,11 @@ import * as __TAURI_EVENT from "@tauri-apps/api/event";
 /** Commands */
 export const commands = {
 	list: () => __TAURI_INVOKE<MinecraftProcessMetadataDto[]>("plugin:process|list"),
+	/**
+	 *  The notices of skipped post-exit hooks that came before the window listened to events, to
+	 *  be shown as warnings. Taken once: every later notice comes as a warning event.
+	 */
+	takeSkippedHookNotices: (requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<WarningDto[]>("plugin:process|take_skipped_hook_notices", { requestId }),
 };
 
 /** Events */
@@ -393,6 +398,8 @@ export type MinecraftProcessMetadataDto = {
 	uuid: string,
 	instanceId: string,
 	startTime: string,
+	/**  Started by an earlier launcher: its console output went with that one. */
+	adopted: boolean,
 };
 
 export type NetworkErrorKindDto = "timeout" | "connect" | "redirect" | "body";
@@ -571,6 +578,8 @@ export type ProcessErrorDto = { code: "KILL_ERROR"; payload: {
 	id: string,
 } } | { code: "WAIT_ERROR"; payload: {
 	id: string,
+} } | { code: "NOT_TAKEN_OVER_YET"; payload: {
+	id: string,
 } } | { code: "IO"; payload: {
 	cause: CauseDto,
 } };
@@ -594,7 +603,7 @@ export type ProcessEventDto = {
 	hookError: HookErrorDto | null,
 };
 
-export type ProcessEventTypeDto = "launched" | "finished" | "post_exit_hook_failed";
+export type ProcessEventTypeDto = "launched" | "adopted" | "finished" | "post_exit_hook_failed";
 
 /**  Why a modloader processor did not finish. */
 export type ProcessorFailureDto = { code: "MAIN_CLASS_NOT_FOUND"; payload: {
@@ -675,6 +684,21 @@ export type UpdateErrorDto = { code: "NO_PENDING_UPDATE" } | { code: "GAME_RUNNI
 	cause: CauseDto,
 } } | { code: "OTHER"; payload: {
 	cause: CauseDto,
+} };
+
+/**  What the user is warned of: a code the frontend translates, with its arguments. */
+export type WarningDto = { code: "INSTANCE_ICON_NOT_IMPORTED"; payload: {
+	cause: CauseDto,
+} } | { code: "INSTANCE_ICON_TOO_LARGE"; payload: {
+	limit: string,
+} } | { code: "INSTANCE_ICON_NOT_SUPPORTED" } | 
+/**
+ *  The game ended while no launcher followed it, or while one that did not start it
+ *  followed it and could not tell how it ended.
+ */
+{ code: "POST_EXIT_HOOK_SKIPPED"; payload: {
+	instanceId: string,
+	instanceName: string,
 } };
 
 export type WindowErrorDto = { code: "ALREADY_EXISTS"; payload: {

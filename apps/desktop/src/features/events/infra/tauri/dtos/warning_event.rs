@@ -23,11 +23,6 @@ pub struct WarningEventDto {
     rename_all = "SCREAMING_SNAKE_CASE",
     rename_all_fields = "camelCase"
 )]
-// The codes are the translation keys; the warnings of other kinds will not share the prefix.
-#[expect(
-    clippy::enum_variant_names,
-    reason = "the codes are translation keys; other kinds of warning will not share the prefix"
-)]
 pub enum WarningDto {
     InstanceIconNotImported {
         cause: CauseDto,
@@ -37,6 +32,12 @@ pub enum WarningDto {
         limit: String,
     },
     InstanceIconNotSupported,
+    /// The game ended while no launcher followed it, or while one that did not start it
+    /// followed it and could not tell how it ended.
+    PostExitHookSkipped {
+        instance_id: String,
+        instance_name: String,
+    },
 }
 
 impl From<WarningEvent> for WarningEventDto {
@@ -59,6 +60,13 @@ impl From<WarningEvent> for WarningDto {
                 AssetError::ReadSource(err) | AssetError::Write(err) | AssetError::Remove(err) => {
                     Self::InstanceIconNotImported { cause: err.into() }
                 }
+            },
+            WarningEvent::PostExitHookSkipped {
+                instance_id,
+                instance_name,
+            } => Self::PostExitHookSkipped {
+                instance_id: instance_id.to_string(),
+                instance_name,
             },
         }
     }
@@ -109,6 +117,22 @@ mod tests {
         assert_eq!(
             to_json(not_an_image)["warning"],
             json!({"code": "INSTANCE_ICON_NOT_SUPPORTED"})
+        );
+    }
+
+    #[test]
+    fn should_name_the_instance_when_its_post_exit_hook_was_skipped() {
+        let skipped = WarningEvent::PostExitHookSkipped {
+            instance_id: aether_core::features::instance::InstanceId::try_from("survival").unwrap(),
+            instance_name: "Survival".to_owned(),
+        };
+
+        assert_eq!(
+            to_json(skipped)["warning"],
+            json!({
+                "code": "POST_EXIT_HOOK_SKIPPED",
+                "payload": {"instanceId": "survival", "instanceName": "Survival"},
+            })
         );
     }
 }

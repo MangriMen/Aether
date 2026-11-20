@@ -27,6 +27,7 @@ pub struct ProcessEventDto {
 #[serde(rename_all = "snake_case")]
 pub enum ProcessEventTypeDto {
     Launched,
+    Adopted,
     Finished,
     PostExitHookFailed,
 }
@@ -35,7 +36,9 @@ impl From<ProcessEvent> for ProcessEventDto {
     fn from(value: ProcessEvent) -> Self {
         let hook_error = match &value.event {
             ProcessEventType::PostExitHookFailed(err) => Some(err.into()),
-            ProcessEventType::Launched | ProcessEventType::Finished => None,
+            ProcessEventType::Launched | ProcessEventType::Adopted | ProcessEventType::Finished => {
+                None
+            }
         };
         Self {
             seq: 0,
@@ -54,6 +57,7 @@ impl From<&ProcessEventType> for ProcessEventTypeDto {
     fn from(value: &ProcessEventType) -> Self {
         match value {
             ProcessEventType::Launched => Self::Launched,
+            ProcessEventType::Adopted => Self::Adopted,
             ProcessEventType::Finished => Self::Finished,
             ProcessEventType::PostExitHookFailed(_) => Self::PostExitHookFailed,
         }

@@ -17,6 +17,7 @@ enum Held {
     /// Behind a lock of its own: its calls block on the OS, so they run on a blocking thread
     /// without the process list held.
     Adopted(SharedAdopted),
+    Pending,
 }
 
 impl From<ProcessHandle> for Held {
@@ -24,6 +25,7 @@ impl From<ProcessHandle> for Held {
         match handle {
             ProcessHandle::Owned(child) => Self::Owned(child),
             ProcessHandle::Adopted(process) => Self::Adopted(Arc::new(Mutex::new(process))),
+            ProcessHandle::Pending => Self::Pending,
         }
     }
 }
@@ -86,6 +88,17 @@ impl ProcessStorage for InMemoryProcessStorage {
         Ok(())
     }
 
+    async fn replace_pending(&self, id: Uuid, handle: ProcessHandle) -> Result<bool, ProcessError> {
+        let Some(mut process) = self.processes.get_mut(&id) else {
+            return Ok(false);
+        };
+        if !matches!(process.handle, Held::Pending) {
+            return Ok(false);
+        }
+        process.handle = handle.into();
+        Ok(true)
+    }
+
     async fn list_metadata(&self) -> Result<Vec<MinecraftProcessMetadata>, ProcessError> {
         Ok(self.processes.iter().map(|x| x.metadata.clone()).collect())
     }
@@ -112,6 +125,8 @@ impl ProcessStorage for InMemoryProcessStorage {
                         .map_err(|err| wait_failed(id, &err));
                 }
                 Held::Adopted(process) => process.clone(),
+                // Shown as running until it is taken over or known to be gone.
+                Held::Pending => return Ok(Some(ProcessState::Running)),
             },
         };
         call_adopted(adopted, |process| process.try_wait())
@@ -146,6 +161,9 @@ impl ProcessStorage for InMemoryProcessStorage {
                     process.killed = true;
                     adopted
                 }
+                // Nothing holds the game yet: a stop now could not be told from one that was
+                // lost, so it is refused until the game is taken over.
+                Held::Pending => return Err(ProcessError::NotTakenOverYet { id: id.to_string() }),
             }
         };
         if let Err(err) = call_adopted(adopted, |process| process.start_kill()).await {
@@ -315,6 +333,57 @@ mod tests {
             storage.try_wait(id).await.unwrap(),
             Some(ProcessState::Running)
         );
+    }
+
+    #[tokio::test]
+    async fn should_show_a_pending_game_as_running_and_refuse_to_stop_it() {
+        let (storage, id) = storage_with(ProcessHandle::Pending).await;
+
+        let stop = kill_without_waiting(&storage, id).await;
+
+        assert!(matches!(stop, Err(ProcessError::NotTakenOverYet { .. })));
+        assert!(!storage.was_killed(id).await);
+        assert_eq!(
+            storage.try_wait(id).await.unwrap(),
+            Some(ProcessState::Running)
+        );
+        assert_eq!(storage.list_metadata().await.unwrap().len(), 1);
+    }
+
+    #[tokio::test]
+    async fn should_stop_a_pending_game_once_it_is_taken_over() {
+        let (storage, id) = storage_with(ProcessHandle::Pending).await;
+        let game = AdoptedGame::default();
+        let stops = game.stops.clone();
+
+        let replaced = storage
+            .replace_pending(id, ProcessHandle::Adopted(Box::new(game)))
+            .await
+            .unwrap();
+        kill_without_waiting(&storage, id).await.unwrap();
+
+        assert!(replaced);
+        assert_eq!(*stops.lock().unwrap(), 1);
+    }
+
+    #[tokio::test]
+    async fn should_replace_nothing_when_the_game_is_not_pending() {
+        let (storage, id) =
+            storage_with(ProcessHandle::Adopted(Box::new(AdoptedGame::default()))).await;
+        let unknown = Uuid::new_v4();
+
+        let followed = storage
+            .replace_pending(id, ProcessHandle::Pending)
+            .await
+            .unwrap();
+        let absent = storage
+            .replace_pending(unknown, ProcessHandle::Pending)
+            .await
+            .unwrap();
+
+        assert!(!followed);
+        assert!(!absent);
+        assert!(storage.try_wait(unknown).await.unwrap().is_none());
     }
 
     /// An adopted game that notes, on every call, whether its entry in `storage` was held.

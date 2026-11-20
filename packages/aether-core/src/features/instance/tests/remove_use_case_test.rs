@@ -93,6 +93,9 @@ impl ProcessStorage for FakeProcesses {
     async fn remove(&self, _: Uuid) -> Result<(), ProcessError> {
         unimplemented!()
     }
+    async fn replace_pending(&self, _: Uuid, _: ProcessHandle) -> Result<bool, ProcessError> {
+        unimplemented!()
+    }
     async fn list_metadata(&self) -> Result<Vec<MinecraftProcessMetadata>, ProcessError> {
         Ok(self.running.lock().unwrap().clone())
     }

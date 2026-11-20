@@ -1,4 +1,4 @@
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Duration, Utc};
 use uuid::Uuid;
 
 use super::KillScope;
@@ -60,6 +60,28 @@ pub struct ProcessRecord {
     pub owner: OsProcessIdentity,
 }
 
+/// The most playtime credited for a run that ended while no launcher followed it. Its end is
+/// guessed from the last write to its log, which may be off by much: a wrong guess must cost
+/// little.
+pub const MAX_UNFOLLOWED_END_PLAYTIME: Duration = Duration::hours(24);
+
+/// The playtime of a run that ended while no launcher followed it: from `credited_until` to the
+/// last write the game made to its log, not past `now`, and at most
+/// [`MAX_UNFOLLOWED_END_PLAYTIME`]. Nothing when no such write is known: time is rather left
+/// uncredited than credited for a game that was not running.
+pub fn unfollowed_end_playtime(
+    credited_until: DateTime<Utc>,
+    last_log_write: Option<DateTime<Utc>>,
+    now: DateTime<Utc>,
+) -> Duration {
+    let Some(last_log_write) = last_log_write else {
+        return Duration::zero();
+    };
+    let end = last_log_write.min(now);
+    let played = end.signed_duration_since(credited_until);
+    played.clamp(Duration::zero(), MAX_UNFOLLOWED_END_PLAYTIME)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -86,5 +108,48 @@ mod tests {
     #[test]
     fn should_not_match_when_the_boot_differs() {
         assert!(!identity(42, 1000, "boot").matches(&identity(42, 1000, "other")));
+    }
+
+    fn at(seconds: i64) -> DateTime<Utc> {
+        DateTime::from_timestamp(1_800_000_000 + seconds, 0).unwrap()
+    }
+
+    #[test]
+    fn should_credit_up_to_the_last_log_write_when_the_game_ended_unfollowed() {
+        let played = unfollowed_end_playtime(at(0), Some(at(600)), at(3600));
+
+        assert_eq!(played, Duration::seconds(600));
+    }
+
+    #[test]
+    fn should_credit_up_to_now_when_the_log_was_written_later_than_now() {
+        let played = unfollowed_end_playtime(at(0), Some(at(7200)), at(3600));
+
+        assert_eq!(played, Duration::seconds(3600));
+    }
+
+    #[test]
+    fn should_credit_nothing_when_no_log_write_is_known() {
+        assert_eq!(
+            unfollowed_end_playtime(at(0), None, at(3600)),
+            Duration::zero()
+        );
+    }
+
+    #[test]
+    fn should_credit_nothing_when_the_log_was_last_written_before_the_mark() {
+        assert_eq!(
+            unfollowed_end_playtime(at(600), Some(at(300)), at(3600)),
+            Duration::zero()
+        );
+    }
+
+    #[test]
+    fn should_credit_at_most_a_day_when_the_log_was_written_much_later() {
+        let week = 7 * 24 * 3600;
+
+        let played = unfollowed_end_playtime(at(0), Some(at(week)), at(week));
+
+        assert_eq!(played, MAX_UNFOLLOWED_END_PLAYTIME);
     }
 }

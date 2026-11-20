@@ -592,6 +592,8 @@ export type ProcessErrorDto = { code: "KILL_ERROR"; payload: {
 	id: string,
 } } | { code: "WAIT_ERROR"; payload: {
 	id: string,
+} } | { code: "NOT_TAKEN_OVER_YET"; payload: {
+	id: string,
 } } | { code: "IO"; payload: {
 	cause: CauseDto,
 } };
@@ -741,7 +743,15 @@ export type WarningDto = { code: "INSTANCE_ICON_NOT_IMPORTED"; payload: {
 	cause: CauseDto,
 } } | { code: "INSTANCE_ICON_TOO_LARGE"; payload: {
 	limit: string,
-} } | { code: "INSTANCE_ICON_NOT_SUPPORTED" };
+} } | { code: "INSTANCE_ICON_NOT_SUPPORTED" } | 
+/**
+ *  The game ended while no launcher followed it, or while one that did not start it
+ *  followed it and could not tell how it ended.
+ */
+{ code: "POST_EXIT_HOOK_SKIPPED"; payload: {
+	instanceId: string,
+	instanceName: string,
+} };
 
 export type WarningEventDto = {
 	/**
