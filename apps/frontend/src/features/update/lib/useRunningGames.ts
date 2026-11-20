@@ -18,7 +18,17 @@ export const useRunningGames = () => {
     getRunningGameNames(running.instances, instances.data),
   );
 
-  const carryOn = useGamesCarryOnUpdate(names);
+  // Not the names alone: a game that has started is another case than one that is launching, and
+  // what carries on is asked again when it changes.
+  const states = createMemo(() =>
+    Object.entries(running.instances)
+      .filter(([, state]) => state?.isRunning || state?.isLoading)
+      .map(
+        ([id, state]) => `${id}:${state?.isRunning ? 'running' : 'launching'}`,
+      ),
+  );
+
+  const carryOn = useGamesCarryOnUpdate(states);
 
   // A launch is in the gate: the install is refused until it is over.
   const isLaunching = () =>

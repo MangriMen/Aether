@@ -2,14 +2,22 @@ import { createRoot } from 'solid-js';
 import { createStore, reconcile } from 'solid-js/store';
 import { describe, expect, it, vi } from 'vitest';
 
-const carryOn = vi.hoisted(() => ({ data: undefined as boolean | undefined }));
+const carryOn = vi.hoisted(() => ({
+  data: undefined as boolean | undefined,
+  asked: [] as string[][],
+}));
 
 vi.mock('@/features/instance', async (importActual) => ({
   ...(await importActual<Record<string, unknown>>()),
   useInstances: () => ({ data: [{ id: 'a', name: 'Alpha' }] }),
 }));
 vi.mock('../../api/updateQueries', () => ({
-  useGamesCarryOnUpdate: () => carryOn,
+  useGamesCarryOnUpdate: (games: () => readonly string[]) => ({
+    get data() {
+      carryOn.asked.push([...games()]);
+      return carryOn.data;
+    },
+  }),
 }));
 
 import { RunningInstancesContext } from '@/features/instance';
@@ -103,5 +111,20 @@ describe('useRunningGames', () => {
     inProvider({ a: { isLoading: true, isRunning: false } }, (games) =>
       expect(games.isBlocked()).toBe(true),
     );
+  });
+});
+
+describe('useRunningGames carry on question', () => {
+  it('should_ask_again_when_a_launching_game_has_started', () => {
+    const asked = (state: State) => {
+      carryOn.asked = [];
+      inProvider({ a: state }, (games) => games.isBlocked());
+      return carryOn.asked.at(-1);
+    };
+
+    const launching = asked({ isLoading: true, isRunning: false });
+    const running = asked({ isLoading: false, isRunning: true });
+
+    expect(launching).not.toEqual(running);
   });
 });

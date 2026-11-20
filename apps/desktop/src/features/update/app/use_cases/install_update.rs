@@ -4,6 +4,9 @@ use aether_core::features::process::RestartService;
 
 use crate::features::update::{UpdateError, UpdateService};
 
+/// How long the launch gate stays closed after the install, for the launcher to restart.
+const RESTART_GRACE: std::time::Duration = std::time::Duration::from_secs(60);
+
 pub struct InstallUpdateUseCase<US: UpdateService> {
     update_service: Arc<US>,
     restart: Arc<dyn RestartService>,
@@ -49,9 +52,13 @@ impl<US: UpdateService> InstallUpdateUseCase<US> {
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .take();
         match (result, permit) {
-            // The launcher is going: the gate stays closed until it is gone.
+            // The launcher is going: the gate stays closed until it is gone. Not for good, as the
+            // restart may be put off (a window being recreated) and the launcher go on.
             (Ok(()), Some(permit)) => {
-                permit.keep_closed();
+                tokio::spawn(async move {
+                    tokio::time::sleep(RESTART_GRACE).await;
+                    drop(permit);
+                });
                 Ok(())
             }
             (result, _) => result,
@@ -190,7 +197,8 @@ mod tests {
     #[tokio::test]
     async fn should_refuse_to_install_when_the_running_games_are_unknown() {
         let service = service(Ok(()));
-        let use_case = InstallUpdateUseCase::new(service.clone(), MockProcesses::restart(vec![None]));
+        let use_case =
+            InstallUpdateUseCase::new(service.clone(), MockProcesses::restart(vec![None]));
 
         assert!(matches!(
             use_case.execute(false).await,
@@ -202,8 +210,10 @@ mod tests {
     #[tokio::test]
     async fn should_refuse_to_restart_when_a_game_started_during_the_download() {
         let service = service(Ok(()));
-        let use_case =
-            InstallUpdateUseCase::new(service.clone(), MockProcesses::restart(vec![Some(0), Some(1)]));
+        let use_case = InstallUpdateUseCase::new(
+            service.clone(),
+            MockProcesses::restart(vec![Some(0), Some(1)]),
+        );
 
         assert!(matches!(
             use_case.execute(false).await,

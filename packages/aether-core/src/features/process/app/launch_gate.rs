@@ -22,14 +22,6 @@ pub struct RestartPermit {
     _guard: OwnedRwLockWriteGuard<()>,
 }
 
-impl RestartPermit {
-    /// Keeps the gate closed for good, as the launcher is going away: a launch that comes now
-    /// would be left to a launcher that is not there.
-    pub fn keep_closed(self) {
-        std::mem::forget(self);
-    }
-}
-
 impl LaunchGate {
     /// Enters the gate for a launch. Waits while a restart holds it, which ends with the launcher.
     pub async fn enter_launch(&self) -> LaunchPermit {
