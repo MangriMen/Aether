@@ -8,7 +8,7 @@ use tokio::io::AsyncWriteExt;
 use crate::{
     features::events::{ProgressBarId, ProgressService, ProgressServiceExt},
     shared::{
-        fetch::domain::{ApiSemaphore, FetchSemaphore},
+        fetch::{ApiSemaphore, FetchSemaphore},
         hash::{
             FileHash,
             infra::{FileHasher, hash_hex_async},
