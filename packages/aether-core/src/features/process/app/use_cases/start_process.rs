@@ -110,6 +110,7 @@ impl StartProcessUseCase {
                     post_exit_command,
                     capture: Some(capture),
                     origin: ProcessOrigin::Launched,
+                    crash_watch: None,
                 })
                 .await
             {

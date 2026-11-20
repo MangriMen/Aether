@@ -280,6 +280,7 @@ pub(super) struct Followed {
     pub(super) post_exit_command: String,
     pub(super) captured: bool,
     pub(super) origin: crate::features::process::ProcessOrigin,
+    pub(super) crash_watch: Option<super::CrashWatch>,
 }
 
 #[derive(Default)]
@@ -295,6 +296,7 @@ impl ManageProcessService for Manage {
             post_exit_command: params.post_exit_command,
             captured: params.capture.is_some(),
             origin: params.origin,
+            crash_watch: params.crash_watch,
         });
         Ok(())
     }

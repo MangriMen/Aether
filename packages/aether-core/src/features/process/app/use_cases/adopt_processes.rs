@@ -10,7 +10,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use async_trait::async_trait;
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use tokio::task::JoinSet;
 
 use crate::core::domain::error_chain;
@@ -26,7 +26,7 @@ use crate::features::{
     },
 };
 
-use super::{ManageProcessParams, ended_runs::EndedRuns};
+use super::{CrashWatch, ManageProcessParams, ended_runs::EndedRuns};
 
 /// How long the launcher that followed a game may take to exit before the game is left to it:
 /// a restart for an update starts the new launcher before the old one has quit.
@@ -251,8 +251,10 @@ impl Adoption {
             }
         }
 
+        // Taken before the game is looked at: a crash from here on is told by its trace.
+        let seen_at = Utc::now();
         match self.probe.adopt(record).await {
-            Ok(Some(process)) => self.take_over(record, process).await,
+            Ok(Some(process)) => self.take_over(record, process, seen_at).await,
             Ok(None) => {
                 if let Err(err) = self.ended_runs.forget(record).await {
                     // The record stays for the next launch or start to forget.
@@ -294,7 +296,12 @@ impl Adoption {
         }
     }
 
-    async fn take_over(&self, record: &ProcessRecord, process: Box<dyn AdoptedProcess>) -> Step {
+    async fn take_over(
+        &self,
+        record: &ProcessRecord,
+        process: Box<dyn AdoptedProcess>,
+        seen_at: DateTime<Utc>,
+    ) -> Step {
         let Some(own) = self.probe.own_identity() else {
             // The owner of the record cannot be changed to a launcher that is not known: the
             // game stays shown as running until it ends.
@@ -365,7 +372,7 @@ impl Adoption {
         }
 
         self.credit_unfollowed_time(record).await;
-        self.follow(record).await;
+        self.follow(record, seen_at).await;
         Step::Settled
     }
 
@@ -408,7 +415,7 @@ impl Adoption {
 
     /// Told before the following starts, so that the end of a game that exits at once comes
     /// after it.
-    async fn follow(&self, record: &ProcessRecord) {
+    async fn follow(&self, record: &ProcessRecord, seen_at: DateTime<Utc>) {
         let manage_process_service = self.manage_process_service.clone();
         let params = ManageProcessParams {
             process_id: record.id,
@@ -416,6 +423,10 @@ impl Adoption {
             post_exit_command: record.post_exit_command.clone(),
             capture: None,
             origin: ProcessOrigin::Adopted,
+            crash_watch: Some(CrashWatch {
+                pid: record.process.pid(),
+                since: seen_at,
+            }),
         };
         tracing::info!(
             process_id = %record.id,
