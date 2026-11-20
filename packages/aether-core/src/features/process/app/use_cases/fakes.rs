@@ -13,7 +13,8 @@ use uuid::Uuid;
 use crate::features::{
     events::{Event, ProcessEvent, SharedEventEmitter, test_support::ChannelEmitter},
     game_log::{
-        GameLogError, ListGameLogSourcesUseCasePort, LogSource, LogSourceKind, LogSourceRef,
+        GameLogError, GameLogTailService, ListGameLogSourcesUseCasePort, LogSource, LogSourceKind,
+        LogSourceRef, LogTail,
     },
     instance::{
         Instance, InstanceBuilder, InstanceChange, InstanceError, InstanceId, InstanceName,
@@ -291,6 +292,7 @@ pub(super) struct Followed {
     pub(super) process_id: Uuid,
     pub(super) post_exit_command: String,
     pub(super) captured: bool,
+    pub(super) tails_latest_log: bool,
     pub(super) origin: crate::features::process::ProcessOrigin,
     pub(super) crash_watch: Option<super::CrashWatch>,
 }
@@ -307,6 +309,7 @@ impl ManageProcessService for Manage {
             process_id: params.process_id,
             post_exit_command: params.post_exit_command,
             captured: params.capture.is_some(),
+            tails_latest_log: params.log_tail.is_some(),
             origin: params.origin,
             crash_watch: params.crash_watch,
         });
@@ -363,6 +366,18 @@ impl InstanceStorage for Instances {
     }
 }
 
+/// Follows nothing.
+/// How many followings were started.
+#[derive(Default)]
+pub(super) struct LogTails(pub(super) std::sync::atomic::AtomicUsize);
+
+impl GameLogTailService for LogTails {
+    fn follow(&self, _instance_id: &InstanceId) -> LogTail {
+        self.0.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        LogTail::idle()
+    }
+}
+
 /// The logs of the instance: a `latest.log` last written at the time it holds, if any.
 #[derive(Default)]
 pub(super) struct GameLogs(pub(super) Mutex<Option<DateTime<Utc>>>);
@@ -389,6 +404,7 @@ pub(super) struct World {
     pub(super) manage: Arc<Manage>,
     pub(super) instances: Arc<Instances>,
     pub(super) game_logs: Arc<GameLogs>,
+    pub(super) log_tails: Arc<LogTails>,
     pub(super) emitter: SharedEventEmitter,
     pub(super) events: Mutex<mpsc::UnboundedReceiver<Event>>,
     pub(super) notices: Arc<TakeSkippedHookNoticesUseCase>,
@@ -410,6 +426,7 @@ impl World {
             manage: Arc::new(Manage::default()),
             instances,
             game_logs: Arc::new(GameLogs::default()),
+            log_tails: Arc::new(LogTails::default()),
             emitter,
             events: Mutex::new(events),
             notices,

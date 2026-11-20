@@ -6,7 +6,7 @@ use uuid::Uuid;
 use crate::{
     features::{
         events::{EventEmitterExt, ProcessEvent, ProcessEventType, SharedEventEmitter},
-        game_log::CaptureHandle,
+        game_log::{CaptureHandle, LogTail},
         instance::InstanceId,
         process::{
             ManageProcessService, ProcessError, ProcessOrigin, ProcessStorage, TrackProcessService,
@@ -57,6 +57,8 @@ pub struct ManageProcessParams {
     pub post_exit_command: String,
     /// `None` for a game taken over from an earlier launcher: its output went with that one.
     pub capture: Option<CaptureHandle>,
+    /// Follows the game's own `latest.log` for a game whose console output is not captured.
+    pub log_tail: Option<LogTail>,
     pub origin: ProcessOrigin,
     /// Where to look for a crash when the exit cannot be read; set for a game taken over from an earlier launcher.
     pub crash_watch: Option<CrashWatch>,
@@ -90,6 +92,7 @@ impl ManageProcessService for ManageProcessUseCase {
             instance_id,
             post_exit_command,
             capture,
+            log_tail,
             origin,
             crash_watch,
         } = params;
@@ -115,6 +118,9 @@ impl ManageProcessService for ManageProcessUseCase {
 
         if let Some(capture) = capture {
             capture.wait(CAPTURE_DRAIN_TIMEOUT).await;
+        }
+        if let Some(log_tail) = log_tail {
+            log_tail.finish(CAPTURE_DRAIN_TIMEOUT).await;
         }
 
         let killed = self.process_storage.was_killed(process_id).await;
@@ -435,6 +441,7 @@ mod tests {
                 instance_id,
                 post_exit_command: ending.post_exit.to_owned(),
                 capture,
+                log_tail: None,
                 origin: ending.origin,
                 crash_watch: (ending.origin == ProcessOrigin::Adopted).then(|| CrashWatch {
                     pid: 1,
