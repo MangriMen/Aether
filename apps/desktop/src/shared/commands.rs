@@ -147,6 +147,7 @@ macro_rules! process_commands {
     ($($tokens:tt)*) => {
         $($tokens)* [
             list,
+            take_skipped_hook_notices,
         ]
     };
 }

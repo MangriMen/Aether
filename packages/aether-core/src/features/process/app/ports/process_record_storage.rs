@@ -3,7 +3,7 @@ use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
 use crate::features::instance::InstanceId;
-use crate::features::process::domain::ProcessRecord;
+use crate::features::process::domain::{OsProcessIdentity, ProcessRecord};
 use crate::shared::error::DatabaseError;
 
 /// The started games kept across launcher restarts. Removing or touching a record that is not
@@ -21,4 +21,12 @@ pub trait ProcessRecordStorage: Send + Sync {
     ) -> Result<Vec<ProcessRecord>, DatabaseError>;
     /// Moves the playtime mark of the run to `until`.
     async fn touch_playtime(&self, id: Uuid, until: DateTime<Utc>) -> Result<(), DatabaseError>;
+    /// Makes `to` the owner of the record, only if `from` still is; whether it did. Of two
+    /// launchers that take over the same game, one does.
+    async fn take_over(
+        &self,
+        id: Uuid,
+        from: &OsProcessIdentity,
+        to: &OsProcessIdentity,
+    ) -> Result<bool, DatabaseError>;
 }

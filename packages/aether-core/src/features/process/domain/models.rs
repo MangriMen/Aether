@@ -6,6 +6,7 @@ use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
 use crate::features::instance::InstanceId;
+use crate::shared::error::DatabaseError;
 use crate::shared::io::domain::IoError;
 
 #[derive(Clone, Debug, thiserror::Error)]
@@ -15,6 +16,16 @@ pub enum ProcessError {
 
     #[error("Failed to wait process {id}")]
     WaitError { id: String },
+
+    /// The game was started by an earlier launcher, and this one has not taken it over yet:
+    /// it cannot be stopped until then.
+    #[error("The game process {id} has not been taken over yet")]
+    NotTakenOverYet { id: String },
+
+    /// The saved games could not be read: one of them may run, so whatever needs the game of
+    /// an instance to be gone is refused.
+    #[error("Could not read the saved games")]
+    SavedGamesUnreadable(#[source] DatabaseError),
 
     /// The program of the command could not be started. Names the program only: the arguments
     /// of a launch hold the access token.

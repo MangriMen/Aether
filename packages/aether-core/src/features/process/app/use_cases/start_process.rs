@@ -11,7 +11,8 @@ use crate::features::{
     instance::InstanceId,
     process::{
         KillScope, ManageProcessService, MinecraftProcessMetadata, ProcessError, ProcessHandle,
-        ProcessProbe, ProcessRecord, ProcessRecordStorage, ProcessStartService, ProcessStorage,
+        ProcessOrigin, ProcessProbe, ProcessRecord, ProcessRecordStorage, ProcessStartService,
+        ProcessStorage,
     },
 };
 
@@ -107,7 +108,8 @@ impl StartProcessUseCase {
                     process_id: process_uuid_clone,
                     instance_id: instance_id_clone,
                     post_exit_command,
-                    capture,
+                    capture: Some(capture),
+                    origin: ProcessOrigin::Launched,
                 })
                 .await
             {
@@ -123,6 +125,7 @@ impl StartProcessUseCase {
                 message: "Launched Minecraft".to_string(),
                 exit_code: None,
                 crashed: false,
+                adopted: false,
             })
             .await;
 
@@ -424,6 +427,14 @@ mod start_tests {
             unimplemented!()
         }
 
+        async fn replace_pending(
+            &self,
+            _id: Uuid,
+            _handle: ProcessHandle,
+        ) -> Result<bool, ProcessError> {
+            unimplemented!()
+        }
+
         async fn list_metadata(&self) -> Result<Vec<MinecraftProcessMetadata>, ProcessError> {
             unimplemented!()
         }
@@ -518,6 +529,15 @@ mod start_tests {
         ) -> Result<(), DatabaseError> {
             unimplemented!()
         }
+
+        async fn take_over(
+            &self,
+            _id: Uuid,
+            _from: &OsProcessIdentity,
+            _to: &OsProcessIdentity,
+        ) -> Result<bool, DatabaseError> {
+            unimplemented!()
+        }
     }
 
     fn launcher() -> OsProcessIdentity {
@@ -547,7 +567,7 @@ mod start_tests {
             unimplemented!()
         }
 
-        async fn is_alive(&self, _record: &ProcessRecord) -> std::io::Result<bool> {
+        async fn is_alive(&self, _process: &OsProcessIdentity) -> std::io::Result<bool> {
             unimplemented!()
         }
     }

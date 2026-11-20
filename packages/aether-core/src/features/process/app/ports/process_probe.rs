@@ -23,9 +23,9 @@ pub trait ProcessProbe: Send + Sync {
         record: &ProcessRecord,
     ) -> std::io::Result<Option<Box<dyn AdoptedProcess>>>;
 
-    /// Whether the process of `record` still runs; an error when the OS could not tell, as
-    /// with [`adopt`](Self::adopt).
-    async fn is_alive(&self, record: &ProcessRecord) -> std::io::Result<bool>;
+    /// Whether the process still runs; an error when the OS could not tell, as with
+    /// [`adopt`](Self::adopt).
+    async fn is_alive(&self, process: &OsProcessIdentity) -> std::io::Result<bool>;
 }
 
 /// A running process that the launcher did not start. Both calls may block on the OS, so they

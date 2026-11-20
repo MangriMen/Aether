@@ -4,7 +4,7 @@ use sqlx::SqlitePool;
 use uuid::Uuid;
 
 use crate::features::instance::InstanceId;
-use crate::features::process::{ProcessRecord, ProcessRecordStorage};
+use crate::features::process::{OsProcessIdentity, ProcessRecord, ProcessRecordStorage};
 use crate::shared::error::DatabaseError;
 
 use super::sql_process_record::{SqlProcessRecord, format_timestamp};
@@ -110,6 +110,36 @@ impl ProcessRecordStorage for SqliteProcessRecordStorage {
         .await?;
         Ok(())
     }
+
+    async fn take_over(
+        &self,
+        id: Uuid,
+        from: &OsProcessIdentity,
+        to: &OsProcessIdentity,
+    ) -> Result<bool, DatabaseError> {
+        let id = id.to_string();
+        let (from_pid, from_stamp) = (i64::from(from.pid()), from.start_stamp().cast_signed());
+        let (to_pid, to_stamp) = (i64::from(to.pid()), to.start_stamp().cast_signed());
+        let (from_boot, to_boot) = (from.boot_id(), to.boot_id());
+        // One statement, so that of two launchers taking over the same game only the first
+        // finds the owner it read.
+        let taken = sqlx::query!(
+            "UPDATE game_processes
+            SET owner_pid = ?, owner_start_stamp = ?, owner_boot_id = ?
+            WHERE id = ? AND owner_pid = ? AND owner_start_stamp = ? AND owner_boot_id = ?",
+            to_pid,
+            to_stamp,
+            to_boot,
+            id,
+            from_pid,
+            from_stamp,
+            from_boot,
+        )
+        .execute(&self.pool)
+        .await?
+        .rows_affected();
+        Ok(taken == 1)
+    }
 }
 
 #[cfg(test)]
@@ -120,7 +150,7 @@ mod tests {
     use crate::features::instance::infra::SqliteInstanceStorage;
     use crate::features::instance::{InstanceBuilder, InstanceName, InstanceStorage};
     use crate::features::minecraft::{GameVersion, ModLoader};
-    use crate::features::process::{KillScope, OsProcessIdentity};
+    use crate::features::process::KillScope;
 
     /// Over a fresh database with foreign keys enforced, as the app opens it.
     async fn storages() -> (SqliteProcessRecordStorage, SqliteInstanceStorage) {
@@ -230,6 +260,58 @@ mod tests {
             .touch_playtime(Uuid::new_v4(), Utc::now())
             .await
             .unwrap();
+    }
+
+    #[tokio::test]
+    async fn should_take_over_the_record_once_when_two_launchers_take_it_over_from_the_same_owner()
+    {
+        let (records, instances) = storages().await;
+        let instance_id = add_instance(&instances, "a").await;
+        let mut record = record(&instance_id);
+        records.insert(&record).await.unwrap();
+        let first = OsProcessIdentity::new(30, 300, "boot-a".to_owned());
+        let second = OsProcessIdentity::new(31, 310, "boot-a".to_owned());
+
+        let first_took = records
+            .take_over(record.id, &record.owner, &first)
+            .await
+            .unwrap();
+        let second_took = records
+            .take_over(record.id, &record.owner, &second)
+            .await
+            .unwrap();
+
+        assert!(first_took);
+        assert!(!second_took);
+        record.owner = first;
+        assert_eq!(records.list().await.unwrap(), [record]);
+    }
+
+    #[tokio::test]
+    async fn should_not_take_over_the_record_when_the_owner_differs_in_its_boot_only() {
+        let (records, instances) = storages().await;
+        let instance_id = add_instance(&instances, "a").await;
+        let record = record(&instance_id);
+        records.insert(&record).await.unwrap();
+        let other_boot = OsProcessIdentity::new(
+            record.owner.pid(),
+            record.owner.start_stamp(),
+            "boot-b".to_owned(),
+        );
+        let launcher = OsProcessIdentity::new(30, 300, "boot-a".to_owned());
+
+        let took = records
+            .take_over(record.id, &other_boot, &launcher)
+            .await
+            .unwrap();
+        let missing = records
+            .take_over(Uuid::new_v4(), &record.owner, &launcher)
+            .await
+            .unwrap();
+
+        assert!(!took);
+        assert!(!missing);
+        assert_eq!(records.list().await.unwrap(), [record]);
     }
 
     #[tokio::test]

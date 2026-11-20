@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use aether_core::features::events::SharedEventEmitter;
+use aether_core::features::process::ProcessFeature;
 use aether_core::features::settings::LocationInfo;
 use log::error;
 use sqlx::{SqlitePool, migrate::MigrateError};
@@ -78,7 +79,14 @@ fn post_initialize<R: tauri::Runtime>(
             .await
             .unwrap_or_else(|err| exit_with_error(&format!("Failed to initialize Aether: {err}")));
 
+        // Before the container is managed, so that no command finds the games an earlier
+        // launcher left running missing: they are not launched twice, removed or updated under.
+        let pending_adoptions = container.adopt_game_processes_use_case().execute().await;
+
         app_handle.manage(ContainerState(container.clone()));
+
+        // Before the window, so that games are taken over while it loads.
+        tauri::async_runtime::spawn(pending_adoptions);
 
         let main_window_label = WindowLabel::Main;
 

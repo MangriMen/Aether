@@ -49,7 +49,7 @@ pub async fn install_update(
 
     Ok(InstallUpdateUseCase::new(
         update_service.inner().clone(),
-        container.0.list_process_metadata_use_case(),
+        container.0.running_game_service(),
     )
     .execute()
     .await

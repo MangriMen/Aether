@@ -163,6 +163,7 @@ mod tests {
             message: "started".into(),
             exit_code: None,
             crashed: false,
+            adopted: false,
         }
     }
 
@@ -234,7 +235,10 @@ mod tests {
         let (
             WarningEvent::InstanceIconNotImported { cause: recovered },
             WarningEvent::InstanceIconNotImported { cause: original },
-        ) = (recovered, original);
+        ) = (recovered, original)
+        else {
+            panic!("the warning changed its kind");
+        };
         assert!(std::sync::Arc::ptr_eq(&recovered, &original));
     }
 

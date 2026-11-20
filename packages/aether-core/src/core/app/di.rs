@@ -78,10 +78,12 @@ use crate::features::{
         UpdatePluginUseCase, UpdatePluginUseCasePort,
     },
     process::{
+        AdoptGameProcessesUseCase, AdoptGameProcessesUseCasePort, FindRunningGameUseCase,
         KillProcessUseCase, KillProcessUseCasePort, ListProcessMetadataUseCase,
         ListProcessMetadataUseCasePort, ManageProcessService, ManageProcessUseCase, ProcessFeature,
         ProcessProbe, ProcessRecordStorage, ProcessStartService, ProcessStorage,
-        StartProcessUseCase, TrackProcessService, TrackProcessUseCase,
+        RunningGameService, StartProcessUseCase, TakeSkippedHookNoticesUseCase,
+        TakeSkippedHookNoticesUseCasePort, TrackProcessService, TrackProcessUseCase,
     },
     settings::{
         EditDefaultInstanceSettingsUseCase, EditDefaultInstanceSettingsUseCasePort,
@@ -119,6 +121,7 @@ struct UseCaseCache {
     start_process_uc: OnceLock<Arc<dyn ProcessStartService>>,
     track_process_uc: OnceLock<Arc<dyn TrackProcessService>>,
     manage_process_uc: OnceLock<Arc<dyn ManageProcessService>>,
+    skipped_hook_notices: OnceLock<Arc<TakeSkippedHookNoticesUseCase>>,
     install_instance_uc: OnceLock<Arc<dyn InstanceInstallService>>,
     disable_plugin_uc: OnceLock<Arc<dyn PluginDisableService>>,
     sync_plugins_uc: OnceLock<Arc<dyn PluginSyncService>>,
@@ -141,6 +144,7 @@ impl UseCaseCache {
             start_process_uc: OnceLock::new(),
             track_process_uc: OnceLock::new(),
             manage_process_uc: OnceLock::new(),
+            skipped_hook_notices: OnceLock::new(),
             install_instance_uc: OnceLock::new(),
             disable_plugin_uc: OnceLock::new(),
             sync_plugins_uc: OnceLock::new(),
@@ -462,7 +466,7 @@ impl AetherContainer {
                     self.storage().instance_storage.clone(),
                     self.storage().default_instance_settings_storage.clone(),
                     self.location_info().clone(),
-                    self.storage().process_storage.clone(),
+                    self.running_game_service(),
                     self.instance_install_service(),
                     self.health_service(),
                     self.launch_command_service(),
@@ -496,9 +500,34 @@ impl AetherContainer {
                     self.storage().process_storage.clone(),
                     self.track_process_service(),
                     self.location_info().clone(),
+                    self.skipped_hook_notices(),
                 ))
             })
             .clone()
+    }
+
+    /// One for the app: it holds the notices until the frontend first takes them.
+    fn skipped_hook_notices(&self) -> Arc<TakeSkippedHookNoticesUseCase> {
+        self.cache
+            .skipped_hook_notices
+            .get_or_init(|| {
+                Arc::new(TakeSkippedHookNoticesUseCase::new(
+                    self.event_emitter(),
+                    self.storage().instance_storage.clone(),
+                ))
+            })
+            .clone()
+    }
+
+    fn running_game_service(&self) -> Arc<dyn RunningGameService> {
+        Arc::new(FindRunningGameUseCase::new(
+            self.storage().process_storage.clone(),
+            self.storage().process_record_storage.clone(),
+            self.params.process_probe.clone(),
+            self.storage().instance_storage.clone(),
+            self.list_game_log_sources_use_case(),
+            self.skipped_hook_notices(),
+        ))
     }
 
     fn process_start_service(&self) -> Arc<dyn ProcessStartService> {
@@ -770,7 +799,7 @@ impl InstanceCrudPort for AetherContainer {
                         self.storage().pack_storage.clone(),
                         self.instance_locks.clone(),
                         self.icon_asset_reaper(),
-                        self.storage().process_storage.clone(),
+                        self.running_game_service(),
                     )
                     .with_cancellations(self.install_cancellations.clone()),
                 )
@@ -970,6 +999,24 @@ impl ProcessFeature for AetherContainer {
     }
     fn manage_process_service(&self) -> Arc<dyn ManageProcessService> {
         self.manage_process_service()
+    }
+    fn running_game_service(&self) -> Arc<dyn RunningGameService> {
+        self.running_game_service()
+    }
+    fn adopt_game_processes_use_case(&self) -> Arc<dyn AdoptGameProcessesUseCasePort> {
+        Arc::new(AdoptGameProcessesUseCase::new(
+            self.storage().process_storage.clone(),
+            self.storage().process_record_storage.clone(),
+            self.params.process_probe.clone(),
+            self.manage_process_service(),
+            self.event_emitter(),
+            self.storage().instance_storage.clone(),
+            self.list_game_log_sources_use_case(),
+            self.skipped_hook_notices(),
+        ))
+    }
+    fn take_skipped_hook_notices_use_case(&self) -> Arc<dyn TakeSkippedHookNoticesUseCasePort> {
+        self.skipped_hook_notices()
     }
 }
 

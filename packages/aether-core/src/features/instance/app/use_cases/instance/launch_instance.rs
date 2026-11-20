@@ -20,7 +20,8 @@ use crate::{
         },
         plugins::{PluginInternalEvent, PluginRegistry, PluginState},
         process::{
-            KillScope, MinecraftProcessMetadata, ProcessError, ProcessStartService, ProcessStorage,
+            KillScope, MinecraftProcessMetadata, ProcessError, ProcessStartService,
+            RunningGameService,
         },
         settings::{DefaultInstanceSettings, DefaultInstanceSettingsStorage, Hooks, LocationInfo},
     },
@@ -39,7 +40,7 @@ pub struct LaunchInstanceUseCase {
     instance_storage: Arc<dyn InstanceStorage>,
     default_instance_settings_storage: Arc<dyn DefaultInstanceSettingsStorage>,
     location_info: Arc<LocationInfo>,
-    process_storage: Arc<dyn ProcessStorage>,
+    running_games: Arc<dyn RunningGameService>,
     instance_install_service: Arc<dyn InstanceInstallService>,
     minecraft_health_service: Arc<dyn MinecraftHealthService>,
     minecraft_launch_command_service: Arc<dyn MinecraftLaunchCommandService>,
@@ -59,7 +60,7 @@ impl LaunchInstanceUseCase {
         instance_storage: Arc<dyn InstanceStorage>,
         default_instance_settings_storage: Arc<dyn DefaultInstanceSettingsStorage>,
         location_info: Arc<LocationInfo>,
-        process_storage: Arc<dyn ProcessStorage>,
+        running_games: Arc<dyn RunningGameService>,
         instance_install_service: Arc<dyn InstanceInstallService>,
         minecraft_health_service: Arc<dyn MinecraftHealthService>,
         minecraft_launch_command_service: Arc<dyn MinecraftLaunchCommandService>,
@@ -73,7 +74,7 @@ impl LaunchInstanceUseCase {
             instance_storage,
             default_instance_settings_storage,
             location_info,
-            process_storage,
+            running_games,
             instance_install_service,
             minecraft_health_service,
             minecraft_launch_command_service,
@@ -193,18 +194,12 @@ impl LaunchInstanceUseCase {
             });
         }
 
-        // Check if profile has a running profile, and reject running the command if it does
-        // Done late so a quick double call doesn't launch two instances
-        if let Some(process) = self
-            .process_storage
-            .list_metadata()
-            .await?
-            .into_iter()
-            .find(|p| *p.instance_id() == instance_id)
-        {
+        // Done late so a quick double call doesn't launch two instances. A game an earlier
+        // launcher left running counts too, also before it is taken over.
+        if let Some(process_id) = self.running_games.running_game(&instance_id).await? {
             return Err(InstanceError::InstanceAlreadyRunning {
                 instance_id: instance_id.to_string(),
-                process_id: process.uuid(),
+                process_id,
             });
         }
 
