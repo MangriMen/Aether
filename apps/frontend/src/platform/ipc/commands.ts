@@ -37,6 +37,7 @@ export const authCommands = {
 export const updateCommands = {
   checkForUpdates: updateRawCommands.checkForUpdates,
   installUpdate: withIdempotency(updateRawCommands.installUpdate),
+  gamesCarryOnUpdate: updateRawCommands.gamesCarryOnUpdate,
 };
 
 export const pluginsCommands = {

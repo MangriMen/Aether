@@ -26,6 +26,10 @@ pub trait ProcessProbe: Send + Sync {
     /// Whether the process still runs; an error when the OS could not tell, as with
     /// [`adopt`](Self::adopt).
     async fn is_alive(&self, process: &OsProcessIdentity) -> std::io::Result<bool>;
+
+    /// Whether the OS tells how a game the launcher did not start ended. It does not on Unix:
+    /// only the parent may read the status.
+    fn tells_exit_of_adopted(&self) -> bool;
 }
 
 /// A running process that the launcher did not start. Both calls may block on the OS, so they

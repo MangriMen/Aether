@@ -68,6 +68,10 @@ impl ProcessProbe for OsProcessProbe {
         .await
         .map_err(io::Error::other)?
     }
+
+    fn tells_exit_of_adopted(&self) -> bool {
+        cfg!(windows)
+    }
 }
 
 #[cfg(windows)]

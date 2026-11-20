@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::features::process::app::ports::{
     AdoptGameProcessesUseCasePort, KillProcessUseCasePort, ListProcessMetadataUseCasePort,
-    ManageProcessService, ProcessStartService, RunningGameService,
+    ManageProcessService, ProcessStartService, RestartService, RunningGameService,
     TakeSkippedHookNoticesUseCasePort, TrackProcessService,
 };
 
@@ -23,4 +23,6 @@ pub trait ProcessFeature {
     fn track_process_service(&self) -> Arc<dyn TrackProcessService>;
     fn manage_process_service(&self) -> Arc<dyn ManageProcessService>;
     fn running_game_service(&self) -> Arc<dyn RunningGameService>;
+    /// Whether the launcher may restart, as an update does, without losing a game.
+    fn restart_service(&self) -> Arc<dyn RestartService>;
 }

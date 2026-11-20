@@ -8,7 +8,7 @@ use crate::features::{
     game_log::ListGameLogSourcesUseCasePort,
     instance::{InstanceId, InstanceStorage},
     process::{
-        ProcessError, ProcessProbe, ProcessRecord, ProcessRecordStorage, ProcessStorage,
+        KillScope, ProcessError, ProcessProbe, ProcessRecord, ProcessRecordStorage, ProcessStorage,
         RunningGameService, app::ports::SkippedHookNoticeService,
     },
 };
@@ -99,6 +99,12 @@ impl FindRunningGameUseCase {
         })
     }
 
+    /// Whether the game of the record carries on across a restart of the launcher. Stopping a
+    /// game behind a wrapper after the restart ends the wrapper alone, so it is not left to.
+    fn carries_on(&self, record: &ProcessRecord) -> bool {
+        record.kill_scope == KillScope::Process && self.ended_runs.probe.tells_exit_of_adopted()
+    }
+
     /// A game the OS cannot tell about may still run, and launching a second one is worse than
     /// refusing. A game that ended while another launcher still follows it is left to that
     /// launcher, which credits and forgets it.
@@ -137,6 +143,25 @@ impl FindRunningGameUseCase {
 
 #[async_trait]
 impl RunningGameService for FindRunningGameUseCase {
+    async fn running_games_carry_on(&self) -> Result<bool, ProcessError> {
+        let runs = &self.ended_runs;
+        // Both the saved records and the games of the launcher: a game it follows but has not
+        // saved is not known to carry on.
+        let saved = self.saved(None).await?;
+        for process in runs.process_storage.list_metadata().await? {
+            let record = saved.iter().find(|record| record.id == process.uuid());
+            if !record.is_some_and(|record| self.carries_on(record)) {
+                return Ok(false);
+            }
+        }
+        for record in &saved {
+            if !self.carries_on(record) && matches!(self.look_at(record).await, Saved::Running) {
+                return Ok(false);
+            }
+        }
+        Ok(true)
+    }
+
     async fn running_game(&self, instance_id: &InstanceId) -> Result<Option<Uuid>, ProcessError> {
         self.execute(instance_id).await
     }
@@ -166,7 +191,7 @@ mod tests {
 
     use super::*;
     use crate::features::process::{
-        MinecraftProcessMetadata, ProcessHandle,
+        KillScope, MinecraftProcessMetadata, ProcessHandle,
         app::use_cases::fakes::{Look, World, earlier_launcher, instance_id, launcher, record_of},
     };
 
@@ -271,6 +296,88 @@ mod tests {
         assert_eq!(running, None);
         assert!(world.records.get(record.id).is_none());
         assert_eq!(world.probe.times_asked(1), 0);
+    }
+
+    #[tokio::test]
+    async fn should_carry_on_when_no_game_runs() {
+        let world = World::new(&[], Some(launcher()));
+
+        assert!(use_case(&world).running_games_carry_on().await.unwrap());
+    }
+
+    async fn follow(world: &World, record: &ProcessRecord) {
+        let metadata = MinecraftProcessMetadata::adopted(
+            record.id,
+            record.instance_id.clone(),
+            record.started_at,
+        );
+        world
+            .storage
+            .insert(metadata, ProcessHandle::Pending)
+            .await
+            .unwrap();
+    }
+
+    #[tokio::test]
+    async fn should_carry_on_when_the_game_has_a_record_of_a_started_process() {
+        let record = record_of(10, launcher());
+        let world = World::new(std::slice::from_ref(&record), Some(launcher()));
+        follow(&world, &record).await;
+
+        assert!(use_case(&world).running_games_carry_on().await.unwrap());
+    }
+
+    #[tokio::test]
+    async fn should_not_carry_on_when_the_followed_game_has_no_record() {
+        let world = World::new(&[], Some(launcher()));
+        let metadata = MinecraftProcessMetadata::new(instance_id());
+        world
+            .storage
+            .insert(metadata, ProcessHandle::Pending)
+            .await
+            .unwrap();
+
+        assert!(!use_case(&world).running_games_carry_on().await.unwrap());
+    }
+
+    #[tokio::test]
+    async fn should_not_carry_on_when_the_game_is_behind_a_wrapper() {
+        let mut record = record_of(10, launcher());
+        record.kill_scope = KillScope::Tree;
+        let world = World::new(std::slice::from_ref(&record), Some(launcher()));
+        follow(&world, &record).await;
+
+        assert!(!use_case(&world).running_games_carry_on().await.unwrap());
+    }
+
+    #[tokio::test]
+    async fn should_not_carry_on_when_the_os_does_not_tell_how_an_adopted_game_ended() {
+        let record = record_of(10, launcher());
+        let world = World::new(std::slice::from_ref(&record), Some(launcher()));
+        follow(&world, &record).await;
+        world.probe.tell_exit(false);
+
+        assert!(!use_case(&world).running_games_carry_on().await.unwrap());
+    }
+
+    #[tokio::test]
+    async fn should_not_carry_on_when_a_game_of_another_launcher_would_not() {
+        let mut record = record_of(10, earlier_launcher());
+        record.kill_scope = KillScope::Tree;
+        let world = World::new(std::slice::from_ref(&record), Some(launcher()));
+        world.probe.set(10, Look::Running);
+        world.probe.set(2, Look::Running);
+
+        assert!(!use_case(&world).running_games_carry_on().await.unwrap());
+    }
+
+    #[tokio::test]
+    async fn should_not_mind_a_game_that_is_gone_when_it_would_not_carry_on() {
+        let mut record = record_of(10, launcher());
+        record.kill_scope = KillScope::Tree;
+        let world = World::new(std::slice::from_ref(&record), Some(launcher()));
+
+        assert!(use_case(&world).running_games_carry_on().await.unwrap());
     }
 
     #[tokio::test]

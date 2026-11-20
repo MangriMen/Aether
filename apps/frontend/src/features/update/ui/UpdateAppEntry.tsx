@@ -50,7 +50,7 @@ export const UpdateAppEntry: Component<UpdateAppEntryProps> = (props) => {
       return;
     }
 
-    await updateAndRestart(update.data);
+    await updateAndRestart(update.data, runningGames.keepsGames());
   };
 
   return (
@@ -71,16 +71,19 @@ export const UpdateAppEntry: Component<UpdateAppEntryProps> = (props) => {
           isUpdateAvailable={isUpdateAvailable()}
           isFetching={update.isFetching}
           isUpdating={isUpdating()}
-          isBlocked={runningGames.isRunning()}
+          isBlocked={runningGames.isBlocked()}
           onCheckUpdates={handleCheckUpdates}
           onSubmitUpdate={() => setIsDialogOpen(true)}
         />
       </SettingsEntry>
       <Show when={isUpdateAvailable()}>
-        <RunningGamesHint games={runningGames.names()} />
+        <RunningGamesHint
+          games={runningGames.isBlocked() ? runningGames.names() : []}
+        />
       </Show>
       <UpdateAndRestartWarningDialog
         open={isDialogOpen()}
+        keptGames={runningGames.keepsGames() ? runningGames.names() : []}
         onOpenChange={setIsDialogOpen}
         onOk={handleInstallUpdate}
         onCancel={() => setIsDialogOpen(false)}

@@ -42,6 +42,7 @@ pub async fn check_for_updates(
 pub async fn install_update(
     update_service: State<'_, UpdateServiceState<tauri::Wry>>,
     container: State<'_, ContainerState>,
+    allow_running_games: bool,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
 ) -> FrontendResult<()> {
@@ -49,9 +50,25 @@ pub async fn install_update(
 
     Ok(InstallUpdateUseCase::new(
         update_service.inner().clone(),
-        container.0.running_game_service(),
+        container.0.restart_service(),
     )
-    .execute()
+    .execute(allow_running_games)
     .await
     .map_err(crate::Error::from)?)
+}
+
+/// Whether the games that run now would carry on across the restart of an update: the update may
+/// be installed under them with `allow_running_games`. True when none runs.
+#[tauri::command]
+#[specta::specta]
+pub async fn games_carry_on_update(
+    update_service: State<'_, UpdateServiceState<tauri::Wry>>,
+    container: State<'_, ContainerState>,
+) -> FrontendResult<bool> {
+    Ok(InstallUpdateUseCase::new(
+        update_service.inner().clone(),
+        container.0.restart_service(),
+    )
+    .games_carry_on()
+    .await)
 }

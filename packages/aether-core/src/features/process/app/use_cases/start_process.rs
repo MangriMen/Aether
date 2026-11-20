@@ -561,6 +561,10 @@ mod start_tests {
             self.own.as_ref()
         }
 
+        fn tells_exit_of_adopted(&self) -> bool {
+            true
+        }
+
         async fn adopt(
             &self,
             _record: &ProcessRecord,

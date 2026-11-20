@@ -936,6 +936,7 @@
   },
   "update": {
     "closeGameToInstall": "Close the game to install the update: {{games}}",
+    "gamesKeepRunning": "Running games will keep running: {{games}}. Their console output after the restart will not reach the launcher log; see latest.log.",
     "updateError": "Failed to install update",
     "banner": "Banner",
     "toast": "Toast",

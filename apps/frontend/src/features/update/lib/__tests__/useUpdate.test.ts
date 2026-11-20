@@ -11,11 +11,14 @@ import { useUpdate } from '../useUpdate';
 
 const update = { version: '2.0.0', date: null, body: null };
 
-const updateAndRestart = (status: typeof update | null) =>
+const updateAndRestart = (
+  status: typeof update | null,
+  allowRunningGames?: boolean,
+) =>
   createRoot((dispose) => {
     const { isUpdating, updateAndRestart } = useUpdate();
 
-    return updateAndRestart(status).then((installed) => {
+    return updateAndRestart(status, allowRunningGames).then((installed) => {
       const updating = isUpdating();
       dispose();
       return { installed, updating };
@@ -34,6 +37,15 @@ describe('useUpdate', () => {
       installed: true,
       updating: false,
     });
+  });
+
+  it('should_ask_to_leave_the_running_games_only_when_told_to', async () => {
+    install.mutateAsync.mockResolvedValue(undefined);
+
+    await updateAndRestart(update);
+    await updateAndRestart(update, true);
+
+    expect(install.mutateAsync.mock.calls).toEqual([[false], [true]]);
   });
 
   it('should_say_the_update_was_not_installed_when_the_install_fails', async () => {

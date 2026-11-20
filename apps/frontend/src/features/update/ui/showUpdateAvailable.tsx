@@ -51,7 +51,7 @@ export const showUpdateAvailable = (update: UpdateStatus) => {
     const handleInstallUpdate = async () => {
       setIsDialogOpen(false);
 
-      if (await updateAndRestart(update)) {
+      if (await updateAndRestart(update, runningGames.keepsGames())) {
         closeToast(number);
         cleanup();
       }
@@ -76,7 +76,7 @@ export const showUpdateAvailable = (update: UpdateStatus) => {
               class='h-auto'
               size='sm'
               loading={isUpdating()}
-              disabled={runningGames.isRunning()}
+              disabled={runningGames.isBlocked()}
               onClick={handleOpenDialog}
             >
               {t('settings.update')}
@@ -90,9 +90,12 @@ export const showUpdateAvailable = (update: UpdateStatus) => {
               {t('settings.goToUpdatePage')}
             </Button>
           </div>
-          <RunningGamesHint games={runningGames.names()} />
+          <RunningGamesHint
+            games={runningGames.isBlocked() ? runningGames.names() : []}
+          />
           <UpdateAndRestartWarningDialog
             open={isDialogOpen()}
+            keptGames={runningGames.keepsGames() ? runningGames.names() : []}
             onOpenChange={setIsDialogOpen}
             onOk={handleInstallUpdate}
             onCancel={handleCancel}
