@@ -1,10 +1,9 @@
-import { useQueryClient } from '@tanstack/solid-query';
 import { createMemo, createSignal, type Accessor } from 'solid-js';
 
 import { useInstances } from '@/features/instance';
 import { showDialog } from '@/shared/dialogs';
 
-import { CHECK_COMPATIBILITY_QUERY } from '../api/contentQueries';
+import { usePrefetchCompatibility } from '../api/contentQueries';
 import { useContentContext } from '../model/contentContext';
 import { type ContentItem } from '../model/contentItem';
 import { ContentType } from '../model/contentType';
@@ -18,7 +17,7 @@ export const useContentItemActions = (
 
   const [isPrefetching, setIsPrefetching] = createSignal(false);
 
-  const queryClient = useQueryClient();
+  const prefetchCompatibilityQuery = usePrefetchCompatibility();
   const instances = useInstances();
 
   const isInstalled = createMemo(() => {
@@ -46,12 +45,10 @@ export const useContentItemActions = (
     try {
       const instanceIds = instances.data?.map((instance) => instance.id) ?? [];
 
-      await queryClient.prefetchQuery(
-        CHECK_COMPATIBILITY_QUERY(instanceIds, {
-          providerId: context.providerId,
-          contentItem: currentItem,
-        }),
-      );
+      await prefetchCompatibilityQuery(instanceIds, {
+        providerId: context.providerId,
+        contentItem: currentItem,
+      });
     } catch {
       /* empty */
     } finally {
