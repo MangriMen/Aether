@@ -430,7 +430,11 @@ impl Drop for ProgressBarId {
         };
         sequencer.queue_end(self.id, storage);
 
-        tokio::spawn(Self::finish_dropped(sequencer));
+        // Outside a runtime nothing can end the bar now: it stays queued and ends with the
+        // next bar that is dropped inside one.
+        if let Ok(runtime) = tokio::runtime::Handle::try_current() {
+            runtime.spawn(Self::finish_dropped(sequencer));
+        }
     }
 }
 
@@ -833,5 +837,13 @@ mod tests {
         settle().await;
 
         assert!(rx.try_recv().is_err());
+    }
+
+    #[test]
+    fn dropping_a_handle_outside_a_runtime_does_not_panic() {
+        let (tx, _rx) = mpsc::unbounded_channel();
+        let storage = Arc::new(MapStorage::default());
+
+        drop(attached(Uuid::new_v4(), &storage, tx));
     }
 }
