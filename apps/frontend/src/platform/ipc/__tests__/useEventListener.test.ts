@@ -3,7 +3,7 @@ import type { Event, EventCallback, UnlistenFn } from '@tauri-apps/api/event';
 import { createRoot } from 'solid-js';
 import { describe, expect, it, vi } from 'vitest';
 
-import { useEventListener } from '../useEventListener';
+import { useEventListener, useReadyEventListener } from '../useEventListener';
 
 type Payload = { seq: number };
 
@@ -107,5 +107,54 @@ describe('useEventListener', () => {
 
     expect(heardFirst).toEqual([7]);
     expect(heardSecond).toEqual([3, 8]);
+  });
+});
+
+describe('useEventListener readiness', () => {
+  it('settles once the listener is registered, not before', async () => {
+    const { event, resolve } = createEvent();
+    let ready: Promise<boolean> | undefined;
+    let settled = false;
+
+    createRoot(() => {
+      ready = useReadyEventListener(event, () => {});
+    });
+    void ready?.then(() => {
+      settled = true;
+    });
+    await Promise.resolve();
+
+    expect(settled).toBe(false);
+
+    resolve();
+    await expect(ready).resolves.toBe(true);
+
+    expect(settled).toBe(true);
+  });
+
+  it('resolves false when the owner is disposed before the listener is registered', async () => {
+    const { event, unlisten, resolve } = createEvent();
+    let ready: Promise<boolean> | undefined;
+    const dispose = createRoot((dispose) => {
+      ready = useReadyEventListener(event, () => {});
+      return dispose;
+    });
+
+    dispose();
+    resolve();
+
+    await expect(ready).resolves.toBe(false);
+    expect(unlisten).toHaveBeenCalledOnce();
+  });
+
+  it('resolves false when listening failed', async () => {
+    const event = { listen: vi.fn(() => Promise.reject(new Error('no ipc'))) };
+    let ready: Promise<boolean> | undefined;
+
+    createRoot(() => {
+      ready = useReadyEventListener(event, () => {});
+    });
+
+    await expect(ready).resolves.toBe(false);
   });
 });

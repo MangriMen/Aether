@@ -20,3 +20,9 @@ describe('getRunningState', () => {
     expect(getRunningState(event('post_exit_hook_failed'))).toBeUndefined();
   });
 });
+
+describe('getRunningState for an adopted game', () => {
+  it('should_mark_running_when_the_launcher_adopted_the_game', () => {
+    expect(getRunningState(event('adopted'))).toBe(true);
+  });
+});

@@ -33,6 +33,7 @@ export const RunningInstancesProvider: Component<
             processes.map((p) => ({
               instanceId: p.instanceId,
               processId: p.uuid,
+              adopted: p.adopted,
             })),
           );
         } catch (error) {

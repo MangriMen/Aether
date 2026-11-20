@@ -293,3 +293,30 @@ describe('applyLaunchChange', () => {
     expect(applyLaunchChange(instances, 'b', false).a?.isLaunching).toBe(true);
   });
 });
+
+describe('adopted games', () => {
+  it('should_mark_running_and_adopted_when_an_adopted_update_arrives', () => {
+    const next = applyRunningProcessUpdate(
+      {},
+      { instanceId: 'a', processId: 'p1', isRunning: true, adopted: true },
+    );
+
+    expect(next.a).toEqual({
+      processId: 'p1',
+      isRunning: true,
+      isLoading: false,
+      adopted: true,
+    });
+  });
+
+  it('should_mark_running_and_adopted_when_the_snapshot_has_an_adopted_game', () => {
+    const next = applyProcessSnapshot({}, [
+      { instanceId: 'a', processId: 'p1', adopted: true },
+      { instanceId: 'b', processId: 'p2', adopted: false },
+    ]);
+
+    expect(next.a).toMatchObject({ isRunning: true, adopted: true });
+    expect(next.b).toMatchObject({ isRunning: true });
+    expect(next.b?.adopted).toBeUndefined();
+  });
+});

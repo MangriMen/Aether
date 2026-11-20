@@ -146,6 +146,9 @@ export const minecraftCommands = {
 
 export const processCommands = {
   list: processRawCommands.list,
+  takeSkippedHookNotices: withIdempotency(
+    processRawCommands.takeSkippedHookNotices,
+  ),
 };
 
 export const eventsCommands = {

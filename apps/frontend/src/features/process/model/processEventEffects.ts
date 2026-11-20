@@ -4,6 +4,7 @@ import type { ProcessEvent } from './processEvent';
 export const getRunningState = (event: ProcessEvent): boolean | undefined => {
   switch (event.event) {
     case 'launched':
+    case 'adopted':
       return true;
     case 'finished':
       return false;

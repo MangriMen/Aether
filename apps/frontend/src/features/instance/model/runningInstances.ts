@@ -37,6 +37,7 @@ export const applyRunningProcessUpdate = (
       processId: update.processId,
       isRunning: true,
       isLoading: false,
+      ...(update.adopted ? { adopted: true } : {}),
     },
   };
 };
@@ -47,7 +48,7 @@ export const applyRunningProcessUpdate = (
  */
 export const applyProcessSnapshot = (
   instances: RunningInstancesState,
-  processes: { instanceId: string; processId: string }[],
+  processes: { instanceId: string; processId: string; adopted?: boolean }[],
 ): RunningInstancesState => {
   const next: RunningInstancesState = {};
 
@@ -57,11 +58,12 @@ export const applyProcessSnapshot = (
     }
   }
 
-  for (const { instanceId, processId } of processes) {
+  for (const { instanceId, processId, adopted } of processes) {
     next[instanceId] = {
       processId,
       isLoading: instances[instanceId]?.isLoading ?? false,
       isRunning: true,
+      ...(adopted ? { adopted: true } : {}),
     };
   }
 
@@ -171,7 +173,11 @@ export const createRunningInstancesStore = () => {
     applyProcessUpdate: (update: RunningProcessUpdate) =>
       apply((instances) => applyRunningProcessUpdate(instances, update)),
     applyProcessSnapshot: (
-      processes: { instanceId: string; processId: string }[],
+      processes: {
+        instanceId: string;
+        processId: string;
+        adopted?: boolean;
+      }[],
     ) => apply((instances) => applyProcessSnapshot(instances, processes)),
     applyLoadingChange: (id: string, isLoading: boolean) =>
       apply((instances) => applyLoadingChange(instances, id, isLoading)),
