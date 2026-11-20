@@ -44,4 +44,6 @@ pub use pagination::*;
 pub use release_channel::*;
 pub use resolve::*;
 
-pub use crate::shared::capability::{CapabilityId, InvalidId, PlatformId, PluginId, is_valid_id};
+pub use crate::shared::capability::{
+    CapabilityId, InvalidId, PlatformId, PluginId, ProviderId, ProviderIdError, is_valid_id,
+};
