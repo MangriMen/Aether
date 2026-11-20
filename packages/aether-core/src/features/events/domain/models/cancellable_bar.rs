@@ -58,8 +58,12 @@ impl Drop for CancellableBar {
             return;
         }
         if let Some(bar) = self.bar.take() {
-            // Marked first, ended when the task drops it.
-            tokio::spawn(async move { bar.cancel().await });
+            // Marked first, ended when the task drops it. Dropped outside a runtime there is
+            // no task to cancel it with: the drop of the bar queues its end, which is
+            // done by the next bar dropped inside a runtime, as done rather than cancelled.
+            if let Ok(runtime) = tokio::runtime::Handle::try_current() {
+                runtime.spawn(async move { bar.cancel().await });
+            }
         }
     }
 }
