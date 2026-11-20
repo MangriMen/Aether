@@ -600,6 +600,7 @@
     "title": "Home"
   },
   "logs": {
+    "adoptedHint": "The launcher restarted while the game was running, so this console log ends there. Pick latest.log for what the game writes now.",
     "copied": "Log copied to clipboard",
     "copy": "Copy shown lines",
     "copyFailed": "Failed to copy the log",
@@ -618,6 +619,7 @@
     "loadingOlder": "Loading older lines…",
     "noLogs": "No logs",
     "openFile": "Show the log file in the folder",
+    "outputBeforeRestart": "Output before the launcher restarted",
     "searchCut": "Too many matches: showing the latest ones. Narrow the filter.",
     "title": "Logs",
     "wrapLines": "Wrap long lines",

@@ -30,8 +30,16 @@ export const InstanceLogsTab: Component<InstanceLogsTabProps> = (props) => {
   const [{ t }] = useTranslation();
 
   const instanceId = () => props.instance.id;
-  const { sources, options, currentOption, sourceId, currentSource, select } =
-    createLogSources(instanceId);
+  const {
+    sources,
+    isAdopted,
+    isLiveShown,
+    options,
+    currentOption,
+    sourceId,
+    currentSource,
+    select,
+  } = createLogSources(instanceId);
   const { levels, setLevels, query, setQuery, lineFilter, searchFilter } =
     createLogFilter();
 
@@ -138,6 +146,11 @@ export const InstanceLogsTab: Component<InstanceLogsTabProps> = (props) => {
           onChange={select}
         />
       </div>
+      <Show when={isAdopted() && isLiveShown()}>
+        <p class='px-1 text-muted-foreground text-xs'>
+          {t('logs.adoptedHint')}
+        </p>
+      </Show>
       <LogToolbar
         levels={levels()}
         onLevelsChange={setLevels}

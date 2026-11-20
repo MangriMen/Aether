@@ -16,6 +16,10 @@ export const createLogSources = (instanceId: () => string) => {
   const sources = useGameLogSources(instanceId);
   const [running] = useRunningInstancesContext();
   const isRunning = () => running.instances[instanceId()]?.isRunning ?? false;
+  // The launcher restarted while the game ran: its console log stops where the old launcher
+  // did, and only the game's own latest.log goes on.
+  const isAdopted = () =>
+    isRunning() && (running.instances[instanceId()]?.adopted ?? false);
 
   // A run starting or ending adds or finishes a console log.
   createEffect(
@@ -28,11 +32,39 @@ export const createLogSources = (instanceId: () => string) => {
     ),
   );
 
-  const [selected, setSelected] = createSignal<string>(LIVE);
+  const [chosen, setChosen] = createSignal<string>();
+
+  const adoptedGameLog = createMemo(() =>
+    sources.data?.find(
+      (source) => source.kind === 'game' && source.name === 'latest.log',
+    ),
+  );
+
+  // The log shown first for an adopted game is kept after the game ends, so the view does not
+  // jump to the console log on its own.
+  const [adoptedDefault, setAdoptedDefault] = createSignal<string>();
+
+  createEffect(() => {
+    const gameLog = adoptedGameLog();
+
+    if (isAdopted() && gameLog && adoptedDefault() === undefined) {
+      setAdoptedDefault(gameLog.id);
+    }
+  });
+
+  const selected = () => chosen() ?? adoptedDefault() ?? LIVE;
 
   const newestConsole = createMemo(() =>
     sources.data?.find((source) => source.kind === 'console'),
   );
+
+  const liveName = () => {
+    if (isAdopted()) {
+      return t('logs.outputBeforeRestart');
+    }
+
+    return isRunning() ? t('logs.live') : t('logs.lastRun');
+  };
 
   const options = createMemo((): Option<string>[] => {
     const live = newestConsole();
@@ -41,7 +73,7 @@ export const createLogSources = (instanceId: () => string) => {
       if (source === live) {
         return {
           value: LIVE,
-          name: (isRunning() ? t('logs.live') : t('logs.lastRun')) ?? '',
+          name: liveName() ?? '',
         };
       }
 
@@ -77,10 +109,12 @@ export const createLogSources = (instanceId: () => string) => {
 
   return {
     sources,
+    isAdopted,
+    isLiveShown: () => currentOption()?.value === LIVE,
     options,
     currentOption,
     sourceId,
     currentSource,
-    select: setSelected,
+    select: setChosen,
   };
 };
