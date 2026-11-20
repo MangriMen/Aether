@@ -108,10 +108,20 @@ md-5 = "0.11"
 svg-hush = "0.9.7"
 
 [target.'cfg(windows)'.dependencies]
-# `CREATE_NO_WINDOW` for child processes; the same major as `process-wrap`'s, whose `CreationFlags` takes its type
-windows = { version = "0.62.2", features = ["Win32_System_Threading"] }
+# `CREATE_NO_WINDOW` for child processes; the same major as `process-wrap`'s, whose `CreationFlags` takes its type.
+# A game a previous launcher started is followed and stopped through a handle to its process.
+windows = { version = "0.62.2", features = [
+    "Win32_Foundation",
+    "Win32_System_Diagnostics_ToolHelp",
+    "Win32_System_Threading",
+] }
 # `sys-info` reads the Windows version with `GetVersionEx`, which is capped at 6.2 without a manifest
 windows-sys = { version = "0.61.2", features = ["Wdk_System_SystemServices", "Win32_System_SystemInformation"] }
+
+[target.'cfg(unix)'.dependencies]
+# Stops a game a previous launcher started, by its pid or process group. The version
+# `process-wrap` uses.
+nix = { version = "0.31.3", default-features = false, features = ["signal"] }
 
 [dev-dependencies]
 tracing-subscriber.workspace = true
