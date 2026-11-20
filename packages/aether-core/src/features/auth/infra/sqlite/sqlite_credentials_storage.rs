@@ -164,13 +164,13 @@ impl TryFrom<SqlCredential> for Credential {
 
     fn try_from(value: SqlCredential) -> Result<Self, Self::Error> {
         let id = Uuid::parse_str(&value.id)
-            .map_err(|_| AuthApplicationError::Storage("Invalid UUID in DB".into()))?;
+            .map_err(|err| AuthApplicationError::Storage(format!("Invalid UUID in DB: {err}")))?;
 
         let username = value.username.try_into()?;
         let account_type = value.account_type.try_into()?;
 
         let expires = DateTime::parse_from_rfc3339(&value.expires)
-            .map_err(|_| AuthApplicationError::Storage("Invalid Date in DB".into()))?
+            .map_err(|err| AuthApplicationError::Storage(format!("Invalid date in DB: {err}")))?
             .with_timezone(&Utc);
 
         Ok(Self::new(
