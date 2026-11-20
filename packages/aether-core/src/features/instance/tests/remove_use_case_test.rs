@@ -101,6 +101,10 @@ impl RunningGameService for FakeProcesses {
     async fn any_running(&self) -> Result<bool, ProcessError> {
         unimplemented!()
     }
+
+    async fn running_games_carry_on(&self) -> Result<bool, ProcessError> {
+        unimplemented!()
+    }
 }
 
 // ─── End-to-end test ───────────────────────────────────────────

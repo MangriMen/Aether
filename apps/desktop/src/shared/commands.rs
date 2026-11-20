@@ -178,6 +178,7 @@ macro_rules! update_commands {
         $($tokens)* [
             check_for_updates,
             install_update,
+            games_carry_on_update,
         ]
     };
 }

@@ -187,6 +187,7 @@ pub(super) struct Probe {
     looks: Mutex<HashMap<u32, Look>>,
     /// The pids looked at, in order.
     pub(super) asked: Mutex<Vec<u32>>,
+    tells_exit: std::sync::atomic::AtomicBool,
 }
 
 impl Probe {
@@ -195,7 +196,14 @@ impl Probe {
             own,
             looks: Mutex::default(),
             asked: Mutex::default(),
+            tells_exit: true.into(),
         })
+    }
+
+    /// Makes the OS tell, or not, how a game that was not started by the launcher ended.
+    pub(super) fn tell_exit(&self, tells: bool) {
+        self.tells_exit
+            .store(tells, std::sync::atomic::Ordering::Relaxed);
     }
 
     pub(super) fn set(&self, pid: u32, look: Look) {
@@ -230,6 +238,10 @@ impl ProcessProbe for Probe {
 
     fn own_identity(&self) -> Option<&OsProcessIdentity> {
         self.own.as_ref()
+    }
+
+    fn tells_exit_of_adopted(&self) -> bool {
+        self.tells_exit.load(std::sync::atomic::Ordering::Relaxed)
     }
 
     async fn adopt(

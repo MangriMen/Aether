@@ -79,12 +79,12 @@ use crate::features::{
     },
     process::{
         AdoptGameProcessesUseCase, AdoptGameProcessesUseCasePort, FindRunningGameUseCase,
-        KillProcessUseCase, KillProcessUseCasePort, ListProcessMetadataUseCase,
-        ListProcessMetadataUseCasePort, ManageProcessService, ManageProcessUseCase, ProcessFeature,
-        ProcessProbe, ProcessRecordStorage, ProcessStartService, ProcessStorage,
-        RunningGameService, StartProcessUseCase, TakeSkippedHookNoticesUseCase,
-        TakeSkippedHookNoticesUseCasePort, TrackProcessService, TrackProcessUseCase,
-        infra::FsCrashEvidence,
+        KillProcessUseCase, KillProcessUseCasePort, LaunchGate, ListProcessMetadataUseCase,
+        ListProcessMetadataUseCasePort, ManageProcessService, ManageProcessUseCase,
+        PrepareRestartUseCase, ProcessFeature, ProcessProbe, ProcessRecordStorage,
+        ProcessStartService, ProcessStorage, RestartService, RunningGameService,
+        StartProcessUseCase, TakeSkippedHookNoticesUseCase, TakeSkippedHookNoticesUseCasePort,
+        TrackProcessService, TrackProcessUseCase, infra::FsCrashEvidence,
     },
     settings::{
         EditDefaultInstanceSettingsUseCase, EditDefaultInstanceSettingsUseCasePort,
@@ -243,6 +243,8 @@ pub struct AetherContainer {
     /// Shared by the install of games and the removal of instances.
     install_cancellations: Arc<InstallCancellations>,
     launch_cancellations: Arc<LaunchCancellations>,
+    /// Launches share it, a restart of the launcher takes it alone.
+    launch_gate: Arc<LaunchGate>,
     /// Held busy by installs and instance locks, paused while the caches are emptied.
     activity_gate: Arc<ActivityGate>,
     /// One for the process: it keeps which refreshes run and what providers could not tell.
@@ -289,6 +291,7 @@ impl AetherContainer {
             instance_locks,
             install_cancellations: Arc::default(),
             launch_cancellations: Arc::default(),
+            launch_gate: Arc::default(),
             activity_gate,
             content_metadata,
             cache_storage,
@@ -474,6 +477,7 @@ impl AetherContainer {
                     start,
                     self.instance_locks.clone(),
                     self.launch_cancellations.clone(),
+                    self.launch_gate.clone(),
                 ))
             })
             .clone()
@@ -1004,6 +1008,12 @@ impl ProcessFeature for AetherContainer {
     }
     fn running_game_service(&self) -> Arc<dyn RunningGameService> {
         self.running_game_service()
+    }
+    fn restart_service(&self) -> Arc<dyn RestartService> {
+        Arc::new(PrepareRestartUseCase::new(
+            self.launch_gate.clone(),
+            self.running_game_service(),
+        ))
     }
     fn adopt_game_processes_use_case(&self) -> Arc<dyn AdoptGameProcessesUseCasePort> {
         Arc::new(AdoptGameProcessesUseCase::new(

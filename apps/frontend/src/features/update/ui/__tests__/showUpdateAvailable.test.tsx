@@ -13,7 +13,10 @@ const update = vi.hoisted(() => ({ updateAndRestart: vi.fn() }));
 const buttons = vi.hoisted(() => ({
   props: [] as { disabled?: boolean; onClick?: () => void }[],
 }));
-const games = vi.hoisted(() => ({ names: [] as string[] }));
+const games = vi.hoisted(() => ({
+  names: [] as string[],
+  carryOn: false,
+}));
 const settings = vi.hoisted(() => ({ open: vi.fn() }));
 
 vi.mock('@/shared/ui-kit', () => ({
@@ -35,6 +38,8 @@ vi.mock('../../lib/useRunningGames', () => ({
   useRunningGames: () => ({
     names: () => games.names,
     isRunning: () => games.names.length > 0,
+    keepsGames: () => games.names.length > 0 && games.carryOn,
+    isBlocked: () => games.names.length > 0 && !games.carryOn,
   }),
 }));
 vi.mock('../RunningGamesHint', () => ({ RunningGamesHint: () => null }));
@@ -69,6 +74,7 @@ beforeEach(() => {
   update.updateAndRestart.mockReset();
   dialog.onOk = undefined;
   games.names = [];
+  games.carryOn = false;
   buttons.props = [];
 });
 
@@ -114,6 +120,19 @@ describe('showUpdateAvailable', () => {
     show(status);
 
     expect(buttons.props[0]?.disabled).toBe(true);
+  });
+
+  it('should_enable_the_update_button_when_the_games_carry_on_across_the_restart', async () => {
+    const show = await load();
+    games.names = ['Alpha'];
+    games.carryOn = true;
+    update.updateAndRestart.mockResolvedValue(true);
+
+    show(status);
+    await dialog.onOk!();
+
+    expect(buttons.props[0]?.disabled).toBe(false);
+    expect(update.updateAndRestart).toHaveBeenCalledWith(status, true);
   });
 
   it('should_enable_the_update_button_when_no_game_runs', async () => {

@@ -20,7 +20,7 @@ use crate::{
         },
         plugins::{PluginInternalEvent, PluginRegistry, PluginState},
         process::{
-            KillScope, MinecraftProcessMetadata, ProcessError, ProcessStartService,
+            KillScope, LaunchGate, MinecraftProcessMetadata, ProcessError, ProcessStartService,
             RunningGameService,
         },
         settings::{DefaultInstanceSettings, DefaultInstanceSettingsStorage, Hooks, LocationInfo},
@@ -47,6 +47,7 @@ pub struct LaunchInstanceUseCase {
     process_start_service: Arc<dyn ProcessStartService>,
     instance_locks: Arc<InstanceLocks>,
     cancellations: Arc<LaunchCancellations>,
+    launch_gate: Arc<LaunchGate>,
 }
 
 impl LaunchInstanceUseCase {
@@ -67,6 +68,7 @@ impl LaunchInstanceUseCase {
         process_start_service: Arc<dyn ProcessStartService>,
         instance_locks: Arc<InstanceLocks>,
         cancellations: Arc<LaunchCancellations>,
+        launch_gate: Arc<LaunchGate>,
     ) -> Self {
         Self {
             event_emitter,
@@ -81,6 +83,7 @@ impl LaunchInstanceUseCase {
             process_start_service,
             instance_locks,
             cancellations,
+            launch_gate,
         }
     }
 
@@ -137,6 +140,9 @@ impl LaunchInstanceUseCase {
         instance_id: InstanceId,
         credentials: Credential,
     ) -> Result<MinecraftProcessMetadata, InstanceError> {
+        // The whole launch, so that a restart of the launcher does not come between the start of the
+        // game and the saving of its record, nor is the launch left to a launcher that is going.
+        let _gate = self.launch_gate.enter_launch().await;
         // Held until the game is started: content is not installed or updated under it. The
         // stage below does not tell an install into an `Installed` instance, nor one that starts
         // after it was read.

@@ -9,7 +9,12 @@ export const commands = {
 	date: string | null,
 	body: string | null,
 } | null>("plugin:update|check_for_updates"),
-	installUpdate: (requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:update|install_update", { requestId }),
+	installUpdate: (allowRunningGames: boolean, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:update|install_update", { allowRunningGames, requestId }),
+	/**
+	 *  Whether the games that run now would carry on across the restart of an update: the update may
+	 *  be installed under them with `allow_running_games`. True when none runs.
+	 */
+	gamesCarryOnUpdate: () => __TAURI_INVOKE<boolean>("plugin:update|games_carry_on_update"),
 };
 
 /* Types */
