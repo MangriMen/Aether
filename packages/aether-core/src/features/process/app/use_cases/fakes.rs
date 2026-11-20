@@ -366,13 +366,13 @@ impl InstanceStorage for Instances {
     }
 }
 
-/// Follows nothing.
-/// How many followings were started.
+/// Follows nothing, counting how many followings were started.
 #[derive(Default)]
 pub(super) struct LogTails(pub(super) std::sync::atomic::AtomicUsize);
 
+#[async_trait]
 impl GameLogTailService for LogTails {
-    fn follow(&self, _instance_id: &InstanceId) -> LogTail {
+    async fn follow(&self, _instance_id: &InstanceId) -> LogTail {
         self.0.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
         LogTail::idle()
     }

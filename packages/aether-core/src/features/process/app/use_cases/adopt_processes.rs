@@ -425,7 +425,7 @@ impl Adoption {
             instance_id: record.instance_id.clone(),
             post_exit_command: record.post_exit_command.clone(),
             capture: None,
-            log_tail: Some(self.log_tails.follow(&record.instance_id)),
+            log_tail: Some(self.log_tails.follow(&record.instance_id).await),
             origin: ProcessOrigin::Adopted,
             crash_watch: Some(CrashWatch {
                 pid: record.process.pid(),

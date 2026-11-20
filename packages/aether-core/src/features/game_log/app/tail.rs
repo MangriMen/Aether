@@ -1,14 +1,16 @@
 use std::time::Duration;
 
+use async_trait::async_trait;
 use tokio::sync::oneshot;
 
 use crate::features::instance::InstanceId;
 
 /// Follows the lines a running game appends to its own `latest.log` and announces them as they
 /// come, for a game whose console output the launcher does not capture.
+#[async_trait]
 pub trait GameLogTailService: Send + Sync {
     /// Follows the file from its end now, until the handle is finished or dropped.
-    fn follow(&self, instance_id: &InstanceId) -> LogTail;
+    async fn follow(&self, instance_id: &InstanceId) -> LogTail;
 }
 
 /// A following in progress. Dropping it stops the following after one last look at the file.
