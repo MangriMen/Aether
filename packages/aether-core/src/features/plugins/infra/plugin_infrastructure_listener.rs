@@ -10,7 +10,7 @@ use crate::{
         },
         settings::LocationInfo,
     },
-    shared::capability::domain::CapabilityRegistry,
+    shared::capability::CapabilityRegistry,
 };
 
 use super::{PluginContentProviderProxy, PluginImporterProxy, PluginUpdaterProxy};

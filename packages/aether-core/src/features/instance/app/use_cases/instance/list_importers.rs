@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use crate::features::instance::app::ports::ListImportersUseCasePort;
 use crate::{
     features::instance::{Importer, ImporterCapabilityMetadata, InstanceError},
-    shared::capability::domain::{CapabilityEntry, CapabilityRegistry},
+    shared::capability::{CapabilityEntry, CapabilityRegistry},
 };
 
 pub struct ListImportersUseCase {

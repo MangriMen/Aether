@@ -19,7 +19,7 @@ use crate::features::instance::{
     ContentId, ContentInstallParams, ContentSearchParams, ContentSearchResult,
 };
 use crate::features::process::MinecraftProcessMetadata;
-use crate::shared::capability::domain::CapabilityEntry;
+use crate::shared::capability::CapabilityEntry;
 
 /// `parent_bar`: the bar of whatever the instance is created for (a pack being installed into
 /// it), which the bar of the install of its game goes under; at the top without one.

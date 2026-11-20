@@ -1,9 +1,6 @@
 use async_trait::async_trait;
 
-use crate::shared::capability::domain::{
-    ids::{CapabilityId, PluginId},
-    models::{CapabilityEntry, RegistryError},
-};
+use crate::shared::capability::domain::{CapabilityEntry, CapabilityId, PluginId, RegistryError};
 
 #[async_trait]
 pub trait CapabilityRegistry<C: Send + Sync + Clone>: Send + Sync {

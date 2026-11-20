@@ -7,7 +7,7 @@ use crate::{
     features::instance::{
         ContentProvider, ContentSearchParams, ContentSearchResult, InstanceError,
     },
-    shared::capability::domain::CapabilityRegistry,
+    shared::capability::CapabilityRegistry,
 };
 
 pub struct SearchContentUseCase {

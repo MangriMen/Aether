@@ -27,7 +27,7 @@ use crate::{
             ProviderId,
         },
     },
-    shared::{capability::domain::CapabilityRegistry, web_url::HttpsUrl},
+    shared::{capability::CapabilityRegistry, web_url::HttpsUrl},
 };
 
 /// How long an id its provider did not know is left alone before it is asked about again.

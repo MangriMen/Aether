@@ -110,7 +110,7 @@ use crate::{
         settings::LocationInfo,
     },
     shared::{
-        capability::domain::CapabilityRegistry,
+        capability::CapabilityRegistry,
         hash::{FileHash, HashAlgorithm, infra::hash_file_hex_async},
         web_url::HttpsUrl,
     },
