@@ -4,9 +4,7 @@ use log::error;
 use tokio::sync::{Mutex, MutexGuard};
 use uuid::Uuid;
 
-use crate::features::events::{ProgressBarStorage, SharedEventEmitter};
-
-use super::{EventError, ProgressEvent};
+use crate::features::events::{EventError, ProgressBarStorage, ProgressEvent, SharedEventEmitter};
 
 /// Sends progress events in the order the changes that made them were made, whoever sends them:
 /// the progress service for the changes of a running bar, and the handle of a bar for its end.
