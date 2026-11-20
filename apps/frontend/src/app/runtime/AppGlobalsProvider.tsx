@@ -1,5 +1,6 @@
 import { onMount, type JSX } from 'solid-js';
 
+import { CloseWithGamesDialog } from '@/features/process';
 import { getOrCreateFeatureFlagsStore } from '@/features/settings';
 
 import { useSetupListeners } from './useSetupListeners';
@@ -13,5 +14,10 @@ export const AppGlobalsProvider = (props: AppGlobalsProviderProps) => {
     getOrCreateFeatureFlagsStore();
   });
 
-  return <>{props.children}</>;
+  return (
+    <>
+      {props.children}
+      <CloseWithGamesDialog />
+    </>
+  );
 };

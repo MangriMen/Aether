@@ -1,6 +1,8 @@
 use tauri::{AppHandle, WebviewUrl, WebviewWindow, WebviewWindowBuilder};
 use tauri_plugin_window_state::StateFlags;
 
+use super::close_guard::guard_close_with_running_games;
+
 const WINDOW_TITLE: &str = "Aether";
 
 const DEFAULT_SIZE: (f64, f64) = (1024.0, 640.0);
@@ -48,6 +50,7 @@ pub fn build_main_window<R: tauri::Runtime>(
     }
 
     let window = builder.build()?;
+    guard_close_with_running_games(&window);
 
     Ok(window)
 }
