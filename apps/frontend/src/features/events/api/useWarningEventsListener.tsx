@@ -1,5 +1,7 @@
 import { onMount } from 'solid-js';
 
+import type { WarningDto } from '@/platform/bindings/events';
+
 import {
   ErrorDetails,
   getReasonDetails,
@@ -14,14 +16,15 @@ import { useTranslation } from '@/shared/i18n';
 import { logDebug, logError } from '@/shared/log';
 import { showToast } from '@/shared/ui-kit';
 
-type Warning = Parameters<typeof getTranslatedWarning>[0];
+type Warning = WarningDto;
 
 /** Warnings the user has to read and close: they say that something did not happen. */
 const isPersistent = (warning: Warning) =>
   warning.code === 'POST_EXIT_HOOK_SKIPPED';
 
-// The backend hands the held notices out once, so asking again is pointless. Kept per module,
-// not per mount, so that a remount of the listener does not ask twice.
+// The backend hands the held notices out once, and a repeated ask returns none. Kept per module,
+// not per mount, so that a remount of the listener does not ask while an ask is on its way or
+// done; a failed ask is reset, so that a later mount tries again.
 let noticesTaken = false;
 
 export const useWarningEventsListener = () => {
@@ -55,13 +58,18 @@ export const useWarningEventsListener = () => {
     noticesTaken = true;
 
     try {
-      // After the listener is registered: what comes later is sent as events.
-      await listening;
+      // After the listener is registered: what comes later is sent as events. Without a
+      // listener the notices stay held on the backend for a later mount.
+      if (!(await listening)) {
+        noticesTaken = false;
+        return;
+      }
 
       for (const warning of await processCommands.takeSkippedHookNotices()) {
         show(warning);
       }
     } catch (error) {
+      noticesTaken = false;
       logError('Failed to take the skipped post-exit hook notices:', error);
     }
   };

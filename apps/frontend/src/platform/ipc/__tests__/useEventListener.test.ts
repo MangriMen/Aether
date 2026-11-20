@@ -113,7 +113,7 @@ describe('useEventListener', () => {
 describe('useEventListener readiness', () => {
   it('settles once the listener is registered, not before', async () => {
     const { event, resolve } = createEvent();
-    let ready: Promise<void> | undefined;
+    let ready: Promise<boolean> | undefined;
     let settled = false;
 
     createRoot(() => {
@@ -127,19 +127,34 @@ describe('useEventListener readiness', () => {
     expect(settled).toBe(false);
 
     resolve();
-    await ready;
+    await expect(ready).resolves.toBe(true);
 
     expect(settled).toBe(true);
   });
 
-  it('settles when listening failed', async () => {
+  it('resolves false when the owner is disposed before the listener is registered', async () => {
+    const { event, unlisten, resolve } = createEvent();
+    let ready: Promise<boolean> | undefined;
+    const dispose = createRoot((dispose) => {
+      ready = useReadyEventListener(event, () => {});
+      return dispose;
+    });
+
+    dispose();
+    resolve();
+
+    await expect(ready).resolves.toBe(false);
+    expect(unlisten).toHaveBeenCalledOnce();
+  });
+
+  it('resolves false when listening failed', async () => {
     const event = { listen: vi.fn(() => Promise.reject(new Error('no ipc'))) };
-    let ready: Promise<void> | undefined;
+    let ready: Promise<boolean> | undefined;
 
     createRoot(() => {
       ready = useReadyEventListener(event, () => {});
     });
 
-    await expect(ready).resolves.toBeUndefined();
+    await expect(ready).resolves.toBe(false);
   });
 });

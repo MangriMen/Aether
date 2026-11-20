@@ -7,7 +7,7 @@ const ipc = vi.hoisted(() => ({
   deliver: undefined as
     | ((e: { payload: { seq: number; warning: Warning } }) => void)
     | undefined,
-  registered: undefined as (() => void) | undefined,
+  registered: undefined as ((registered?: boolean) => void) | undefined,
   take: vi.fn(),
   showToast: vi.fn(),
   logError: vi.fn(),
@@ -19,8 +19,8 @@ vi.mock('@/platform/ipc', () => ({
   useReadyEventListener: (_: unknown, cb: typeof ipc.deliver) => {
     ipc.deliver = cb;
 
-    return new Promise<void>((resolve) => {
-      ipc.registered = resolve;
+    return new Promise<boolean>((resolve) => {
+      ipc.registered = (registered = true) => resolve(registered);
     });
   },
 }));
@@ -113,6 +113,35 @@ describe('useWarningEventsListener', () => {
     await flushed();
 
     expect(ipc.logError).toHaveBeenCalled();
+    expect(ipc.showToast).not.toHaveBeenCalled();
+  });
+
+  it('should_take_the_notices_again_on_a_later_mount_when_the_first_take_failed', async () => {
+    ipc.take.mockRejectedValueOnce(new Error('no ipc'));
+    ipc.take.mockResolvedValueOnce([skipped]);
+    const mount = await load();
+    mount();
+    ipc.registered?.();
+    await flushed();
+
+    expect(ipc.showToast).not.toHaveBeenCalled();
+
+    mount();
+    ipc.registered?.();
+    await flushed();
+
+    expect(ipc.take).toHaveBeenCalledTimes(2);
+    expect(ipc.showToast).toHaveBeenCalledOnce();
+  });
+
+  it('should_not_take_the_notices_when_the_listener_was_not_registered', async () => {
+    ipc.take.mockResolvedValue([skipped]);
+    const mount = await load();
+    mount();
+    ipc.registered?.(false);
+    await flushed();
+
+    expect(ipc.take).not.toHaveBeenCalled();
     expect(ipc.showToast).not.toHaveBeenCalled();
   });
 

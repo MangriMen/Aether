@@ -47,6 +47,7 @@ export const useRunningProcessesListener = (
 
   const fetchProcesses = async () => {
     try {
+      // Listening may have failed; the snapshot is still better than nothing then.
       await listening;
 
       const processes = await processCommands.list();

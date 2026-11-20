@@ -18,8 +18,8 @@ vi.mock('@/platform/ipc', () => ({
   ) => {
     ipc.deliver = cb;
 
-    return new Promise<void>((resolve) => {
-      ipc.registered = resolve;
+    return new Promise<boolean>((resolve) => {
+      ipc.registered = () => resolve(true);
     });
   },
 }));
@@ -105,6 +105,26 @@ describe('useRunningProcessesListener', () => {
     await flushed();
 
     expect(ipc.list).toHaveBeenCalledOnce();
+  });
+
+  it('should_report_one_running_entry_when_an_adopted_event_and_the_snapshot_have_the_same_instance', async () => {
+    let resolveList: (v: unknown[]) => void = () => {};
+    ipc.list.mockReturnValue(
+      new Promise((r) => {
+        resolveList = r;
+      }),
+    );
+    const updates = mount();
+    ipc.registered?.();
+    await flushed();
+
+    ipc.deliver?.(processEvent('adopted', 'a', 'p1'));
+    resolveList([snapshotEntry('a', 'p1', true)]);
+    await flushed();
+
+    expect(updates).toEqual([
+      { instanceId: 'a', processId: 'p1', isRunning: true, adopted: true },
+    ]);
   });
 
   it('should_leave_no_ghost_when_the_game_finished_before_the_snapshot_was_applied', async () => {

@@ -15,14 +15,15 @@ type ListenableEvent<T> = {
 // event it has delivered already, long after, so one that does not follow the last this
 // listener saw is dropped.
 //
-// Returns a promise that settles once the listener is registered (or failed to be), so that a
-// caller that reads state a missed event would change can read it after, not before.
+// Returns a promise that settles once the listener is registered, so that a caller that reads
+// state a missed event would change can read it after, not before. It resolves with whether the
+// listener is registered: false when listening failed or the owner was disposed first.
 export const useReadyEventListener = <T extends { seq: number }>(
   event: ListenableEvent<T>,
   callback: EventCallback<T>,
-): Promise<void> => {
-  let markReady: () => void = () => {};
-  const ready = new Promise<void>((resolve) => {
+): Promise<boolean> => {
+  let markReady: (registered: boolean) => void = () => {};
+  const ready = new Promise<boolean>((resolve) => {
     markReady = resolve;
   });
   let unlisten: UnlistenFn | undefined;
@@ -48,17 +49,19 @@ export const useReadyEventListener = <T extends { seq: number }>(
         } else {
           unlisten = fn;
         }
+
+        markReady(!disposed);
       })
       .catch((error: unknown) => {
         logError('[EVENT] failed to start listening', error);
-      })
-      .finally(markReady);
+        markReady(false);
+      });
   });
 
   onCleanup(() => {
     disposed = true;
     unlisten?.();
-    markReady();
+    markReady(false);
   });
 
   return ready;
