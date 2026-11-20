@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE game_processes SET playtime_credited_until = ? WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "1dfcf69f95f0afaa3463a260e3cc392b62669e390248eec0d2332d6a7dfc0332"
+}

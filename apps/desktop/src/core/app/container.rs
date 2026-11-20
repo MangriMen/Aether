@@ -35,7 +35,9 @@ use aether_core::features::plugins::{
     LoadConfigType, PluginLoader, PluginLoaderRegistry, PluginProvider, PluginProviderFactory,
     PluginRegistry,
 };
-use aether_core::features::process::infra::InMemoryProcessStorage;
+use aether_core::features::process::infra::{
+    InMemoryProcessStorage, OsProcessProbe, SqliteProcessRecordStorage,
+};
 use aether_core::features::settings::CacheKind;
 use aether_core::features::settings::LocationInfo;
 use aether_core::features::settings::Settings;
@@ -489,6 +491,7 @@ pub async fn build_container(
             settings_storage,
             default_instance_settings_storage,
             process_storage,
+            process_record_storage: Arc::new(SqliteProcessRecordStorage::new(pool.clone())),
             instance_storage: instance_storage.clone(),
             broken_instances: Arc::new(SqliteInstanceStorage::new(pool.clone())),
             legacy_instances: Arc::new(LegacyInstanceScanner::new(location_info.clone())),
@@ -525,6 +528,7 @@ pub async fn build_container(
         progress_service: progress_service
             as Arc<dyn aether_core::features::events::ProgressService>,
         location_info: location_info.clone(),
+        process_probe: Arc::new(OsProcessProbe::new()),
         fetch_semaphore,
         request_client: download_client.clone(),
         instance_watcher_service: instance_watcher_service.clone(),

@@ -1,4 +1,6 @@
 mod manage_process_service;
+mod process_probe;
+mod process_record_storage;
 mod process_start_service;
 mod track_process_service;
 
@@ -11,6 +13,8 @@ use uuid::Uuid;
 use crate::features::process::domain::{MinecraftProcessMetadata, ProcessError};
 
 pub use manage_process_service::ManageProcessService;
+pub use process_probe::ProcessProbe;
+pub use process_record_storage::ProcessRecordStorage;
 pub use process_start_service::ProcessStartService;
 pub use track_process_service::TrackProcessService;
 

@@ -1,0 +1,158 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT\n                id, instance_id, pid, start_stamp, boot_id,\n                started_at AS \"started_at: String\", kill_scope, post_exit_command,\n                playtime_credited_until AS \"playtime_credited_until: String\",\n                owner_pid, owner_start_stamp, owner_boot_id\n            FROM game_processes\n            WHERE instance_id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "game_processes",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "instance_id",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "game_processes",
+            "name": "instance_id"
+          }
+        }
+      },
+      {
+        "name": "pid",
+        "ordinal": 2,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "game_processes",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "name": "start_stamp",
+        "ordinal": 3,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "game_processes",
+            "name": "start_stamp"
+          }
+        }
+      },
+      {
+        "name": "boot_id",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "game_processes",
+            "name": "boot_id"
+          }
+        }
+      },
+      {
+        "name": "started_at: String",
+        "ordinal": 5,
+        "type_info": "Datetime",
+        "origin": {
+          "Table": {
+            "table": "game_processes",
+            "name": "started_at"
+          }
+        }
+      },
+      {
+        "name": "kill_scope",
+        "ordinal": 6,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "game_processes",
+            "name": "kill_scope"
+          }
+        }
+      },
+      {
+        "name": "post_exit_command",
+        "ordinal": 7,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "game_processes",
+            "name": "post_exit_command"
+          }
+        }
+      },
+      {
+        "name": "playtime_credited_until: String",
+        "ordinal": 8,
+        "type_info": "Datetime",
+        "origin": {
+          "Table": {
+            "table": "game_processes",
+            "name": "playtime_credited_until"
+          }
+        }
+      },
+      {
+        "name": "owner_pid",
+        "ordinal": 9,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "game_processes",
+            "name": "owner_pid"
+          }
+        }
+      },
+      {
+        "name": "owner_start_stamp",
+        "ordinal": 10,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "game_processes",
+            "name": "owner_start_stamp"
+          }
+        }
+      },
+      {
+        "name": "owner_boot_id",
+        "ordinal": 11,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "game_processes",
+            "name": "owner_boot_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "e8536796c981cea949f94c463c727a7a2b793f0f70f8599b447dcc208ca17a06"
+}
