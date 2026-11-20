@@ -1,17 +1,14 @@
-use std::process::ExitStatus;
-
 use async_trait::async_trait;
 use dashmap::DashMap;
-use process_wrap::tokio::ChildWrapper;
 use uuid::Uuid;
 
-use super::super::app::ProcessStorage;
-use super::super::domain::{MinecraftProcessMetadata, ProcessError};
+use super::super::app::{ProcessHandle, ProcessStorage};
+use super::super::domain::{MinecraftProcessMetadata, ProcessError, ProcessState};
 
 #[derive(Debug)]
 struct ActiveProcess {
     metadata: MinecraftProcessMetadata,
-    child: Box<dyn ChildWrapper>,
+    handle: ProcessHandle,
     killed: bool,
 }
 
@@ -25,13 +22,13 @@ impl ProcessStorage for InMemoryProcessStorage {
     async fn insert(
         &self,
         metadata: MinecraftProcessMetadata,
-        child: Box<dyn ChildWrapper>,
+        handle: ProcessHandle,
     ) -> Result<(), ProcessError> {
         self.processes.insert(
             metadata.uuid(),
             ActiveProcess {
                 metadata,
-                child,
+                handle,
                 killed: false,
             },
         );
@@ -55,9 +52,9 @@ impl ProcessStorage for InMemoryProcessStorage {
         Ok(self.processes.get(&id).map(|x| x.metadata.clone()))
     }
 
-    async fn try_wait(&self, id: Uuid) -> Result<Option<Option<ExitStatus>>, ProcessError> {
+    async fn try_wait(&self, id: Uuid) -> Result<Option<ProcessState>, ProcessError> {
         if let Some(mut process) = self.processes.get_mut(&id) {
-            return Ok(Some(process.child.try_wait().map_err(|err| {
+            return Ok(Some(process.handle.try_wait().map_err(|err| {
                 tracing::warn!(process_id = %id, "Failed to wait for the game process: {err}");
                 ProcessError::WaitError { id: id.to_string() }
             })?));
@@ -76,7 +73,7 @@ impl ProcessStorage for InMemoryProcessStorage {
         if process.killed {
             return Ok(());
         }
-        if let Err(err) = process.child.start_kill() {
+        if let Err(err) = process.handle.start_kill() {
             tracing::warn!(process_id = %id, "Failed to kill the game process: {err}");
             return Err(ProcessError::KillError { id: id.to_string() });
         }
@@ -91,9 +88,14 @@ impl ProcessStorage for InMemoryProcessStorage {
 
 #[cfg(test)]
 mod tests {
+    use std::process::ExitStatus;
+    use std::sync::{Arc, Mutex};
     use std::{future::Future, pin::Pin, time::Duration};
 
+    use process_wrap::tokio::ChildWrapper;
+
     use crate::features::instance::InstanceId;
+    use crate::features::process::AdoptedProcess;
 
     use super::*;
 
@@ -124,15 +126,45 @@ mod tests {
         }
     }
 
-    async fn storage_with_a_process_that_never_exits() -> (InMemoryProcessStorage, Uuid) {
+    /// An adopted game that runs until it is stopped and then exits with an unknown status, as
+    /// one does on Unix. `stops` counts the stop requests; `refuse_stop` makes them fail.
+    #[derive(Debug, Default)]
+    struct AdoptedGame {
+        stops: Arc<Mutex<u32>>,
+        refuse_stop: bool,
+    }
+
+    impl AdoptedProcess for AdoptedGame {
+        fn try_wait(&mut self) -> std::io::Result<ProcessState> {
+            if *self.stops.lock().unwrap() > 0 {
+                Ok(ProcessState::Exited(None))
+            } else {
+                Ok(ProcessState::Running)
+            }
+        }
+
+        fn start_kill(&mut self) -> std::io::Result<()> {
+            if self.refuse_stop {
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::PermissionDenied,
+                    "cannot stop an elevated game",
+                ));
+            }
+            *self.stops.lock().unwrap() += 1;
+            Ok(())
+        }
+    }
+
+    async fn storage_with(handle: ProcessHandle) -> (InMemoryProcessStorage, Uuid) {
         let storage = InMemoryProcessStorage::default();
         let metadata = MinecraftProcessMetadata::new(InstanceId::generate());
         let id = metadata.uuid();
-        storage
-            .insert(metadata, Box::new(NeverExits))
-            .await
-            .unwrap();
+        storage.insert(metadata, handle).await.unwrap();
         (storage, id)
+    }
+
+    async fn storage_with_a_process_that_never_exits() -> (InMemoryProcessStorage, Uuid) {
+        storage_with(ProcessHandle::Owned(Box::new(NeverExits))).await
     }
 
     /// `kill`, which must not wait for the exit: with [`NeverExits`] that wait would never end.
@@ -152,7 +184,10 @@ mod tests {
         kill_without_waiting(&storage, id).await.unwrap();
 
         assert_eq!(storage.list_metadata().await.unwrap().len(), 1);
-        assert_eq!(storage.try_wait(id).await.unwrap(), Some(None));
+        assert_eq!(
+            storage.try_wait(id).await.unwrap(),
+            Some(ProcessState::Running)
+        );
         assert!(storage.was_killed(id).await);
     }
 
@@ -163,5 +198,49 @@ mod tests {
         kill_without_waiting(&storage, id).await.unwrap();
 
         assert!(kill_without_waiting(&storage, id).await.is_ok());
+    }
+
+    #[tokio::test]
+    async fn should_know_no_process_when_it_was_never_inserted() {
+        let storage = InMemoryProcessStorage::default();
+
+        assert_eq!(storage.try_wait(Uuid::new_v4()).await.unwrap(), None);
+    }
+
+    #[tokio::test]
+    async fn should_follow_and_stop_an_adopted_game_like_a_started_one() {
+        let game = AdoptedGame::default();
+        let stops = game.stops.clone();
+        let (storage, id) = storage_with(ProcessHandle::Adopted(Box::new(game))).await;
+
+        let before = storage.try_wait(id).await.unwrap();
+        kill_without_waiting(&storage, id).await.unwrap();
+        kill_without_waiting(&storage, id).await.unwrap();
+
+        assert_eq!(before, Some(ProcessState::Running));
+        assert_eq!(*stops.lock().unwrap(), 1);
+        assert!(storage.was_killed(id).await);
+        assert_eq!(
+            storage.try_wait(id).await.unwrap(),
+            Some(ProcessState::Exited(None))
+        );
+    }
+
+    #[tokio::test]
+    async fn should_report_a_failed_stop_when_the_adopted_game_cannot_be_stopped() {
+        let game = AdoptedGame {
+            refuse_stop: true,
+            ..AdoptedGame::default()
+        };
+        let (storage, id) = storage_with(ProcessHandle::Adopted(Box::new(game))).await;
+
+        let result = kill_without_waiting(&storage, id).await;
+
+        assert!(matches!(result, Err(ProcessError::KillError { .. })));
+        assert!(!storage.was_killed(id).await);
+        assert_eq!(
+            storage.try_wait(id).await.unwrap(),
+            Some(ProcessState::Running)
+        );
     }
 }

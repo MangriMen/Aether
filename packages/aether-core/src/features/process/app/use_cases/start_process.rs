@@ -10,8 +10,8 @@ use crate::features::{
     game_log::{CaptureGameOutputParams, GameOutputCaptureService},
     instance::InstanceId,
     process::{
-        KillScope, ManageProcessService, MinecraftProcessMetadata, ProcessError, ProcessProbe,
-        ProcessRecord, ProcessRecordStorage, ProcessStartService, ProcessStorage,
+        KillScope, ManageProcessService, MinecraftProcessMetadata, ProcessError, ProcessHandle,
+        ProcessProbe, ProcessRecord, ProcessRecordStorage, ProcessStartService, ProcessStorage,
     },
 };
 
@@ -81,7 +81,7 @@ impl StartProcessUseCase {
         });
 
         self.process_storage
-            .insert(metadata.clone(), process)
+            .insert(metadata.clone(), ProcessHandle::Owned(process))
             .await?;
         let manage_process_service = self.manage_process_service.clone();
         let records = self.records.clone();
@@ -390,7 +390,6 @@ mod tests {
 
 #[cfg(test)]
 mod start_tests {
-    use std::process::ExitStatus;
     use std::sync::Mutex;
 
     use chrono::{DateTime, Utc};
@@ -400,7 +399,7 @@ mod start_tests {
     use crate::features::{
         events::test_support::NoOpEmitter,
         game_log::{CaptureGameOutputParams, CaptureHandle, GameOutputCaptureService},
-        process::OsProcessIdentity,
+        process::{AdoptedProcess, OsProcessIdentity, ProcessState},
     };
     use crate::shared::error::DatabaseError;
 
@@ -415,7 +414,7 @@ mod start_tests {
         async fn insert(
             &self,
             process: MinecraftProcessMetadata,
-            _child: Box<dyn ChildWrapper>,
+            _handle: ProcessHandle,
         ) -> Result<(), ProcessError> {
             self.0.lock().unwrap().push(process);
             Ok(())
@@ -436,7 +435,7 @@ mod start_tests {
             unimplemented!()
         }
 
-        async fn try_wait(&self, _id: Uuid) -> Result<Option<Option<ExitStatus>>, ProcessError> {
+        async fn try_wait(&self, _id: Uuid) -> Result<Option<ProcessState>, ProcessError> {
             unimplemented!()
         }
 
@@ -539,6 +538,14 @@ mod start_tests {
 
         fn own_identity(&self) -> Option<&OsProcessIdentity> {
             self.own.as_ref()
+        }
+
+        async fn adopt(&self, _record: &ProcessRecord) -> Option<Box<dyn AdoptedProcess>> {
+            unimplemented!()
+        }
+
+        async fn is_alive(&self, _record: &ProcessRecord) -> bool {
+            unimplemented!()
         }
     }
 

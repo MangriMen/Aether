@@ -108,6 +108,7 @@ dependencies = [
  "hyper-util",
  "log",
  "md-5",
+ "nix 0.31.3",
  "notify",
  "notify-debouncer-mini",
  "path-slash",

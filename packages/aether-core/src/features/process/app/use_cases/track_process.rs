@@ -6,7 +6,7 @@ use uuid::Uuid;
 use crate::core::domain::error_chain;
 use crate::features::{
     instance::{InstanceId, InstanceStorage, InstanceStorageExt},
-    process::{ProcessRecordStorage, ProcessStorage, TrackProcessService},
+    process::{ProcessRecordStorage, ProcessState, ProcessStorage, TrackProcessService},
 };
 
 const PROCESS_CHECK_INTERVAL: time::Duration = time::Duration::from_millis(50);
@@ -38,12 +38,13 @@ impl TrackProcessService for TrackProcessUseCase {
 
         loop {
             match self.process_storage.try_wait(process_id).await {
-                Ok(Some(Some(exit_status))) => {
+                // An exit with an unknown status is still an exit: the record goes.
+                Ok(Some(ProcessState::Exited(exit_status))) => {
                     self.finish(process_id, &instance_id, last_updated_playtime)
                         .await;
-                    return Some(exit_status);
+                    return exit_status;
                 }
-                Ok(Some(None)) => {} // Still running
+                Ok(Some(ProcessState::Running)) => {}
                 // An unknown exit must not look like a clean one. The game may still run, so
                 // its record stays for a later launcher to find.
                 Ok(None) | Err(_) => {
@@ -150,14 +151,13 @@ mod tests {
     use std::sync::Mutex;
 
     use async_trait::async_trait;
-    use process_wrap::tokio::ChildWrapper;
     use rstest::rstest;
 
     use super::*;
     use crate::features::{
         instance::{Instance, InstanceBuilder, InstanceChange, InstanceError, InstanceName},
         minecraft::{GameVersion, ModLoader},
-        process::{MinecraftProcessMetadata, ProcessError, ProcessRecord},
+        process::{MinecraftProcessMetadata, ProcessError, ProcessHandle, ProcessRecord},
     };
     use crate::shared::error::DatabaseError;
 
@@ -179,6 +179,8 @@ mod tests {
     #[derive(Clone, Copy, Debug)]
     enum Game {
         Exited,
+        /// An adopted game on Unix: its status is not for the launcher to read.
+        ExitedUnknown,
         /// The storage does not know the game.
         Unknown,
         /// The OS refused the wait.
@@ -190,7 +192,7 @@ mod tests {
         async fn insert(
             &self,
             _process: MinecraftProcessMetadata,
-            _child: Box<dyn ChildWrapper>,
+            _handle: ProcessHandle,
         ) -> Result<(), ProcessError> {
             unimplemented!()
         }
@@ -210,9 +212,10 @@ mod tests {
             unimplemented!()
         }
 
-        async fn try_wait(&self, id: Uuid) -> Result<Option<Option<ExitStatus>>, ProcessError> {
+        async fn try_wait(&self, id: Uuid) -> Result<Option<ProcessState>, ProcessError> {
             match self {
-                Game::Exited => Ok(Some(Some(status(0)))),
+                Game::Exited => Ok(Some(ProcessState::Exited(Some(status(0))))),
+                Game::ExitedUnknown => Ok(Some(ProcessState::Exited(None))),
                 Game::Unknown => Ok(None),
                 Game::Unreadable => Err(ProcessError::WaitError { id: id.to_string() }),
             }
@@ -366,6 +369,16 @@ mod tests {
         let exit_status = track(&use_case).await;
 
         assert_eq!(exit_status, Some(status(0)));
+        assert_eq!(*calls.lock().unwrap(), ["remove", "credit 0"]);
+    }
+
+    #[tokio::test]
+    async fn should_remove_the_record_and_credit_when_the_game_exits_with_an_unknown_status() {
+        let (use_case, calls) = use_case(Game::ExitedUnknown, Records::default());
+
+        let exit_status = track(&use_case).await;
+
+        assert_eq!(exit_status, None);
         assert_eq!(*calls.lock().unwrap(), ["remove", "credit 0"]);
     }
 

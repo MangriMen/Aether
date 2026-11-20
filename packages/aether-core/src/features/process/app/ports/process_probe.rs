@@ -1,6 +1,8 @@
+use std::fmt::Debug;
+
 use async_trait::async_trait;
 
-use crate::features::process::domain::OsProcessIdentity;
+use crate::features::process::domain::{OsProcessIdentity, ProcessRecord, ProcessState};
 
 /// What the OS tells about running processes.
 #[async_trait]
@@ -11,4 +13,21 @@ pub trait ProcessProbe: Send + Sync {
 
     /// The identity of the launcher itself, read once; `None` when the OS did not report it.
     fn own_identity(&self) -> Option<&OsProcessIdentity>;
+
+    /// Takes over the process of `record` so that it can be followed and stopped like a started
+    /// one. `None` when the process is gone or its pid now belongs to another process.
+    async fn adopt(&self, record: &ProcessRecord) -> Option<Box<dyn AdoptedProcess>>;
+
+    /// Whether the process of `record` still runs.
+    async fn is_alive(&self, record: &ProcessRecord) -> bool;
+}
+
+/// A running process that the launcher did not start. Neither call blocks for long: both are
+/// made while the process list is held.
+pub trait AdoptedProcess: Debug + Send + Sync {
+    fn try_wait(&mut self) -> std::io::Result<ProcessState>;
+
+    /// Asks the process to stop and returns without waiting for it: the exit is seen by
+    /// `try_wait`.
+    fn start_kill(&mut self) -> std::io::Result<()>;
 }

@@ -56,7 +56,9 @@ mod tests {
     use process_wrap::tokio::CommandWrap;
     use tokio::process::Command;
 
-    use crate::features::process::{MinecraftProcessMetadata, infra::InMemoryProcessStorage};
+    use crate::features::process::{
+        MinecraftProcessMetadata, ProcessHandle, infra::InMemoryProcessStorage,
+    };
 
     use super::*;
 
@@ -64,7 +66,7 @@ mod tests {
         InstanceId::try_from(name).unwrap()
     }
 
-    fn sleeping_process() -> Box<dyn process_wrap::tokio::ChildWrapper> {
+    fn sleeping_process() -> ProcessHandle {
         let mut command = if cfg!(windows) {
             let mut command = Command::new("ping");
             command.args(["-n", "60", "127.0.0.1"]);
@@ -75,7 +77,7 @@ mod tests {
             command
         };
         command.stdout(std::process::Stdio::null());
-        CommandWrap::from(command).spawn().unwrap()
+        ProcessHandle::Owned(CommandWrap::from(command).spawn().unwrap())
     }
 
     fn use_case(

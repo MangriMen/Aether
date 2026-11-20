@@ -4,26 +4,51 @@ mod process_record_storage;
 mod process_start_service;
 mod track_process_service;
 
-use std::process::ExitStatus;
-
 use async_trait::async_trait;
 use process_wrap::tokio::ChildWrapper;
 use uuid::Uuid;
 
-use crate::features::process::domain::{MinecraftProcessMetadata, ProcessError};
+use crate::features::process::domain::{MinecraftProcessMetadata, ProcessError, ProcessState};
 
 pub use manage_process_service::ManageProcessService;
-pub use process_probe::ProcessProbe;
+pub use process_probe::{AdoptedProcess, ProcessProbe};
 pub use process_record_storage::ProcessRecordStorage;
 pub use process_start_service::ProcessStartService;
 pub use track_process_service::TrackProcessService;
+
+/// The game process as the launcher holds it.
+#[derive(Debug)]
+pub enum ProcessHandle {
+    /// A child of this launcher.
+    Owned(Box<dyn ChildWrapper>),
+    /// A game an earlier launcher started.
+    Adopted(Box<dyn AdoptedProcess>),
+}
+
+impl ProcessHandle {
+    pub fn try_wait(&mut self) -> std::io::Result<ProcessState> {
+        match self {
+            Self::Owned(child) => Ok(child.try_wait()?.map_or(ProcessState::Running, |status| {
+                ProcessState::Exited(Some(status))
+            })),
+            Self::Adopted(process) => process.try_wait(),
+        }
+    }
+
+    pub fn start_kill(&mut self) -> std::io::Result<()> {
+        match self {
+            Self::Owned(child) => child.start_kill(),
+            Self::Adopted(process) => process.start_kill(),
+        }
+    }
+}
 
 #[async_trait]
 pub trait ProcessStorage: Send + Sync {
     async fn insert(
         &self,
         process: MinecraftProcessMetadata,
-        child: Box<dyn ChildWrapper>,
+        handle: ProcessHandle,
     ) -> Result<(), ProcessError>;
     async fn remove(&self, id: Uuid) -> Result<(), ProcessError>;
 
@@ -33,7 +58,8 @@ pub trait ProcessStorage: Send + Sync {
         id: Uuid,
     ) -> Result<Option<MinecraftProcessMetadata>, ProcessError>;
 
-    async fn try_wait(&self, id: Uuid) -> Result<Option<Option<ExitStatus>>, ProcessError>;
+    /// `None` when the storage does not hold the process.
+    async fn try_wait(&self, id: Uuid) -> Result<Option<ProcessState>, ProcessError>;
     /// Ask the process to stop and return without waiting for it: the exit is seen by `try_wait`.
     async fn kill(&self, id: Uuid) -> Result<(), ProcessError>;
     /// Whether `kill` was requested for the process (the exit is then not a crash).

@@ -1,3 +1,4 @@
+use std::process::ExitStatus;
 use std::sync::Arc;
 
 use chrono::{DateTime, Utc};
@@ -38,11 +39,30 @@ pub enum KillScope {
     Tree,
 }
 
+/// Whether a followed process still runs.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ProcessState {
+    Running,
+    /// The process ended. The status is unknown for a process the launcher did not start on
+    /// Unix: only its parent may read it.
+    Exited(Option<ExitStatus>),
+}
+
+/// How the launcher came to follow a game.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ProcessOrigin {
+    /// This launcher started it.
+    Launched,
+    /// An earlier launcher started it, and this one took it over.
+    Adopted,
+}
+
 #[derive(Debug, Clone)]
 pub struct MinecraftProcessMetadata {
     uuid: Uuid,
     instance_id: InstanceId,
     start_time: DateTime<Utc>,
+    origin: ProcessOrigin,
 }
 
 impl MinecraftProcessMetadata {
@@ -51,6 +71,17 @@ impl MinecraftProcessMetadata {
             uuid: Uuid::new_v4(),
             instance_id,
             start_time: Utc::now(),
+            origin: ProcessOrigin::Launched,
+        }
+    }
+
+    /// A run that an earlier launcher started, under the id and start it was given then.
+    pub fn adopted(uuid: Uuid, instance_id: InstanceId, start_time: DateTime<Utc>) -> Self {
+        MinecraftProcessMetadata {
+            uuid,
+            instance_id,
+            start_time,
+            origin: ProcessOrigin::Adopted,
         }
     }
 
@@ -62,5 +93,30 @@ impl MinecraftProcessMetadata {
     }
     pub fn start_time(&self) -> &DateTime<Utc> {
         &self.start_time
+    }
+    pub fn origin(&self) -> ProcessOrigin {
+        self.origin
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn should_keep_the_id_and_start_of_the_run_when_it_is_adopted() {
+        let launched = MinecraftProcessMetadata::new(InstanceId::generate());
+
+        let adopted = MinecraftProcessMetadata::adopted(
+            launched.uuid(),
+            launched.instance_id().clone(),
+            *launched.start_time(),
+        );
+
+        assert_eq!(launched.origin(), ProcessOrigin::Launched);
+        assert_eq!(adopted.origin(), ProcessOrigin::Adopted);
+        assert_eq!(adopted.uuid(), launched.uuid());
+        assert_eq!(adopted.instance_id(), launched.instance_id());
+        assert_eq!(adopted.start_time(), launched.start_time());
     }
 }
