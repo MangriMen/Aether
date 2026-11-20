@@ -225,6 +225,32 @@ impl ProgressBar {
         };
         self.event(fraction, message, ProgressStatus::Running)
     }
+
+    /// The last event of a bar: done or, after [`ProgressBarId::fail`] or
+    /// [`ProgressBarId::cancel`], failed or cancelled.
+    pub(crate) fn finished_event(&self) -> ProgressEvent {
+        match &self.status {
+            ProgressStatus::Failed(_) => {
+                self.event(None, FAILED_MESSAGE.to_string(), self.status.clone())
+            }
+            ProgressStatus::Cancelled => self.event(
+                None,
+                CANCELLED_MESSAGE.to_string(),
+                ProgressStatus::Cancelled,
+            ),
+            ProgressStatus::Running | ProgressStatus::Done => {
+                self.event(None, COMPLETED_MESSAGE.to_string(), ProgressStatus::Done)
+            }
+        }
+    }
+
+    /// Mark a bar that is left behind by the end of its parent as cancelled, unless it has
+    /// failed already.
+    pub(crate) fn cut_short(&mut self) {
+        if self.status == ProgressStatus::Running {
+            self.status = ProgressStatus::Cancelled;
+        }
+    }
 }
 
 /// What a shared bar shows ([`ProgressBar::shown`]), taken without copying the whole bar, for
@@ -326,7 +352,7 @@ impl ProgressBarId {
             Self::finish_children(self_id, storage, events).await;
         }
         Self::finish_mirrors(&bar, storage, events).await;
-        events.push(Self::finished_event(&bar));
+        events.push(bar.finished_event());
     }
 
     /// End the mirrors of the shared bar `shared` as it ends: they show its last state. Their
@@ -347,7 +373,7 @@ impl ProgressBarId {
             };
             mirror.show(&shown);
             mirror.status = shared.status.clone();
-            events.push(Self::finished_event(&mirror));
+            events.push(mirror.finished_event());
         }
     }
 
@@ -378,10 +404,8 @@ impl ProgressBarId {
                 if child.has_children {
                     parents.push(child.id);
                 }
-                if child.status == ProgressStatus::Running {
-                    child.status = ProgressStatus::Cancelled;
-                }
-                ended.push(Self::finished_event(&child));
+                child.cut_short();
+                ended.push(child.finished_event());
             }
         }
         // A bar is found before the bars under it.
@@ -395,24 +419,6 @@ impl ProgressBarId {
             Err(e) => {
                 error!("Could not unregister progress bar {id}: {e:?}");
                 None
-            }
-        }
-    }
-
-    /// The last event of a bar: done or, after [`fail`](Self::fail) or
-    /// [`cancel`](Self::cancel), failed or cancelled.
-    fn finished_event(bar: &ProgressBar) -> ProgressEvent {
-        match &bar.status {
-            ProgressStatus::Failed(_) => {
-                bar.event(None, FAILED_MESSAGE.to_string(), bar.status.clone())
-            }
-            ProgressStatus::Cancelled => bar.event(
-                None,
-                CANCELLED_MESSAGE.to_string(),
-                ProgressStatus::Cancelled,
-            ),
-            ProgressStatus::Running | ProgressStatus::Done => {
-                bar.event(None, COMPLETED_MESSAGE.to_string(), ProgressStatus::Done)
             }
         }
     }
@@ -845,5 +851,29 @@ mod tests {
         let storage = Arc::new(MapStorage::default());
 
         drop(attached(Uuid::new_v4(), &storage, tx));
+    }
+
+    #[test]
+    fn a_bar_cut_short_ends_cancelled_unless_it_failed() {
+        let mut running = bar(Uuid::new_v4());
+        running.cut_short();
+        let event = running.finished_event();
+        assert_eq!(event.status, ProgressStatus::Cancelled);
+        assert_eq!(event.message, CANCELLED_MESSAGE);
+        assert_eq!(event.fraction, None);
+
+        let mut failed = bar(Uuid::new_v4());
+        failed.status = ProgressStatus::Failed(ProgressFailure::new(failure("boom")));
+        failed.cut_short();
+        let event = failed.finished_event();
+        assert!(matches!(event.status, ProgressStatus::Failed(_)));
+        assert_eq!(event.message, FAILED_MESSAGE);
+    }
+
+    #[test]
+    fn a_running_bar_ends_done_when_not_cut_short() {
+        let event = bar(Uuid::new_v4()).finished_event();
+        assert_eq!(event.status, ProgressStatus::Done);
+        assert_eq!(event.message, COMPLETED_MESSAGE);
     }
 }
