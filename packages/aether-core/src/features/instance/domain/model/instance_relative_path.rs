@@ -13,8 +13,11 @@ use std::fmt;
 use std::path::PathBuf;
 
 use super::InstanceError;
-use crate::features::settings::INSTANCE_METADATA_FOLDER_NAME;
 use crate::shared::safe_path::{self, PathRejection, Separators};
+
+/// Subdirectory of an instance that holds state owned by the core, not by the pack:
+/// `instance.json` and, under `plugins/<plugin_id>/`, each plugin's own per-instance state.
+pub const INSTANCE_METADATA_FOLDER_NAME: &str = ".metadata";
 
 /// A path refused by [`InstanceRelativePath::parse`] or [`ContentPath::parse`].
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]

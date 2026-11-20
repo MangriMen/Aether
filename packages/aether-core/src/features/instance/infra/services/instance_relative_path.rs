@@ -18,8 +18,10 @@
 
 use std::path::{Path, PathBuf};
 
-use crate::features::instance::domain::{InstanceError, InstanceId, InstanceRelativePath};
-use crate::features::settings::{INSTANCE_METADATA_FOLDER_NAME, PLUGINS_FOLDER_NAME};
+use crate::features::instance::domain::{
+    INSTANCE_METADATA_FOLDER_NAME, InstanceError, InstanceId, InstanceRelativePath,
+};
+use crate::features::settings::PLUGINS_FOLDER_NAME;
 use crate::shared::safe_path::PathRejection;
 
 fn invalid(path: &str, reason: PathRejection) -> InstanceError {

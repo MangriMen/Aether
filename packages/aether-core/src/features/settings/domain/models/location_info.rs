@@ -1,16 +1,13 @@
 use std::path::{Path, PathBuf};
 
 use crate::{
-    features::instance::{InstanceId, PluginId},
+    features::instance::{INSTANCE_METADATA_FOLDER_NAME, InstanceId, PluginId},
     shared::hash::FileHash,
 };
 
 pub const METADATA_FOLDER_NAME: &str = ".minecraft";
 pub const CACHE_FOLDER_NAME: &str = "cache";
 pub const INSTANCES_FOLDER_NAME: &str = "instances";
-/// Subdirectory of an instance that holds state owned by the core, not by the pack:
-/// `instance.json` and, under `plugins/<plugin_id>/`, each plugin's own per-instance state.
-pub const INSTANCE_METADATA_FOLDER_NAME: &str = ".metadata";
 pub const PLUGINS_FOLDER_NAME: &str = "plugins";
 pub const PLUGIN_SETTINGS_FILE_NAME: &str = "settings.toml";
 
