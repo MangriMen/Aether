@@ -64,6 +64,15 @@ impl WindowsAdoptedProcess {
             Ok(opened) => opened,
             // The pid is not in use.
             Err(err) if err.code() == ERROR_INVALID_PARAMETER.to_hresult() => return Ok(None),
+            // Not even watching is allowed, as for a protected system process that took the
+            // pid over: its start is read from the process list, which needs no handle.
+            Err(err) if err.code() == ERROR_ACCESS_DENIED.to_hresult() => {
+                return if is_gone_when_denied(identity, listed_start(pid)) {
+                    Ok(None)
+                } else {
+                    Err(err.into())
+                };
+            }
             Err(err) => return Err(err.into()),
         };
         let created = creation_time(&handle)?;
@@ -161,6 +170,48 @@ fn creation_time(handle: &OwnedHandle) -> io::Result<u64> {
 fn start_stamp(created: u64) -> u64 {
     const SECONDS_FROM_1601_TO_1970: u64 = 11_644_473_600;
     (created / 10_000_000).saturating_sub(SECONDS_FROM_1601_TO_1970)
+}
+
+/// The start of a pid as the process list tells it, without a handle to the process.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Listed {
+    /// No process holds the pid.
+    Absent,
+    /// Its start stamp, in the form [`start_stamp`] gives.
+    Started(u64),
+    /// A process holds the pid, but its start could not be read.
+    Unreadable,
+}
+
+fn listed_start(pid: u32) -> Listed {
+    use sysinfo::{Pid, ProcessRefreshKind, ProcessesToUpdate, System};
+
+    let Ok(mut system) = System::new() else {
+        return Listed::Unreadable;
+    };
+    let target = Pid::from_u32(pid);
+    system.refresh_processes_specifics(
+        ProcessesToUpdate::Some(&[target]),
+        false,
+        ProcessRefreshKind::nothing(),
+    );
+    match system.process(target) {
+        None => Listed::Absent,
+        // `sysinfo` reports 0 for a start it could not read.
+        Some(process) if process.start_time() == 0 => Listed::Unreadable,
+        Some(process) => Listed::Started(process.start_time()),
+    }
+}
+
+/// Whether the process of `identity` is known to be gone although its pid could not be opened.
+/// Only a pid nobody holds, or one held by a process of another start, is: a game that runs
+/// elevated past what the launcher may watch must not be forgotten.
+fn is_gone_when_denied(identity: &OsProcessIdentity, listed: Listed) -> bool {
+    match listed {
+        Listed::Absent => true,
+        Listed::Started(stamp) => stamp != identity.start_stamp(),
+        Listed::Unreadable => false,
+    }
 }
 
 fn has_exited(handle: &OwnedHandle) -> io::Result<bool> {
@@ -286,6 +337,20 @@ mod tests {
         let created = (11_644_473_600 + 1) * 10_000_000 + 9_000_000;
 
         assert_eq!(start_stamp(created), 1);
+    }
+
+    #[rstest::rstest]
+    #[case::pid_not_listed(Listed::Absent, true)]
+    #[case::pid_of_another_start(Listed::Started(1_700_000_001), true)]
+    #[case::same_start(Listed::Started(1_700_000_000), false)]
+    #[case::start_unreadable(Listed::Unreadable, false)]
+    fn should_take_a_process_that_cannot_be_opened_for_gone_only_when_its_pid_changed_hands(
+        #[case] listed: Listed,
+        #[case] gone: bool,
+    ) {
+        let identity = OsProcessIdentity::new(4242, 1_700_000_000, String::new());
+
+        assert_eq!(is_gone_when_denied(&identity, listed), gone);
     }
 
     #[test]

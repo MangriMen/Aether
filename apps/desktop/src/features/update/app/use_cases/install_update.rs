@@ -1,19 +1,16 @@
 use std::{future::Future, pin::Pin, sync::Arc};
 
-use aether_core::features::process::ListProcessMetadataUseCasePort;
+use aether_core::features::process::RunningGameService;
 
 use crate::features::update::{UpdateError, UpdateService};
 
 pub struct InstallUpdateUseCase<US: UpdateService> {
     update_service: Arc<US>,
-    processes: Arc<dyn ListProcessMetadataUseCasePort>,
+    processes: Arc<dyn RunningGameService>,
 }
 
 impl<US: UpdateService> InstallUpdateUseCase<US> {
-    pub fn new(
-        update_service: Arc<US>,
-        processes: Arc<dyn ListProcessMetadataUseCasePort>,
-    ) -> Self {
+    pub fn new(update_service: Arc<US>, processes: Arc<dyn RunningGameService>) -> Self {
         Self {
             update_service,
             processes,
@@ -37,13 +34,12 @@ impl<US: UpdateService> InstallUpdateUseCase<US> {
     }
 }
 
-async fn ensure_no_game_runs(
-    processes: &dyn ListProcessMetadataUseCasePort,
-) -> Result<(), UpdateError> {
-    // A process that cannot be listed is not known to be absent.
-    match processes.execute().await {
-        Ok(running) if running.is_empty() => Ok(()),
-        _ => Err(UpdateError::GameRunning),
+/// A game only a saved record tells of counts too: one an earlier launcher left running.
+async fn ensure_no_game_runs(processes: &dyn RunningGameService) -> Result<(), UpdateError> {
+    // Games that cannot be told about are not known to be absent.
+    match processes.any_running().await {
+        Ok(false) => Ok(()),
+        Ok(true) | Err(_) => Err(UpdateError::GameRunning),
     }
 }
 
@@ -52,8 +48,10 @@ mod tests {
     use std::sync::atomic::{AtomicUsize, Ordering};
 
     use aether_core::features::instance::InstanceId;
-    use aether_core::features::process::{MinecraftProcessMetadata, ProcessError};
+    use aether_core::features::process::ProcessError;
+    use aether_core::shared::error::DatabaseError;
     use async_trait::async_trait;
+    use uuid::Uuid;
 
     use super::*;
     use crate::features::update::{BeforeInstall, UpdateStatus};
@@ -76,8 +74,8 @@ mod tests {
         }
     }
 
-    /// The processes listed on each call in turn (the last one repeats), `None` for a list that
-    /// cannot be read.
+    /// The games running on each call in turn (the last one repeats), `None` for games that
+    /// cannot be told about.
     struct MockProcesses(Vec<Option<usize>>, AtomicUsize);
 
     impl MockProcesses {
@@ -87,17 +85,20 @@ mod tests {
     }
 
     #[async_trait]
-    impl ListProcessMetadataUseCasePort for MockProcesses {
-        async fn execute(&self) -> Result<Vec<MinecraftProcessMetadata>, ProcessError> {
+    impl RunningGameService for MockProcesses {
+        async fn running_game(
+            &self,
+            _instance_id: &InstanceId,
+        ) -> Result<Option<Uuid>, ProcessError> {
+            unimplemented!()
+        }
+
+        async fn any_running(&self) -> Result<bool, ProcessError> {
             let call = self.1.fetch_add(1, Ordering::SeqCst).min(self.0.len() - 1);
 
-            self.0[call]
-                .map(|n| {
-                    (0..n)
-                        .map(|_| MinecraftProcessMetadata::new(InstanceId::generate()))
-                        .collect()
-                })
-                .ok_or(ProcessError::KillError { id: "x".to_owned() })
+            self.0[call].map(|n| n > 0).ok_or_else(|| {
+                ProcessError::SavedGamesUnreadable(DatabaseError::new("database is locked"))
+            })
         }
     }
 

@@ -594,6 +594,8 @@ export type ProcessErrorDto = { code: "KILL_ERROR"; payload: {
 	id: string,
 } } | { code: "NOT_TAKEN_OVER_YET"; payload: {
 	id: string,
+} } | { code: "SAVED_GAMES_UNREADABLE"; payload: {
+	cause: CauseDto,
 } } | { code: "IO"; payload: {
 	cause: CauseDto,
 } };

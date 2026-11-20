@@ -16,11 +16,9 @@ use crate::features::instance::{
     InstanceWatcherService, RemoveInstanceUseCase, RemoveInstanceUseCasePort,
 };
 use crate::features::minecraft::ModLoader;
-use crate::features::process::ProcessStorage;
-use crate::features::process::{
-    MinecraftProcessMetadata, ProcessError, ProcessHandle, ProcessState,
-};
+use crate::features::process::{MinecraftProcessMetadata, ProcessError, RunningGameService};
 use crate::features::settings::LocationInfo;
+use crate::shared::error::DatabaseError;
 
 // ─── Minimal inline mock ───────────────────────────────────────
 
@@ -62,6 +60,8 @@ impl InstanceWatcherService for RecordingWatcher {
 #[derive(Default)]
 struct FakeProcesses {
     running: std::sync::Mutex<Vec<MinecraftProcessMetadata>>,
+    /// The saved games cannot be read.
+    unreadable: std::sync::Mutex<bool>,
 }
 
 impl FakeProcesses {
@@ -82,37 +82,24 @@ impl FakeProcesses {
 }
 
 #[async_trait]
-impl ProcessStorage for FakeProcesses {
-    async fn insert(
-        &self,
-        _: MinecraftProcessMetadata,
-        _: ProcessHandle,
-    ) -> Result<(), ProcessError> {
+impl RunningGameService for FakeProcesses {
+    async fn running_game(&self, instance_id: &InstanceId) -> Result<Option<Uuid>, ProcessError> {
+        if *self.unreadable.lock().unwrap() {
+            return Err(ProcessError::SavedGamesUnreadable(DatabaseError::new(
+                "database is locked",
+            )));
+        }
+        Ok(self
+            .running
+            .lock()
+            .unwrap()
+            .iter()
+            .find(|p| p.instance_id() == instance_id)
+            .map(MinecraftProcessMetadata::uuid))
+    }
+
+    async fn any_running(&self) -> Result<bool, ProcessError> {
         unimplemented!()
-    }
-    async fn remove(&self, _: Uuid) -> Result<(), ProcessError> {
-        unimplemented!()
-    }
-    async fn replace_pending(&self, _: Uuid, _: ProcessHandle) -> Result<bool, ProcessError> {
-        unimplemented!()
-    }
-    async fn list_metadata(&self) -> Result<Vec<MinecraftProcessMetadata>, ProcessError> {
-        Ok(self.running.lock().unwrap().clone())
-    }
-    async fn get_metadata(
-        &self,
-        _: Uuid,
-    ) -> Result<Option<MinecraftProcessMetadata>, ProcessError> {
-        unimplemented!()
-    }
-    async fn try_wait(&self, _: Uuid) -> Result<Option<ProcessState>, ProcessError> {
-        unimplemented!()
-    }
-    async fn kill(&self, _: Uuid) -> Result<(), ProcessError> {
-        unimplemented!()
-    }
-    async fn was_killed(&self, _: Uuid) -> bool {
-        false
     }
 }
 
@@ -776,6 +763,52 @@ async fn should_remove_only_the_folder_of_a_broken_legacy_instance_when_it_is_de
         std::fs::read(neighbour.join("world.dat")).unwrap(),
         b"worlds"
     );
+}
+
+#[tokio::test]
+async fn should_refuse_and_keep_the_instance_when_the_saved_games_cannot_be_read() {
+    let (_temp, location_info, pool) = create_test_infrastructure().await;
+    let instance_id = Uuid::new_v4().to_string();
+    let storage = Arc::new(SqliteInstanceStorage::new(pool.clone()));
+    let file_service = Arc::new(FsInstanceFileService::new(
+        location_info.clone(),
+        crate::shared::limits::PluginSandboxLimits::default().max_instance_file_bytes,
+    ));
+    storage
+        .upsert(&create_instance(&instance_id))
+        .await
+        .unwrap();
+    create_instance_dir(&location_info, &instance_id).await;
+    let processes = Arc::new(FakeProcesses::default());
+    *processes.unreadable.lock().unwrap() = true;
+    let use_case = RemoveInstanceUseCase::new(
+        storage.clone(),
+        Arc::new(NoOpWatcher),
+        file_service,
+        Arc::new(SqlitePackStorage::new(pool.clone())),
+        Arc::new(InstanceLocks::new()),
+        no_op_reaper(storage),
+        processes,
+    );
+
+    let result = use_case
+        .execute(InstanceId::try_from(instance_id.clone()).unwrap())
+        .await;
+
+    assert!(
+        matches!(
+            result,
+            Err(InstanceError::ProcessError(
+                ProcessError::SavedGamesUnreadable(_)
+            ))
+        ),
+        "{result:?}"
+    );
+    let instances: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM instances")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(instances, 1);
 }
 
 #[tokio::test]

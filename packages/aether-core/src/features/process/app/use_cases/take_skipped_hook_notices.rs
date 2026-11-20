@@ -6,21 +6,21 @@ use crate::core::domain::error_chain;
 use crate::features::{
     events::{EventEmitterExt, SharedEventEmitter, WarningEvent},
     instance::{InstanceId, InstanceStorage},
-    process::app::ports::TakeSkippedHookNoticesUseCasePort,
+    process::app::ports::{SkippedHookNoticeService, TakeSkippedHookNoticesUseCasePort},
 };
 
 /// Tells the user that the post-exit hook of a game was not run.
 ///
 /// The notices of the games found ended at start come before the window listens to events, so
 /// they are held until the frontend takes them; every later one is sent as an event.
-pub struct SkippedHookNotices {
+pub struct TakeSkippedHookNoticesUseCase {
     event_emitter: SharedEventEmitter,
     instance_storage: Arc<dyn InstanceStorage>,
     /// `Some` until the frontend first takes the notices.
     held: Mutex<Option<Vec<WarningEvent>>>,
 }
 
-impl SkippedHookNotices {
+impl TakeSkippedHookNoticesUseCase {
     pub fn new(
         event_emitter: SharedEventEmitter,
         instance_storage: Arc<dyn InstanceStorage>,
@@ -32,7 +32,18 @@ impl SkippedHookNotices {
         }
     }
 
-    pub async fn notify(&self, instance_id: &InstanceId) {
+    pub fn execute(&self) -> Vec<WarningEvent> {
+        self.held
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .take()
+            .unwrap_or_default()
+    }
+}
+
+#[async_trait]
+impl SkippedHookNoticeService for TakeSkippedHookNoticesUseCase {
+    async fn notify(&self, instance_id: &InstanceId) {
         // The instance may have been removed or broken: its id still tells which one it was.
         let instance_name = match self.instance_storage.get(instance_id).await {
             Ok(instance) => instance.name().to_string(),
@@ -61,12 +72,8 @@ impl SkippedHookNotices {
 }
 
 #[async_trait]
-impl TakeSkippedHookNoticesUseCasePort for SkippedHookNotices {
+impl TakeSkippedHookNoticesUseCasePort for TakeSkippedHookNoticesUseCase {
     async fn execute(&self) -> Vec<WarningEvent> {
-        self.held
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .take()
-            .unwrap_or_default()
+        self.execute()
     }
 }

@@ -8,16 +8,23 @@ use crate::features::{
     game_log::ListGameLogSourcesUseCasePort,
     instance::{InstanceId, InstanceStorage},
     process::{
-        ProcessError, ProcessProbe, ProcessRecordStorage, ProcessStorage, RunningGameService,
+        ProcessError, ProcessProbe, ProcessRecord, ProcessRecordStorage, ProcessStorage,
+        RunningGameService, app::ports::SkippedHookNoticeService,
     },
 };
 
-use super::{SkippedHookNotices, ended_runs::EndedRuns};
+use super::ended_runs::EndedRuns;
 
 /// Finds the game of an instance, also one that only a saved record tells of: a game another
 /// launcher on the same data follows, or one this launcher has not taken over yet.
 pub struct FindRunningGameUseCase {
     ended_runs: EndedRuns,
+}
+
+/// What a saved record tells of its game.
+enum Saved {
+    Running,
+    Ended,
 }
 
 impl FindRunningGameUseCase {
@@ -27,7 +34,7 @@ impl FindRunningGameUseCase {
         probe: Arc<dyn ProcessProbe>,
         instance_storage: Arc<dyn InstanceStorage>,
         game_logs: Arc<dyn ListGameLogSourcesUseCasePort>,
-        notices: Arc<SkippedHookNotices>,
+        notices: Arc<dyn SkippedHookNoticeService>,
     ) -> Self {
         Self {
             ended_runs: EndedRuns {
@@ -53,23 +60,10 @@ impl FindRunningGameUseCase {
             return Ok(Some(process.uuid()));
         }
 
-        // The records only add to what the launcher follows: when they cannot be read, the
-        // launch goes on as it would without them.
-        let records = match runs.records.list_for_instance(instance_id).await {
-            Ok(records) => records,
-            Err(err) => {
-                tracing::warn!(
-                    %instance_id,
-                    error = %error_chain(&err),
-                    "Could not read the saved games of the instance"
-                );
-                return Ok(None);
-            }
-        };
-        for record in records {
-            match runs.probe.is_alive(&record.process).await {
-                Ok(true) => return Ok(Some(record.id)),
-                Ok(false) => {
+        for record in self.saved(Some(instance_id)).await? {
+            match self.look_at(&record).await {
+                Saved::Running => return Ok(Some(record.id)),
+                Saved::Ended => {
                     if let Err(err) = runs.forget(&record).await {
                         tracing::warn!(
                             process_id = %record.id,
@@ -79,19 +73,65 @@ impl FindRunningGameUseCase {
                         );
                     }
                 }
-                // The game may still run: launching a second one is worse than refusing.
-                Err(err) => {
-                    tracing::warn!(
-                        process_id = %record.id,
-                        %instance_id,
-                        error = %err,
-                        "Could not tell whether the saved game still runs: it is taken for running"
-                    );
-                    return Ok(Some(record.id));
-                }
             }
         }
         Ok(None)
+    }
+
+    /// The saved records, of one instance or of all. Unreadable ones are an error: one of them
+    /// may stand for a game that runs.
+    async fn saved(
+        &self,
+        instance_id: Option<&InstanceId>,
+    ) -> Result<Vec<ProcessRecord>, ProcessError> {
+        let records = &self.ended_runs.records;
+        let saved = match instance_id {
+            Some(instance_id) => records.list_for_instance(instance_id).await,
+            None => records.list().await,
+        };
+        saved.map_err(|err| {
+            tracing::warn!(
+                instance_id = instance_id.map(tracing::field::display),
+                error = %error_chain(&err),
+                "Could not read the saved games: a game is taken for running"
+            );
+            ProcessError::SavedGamesUnreadable(err)
+        })
+    }
+
+    /// A game the OS cannot tell about may still run, and launching a second one is worse than
+    /// refusing. A game that ended while another launcher still follows it is left to that
+    /// launcher, which credits and forgets it.
+    async fn look_at(&self, record: &ProcessRecord) -> Saved {
+        let probe = &self.ended_runs.probe;
+        match probe.is_alive(&record.process).await {
+            Ok(true) => return Saved::Running,
+            Ok(false) => {}
+            Err(err) => {
+                tracing::warn!(
+                    process_id = %record.id,
+                    error = %err,
+                    "Could not tell whether the saved game still runs: it is taken for running"
+                );
+                return Saved::Running;
+            }
+        }
+        if probe.own_identity() == Some(&record.owner) {
+            return Saved::Ended;
+        }
+        match probe.is_alive(&record.owner).await {
+            Ok(false) => Saved::Ended,
+            Ok(true) => Saved::Running,
+            Err(err) => {
+                tracing::warn!(
+                    process_id = %record.id,
+                    owner_pid = record.owner.pid(),
+                    error = %err,
+                    "Could not tell whether the launcher that follows the saved game still runs: the game is taken for running"
+                );
+                Saved::Running
+            }
+        }
     }
 }
 
@@ -99,6 +139,24 @@ impl FindRunningGameUseCase {
 impl RunningGameService for FindRunningGameUseCase {
     async fn running_game(&self, instance_id: &InstanceId) -> Result<Option<Uuid>, ProcessError> {
         self.execute(instance_id).await
+    }
+
+    async fn any_running(&self) -> Result<bool, ProcessError> {
+        if !self
+            .ended_runs
+            .process_storage
+            .list_metadata()
+            .await?
+            .is_empty()
+        {
+            return Ok(true);
+        }
+        for record in self.saved(None).await? {
+            if matches!(self.look_at(&record).await, Saved::Running) {
+                return Ok(true);
+            }
+        }
+        Ok(false)
     }
 }
 
@@ -109,7 +167,6 @@ mod tests {
     use super::*;
     use crate::features::process::{
         MinecraftProcessMetadata, ProcessHandle,
-        app::ports::TakeSkippedHookNoticesUseCasePort,
         app::use_cases::fakes::{Look, World, earlier_launcher, instance_id, launcher, record_of},
     };
 
@@ -139,6 +196,7 @@ mod tests {
         let running = use_case(&world).execute(&instance_id()).await.unwrap();
 
         assert_eq!(running, Some(id));
+        assert!(use_case(&world).any_running().await.unwrap());
     }
 
     #[tokio::test]
@@ -151,6 +209,7 @@ mod tests {
 
         assert_eq!(running, Some(record.id));
         assert!(world.records.get(record.id).is_some());
+        assert!(use_case(&world).any_running().await.unwrap());
     }
 
     #[tokio::test]
@@ -163,6 +222,7 @@ mod tests {
 
         assert_eq!(running, Some(record.id));
         assert!(world.records.get(record.id).is_some());
+        assert!(use_case(&world).any_running().await.unwrap());
     }
 
     #[tokio::test]
@@ -172,22 +232,59 @@ mod tests {
         *world.game_logs.0.lock().unwrap() =
             Some(record.playtime_credited_until + Duration::seconds(120));
 
+        assert!(!use_case(&world).any_running().await.unwrap());
+        assert!(world.records.get(record.id).is_some(), "looking forgot it");
         let running = use_case(&world).execute(&instance_id()).await.unwrap();
 
         assert_eq!(running, None);
         assert!(world.records.get(record.id).is_none());
         assert_eq!(world.instances.time_played(), 120);
-        assert_eq!(world.notices.execute().await.len(), 1);
+        assert_eq!(world.notices.execute().len(), 1);
+    }
+
+    #[rstest::rstest]
+    #[case::launcher_runs(Look::Running)]
+    #[case::launcher_unknown(Look::Unknown)]
+    #[tokio::test]
+    async fn should_leave_the_ended_game_to_the_launcher_that_follows_it_when_that_one_may_run(
+        #[case] launcher_look: Look,
+    ) {
+        let record = record_of(10, earlier_launcher());
+        let world = World::new(std::slice::from_ref(&record), Some(launcher()));
+        world.probe.set(2, launcher_look);
+
+        let running = use_case(&world).execute(&instance_id()).await.unwrap();
+
+        assert_eq!(running, Some(record.id));
+        assert!(world.records.get(record.id).is_some());
+        assert_eq!(world.instances.time_played(), 0);
+        assert!(use_case(&world).any_running().await.unwrap());
     }
 
     #[tokio::test]
-    async fn should_find_no_game_when_the_saved_games_cannot_be_read() {
-        let world = World::new(&[record_of(10, earlier_launcher())], Some(launcher()));
-        world.probe.set(10, Look::Running);
-        *world.records.failing_reads.lock().unwrap() = true;
+    async fn should_forget_the_ended_game_of_this_launcher_without_looking_at_the_launcher() {
+        let record = record_of(10, launcher());
+        let world = World::new(std::slice::from_ref(&record), Some(launcher()));
 
         let running = use_case(&world).execute(&instance_id()).await.unwrap();
 
         assert_eq!(running, None);
+        assert!(world.records.get(record.id).is_none());
+        assert_eq!(world.probe.times_asked(1), 0);
+    }
+
+    #[tokio::test]
+    async fn should_refuse_when_the_saved_games_cannot_be_read() {
+        let world = World::new(&[record_of(10, earlier_launcher())], Some(launcher()));
+        *world.records.failing_reads.lock().unwrap() = true;
+
+        let running = use_case(&world).execute(&instance_id()).await;
+        let any = use_case(&world).any_running().await;
+
+        assert!(
+            matches!(running, Err(ProcessError::SavedGamesUnreadable(_))),
+            "{running:?}"
+        );
+        assert!(matches!(any, Err(ProcessError::SavedGamesUnreadable(_))));
     }
 }

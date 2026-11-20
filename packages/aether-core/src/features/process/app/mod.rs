@@ -5,12 +5,12 @@ mod use_cases;
 pub use di::ProcessFeature;
 pub use ports::{
     AdoptGameProcessesUseCasePort, AdoptedProcess, KillProcessUseCasePort,
-    ListProcessMetadataUseCasePort, ManageProcessService, ProcessHandle, ProcessProbe,
-    ProcessRecordStorage, ProcessStartService, ProcessStorage, RunningGameService,
-    TakeSkippedHookNoticesUseCasePort, TrackProcessService,
+    ListProcessMetadataUseCasePort, ManageProcessService, PendingAdoptions, ProcessHandle,
+    ProcessProbe, ProcessRecordStorage, ProcessStartService, ProcessStorage, RunningGameService,
+    SkippedHookNoticeService, TakeSkippedHookNoticesUseCasePort, TrackProcessService, TrackedEnd,
 };
 pub use use_cases::{
     AdoptGameProcessesUseCase, FindRunningGameUseCase, KillProcessUseCase,
-    ListProcessMetadataUseCase, ManageProcessUseCase, PendingAdoptions, SkippedHookNotices,
-    StartProcessUseCase, TrackProcessUseCase,
+    ListProcessMetadataUseCase, ManageProcessUseCase, StartProcessUseCase,
+    TakeSkippedHookNoticesUseCase, TrackProcessUseCase,
 };

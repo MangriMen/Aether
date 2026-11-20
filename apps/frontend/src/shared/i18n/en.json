@@ -392,7 +392,8 @@
     "process": {
       "KILL_ERROR": "Failed to terminate process",
       "WAIT_ERROR": "Error waiting for process completion",
-      "NOT_TAKEN_OVER_YET": "The game was started before the launcher restarted and cannot be stopped yet; try again in a moment",
+      "NOT_TAKEN_OVER_YET": "The game was started before the launcher restarted, and the launcher cannot stop it",
+      "SAVED_GAMES_UNREADABLE": "Could not tell whether a game is running: the saved games could not be read",
       "IO": "Process I/O error"
     },
     "request": {

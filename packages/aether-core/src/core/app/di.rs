@@ -82,7 +82,7 @@ use crate::features::{
         KillProcessUseCase, KillProcessUseCasePort, ListProcessMetadataUseCase,
         ListProcessMetadataUseCasePort, ManageProcessService, ManageProcessUseCase, ProcessFeature,
         ProcessProbe, ProcessRecordStorage, ProcessStartService, ProcessStorage,
-        RunningGameService, SkippedHookNotices, StartProcessUseCase,
+        RunningGameService, StartProcessUseCase, TakeSkippedHookNoticesUseCase,
         TakeSkippedHookNoticesUseCasePort, TrackProcessService, TrackProcessUseCase,
     },
     settings::{
@@ -121,7 +121,7 @@ struct UseCaseCache {
     start_process_uc: OnceLock<Arc<dyn ProcessStartService>>,
     track_process_uc: OnceLock<Arc<dyn TrackProcessService>>,
     manage_process_uc: OnceLock<Arc<dyn ManageProcessService>>,
-    skipped_hook_notices: OnceLock<Arc<SkippedHookNotices>>,
+    skipped_hook_notices: OnceLock<Arc<TakeSkippedHookNoticesUseCase>>,
     install_instance_uc: OnceLock<Arc<dyn InstanceInstallService>>,
     disable_plugin_uc: OnceLock<Arc<dyn PluginDisableService>>,
     sync_plugins_uc: OnceLock<Arc<dyn PluginSyncService>>,
@@ -507,11 +507,11 @@ impl AetherContainer {
     }
 
     /// One for the app: it holds the notices until the frontend first takes them.
-    fn skipped_hook_notices(&self) -> Arc<SkippedHookNotices> {
+    fn skipped_hook_notices(&self) -> Arc<TakeSkippedHookNoticesUseCase> {
         self.cache
             .skipped_hook_notices
             .get_or_init(|| {
-                Arc::new(SkippedHookNotices::new(
+                Arc::new(TakeSkippedHookNoticesUseCase::new(
                     self.event_emitter(),
                     self.storage().instance_storage.clone(),
                 ))
@@ -799,7 +799,7 @@ impl InstanceCrudPort for AetherContainer {
                         self.storage().pack_storage.clone(),
                         self.instance_locks.clone(),
                         self.icon_asset_reaper(),
-                        self.storage().process_storage.clone(),
+                        self.running_game_service(),
                     )
                     .with_cancellations(self.install_cancellations.clone()),
                 )

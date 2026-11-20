@@ -86,7 +86,7 @@ fn post_initialize<R: tauri::Runtime>(
         app_handle.manage(ContainerState(container.clone()));
 
         // Before the window, so that games are taken over while it loads.
-        tauri::async_runtime::spawn(pending_adoptions.resolve());
+        tauri::async_runtime::spawn(pending_adoptions);
 
         let main_window_label = WindowLabel::Main;
 

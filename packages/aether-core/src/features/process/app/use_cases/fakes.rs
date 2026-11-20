@@ -22,8 +22,8 @@ use crate::features::{
     minecraft::{GameVersion, ModLoader},
     process::{
         AdoptedProcess, KillScope, ManageProcessService, OsProcessIdentity, ProcessError,
-        ProcessProbe, ProcessRecord, ProcessRecordStorage, ProcessState, SkippedHookNotices,
-        infra::InMemoryProcessStorage,
+        ProcessProbe, ProcessRecord, ProcessRecordStorage, ProcessState,
+        TakeSkippedHookNoticesUseCase, infra::InMemoryProcessStorage,
     },
 };
 use crate::shared::error::DatabaseError;
@@ -75,6 +75,8 @@ pub(super) struct Records {
     pub(super) saved: Mutex<Vec<ProcessRecord>>,
     pub(super) touches: Mutex<Vec<Uuid>>,
     pub(super) failing_reads: Mutex<bool>,
+    /// The next take over finds the record taken over by this launcher first.
+    pub(super) taken_first_by: Mutex<Option<OsProcessIdentity>>,
 }
 
 impl Records {
@@ -162,6 +164,9 @@ impl ProcessRecordStorage for Records {
         from: &OsProcessIdentity,
         to: &OsProcessIdentity,
     ) -> Result<bool, DatabaseError> {
+        if let Some(first) = self.taken_first_by.lock().unwrap().take() {
+            self.set_owner(id, first);
+        }
         let mut saved = self.saved.lock().unwrap();
         match saved
             .iter_mut()
@@ -372,7 +377,7 @@ pub(super) struct World {
     pub(super) game_logs: Arc<GameLogs>,
     pub(super) emitter: SharedEventEmitter,
     pub(super) events: Mutex<mpsc::UnboundedReceiver<Event>>,
-    pub(super) notices: Arc<SkippedHookNotices>,
+    pub(super) notices: Arc<TakeSkippedHookNoticesUseCase>,
 }
 
 impl World {
@@ -380,7 +385,10 @@ impl World {
         let (sender, events) = mpsc::unbounded_channel();
         let emitter: SharedEventEmitter = Arc::new(ChannelEmitter(sender));
         let instances = Instances::new();
-        let notices = Arc::new(SkippedHookNotices::new(emitter.clone(), instances.clone()));
+        let notices = Arc::new(TakeSkippedHookNoticesUseCase::new(
+            emitter.clone(),
+            instances.clone(),
+        ));
         Self {
             storage: Arc::new(InMemoryProcessStorage::default()),
             records: Records::with(records),

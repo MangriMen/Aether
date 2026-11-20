@@ -1,4 +1,5 @@
-use std::{process::ExitStatus, sync::Arc, time};
+use std::sync::Arc;
+use std::time;
 
 use chrono::{DateTime, Duration, Utc};
 use uuid::Uuid;
@@ -6,7 +7,10 @@ use uuid::Uuid;
 use crate::core::domain::error_chain;
 use crate::features::{
     instance::{InstanceId, InstanceStorage, InstanceStorageExt},
-    process::{ProcessRecordStorage, ProcessState, ProcessStorage, TrackProcessService},
+    process::{
+        ProcessRecordStorage, ProcessState, ProcessStorage, TrackProcessService,
+        app::ports::TrackedEnd,
+    },
 };
 
 const PROCESS_CHECK_INTERVAL: time::Duration = time::Duration::from_millis(50);
@@ -28,7 +32,7 @@ pub struct TrackProcessUseCase {
 
 #[async_trait::async_trait]
 impl TrackProcessService for TrackProcessUseCase {
-    async fn execute(&self, params: TrackProcessParams) -> Option<ExitStatus> {
+    async fn execute(&self, params: TrackProcessParams) -> TrackedEnd {
         let TrackProcessParams {
             process_id,
             instance_id,
@@ -42,7 +46,7 @@ impl TrackProcessService for TrackProcessUseCase {
                 Ok(Some(ProcessState::Exited(exit_status))) => {
                     self.finish(process_id, &instance_id, last_updated_playtime)
                         .await;
-                    return exit_status;
+                    return TrackedEnd::Exited(exit_status);
                 }
                 Ok(Some(ProcessState::Running)) => {}
                 // An unknown exit must not look like a clean one. The game may still run, so
@@ -50,7 +54,7 @@ impl TrackProcessService for TrackProcessUseCase {
                 Ok(None) | Err(_) => {
                     self.checkpoint(&mut last_updated_playtime, process_id, &instance_id)
                         .await;
-                    return None;
+                    return TrackedEnd::Lost;
                 }
             }
 
@@ -63,7 +67,6 @@ impl TrackProcessService for TrackProcessUseCase {
         }
     }
 }
-
 impl TrackProcessUseCase {
     pub fn new(
         process_storage: Arc<dyn ProcessStorage>,
@@ -103,7 +106,9 @@ impl TrackProcessUseCase {
 
     /// Credits the rest of an ended run once its record is gone, so that no later launcher
     /// credits it again. A record that cannot be removed is tried once more, then the rest of
-    /// the run is left uncredited.
+    /// the run is left uncredited. When the record was gone already, a launcher that found the
+    /// game ended removed it and credited the run: it is not credited twice. A run whose record
+    /// was never saved loses its last minute the same way.
     async fn finish(
         &self,
         process_id: Uuid,
@@ -111,20 +116,26 @@ impl TrackProcessUseCase {
         last_updated: DateTime<Utc>,
     ) {
         let removed = match self.records.remove(process_id).await {
-            Ok(_) => Ok(()),
-            Err(_) => self.records.remove(process_id).await.map(|_| ()),
+            Ok(removed) => Ok(removed),
+            Err(_) => self.records.remove(process_id).await,
         };
-        if let Err(err) = removed {
-            tracing::warn!(
+        match removed {
+            Ok(true) => {
+                self.credit_playtime(instance_id, Utc::now().signed_duration_since(last_updated))
+                    .await;
+            }
+            Ok(false) => tracing::debug!(
+                %process_id,
+                %instance_id,
+                "The record of the ended game was removed already: its last playtime is left to whoever removed it"
+            ),
+            Err(err) => tracing::warn!(
                 %process_id,
                 %instance_id,
                 error = %error_chain(&err),
                 "Could not remove the record of the ended game: its last playtime is not credited"
-            );
-            return;
+            ),
         }
-        self.credit_playtime(instance_id, Utc::now().signed_duration_since(last_updated))
-            .await;
     }
 
     async fn credit_playtime(&self, instance_id: &InstanceId, elapsed: Duration) {
@@ -148,6 +159,7 @@ impl TrackProcessUseCase {
 
 #[cfg(test)]
 mod tests {
+    use std::process::ExitStatus;
     use std::sync::Mutex;
 
     use async_trait::async_trait;
@@ -278,12 +290,14 @@ mod tests {
         }
     }
 
-    /// Fails the first `failing_removes` removes, and every touch when `failing_touch`.
+    /// Fails the first `failing_removes` removes, and every touch when `failing_touch`; finds
+    /// no record to remove when `removed_already`.
     #[derive(Default)]
     struct Records {
         calls: Calls,
         failing_removes: Mutex<u32>,
         failing_touch: bool,
+        removed_already: bool,
     }
 
     #[async_trait]
@@ -299,7 +313,7 @@ mod tests {
                 *failing -= 1;
                 return Err(DatabaseError::new("database is locked"));
             }
-            Ok(true)
+            Ok(!self.removed_already)
         }
 
         async fn list(&self) -> Result<Vec<ProcessRecord>, DatabaseError> {
@@ -362,7 +376,7 @@ mod tests {
         (use_case, calls)
     }
 
-    async fn track(use_case: &TrackProcessUseCase) -> Option<ExitStatus> {
+    async fn track(use_case: &TrackProcessUseCase) -> TrackedEnd {
         use_case
             .execute(TrackProcessParams {
                 process_id: Uuid::new_v4(),
@@ -387,7 +401,7 @@ mod tests {
 
         let exit_status = track(&use_case).await;
 
-        assert_eq!(exit_status, Some(status(0)));
+        assert_eq!(exit_status, TrackedEnd::Exited(Some(status(0))));
         assert_eq!(*calls.lock().unwrap(), ["remove", "credit 0"]);
     }
 
@@ -397,7 +411,7 @@ mod tests {
 
         let exit_status = track(&use_case).await;
 
-        assert_eq!(exit_status, None);
+        assert_eq!(exit_status, TrackedEnd::Exited(None));
         assert_eq!(*calls.lock().unwrap(), ["remove", "credit 0"]);
     }
 
@@ -412,6 +426,21 @@ mod tests {
         track(&use_case).await;
 
         assert_eq!(*calls.lock().unwrap(), ["remove", "remove", "credit 0"]);
+    }
+
+    #[tokio::test]
+    async fn should_not_credit_the_rest_of_the_run_when_another_launcher_removed_the_record_first()
+    {
+        let records = Records {
+            removed_already: true,
+            ..Records::default()
+        };
+        let (use_case, calls) = use_case(Game::Exited, records);
+
+        let end = track(&use_case).await;
+
+        assert_eq!(end, TrackedEnd::Exited(Some(status(0))));
+        assert_eq!(*calls.lock().unwrap(), ["remove"]);
     }
 
     #[tokio::test]
@@ -438,7 +467,7 @@ mod tests {
 
         let exit_status = track(&use_case).await;
 
-        assert_eq!(exit_status, None);
+        assert_eq!(exit_status, TrackedEnd::Lost);
         assert_eq!(kinds(&calls), ["touch", "credit"]);
     }
 

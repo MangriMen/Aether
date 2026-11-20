@@ -9,13 +9,14 @@ use crate::{
         instance::InstanceId,
         process::{
             ManageProcessService, ProcessError, ProcessOrigin, ProcessStorage, TrackProcessService,
+            app::ports::{SkippedHookNoticeService, TrackedEnd},
         },
         settings::LocationInfo,
     },
     shared::serializable_command::{HookKind, HookSpawnError, parse_hook_command},
 };
 
-use super::{SkippedHookNotices, TrackProcessParams};
+use super::TrackProcessParams;
 
 /// A failed exit the user did not ask for. An unknown exit is not reported as a crash.
 fn is_crash(status: Option<ExitStatus>, killed: bool) -> bool {
@@ -33,15 +34,16 @@ enum PostExit {
 }
 
 /// The hook runs after a clean exit only, and never after a stop the user asked for. An exit
-/// that cannot be read is not taken for a clean one.
-fn post_exit(status: Option<ExitStatus>, killed: bool, origin: ProcessOrigin) -> PostExit {
+/// that cannot be read is not taken for a clean one, and a game the launcher lost sight of may
+/// not have ended at all.
+fn post_exit(end: TrackedEnd, killed: bool, origin: ProcessOrigin) -> PostExit {
     if killed {
         return PostExit::Skip;
     }
-    match status {
-        Some(status) if status.success() => PostExit::Run,
-        Some(_) => PostExit::Skip,
-        None => match origin {
+    match end {
+        TrackedEnd::Exited(Some(status)) if status.success() => PostExit::Run,
+        TrackedEnd::Exited(Some(_)) | TrackedEnd::Lost => PostExit::Skip,
+        TrackedEnd::Exited(None) => match origin {
             ProcessOrigin::Adopted => PostExit::SkipAndTell,
             ProcessOrigin::Launched => PostExit::Skip,
         },
@@ -65,7 +67,7 @@ pub struct ManageProcessUseCase {
     process_storage: Arc<dyn ProcessStorage>,
     track_process_service: Arc<dyn TrackProcessService>,
     location_info: Arc<LocationInfo>,
-    notices: Arc<SkippedHookNotices>,
+    notices: Arc<dyn SkippedHookNoticeService>,
 }
 
 #[async_trait::async_trait]
@@ -79,13 +81,24 @@ impl ManageProcessService for ManageProcessUseCase {
             origin,
         } = params;
 
-        let mc_exit_status = self
+        let end = self
             .track_process_service
             .execute(TrackProcessParams {
                 process_id,
                 instance_id: instance_id.clone(),
             })
             .await;
+        let mc_exit_status = match end {
+            TrackedEnd::Exited(status) => status,
+            TrackedEnd::Lost => {
+                tracing::warn!(
+                    %process_id,
+                    %instance_id,
+                    "Lost sight of the game: it is no longer followed, and its record stays"
+                );
+                None
+            }
+        };
 
         if let Some(capture) = capture {
             capture.wait(CAPTURE_DRAIN_TIMEOUT).await;
@@ -107,7 +120,7 @@ impl ManageProcessService for ManageProcessUseCase {
             })
             .await;
 
-        match post_exit(mc_exit_status, killed, origin) {
+        match post_exit(end, killed, origin) {
             PostExit::Run => {
                 if let Err(err) = self.run_post_exit(&post_exit_command, &instance_id) {
                     tracing::warn!(instance_id = %instance_id, error = %err, "Post-exit hook failed");
@@ -145,7 +158,7 @@ impl ManageProcessUseCase {
         process_storage: Arc<dyn ProcessStorage>,
         track_process_service: Arc<dyn TrackProcessService>,
         location_info: Arc<LocationInfo>,
-        notices: Arc<SkippedHookNotices>,
+        notices: Arc<dyn SkippedHookNoticeService>,
     ) -> Self {
         Self {
             event_emitter,
@@ -181,7 +194,8 @@ mod tests {
         instance::{Instance, InstanceChange, InstanceError, InstanceStorage},
         process::{
             AdoptedProcess, MinecraftProcessMetadata, ProcessHandle, ProcessState,
-            app::ports::TakeSkippedHookNoticesUseCasePort, infra::InMemoryProcessStorage,
+            TakeSkippedHookNoticesUseCase, app::ports::SkippedHookNoticeService,
+            infra::InMemoryProcessStorage,
         },
     };
     use crate::shared::serializable_command::CommandParseError;
@@ -211,29 +225,49 @@ mod tests {
     }
 
     #[rstest]
-    #[case::launched_clean_exit(Some(0), false, ProcessOrigin::Launched, PostExit::Run)]
-    #[case::adopted_clean_exit_with_a_code(Some(0), false, ProcessOrigin::Adopted, PostExit::Run)]
-    #[case::adopted_failed_exit(Some(1), false, ProcessOrigin::Adopted, PostExit::Skip)]
-    #[case::launched_unknown_exit(None, false, ProcessOrigin::Launched, PostExit::Skip)]
-    #[case::adopted_unknown_exit(None, false, ProcessOrigin::Adopted, PostExit::SkipAndTell)]
-    #[case::killed_clean_exit(Some(0), true, ProcessOrigin::Launched, PostExit::Skip)]
-    #[case::killed_adopted_clean_exit(Some(0), true, ProcessOrigin::Adopted, PostExit::Skip)]
-    #[case::killed_adopted_unknown_exit(None, true, ProcessOrigin::Adopted, PostExit::Skip)]
+    #[case::launched_clean_exit(exited(Some(0)), false, ProcessOrigin::Launched, PostExit::Run)]
+    #[case::adopted_clean_exit_with_a_code(
+        exited(Some(0)),
+        false,
+        ProcessOrigin::Adopted,
+        PostExit::Run
+    )]
+    #[case::adopted_failed_exit(exited(Some(1)), false, ProcessOrigin::Adopted, PostExit::Skip)]
+    #[case::launched_unknown_exit(exited(None), false, ProcessOrigin::Launched, PostExit::Skip)]
+    #[case::adopted_unknown_exit(
+        exited(None),
+        false,
+        ProcessOrigin::Adopted,
+        PostExit::SkipAndTell
+    )]
+    #[case::killed_clean_exit(exited(Some(0)), true, ProcessOrigin::Launched, PostExit::Skip)]
+    #[case::killed_adopted_clean_exit(
+        exited(Some(0)),
+        true,
+        ProcessOrigin::Adopted,
+        PostExit::Skip
+    )]
+    #[case::killed_adopted_unknown_exit(exited(None), true, ProcessOrigin::Adopted, PostExit::Skip)]
+    #[case::lost_adopted_game(TrackedEnd::Lost, false, ProcessOrigin::Adopted, PostExit::Skip)]
     fn should_run_the_post_exit_hook_only_after_a_clean_exit_that_was_not_a_stop(
-        #[case] code: Option<i32>,
+        #[case] end: TrackedEnd,
         #[case] killed: bool,
         #[case] origin: ProcessOrigin,
         #[case] expected: PostExit,
     ) {
-        assert_eq!(post_exit(code.map(status), killed, origin), expected);
+        assert_eq!(post_exit(end, killed, origin), expected);
     }
 
-    struct ExitedWith(Option<i32>);
+    fn exited(code: Option<i32>) -> TrackedEnd {
+        TrackedEnd::Exited(code.map(status))
+    }
+
+    struct EndedAs(TrackedEnd);
 
     #[async_trait::async_trait]
-    impl TrackProcessService for ExitedWith {
-        async fn execute(&self, _params: TrackProcessParams) -> Option<ExitStatus> {
-            self.0.map(status)
+    impl TrackProcessService for EndedAs {
+        async fn execute(&self, _params: TrackProcessParams) -> TrackedEnd {
+            self.0
         }
     }
 
@@ -284,7 +318,7 @@ mod tests {
     }
 
     struct Ending {
-        exit_code: Option<i32>,
+        end: TrackedEnd,
         origin: ProcessOrigin,
         post_exit: &'static str,
         killed: bool,
@@ -293,7 +327,7 @@ mod tests {
     impl Ending {
         fn launched(exit_code: i32, post_exit: &'static str) -> Self {
             Self {
-                exit_code: Some(exit_code),
+                end: exited(Some(exit_code)),
                 origin: ProcessOrigin::Launched,
                 post_exit,
                 killed: false,
@@ -328,14 +362,14 @@ mod tests {
                 .unwrap();
             storage.kill(process_id).await.unwrap();
         }
-        let notices = Arc::new(SkippedHookNotices::new(
+        let notices = Arc::new(TakeSkippedHookNoticesUseCase::new(
             emitter.clone(),
             Arc::new(NoInstances),
         ));
         let use_case = ManageProcessUseCase::new(
             emitter,
             storage,
-            Arc::new(ExitedWith(ending.exit_code)),
+            Arc::new(EndedAs(ending.end)),
             location_info,
             notices.clone(),
         );
@@ -364,7 +398,7 @@ mod tests {
             .collect();
         Finished {
             events,
-            notices: notices.execute().await,
+            notices: notices.execute(),
         }
     }
 
@@ -459,7 +493,7 @@ mod tests {
     #[tokio::test]
     async fn should_tell_of_the_skipped_hook_when_a_taken_over_game_ends_in_an_unknown_way() {
         let finished = finish(Ending {
-            exit_code: None,
+            end: exited(None),
             origin: ProcessOrigin::Adopted,
             ..Ending::launched(0, "aether-no-such-program-0f3a")
         })
@@ -488,7 +522,7 @@ mod tests {
         #[case] killed: bool,
     ) {
         let finished = finish(Ending {
-            exit_code: None,
+            end: exited(None),
             origin: ProcessOrigin::Adopted,
             post_exit,
             killed,
@@ -500,16 +534,32 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn should_tell_nothing_when_the_launcher_loses_sight_of_a_taken_over_game() {
+        let finished = finish(Ending {
+            end: TrackedEnd::Lost,
+            origin: ProcessOrigin::Adopted,
+            ..Ending::launched(0, "aether-no-such-program-0f3a")
+        })
+        .await;
+
+        assert_eq!(kinds(&finished.events), ["finished"]);
+        assert!(!finished.events[0].crashed);
+        assert!(finished.notices.is_empty(), "{:?}", finished.notices);
+    }
+
+    #[tokio::test]
     async fn should_hold_the_notices_only_until_they_are_first_taken() {
         let (sender, mut events) = mpsc::unbounded_channel();
-        let notices =
-            SkippedHookNotices::new(Arc::new(ChannelEmitter(sender)), Arc::new(NoInstances));
+        let notices = TakeSkippedHookNoticesUseCase::new(
+            Arc::new(ChannelEmitter(sender)),
+            Arc::new(NoInstances),
+        );
         let instance_id = InstanceId::try_from("test-instance").unwrap();
 
         notices.notify(&instance_id).await;
-        let held = notices.execute().await;
+        let held = notices.execute();
         notices.notify(&instance_id).await;
-        let held_later = notices.execute().await;
+        let held_later = notices.execute();
 
         assert_eq!(held.len(), 1);
         assert!(held_later.is_empty());

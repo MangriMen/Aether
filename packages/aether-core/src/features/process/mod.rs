@@ -7,8 +7,9 @@ pub use app::{
     FindRunningGameUseCase, KillProcessUseCase, KillProcessUseCasePort, ListProcessMetadataUseCase,
     ListProcessMetadataUseCasePort, ManageProcessService, ManageProcessUseCase, PendingAdoptions,
     ProcessFeature, ProcessHandle, ProcessProbe, ProcessRecordStorage, ProcessStartService,
-    ProcessStorage, RunningGameService, SkippedHookNotices, StartProcessUseCase,
-    TakeSkippedHookNoticesUseCasePort, TrackProcessService, TrackProcessUseCase,
+    ProcessStorage, RunningGameService, SkippedHookNoticeService, StartProcessUseCase,
+    TakeSkippedHookNoticesUseCase, TakeSkippedHookNoticesUseCasePort, TrackProcessService,
+    TrackProcessUseCase, TrackedEnd,
 };
 pub use domain::{
     KillScope, MinecraftProcessMetadata, OsProcessIdentity, ProcessError, ProcessOrigin,

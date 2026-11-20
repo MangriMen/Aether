@@ -21,11 +21,12 @@ use crate::features::{
     process::{
         AdoptedProcess, ManageProcessService, MinecraftProcessMetadata, OsProcessIdentity,
         ProcessHandle, ProcessOrigin, ProcessProbe, ProcessRecord, ProcessRecordStorage,
-        ProcessStorage, app::ports::AdoptGameProcessesUseCasePort,
+        ProcessStorage,
+        app::ports::{AdoptGameProcessesUseCasePort, PendingAdoptions, SkippedHookNoticeService},
     },
 };
 
-use super::{ManageProcessParams, SkippedHookNotices, ended_runs::EndedRuns};
+use super::{ManageProcessParams, ended_runs::EndedRuns};
 
 /// How long the launcher that followed a game may take to exit before the game is left to it:
 /// a restart for an update starts the new launcher before the old one has quit.
@@ -83,7 +84,7 @@ impl AdoptGameProcessesUseCase {
         event_emitter: SharedEventEmitter,
         instance_storage: Arc<dyn InstanceStorage>,
         game_logs: Arc<dyn ListGameLogSourcesUseCasePort>,
-        notices: Arc<SkippedHookNotices>,
+        notices: Arc<dyn SkippedHookNoticeService>,
     ) -> Self {
         Self {
             adoption: Arc::new(Adoption {
@@ -143,10 +144,7 @@ impl AdoptGameProcessesUseCase {
                 ),
             }
         }
-        PendingAdoptions {
-            adoption: adoption.clone(),
-            records: pending,
-        }
+        Box::pin(adoption.clone().resolve_all(pending))
     }
 }
 
@@ -154,28 +152,6 @@ impl AdoptGameProcessesUseCase {
 impl AdoptGameProcessesUseCasePort for AdoptGameProcessesUseCase {
     async fn execute(&self) -> PendingAdoptions {
         self.execute().await
-    }
-}
-
-/// The games shown as running that are still to be taken over or forgotten.
-pub struct PendingAdoptions {
-    adoption: Arc<Adoption>,
-    records: Vec<ProcessRecord>,
-}
-
-impl PendingAdoptions {
-    /// Takes over or forgets every game. Returns once each one is settled, which for a game
-    /// another running launcher follows may be never.
-    pub async fn resolve(self) {
-        let mut games = JoinSet::new();
-        for record in self.records {
-            games.spawn(self.adoption.clone().resolve(record));
-        }
-        while let Some(result) = games.join_next().await {
-            if let Err(err) = result {
-                tracing::error!(error = %err, "Taking over a game failed");
-            }
-        }
     }
 }
 
@@ -189,11 +165,23 @@ enum Step {
 }
 
 impl Adoption {
+    async fn resolve_all(self: Arc<Self>, records: Vec<ProcessRecord>) {
+        let mut games = JoinSet::new();
+        for record in records {
+            games.spawn(self.clone().resolve(record));
+        }
+        while let Some(result) = games.join_next().await {
+            if let Err(err) = result {
+                tracing::error!(error = %err, "Taking over a game failed");
+            }
+        }
+    }
+
     async fn resolve(self: Arc<Self>, mut record: ProcessRecord) {
         let mut retry = self.pace.retry_min;
         let mut first = true;
         loop {
-            let step = self.try_take_over(&record, first).await;
+            let step = self.try_take_over(&mut record, first).await;
             first = false;
             let wait = match step {
                 Step::Settled => return,
@@ -205,23 +193,25 @@ impl Adoption {
                 }
             };
             tokio::time::sleep(wait).await;
-            // Another launcher may have taken the game over or ended its run meanwhile.
-            match self.reread(&record).await {
-                Ok(Some(fresh)) => record = fresh,
-                Ok(None) => {
-                    tracing::debug!(
-                        process_id = %record.id,
-                        "The run of the game was ended by another launcher"
-                    );
-                    self.drop_pending(&record).await;
-                    return;
-                }
-                Err(()) => {}
-            }
         }
     }
 
-    async fn try_take_over(&self, record: &ProcessRecord, wait_for_owner: bool) -> Step {
+    /// One try at the game of `record`, which is read again on the way: another launcher may
+    /// have moved its playtime mark, taken it over or ended its run since it was last read.
+    async fn try_take_over(&self, record: &mut ProcessRecord, wait_for_owner: bool) -> Step {
+        let Ok(fresh) = self.reread(record).await else {
+            return Step::Unknown;
+        };
+        let Some(fresh) = fresh else {
+            tracing::debug!(
+                process_id = %record.id,
+                "The run of the game was ended by another launcher"
+            );
+            self.drop_pending(record).await;
+            return Step::Settled;
+        };
+        *record = fresh;
+
         let own = self.probe.own_identity();
         if own != Some(&record.owner) {
             match self.owner_runs(&record.owner, wait_for_owner).await {
@@ -245,6 +235,19 @@ impl Adoption {
                     );
                     return Step::Unknown;
                 }
+            }
+            // The owner may have moved the mark, or ended the run, while it was waited for.
+            let checked_owner = record.owner.clone();
+            match self.reread(record).await {
+                Ok(Some(fresh)) => *record = fresh,
+                Ok(None) => {
+                    self.drop_pending(record).await;
+                    return Step::Settled;
+                }
+                Err(()) => return Step::Unknown,
+            }
+            if !record.owner.matches(&checked_owner) {
+                return Step::Foreign;
             }
         }
 
@@ -301,6 +304,25 @@ impl Adoption {
             );
             return Step::Unknown;
         };
+        // Looked at before the owner changes: a record this launcher owns must be followed.
+        match self.process_storage.get_metadata(record.id).await {
+            Ok(Some(_)) => {}
+            Ok(None) => {
+                tracing::error!(
+                    process_id = %record.id,
+                    "The game to take over is no longer shown: it is left alone"
+                );
+                return Step::Settled;
+            }
+            Err(err) => {
+                tracing::warn!(
+                    process_id = %record.id,
+                    error = %error_chain(&err),
+                    "Could not look at the game to take over"
+                );
+                return Step::Unknown;
+            }
+        }
         match self.records.take_over(record.id, &record.owner, own).await {
             Ok(true) => {}
             Ok(false) => {
@@ -321,9 +343,47 @@ impl Adoption {
             }
         }
 
+        let replaced = self
+            .process_storage
+            .replace_pending(record.id, ProcessHandle::Adopted(process))
+            .await;
+        if !matches!(replaced, Ok(true)) {
+            let why = match &replaced {
+                Err(err) => error_chain(err),
+                Ok(_) => "the game is no longer pending".to_owned(),
+            };
+            tracing::warn!(
+                process_id = %record.id,
+                error = %why,
+                "Could not follow the game that was taken over: it is handed back"
+            );
+            self.hand_back(record, own).await;
+            return match replaced {
+                Err(_) => Step::Unknown,
+                Ok(_) => Step::Settled,
+            };
+        }
+
         self.credit_unfollowed_time(record).await;
-        self.follow(record, process).await;
+        self.follow(record).await;
         Step::Settled
+    }
+
+    /// Gives the record back to the launcher it was taken from, so that a launcher that can
+    /// follow the game takes it over.
+    async fn hand_back(&self, record: &ProcessRecord, own: &OsProcessIdentity) {
+        match self.records.take_over(record.id, own, &record.owner).await {
+            Ok(true) => {}
+            Ok(false) => tracing::warn!(
+                process_id = %record.id,
+                "Could not hand the game back: its record changed"
+            ),
+            Err(err) => tracing::warn!(
+                process_id = %record.id,
+                error = %error_chain(&err),
+                "Could not hand the game back"
+            ),
+        }
     }
 
     /// The game ran all the time no launcher followed it: that time is credited, once the mark
@@ -346,31 +406,9 @@ impl Adoption {
             .await;
     }
 
-    async fn follow(&self, record: &ProcessRecord, process: Box<dyn AdoptedProcess>) {
-        let handle = ProcessHandle::Adopted(process);
-        let replaced = match self
-            .process_storage
-            .replace_pending(record.id, handle)
-            .await
-        {
-            Ok(replaced) => replaced,
-            Err(err) => {
-                tracing::error!(
-                    process_id = %record.id,
-                    error = %error_chain(&err),
-                    "Could not follow the game that was taken over"
-                );
-                return;
-            }
-        };
-        if !replaced {
-            tracing::error!(
-                process_id = %record.id,
-                "The game that was taken over is no longer shown"
-            );
-            return;
-        }
-
+    /// Told before the following starts, so that the end of a game that exits at once comes
+    /// after it.
+    async fn follow(&self, record: &ProcessRecord) {
         let manage_process_service = self.manage_process_service.clone();
         let params = ManageProcessParams {
             process_id: record.id,
@@ -379,13 +417,6 @@ impl Adoption {
             capture: None,
             origin: ProcessOrigin::Adopted,
         };
-        tokio::spawn(async move {
-            let process_id = params.process_id;
-            if let Err(err) = manage_process_service.execute(params).await {
-                tracing::error!(%process_id, "Could not follow the game process: {err}");
-            }
-        });
-
         tracing::info!(
             process_id = %record.id,
             instance_id = %record.instance_id,
@@ -403,6 +434,16 @@ impl Adoption {
                 adopted: true,
             })
             .await;
+        tokio::spawn(async move {
+            let process_id = params.process_id;
+            if let Err(err) = manage_process_service.execute(params).await {
+                tracing::error!(
+                    %process_id,
+                    error = %error_chain(&err),
+                    "Could not follow the game process"
+                );
+            }
+        });
     }
 
     async fn reread(&self, record: &ProcessRecord) -> Result<Option<ProcessRecord>, ()> {

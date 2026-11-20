@@ -8,12 +8,10 @@ use crate::features::{
     instance::{InstanceId, InstanceStorage, InstanceStorageExt},
     process::{
         OsProcessIdentity, ProcessProbe, ProcessRecord, ProcessRecordStorage, ProcessStorage,
-        domain::unfollowed_end_playtime,
+        app::ports::SkippedHookNoticeService, domain::unfollowed_end_playtime,
     },
 };
 use crate::shared::error::DatabaseError;
-
-use super::SkippedHookNotices;
 
 /// The log the game itself writes up to its end, unlike the console log the launcher wrote.
 const GAME_LOG: &str = "latest.log";
@@ -26,7 +24,7 @@ pub(super) struct EndedRuns {
     pub(super) instance_storage: Arc<dyn InstanceStorage>,
     pub(super) game_logs: Arc<dyn ListGameLogSourcesUseCasePort>,
     pub(super) probe: Arc<dyn ProcessProbe>,
-    pub(super) notices: Arc<SkippedHookNotices>,
+    pub(super) notices: Arc<dyn SkippedHookNoticeService>,
 }
 
 impl EndedRuns {

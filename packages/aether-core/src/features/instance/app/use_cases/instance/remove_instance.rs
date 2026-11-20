@@ -9,7 +9,7 @@ use crate::features::instance::{
     InstallCancellations, InstanceError, InstanceId, InstanceLocks, InstanceStorage,
     InstanceWatcherService, PackStorage,
 };
-use crate::features::process::ProcessStorage;
+use crate::features::process::RunningGameService;
 
 /// Removes an instance under its lock ([`InstanceLocks`]): after a plan or an update running in
 /// it, so they do not write into a directory that is being deleted.
@@ -20,7 +20,7 @@ pub struct RemoveInstanceUseCase {
     pack_storage: Arc<dyn PackStorage>,
     instance_locks: Arc<InstanceLocks>,
     icon_reaper: IconAssetReaper,
-    process_storage: Arc<dyn ProcessStorage>,
+    running_games: Arc<dyn RunningGameService>,
     cancellations: Arc<InstallCancellations>,
 }
 
@@ -32,7 +32,7 @@ impl RemoveInstanceUseCase {
         pack_storage: Arc<dyn PackStorage>,
         instance_locks: Arc<InstanceLocks>,
         icon_reaper: IconAssetReaper,
-        process_storage: Arc<dyn ProcessStorage>,
+        running_games: Arc<dyn RunningGameService>,
     ) -> Self {
         Self {
             storage,
@@ -41,23 +41,18 @@ impl RemoveInstanceUseCase {
             pack_storage,
             instance_locks,
             icon_reaper,
-            process_storage,
+            running_games,
             cancellations: Arc::default(),
         }
     }
 
-    /// Listed by instance id rather than read from the instance, so a broken instance is checked too.
+    /// Looked up by instance id rather than read from the instance, so a broken instance is checked
+    /// too. A game only a saved record tells of counts, as for a launch.
     async fn ensure_not_running(&self, instance_id: &InstanceId) -> Result<(), InstanceError> {
-        let running = self
-            .process_storage
-            .list_metadata()
-            .await?
-            .into_iter()
-            .find(|p| p.instance_id() == instance_id);
-        match running {
-            Some(process) => Err(InstanceError::InstanceAlreadyRunning {
+        match self.running_games.running_game(instance_id).await? {
+            Some(process_id) => Err(InstanceError::InstanceAlreadyRunning {
                 instance_id: instance_id.to_string(),
-                process_id: process.uuid(),
+                process_id,
             }),
             None => Ok(()),
         }

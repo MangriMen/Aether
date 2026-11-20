@@ -3,14 +3,17 @@ mod process_probe;
 mod process_record_storage;
 mod process_start_service;
 mod running_game_service;
+mod skipped_hook_notice_service;
 mod track_process_service;
+
+use std::future::Future;
+use std::pin::Pin;
 
 use async_trait::async_trait;
 use process_wrap::tokio::ChildWrapper;
 use uuid::Uuid;
 
 use crate::features::events::WarningEvent;
-use crate::features::process::app::use_cases::PendingAdoptions;
 use crate::features::process::domain::{MinecraftProcessMetadata, ProcessError, ProcessState};
 
 pub use manage_process_service::ManageProcessService;
@@ -18,7 +21,12 @@ pub use process_probe::{AdoptedProcess, ProcessProbe};
 pub use process_record_storage::ProcessRecordStorage;
 pub use process_start_service::ProcessStartService;
 pub use running_game_service::RunningGameService;
-pub use track_process_service::TrackProcessService;
+pub use skipped_hook_notice_service::SkippedHookNoticeService;
+pub use track_process_service::{TrackProcessService, TrackedEnd};
+
+/// The work that takes over, or forgets, the games shown as pending. It ends once every one is
+/// settled, which for a game another running launcher follows may be never.
+pub type PendingAdoptions = Pin<Box<dyn Future<Output = ()> + Send>>;
 
 /// The game process as the launcher holds it.
 #[derive(Debug)]

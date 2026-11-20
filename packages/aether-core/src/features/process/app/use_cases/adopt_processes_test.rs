@@ -7,7 +7,6 @@ use crate::features::{
     events::WarningEvent,
     process::{
         ProcessError, ProcessState,
-        app::ports::TakeSkippedHookNoticesUseCasePort,
         app::use_cases::fakes::{Look, World, earlier_launcher, eventually, launcher, record_of},
     },
 };
@@ -40,7 +39,7 @@ fn use_case(world: &World) -> AdoptGameProcessesUseCase {
 /// Shows the saved games and starts taking them over in the background.
 async fn start(world: &World) -> tokio::task::JoinHandle<()> {
     let pending = use_case(world).execute().await;
-    tokio::spawn(pending.resolve())
+    tokio::spawn(pending)
 }
 
 async fn is_pending(world: &World, id: uuid::Uuid) -> bool {
@@ -143,7 +142,7 @@ async fn should_credit_the_time_the_game_ran_unfollowed_once_the_mark_is_moved()
 }
 
 #[tokio::test]
-async fn should_leave_the_game_to_the_launcher_that_took_it_over_first() {
+async fn should_leave_the_game_to_a_launcher_that_took_it_over_after_the_records_were_read() {
     let record = record_of(10, earlier_launcher());
     let world = World::new(std::slice::from_ref(&record), Some(launcher()));
     world.probe.set(10, Look::Running);
@@ -153,7 +152,7 @@ async fn should_leave_the_game_to_the_launcher_that_took_it_over_first() {
     // Another launcher on the same data takes the game over after this one read the record.
     world.records.set_owner(record.id, other.clone());
 
-    let resolving = tokio::spawn(resolution.resolve());
+    let resolving = tokio::spawn(resolution);
     eventually("the other launcher was not looked at again", || {
         world.probe.times_asked(3) >= 2
     })
@@ -274,7 +273,7 @@ async fn should_stop_showing_the_game_when_the_launcher_that_follows_it_ends_its
         .unwrap();
 
     assert!(world.storage.list_metadata().await.unwrap().is_empty());
-    assert!(world.notices.execute().await.is_empty());
+    assert!(world.notices.execute().is_empty());
     assert_eq!(world.instances.time_played(), 0);
 }
 
@@ -303,7 +302,7 @@ async fn should_forget_the_game_and_credit_up_to_its_last_log_write_when_it_is_g
         "{events:?}"
     );
     assert!(world.followed().is_empty());
-    let notices = world.notices.execute().await;
+    let notices = world.notices.execute();
     assert!(
         matches!(
             notices.as_slice(),
@@ -325,7 +324,7 @@ async fn should_credit_nothing_for_the_gone_game_when_a_later_run_of_the_instanc
     let pending = use_case(&world).execute().await;
     // Saved by another launcher on the same data, after this one read the records.
     world.records.saved.lock().unwrap().push(later);
-    pending.resolve().await;
+    pending.await;
 
     assert!(world.records.get(record.id).is_none());
     assert_eq!(world.instances.time_played(), 0);
@@ -347,7 +346,7 @@ async fn should_credit_nothing_for_the_gone_game_when_a_later_run_of_the_instanc
         )
         .await
         .unwrap();
-    pending.resolve().await;
+    pending.await;
 
     assert!(world.records.get(record.id).is_none());
     assert_eq!(world.instances.time_played(), 0);
@@ -362,10 +361,10 @@ async fn should_neither_credit_nor_tell_when_another_launcher_forgot_the_gone_ga
 
     let pending = use_case(&world).execute().await;
     world.records.saved.lock().unwrap().clear();
-    pending.resolve().await;
+    pending.await;
 
     assert_eq!(world.instances.time_played(), 0);
-    assert!(world.notices.execute().await.is_empty());
+    assert!(world.notices.execute().is_empty());
     assert!(world.storage.list_metadata().await.unwrap().is_empty());
 }
 
@@ -378,7 +377,7 @@ async fn should_tell_nothing_of_a_hook_when_the_gone_game_had_none() {
     start(&world).await.await.unwrap();
 
     assert!(world.records.get(record.id).is_none());
-    assert!(world.notices.execute().await.is_empty());
+    assert!(world.notices.execute().is_empty());
 }
 
 #[tokio::test]
@@ -469,8 +468,93 @@ async fn should_show_nothing_when_the_saved_games_cannot_be_read() {
     let world = World::new(std::slice::from_ref(&record), Some(launcher()));
     *world.records.failing_reads.lock().unwrap() = true;
 
-    use_case(&world).execute().await.resolve().await;
+    use_case(&world).execute().await.await;
 
     assert!(world.storage.list_metadata().await.unwrap().is_empty());
     assert!(world.records.get(record.id).is_some());
+}
+
+#[tokio::test]
+async fn should_leave_the_game_to_the_launcher_that_took_it_over_first() {
+    let record = record_of(10, earlier_launcher());
+    let world = World::new(std::slice::from_ref(&record), Some(launcher()));
+    world.probe.set(10, Look::Running);
+    let other = OsProcessIdentity::new(3, 70, "boot".to_owned());
+    world.probe.set(3, Look::Running);
+    // Between this launcher's last look at the record and its take over.
+    *world.records.taken_first_by.lock().unwrap() = Some(other.clone());
+
+    let resolving = start(&world).await;
+    eventually("the other launcher was not looked at", || {
+        world.probe.times_asked(3) >= 1
+    })
+    .await;
+
+    assert!(world.records.get(record.id).unwrap().owner.matches(&other));
+    assert!(world.followed().is_empty());
+    assert!(world.process_events().is_empty());
+    assert!(is_pending(&world, record.id).await);
+    assert_eq!(world.instances.time_played(), 0);
+    resolving.abort();
+}
+
+#[tokio::test]
+async fn should_credit_from_the_mark_the_earlier_launcher_moved_while_it_was_waited_for() {
+    let record = record_of(10, earlier_launcher());
+    let world = World::new(std::slice::from_ref(&record), Some(launcher()));
+    world.probe.set(10, Look::Running);
+    world.probe.set(2, Look::Running);
+
+    let resolving = start(&world).await;
+    eventually("the earlier launcher was not waited for", || {
+        world.probe.times_asked(2) >= 2
+    })
+    .await;
+    // Its last checkpoint before it quits credits up to now.
+    world
+        .records
+        .touch_playtime(record.id, Utc::now())
+        .await
+        .unwrap();
+    world.probe.set(2, Look::Gone);
+    tokio::time::timeout(Duration::from_secs(10), resolving)
+        .await
+        .expect("the game was not taken over")
+        .unwrap();
+
+    assert!(
+        world
+            .records
+            .get(record.id)
+            .unwrap()
+            .owner
+            .matches(&launcher())
+    );
+    assert!(
+        world.instances.time_played() < 60,
+        "credited again: {}",
+        world.instances.time_played()
+    );
+}
+
+#[tokio::test]
+async fn should_not_take_over_the_game_when_it_is_no_longer_shown() {
+    let record = record_of(10, earlier_launcher());
+    let world = World::new(std::slice::from_ref(&record), Some(launcher()));
+    world.probe.set(10, Look::Running);
+
+    let pending = use_case(&world).execute().await;
+    world.storage.remove(record.id).await.unwrap();
+    pending.await;
+
+    assert!(
+        world
+            .records
+            .get(record.id)
+            .unwrap()
+            .owner
+            .matches(&earlier_launcher())
+    );
+    assert!(world.followed().is_empty());
+    assert_eq!(world.instances.time_played(), 0);
 }
