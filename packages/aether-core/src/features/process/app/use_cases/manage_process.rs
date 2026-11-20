@@ -66,7 +66,7 @@ pub struct ManageProcessParams {
 #[derive(Debug, Clone, Copy)]
 pub struct CrashWatch {
     pub pid: u32,
-    /// The earliest write that counts: the later of the start of the game and its adoption.
+    /// The earliest write that counts: the moment the game was first seen alive by this launcher.
     pub since: DateTime<Utc>,
 }
 
@@ -137,7 +137,13 @@ impl ManageProcessService for ManageProcessUseCase {
             })
             .await;
 
-        match post_exit(end, killed, origin) {
+        // A crash found is told as one; the notice of a hook skipped for an unknown end would contradict it.
+        let post = if crashed {
+            PostExit::Skip
+        } else {
+            post_exit(end, killed, origin)
+        };
+        match post {
             PostExit::Run => {
                 if let Err(err) = self.run_post_exit(&post_exit_command, &instance_id) {
                     tracing::warn!(instance_id = %instance_id, error = %err, "Post-exit hook failed");
@@ -602,6 +608,40 @@ mod tests {
         .await;
 
         assert_eq!(finished.events[0].crashed, crashed);
+    }
+
+    #[rstest]
+    #[case::launched_unknown_exit(exited(None), ProcessOrigin::Launched)]
+    #[case::lost_sight(TrackedEnd::Lost, ProcessOrigin::Adopted)]
+    #[tokio::test]
+    async fn should_not_report_a_crash_by_a_trace_unless_a_taken_over_game_exit_is_unknown(
+        #[case] end: TrackedEnd,
+        #[case] origin: ProcessOrigin,
+    ) {
+        let finished = finish(Ending {
+            end,
+            origin,
+            traced: true,
+            ..Ending::launched(0, "")
+        })
+        .await;
+
+        assert!(!finished.events[0].crashed);
+    }
+
+    #[tokio::test]
+    async fn should_not_tell_of_a_skipped_hook_when_a_crash_of_a_taken_over_game_is_found() {
+        let finished = finish(Ending {
+            end: exited(None),
+            origin: ProcessOrigin::Adopted,
+            traced: true,
+            ..Ending::launched(0, "aether-no-such-program-0f3a")
+        })
+        .await;
+
+        assert!(finished.events[0].crashed);
+        assert_eq!(kinds(&finished.events), ["finished"]);
+        assert!(finished.notices.is_empty());
     }
 
     #[tokio::test]

@@ -108,6 +108,20 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn should_not_find_a_fatal_log_of_the_jvm_older_than_the_start() {
+        let (_dir, evidence, id) = setup();
+        let log = evidence
+            .location_info
+            .instance_dir(&id)
+            .join("hs_err_pid42.log");
+        std::fs::write(&log, "fatal").unwrap();
+        set_age(&log, Duration::from_secs(3600));
+        let since = Utc::now() - chrono::Duration::seconds(60);
+
+        assert!(!evidence.found(&id, 42, since).await);
+    }
+
+    #[tokio::test]
     async fn should_find_nothing_when_the_game_left_no_trace() {
         let (_dir, evidence, id) = setup();
 

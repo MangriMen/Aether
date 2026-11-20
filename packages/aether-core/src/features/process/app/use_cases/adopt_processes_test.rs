@@ -100,6 +100,11 @@ async fn should_take_over_the_game_when_it_runs_and_its_launcher_is_gone() {
     assert_eq!(followed[0].post_exit_command, "backup.sh");
     assert!(!followed[0].captured);
     assert_eq!(followed[0].origin, ProcessOrigin::Adopted);
+    assert!(
+        followed[0]
+            .crash_watch
+            .is_some_and(|watch| watch.pid == record.process.pid())
+    );
     let events = world.process_events();
     assert!(
         matches!(
