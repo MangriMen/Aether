@@ -11,7 +11,8 @@ use crate::shared::error::DatabaseError;
 #[async_trait]
 pub trait ProcessRecordStorage: Send + Sync {
     async fn insert(&self, record: &ProcessRecord) -> Result<(), DatabaseError>;
-    async fn remove(&self, id: Uuid) -> Result<(), DatabaseError>;
+    /// Whether there was a record to remove.
+    async fn remove(&self, id: Uuid) -> Result<bool, DatabaseError>;
     /// Every readable record; one that cannot be read is left out.
     async fn list(&self) -> Result<Vec<ProcessRecord>, DatabaseError>;
     async fn list_for_instance(

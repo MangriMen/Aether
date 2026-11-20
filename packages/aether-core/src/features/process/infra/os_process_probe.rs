@@ -132,7 +132,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn should_tell_the_child_from_the_launcher_when_both_run() {
+    async fn should_read_a_later_start_of_the_same_boot_when_the_launcher_starts_a_child() {
         let probe = OsProcessProbe::new();
         #[cfg(windows)]
         let mut command = std::process::Command::new("ping");
@@ -149,7 +149,14 @@ mod tests {
         let _ = child.wait();
 
         let identity = identity.unwrap();
+        let own = probe.own_identity().unwrap();
         assert_eq!(identity.pid(), child.id());
-        assert!(!identity.matches(probe.own_identity().unwrap()));
+        assert!(
+            identity.start_stamp() >= own.start_stamp(),
+            "{identity:?} before {own:?}"
+        );
+        assert_eq!(identity.boot_id(), own.boot_id());
+        #[cfg(target_os = "linux")]
+        assert!(!own.boot_id().is_empty());
     }
 }

@@ -1,9 +1,8 @@
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
-use crate::features::instance::InstanceId;
-
 use super::KillScope;
+use crate::features::instance::InstanceId;
 
 /// A running process as the OS tells it apart from a later one that reuses its pid.
 ///

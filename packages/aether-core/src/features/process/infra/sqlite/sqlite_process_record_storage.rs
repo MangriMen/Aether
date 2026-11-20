@@ -47,12 +47,13 @@ impl ProcessRecordStorage for SqliteProcessRecordStorage {
         Ok(())
     }
 
-    async fn remove(&self, id: Uuid) -> Result<(), DatabaseError> {
+    async fn remove(&self, id: Uuid) -> Result<bool, DatabaseError> {
         let id = id.to_string();
-        sqlx::query!("DELETE FROM game_processes WHERE id = ?", id)
+        let removed = sqlx::query!("DELETE FROM game_processes WHERE id = ?", id)
             .execute(&self.pool)
-            .await?;
-        Ok(())
+            .await?
+            .rows_affected();
+        Ok(removed > 0)
     }
 
     async fn list(&self) -> Result<Vec<ProcessRecord>, DatabaseError> {
@@ -199,8 +200,9 @@ mod tests {
         records.insert(&removed).await.unwrap();
         records.insert(&kept).await.unwrap();
 
-        records.remove(removed.id).await.unwrap();
+        let was_there = records.remove(removed.id).await.unwrap();
 
+        assert!(was_there);
         assert_eq!(records.list().await.unwrap(), [kept]);
     }
 
@@ -219,10 +221,11 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn should_not_fail_when_a_missing_record_is_removed_or_touched() {
+    async fn should_report_nothing_removed_and_not_fail_when_the_record_is_missing() {
         let (records, _) = storages().await;
 
-        records.remove(Uuid::new_v4()).await.unwrap();
+        let was_there = records.remove(Uuid::new_v4()).await.unwrap();
+        assert!(!was_there);
         records
             .touch_playtime(Uuid::new_v4(), Utc::now())
             .await

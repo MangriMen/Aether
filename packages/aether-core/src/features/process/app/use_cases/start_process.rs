@@ -47,62 +47,6 @@ impl StartProcessUseCase {
         }
     }
 
-    /// Keeps the started game so that a later launcher finds it. A game that cannot be kept
-    /// still runs and is followed as before: it is only lost to a restart of the launcher.
-    async fn save_record(
-        &self,
-        metadata: &MinecraftProcessMetadata,
-        pid: Option<u32>,
-        kill_scope: KillScope,
-        post_exit_command: &str,
-    ) {
-        let process_id = metadata.uuid();
-        let instance_id = metadata.instance_id();
-        // The probe has logged why it does not know the launcher.
-        let Some(owner) = self.process_probe.own_identity() else {
-            return;
-        };
-        let Some(pid) = pid else {
-            tracing::warn!(
-                %process_id,
-                %instance_id,
-                "Could not save the started game: it has no pid"
-            );
-            return;
-        };
-        let process = match self.process_probe.identity_of(pid).await {
-            Ok(process) => process,
-            Err(err) => {
-                tracing::warn!(
-                    %process_id,
-                    %instance_id,
-                    pid,
-                    error = %err,
-                    "Could not save the started game: the OS did not report its start"
-                );
-                return;
-            }
-        };
-        let record = ProcessRecord {
-            id: process_id,
-            instance_id: instance_id.clone(),
-            process,
-            started_at: *metadata.start_time(),
-            kill_scope,
-            post_exit_command: post_exit_command.to_owned(),
-            playtime_credited_until: *metadata.start_time(),
-            owner: owner.clone(),
-        };
-        if let Err(err) = self.records.insert(&record).await {
-            tracing::warn!(
-                %process_id,
-                %instance_id,
-                error = %error_chain(&err),
-                "Could not save the started game"
-            );
-        }
-    }
-
     pub async fn execute(
         &self,
         instance_id: InstanceId,
@@ -139,16 +83,25 @@ impl StartProcessUseCase {
         self.process_storage
             .insert(metadata.clone(), process)
             .await?;
-        // Saved before the game is followed, whose end removes the record: a record saved after
-        // that would outlive the game.
-        self.save_record(&metadata, pid, kill_scope, &post_exit_command)
-            .await;
-
         let manage_process_service = self.manage_process_service.clone();
+        let records = self.records.clone();
+        let process_probe = self.process_probe.clone();
+        let started = metadata.clone();
         let instance_id_clone = instance_id.clone();
         let process_uuid_clone = metadata.uuid();
 
         tokio::spawn(async move {
+            // Off the launch, which holds the instance lock, but before the game is followed:
+            // its end removes the record, and a record saved after that would outlive the game.
+            save_record(
+                records.as_ref(),
+                process_probe.as_ref(),
+                &started,
+                pid,
+                kill_scope,
+                &post_exit_command,
+            )
+            .await;
             if let Err(err) = manage_process_service
                 .execute(ManageProcessParams {
                     process_id: process_uuid_clone,
@@ -189,6 +142,63 @@ impl ProcessStartService for StartProcessUseCase {
     ) -> Result<MinecraftProcessMetadata, ProcessError> {
         self.execute(instance_id, command, kill_scope, post_exit_command, secrets)
             .await
+    }
+}
+
+/// Keeps the started game so that a later launcher finds it. A game that cannot be kept still
+/// runs and is followed as before: it is only lost to a restart of the launcher.
+async fn save_record(
+    records: &dyn ProcessRecordStorage,
+    probe: &dyn ProcessProbe,
+    metadata: &MinecraftProcessMetadata,
+    pid: Option<u32>,
+    kill_scope: KillScope,
+    post_exit_command: &str,
+) {
+    let process_id = metadata.uuid();
+    let instance_id = metadata.instance_id();
+    // The probe has logged why it does not know the launcher.
+    let Some(owner) = probe.own_identity() else {
+        return;
+    };
+    let Some(pid) = pid else {
+        tracing::warn!(
+            %process_id,
+            %instance_id,
+            "Could not save the started game: it has no pid"
+        );
+        return;
+    };
+    let process = match probe.identity_of(pid).await {
+        Ok(process) => process,
+        Err(err) => {
+            tracing::warn!(
+                %process_id,
+                %instance_id,
+                pid,
+                error = %err,
+                "Could not save the started game: the OS did not report its start"
+            );
+            return;
+        }
+    };
+    let record = ProcessRecord {
+        id: process_id,
+        instance_id: instance_id.clone(),
+        process,
+        started_at: *metadata.start_time(),
+        kill_scope,
+        post_exit_command: post_exit_command.to_owned(),
+        playtime_credited_until: *metadata.start_time(),
+        owner: owner.clone(),
+    };
+    if let Err(err) = records.insert(&record).await {
+        tracing::warn!(
+            %process_id,
+            %instance_id,
+            error = %error_chain(&err),
+            "Could not save the started game"
+        );
     }
 }
 
@@ -380,25 +390,84 @@ mod tests {
 
 #[cfg(test)]
 mod start_tests {
+    use std::process::ExitStatus;
     use std::sync::Mutex;
 
     use chrono::{DateTime, Utc};
+    use tokio::sync::oneshot;
     use uuid::Uuid;
 
     use crate::features::{
         events::test_support::NoOpEmitter,
         game_log::{CaptureGameOutputParams, CaptureHandle, GameOutputCaptureService},
-        process::{OsProcessIdentity, infra::InMemoryProcessStorage},
+        process::OsProcessIdentity,
     };
     use crate::shared::error::DatabaseError;
 
     use super::*;
 
-    struct NotManaged;
+    /// Keeps the metadata of the started games; the processes are left to end by themselves.
+    #[derive(Default)]
+    struct Started(Mutex<Vec<MinecraftProcessMetadata>>);
 
     #[async_trait]
-    impl ManageProcessService for NotManaged {
-        async fn execute(&self, _params: ManageProcessParams) -> Result<(), ProcessError> {
+    impl ProcessStorage for Started {
+        async fn insert(
+            &self,
+            process: MinecraftProcessMetadata,
+            _child: Box<dyn ChildWrapper>,
+        ) -> Result<(), ProcessError> {
+            self.0.lock().unwrap().push(process);
+            Ok(())
+        }
+
+        async fn remove(&self, _id: Uuid) -> Result<(), ProcessError> {
+            unimplemented!()
+        }
+
+        async fn list_metadata(&self) -> Result<Vec<MinecraftProcessMetadata>, ProcessError> {
+            unimplemented!()
+        }
+
+        async fn get_metadata(
+            &self,
+            _id: Uuid,
+        ) -> Result<Option<MinecraftProcessMetadata>, ProcessError> {
+            unimplemented!()
+        }
+
+        async fn try_wait(&self, _id: Uuid) -> Result<Option<Option<ExitStatus>>, ProcessError> {
+            unimplemented!()
+        }
+
+        async fn kill(&self, _id: Uuid) -> Result<(), ProcessError> {
+            unimplemented!()
+        }
+
+        async fn was_killed(&self, _id: Uuid) -> bool {
+            unimplemented!()
+        }
+    }
+
+    /// Tells, once it is asked to follow the game, whether the record of the game was there.
+    struct Followed {
+        records: Arc<Records>,
+        record_was_saved: Mutex<Option<oneshot::Sender<bool>>>,
+    }
+
+    #[async_trait]
+    impl ManageProcessService for Followed {
+        async fn execute(&self, params: ManageProcessParams) -> Result<(), ProcessError> {
+            let saved = self
+                .records
+                .saved
+                .lock()
+                .unwrap()
+                .iter()
+                .any(|record| record.id == params.process_id);
+            if let Some(sender) = self.record_was_saved.lock().unwrap().take() {
+                let _ = sender.send(saved);
+            }
             Ok(())
         }
     }
@@ -407,7 +476,7 @@ mod start_tests {
 
     impl GameOutputCaptureService for NotCaptured {
         fn start(&self, _params: CaptureGameOutputParams) -> CaptureHandle {
-            CaptureHandle::new(tokio::sync::oneshot::channel().1)
+            CaptureHandle::new(oneshot::channel().1)
         }
     }
 
@@ -428,7 +497,7 @@ mod start_tests {
             Ok(())
         }
 
-        async fn remove(&self, _id: Uuid) -> Result<(), DatabaseError> {
+        async fn remove(&self, _id: Uuid) -> Result<bool, DatabaseError> {
             unimplemented!()
         }
 
@@ -456,8 +525,11 @@ mod start_tests {
         OsProcessIdentity::new(1, 5, "boot".to_owned())
     }
 
-    /// Reports every process as started at stamp 7 of the boot of the launcher.
-    struct Probe(OsProcessIdentity);
+    /// Reports every process as started at stamp 7 of the boot of the launcher, and the
+    /// launcher itself as `own`.
+    struct Probe {
+        own: Option<OsProcessIdentity>,
+    }
 
     #[async_trait]
     impl ProcessProbe for Probe {
@@ -466,22 +538,38 @@ mod start_tests {
         }
 
         fn own_identity(&self) -> Option<&OsProcessIdentity> {
-            Some(&self.0)
+            self.own.as_ref()
         }
     }
 
-    fn use_case(
-        process_storage: Arc<dyn ProcessStorage>,
-        records: Arc<dyn ProcessRecordStorage>,
-    ) -> StartProcessUseCase {
-        StartProcessUseCase::new(
+    struct Fixture {
+        use_case: StartProcessUseCase,
+        started: Arc<Started>,
+        records: Arc<Records>,
+        record_was_saved: oneshot::Receiver<bool>,
+    }
+
+    fn fixture(records: Records, own: Option<OsProcessIdentity>) -> Fixture {
+        let started = Arc::new(Started::default());
+        let records = Arc::new(records);
+        let (sender, record_was_saved) = oneshot::channel();
+        let use_case = StartProcessUseCase::new(
             Arc::new(NoOpEmitter),
-            process_storage,
-            Arc::new(NotManaged),
+            started.clone(),
+            Arc::new(Followed {
+                records: records.clone(),
+                record_was_saved: Mutex::new(Some(sender)),
+            }),
             Arc::new(NotCaptured),
+            records.clone(),
+            Arc::new(Probe { own }),
+        );
+        Fixture {
+            use_case,
+            started,
             records,
-            Arc::new(Probe(launcher())),
-        )
+            record_was_saved,
+        }
     }
 
     /// A program that is there on every platform and ends at once.
@@ -511,14 +599,12 @@ mod start_tests {
 
     #[tokio::test]
     async fn should_name_the_program_when_it_cannot_be_started() {
-        let use_case = use_case(
-            Arc::new(InMemoryProcessStorage::default()),
-            Arc::new(Records::default()),
-        );
+        let fixture = fixture(Records::default(), Some(launcher()));
         let mut command = Command::new("aether-no-such-program-0f3a");
         command.arg("--accessToken").arg("secret");
 
-        let result = use_case
+        let result = fixture
+            .use_case
             .execute(
                 InstanceId::try_from("test-instance").unwrap(),
                 command,
@@ -542,13 +628,16 @@ mod start_tests {
     }
 
     #[tokio::test]
-    async fn should_save_the_game_with_the_launcher_as_its_owner_when_it_starts() {
-        let records = Arc::new(Records::default());
-        let use_case = use_case(Arc::new(InMemoryProcessStorage::default()), records.clone());
+    async fn should_save_the_game_with_the_launcher_as_its_owner_before_it_is_followed() {
+        let fixture = fixture(Records::default(), Some(launcher()));
 
-        let metadata = start(&use_case).await.unwrap();
+        let metadata = start(&fixture.use_case).await.unwrap();
 
-        let saved = records.saved.lock().unwrap().clone();
+        assert!(
+            fixture.record_was_saved.await.unwrap(),
+            "the game was followed before its record was saved"
+        );
+        let saved = fixture.records.saved.lock().unwrap().clone();
         assert_eq!(saved.len(), 1);
         let record = &saved[0];
         assert_eq!(record.id, metadata.uuid());
@@ -562,17 +651,33 @@ mod start_tests {
     }
 
     #[tokio::test]
-    async fn should_start_the_game_when_its_record_cannot_be_saved() {
-        let process_storage = Arc::new(InMemoryProcessStorage::default());
-        let records = Arc::new(Records {
-            failing: true,
-            ..Records::default()
-        });
-        let use_case = use_case(process_storage.clone(), records);
+    async fn should_start_and_follow_the_game_when_its_record_cannot_be_saved() {
+        let fixture = fixture(
+            Records {
+                failing: true,
+                ..Records::default()
+            },
+            Some(launcher()),
+        );
 
-        let metadata = start(&use_case).await.unwrap();
+        let metadata = start(&fixture.use_case).await.unwrap();
 
-        let running = process_storage.get_metadata(metadata.uuid()).await.unwrap();
-        assert!(running.is_some(), "the started game is not followed");
+        assert!(!fixture.record_was_saved.await.unwrap());
+        let started = fixture.started.0.lock().unwrap();
+        assert!(
+            started
+                .iter()
+                .any(|process| process.uuid() == metadata.uuid())
+        );
+    }
+
+    #[tokio::test]
+    async fn should_save_no_record_when_the_launcher_does_not_know_its_own_process() {
+        let fixture = fixture(Records::default(), None);
+
+        start(&fixture.use_case).await.unwrap();
+
+        assert!(!fixture.record_was_saved.await.unwrap());
+        assert!(fixture.records.saved.lock().unwrap().is_empty());
     }
 }
