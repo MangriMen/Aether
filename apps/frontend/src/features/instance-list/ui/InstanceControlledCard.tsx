@@ -10,8 +10,7 @@ import {
   InstanceCard,
   InstanceContextMenu,
   useInstanceActions,
-  useInstanceDir,
-  useRevealInExplorer,
+  useRevealInstanceDir,
   useRunningInstancesContext,
   INSTANCE_ROUTES,
 } from '@/features/instance';
@@ -31,8 +30,6 @@ export const InstanceControlledCard: Component<InstanceControlledCardProps> = (
   const navigate = useNavigate();
 
   const id = createMemo(() => props.instance.id);
-
-  const instancePath = useInstanceDir(() => id());
 
   const [{ t }] = useTranslation();
 
@@ -63,14 +60,10 @@ export const InstanceControlledCard: Component<InstanceControlledCardProps> = (
       .then(() => closeRemoveModal())
       .catch(logError);
 
-  const { mutateAsync: revealInExplorer } = useRevealInExplorer();
+  const { mutateAsync: revealInstanceDir } = useRevealInstanceDir();
 
   const handleOpenFolder = () => {
-    if (!instancePath.data) {
-      return;
-    }
-
-    revealInExplorer({ path: instancePath.data }).catch(logError);
+    revealInstanceDir(props.instance.id).catch(logError);
   };
 
   const handleOpenSettings = () => {
@@ -93,7 +86,6 @@ export const InstanceControlledCard: Component<InstanceControlledCardProps> = (
           onOpenFolder={handleOpenFolder}
           onOpenSettings={handleOpenSettings}
           onRemove={openRemoveModal}
-          disableOpenFolder={!instancePath.data}
         >
           <ContextMenuTrigger
             as={InstanceCard}
