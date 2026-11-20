@@ -84,6 +84,7 @@ use crate::features::{
         ProcessProbe, ProcessRecordStorage, ProcessStartService, ProcessStorage,
         RunningGameService, StartProcessUseCase, TakeSkippedHookNoticesUseCase,
         TakeSkippedHookNoticesUseCasePort, TrackProcessService, TrackProcessUseCase,
+        infra::FsCrashEvidence,
     },
     settings::{
         EditDefaultInstanceSettingsUseCase, EditDefaultInstanceSettingsUseCasePort,
@@ -501,9 +502,7 @@ impl AetherContainer {
                     self.track_process_service(),
                     self.location_info().clone(),
                     self.skipped_hook_notices(),
-                    Arc::new(crate::features::process::infra::FsCrashEvidence::new(
-                        self.location_info().clone(),
-                    )),
+                    Arc::new(FsCrashEvidence::new(self.location_info().clone())),
                 ))
             })
             .clone()
