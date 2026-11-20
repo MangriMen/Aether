@@ -33,6 +33,7 @@ export const InstanceLogsTab: Component<InstanceLogsTabProps> = (props) => {
   const {
     sources,
     isAdopted,
+    isLiveShown,
     options,
     currentOption,
     sourceId,
@@ -145,7 +146,7 @@ export const InstanceLogsTab: Component<InstanceLogsTabProps> = (props) => {
           onChange={select}
         />
       </div>
-      <Show when={isAdopted() && currentSource()?.kind === 'console'}>
+      <Show when={isAdopted() && isLiveShown()}>
         <p class='px-1 text-muted-foreground text-xs'>
           {t('logs.adoptedHint')}
         </p>
