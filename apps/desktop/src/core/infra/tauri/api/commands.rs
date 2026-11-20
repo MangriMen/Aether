@@ -50,3 +50,23 @@ async fn recreate_window(
     .execute()
     .await?)
 }
+
+/// Ends the launcher, as the user agreed to when asked about the game that runs.
+#[tauri::command]
+#[specta::specta]
+async fn quit_app(app: tauri::AppHandle) -> FrontendResult<()> {
+    app.exit(0);
+    Ok(())
+}
+
+/// The frontend tells whether it listens for the close confirmation, see
+/// [`CloseConfirmationState`].
+#[tauri::command]
+#[specta::specta]
+async fn set_close_confirmation_ready(
+    state: State<'_, crate::core::CloseConfirmationState>,
+    ready: bool,
+) -> FrontendResult<()> {
+    state.set_ready(ready);
+    Ok(())
+}

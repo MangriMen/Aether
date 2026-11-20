@@ -6,8 +6,8 @@ use tauri::{AppHandle, Manager};
 
 use crate::{
     core::{
-        AppSettingsStorageState, EventEmitterState, PreventExitState, TauriWindowManager,
-        WindowManagerState,
+        AppSettingsStorageState, CloseConfirmationState, EventEmitterState, PreventExitState,
+        TauriWindowManager, WindowManagerState,
     },
     features::{
         events::infra::TauriEventEmitter,
@@ -47,6 +47,7 @@ pub fn register_state<R: tauri::Runtime>(
     app_handle.manage(event_emitter);
     app_handle.manage(tauri_update_service);
     app_handle.manage(prevent_exit_state);
+    app_handle.manage(CloseConfirmationState::default());
     app_handle.manage(idempotency_manager);
 }
 

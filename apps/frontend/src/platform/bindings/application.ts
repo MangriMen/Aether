@@ -5,6 +5,13 @@ import { invoke as __TAURI_INVOKE } from "@tauri-apps/api/core";
 /** Commands */
 export const commands = {
 	recreateWindow: () => __TAURI_INVOKE<null>("plugin:application|recreate_window"),
+	/**  Ends the launcher, as the user agreed to when asked about the game that runs. */
+	quitApp: () => __TAURI_INVOKE<null>("plugin:application|quit_app"),
+	/**
+	 *  The frontend tells whether it listens for the close confirmation, see
+	 *  [`CloseConfirmationState`].
+	 */
+	setCloseConfirmationReady: (ready: boolean) => __TAURI_INVOKE<null>("plugin:application|set_close_confirmation_ready", { ready }),
 	revealInExplorer: (path: string, exact: boolean) => __TAURI_INVOKE<null>("plugin:application|reveal_in_explorer", { path, exact }),
 };
 
