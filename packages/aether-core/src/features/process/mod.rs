@@ -3,7 +3,7 @@ mod domain;
 pub mod infra;
 
 pub use app::{
-    AdoptGameProcessesUseCase, AdoptGameProcessesUseCasePort, AdoptedProcess,
+    AdoptGameProcessesUseCase, AdoptGameProcessesUseCasePort, AdoptedProcess, CrashEvidenceService,
     FindRunningGameUseCase, KillProcessUseCase, KillProcessUseCasePort, ListProcessMetadataUseCase,
     ListProcessMetadataUseCasePort, ManageProcessService, ManageProcessUseCase, PendingAdoptions,
     ProcessFeature, ProcessHandle, ProcessProbe, ProcessRecordStorage, ProcessStartService,

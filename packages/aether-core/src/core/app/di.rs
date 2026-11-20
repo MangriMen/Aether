@@ -501,6 +501,9 @@ impl AetherContainer {
                     self.track_process_service(),
                     self.location_info().clone(),
                     self.skipped_hook_notices(),
+                    Arc::new(crate::features::process::infra::FsCrashEvidence::new(
+                        self.location_info().clone(),
+                    )),
                 ))
             })
             .clone()

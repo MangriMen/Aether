@@ -26,7 +26,7 @@ use crate::features::{
     },
 };
 
-use super::{ManageProcessParams, ended_runs::EndedRuns};
+use super::{CrashWatch, ManageProcessParams, ended_runs::EndedRuns};
 
 /// How long the launcher that followed a game may take to exit before the game is left to it:
 /// a restart for an update starts the new launcher before the old one has quit.
@@ -416,6 +416,10 @@ impl Adoption {
             post_exit_command: record.post_exit_command.clone(),
             capture: None,
             origin: ProcessOrigin::Adopted,
+            crash_watch: Some(CrashWatch {
+                pid: record.process.pid(),
+                since: record.started_at.max(Utc::now()),
+            }),
         };
         tracing::info!(
             process_id = %record.id,

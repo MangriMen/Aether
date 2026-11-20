@@ -1,3 +1,4 @@
+mod crash_evidence_service;
 mod manage_process_service;
 mod process_probe;
 mod process_record_storage;
@@ -16,6 +17,7 @@ use uuid::Uuid;
 use crate::features::events::WarningEvent;
 use crate::features::process::domain::{MinecraftProcessMetadata, ProcessError, ProcessState};
 
+pub use crash_evidence_service::CrashEvidenceService;
 pub use manage_process_service::ManageProcessService;
 pub use process_probe::{AdoptedProcess, ProcessProbe};
 pub use process_record_storage::ProcessRecordStorage;

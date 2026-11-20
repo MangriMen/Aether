@@ -4,7 +4,7 @@ mod use_cases;
 
 pub use di::ProcessFeature;
 pub use ports::{
-    AdoptGameProcessesUseCasePort, AdoptedProcess, KillProcessUseCasePort,
+    AdoptGameProcessesUseCasePort, AdoptedProcess, CrashEvidenceService, KillProcessUseCasePort,
     ListProcessMetadataUseCasePort, ManageProcessService, PendingAdoptions, ProcessHandle,
     ProcessProbe, ProcessRecordStorage, ProcessStartService, ProcessStorage, RunningGameService,
     SkippedHookNoticeService, TakeSkippedHookNoticesUseCasePort, TrackProcessService, TrackedEnd,

@@ -1,5 +1,6 @@
 use std::{process::ExitStatus, sync::Arc, time::Duration};
 
+use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
 use crate::{
@@ -9,7 +10,7 @@ use crate::{
         instance::InstanceId,
         process::{
             ManageProcessService, ProcessError, ProcessOrigin, ProcessStorage, TrackProcessService,
-            app::ports::{SkippedHookNoticeService, TrackedEnd},
+            app::ports::{CrashEvidenceService, SkippedHookNoticeService, TrackedEnd},
         },
         settings::LocationInfo,
     },
@@ -57,6 +58,16 @@ pub struct ManageProcessParams {
     /// `None` for a game taken over from an earlier launcher: its output went with that one.
     pub capture: Option<CaptureHandle>,
     pub origin: ProcessOrigin,
+    /// Where to look for a crash when the exit cannot be read; set for a game taken over from an earlier launcher.
+    pub crash_watch: Option<CrashWatch>,
+}
+
+/// What a crash of a game with an unreadable exit is looked for by.
+#[derive(Debug, Clone, Copy)]
+pub struct CrashWatch {
+    pub pid: u32,
+    /// The earliest write that counts: the later of the start of the game and its adoption.
+    pub since: DateTime<Utc>,
 }
 
 /// How long the last output may lag behind the exit before `Finished` is sent anyway.
@@ -68,6 +79,7 @@ pub struct ManageProcessUseCase {
     track_process_service: Arc<dyn TrackProcessService>,
     location_info: Arc<LocationInfo>,
     notices: Arc<dyn SkippedHookNoticeService>,
+    crash_evidence: Arc<dyn CrashEvidenceService>,
 }
 
 #[async_trait::async_trait]
@@ -79,6 +91,7 @@ impl ManageProcessService for ManageProcessUseCase {
             post_exit_command,
             capture,
             origin,
+            crash_watch,
         } = params;
 
         let end = self
@@ -108,6 +121,10 @@ impl ManageProcessService for ManageProcessUseCase {
         self.process_storage.remove(process_id).await?;
 
         let adopted = origin == ProcessOrigin::Adopted;
+        let crashed = is_crash(mc_exit_status, killed)
+            || (!killed
+                && matches!(end, TrackedEnd::Exited(None))
+                && self.crash_traced(&instance_id, crash_watch).await);
         self.event_emitter
             .emit_safe(ProcessEvent {
                 instance_id: instance_id.clone(),
@@ -115,7 +132,7 @@ impl ManageProcessService for ManageProcessUseCase {
                 event: ProcessEventType::Finished,
                 message: "Exited process".to_string(),
                 exit_code: mc_exit_status.and_then(|s| s.code()),
-                crashed: is_crash(mc_exit_status, killed),
+                crashed,
                 adopted,
             })
             .await;
@@ -159,6 +176,7 @@ impl ManageProcessUseCase {
         track_process_service: Arc<dyn TrackProcessService>,
         location_info: Arc<LocationInfo>,
         notices: Arc<dyn SkippedHookNoticeService>,
+        crash_evidence: Arc<dyn CrashEvidenceService>,
     ) -> Self {
         Self {
             event_emitter,
@@ -166,6 +184,19 @@ impl ManageProcessUseCase {
             track_process_service,
             location_info,
             notices,
+            crash_evidence,
+        }
+    }
+
+    /// Whether a game that ended with an unreadable exit left a trace of a crash.
+    async fn crash_traced(&self, instance_id: &InstanceId, watch: Option<CrashWatch>) -> bool {
+        match watch {
+            Some(watch) => {
+                self.crash_evidence
+                    .found(instance_id, watch.pid, watch.since)
+                    .await
+            }
+            None => false,
         }
     }
 
@@ -262,6 +293,15 @@ mod tests {
         TrackedEnd::Exited(code.map(status))
     }
 
+    struct Traced(bool);
+
+    #[async_trait::async_trait]
+    impl CrashEvidenceService for Traced {
+        async fn found(&self, _: &InstanceId, _: u32, _: DateTime<Utc>) -> bool {
+            self.0
+        }
+    }
+
     struct EndedAs(TrackedEnd);
 
     #[async_trait::async_trait]
@@ -322,6 +362,8 @@ mod tests {
         origin: ProcessOrigin,
         post_exit: &'static str,
         killed: bool,
+        /// Whether the game left a trace of a crash.
+        traced: bool,
     }
 
     impl Ending {
@@ -331,6 +373,7 @@ mod tests {
                 origin: ProcessOrigin::Launched,
                 post_exit,
                 killed: false,
+                traced: false,
             }
         }
     }
@@ -372,6 +415,7 @@ mod tests {
             Arc::new(EndedAs(ending.end)),
             location_info,
             notices.clone(),
+            Arc::new(Traced(ending.traced)),
         );
         let capture = match ending.origin {
             // The output is drained already: the sender is gone.
@@ -386,6 +430,10 @@ mod tests {
                 post_exit_command: ending.post_exit.to_owned(),
                 capture,
                 origin: ending.origin,
+                crash_watch: (ending.origin == ProcessOrigin::Adopted).then(|| CrashWatch {
+                    pid: 1,
+                    since: Utc::now(),
+                }),
             })
             .await
             .unwrap();
@@ -526,11 +574,46 @@ mod tests {
             origin: ProcessOrigin::Adopted,
             post_exit,
             killed,
+            traced: false,
         })
         .await;
 
         assert_eq!(kinds(&finished.events), ["finished"]);
         assert!(finished.notices.is_empty(), "{:?}", finished.notices);
+    }
+
+    #[rstest]
+    #[case::trace_found(true, false, true)]
+    #[case::no_trace(false, false, false)]
+    #[case::stopped_by_the_user(true, true, false)]
+    #[tokio::test]
+    async fn should_report_a_crash_of_a_taken_over_game_with_an_unknown_exit_by_its_trace(
+        #[case] traced: bool,
+        #[case] killed: bool,
+        #[case] crashed: bool,
+    ) {
+        let finished = finish(Ending {
+            end: exited(None),
+            origin: ProcessOrigin::Adopted,
+            killed,
+            traced,
+            ..Ending::launched(0, "")
+        })
+        .await;
+
+        assert_eq!(finished.events[0].crashed, crashed);
+    }
+
+    #[tokio::test]
+    async fn should_not_report_a_crash_by_a_trace_when_the_exit_code_is_known() {
+        let finished = finish(Ending {
+            origin: ProcessOrigin::Adopted,
+            traced: true,
+            ..Ending::launched(0, "")
+        })
+        .await;
+
+        assert!(!finished.events[0].crashed);
     }
 
     #[tokio::test]
