@@ -5,7 +5,9 @@ pub mod infra;
 pub use app::{
     KillProcessUseCase, KillProcessUseCasePort, ListProcessMetadataUseCase,
     ListProcessMetadataUseCasePort, ManageProcessService, ManageProcessUseCase, ProcessFeature,
-    ProcessStartService, ProcessStorage, StartProcessUseCase, TrackProcessService,
-    TrackProcessUseCase,
+    ProcessProbe, ProcessRecordStorage, ProcessStartService, ProcessStorage, StartProcessUseCase,
+    TrackProcessService, TrackProcessUseCase,
 };
-pub use domain::{KillScope, MinecraftProcessMetadata, ProcessError};
+pub use domain::{
+    KillScope, MinecraftProcessMetadata, OsProcessIdentity, ProcessError, ProcessRecord,
+};

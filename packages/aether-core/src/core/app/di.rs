@@ -80,8 +80,8 @@ use crate::features::{
     process::{
         KillProcessUseCase, KillProcessUseCasePort, ListProcessMetadataUseCase,
         ListProcessMetadataUseCasePort, ManageProcessService, ManageProcessUseCase, ProcessFeature,
-        ProcessStartService, ProcessStorage, StartProcessUseCase, TrackProcessService,
-        TrackProcessUseCase,
+        ProcessProbe, ProcessRecordStorage, ProcessStartService, ProcessStorage,
+        StartProcessUseCase, TrackProcessService, TrackProcessUseCase,
     },
     settings::{
         EditDefaultInstanceSettingsUseCase, EditDefaultInstanceSettingsUseCasePort,
@@ -159,6 +159,8 @@ pub struct StorageParams {
     pub default_instance_settings_storage:
         Arc<dyn crate::features::settings::DefaultInstanceSettingsStorage>,
     pub process_storage: Arc<dyn ProcessStorage>,
+    /// The started games, kept so that a later launcher finds the ones still running.
+    pub process_record_storage: Arc<dyn ProcessRecordStorage>,
     pub instance_storage: Arc<dyn InstanceStorage>,
     /// The records of `instance_storage` that cannot be read.
     pub broken_instances: Arc<dyn crate::features::instance::BrokenInstanceSource>,
@@ -210,6 +212,8 @@ pub struct AetherContainerParams {
     pub progress_bar_storage: Arc<dyn ProgressBarStorage>,
     pub progress_service: Arc<dyn ProgressService>,
     pub location_info: Arc<LocationInfo>,
+    /// Knows the launcher's own process, read once when it was built.
+    pub process_probe: Arc<dyn ProcessProbe>,
     /// The process-wide cap on concurrent downloads. Shared with downloads plugins make
     /// through the host (`download_to_cache`), so they count against the same limit.
     pub fetch_semaphore: Arc<FetchSemaphore>,
@@ -477,6 +481,7 @@ impl AetherContainer {
                 Arc::new(TrackProcessUseCase::new(
                     self.storage().process_storage.clone(),
                     self.storage().instance_storage.clone(),
+                    self.storage().process_record_storage.clone(),
                 ))
             })
             .clone()
@@ -508,6 +513,8 @@ impl AetherContainer {
                         self.location_info().clone(),
                         self.event_emitter().clone(),
                     )),
+                    self.storage().process_record_storage.clone(),
+                    self.params.process_probe.clone(),
                 ))
             })
             .clone()

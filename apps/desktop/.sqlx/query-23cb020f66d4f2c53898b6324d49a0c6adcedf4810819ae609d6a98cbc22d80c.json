@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO game_processes (\n                id, instance_id, pid, start_stamp, boot_id, started_at, kill_scope,\n                post_exit_command, playtime_credited_until, owner_pid, owner_start_stamp,\n                owner_boot_id\n            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 12
+    },
+    "nullable": []
+  },
+  "hash": "23cb020f66d4f2c53898b6324d49a0c6adcedf4810819ae609d6a98cbc22d80c"
+}
