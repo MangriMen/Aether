@@ -1,6 +1,7 @@
 import {
   keepPreviousData,
   useMutation,
+  useQueries,
   useQuery,
   useQueryClient,
 } from '@tanstack/solid-query';
@@ -63,7 +64,7 @@ export const useSearchContent = (
   });
 };
 
-export const instanceContentsQuery = (id: string | undefined) => ({
+const instanceContentsQuery = (id: string | undefined) => ({
   queryKey: CONTENT_QUERY_KEYS.BY_INSTANCE(id ?? ''),
   queryFn: () => instanceCommands.listContent(id ?? ''),
   enabled: !!id,
@@ -72,6 +73,12 @@ export const instanceContentsQuery = (id: string | undefined) => ({
 export const useInstanceContents = (id: Accessor<string | undefined>) => {
   return useQuery(() => instanceContentsQuery(id()));
 };
+
+/** The contents of several instances at once, one query each, in the order of `ids`. */
+export const useInstancesContents = (ids: Accessor<string[]>) =>
+  useQueries(() => ({
+    queries: ids().map((id) => instanceContentsQuery(id)),
+  }));
 
 export const useDisableContents = () => {
   const queryClient = useQueryClient();
@@ -220,7 +227,7 @@ export const useImportContents = () => {
   }));
 };
 
-export const CHECK_COMPATIBILITY_QUERY = (
+const CHECK_COMPATIBILITY_QUERY = (
   ids: Instance['id'][],
   params: PartialBy<ContentCompatibilityCheckParams, 'providerId'>,
 ) => {
@@ -239,6 +246,16 @@ export const CHECK_COMPATIBILITY_QUERY = (
     enabled: isEnabled,
     placeholderData: keepPreviousData,
   };
+};
+
+/** Warms the cache of the compatibility check; a failure is left to the check itself. */
+export const usePrefetchCompatibility = () => {
+  const queryClient = useQueryClient();
+
+  return (
+    ids: Instance['id'][],
+    params: PartialBy<ContentCompatibilityCheckParams, 'providerId'>,
+  ) => queryClient.prefetchQuery(CHECK_COMPATIBILITY_QUERY(ids, params));
 };
 
 export const useCheckCompatibility = (

@@ -1,6 +1,5 @@
 import type { JSX } from 'solid-js';
 
-import { useQueries } from '@tanstack/solid-query';
 import { createComputed, splitProps, type Component } from 'solid-js';
 import { createStore } from 'solid-js/store';
 
@@ -20,9 +19,9 @@ import {
   ContentContext,
   createInstalledContentIndexStore,
   getContentIdFromUpdateInfo,
-  instanceContentsQuery,
   isAtomicContentType,
   useInstallContent,
+  useInstancesContents,
 } from '@/features/content';
 import { useInstances } from '@/features/instance';
 
@@ -70,11 +69,9 @@ export const ContentContextProvider: Component<ContentContextProviderProps> = (
 
   const instances = useInstances();
 
-  const instancesContents = useQueries(() => ({
-    queries: (instances.data ?? []).map((instance) =>
-      instanceContentsQuery(instance.id),
-    ),
-  }));
+  const instancesContents = useInstancesContents(() =>
+    (instances.data ?? []).map((instance) => instance.id),
+  );
 
   createComputed(() => {
     const providerId = store.providerId;
