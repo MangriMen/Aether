@@ -2,7 +2,7 @@ use aether_core::features::process::ProcessFeature;
 use log::{error, warn};
 use tauri::{Emitter, Manager, WebviewWindow, WindowEvent};
 
-use crate::core::{ContainerState, PreventExitState};
+use crate::core::{CloseConfirmationState, ContainerState, PreventExitState};
 
 /// Sent to the window when the user closes it while a game runs and the close would end the
 /// launcher: the frontend asks the user, and destroys the window once they agree.
@@ -23,7 +23,9 @@ pub fn guard_close_with_running_games<R: tauri::Runtime>(window: &WebviewWindow<
         let Some(container) = app.try_state::<ContainerState>() else {
             return;
         };
-        if app.state::<PreventExitState>().is_prevented() {
+        if app.state::<PreventExitState>().is_prevented()
+            || !app.state::<CloseConfirmationState>().is_ready()
+        {
             return;
         }
 

@@ -1,7 +1,7 @@
 import { listen } from '@tauri-apps/api/event';
-import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { createSignal, onCleanup, onMount } from 'solid-js';
 
+import { applicationCommands } from '@/platform/ipc';
 import { logError } from '@/shared/log';
 
 /** Sent by the backend when the window is closed while a game runs. */
@@ -22,9 +22,12 @@ export const useCloseConfirmationRequest = () => {
       .then((fn) => {
         if (disposed) {
           fn();
-        } else {
-          unlisten = fn;
+          return;
         }
+
+        unlisten = fn;
+        // Told once the listening is certain: the backend holds a close only then.
+        return applicationCommands.setCloseConfirmationReady(true);
       })
       .catch((err: unknown) => {
         logError('Failed to listen for close requests:', err);
@@ -33,16 +36,15 @@ export const useCloseConfirmationRequest = () => {
     onCleanup(() => {
       disposed = true;
       unlisten?.();
+      applicationCommands.setCloseConfirmationReady(false).catch(logError);
     });
   });
 
   const confirm = () => {
     setIsRequested(false);
-    getCurrentWebviewWindow()
-      .destroy()
-      .catch((err: unknown) => {
-        logError('Failed to close the window:', err);
-      });
+    applicationCommands.quitApp().catch((err: unknown) => {
+      logError('Failed to close the launcher:', err);
+    });
   };
 
   const cancel = () => setIsRequested(false);

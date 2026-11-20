@@ -159,6 +159,8 @@ export const eventsCommands = {
 export const applicationCommands = {
   recreateWindow: applicationRawCommands.recreateWindow,
   revealInExplorer: applicationRawCommands.revealInExplorer,
+  quitApp: applicationRawCommands.quitApp,
+  setCloseConfirmationReady: applicationRawCommands.setCloseConfirmationReady,
 };
 
 // Re-export events from bindings

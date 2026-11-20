@@ -15,6 +15,8 @@ macro_rules! application_commands {
     ($($tokens:tt)*) => {
         $($tokens)* [
             recreate_window,
+            quit_app,
+            set_close_confirmation_ready,
             reveal_in_explorer,
         ]
     };
