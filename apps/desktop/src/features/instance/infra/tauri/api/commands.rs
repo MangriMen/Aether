@@ -382,15 +382,22 @@ async fn list_contents(
     let use_case = container.0.list_content_use_case();
     let mut listing = tokio::task::JoinSet::new();
     for id in ids {
-        let instance_id = InstanceId::try_from(id.clone()).map_err(aether_core::Error::from)?;
+        let Ok(instance_id) = InstanceId::try_from(id.clone()) else {
+            tracing::warn!(instance_id = %id, "Could not list the contents of an instance: not a valid id");
+            continue;
+        };
         let use_case = use_case.clone();
         listing.spawn(async move { (id, use_case.execute(instance_id).await) });
     }
 
     let mut contents = HashMap::new();
     while let Some(done) = listing.join_next().await {
-        let Ok((id, result)) = done else {
-            continue;
+        let (id, result) = match done {
+            Ok(done) => done,
+            Err(err) => {
+                tracing::warn!(error = %err, "Listing the contents of an instance did not finish");
+                continue;
+            }
         };
         match result {
             Ok(files) => {
