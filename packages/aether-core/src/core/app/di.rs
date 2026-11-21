@@ -13,9 +13,9 @@ use crate::features::{
         ProgressBarStorage, ProgressService, SharedEventEmitter,
     },
     game_log::{
-        GameLogFeature, GameLogStore, ListGameLogSourcesUseCase, ListGameLogSourcesUseCasePort,
-        ReadGameLogUseCase, ReadGameLogUseCasePort,
-        infra::{FsGameLogStore, FsGameOutputCapture},
+        GameLogFeature, GameLogStore, GameLogTailService, ListGameLogSourcesUseCase,
+        ListGameLogSourcesUseCasePort, ReadGameLogUseCase, ReadGameLogUseCasePort,
+        infra::{FsGameLogStore, FsGameLogTail, FsGameOutputCapture},
     },
     instance::{
         ChangeContentStateUseCase, ChangeContentStateUseCasePort, ChangeInstanceGameUseCase,
@@ -1024,6 +1024,7 @@ impl ProcessFeature for AetherContainer {
             self.event_emitter(),
             self.storage().instance_storage.clone(),
             self.list_game_log_sources_use_case(),
+            self.game_log_tail(),
             self.skipped_hook_notices(),
         ))
     }
@@ -1042,6 +1043,13 @@ impl GameLogFeature for AetherContainer {
 }
 
 impl AetherContainer {
+    fn game_log_tail(&self) -> Arc<dyn GameLogTailService> {
+        Arc::new(FsGameLogTail::new(
+            self.location_info().clone(),
+            self.event_emitter(),
+        ))
+    }
+
     fn game_log_store(&self) -> Arc<dyn GameLogStore> {
         Arc::new(FsGameLogStore::new(self.location_info().clone()))
     }

@@ -109,6 +109,7 @@ impl StartProcessUseCase {
                     instance_id: instance_id_clone,
                     post_exit_command,
                     capture: Some(capture),
+                    log_tail: None,
                     origin: ProcessOrigin::Launched,
                     crash_watch: None,
                 })

@@ -31,6 +31,7 @@ fn use_case(world: &World) -> AdoptGameProcessesUseCase {
         world.emitter.clone(),
         world.instances.clone(),
         world.game_logs.clone(),
+        world.log_tails.clone(),
         world.notices.clone(),
     )
     .with_pace(pace())
@@ -99,6 +100,11 @@ async fn should_take_over_the_game_when_it_runs_and_its_launcher_is_gone() {
     assert_eq!(followed[0].process_id, record.id);
     assert_eq!(followed[0].post_exit_command, "backup.sh");
     assert!(!followed[0].captured);
+    assert!(followed[0].tails_latest_log);
+    assert_eq!(
+        world.log_tails.0.load(std::sync::atomic::Ordering::SeqCst),
+        1
+    );
     assert_eq!(followed[0].origin, ProcessOrigin::Adopted);
     assert!(
         followed[0]

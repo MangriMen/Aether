@@ -16,7 +16,7 @@ use tokio::task::JoinSet;
 use crate::core::domain::error_chain;
 use crate::features::{
     events::{EventEmitterExt, ProcessEvent, ProcessEventType, SharedEventEmitter},
-    game_log::ListGameLogSourcesUseCasePort,
+    game_log::{GameLogTailService, ListGameLogSourcesUseCasePort},
     instance::InstanceStorage,
     process::{
         AdoptedProcess, ManageProcessService, MinecraftProcessMetadata, OsProcessIdentity,
@@ -63,6 +63,7 @@ struct Adoption {
     probe: Arc<dyn ProcessProbe>,
     manage_process_service: Arc<dyn ManageProcessService>,
     event_emitter: SharedEventEmitter,
+    log_tails: Arc<dyn GameLogTailService>,
     ended_runs: EndedRuns,
     pace: Pace,
 }
@@ -84,6 +85,7 @@ impl AdoptGameProcessesUseCase {
         event_emitter: SharedEventEmitter,
         instance_storage: Arc<dyn InstanceStorage>,
         game_logs: Arc<dyn ListGameLogSourcesUseCasePort>,
+        log_tails: Arc<dyn GameLogTailService>,
         notices: Arc<dyn SkippedHookNoticeService>,
     ) -> Self {
         Self {
@@ -101,6 +103,7 @@ impl AdoptGameProcessesUseCase {
                 probe,
                 manage_process_service,
                 event_emitter,
+                log_tails,
                 pace: Pace::default(),
             }),
         }
@@ -422,6 +425,7 @@ impl Adoption {
             instance_id: record.instance_id.clone(),
             post_exit_command: record.post_exit_command.clone(),
             capture: None,
+            log_tail: Some(self.log_tails.follow(&record.instance_id).await),
             origin: ProcessOrigin::Adopted,
             crash_watch: Some(CrashWatch {
                 pid: record.process.pid(),
