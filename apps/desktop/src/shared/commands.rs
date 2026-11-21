@@ -71,6 +71,7 @@ macro_rules! instance_commands {
             stop,
             import_contents,
             list_content,
+            list_contents,
             install_content,
             enable_contents,
             disable_contents,

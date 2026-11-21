@@ -32,6 +32,11 @@ export const commands = {
 	stop: (id: string, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:instance|stop", { id, requestId }),
 	importContents: (instanceId: string, contentType: ContentTypeDto, sourcePaths: string[], requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:instance|import_contents", { instanceId, contentType, sourcePaths, requestId }),
 	listContent: (id: string) => __TAURI_INVOKE<{ [key in string]: ContentFileDto }>("plugin:instance|list_content", { id }),
+	/**
+	 *  The contents of several instances in one call, listed side by side. An instance whose
+	 *  contents cannot be listed is left out of the answer, the others are not held back by it.
+	 */
+	listContents: (ids: string[]) => __TAURI_INVOKE<{ [key in string]: { [key in string]: ContentFileDto } }>("plugin:instance|list_contents", { ids }),
 	installContent: (payload: ContentInstallParamsDto, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:instance|install_content", { payload, requestId }),
 	enableContents: (id: string, contentPaths: string[], requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:instance|enable_contents", { id, contentPaths, requestId }),
 	disableContents: (id: string, contentPaths: string[], requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:instance|disable_contents", { id, contentPaths, requestId }),
