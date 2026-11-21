@@ -370,6 +370,40 @@ async fn list_content(
         .collect())
 }
 
+/// The contents of several instances in one call, listed side by side. An instance whose
+/// contents cannot be listed is left out of the answer, the others are not held back by it.
+#[tauri::command]
+#[specta::specta]
+#[tracing::instrument(level = "debug", skip_all)]
+async fn list_contents(
+    ids: Vec<String>,
+    container: State<'_, ContainerState>,
+) -> FrontendResult<HashMap<String, HashMap<String, ContentFileDto>>> {
+    let use_case = container.0.list_content_use_case();
+    let mut listing = tokio::task::JoinSet::new();
+    for id in ids {
+        let instance_id = InstanceId::try_from(id.clone()).map_err(aether_core::Error::from)?;
+        let use_case = use_case.clone();
+        listing.spawn(async move { (id, use_case.execute(instance_id).await) });
+    }
+
+    let mut contents = HashMap::new();
+    while let Some(done) = listing.join_next().await {
+        let Ok((id, result)) = done else {
+            continue;
+        };
+        match result {
+            Ok(files) => {
+                contents.insert(id, files.into_iter().map(|(k, v)| (k, v.into())).collect());
+            }
+            Err(err) => {
+                tracing::warn!(instance_id = %id, error = %err, "Could not list the contents of the instance");
+            }
+        }
+    }
+    Ok(contents)
+}
+
 #[tauri::command]
 #[specta::specta]
 #[tracing::instrument(level = "debug", skip_all)]

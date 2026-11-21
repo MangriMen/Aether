@@ -38,6 +38,7 @@ import {
 } from '../model/contentItemMappers';
 import { ContentType } from '../model/contentType';
 import { CONTENT_QUERY_KEYS } from './contentQueryKeys';
+import { listContentBatched } from './listContentBatched';
 
 export const useContentProviders = () => {
   return useQuery(() => ({
@@ -74,10 +75,16 @@ export const useInstanceContents = (id: Accessor<string | undefined>) => {
   return useQuery(() => instanceContentsQuery(id()));
 };
 
-/** The contents of several instances at once, one query each, in the order of `ids`. */
+/**
+ * The contents of several instances at once, one query each, in the order of `ids`. Queries
+ * that start together are answered by one call to the backend.
+ */
 export const useInstancesContents = (ids: Accessor<string[]>) =>
   useQueries(() => ({
-    queries: ids().map((id) => instanceContentsQuery(id)),
+    queries: ids().map((id) => ({
+      ...instanceContentsQuery(id),
+      queryFn: () => listContentBatched(id),
+    })),
   }));
 
 export const useDisableContents = () => {

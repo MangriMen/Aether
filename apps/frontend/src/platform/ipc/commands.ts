@@ -112,6 +112,7 @@ export const instanceCommands = {
   stop: withIdempotency(instanceRawCommands.stop),
   importContents: withIdempotency(instanceRawCommands.importContents),
   listContent: instanceRawCommands.listContent,
+  listContents: instanceRawCommands.listContents,
   installContent: withIdempotency(instanceRawCommands.installContent),
   enableContents: withIdempotency(instanceRawCommands.enableContents),
   disableContents: withIdempotency(instanceRawCommands.disableContents),
