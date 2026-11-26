@@ -53,7 +53,7 @@
     "dompurify": "^3.4.18",
     "marked": "^18.2.1",
     "semver": "^7.8.6",
-    "solid-js": "^1.9.19",
+    "solid-js": "^2.0.3",
     "solid-transition-group": "^0.3.0",
     "tailwind-merge": "^3.7.0",
     "valibot": "^1.5.0"
