@@ -125,7 +125,7 @@ nix = { version = "0.31.3", default-features = false, features = ["signal"] }
 
 [dev-dependencies]
 tracing-subscriber.workspace = true
-rstest = "0.28.0"
+rstest = "0.29.0"
 rust_arkitect = "0.3.7"
 
 [lints]
