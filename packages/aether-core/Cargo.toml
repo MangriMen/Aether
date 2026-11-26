@@ -121,7 +121,7 @@ windows-sys = { version = "0.61.2", features = ["Wdk_System_SystemServices", "Wi
 [target.'cfg(unix)'.dependencies]
 # Stops a game a previous launcher started, by its pid or process group. The version
 # `process-wrap` uses.
-nix = { version = "0.31.3", default-features = false, features = ["signal"] }
+nix = { version = "0.32.0", default-features = false, features = ["signal"] }
 
 [dev-dependencies]
 tracing-subscriber.workspace = true
