@@ -44,7 +44,7 @@ dunce = "1.0.5"
 # The home folder, which no folder grant may take in.
 dirs = "7.0.0"
 notify = "8.2.0"
-notify-debouncer-mini = "0.7.0"
+notify-debouncer-mini = "0.8.0"
 path-slash = "0.2.1"
 # A plugin's `run_command` is stopped as a whole process tree, not only its direct child: a job
 # object on Windows, a process group on Unix.
