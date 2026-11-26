@@ -34,7 +34,7 @@
     "@formisch/solid": "^1.3.0",
     "@kobalte/core": "0.13.12",
     "@solid-primitives/i18n": "^2.2.1",
-    "@solid-primitives/media": "^2.3.6",
+    "@solid-primitives/media": "^4.0.0",
     "@solid-primitives/resize-observer": "^2.2.0",
     "@solid-primitives/scheduled": "^1.5.3",
     "@solid-primitives/storage": "4.3.5",
